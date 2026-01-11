@@ -1,30 +1,79 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { toast } from 'vue-sonner';
 
-type PermissionItem = { id: number; name: string };
+import InputError from '@/components/InputError.vue';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
-const props = defineProps<{ permissions: PermissionItem[] }>();
+import { create, index, store } from '@/routes/roles';
+import { type BreadcrumbItem } from '@/types';
 
+/* -------------------------------------------------------------------------- */
+/* Props (Inertia Resource)                                                    */
+/* -------------------------------------------------------------------------- */
+const props = defineProps<{
+    permissions: {
+        data: {
+            id: number;
+            name: string;
+        }[];
+    };
+}>();
+
+/* -------------------------------------------------------------------------- */
+/* Breadcrumbs                                                                 */
+/* -------------------------------------------------------------------------- */
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Roles',
-        href: RolesIndex().url,
+        title: 'Roles Table',
+        href: index().url,
     },
     {
-        title: 'Create',
-        href: RolesStore().url,
+        title: 'Create Role',
+        href: create().url,
     },
 ];
 
-const form = useForm<{ name: string; permissions: number[] }>({
+/* -------------------------------------------------------------------------- */
+/* Form                                                                        */
+/* -------------------------------------------------------------------------- */
+const form = useForm({
     name: '',
-    permissions: [],
+    permissions: [] as number[],
 });
 
+/* -------------------------------------------------------------------------- */
+/* Submit                                                                      */
+/* -------------------------------------------------------------------------- */
 const submit = () => {
-    form.post(RolesStore().url);
+    form.post(store().url, {
+        onSuccess: () => {
+            toast.success('Role created successfully');
+            form.reset();
+        },
+    });
+};
+
+const togglePermission = (checked: boolean | 'indeterminate', id: number) => {
+    const isChecked = checked === true;
+
+    form.permissions = isChecked
+        ? form.permissions.includes(id)
+            ? form.permissions
+            : [...form.permissions, id]
+        : form.permissions.filter((permissionId) => permissionId !== id);
 };
 </script>
 
@@ -32,88 +81,85 @@ const submit = () => {
     <Head title="Create Role" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
-        >
-            <div class="flex items-center justify-between">
-                <h1 class="text-2xl font-bold">Create Role</h1>
-                <Link
-                    :href="RolesIndex().url"
-                    class="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-100"
-                >
-                    Back to Roles
-                </Link>
-            </div>
+        <div class="flex h-full flex-1 justify-center p-4">
+            <Card class="w-full max-w-2xl">
+                <CardHeader>
+                    <CardTitle>Create Role</CardTitle>
+                    <CardDescription>
+                        Define a role name and assign permissions
+                    </CardDescription>
+                </CardHeader>
 
-            <form @submit.prevent="submit" class="flex max-w-xl flex-col gap-6">
-                <div>
-                    <label
-                        for="name"
-                        class="mb-1 block text-sm font-medium text-gray-700"
-                        >Role Name</label
-                    >
-                    <input
-                        id="name"
-                        type="text"
-                        v-model="form.name"
-                        class="w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-                        placeholder="e.g., Admin"
-                        required
-                    />
-                    <p
-                        v-if="form.errors.name"
-                        class="mt-1 text-sm text-red-600"
-                    >
-                        {{ form.errors.name }}
-                    </p>
-                </div>
-
-                <div>
-                    <span class="mb-2 block text-sm font-medium text-gray-700"
-                        >Permissions</span
-                    >
-                    <div
-                        class="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3"
-                    >
-                        <label
-                            v-for="permission in props.permissions"
-                            :key="permission.id"
-                            class="flex items-center gap-2 rounded border border-gray-200 p-2 hover:bg-gray-50"
-                        >
-                            <input
-                                type="checkbox"
-                                :value="permission.id"
-                                v-model="form.permissions"
-                                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                <form @submit.prevent="submit">
+                    <CardContent class="space-y-6">
+                        <!-- Role Name -->
+                        <div class="space-y-2">
+                            <Label for="name">Role Name</Label>
+                            <Input
+                                id="name"
+                                v-model="form.name"
+                                placeholder="e.g. Admin"
                             />
-                            <span class="text-sm">{{ permission.name }}</span>
-                        </label>
-                    </div>
-                    <p
-                        v-if="form.errors.permissions"
-                        class="mt-1 text-sm text-red-600"
-                    >
-                        {{ form.errors.permissions }}
-                    </p>
-                </div>
+                            <InputError :message="form.errors.name" />
+                        </div>
 
-                <div class="flex gap-2">
-                    <button
-                        type="submit"
-                        :disabled="form.processing"
-                        class="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
-                    >
-                        Save Role
-                    </button>
-                    <button
-                        type="button"
-                        @click="form.reset()"
-                        class="rounded border border-gray-300 px-4 py-2 hover:bg-gray-100"
-                    >
-                        Reset
-                    </button>
-                </div>
-            </form>
+                        <!-- Permissions -->
+                        <div class="space-y-3">
+                            <Label>Permissions</Label>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div
+                                    v-for="permission in props.permissions.data"
+                                    :key="permission.id"
+                                    class="flex items-center gap-2"
+                                >
+                                    <!-- ✅ CORRECT RADIX CHECKBOX -->
+                                    <Checkbox
+                                        :id="`perm-${permission.id}`"
+                                        :model-value="
+                                            form.permissions.includes(
+                                                permission.id,
+                                            )
+                                        "
+                                        @update:modelValue="
+                                            (checked) =>
+                                                togglePermission(
+                                                    checked,
+                                                    permission.id,
+                                                )
+                                        "
+                                    />
+
+                                    <Label
+                                        :for="`perm-${permission.id}`"
+                                        class="font-normal"
+                                    >
+                                        {{ permission.name }}
+                                    </Label>
+                                </div>
+                            </div>
+
+                            <InputError :message="form.errors.permissions" />
+                        </div>
+                    </CardContent>
+
+                    <CardFooter class="flex justify-end gap-2">
+                        <Link :href="index().url">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                :disabled="form.processing"
+                            >
+                                Cancel
+                            </Button>
+                        </Link>
+
+                        <Button type="submit" :disabled="form.processing">
+                            Create Role
+                        </Button>
+                    </CardFooter>
+                </form>
+            </Card>
         </div>
     </AppLayout>
 </template>

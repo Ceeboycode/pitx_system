@@ -18,6 +18,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
 import { create, index, store } from '@/routes/users';
+
 import { toast } from 'vue-sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -87,7 +88,7 @@ const submit = () => {
                     <div class="flex items-center justify-between">
                         <CardTitle class="text-lg font-medium">
                             Create user
-                        </CardTitle>
+                    </CardTitle>
 
                         <!-- <Link
                 :href="index().url"

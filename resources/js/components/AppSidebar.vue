@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import NavFooter from '@/components/NavFooter.vue';
-import NavMain from '@/components/NavMain.vue';
-import NavUser from '@/components/NavUser.vue';
+import { computed } from 'vue'
+import { Link } from '@inertiajs/vue3'
+import { BookOpen, User, LayoutGrid, Folder } from 'lucide-vue-next'
+
+import NavFooter from '@/components/NavFooter.vue'
+import NavMain from '@/components/NavMain.vue'
+import NavUser from '@/components/NavUser.vue'
 import {
     Sidebar,
     SidebarContent,
@@ -10,29 +14,45 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-} from '@/components/ui/sidebar';
-import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/vue3';
-import { BookOpen, User, LayoutGrid, Folder} from 'lucide-vue-next';
-import AppLogo from './AppLogo.vue';
+} from '@/components/ui/sidebar'
+import AppLogo from './AppLogo.vue'
+import { can } from '@/lib/can'
 
-// Import routes
-import { dashboard } from '@/routes';
-import UserController from '@/actions/App/Http/Controllers/UserController';
+// Routes
+import { dashboard } from '@/routes'
+import { index as usersIndex } from '@/routes/users'
+import { index as rolesIndex } from '@/routes/roles'
 
+export interface NavItem {
+    title: string
+    href: string
+    icon: any
+    permission?: string
+}
 
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
-        href: dashboard(),
+        href: dashboard().url,
         icon: LayoutGrid,
     },
     {
         title: 'Users',
-        href: UserController.index(),
+        href: usersIndex().url,
         icon: User,
+        permission: 'users.viewAny',
     },
-];
+    {
+        title: 'Roles',
+        href: rolesIndex().url,
+        icon: User,
+        permission: 'roles.viewAny',
+    }
+]
+
+const visibleMainNavItems = computed(() =>
+    mainNavItems.filter(item => !item.permission || can(item.permission))
+)
 
 const footerNavItems: NavItem[] = [
     {
@@ -45,7 +65,7 @@ const footerNavItems: NavItem[] = [
         href: 'https://laravel.com/docs/starter-kits#vue',
         icon: BookOpen,
     },
-];
+]
 </script>
 
 <template>
@@ -63,7 +83,7 @@ const footerNavItems: NavItem[] = [
         </SidebarHeader>
 
         <SidebarContent>
-            <NavMain :items="mainNavItems" />
+            <NavMain :items="visibleMainNavItems" />
         </SidebarContent>
 
         <SidebarFooter>
