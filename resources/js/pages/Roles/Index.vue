@@ -1,120 +1,95 @@
 <script setup lang="ts">
+import {
+    Card,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+    CardContent,
+    CardFooter,
+} from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import AppLayout from '@/layouts/AppLayout.vue';
-import { RolesCreate, RolesDestroy, RolesEdit, RolesIndex } from '@/routes';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/vue3';
-import { toRefs } from 'vue';
-
-type RoleItem = {
-    id: number;
-    name: string;
-    guard_name?: string;
-    created_at?: string;
-    permissions?: { id: number; name: string }[];
-};
-
-const props = withDefaults(defineProps<{ roles: RoleItem[] }>(), {
-    roles: () => [],
-});
-const { roles } = toRefs(props);
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Roles Table',
-        href: RolesIndex().url,
-    },
-];
-
-// Actions handled via Inertia <Link> components in the template
 </script>
 
-<template>
-    <Head title="Roles Table" />
 
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
-        >
-            <div class="flex items-center justify-between">
-                <h1 class="text-2xl font-bold">Roles</h1>
-                <Link
-                    :href="RolesCreate().url"
-                    class="rounded bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700"
-                >
-                    Create Role
-                </Link>
+
+<template>
+    <Card class="w-full">
+        <!-- Header -->
+        <CardHeader class="flex flex-row items-center justify-between">
+            <div>
+                <CardTitle>Users</CardTitle>
+                <CardDescription>
+                    A list of all registered users
+                </CardDescription>
             </div>
-            <table
-                class="w-full table-auto border-collapse border border-gray-200"
-            >
-                <thead>
-                    <tr class="bg-gray-100">
-                        <th class="border border-gray-300 px-4 py-2 text-left">
-                            Name
-                        </th>
-                        <th class="border border-gray-300 px-4 py-2 text-left">
-                            Permissions
-                        </th>
-                        <th class="border border-gray-300 px-4 py-2 text-left">
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-if="!roles.length">
-                        <td
-                            class="border border-gray-300 px-4 py-2"
-                            colspan="3"
+
+            <Button size="sm">
+                Create New User
+            </Button>
+        </CardHeader>
+
+        <!-- Table -->
+        <CardContent>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Roles</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead class="text-right">Actions</TableHead>
+                    </TableRow>
+                </TableHeader>
+
+                <TableBody>
+                    <!-- Example row -->
+                    <TableRow>
+                        <TableCell>1</TableCell>
+                        <TableCell class="font-medium">
+                            John Doe
+                        </TableCell>
+                        <TableCell>john@example.com</TableCell>
+                        <TableCell>Admin</TableCell>
+                        <TableCell>2024-01-01</TableCell>
+                        <TableCell class="space-x-2 text-right">
+                            <Button variant="outline" size="sm">
+                                Edit
+                            </Button>
+
+                            <Button variant="destructive" size="sm">
+                                Delete
+                            </Button>
+                        </TableCell>
+                    </TableRow>
+
+                    <!-- Empty state example -->
+                    <!--
+                    <TableRow>
+                        <TableCell
+                            colspan="6"
+                            class="h-24 text-center text-muted-foreground"
                         >
-                            No roles found.
-                        </td>
-                    </tr>
-                    <tr
-                        v-for="role in roles"
-                        :key="role.id"
-                        class="hover:bg-gray-50"
-                    >
-                        <td class="border border-gray-300 px-4 py-2">
-                            {{ role.name }}
-                        </td>
-                        <td class="border border-gray-300 px-4 py-2">
-                            <template
-                                v-if="
-                                    role.permissions && role.permissions.length
-                                "
-                            >
-                                {{
-                                    role.permissions
-                                        .map((p) => p.name)
-                                        .join(', ')
-                                }}
-                            </template>
-                            <template v-else> None </template>
-                        </td>
-                        <td class="border border-gray-300 px-4 py-2">
-                            <div class="flex items-center gap-2">
-                                <Link
-                                    :href="RolesEdit(role.id).url"
-                                    as="button"
-                                    class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
-                                    aria-label="Edit role"
-                                >
-                                    Edit
-                                </Link>
-                                <Link
-                                    :href="RolesDestroy(role.id).url"
-                                    method="delete"
-                                    as="button"
-                                    class="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
-                                    aria-label="Delete role"
-                                >
-                                    Delete
-                                </Link>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </AppLayout>
+                            No users found
+                        </TableCell>
+                    </TableRow>
+                    -->
+                </TableBody>
+            </Table>
+        </CardContent>
+
+        <!-- Footer (UI only) -->
+        <CardFooter class="flex items-center justify-between">
+            <span class="text-sm text-muted-foreground">
+                Page 1 of 1
+            </span>
+
+            <div class="flex items-center gap-1">
+                <Button variant="outline" size="sm">Previous</Button>
+                <Button variant="outline" size="sm">1</Button>
+                <Button variant="outline" size="sm">Next</Button>
+            </div>
+        </CardFooter>
+    </Card>
 </template>
