@@ -9,9 +9,22 @@ use App\Http\Resources\Web\RoleResource as WebRoleResource;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class RoleController extends Controller
+class RoleController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:users.viewAny', only: ['index']),
+            new Middleware('permission:users.view', only: ['show']),
+            new Middleware('permission:roles.create', only: ['create', 'store']),
+            new Middleware('permission:roles.edit', only: ['edit', 'update']),
+            new Middleware('permission:roles.delete', only: ['destroy']),
+        ];
+    }
+
     public function index()
     {
         $roles = Role::with('permissions:id,name')
@@ -35,12 +48,14 @@ class RoleController extends Controller
 
     public function store(StoreRoleRequest $request)
     {
+        $validated = $request->validated();
+
         $role = Role::create([
-            'name'       => $request->name,
+            'name'       => $validated['name'],
             'guard_name' => config('auth.defaults.guard'),
         ]);
 
-        $role->syncPermissions($request->permissions ?? []);
+        $role->syncPermissions($validated['permissions'] ?? []);
 
         return to_route('roles.index')
             ->with('success', 'Role created successfully.');
@@ -70,11 +85,13 @@ class RoleController extends Controller
 
     public function update(UpdateRoleRequest $request, Role $role)
     {
+        $validated = $request->validated();
+
         $role->update([
-            'name' => $request->name,
+            'name' => $validated['name'],
         ]);
 
-        $role->syncPermissions($request->permissions ?? []);
+        $role->syncPermissions($validated['permissions'] ?? []);
 
         return to_route('roles.index')
             ->with('success', 'Role updated successfully.');

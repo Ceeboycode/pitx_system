@@ -138,6 +138,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                     <Button v-if="can('users.create')" as-child size="sm">
                         <Link :href="create().url"> Create New User </Link>
                     </Button>
+
                 </CardHeader>
                 <!-- Table -->
                 <CardContent>
@@ -175,6 +176,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                         as-child
                                         variant="outline"
                                         size="sm"
+                                        v-if="can('users.edit')"
                                     >
                                         <Link :href="edit(user.id).url">
                                             Edit
@@ -185,6 +187,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                         variant="destructive"
                                         size="sm"
                                         @click="openDeleteDialog(user.id)"
+                                        v-if="can('users.delete')"
                                     >
                                         Delete
                                     </Button>

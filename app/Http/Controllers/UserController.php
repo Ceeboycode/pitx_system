@@ -6,17 +6,30 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 
-class UserController extends Controller
+class UserController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:users.viewAny', only: ['index']),
+            new Middleware('permission:users.view', only: ['show']),
+            new Middleware('permission:users.create', only: ['create', 'store']),
+            new Middleware('permission:users.edit', only: ['edit', 'update']),
+            new Middleware('permission:users.delete', only: ['destroy']),
+        ];
+    }
+
     public function index()
     {
         $users = User::with('roles:id,name')
             ->latest()
-            ->paginate(5)
+            ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Users/Index', [
