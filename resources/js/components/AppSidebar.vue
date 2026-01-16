@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Link } from '@inertiajs/vue3'
-import { BookOpen, User, LayoutGrid, Folder } from 'lucide-vue-next'
+import { BookOpen, User, LayoutGrid, Folder, Building2 } from 'lucide-vue-next'
 
 import NavFooter from '@/components/NavFooter.vue'
 import NavMain from '@/components/NavMain.vue'
@@ -22,6 +22,7 @@ import { can } from '@/lib/can'
 import { dashboard } from '@/routes'
 import { index as usersIndex } from '@/routes/users'
 import { index as rolesIndex } from '@/routes/roles'
+import { index as companiesIndex } from '@/routes/companies'
 
 export interface NavItem {
     title: string
@@ -47,6 +48,12 @@ const mainNavItems: NavItem[] = [
         href: rolesIndex().url,
         icon: User,
         permission: 'roles.viewAny',
+    },
+    {
+        title: 'Companies',
+        href: companiesIndex().url,
+        icon: Building2,
+        // permission: 'companies.viewAny',
     }
 ]
 

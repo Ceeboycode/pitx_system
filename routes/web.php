@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CompanyController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -19,6 +20,12 @@ Route::get('dashboard', function () {
 Route::middleware('auth')->group(function () {
     Route::resource('users', UserController::class);
     Route::resource('roles', RoleController::class);
+    
+    Route::resource('companies', CompanyController::class);
+    Route::get('/companies-trash', [CompanyController::class, 'trash'])->name('companies.trash');
+    Route::post('/companies/{id}/restore', [CompanyController::class, 'restore'])->name('companies.restore');
+    Route::delete('/companies/{id}/force-delete', [CompanyController::class, 'forceDelete'])->name('companies.forceDelete');
+
 });
 
 
