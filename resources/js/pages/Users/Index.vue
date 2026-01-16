@@ -12,7 +12,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-
+import { Plus } from 'lucide-vue-next';
 import {
     Dialog,
     DialogContent,
@@ -135,8 +135,9 @@ const breadcrumbs: BreadcrumbItem[] = [
                         </CardDescription>
                     </div>
 
-                    <Button v-if="can('users.create')" as-child size="sm">
-                        <Link :href="create().url"> Create New User </Link>
+                    <Button v-if="can('users.create')" as-child size="sm" variant="default">
+                        
+                        <Link :href="create().url"> <Plus /> Create New User </Link>
                     </Button>
 
                 </CardHeader>
