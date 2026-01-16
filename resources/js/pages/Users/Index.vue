@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { can } from '@/lib/can';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
@@ -31,6 +30,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 
+import { can } from '@/lib/can';
 import { Button } from '@/components/ui/button';
 
 /* =======================
