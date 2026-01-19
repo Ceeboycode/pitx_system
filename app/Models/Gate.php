@@ -4,19 +4,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Company extends Model
+class Gate extends Model
 {
     use SoftDeletes, HasFactory;
 
     protected $fillable = [
-        'company_name',
+        'gate_name',
         'created_by',
         'updated_by',
     ];
 
-    // (Laravel already casts these automatically, but keeping is fine)
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -28,9 +28,6 @@ class Company extends Model
         'updated_at_human',
         'deleted_at_human',
     ];
-    /* =====================
-     | Relationships
-     ===================== */
 
     public function creator()
     {
@@ -41,10 +38,6 @@ class Company extends Model
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
-
-    /* =====================
-     | EASY Human Readable Accessors
-     ===================== */
 
     public function getCreatedAtHumanAttribute()
     {
@@ -61,5 +54,10 @@ class Company extends Model
         return $this->deleted_at
             ? $this->deleted_at->diffForHumans()
             : null;
+    }
+
+    public function routes(): HasMany
+    {
+        return $this->hasMany(Route::class);
     }
 }
