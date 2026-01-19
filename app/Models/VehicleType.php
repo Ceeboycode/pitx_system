@@ -4,33 +4,28 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Company extends Model
+class VehicleType extends Model
 {
-    use SoftDeletes, HasFactory;
-
+    //
+    use HasFactory;
     protected $fillable = [
-        'company_name',
+        'type_name',
+        'is_active',
         'created_by',
         'updated_by',
     ];
 
-    // (Laravel already casts these automatically, but keeping is fine)
     protected $casts = [
+        'is_active' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
     ];
 
     protected $appends = [
         'created_at_human',
         'updated_at_human',
-        'deleted_at_human',
     ];
-    /* =====================
-     | Relationships
-     ===================== */
 
     public function creator()
     {
@@ -42,10 +37,6 @@ class Company extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    /* =====================
-     | EASY Human Readable Accessors
-     ===================== */
-
     public function getCreatedAtHumanAttribute()
     {
         return $this->created_at?->diffForHumans();
@@ -56,10 +47,4 @@ class Company extends Model
         return $this->updated_at?->diffForHumans();
     }
 
-    public function getDeletedAtHumanAttribute()
-    {
-        return $this->deleted_at
-            ? $this->deleted_at->diffForHumans()
-            : null;
-    }
 }

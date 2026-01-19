@@ -23,7 +23,7 @@ import { dashboard } from '@/routes'
 import { index as usersIndex } from '@/routes/users'
 import { index as rolesIndex } from '@/routes/roles'
 import { index as companiesIndex } from '@/routes/companies'
-
+import { index as vehicleTypesIndex } from '@/routes/vehicle-types'
 export interface NavItem {
     title: string
     href: string
@@ -54,7 +54,15 @@ const mainNavItems: NavItem[] = [
         href: companiesIndex().url,
         icon: Building2,
         // permission: 'companies.viewAny',
+    },
+    {
+        title: 'Vehicles Types',
+        href: vehicleTypesIndex().url,
+        icon: Folder,
     }
+
+
+
 ]
 
 const visibleMainNavItems = computed(() =>

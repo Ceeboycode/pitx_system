@@ -11,38 +11,23 @@ class PermissionSeeder extends Seeder
 {
     public function run(): void
     {
-        // Clear cached permissions
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $permissions = [
-            'users.viewAny',
-            'users.view',
-            'users.create',
-            'users.edit',
-            'users.delete',
-
-            'roles.viewAny',
-            'roles.view',
-            'roles.create',
-            'roles.edit',
-            'roles.delete',
+            'users.viewAny','users.view','users.create','users.edit','users.delete',
+            'roles.viewAny','roles.view','roles.create','roles.edit','roles.delete',
+            'company.viewAny','company.view','company.create','company.update',
+            'company.delete','company.restore','company.forceDelete',
+            'vehicle_type.viewAny','vehicle_type.view','vehicle_type.create',
+            'vehicle_type.update','vehicle_type.delete',
+            'vehicle_type.restore','vehicle_type.forceDelete',
         ];
 
-        // 1️ Create permissions if they don't exist
         foreach ($permissions as $permission) {
             Permission::firstOrCreate([
                 'name' => $permission,
-                'guard_name' => config('auth.defaults.guard'),
+                'guard_name' => 'web',
             ]);
         }
-
-        // 2️ Create role
-        $admin = Role::firstOrCreate(
-            ['name' => 'super-admin'],
-            ['guard_name' => config('auth.defaults.guard')]
-        );
-
-        // 3️ Assign permissions to role
-        $admin->syncPermissions($permissions);
     }
 }

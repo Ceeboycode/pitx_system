@@ -2,18 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Company\CompanyStoreRequest;
+use App\Http\Requests\Company\CompanyUpdateRequest;
 use App\Models\Company;
+use App\Services\Company\CompanyService;
 use Inertia\Inertia;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class CompanyController extends Controller
 {
+
+    public function __construct(
+        private CompanyService $companyService
+    ) {}
+
+
     // Display a listing of the resource.
     public function index()
     {
+        Gate::authorize('viewAny', Company::class);
         $companies = Company::select('id', 'company_name')
-            ->orderBy('id', 'desc')
-            ->paginate(2)
+            ->latest()
+            ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Company/Index', [
@@ -24,53 +34,55 @@ class CompanyController extends Controller
     // Display the specified resource.
     public function show(Company $company)
     {
+        Gate::authorize('view', $company);
+
         return Inertia::render('Company/Show', [
             'company' => $company->load(['creator', 'updater']),
         ]);
     }
 
     // Implementation for storing a new company
-    public function store(Request $request)
+    public function store(CompanyStoreRequest $request)
     {
-        // dd($request->all());
-        // Validation and creation logic would go here
-        $validated = $request->validate([
-            'company_name' => 'required|string|max:80|unique:companies,company_name',
-        ]);
+        // 1. Authorize FIRST
+        Gate::authorize('create', Company::class);
 
-        // Assuming the authenticated user's ID is available
-        $validated['created_by'] = auth()->id();
+        // 2. Validated data
+        $validated = $request->validated();
 
-        // Create the company
-        Company::create($validated);
+        // 3. Delegate to Service
+        $this->companyService->createCompany($validated, auth()->id());
 
-        // Redirect back to the company index with a success message
+        // 4. Redirect back to the company index with a success message
         return redirect()->back();
     }
 
     // Implementation for updating an existing company
-    public function update(Request $request, Company $company)
+    public function update(CompanyUpdateRequest $request, Company $company)
     {
-        // Validation and update logic would go here
-        $validated = $request->validate([
-            'company_name' => 'required|string|max:80|unique:companies,company_name,' . $company->id,
-        ]);
-        // Assuming the authenticated user's ID is available
-        $validated['updated_by'] = auth()->id();
+        // 1. Authorize FIRST
+        Gate::authorize('update', $company);
 
-        // Update the company
-        $company->update($validated);
+        // 2. Validated data
+        $validated = $request->validated();
 
-        // Redirect back to the company index with a success message
+        // 3. Delegate to Service
+        $this->companyService->updateCompany($company, $validated, auth()->id());
+
+        // 4. Redirect back to the company index with a success message
         return redirect()->back();
     }
 
     // Implementation for sofre deleting a company
     public function destroy(Company $company)
     {
-        // Delete the company
-        $company->delete();
-        // Redirect back to the company index with a success message
+        // 1. Authorize FIRST
+        Gate::authorize('delete', $company);
+
+        // 2. Delegate to Service
+        $this->companyService->deleteCompany($company);
+
+        // 3. Redirect back to the company index with a success message
         return redirect()->back();
     }
 
@@ -79,7 +91,7 @@ class CompanyController extends Controller
     {
         $companies = Company::onlyTrashed()
             ->select('id', 'company_name', 'deleted_at')
-            ->orderBy('deleted_at', 'desc')
+            ->latest('deleted_at')
             ->paginate(10)
             ->withQueryString();
 
@@ -92,7 +104,10 @@ class CompanyController extends Controller
     public function restore(int $id)
     {
         $company = Company::onlyTrashed()->findOrFail($id);
-        $company->restore();
+
+        Gate::authorize('restore', $company);
+
+        $this->companyService->restoreCompany($company);
 
         return redirect()->back();
     }
@@ -100,8 +115,11 @@ class CompanyController extends Controller
     // Permanently delete a soft-deleted company.
     public function forceDelete(int $id)
     {
-        $company = Company::withTrashed()->findOrFail($id);
-        $company->forceDelete();
+        $company = Company::onlyTrashed()->findOrFail($id);
+
+        Gate::authorize('forceDelete', $company);
+
+        $this->companyService->forceDeleteCompany($company);
 
         return redirect()->back();
     }
