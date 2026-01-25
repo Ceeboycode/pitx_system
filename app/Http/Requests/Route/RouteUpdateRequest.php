@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Route;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class RouteUpdateRequest extends FormRequest
 {
@@ -22,7 +23,10 @@ class RouteUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'route_name' => ['sometimes', 'required', 'string', 'max:150'],
+            'route_name' => ['sometimes', 'required', 'string', 'max:150',
+                Rule::unique('routes', 'route_name')
+                ->ignore($this->route->id),
+            ],
             'gate_id' => ['sometimes', 'required', 'exists:gates,id'],
         ];
     }

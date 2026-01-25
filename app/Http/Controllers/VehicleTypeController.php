@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Services\Vehicle\VehicleTypeService;
 use Illuminate\Support\Facades\Gate;
 use App\Http\Requests\VehicleType\VehicleTypeStoreRequest;

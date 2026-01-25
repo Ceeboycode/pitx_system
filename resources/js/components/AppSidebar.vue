@@ -24,6 +24,10 @@ import { index as usersIndex } from '@/routes/users'
 import { index as rolesIndex } from '@/routes/roles'
 import { index as companiesIndex } from '@/routes/companies'
 import { index as vehicleTypesIndex } from '@/routes/vehicle-types'
+import { index as routeStopsIndex } from '@/routes/route-stops'
+import { index as routesIndex } from '@/routes/routes'
+import { index as gateIndex } from '@/routes/gates'
+
 export interface NavItem {
     title: string
     href: string
@@ -59,10 +63,22 @@ const mainNavItems: NavItem[] = [
         title: 'Vehicles Types',
         href: vehicleTypesIndex().url,
         icon: Folder,
-    }
-
-
-
+    },
+    {
+        title: 'Route Stops',
+        href: routeStopsIndex().url,
+        icon: Folder,
+    },
+    {
+        title: 'Routes',
+        href: routesIndex().url,
+        icon: Folder,
+    },
+    {
+        title: 'Gates',
+        href: gateIndex().url,
+        icon: Folder,
+    },
 ]
 
 const visibleMainNavItems = computed(() =>
