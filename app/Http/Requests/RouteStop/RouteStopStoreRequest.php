@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\Route;
+namespace App\Http\Requests\RouteStop;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class RouteStoreRequest extends FormRequest
+class RouteStopStoreRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,8 +22,9 @@ class RouteStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'route_name' => ['required', 'string', 'max:150', 'unique:routes,route_name'],
-            'gate_id' => ['required', 'exists:gates,id'],
+            'stop_name' => 'required|string|max:255',
+            'route_id' => 'required|exists:routes,id',
+            'stop_order' => 'required|integer|min:1',
         ];
     }
 }

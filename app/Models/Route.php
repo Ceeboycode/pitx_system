@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\RouteStop;
+use App\Models\User;
+use App\Models\Gate;
 
 class Route extends Model
 {
@@ -68,5 +71,5 @@ class Route extends Model
     {
         return $this->hasMany(RouteStop::class)->orderBy('stop_order');
     }
-    
+
 }

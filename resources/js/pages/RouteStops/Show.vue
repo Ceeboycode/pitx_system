@@ -1,25 +1,20 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { index } from '@/routes/gates';
+import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 
-
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Gates',
-        href: index().url,
+        title: 'Dashboard',
+        href: dashboard().url,
     },
-    {
-        title: 'Show details',
-        href: '#',
-    }
 ];
 </script>
 
 <template>
-    <Head title="Gate details" />
+    <Head title="Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div

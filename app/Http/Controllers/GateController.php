@@ -20,7 +20,8 @@ class GateController extends Controller
     {
         Gate::authorize('viewAny', GateModel::class);
 
-        $gates = GateModel::select('id', 'gate_name')
+        $gates = GateModel::select('id', 'gate_name', 'created_by')
+            ->with('creator:id,name')
             ->latest()
             ->paginate(10)
             ->withQueryString();
@@ -47,7 +48,7 @@ class GateController extends Controller
             $request->validated(),
         );
 
-        return redirect()->back()->with('success', 'Gate created successfully.');
+        return to_route('gates.index')->with('success', 'Gate created successfully.');
     }
 
     public function update(GateUpdateRequest $request, GateModel $gate)
@@ -62,6 +63,21 @@ class GateController extends Controller
         return redirect()->back()->with('success', 'Gate updated successfully.');
     }
 
+    public function trash()
+    {
+        Gate::authorize('viewTrash', GateModel::class);
+
+        $gates = GateModel::onlyTrashed()
+            ->select('id', 'gate_name', 'deleted_at')
+            ->latest('deleted_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return Inertia::render('Gates/Trash', [
+            'gates' => $gates,
+        ]);
+    }
+
     public function destroy(GateModel $gate)
     {
         Gate::authorize('delete', GateModel::class);
@@ -71,8 +87,9 @@ class GateController extends Controller
         return redirect()->back()->with('success', 'Gate deleted successfully.');
     }
 
-    public function restore(GateModel $gate)
+    public function restore(int $id)
     {
+        $gate = GateModel::onlyTrashed()->findOrFail($id);
         Gate::authorize('restore', GateModel::class);
 
         $this->gateService->restoreGate($gate);
@@ -80,8 +97,9 @@ class GateController extends Controller
         return redirect()->back()->with('success', 'Gate restored successfully.');
     }
 
-    public function forceDelete(GateModel $gate)
+    public function forceDelete(int $id)
     {
+        $gate = GateModel::onlyTrashed()->findOrFail($id);
         Gate::authorize('forceDelete', GateModel::class);
 
         $this->gateService->forceDeleteGate($gate);

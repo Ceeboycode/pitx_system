@@ -136,8 +136,10 @@ const confirmDelete = () => {
     if (!deletingId.value) return;
 
     useForm({}).delete(destroy(deletingId.value).url, {
+        preserveScroll: true,
         onSuccess: () => {
             deleteOpen.value = false;
+
         },
         onError: () => {
             toast.error('Failed to delete vehicle type.');
