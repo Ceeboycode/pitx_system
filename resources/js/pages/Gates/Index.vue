@@ -126,11 +126,14 @@ const archiveGate = (gateId: number) => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
             <Card>
-                <CardHeader>
-                    <CardTitle>Gates</CardTitle>
-                    <CardDescription>List of all gates in the system.</CardDescription>
+                <CardHeader class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <CardTitle>Gates</CardTitle>
+                        <CardDescription>List of all gates in the system.</CardDescription>
+                    </div>
 
-                    <CardAction>
+                    <div class="flex gap-2">
+                        <!-- Trash Button -->
                         <Button asChild size="sm" variant="outline">
                             <Link :href="trash().url">View Trash</Link>
                         </Button>
@@ -164,8 +167,9 @@ const archiveGate = (gateId: number) => {
                                 </form>
                             </DialogContent>
                         </Dialog>
-                    </CardAction>
+                    </div>
                 </CardHeader>
+
 
                 <CardContent>
                     <Table>
@@ -187,13 +191,13 @@ const archiveGate = (gateId: number) => {
                                         <Link :href="show(gate.id).url">View</Link>
                                     </Button>
 
-                                    <Button size="sm" @click="openEdit(gate)">
+                                    <Button size="sm" variant="default" @click="openEdit(gate)">
                                         Edit
                                     </Button>
 
                                     <Dialog>
                                         <DialogTrigger asChild>
-                                            <Button size="sm" variant="destructive">
+                                            <Button size="sm" variant="archive">
                                                 Archive
                                             </Button>
                                         </DialogTrigger>
@@ -209,7 +213,7 @@ const archiveGate = (gateId: number) => {
                                                 </DialogClose>
                                                 <Button
                                                     size="sm"
-                                                    variant="destructive"
+                                                    variant="archive"
                                                     @click="archiveGate(gate.id)"
                                                 >
                                                     Archive

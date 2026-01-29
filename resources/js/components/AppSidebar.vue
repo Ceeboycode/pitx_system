@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Link } from '@inertiajs/vue3'
-import { BookOpen, User, LayoutGrid, Folder, Building2 } from 'lucide-vue-next'
+import { BookOpen, User, LayoutGrid, Folder, Building2, BusFrontIcon, MapPin } from 'lucide-vue-next'
+import { MapIcon, DoorOpen } from 'lucide-vue-next'
+
 
 import NavFooter from '@/components/NavFooter.vue'
 import NavMain from '@/components/NavMain.vue'
@@ -27,6 +29,7 @@ import { index as vehicleTypesIndex } from '@/routes/vehicle-types'
 import { index as routeStopsIndex } from '@/routes/route-stops'
 import { index as routesIndex } from '@/routes/routes'
 import { index as gateIndex } from '@/routes/gates'
+import { index as vehiclesIndex } from '@/routes/vehicles'
 
 export interface NavItem {
     title: string
@@ -62,23 +65,28 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Vehicles Types',
         href: vehicleTypesIndex().url,
-        icon: Folder,
+        icon: BusFrontIcon,
     },
     {
         title: 'Route Stops',
         href: routeStopsIndex().url,
-        icon: Folder,
+        icon: MapPin,
     },
     {
         title: 'Routes',
         href: routesIndex().url,
-        icon: Folder,
+        icon: MapIcon,
     },
     {
         title: 'Gates',
         href: gateIndex().url,
-        icon: Folder,
+        icon: DoorOpen,
     },
+    {
+        title: 'Vehicles',
+        href: vehiclesIndex().url,
+        icon: Folder,
+    }
 ]
 
 const visibleMainNavItems = computed(() =>

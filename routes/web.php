@@ -10,6 +10,7 @@ use App\Http\Controllers\RouteController;
 use App\Http\Controllers\RouteStopController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VehicleTypeController;
+use App\Http\Controllers\VehicleController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -55,6 +56,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/routes/{route}/force-delete', [RouteController::class, 'forceDelete'])
         ->withTrashed()
         ->name('routes.forceDelete');
+
+
+
+    Route::resource('vehicles', VehicleController::class);
 });
 
 
