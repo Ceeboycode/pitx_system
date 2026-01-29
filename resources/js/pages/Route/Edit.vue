@@ -25,6 +25,7 @@ import {
 import Button from '@/components/ui/button/Button.vue';
 import { edit, index, update } from '@/routes/routes';
 import { toast } from 'vue-sonner';
+import { Save } from 'lucide-vue-next';
 
 /* =====================
    Types
@@ -156,7 +157,7 @@ const submit = () => {
 
                         <!-- Actions -->
                         <div class="flex justify-end gap-3">
-                            <Button type="submit" size="sm" :disabled="form.processing">
+                            <Button type="submit" size="sm" :disabled="form.processing"> <Save />
                                 Update Route
                             </Button>
                         </div>

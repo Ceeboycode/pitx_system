@@ -41,6 +41,8 @@ import {
 
 import { index, show, store, trash, update } from '@/routes/companies';
 import { type BreadcrumbItem } from '@/types';
+import { Archive, View } from "lucide-vue-next";
+import { Plus, Trash, Edit, Save } from 'lucide-vue-next';
 
 /* ======================================================
    Types
@@ -162,7 +164,7 @@ const confirmDeleteCompany = () => {
             <!-- Create Company Dialog -->
             <Dialog v-model:open="isCreateDialogOpen">
               <DialogTrigger asChild>
-                <Button size="sm">Create New Company</Button>
+                <Button size="sm"> <Plus /> Create New Company</Button>
               </DialogTrigger>
 
               <DialogContent class="sm:max-w-md">
@@ -189,14 +191,14 @@ const confirmDeleteCompany = () => {
                   <DialogClose asChild>
                     <Button variant="secondary">Cancel</Button>
                   </DialogClose>
-                  <Button @click="createCompany">Save</Button>
+                  <Button @click="createCompany"> <Save /> Save</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
 
             <!-- Trash Button -->
             <Link :href="trash().url">
-              <Button size="sm" variant="outline">Trash</Button>
+              <Button size="sm" variant="outline"> <Trash /> Trash</Button>
             </Link>
           </div>
         </CardHeader>
@@ -216,14 +218,15 @@ const confirmDeleteCompany = () => {
                 <TableCell>{{ company.company_name }}</TableCell>
                 <TableCell class="space-x-2">
                   <Button asChild size="sm" variant="outline">
-                    <Link :href="show(company.id).url">View</Link>
+                    <Link :href="show(company.id).url"><View/>View</Link>
                   </Button>
-                  <Button size="sm" @click="editCompany(company)">Edit</Button>
+                  <Button size="sm" @click="editCompany(company)"> <Edit /> Edit</Button>
                   <Button
                     size="sm"
                     variant="archive"
                     @click="deletingCompanyId = company.id; isDeleteDialogOpen = true"
                   >
+                    <Archive />
                     Archive
                   </Button>
                 </TableCell>
@@ -243,7 +246,6 @@ const confirmDeleteCompany = () => {
           <InertiaPagination :links="companies.links" />
         </CardAction>
       </Card>
-
       <!-- Edit Company Dialog -->
       <Dialog v-model:open="isEditDialogOpen">
         <DialogContent class="sm:max-w-md">
@@ -270,7 +272,10 @@ const confirmDeleteCompany = () => {
       <Dialog v-model:open="isDeleteDialogOpen">
         <DialogContent class="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Archive Company</DialogTitle>
+            <DialogTitle class="flex items-center gap-2">
+              <Archive :size="18" class="text-muted-foreground" />
+              Archive Company
+            </DialogTitle>
             <DialogDescription>
               Are you sure you want to archive this company? You can restore it later from the Trash.
             </DialogDescription>

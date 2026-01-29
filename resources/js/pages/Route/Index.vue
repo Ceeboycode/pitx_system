@@ -33,6 +33,8 @@ import { create, destroy, index, show, edit, trash } from '@/routes/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { Archive, View, Plus, Edit, ArchiveIcon } from "lucide-vue-next";
+
 
 interface Gate {
     id: number;
@@ -86,10 +88,10 @@ const confirmArchive = () => {
 
                     <CardAction class="flex gap-2">
                         <Button size="sm" asChild variant="outline">
-                            <Link :href="trash().url">View Trash</Link>
+                            <Link :href="trash().url"> <View /> View Trash</Link>
                         </Button>
                         <Button size="sm" asChild>
-                            <Link :href="create().url">Create Route</Link>
+                            <Link :href="create().url"> <Plus /> Create Route</Link>
                         </Button>
                     </CardAction>
                 </CardHeader>
@@ -113,24 +115,25 @@ const confirmArchive = () => {
 
                                 <TableCell class="space-x-2">
                                     <Button asChild size="sm" variant="outline">
-                                        <Link :href="show(route.id).url">View</Link>
+                                        <Link :href="show(route.id).url"> <View /> View</Link>
                                     </Button>
                                     <Button size="sm" asChild variant="default">
-                                        <Link :href="edit(route.id).url">Edit</Link>
+                                        <Link :href="edit(route.id).url"> <Edit /> Edit</Link>
                                     </Button>
 
                                     <Dialog>
                                         <DialogTrigger asChild>
-                                            <Button size="sm" variant="archive" @click="archivingId = route.id">
-                                                Archive
-                                            </Button>
+                                            <Button size="sm" variant="archive" @click="archivingId = route.id"> <ArchiveIcon /> Archive</Button>
                                         </DialogTrigger>
 
                                         <DialogContent>
                                             <DialogHeader>
-                                                <DialogTitle>Archive Route</DialogTitle>
+                                                <DialogTitle class="flex items-center gap-2">
+                                                <Archive :size="18" class="text-muted-foreground" />
+                                                Archive Route
+                                                </DialogTitle>
                                                 <DialogDescription>
-                                                    This route will be archived and removed from the active list. You can restore it later from the trash.
+                                                Are you sure you want to archive this route? You can restore it later from the Trash.
                                                 </DialogDescription>
                                             </DialogHeader>
 
@@ -141,6 +144,7 @@ const confirmArchive = () => {
                                                     </Button>
                                                 </DialogClose>
                                                 <Button variant="archive" @click="confirmArchive">
+                                                    <ArchiveIcon />
                                                     Archive
                                                 </Button>
                                             </DialogFooter>

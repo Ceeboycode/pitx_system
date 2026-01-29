@@ -19,7 +19,7 @@ import { Label } from '@/components/ui/label';
 
 import { create, index, store } from '@/routes/roles';
 import { type BreadcrumbItem } from '@/types';
-
+import { Plus } from 'lucide-vue-next';
 /* -------------------------------------------------------------------------- */
 /* Props (Inertia Resource)                                                    */
 /* -------------------------------------------------------------------------- */
@@ -154,7 +154,7 @@ const togglePermission = (checked: boolean | 'indeterminate', id: number) => {
                             </Button>
                         </Link>
 
-                        <Button type="submit" :disabled="form.processing">
+                        <Button type="submit" :disabled="form.processing"> <Plus/>
                             Create Role
                         </Button>
                     </CardFooter>

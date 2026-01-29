@@ -22,6 +22,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
+import {Plus} from "lucide-vue-next";
 
 defineProps<{
     vehicles: {
@@ -53,7 +54,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                     </CardDescription>
                     <CardAction>
                         <Button size="sm" asChild>
-                            <Link :href="create().url">Add Vehicle</Link>
+                            <Link :href="create().url"> <Plus /> Add Vehicle</Link>
                         </Button>
                     </CardAction>
                 </CardHeader>

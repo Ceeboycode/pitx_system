@@ -20,6 +20,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { create, index, store } from '@/routes/users';
 
 import { toast } from 'vue-sonner';
+import { Plus } from 'lucide-vue-next'; 
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -207,6 +208,7 @@ const submit = () => {
                             class="px-6"
                             :disabled="form.processing"
                         >
+                        <Plus />
                             Create user
                         </Button>
                     </CardFooter>

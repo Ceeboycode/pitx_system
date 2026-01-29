@@ -38,6 +38,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import InertiaPagination from '@/components/InertiaPagination.vue';
+import { AlertTriangle } from 'lucide-vue-next';
+import { Plus, View, Edit, Trash2, Save, LucideTrash2 } from 'lucide-vue-next';
 
 import { destroy, index, show, store, update } from '@/routes/vehicle-types';
 import { type BreadcrumbItem } from '@/types';
@@ -169,7 +171,7 @@ const confirmDelete = () => {
             <!-- CREATE -->
             <Dialog v-model:open="createOpen">
               <DialogTrigger as-child>
-                <Button size="sm">Add Vehicle Type</Button>
+                <Button size="sm"> <Plus /> Add Vehicle Type</Button>
               </DialogTrigger>
               <DialogContent class="sm:max-w-md">
                 <DialogHeader>
@@ -184,7 +186,7 @@ const confirmDelete = () => {
                     <DialogClose asChild>
                       <Button variant="secondary" size="sm">Cancel</Button>
                     </DialogClose>
-                    <Button type="submit" size="sm" :disabled="createForm.processing">Save</Button>
+                    <Button type="submit" size="sm" :disabled="createForm.processing"> <Save /> Save</Button>
                   </DialogFooter>
                 </form>
               </DialogContent>
@@ -218,10 +220,10 @@ const confirmDelete = () => {
                 </TableCell>
                 <TableCell class="space-x-2">
                   <Button asChild size="sm" variant="outline">
-                    <Link :href="show(vehicle.id).url">View</Link>
+                    <Link :href="show(vehicle.id).url"> <View /> View</Link>
                   </Button>
-                  <Button size="sm" @click="openEditDialog(vehicle)">Edit</Button>
-                  <Button size="sm" variant="destructive" @click="openDeleteDialog(vehicle)">Delete</Button>
+                  <Button size="sm" @click="openEditDialog(vehicle)"> <Edit /> Edit</Button>
+                  <Button size="sm" variant="destructive" @click="openDeleteDialog(vehicle)"> <Trash2 /> Delete</Button>
                 </TableCell>
               </TableRow>
 
@@ -270,38 +272,61 @@ const confirmDelete = () => {
               <DialogClose asChild>
                 <Button variant="secondary" size="sm">Cancel</Button>
               </DialogClose>
-              <Button size="sm" type="submit" :disabled="editForm.processing">Update</Button>
+              <Button size="sm" type="submit" :disabled="editForm.processing"> <Save /> Update</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
       <!-- ================= DELETE DIALOG ================= -->
-      <Dialog v-model:open="deleteOpen">
-        <DialogContent class="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle class="text-red-600">Confirm Delete</DialogTitle>
-            <DialogDescription>
-              This action cannot be undone. Type <strong>delete</strong> to confirm.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div class="mt-4">
-            <Input v-model="deleteConfirmText" placeholder="delete" />
+          <Dialog v-model:open="deleteOpen">
+      <DialogContent
+        class="sm:max-w-md"
+        :disableOutsidePointerEvents="true"
+      >
+        <DialogHeader class="space-y-2">
+          <div class="flex items-center gap-2 text-red-600">
+            <AlertTriangle class="h-5 w-5 text-destructive" />
+            <DialogTitle>Delete Confirmation</DialogTitle>
           </div>
 
-          <DialogFooter class="mt-6 flex gap-2">
-            <Button variant="outline" @click="deleteOpen = false">Cancel</Button>
-            <Button
-              variant="destructive"
-              :disabled="deleteConfirmText.toLowerCase() !== 'delete'"
-              @click="confirmDelete"
-            >
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <DialogDescription class="text-sm text-muted-foreground">
+            This action is <span class="font-semibold text-red-600">permanent</span>.
+            To confirm, type <strong>delete</strong> below.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="mt-4 space-y-1">
+          <Input
+            v-model="deleteConfirmText"
+            placeholder="Type delete to confirm"
+            class="focus-visible:ring-red-500"
+          />
+          <p class="text-xs text-muted-foreground">
+            This is case-insensitive.
+          </p>
+        </div>
+
+        <DialogFooter class="mt-6 flex gap-2">
+          <Button
+            variant="outline"
+            @click="deleteOpen = false"
+          >
+            Cancel
+          </Button>
+
+          <Button
+            variant="destructive"
+            :disabled="deleteConfirmText.trim().toLowerCase() !== 'delete'"
+            @click="confirmDelete"
+          >
+          <LucideTrash2/>
+            Permanently Delete
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     </div>
   </AppLayout>
 </template>
