@@ -175,7 +175,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 <TableCell class="space-x-2">
                                     <Button
                                         as-child
-                                        variant="outline"
+                                        variant="default"
                                         size="sm"
                                         v-if="can('users.edit')"
                                     >

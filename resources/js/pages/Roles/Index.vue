@@ -184,7 +184,7 @@ const confirmDelete = () => {
 
                                         <Button
                                             as-child
-                                            variant="outline"
+                                            variant="default"
                                             size="sm"
                                             v-if="can('roles.edit')"
                                         >
