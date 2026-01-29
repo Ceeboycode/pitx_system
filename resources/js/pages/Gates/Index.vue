@@ -36,6 +36,7 @@ import { User, type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { toast } from 'vue-sonner';
+import { Archive, Edit, Save, View, Plus } from "lucide-vue-next";
 
 interface Gate {
     id: number;
@@ -135,13 +136,13 @@ const archiveGate = (gateId: number) => {
                     <div class="flex gap-2">
                         <!-- Trash Button -->
                         <Button asChild size="sm" variant="outline">
-                            <Link :href="trash().url">View Trash</Link>
+                            <Link :href="trash().url"> <View /> View Trash</Link>
                         </Button>
 
                         <!-- CREATE -->
                         <Dialog v-model:open="isCreateOpen">
                             <DialogTrigger asChild>
-                                <Button size="sm">Create Gate</Button>
+                                <Button size="sm"> <Plus /> Create Gate</Button>
                             </DialogTrigger>
 
                             <DialogContent>
@@ -161,6 +162,7 @@ const archiveGate = (gateId: number) => {
                                             </Button>
                                         </DialogClose>
                                         <Button size="sm" type="submit" :disabled="form.processing">
+                                            <Save />
                                             Save
                                         </Button>
                                     </DialogFooter>
@@ -188,22 +190,29 @@ const archiveGate = (gateId: number) => {
 
                                 <TableCell class="space-x-2">
                                     <Button asChild size="sm" variant="outline">
-                                        <Link :href="show(gate.id).url">View</Link>
+                                        <Link :href="show(gate.id).url"> <View /> View</Link>
                                     </Button>
 
                                     <Button size="sm" variant="default" @click="openEdit(gate)">
-                                        Edit
+                                        <Edit /> Edit
                                     </Button>
 
                                     <Dialog>
                                         <DialogTrigger asChild>
                                             <Button size="sm" variant="archive">
+                                                <Archive />
                                                 Archive
                                             </Button>
                                         </DialogTrigger>
                                         <DialogContent>
                                             <DialogHeader>
-                                                <DialogTitle>Confirm Archiving</DialogTitle>
+                                                <DialogTitle class="flex items-center gap-2">
+                                                <Archive :size="18" class="text-muted-foreground" />
+                                                Archive Gate
+                                                </DialogTitle>
+                                                <DialogDescription>
+                                                Are you sure you want to archive this gate? You can restore it later from the Trash.
+                                                </DialogDescription>
                                             </DialogHeader>
                                             <DialogFooter>
                                                 <DialogClose asChild>
@@ -234,7 +243,7 @@ const archiveGate = (gateId: number) => {
         </div>
     </AppLayout>
 
-    <!-- EDIT DIALOG (single instance, outside loop) -->
+    <!-- EDIT DIALOG  -->
     <Dialog v-model:open="isEditOpen">
         <DialogContent>
             <DialogHeader>
@@ -253,6 +262,7 @@ const archiveGate = (gateId: number) => {
                         </Button>
                     </DialogClose>
                     <Button size="sm" type="submit" :disabled="form.processing">
+                        <Save />
                         Save Changes
                     </Button>
                 </DialogFooter>

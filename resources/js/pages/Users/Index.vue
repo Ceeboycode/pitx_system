@@ -12,7 +12,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import { Plus } from 'lucide-vue-next';
+import { Plus, Trash2, Edit } from 'lucide-vue-next';
 import {
     Dialog,
     DialogContent,
@@ -179,7 +179,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                         size="sm"
                                         v-if="can('users.edit')"
                                     >
-                                        <Link :href="edit(user.id).url">
+                                        <Link :href="edit(user.id).url"> <Edit />
                                             Edit
                                         </Link>
                                     </Button>
@@ -189,7 +189,9 @@ const breadcrumbs: BreadcrumbItem[] = [
                                         size="sm"
                                         @click="openDeleteDialog(user.id)"
                                         v-if="can('users.delete')"
+
                                     >
+                                        <Trash2 />
                                         Delete
                                     </Button>
                                 </TableCell>

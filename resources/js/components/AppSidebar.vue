@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Link } from '@inertiajs/vue3'
-import { BookOpen, User, LayoutGrid, Folder, Building2, BusFrontIcon, MapPin } from 'lucide-vue-next'
+import { BookOpen, User, LayoutGrid, Folder, Building2, BusFrontIcon, MapPin, Bus } from 'lucide-vue-next'
 import { MapIcon, DoorOpen } from 'lucide-vue-next'
 
 
@@ -85,7 +85,7 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Vehicles',
         href: vehiclesIndex().url,
-        icon: Folder,
+        icon: Bus,
     }
 ]
 

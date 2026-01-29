@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import PitxLogo from '@/components/assets/PITX.png'
+import { LogInIcon } from 'lucide-vue-next'
 
 
 withDefaults(
@@ -37,10 +38,7 @@ withDefaults(
 
           <template v-else>
             <Button variant="ghost" as-child>
-              <Link :href="login()">Log in</Link>
-            </Button>
-            <Button v-if="canRegister" variant="destructive" as-child>
-              <Link :href="register()">Register</Link>
+              <Link :href="login()"> <LogInIcon/> Log in</Link>
             </Button>
           </template>
         </nav>

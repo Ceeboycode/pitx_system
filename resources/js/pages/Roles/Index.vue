@@ -36,6 +36,9 @@ import {
 import { create, destroy, edit, index } from '@/routes/roles';
 import { type BreadcrumbItem } from '@/types';
 import { can } from '@/lib/can';
+import { AlertTriangle } from 'lucide-vue-next'
+import { Plus, Edit, Trash2 } from 'lucide-vue-next'; 
+import Trash from '../Company/Trash.vue';
 
 /* -------------------------------------------------------------------------- */
 /* Types                                                                       */
@@ -136,7 +139,7 @@ const confirmDelete = () => {
                     </div>
 
                     <Link :href="create().url" v-if="can('roles.create')">
-                        <Button size="sm"> Create New Role </Button>
+                        <Button size="sm"> <Plus /> Create New Role </Button>
                     </Link>
                 </CardHeader>
 
@@ -188,7 +191,7 @@ const confirmDelete = () => {
                                             size="sm"
                                             v-if="can('roles.edit')"
                                         >
-                                        <Link :href="edit(role.id).url">
+                                        <Link :href="edit(role.id).url"> <Edit/>
                                             Edit
                                         </Link>
                                         </Button>
@@ -199,6 +202,7 @@ const confirmDelete = () => {
                                         size="sm"
                                         @click="openDeleteDialog(role.id)"
                                     >
+                                    <Trash2/>
                                         Delete
                                     </Button>
                                 </TableCell>
@@ -218,42 +222,44 @@ const confirmDelete = () => {
                     </Table>
 
                     <Dialog v-model:open="dialogOpen">
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Delete role</DialogTitle>
+                        <DialogContent class="sm:max-w-md" :disableOutsidePointerEvents="true">
+                            <DialogHeader class="space-y-3">
+                            <div class="flex items-center gap-2 text-destructive">
+                                <AlertTriangle class="h-5 w-5" />
+                                <DialogTitle>Delete Role</DialogTitle>
+                            </div>
 
-                                <DialogDescription>
-                                    This action cannot be undone.
-                                    <br />
-                                    Please type
-                                    <span class="font-semibold">delete</span>
-                                    to confirm.
-                                </DialogDescription>
+                            <DialogDescription>
+                                This action is
+                                <span class="font-semibold text-destructive"> permanent</span>.
+                                Type <strong>delete</strong> to confirm.
+                            </DialogDescription>
                             </DialogHeader>
 
                             <Input
-                                v-model="deleteInput"
-                                placeholder="Type delete to confirm"
+                            v-model="deleteInput"
+                            placeholder="Type delete to confirm"
+                            class="focus-visible:ring-destructive"
                             />
 
-                            <DialogFooter>
-                                <Button
-                                    variant="outline"
-                                    @click="dialogOpen = false"
-                                >
-                                    Cancel
-                                </Button>
+                            <DialogFooter class="gap-2">
+                            <Button
+                                variant="outline"
+                                @click="dialogOpen = false"
+                            >
+                                Cancel
+                            </Button>
 
-                                <Button
-                                    variant="destructive"
-                                    :disabled="deleteInput !== 'delete'"
-                                    @click="confirmDelete"
-                                >
-                                    Confirm delete
-                                </Button>
+                            <Button
+                                variant="destructive"
+                                :disabled="deleteInput.trim().toLowerCase() !== 'delete'"
+                                @click="confirmDelete"
+                            >
+                                Permanently Delete
+                            </Button>
                             </DialogFooter>
                         </DialogContent>
-                    </Dialog>
+                        </Dialog>
                 </CardContent>
 
                 <!-- Pagination -->
