@@ -1,9 +1,4 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
-import { create, index, store } from '@/routes/vehicles';
-import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/vue3';
-import { toast } from 'vue-sonner';
 import Button from '@/components/ui/button/Button.vue';
 import {
     Card,
@@ -15,7 +10,6 @@ import {
 } from '@/components/ui/card';
 import Input from '@/components/ui/input/Input.vue';
 import Label from '@/components/ui/label/Label.vue';
-import InputError from '@/components/InputError.vue';
 import {
     Select,
     SelectContent,
@@ -23,6 +17,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { create, index, store } from '@/routes/vehicles';
+import { type BreadcrumbItem } from '@/types';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { toast } from 'vue-sonner';
 
 /**
  * Data interfaces coming from the controller (match DB column names)
@@ -236,14 +235,9 @@ const submit = () => {
                     </CardContent>
 
                     <CardFooter class="flex justify-end gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            :as="'a'"
-                            :href="index().url"
+                        <Button variant="outline" asChild
+                            ><Link :href="index().url">Cancel</Link></Button
                         >
-                            Cancel
-                        </Button>
 
                         <Button type="submit" :disabled="form.processing">
                             Save Vehicle

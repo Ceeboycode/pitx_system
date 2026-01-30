@@ -2,12 +2,9 @@
 /* ======================================================
    Imports
 ====================================================== */
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
-import { toast } from 'vue-sonner';
-import { Badge } from '@/components/ui/badge';
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import InputError from '@/components/InputError.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent } from '@/components/ui/card';
 import {
@@ -30,7 +27,10 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import InertiaPagination from '@/components/InertiaPagination.vue';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import { toast } from 'vue-sonner';
 
 import { destroy, index, show, store, update } from '@/routes/vehicle-types';
 import { type BreadcrumbItem } from '@/types';
@@ -162,32 +162,49 @@ const confirmDelete = () => {
                         </p>
                     </div>
 
-          <div class="flex gap-2">
-            <!-- CREATE -->
-            <Dialog v-model:open="createOpen">
-              <DialogTrigger as-child>
-                <Button size="sm">Add Vehicle Type</Button>
-              </DialogTrigger>
-              <DialogContent class="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Add Vehicle Type</DialogTitle>
-                  <DialogDescription>Create a new vehicle type.</DialogDescription>
-                </DialogHeader>
-                <form @submit.prevent="createVehicle" class="mt-2 space-y-2">
-                  <Label>Vehicle Type</Label>
-                  <Input v-model="createForm.type_name" />
-                  <InputError :message="createForm.errors.type_name" />
-                  <DialogFooter>
-                    <DialogClose asChild>
-                      <Button variant="secondary" size="sm">Cancel</Button>
-                    </DialogClose>
-                    <Button type="submit" size="sm" :disabled="createForm.processing">Save</Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
+                    <div class="flex gap-2">
+                        <!-- CREATE -->
+                        <Dialog v-model:open="createOpen">
+                            <DialogTrigger as-child>
+                                <Button size="sm">Add Vehicle Type</Button>
+                            </DialogTrigger>
+                            <DialogContent class="sm:max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>Add Vehicle Type</DialogTitle>
+                                    <DialogDescription
+                                        >Create a new vehicle
+                                        type.</DialogDescription
+                                    >
+                                </DialogHeader>
+                                <form
+                                    @submit.prevent="createVehicle"
+                                    class="mt-2 space-y-2"
+                                >
+                                    <Label>Vehicle Type</Label>
+                                    <Input v-model="createForm.type_name" />
+                                    <InputError
+                                        :message="createForm.errors.type_name"
+                                    />
+                                    <DialogFooter>
+                                        <DialogClose asChild>
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                >Cancel</Button
+                                            >
+                                        </DialogClose>
+                                        <Button
+                                            type="submit"
+                                            size="sm"
+                                            :disabled="createForm.processing"
+                                            >Save</Button
+                                        >
+                                    </DialogFooter>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                </div>
 
                 <!-- TABLE -->
                 <CardContent>
@@ -200,27 +217,46 @@ const confirmDelete = () => {
                             </TableRow>
                         </TableHeader>
 
-            <TableBody>
-              <TableRow v-for="vehicle in vehicleTypes.data" :key="vehicle.id">
-                <TableCell>{{ vehicle.type_name }}</TableCell>
-                <TableCell>
-                  <span
-                    class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                    :class="vehicle.is_active
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-red-100 text-red-700'"
-                  >
-                    {{ vehicle.is_active ? 'Active' : 'Inactive' }}
-                  </span>
-                </TableCell>
-                <TableCell class="space-x-2">
-                  <Button asChild size="sm" variant="outline">
-                    <Link :href="show(vehicle.id).url">View</Link>
-                  </Button>
-                  <Button size="sm" @click="openEditDialog(vehicle)">Edit</Button>
-                  <Button size="sm" variant="destructive" @click="openDeleteDialog(vehicle)">Delete</Button>
-                </TableCell>
-              </TableRow>
+                        <TableBody>
+                            <TableRow
+                                v-for="vehicle in vehicleTypes.data"
+                                :key="vehicle.id"
+                            >
+                                <TableCell>{{ vehicle.type_name }}</TableCell>
+                                <TableCell>
+                                    <Badge
+                                        :variant="
+                                            vehicle.is_active
+                                                ? 'outline'
+                                                : 'destructive'
+                                        "
+                                    >
+                                        {{
+                                            vehicle.is_active
+                                                ? 'Active'
+                                                : 'Inactive'
+                                        }}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell class="space-x-2">
+                                    <Button asChild size="sm" variant="outline">
+                                        <Link :href="show(vehicle.id).url"
+                                            >View</Link
+                                        >
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        @click="openEditDialog(vehicle)"
+                                        >Edit</Button
+                                    >
+                                    <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        @click="openDeleteDialog(vehicle)"
+                                        >Delete</Button
+                                    >
+                                </TableCell>
+                            </TableRow>
 
                             <TableRow v-if="vehicleTypes.data.length === 0">
                                 <TableCell
@@ -275,42 +311,59 @@ const confirmDelete = () => {
                             </div>
                         </div>
 
-            <DialogFooter class="mt-6">
-              <DialogClose asChild>
-                <Button variant="secondary" size="sm">Cancel</Button>
-              </DialogClose>
-              <Button size="sm" type="submit" :disabled="editForm.processing">Update</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+                        <DialogFooter class="mt-6">
+                            <DialogClose asChild>
+                                <Button variant="secondary" size="sm"
+                                    >Cancel</Button
+                                >
+                            </DialogClose>
+                            <Button
+                                size="sm"
+                                type="submit"
+                                :disabled="editForm.processing"
+                                >Update</Button
+                            >
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
-      <!-- ================= DELETE DIALOG ================= -->
-      <Dialog v-model:open="deleteOpen">
-        <DialogContent class="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle class="text-red-600">Confirm Delete</DialogTitle>
-            <DialogDescription>
-              This action cannot be undone. Type <strong>delete</strong> to confirm.
-            </DialogDescription>
-          </DialogHeader>
+            <!-- ================= DELETE DIALOG ================= -->
+            <Dialog v-model:open="deleteOpen">
+                <DialogContent class="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle class="text-red-600"
+                            >Confirm Delete</DialogTitle
+                        >
+                        <DialogDescription>
+                            This action cannot be undone. Type
+                            <strong>delete</strong> to confirm.
+                        </DialogDescription>
+                    </DialogHeader>
 
-          <div class="mt-4">
-            <Input v-model="deleteConfirmText" placeholder="delete" />
-          </div>
+                    <div class="mt-4">
+                        <Input
+                            v-model="deleteConfirmText"
+                            placeholder="delete"
+                        />
+                    </div>
 
-          <DialogFooter class="mt-6 flex gap-2">
-            <Button variant="outline" @click="deleteOpen = false">Cancel</Button>
-            <Button
-              variant="destructive"
-              :disabled="deleteConfirmText.toLowerCase() !== 'delete'"
-              @click="confirmDelete"
-            >
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  </AppLayout>
+                    <DialogFooter class="mt-6 flex gap-2">
+                        <Button variant="outline" @click="deleteOpen = false"
+                            >Cancel</Button
+                        >
+                        <Button
+                            variant="destructive"
+                            :disabled="
+                                deleteConfirmText.toLowerCase() !== 'delete'
+                            "
+                            @click="confirmDelete"
+                        >
+                            Delete
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div>
+    </AppLayout>
 </template>

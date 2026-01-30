@@ -12,7 +12,7 @@ import { create, index } from '@/routes/vehicles';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
 
-import { Button } from '@/components/ui/button';
+
 import {
   Table,
   TableBody,
