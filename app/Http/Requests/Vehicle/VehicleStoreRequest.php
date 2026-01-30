@@ -22,12 +22,13 @@ class VehicleStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'plate_number' => 'required|string|unique:vehicles,plate_number',
-            'body_number' => 'required|string|unique:vehicles,body_number',
-            'vehicle_type_id' => 'required|exists:vehicle_types,id',
-            'company_id' => 'required|exists:companies,id',
-            'route_id' => 'required|exists:routes,id',
-            'capacity' => 'required|integer|min:1',
+            'plate_number' => ['required', 'string', 'max:50'],
+            'body_number' => ['required', 'string', 'max:50'],
+            'capacity' => ['required', 'integer', 'min:1'],
+
+            'company_id' => ['required', 'exists:companies,id'],
+            'route_id' => ['required', 'exists:routes,id'],
+            'vehicle_type_id' => ['required', 'exists:vehicle_types,id'],
         ];
     }
 }

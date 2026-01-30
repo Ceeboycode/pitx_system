@@ -12,12 +12,14 @@ class Vehicle extends Model
     protected $fillable = [
         'plate_number',
         'body_number',
-        'vehicle_type_id',
+        'capacity',
         'company_id',
         'route_id',
-        'capacity',
+        'vehicle_type_id',
         'created_by',
+        'updated_by',
     ];
+
 
     public function vehicleType()
     {
