@@ -283,7 +283,7 @@ const confirmDeleteCompany = () => {
 
           <DialogFooter>
             <Button variant="secondary" @click="isDeleteDialogOpen = false">Cancel</Button>
-            <Button variant="destructive" @click="confirmDeleteCompany">Archive</Button>
+            <Button variant="archive" @click="confirmDeleteCompany">Archive</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
