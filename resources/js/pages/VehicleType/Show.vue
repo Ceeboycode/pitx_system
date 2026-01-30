@@ -1,132 +1,113 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
+import AppLayout from '@/layouts/AppLayout.vue'
+import { type BreadcrumbItem } from '@/types'
+import { Head, Link } from '@inertiajs/vue3'
 
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/vue3';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Table, TableBody, TableRow, TableCell } from '@/components/ui/table'
 
 const props = defineProps<{
-    vehicleType: {
-        id: number;
-        type_name: string;
-        is_active: boolean;
-        created_at_human: string | null;
-        updated_at_human: string | null;
-        creator: {
-            id: number;
-            name: string;
-        } | null;
-        updater: {
-            id: number;
-            name: string;
-        } | null;
-    };
-}>();
+  vehicleType: {
+    id: number
+    type_name: string
+    is_active: boolean
+    created_at_human: string | null
+    updated_at_human: string | null
+    creator: { id: number; name: string } | null
+    updater: { id: number; name: string } | null
+  }
+}>()
 
-import { index, show } from '@/routes/vehicle-types';
+import { index, show } from '@/routes/vehicle-types'
+
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Vehicle Types Table',
-        href: index().url,
-    },
-    {
-        title: 'Vehicle Type Details',
-        href: show(props.vehicleType.id).url,
-    },
-];
+  { title: 'Vehicle Types Table', href: index().url },
+  { title: 'Vehicle Type Details', href: show(props.vehicleType.id).url },
+]
 </script>
 
 <template>
-    <Head :title="`Vehicle Type - ${vehicleType.type_name}`" />
+  <Head :title="`Vehicle Type - ${vehicleType.type_name}`" />
 
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex max-w-4xl flex-col gap-6 rounded-xl p-4">
-            <!-- Header -->
-            <div class="flex items-center justify-between">
-                <h1 class="text-2xl font-semibold text-gray-900">
-                    Vehicle Type Details
-                </h1>
-            </div>
+  <AppLayout :breadcrumbs="breadcrumbs">
+    <div class="mx-auto w-full max-w-5xl space-y-6 p-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Vehicle Type Details</CardTitle>
+        </CardHeader>
 
-            <div class="rounded-lg border bg-white shadow-sm">
-                <div class="divide-y">
-                    <!-- Vehicle Type -->
-                    <div class="flex justify-between px-6 py-4">
-                        <span class="text-sm font-medium text-gray-500">
-                            Vehicle Type
-                        </span>
-                        <span class="text-sm text-gray-900">
-                            {{ vehicleType.type_name }}
-                        </span>
-                    </div>
+        <CardContent>
+          <!-- details “table card” look -->
+          <div class="overflow-hidden rounded-lg border">
+            <Table class="w-full">
+              <TableBody>
+                <TableRow>
+                  <TableCell class="w-1/3 text-muted-foreground">
+                    Vehicle Type
+                  </TableCell>
+                  <TableCell class="w-2/3 text-right font-medium">
+                    {{ vehicleType.type_name }}
+                  </TableCell>
+                </TableRow>
 
-                    <!-- Status -->
-                    <div class="flex justify-between px-6 py-4">
-                        <span class="text-sm font-medium text-gray-500">
-                            Status
-                        </span>
-                        <span
-                            class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                            :class="
-                                vehicleType.is_active
-                                    ? 'bg-green-100 text-green-700'
-                                    : 'bg-red-100 text-red-700'
-                            "
-                        >
-                            {{ vehicleType.is_active ? 'Active' : 'Inactive' }}
-                        </span>
-                    </div>
+                <TableRow>
+                  <TableCell class="text-muted-foreground">Status</TableCell>
+                  <TableCell class="text-right">
+                    <Badge
+                      class="rounded-full px-3 py-1 text-xs font-semibold"
+                      :class="
+                        vehicleType.is_active
+                          ? 'bg-green-100 text-green-700 hover:bg-green-100'
+                          : 'bg-red-100 text-red-700 hover:bg-red-100'
+                      "
+                    >
+                      {{ vehicleType.is_active ? 'Active' : 'Inactive' }}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
 
-                    <!-- Created By -->
-                    <div class="flex justify-between px-6 py-4">
-                        <span class="text-sm font-medium text-gray-500">
-                            Created By
-                        </span>
-                        <span class="text-sm text-gray-900">
-                            {{ vehicleType.creator?.name ?? '—' }}
-                        </span>
-                    </div>
+                <TableRow>
+                  <TableCell class="text-muted-foreground">Created By</TableCell>
+                  <TableCell class="text-right">
+                    {{ vehicleType.creator?.name ?? '—' }}
+                  </TableCell>
+                </TableRow>
 
-                    <!-- Created At -->
-                    <div class="flex justify-between px-6 py-4">
-                        <span class="text-sm font-medium text-gray-500">
-                            Created
-                        </span>
-                        <span class="text-sm text-gray-900">
-                            {{ vehicleType.created_at_human ?? '—' }}
-                        </span>
-                    </div>
+                <TableRow>
+                  <TableCell class="text-muted-foreground">Created</TableCell>
+                  <TableCell class="text-right">
+                    {{ vehicleType.created_at_human ?? '—' }}
+                  </TableCell>
+                </TableRow>
 
-                    <!-- Updated By -->
-                    <div class="flex justify-between px-6 py-4">
-                        <span class="text-sm font-medium text-gray-500">
-                            Last Updated By
-                        </span>
-                        <span class="text-sm text-gray-900">
-                            {{ vehicleType.updater?.name ?? '—' }}
-                        </span>
-                    </div>
+                <TableRow>
+                  <TableCell class="text-muted-foreground">
+                    Last Updated By
+                  </TableCell>
+                  <TableCell class="text-right">
+                    {{ vehicleType.updater?.name ?? '—' }}
+                  </TableCell>
+                </TableRow>
 
-                    <!-- Updated At -->
-                    <div class="flex justify-between px-6 py-4">
-                        <span class="text-sm font-medium text-gray-500">
-                            Last Updated
-                        </span>
-                        <span class="text-sm text-gray-900">
-                            {{ vehicleType.updated_at_human ?? '—' }}
-                        </span>
-                    </div>
-                </div>
-            </div>
+                <TableRow>
+                  <TableCell class="text-muted-foreground">Last Updated</TableCell>
+                  <TableCell class="text-right">
+                    {{ vehicleType.updated_at_human ?? '—' }}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
-            <!-- Actions -->
-            <div class="flex gap-2">
-                <Link
-                    :href="index().url"
-                    class="rounded bg-gray-600 px-4 py-2 text-sm text-white hover:bg-gray-700"
-                >
-                    Back to List
-                </Link>
-            </div>
-        </div>
-    </AppLayout>
+      <div class="flex gap-2">
+        <Button as-child variant="secondary">
+          <Link :href="index().url">Back to List</Link>
+        </Button>
+      </div>
+    </div>
+  </AppLayout>
 </template>

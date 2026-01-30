@@ -33,6 +33,7 @@ import { ref } from 'vue';
 import { toast } from 'vue-sonner';
 
 import { destroy, index, show, store, update } from '@/routes/vehicle-types';
+import { Plus, ViewIcon, Trash2, Edit, AlertTriangle } from 'lucide-vue-next';
 import { type BreadcrumbItem } from '@/types';
 
 /* ======================================================
@@ -166,7 +167,7 @@ const confirmDelete = () => {
                         <!-- CREATE -->
                         <Dialog v-model:open="createOpen">
                             <DialogTrigger as-child>
-                                <Button size="sm">Add Vehicle Type</Button>
+                                <Button size="sm"><Plus/>Add Vehicle Type</Button>
                             </DialogTrigger>
                             <DialogContent class="sm:max-w-md">
                                 <DialogHeader>
@@ -241,19 +242,19 @@ const confirmDelete = () => {
                                 <TableCell class="space-x-2">
                                     <Button asChild size="sm" variant="outline">
                                         <Link :href="show(vehicle.id).url"
-                                            >View</Link
+                                            ><ViewIcon />View</Link
                                         >
                                     </Button>
                                     <Button
                                         size="sm"
                                         @click="openEditDialog(vehicle)"
-                                        >Edit</Button
+                                        ><Edit/> Edit</Button
                                     >
                                     <Button
                                         size="sm"
                                         variant="destructive"
                                         @click="openDeleteDialog(vehicle)"
-                                        >Delete</Button
+                                        ><Trash2/> Trash Delete</Button
                                     >
                                 </TableCell>
                             </TableRow>
@@ -332,9 +333,10 @@ const confirmDelete = () => {
             <Dialog v-model:open="deleteOpen">
                 <DialogContent class="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle class="text-red-600"
-                            >Confirm Delete</DialogTitle
-                        >
+                        <div class="flex items-center gap-2 text-destructive">
+                                <AlertTriangle class="h-5 w-5" />
+                                <DialogTitle>Confirm Delete</DialogTitle>
+                            </div>
                         <DialogDescription>
                             This action cannot be undone. Type
                             <strong>delete</strong> to confirm.
@@ -358,7 +360,7 @@ const confirmDelete = () => {
                                 deleteConfirmText.toLowerCase() !== 'delete'
                             "
                             @click="confirmDelete"
-                        >
+                        ><AlertTriangle class="h-5 w-5" />
                             Delete
                         </Button>
                     </DialogFooter>
