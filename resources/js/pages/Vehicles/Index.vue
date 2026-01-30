@@ -1,41 +1,41 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue'
-import { index, create } from '@/routes/vehicles'
-import { type BreadcrumbItem } from '@/types'
-import { Head, Link } from '@inertiajs/vue3'
 import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+    Card,
+    CardAction,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { create, index } from '@/routes/vehicles';
+import { type BreadcrumbItem } from '@/types';
+import { Head, Link } from '@inertiajs/vue3';
 
+import { Button } from '@/components/ui/button';
 import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
+    Table,
+    TableBody,
+    TableCaption,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 
 defineProps<{
     vehicles: {
-        data: any[]
-        links: any[]
-    }
-}>()
+        data: any[];
+        links: any[];
+    };
+}>();
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Vehicles',
         href: index().url,
     },
-]
+];
 </script>
 
 <template>
@@ -70,12 +70,22 @@ const breadcrumbs: BreadcrumbItem[] = [
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            <TableRow v-for="vehicle in vehicles.data" :key="vehicle.id">
-                                <TableCell>{{ vehicle.vehicle_type?.type_name ?? '—' }}</TableCell>
-                                <TableCell>{{ vehicle.plate_number }}</TableCell>
-                                <TableCell>{{ vehicle.company?.company_name ?? '—' }}</TableCell>
-                                <TableCell>{{ vehicle.route?.route_name ?? '—' }}</TableCell>
-
+                            <TableRow
+                                v-for="vehicle in vehicles.data"
+                                :key="vehicle.id"
+                            >
+                                <TableCell>{{
+                                    vehicle.vehicle_type?.type_name ?? '—'
+                                }}</TableCell>
+                                <TableCell>{{
+                                    vehicle.plate_number
+                                }}</TableCell>
+                                <TableCell>{{
+                                    vehicle.company?.company_name ?? '—'
+                                }}</TableCell>
+                                <TableCell>{{
+                                    vehicle.route?.route_name ?? '—'
+                                }}</TableCell>
                             </TableRow>
                         </TableBody>
                     </Table>

@@ -18,7 +18,7 @@ class VehicleController extends Controller
     {
         $vehicles = Vehicle::with(['vehicleType', 'company', 'route'])
             ->latest()
-            ->paginate(20); 
+            ->paginate(20);
 
         return Inertia::render('Vehicles/Index', [
             'vehicles' => $vehicles,
@@ -27,24 +27,32 @@ class VehicleController extends Controller
 
     public function create()
     {
-       $company = Company::all();
-       $route = Route::all();
-       $vehicleType = VehicleType::all();
+        return Inertia::render('Vehicles/Create', [
+            'companies' => Company::query()
+                ->select('id', 'company_name')
+                ->orderBy('company_name')
+                ->get(),
 
-        return Inertia::render('Vehicles/Create',[
-            'companies' => $company,
-            'routes' => $route,
-            'vehicleTypes' => $vehicleType,
+            'routes' => Route::query()
+                ->select('id', 'route_name')
+                ->orderBy('route_name')
+                ->get(),
+
+            'vehicleTypes' => VehicleType::query()
+                ->select('id', 'type_name')
+                ->where('is_active', 1)
+                ->orderBy('type_name')
+                ->get(),
         ]);
     }
 
-public function store(VehicleStoreRequest $request)
-{
-    Vehicle::create([
-        ...$request->validated(),
-        'created_by' => auth()->id(), // or Auth::id()
-    ]);
+    public function store(VehicleStoreRequest $request)
+    {
+        Vehicle::create([
+            ...$request->validated(),
+            'created_by' => $request->user()->id,
+        ]);
 
-    return redirect()->route('vehicles.index');
-}
+        return to_route('vehicles.create')->with('success', 'Vehicle created successfully.');
+    }
 }
