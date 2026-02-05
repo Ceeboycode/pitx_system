@@ -1,10 +1,8 @@
 <script setup lang="ts">
+
 import { computed } from 'vue'
 import { Link } from '@inertiajs/vue3'
-import { BookOpen, User, LayoutGrid, Folder, Building2, BusFrontIcon, MapPin, Bus } from 'lucide-vue-next'
-import { MapIcon, DoorOpen } from 'lucide-vue-next'
-
-
+import { BookOpen, Building2, User, BusFront, House, MessageCircleQuestion } from 'lucide-vue-next'
 import NavFooter from '@/components/NavFooter.vue'
 import NavMain from '@/components/NavMain.vue'
 import NavUser from '@/components/NavUser.vue'
@@ -16,6 +14,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarRail
 } from '@/components/ui/sidebar'
 import AppLogo from './AppLogo.vue'
 import { can } from '@/lib/can'
@@ -30,81 +29,144 @@ import { index as routeStopsIndex } from '@/routes/route-stops'
 import { index as routesIndex } from '@/routes/routes'
 import { index as gateIndex } from '@/routes/gates'
 import { index as vehiclesIndex } from '@/routes/vehicles'
+import { CircleQuestionMark } from 'lucide-react'
+
+export interface Item {
+    id: string
+    title: string
+    href: string
+    permission?: string
+}
 
 export interface NavItem {
+    id: string
     title: string
     href: string
     icon: any
     permission?: string
+    items: Item[]
 }
+
+export interface NavFooterItem {
+    title: string
+    href: string
+    icon: any
+}
+
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
-        href: dashboard().url,
-        icon: LayoutGrid,
+        id: 'home',
+        title: "Home",
+        href: "#",
+        icon: House,
+        items: [
+            {
+                id: 'dashboard',
+                title: "Dashboard",
+                href: dashboard().url,
+            }
+        ],
     },
     {
-        title: 'Users',
-        href: usersIndex().url,
-        icon: User,
-        permission: 'users.viewAny',
+        id: 'company_vehicle',
+        title: "Company & Vehicle",
+        href: "#",
+        icon: BusFront,
+        items: [
+            {
+                id: 'vehicle_types',
+                title: 'Vehicles Types',
+                href: vehicleTypesIndex().url,
+                // icon: BusFrontIcon,
+            },  
+            {
+                id: 'companies',
+                title: 'Companies',
+                href: companiesIndex().url,
+                // icon: Building2,
+                // permission: 'companies.viewAny',
+            },
+            {
+                id: 'vehicles',
+                title: 'Vehicles',
+                href: vehiclesIndex().url,
+                // icon: Bus,
+            }
+        ],
     },
     {
-        title: 'Roles',
-        href: rolesIndex().url,
-        icon: User,
-        permission: 'roles.viewAny',
-    },
-    {
-        title: 'Companies',
-        href: companiesIndex().url,
+        id: 'gates_routes',
+        title: "Gates & Routes",
+        href: "#",
         icon: Building2,
-        // permission: 'companies.viewAny',
+        items: [
+            {
+                id: 'gates',
+                title: 'Gates',
+                href: gateIndex().url,
+                // icon: DoorOpen,
+            },  
+            {
+                id: 'routes',
+                title: 'Routes',
+                href: routesIndex().url,
+                // icon: MapIcon,
+            },
+            {
+                id: 'route_stops',
+                title: 'Route Stops',
+                href: routeStopsIndex().url,
+                // icon: MapPin,
+            },
+        ],
     },
     {
-        title: 'Vehicles Types',
-        href: vehicleTypesIndex().url,
-        icon: BusFrontIcon,
+        id: 'accounts',
+        title: "Accounts",
+        href: "#",
+        icon: User,
+        items: [
+            {
+                id: 'users',
+                title: 'Users',
+                href: usersIndex().url,
+                // icon: User,
+                permission: 'users.viewAny',
+            },
+            {
+                id: 'roles',
+                title: 'Roles',
+                href: rolesIndex().url,
+                // icon: User,
+                permission: 'roles.viewAny',
+            }
+        ],
     },
-    {
-        title: 'Route Stops',
-        href: routeStopsIndex().url,
-        icon: MapPin,
-    },
-    {
-        title: 'Routes',
-        href: routesIndex().url,
-        icon: MapIcon,
-    },
-    {
-        title: 'Gates',
-        href: gateIndex().url,
-        icon: DoorOpen,
-    },
-    {
-        title: 'Vehicles',
-        href: vehiclesIndex().url,
-        icon: Bus,
-    }
 ]
 
 const visibleMainNavItems = computed(() =>
-    mainNavItems.filter(item => !item.permission || can(item.permission))
+    mainNavItems
+    .filter((item) => !item.permission || can(item.permission))
+    .map((item) => ({
+      ...item,
+      items: item.items.filter((sub) => !sub.permission || can(sub.permission)),
+    }))
 )
 
-const footerNavItems: NavItem[] = [
+const footerNavItems: NavFooterItem[] = [
     {
-        title: 'Github Repo',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: Folder,
+        title: 'FAQ',
+        href: '#',
+        icon: MessageCircleQuestion,
     },
     {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
+        title: 'Tutorial',
+        href: '#',
         icon: BookOpen,
     },
 ]
+
 </script>
 
 <template>
@@ -123,6 +185,7 @@ const footerNavItems: NavItem[] = [
 
         <SidebarContent>
             <NavMain :items="visibleMainNavItems" />
+            <!-- <NavMain :items={data.navMain} /> -->
         </SidebarContent>
 
         <SidebarFooter>
