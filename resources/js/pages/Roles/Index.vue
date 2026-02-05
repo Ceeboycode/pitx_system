@@ -37,8 +37,8 @@ import { create, destroy, edit, index } from '@/routes/roles';
 import { type BreadcrumbItem } from '@/types';
 import { can } from '@/lib/can';
 import { AlertTriangle } from 'lucide-vue-next'
-import { Plus, Edit, Trash2 } from 'lucide-vue-next'; 
-import Trash from '../Company/Trash.vue';
+import { Plus, Edit, Trash2 } from 'lucide-vue-next';
+
 
 /* -------------------------------------------------------------------------- */
 /* Types                                                                       */

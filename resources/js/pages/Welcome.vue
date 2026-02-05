@@ -40,9 +40,6 @@ withDefaults(defineProps<{ canRegister: boolean }>(), { canRegister: true });
             <Button variant="ghost" as-child>
               <Link :href="login()">Log in</Link>
             </Button>
-            <Button v-if="canRegister" variant="destructive" as-child>
-              <Link :href="register()">Register</Link>
-            </Button>
           </template>
         </nav>
       </div>

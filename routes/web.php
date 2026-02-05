@@ -26,10 +26,34 @@ Route::middleware('auth')->group(function () {
     Route::resource('users', UserController::class);
     Route::resource('roles', RoleController::class);
 
-    Route::resource('companies', CompanyController::class);
-    Route::get('/companies-trash', [CompanyController::class, 'trash'])->name('companies.trash');
-    Route::post('/companies/{id}/restore', [CompanyController::class, 'restore'])->name('companies.restore');
-    Route::delete('/companies/{id}/force-delete', [CompanyController::class, 'forceDelete'])->name('companies.forceDelete');
+    Route::prefix('companies')
+        ->name('companies.')
+        ->whereNumber('company')
+        ->group(function () {
+
+            // Static routes FIRST
+            Route::get('trash', [CompanyController::class, 'trash'])->name('trash');
+
+            // Resource routes
+            Route::get('/', [CompanyController::class, 'index'])->name('index');
+            Route::post('/', [CompanyController::class, 'store'])->name('store');
+
+            // Dynamic routes
+            Route::get('{company}', [CompanyController::class, 'show'])->name('show');
+            Route::put('{company}', [CompanyController::class, 'update'])->name('update');
+            Route::delete('{company}', [CompanyController::class, 'destroy'])->name('destroy');
+
+            // Soft-delete lifecycle
+            Route::patch('{company}/restore', [CompanyController::class, 'restore'])
+                ->withTrashed()
+                ->name('restore');
+
+            Route::delete('{company}/force-delete', [CompanyController::class, 'forceDelete'])
+                ->withTrashed()
+                ->name('forceDelete');
+        });
+
+
 
 
     Route::resource('vehicle-types', VehicleTypeController::class);
