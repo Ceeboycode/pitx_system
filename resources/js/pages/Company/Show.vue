@@ -1,106 +1,127 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue'
-import { type BreadcrumbItem } from '@/types'
-import { Head, router } from '@inertiajs/vue3'
-import { index, show } from '@/routes/companies'
+import Button from '@/components/ui/button/Button.vue';
+import {
+    Card,
+    CardAction,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { index, show } from '@/routes/companies';
+import { type BreadcrumbItem } from '@/types';
+import { Head, Link } from '@inertiajs/vue3';
 
-/**
- * Props coming from the Laravel controller
- */
 const props = defineProps<{
     company: {
-        id: number
-        company_name: string
-        created_at_human?: string
-        updated_at_human?: string
-        creator?: {
-            id: number
-            name: string
-        } | null
-        updater?: {
-            id: number
-            name: string
-        } | null
-    }
-}>()
+        id: number;
+        company_name: string;
+        created_at?: string;
+        updated_at_human?: string;
+        creator?: { name: string } | null;
+        updater?: { name: string } | null;
+    };
+}>();
 
-/**
- * Breadcrumbs for the page
- * Example: Companies → Cavite Transport
- */
 const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Companies', href: index().url },
     {
-        title: 'Companies',
-        href: index().url,
+        title: 'Company Details',
+        href: show({ company: props.company.id }).url,
     },
-    {
-        title: props.company.company_name,
-        href: show(props.company.id).url,
-    },
-]
+];
+
+function formatDate(date?: string) {
+    if (!date) return '—';
+
+    return new Date(date).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    });
+}
 </script>
 
 <template>
-    <!-- Browser tab title -->
     <Head :title="company.company_name" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 rounded-xl p-6">
+        <!-- Page wrapper -->
+        <div class="w-full px-4 py-6 sm:px-6 capitalize">
+            <!-- Centered container -->
+            <div class="mx-auto w-full max-w-4xl">
+                <Card>
+                    <CardHeader>
+                        <CardTitle class="text-2xl">
+                            {{ company.company_name }}
+                        </CardTitle>
 
-            <!-- Page header -->
-            <div class="flex items-center justify-between">
-                <h1 class="text-2xl font-bold">
-                    {{ company.company_name }}
-                </h1>
+                        <CardDescription>
+                            Details for {{ company.company_name }}
+                        </CardDescription>
 
-                <button
-                    class="rounded bg-gray-600 px-4 py-2 text-white hover:bg-gray-700"
-                    @click="router.visit(index().url)"
-                >
-                    Back
-                </button>
+                        <CardAction>
+                            <Button as-child variant="link" size="sm">
+                                <Link :href="index().url">
+                                    Back to Companies
+                                </Link>
+                            </Button>
+                        </CardAction>
+                    </CardHeader>
+
+                    <CardContent>
+                        <Table class="w-full">
+                            <TableBody>
+                                <TableRow>
+                                    <TableCell
+                                        class="w-56 py-3 text-sm font-medium text-muted-foreground"
+                                    >
+                                        Created At
+                                    </TableCell>
+                                    <TableCell class="py-3">
+                                        {{ formatDate(company.created_at) }}
+                                    </TableCell>
+                                </TableRow>
+
+                                <TableRow>
+                                    <TableCell
+                                        class="w-56 py-3 text-sm font-medium text-muted-foreground"
+                                    >
+                                        Created By
+                                    </TableCell>
+                                    <TableCell class="py-3">
+                                        {{ company.creator?.name ?? 'N/A' }}
+                                    </TableCell>
+                                </TableRow>
+
+                                <TableRow>
+                                    <TableCell
+                                        class="w-56 py-3 text-sm font-medium text-muted-foreground"
+                                    >
+                                        Updated At
+                                    </TableCell>
+                                    <TableCell class="py-3">
+                                        {{ company.updated_at_human ?? '—' }}
+                                    </TableCell>
+                                </TableRow>
+
+                                <TableRow>
+                                    <TableCell
+                                        class="w-56 py-3 text-sm font-medium text-muted-foreground"
+                                    >
+                                        Updated By
+                                    </TableCell>
+                                    <TableCell class="py-3">
+                                        {{ company.updater?.name ?? 'N/A' }}
+                                    </TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
             </div>
-
-            <!-- Company details -->
-            <div class="rounded-lg border bg-white p-6 shadow-sm">
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-
-                    <div>
-                        <p class="text-sm text-gray-500">Company Name</p>
-                        <p class="font-medium">{{ company.company_name }}</p>
-                    </div>
-
-                    <div>
-                        <p class="text-sm text-gray-500">Created By</p>
-                        <p class="font-medium">
-                            {{ company.creator?.name ?? 'N/A' }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <p class="text-sm text-gray-500">Updated By</p>
-                        <p class="font-medium">
-                            {{ company.updater?.name ?? 'N/A' }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <p class="text-sm text-gray-500">Created At</p>
-                        <p class="font-medium">
-                            {{ company.created_at_human ?? '—' }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <p class="text-sm text-gray-500">Updated At</p>
-                        <p class="font-medium">
-                            {{ company.updated_at_human ?? '—' }}
-                        </p>
-                    </div>
-
-                </div>
-            </div>
-
         </div>
     </AppLayout>
 </template>

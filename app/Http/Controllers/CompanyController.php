@@ -8,6 +8,7 @@ use App\Models\Company;
 use App\Services\Company\CompanyService;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Http\Request;
 
 class CompanyController extends Controller
 {
@@ -18,26 +19,47 @@ class CompanyController extends Controller
 
 
     // Display a listing of the resource.
-    public function index()
+    public function index(Request $request)
     {
         Gate::authorize('viewAny', Company::class);
-        $companies = Company::select('id', 'company_name')
+
+        $companies = Company::query()
+            ->select('id', 'company_name', 'created_at')
+            ->when($request->search, function ($query, $search) {
+                $query->where('company_name', 'like', "%{$search}%");
+            })
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Company/Index', [
+            // dd($companies),
             'companies' => $companies,
+            'filters' => [
+                'search' => $request->search,
+            ],
         ]);
     }
 
-    // Display the specified resource.
     public function show(Company $company)
     {
         Gate::authorize('view', $company);
 
         return Inertia::render('Company/Show', [
             'company' => $company->load(['creator', 'updater']),
+        ]);
+    }
+
+    public function trash()
+    {
+        $companies = Company::onlyTrashed()
+            ->select('id', 'company_name', 'deleted_at')
+            ->latest('deleted_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return Inertia::render('Company/Trash', [
+            'companies' => $companies,
         ]);
     }
 
@@ -54,7 +76,7 @@ class CompanyController extends Controller
         $this->companyService->createCompany($validated, auth()->id());
 
         // 4. Redirect back to the company index with a success message
-        return redirect()->back();
+        return to_route('companies.index')->with('success', 'Company created successfully.');
     }
 
     // Implementation for updating an existing company
@@ -70,7 +92,7 @@ class CompanyController extends Controller
         $this->companyService->updateCompany($company, $validated, auth()->id());
 
         // 4. Redirect back to the company index with a success message
-        return redirect()->back();
+        return to_route('companies.index')->with('success', 'Company updated successfully.');
     }
 
     // Implementation for sofre deleting a company
@@ -83,28 +105,12 @@ class CompanyController extends Controller
         $this->companyService->deleteCompany($company);
 
         // 3. Redirect back to the company index with a success message
-        return redirect()->back();
-    }
-
-    // Display a listing of soft-deleted companies.
-    public function trash()
-    {
-        $companies = Company::onlyTrashed()
-            ->select('id', 'company_name', 'deleted_at')
-            ->latest('deleted_at')
-            ->paginate(10)
-            ->withQueryString();
-
-        return Inertia::render('Company/Trash', [
-            'companies' => $companies,
-        ]);
+        return to_route('companies.index')->with('success', 'Company archived successfully.');
     }
 
     // Restore a soft-deleted company.
-    public function restore(int $id)
+    public function restore(Company $company)
     {
-        $company = Company::onlyTrashed()->findOrFail($id);
-
         Gate::authorize('restore', $company);
 
         $this->companyService->restoreCompany($company);
@@ -112,15 +118,13 @@ class CompanyController extends Controller
         return redirect()->back();
     }
 
-    // Permanently delete a soft-deleted company.
-    public function forceDelete(int $id)
+    public function forceDelete(Company $company)
     {
-        $company = Company::onlyTrashed()->findOrFail($id);
-
         Gate::authorize('forceDelete', $company);
 
         $this->companyService->forceDeleteCompany($company);
 
         return redirect()->back();
     }
+
 }

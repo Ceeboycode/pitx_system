@@ -1,292 +1,208 @@
 <script setup lang="ts">
-/* ======================================================
-   Imports
-====================================================== */
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
-import { toast } from 'vue-sonner';
-
-import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import AppLayout from '@/layouts/AppLayout.vue';
+import ArchiveCompanyDialog from '@/components/company/ArchiveCompanyDialog.vue';
+import CreateCompanyDialog from '@/components/company/CreateCompanyDialog.vue';
+import EditCompanyDialog from '@/components/company/EditCompanyDialog.vue';
 import InertiaPagination from '@/components/InertiaPagination.vue';
+import SearchInput from '@/components/SearchInput.vue';
+import { Button } from '@/components/ui/button';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
+    Card,
+    CardAction,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+    Table,
+    TableBody,
+    TableCaption,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 
-import { index, show, store, trash, update } from '@/routes/companies';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { index, show, trash } from '@/routes/companies';
 import { type BreadcrumbItem } from '@/types';
-import { Archive, View } from "lucide-vue-next";
-import { Plus, Trash, Edit, Save } from 'lucide-vue-next';
+import { Head, Link } from '@inertiajs/vue3';
+import { Archive, Edit, Eye, Plus, Trash } from 'lucide-vue-next';
+import { ref } from 'vue';
 
-/* ======================================================
-   Types
-====================================================== */
-interface Company {
-  id: number;
-  company_name: string;
-}
+type Company = {
+    id: number;
+    company_name: string;
+    created_at_human?: string;
+};
 
-interface PaginationLink {
-  url: string | null;
-  label: string;
-  active: boolean;
-}
-
-interface PaginatedCompanies {
-  data: Company[];
-  links: PaginationLink[];
-}
-
-/* ======================================================
-   Props
-====================================================== */
-defineProps<{
-  companies: PaginatedCompanies;
-}>();
-
-/* ======================================================
-   Breadcrumbs
-====================================================== */
 const breadcrumbs: BreadcrumbItem[] = [
-  {
-    title: 'Companies',
-    href: index().url,
-  },
+    { title: 'Companies', href: index().url },
 ];
 
-/* ======================================================
-   Forms
-====================================================== */
-const form = useForm({ company_name: '' });
-const editForm = useForm({ company_name: '' });
+const props = defineProps<{
+    companies: any;
+    filters: { search: string | null };
+}>();
 
-/* ======================================================
-   Dialog State
-====================================================== */
-const isCreateDialogOpen = ref(false);
-const isEditDialogOpen = ref(false);
-const isDeleteDialogOpen = ref(false);
-const editingCompanyId = ref<number | null>(null);
-const deletingCompanyId = ref<number | null>(null);
+const createOpen = ref(false);
 
-/* ======================================================
-   Actions
-====================================================== */
-const viewCompany = (id: number) => {
-  router.visit(show(id).url);
-};
+const editOpen = ref(false);
+const archiveOpen = ref(false);
 
-const createCompany = () => {
-  form.post(store().url, {
-    onSuccess: () => {
-      form.reset();
-      isCreateDialogOpen.value = false;
-      toast.success('Company created successfully!');
-    },
-    onError: () => toast.error('Failed to create company.'),
-  });
-};
+const selectedCompany = ref<Company | null>(null);
 
-const editCompany = (company: Company) => {
-  editingCompanyId.value = company.id;
-  editForm.company_name = company.company_name;
-  isEditDialogOpen.value = true;
-};
+function openEdit(company: Company) {
+    selectedCompany.value = company;
+    editOpen.value = true;
+}
 
-const updateCompany = () => {
-  if (!editingCompanyId.value) return;
-
-  editForm.put(update(editingCompanyId.value).url, {
-    onSuccess: () => {
-      editForm.reset();
-      isEditDialogOpen.value = false;
-      editingCompanyId.value = null;
-      toast.success('Company updated successfully!');
-    },
-    onError: () => toast.error('Failed to update company.'),
-  });
-};
-
-const confirmDeleteCompany = () => {
-  if (!deletingCompanyId.value) return;
-
-  router.delete(update(deletingCompanyId.value).url, {
-    onSuccess: () => {
-      toast.success('Company archived successfully!');
-      isDeleteDialogOpen.value = false;
-      deletingCompanyId.value = null;
-    },
-    onError: () => toast.error('Failed to archive company.'),
-  });
-};
+function openArchive(company: Company) {
+    selectedCompany.value = company;
+    archiveOpen.value = true;
+}
 </script>
 
 <template>
-  <Head title="Companies" />
+    <Head title="Companies" />
 
-  <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="p-6 flex flex-col gap-4">
-      <Card>
-        <!-- Card Header -->
-        <CardHeader class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <CardTitle>Companies</CardTitle>
-            <CardDescription>List of all companies in the system.</CardDescription>
-          </div>
+    <AppLayout :breadcrumbs="breadcrumbs">
+        <div
+            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
+        >
+            <Card class="mx-10 mt-4">
+                <CardHeader>
+                    <CardTitle>Companies</CardTitle>
+                    <CardDescription
+                        >Manage your companies here.</CardDescription
+                    >
 
-          <div class="flex gap-2">
-            <!-- Create Company Dialog -->
-            <Dialog v-model:open="isCreateDialogOpen">
-              <DialogTrigger asChild>
-                <Button size="sm"> <Plus /> Create New Company</Button>
-              </DialogTrigger>
+                    <CardAction>
+                        <Button
+                            as-child
+                            size="sm"
+                            variant="outline"
+                            class="mr-2"
+                        >
+                            <Link :href="trash().url">
+                                <Trash class="mr-2 h-4 w-4" />
+                                View Trash
+                            </Link>
+                        </Button>
 
-              <DialogContent class="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Create New Company</DialogTitle>
-                  <DialogDescription>
-                    Fill out the form below to create a new company.
-                  </DialogDescription>
-                </DialogHeader>
+                        <Button size="sm" @click="createOpen = true">
+                            <Plus class="mr-2 h-4 w-4" />
+                            New Company
+                        </Button>
+                    </CardAction>
+                </CardHeader>
 
-                <div class="grid gap-4 py-4">
-                  <div class="grid gap-2">
-                    <Label for="name">Company Name</Label>
-                    <Input
-                      id="name"
-                      v-model="form.company_name"
-                      placeholder="Enter company name"
+                <CardContent class="space-y-4">
+                    <div class="max-w-sm">
+                        <SearchInput
+                            :route="index().url"
+                            :initial-value="filters.search"
+                            placeholder="Search companies..."
+                            :only="['companies', 'filters']"
+                            :debounce="350"
+                        />
+                    </div>
+
+                    <Table>
+                        <TableCaption>List of companies.</TableCaption>
+
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Company Name</TableHead>
+                                <TableHead>Created At</TableHead>
+                                <TableHead>Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+
+                        <TableBody>
+                            <TableRow
+                                v-for="company in companies.data"
+                                :key="company.id"
+                            >
+                                <TableCell class="capitalize">
+                                    {{ company.company_name }}
+                                </TableCell>
+                                <TableCell >
+                                    {{ company.created_at_human }}
+                                </TableCell>
+
+                                <TableCell class="space-x-2">
+                                    <Button
+                                        as-child
+                                        size="sm"
+                                        variant="outline"
+                                    >
+                                        <Link
+                                            :href="
+                                                show({ company: company.id })
+                                                    .url
+                                            "
+                                        >
+                                            <Eye class="mr-2 h-4 w-4" />
+                                            View
+                                        </Link>
+                                    </Button>
+
+                                    <Button
+                                        size="sm"
+                                        variant="default"
+                                        @click="openEdit(company)"
+                                    >
+                                        <Edit class="mr-2 h-4 w-4" />
+                                        Edit
+                                    </Button>
+
+                                    <Button
+                                        size="sm"
+                                        variant="archive"
+                                        @click="openArchive(company)"
+                                    >
+                                        <Archive class="mr-2 h-4 w-4" />
+                                        Archive
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+
+                            <TableRow v-if="companies.data.length === 0">
+                                <TableCell
+                                    colspan="3"
+                                    class="py-10 text-center text-muted-foreground"
+                                >
+                                    No companies found.
+                                </TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+
+                    <InertiaPagination
+                        :links="companies.links"
+                        :meta="{
+                            from: companies.from,
+                            to: companies.to,
+                            total: companies.total,
+                        }"
                     />
-                    <InputError :message="form.errors.company_name" />
-                  </div>
-                </div>
+                </CardContent>
+            </Card>
 
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button variant="secondary">Cancel</Button>
-                  </DialogClose>
-                  <Button @click="createCompany"> <Save /> Save</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <CreateCompanyDialog v-model:open="createOpen" />
 
-            <!-- Trash Button -->
-            <Link :href="trash().url">
-              <Button size="sm" variant="outline"> <Trash /> Trash</Button>
-            </Link>
-          </div>
-        </CardHeader>
+            <EditCompanyDialog
+                v-if="selectedCompany"
+                v-model:open="editOpen"
+                :company="selectedCompany"
+            />
 
-        <!-- Table -->
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Company Name</TableHead>
-                <TableHead>Action</TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              <TableRow v-for="company in companies.data" :key="company.id">
-                <TableCell>{{ company.company_name }}</TableCell>
-                <TableCell class="space-x-2">
-                  <Button asChild size="sm" variant="outline">
-                    <Link :href="show(company.id).url"><View/>View</Link>
-                  </Button>
-                  <Button size="sm" @click="editCompany(company)"> <Edit /> Edit</Button>
-                  <Button
-                    size="sm"
-                    variant="archive"
-                    @click="deletingCompanyId = company.id; isDeleteDialogOpen = true"
-                  >
-                    <Archive />
-                    Archive
-                  </Button>
-                </TableCell>
-              </TableRow>
-
-              <TableRow v-if="companies.data.length === 0">
-                <TableCell colspan="2" class="text-center text-sm text-gray-500">
-                  No companies found.
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </CardContent>
-
-        <!-- Pagination -->
-        <CardAction class="justify-end p-4">
-          <InertiaPagination :links="companies.links" />
-        </CardAction>
-      </Card>
-      <!-- Edit Company Dialog -->
-      <Dialog v-model:open="isEditDialogOpen">
-        <DialogContent class="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Company</DialogTitle>
-          </DialogHeader>
-
-          <div class="grid gap-4 py-4">
-            <Label>Company Name</Label>
-            <Input v-model="editForm.company_name" />
-            <InputError :message="editForm.errors.company_name" />
-          </div>
-
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="secondary">Cancel</Button>
-            </DialogClose>
-            <Button :disabled="editForm.processing" @click="updateCompany">Update</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <!-- Archive Company Dialog -->
-      <Dialog v-model:open="isDeleteDialogOpen">
-        <DialogContent class="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle class="flex items-center gap-2">
-              <Archive :size="18" class="text-muted-foreground" />
-              Archive Company
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to archive this company? You can restore it later from the Trash.
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter>
-            <Button variant="secondary" @click="isDeleteDialogOpen = false">Cancel</Button>
-            <Button variant="archive" @click="confirmDeleteCompany">Archive</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  </AppLayout>
+            <ArchiveCompanyDialog
+                v-if="selectedCompany"
+                v-model:open="archiveOpen"
+                :company="selectedCompany"
+            />
+        </div>
+    </AppLayout>
 </template>
