@@ -49,7 +49,7 @@ function formatDate(date?: string) {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <!-- Page wrapper -->
-        <div class="w-full px-4 py-6 sm:px-6 capitalize">
+        <div class="w-full px-4 py-6 capitalize sm:px-6">
             <!-- Centered container -->
             <div class="mx-auto w-full max-w-4xl">
                 <Card>

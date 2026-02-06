@@ -1,306 +1,295 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
-import { forceDelete, index, restore, trash } from '@/routes/companies';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
-import { toast } from 'vue-sonner';
+/* ======================================================
+   Shared Components
+====================================================== */
 
+// Pagination component for Inertia responses
+import InertiaPagination from '@/components/InertiaPagination.vue';
+
+// Reusable debounced search input
+import SearchInput from '@/components/SearchInput.vue';
+
+// shadcn-vue button
 import { Button } from '@/components/ui/button';
+
+/* ======================================================
+   Dialog Components
+====================================================== */
+
+// Dialog to permanently delete a company
+import ForceDeleteCompanyDialog from '@/components/company/ForceDeleteCompanyDialog.vue';
+
+// Dialog to restore an archived company
+import RestoreCompanyDialog from '@/components/company/RestoreCompanyDialog.vue';
+
+/* ======================================================
+   shadcn-vue UI Components
+====================================================== */
+
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+    Card,
+    CardAction,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+
 import {
     Table,
     TableBody,
+    TableCaption,
     TableCell,
     TableHead,
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import {
-    AlertTriangle,
-    ArchiveRestoreIcon,
-    LucideTrash2,
-} from 'lucide-vue-next';
 
-/* ======================
- | Types
- ====================== */
+/* ======================================================
+   Layout, Routing & Inertia
+====================================================== */
 
-interface Company {
+// Main application layout
+import AppLayout from '@/layouts/AppLayout.vue';
+
+// Wayfinder routes
+import { index, trash } from '@/routes/companies';
+
+// Breadcrumb type
+import { type BreadcrumbItem } from '@/types';
+
+// Inertia helpers
+import { Head, Link } from '@inertiajs/vue3';
+
+/* ======================================================
+   Icons
+====================================================== */
+
+import { ArrowLeft, RotateCcw, Trash2 } from 'lucide-vue-next';
+
+/* ======================================================
+   Vue Core
+====================================================== */
+
+import { ref } from 'vue';
+
+/* ======================================================
+   Types
+====================================================== */
+
+// Company shape for archived records
+type Company = {
     id: number;
     company_name: string;
-    deleted_at: string;
-    deleted_at_human: string;
-}
+    deleted_at_human?: string;
+    deleter?: { id: number; name: string } | null;
+};
 
-interface PaginationLink {
-    url: string | null;
-    label: string;
-    active: boolean;
-}
-
-/* ======================
- | Props
- ====================== */
-
-defineProps<{
-    companies: {
-        data: Company[];
-        links: PaginationLink[];
-    };
-}>();
-
-/* ======================
- | Breadcrumbs
- ====================== */
+/* ======================================================
+   Breadcrumbs
+====================================================== */
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Companies', href: index().url },
-    { title: 'Trash', href: trash().url },
+    { title: 'Archived', href: trash().url },
 ];
 
-/* ======================
- | Dialog State
- ====================== */
+/* ======================================================
+   Props from Inertia Controller
+====================================================== */
 
-const isDeleteDialogOpen = ref(false);
-const deletingCompanyId = ref<number | null>(null);
-const deleteConfirmText = ref('');
-const DELETE_CONFIRM_TEXT = 'delete';
+const props = defineProps<{
+    companies: any; // Paginated archived companies
+    filters: { search: string | null }; // Active search filter
+}>();
 
-const isRestoreDialogOpen = ref(false);
-const restoringCompanyId = ref<number | null>(null);
+/* ======================================================
+   Dialog State
+====================================================== */
 
-/* ======================
- | Actions
- ====================== */
+// Restore dialog open state
+const restoreOpen = ref(false);
 
-const openRestoreDialog = (id: number) => {
-    restoringCompanyId.value = id;
-    isRestoreDialogOpen.value = true;
-};
+// Force delete dialog open state
+const forceDeleteOpen = ref(false);
 
-const confirmRestoreCompany = () => {
-    if (!restoringCompanyId.value) return;
+// Currently selected company (restore / delete)
+const selectedCompany = ref<Company | null>(null);
 
-    router.patch(
-        restore(restoringCompanyId.value).url,
-        {},
-        {
-            onSuccess: () => {
-                toast.success('Company restored');
-                isRestoreDialogOpen.value = false;
-                restoringCompanyId.value = null;
-            },
-            onError: () => toast.error('Restore failed'),
-        },
-    );
-};
+/* ======================================================
+   Actions
+====================================================== */
 
-const openDeleteDialog = (id: number) => {
-    deletingCompanyId.value = id;
-    deleteConfirmText.value = '';
-    isDeleteDialogOpen.value = true;
-};
+// Open restore dialog for selected company
+function openRestore(company: Company) {
+    selectedCompany.value = company;
+    restoreOpen.value = true;
+}
 
-const forceDeleteCompany = () => {
-    if (!deletingCompanyId.value) return;
-
-    router.delete(forceDelete(deletingCompanyId.value).url, {
-        onSuccess: () => {
-            toast.success('Company permanently deleted');
-            isDeleteDialogOpen.value = false;
-            deletingCompanyId.value = null;
-            deleteConfirmText.value = '';
-        },
-        onError: () => toast.error('Delete failed'),
-    });
-};
-
-/* ======================
- | Cleanup
- ====================== */
-
-watch(isDeleteDialogOpen, (open) => {
-    if (!open) {
-        deletingCompanyId.value = null;
-        deleteConfirmText.value = '';
-    }
-});
+// Open force delete dialog for selected company
+function openForceDelete(company: Company) {
+    selectedCompany.value = company;
+    forceDeleteOpen.value = true;
+}
 </script>
 
 <template>
-    <Head title="Company Trash" />
+    <!-- Page title -->
+    <Head title="Archived Companies" />
 
+    <!-- Main application layout -->
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="space-y-6 p-6">
-            <!-- Header -->
-            <div class="flex items-center justify-between">
-                <div class="space-y-1">
-                    <h1 class="text-2xl font-bold">Deleted Companies</h1>
-                    <p class="text-sm text-muted-foreground">
-                        Permanently delete or restore companies.
-                    </p>
-                </div>
+        <div
+            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
+        >
+            <!-- ======================================================
+                 Archived Companies Card
+            ======================================================= -->
+            <Card class="mx-10 mt-4">
+                <!-- Card Header -->
+                <CardHeader>
+                    <CardTitle>Archived Companies</CardTitle>
+                    <CardDescription>
+                        Archived companies can be restored or permanently
+                        deleted.
+                    </CardDescription>
 
-                <Button as-child variant="outline">
-                    <Link :href="index().url">Back</Link>
-                </Button>
-            </div>
+                    <!-- Header Action -->
+                    <CardAction>
+                        <!-- Back to active companies -->
+                        <Button as-child size="sm" variant="link" class="mr-2">
+                            <Link :href="index().url">
+                                <ArrowLeft class="mr-2 h-4 w-4" />
+                                Back to Companies
+                            </Link>
+                        </Button>
+                    </CardAction>
+                </CardHeader>
 
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Company</TableHead>
-                        <TableHead>Deleted At</TableHead>
-                        <TableHead>Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                    <TableRow
-                        v-for="company in companies.data"
-                        :key="company.id"
+                <!-- Card Content -->
+                <CardContent class="space-y-4">
+                    <!-- ======================================================
+                         Search Row
+                    ======================================================= -->
+                    <div
+                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
                     >
-                        <TableCell class="font-medium">
-                            {{ company.company_name }}
-                        </TableCell>
-
-                        <TableCell>
-                            {{ company.deleted_at_human }}
-                        </TableCell>
-
-                        <TableCell class="space-x-2 text-right">
-                            <Button
-                                size="sm"
-                                variant="secondary"
-                                @click="openRestoreDialog(company.id)"
-                            >
-                                <ArchiveRestoreIcon />
-                                Restore
-                            </Button>
-
-                            <Button
-                                size="sm"
-                                variant="destructive"
-                                @click="openDeleteDialog(company.id)"
-                            >
-                                <LucideTrash2 />
-                                Delete Forever
-                            </Button>
-                        </TableCell>
-                    </TableRow>
-
-                    <TableRow v-if="companies.data.length === 0">
-                        <TableCell
-                            colspan="3"
-                            class="text-center text-muted-foreground"
-                        >
-                            No deleted companies found.
-                        </TableCell>
-                    </TableRow>
-                </TableBody>
-            </Table>
-
-            <!-- Pagination -->
-            <div class="flex flex-wrap gap-2">
-                <Button
-                    v-for="link in companies.links"
-                    :key="link.label"
-                    size="sm"
-                    variant="outline"
-                    :disabled="!link.url"
-                    @click="link.url && router.visit(link.url)"
-                    :class="{
-                        'bg-primary text-primary-foreground': link.active,
-                    }"
-                    v-html="link.label"
-                />
-            </div>
-
-            <!-- DELETE DIALOG -->
-            <Dialog v-model:open="isDeleteDialogOpen">
-                <DialogContent
-                    class="sm:max-w-md"
-                    :disableOutsidePointerEvents="true"
-                >
-                    <DialogHeader class="space-y-3">
-                        <div class="flex items-center gap-2 text-destructive">
-                            <AlertTriangle class="h-5 w-5" />
-                            <DialogTitle>Delete Company</DialogTitle>
+                        <!-- Search archived companies -->
+                        <div class="w-full max-w-sm">
+                            <SearchInput
+                                :route="trash().url"
+                                :initial-value="filters.search"
+                                placeholder="Search archived companies..."
+                                :only="['companies', 'filters']"
+                                :debounce="350"
+                            />
                         </div>
+                    </div>
 
-                        <DialogDescription>
-                            This action is
-                            <span class="font-semibold text-destructive">
-                                permanent</span
-                            >. Type <strong>delete</strong> to confirm.
-                        </DialogDescription>
-                    </DialogHeader>
+                    <!-- ======================================================
+                         Archived Companies Table
+                    ======================================================= -->
+                    <Table>
+                        <TableCaption>
+                            List of archived companies.
+                        </TableCaption>
 
-                    <Input
-                        v-model="deleteConfirmText"
-                        placeholder="Type delete to confirm"
-                        class="focus-visible:ring-destructive"
+                        <!-- Table Header -->
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Company Name</TableHead>
+                                <TableHead>Archived At</TableHead>
+                                <TableHead>Archived By</TableHead>
+                                <TableHead>Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+
+                        <!-- Table Body -->
+                        <TableBody>
+                            <!-- Company Rows -->
+                            <TableRow
+                                v-for="company in companies.data"
+                                :key="company.id"
+                            >
+                                <TableCell class="capitalize">
+                                    {{ company.company_name }}
+                                </TableCell>
+
+                                <TableCell class="capitalize">
+                                    {{ company.deleted_at_human ?? '—' }}
+                                </TableCell>
+
+                                <TableCell class="capitalize">
+                                    {{ company.deleter?.name ?? '—' }}
+                                </TableCell>
+
+                                <!-- Action Buttons -->
+                                <TableCell class="space-x-2">
+                                    <!-- Restore -->
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        @click="openRestore(company)"
+                                    >
+                                        <RotateCcw class="mr-2 h-4 w-4" />
+                                        Restore
+                                    </Button>
+
+                                    <!-- Force Delete -->
+                                    <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        @click="openForceDelete(company)"
+                                    >
+                                        <Trash2 class="mr-2 h-4 w-4" />
+                                        Delete Permanently
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+
+                            <!-- Empty State -->
+                            <TableRow v-if="companies.data.length === 0">
+                                <TableCell
+                                    colspan="4"
+                                    class="py-10 text-center text-muted-foreground"
+                                >
+                                    No archived companies found.
+                                </TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+
+                    <!-- ======================================================
+                         Pagination
+                    ======================================================= -->
+                    <InertiaPagination
+                        :links="companies.links"
+                        :meta="{
+                            from: companies.from,
+                            to: companies.to,
+                            total: companies.total,
+                        }"
                     />
+                </CardContent>
+            </Card>
 
-                    <DialogFooter class="gap-2">
-                        <Button
-                            variant="outline"
-                            @click="isDeleteDialogOpen = false"
-                        >
-                            Cancel
-                        </Button>
+            <!-- ======================================================
+                 Dialogs
+            ======================================================= -->
 
-                        <Button
-                            variant="destructive"
-                            :disabled="
-                                deleteConfirmText.trim().toLowerCase() !==
-                                DELETE_CONFIRM_TEXT
-                            "
-                            @click="forceDeleteCompany"
-                        >
-                            Permanently Delete
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <!-- Restore Company Dialog -->
+            <RestoreCompanyDialog
+                v-if="selectedCompany"
+                v-model:open="restoreOpen"
+                :company="selectedCompany"
+            />
 
-            <!-- RESTORE DIALOG -->
-            <Dialog v-model:open="isRestoreDialogOpen">
-                <DialogContent class="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Restore Company</DialogTitle>
-                        <DialogDescription>
-                            This will make the company active again.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <DialogFooter class="gap-2">
-                        <Button
-                            variant="outline"
-                            @click="isRestoreDialogOpen = false"
-                        >
-                            Cancel
-                        </Button>
-
-                        <Button
-                            variant="default"
-                            @click="confirmRestoreCompany"
-                        >
-                            Restore
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <!-- Force Delete Company Dialog -->
+            <ForceDeleteCompanyDialog
+                v-if="selectedCompany"
+                v-model:open="forceDeleteOpen"
+                :company="selectedCompany"
+            />
         </div>
     </AppLayout>
 </template>

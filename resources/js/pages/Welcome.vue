@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { dashboard, login, register } from '@/routes'
-import { Head, Link } from '@inertiajs/vue3'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import PitxLogo from '@/components/assets/PITX.png'
-
+import PitxLogo from '@/components/assets/PITX.png';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { dashboard, login } from '@/routes';
+import { Head, Link } from '@inertiajs/vue3';
 
 withDefaults(defineProps<{ canRegister: boolean }>(), { canRegister: true });
 </script>
@@ -36,14 +35,14 @@ withDefaults(defineProps<{ canRegister: boolean }>(), { canRegister: true });
                         <Link :href="dashboard()">Dashboard</Link>
                     </Button>
 
-          <template v-else>
-            <Button variant="ghost" as-child>
-              <Link :href="login()">Log in</Link>
-            </Button>
-          </template>
-        </nav>
-      </div>
-    </header>
+                    <template v-else>
+                        <Button variant="ghost" as-child>
+                            <Link :href="login()">Log in</Link>
+                        </Button>
+                    </template>
+                </nav>
+            </div>
+        </header>
 
         <!-- Hero -->
         <section class="relative overflow-hidden">

@@ -17,7 +17,6 @@ class CompanyController extends Controller
         private CompanyService $companyService
     ) {}
 
-
     // Display a listing of the resource.
     public function index(Request $request)
     {
@@ -50,16 +49,23 @@ class CompanyController extends Controller
         ]);
     }
 
-    public function trash()
+    public function trash(Request $request)
     {
         $companies = Company::onlyTrashed()
-            ->select('id', 'company_name', 'deleted_at')
+            ->select('id', 'company_name', 'deleted_at', 'deleted_by')
+            ->with(['deleter:id,name'])
+            ->when($request->search, function ($query, $search) {
+                $query->where('company_name', 'like', "%{$search}%");
+            })
             ->latest('deleted_at')
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Company/Trash', [
             'companies' => $companies,
+            'filters' => [
+                'search' => $request->search,
+            ],
         ]);
     }
 
@@ -102,7 +108,7 @@ class CompanyController extends Controller
         Gate::authorize('delete', $company);
 
         // 2. Delegate to Service
-        $this->companyService->deleteCompany($company);
+        $this->companyService->deleteCompany($company, auth()->id());
 
         // 3. Redirect back to the company index with a success message
         return to_route('companies.index')->with('success', 'Company archived successfully.');
@@ -115,7 +121,7 @@ class CompanyController extends Controller
 
         $this->companyService->restoreCompany($company);
 
-        return redirect()->back();
+        return to_route('companies.trash')->with('success', 'Company restored successfully.');
     }
 
     public function forceDelete(Company $company)
@@ -124,7 +130,7 @@ class CompanyController extends Controller
 
         $this->companyService->forceDeleteCompany($company);
 
-        return redirect()->back();
+        return to_route('companies.trash')->with('success', 'Company permanently deleted successfully.');
     }
 
 }
