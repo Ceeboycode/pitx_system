@@ -14,6 +14,7 @@ class Company extends Model
         'company_name',
         'created_by',
         'updated_by',
+        'deleted_by',
     ];
 
     protected $appends = [
@@ -30,6 +31,11 @@ class Company extends Model
     public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public function deleter()
+    {
+        return $this->belongsTo(User::class, 'deleted_by');
     }
 
     public function getCreatedAtHumanAttribute()

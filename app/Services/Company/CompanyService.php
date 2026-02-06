@@ -22,8 +22,11 @@ class CompanyService
         return $company;
     }
 
-    public function deleteCompany(Company $company) : bool
+    public function deleteCompany(Company $company, int $userId) : bool
     {
+        $company->deleted_by = $userId;
+        $company->save();
+
         return $company->delete();
     }
 
