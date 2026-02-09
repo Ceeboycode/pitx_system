@@ -84,6 +84,9 @@ Route::middleware('auth')->group(function () {
 
 
     Route::resource('vehicles', VehicleController::class);
+    Route::get('/faq', function () {
+        return Inertia::render('FAQ');
+    })->name('faq');
 });
 
 
