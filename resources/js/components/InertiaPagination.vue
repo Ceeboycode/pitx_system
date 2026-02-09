@@ -46,7 +46,7 @@ const summary = computed(() => {
 
                 <span
                     v-else
-                    class="px-2 text-sm text-muted-foreground"
+                    class="text-sm text-muted-foreground"
                     v-html="link.label"
                 />
             </template>

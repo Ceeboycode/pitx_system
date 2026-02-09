@@ -8,6 +8,7 @@ use App\Http\Requests\VehicleType\VehicleTypeStoreRequest;
 use App\Http\Requests\VehicleType\VehicleTypeUpdateRequest;
 use App\Models\VehicleType;
 use Inertia\Inertia;
+use Illuminate\Http\Request;
 
 
 class VehicleTypeController extends Controller
@@ -17,17 +18,29 @@ class VehicleTypeController extends Controller
     ) {}
 
     //
-    public function index()
+    public function index(Request $request)
     {
         Gate::authorize('viewAny', VehicleType::class);
 
-        $vehicleTypes = VehicleType::select('id', 'type_name', 'is_active')
+        // $vehicleTypes = VehicleType::select('id', 'type_name', 'is_active')
+        //     ->latest()
+        //     ->paginate(10)
+        //     ->withQueryString();
+
+        $vehicleTypes = VehicleType::query()
+            ->select('id', 'type_name', 'is_active')
+            ->when($request->search, function ($query, $search) {
+                $query->where('type_name', 'like', "%{$search}%");
+            })
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('VehicleType/Index', [
             'vehicleTypes' => $vehicleTypes,
+            'filters' => [
+                'search' => $request->search,
+            ],
         ]);
     }
 
