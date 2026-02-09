@@ -157,13 +157,13 @@ const footerNavItems: NavFooterItem[] = [
 </script>
 
 <template>
-    <Sidebar collapsible="icon" variant="inset">
+    <Sidebar collapsible="icon" variant="inset" class="group">
         <SidebarHeader>
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
-                        <Link :href="dashboard().url">
-                            <AppLogo />
+                        <Link :href="dashboard().url" class="my-2">
+                            <AppLogo/>
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>

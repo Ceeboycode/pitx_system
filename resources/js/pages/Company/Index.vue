@@ -142,7 +142,7 @@ function openArchive(company: Company) {
             <!-- ======================================================
                  Companies Card
             ======================================================= -->
-            <Card class="mx-10 mt-4">
+            <Card class="">
                 <!-- Card Header -->
                 <CardHeader>
                     <CardTitle>Companies</CardTitle>
