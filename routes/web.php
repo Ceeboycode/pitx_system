@@ -54,8 +54,6 @@ Route::middleware('auth')->group(function () {
         });
 
 
-
-
     Route::resource('vehicle-types', VehicleTypeController::class);
 
     Route::resource('gates', GateController::class);
