@@ -15,6 +15,7 @@ import { store } from '@/routes/companies'
 import { useForm } from '@inertiajs/vue3'
 import { Save } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
+
 const open = defineModel<boolean>('open')
 
 const form = useForm({
