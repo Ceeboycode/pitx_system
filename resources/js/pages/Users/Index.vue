@@ -125,7 +125,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-1 flex-col gap-4 p-4">
-            <Card class="w-full">
+            <Card class="mx-10 mt-3">
                 <!-- Header -->
                 <CardHeader class="flex flex-row items-center justify-between">
                     <div>

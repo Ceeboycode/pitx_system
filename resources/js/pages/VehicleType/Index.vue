@@ -98,7 +98,7 @@ function openDelete(vehicle_type: VehicleType) {
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
 
-            <Card class="">
+            <Card class="mx-10 mt-3">
                 <CardHeader>
                     <CardTitle>Vehicle Types</CardTitle>
                     <CardDescription>
@@ -106,7 +106,7 @@ function openDelete(vehicle_type: VehicleType) {
                     </CardDescription>
 
                     <CardAction>
-                        <Button size="sm" @click="createOpen = true">
+                        <Button class="cursor-pointer" size="sm" @click="createOpen = true">
                             <Plus class="mr-2 h-4 w-4" />
                             New Vehicle Type
                         </Button>
@@ -127,17 +127,17 @@ function openDelete(vehicle_type: VehicleType) {
                             />
                         </div>
 
-                        <!-- <div class="flex gap-2 sm:justify-end">
-                            <Button size="sm" variant="outline">
+                        <div class="flex gap-2 sm:justify-end">
+                            <Button class="cursor-pointer" size="sm" variant="outline">
                                 <Upload class="mr-2 h-4 w-4" />
                                 Import
                             </Button>
 
-                            <Button size="sm" variant="outline">
+                            <Button class="cursor-pointer" size="sm" variant="outline">
                                 <Download class="mr-2 h-4 w-4" />
                                 Export
                             </Button>
-                        </div> -->
+                        </div> 
                     </div>
 
                     <Table>
@@ -164,7 +164,7 @@ function openDelete(vehicle_type: VehicleType) {
                                     <Badge
                                         :variant="
                                             vehicle.is_active
-                                                ? 'outline'
+                                                ? 'success'
                                                 : 'destructive'
                                         "
                                     >
@@ -191,6 +191,7 @@ function openDelete(vehicle_type: VehicleType) {
 
                                     <!-- Edit -->
                                     <Button
+                                        class="cursor-pointer"
                                         size="sm"
                                         variant="default"
                                         @click="openEdit(vehicle)"
@@ -200,6 +201,7 @@ function openDelete(vehicle_type: VehicleType) {
                                     </Button>
 
                                     <Button
+                                        class="cursor-pointer"
                                         size="sm"
                                         variant="destructive"
                                         @click="openDelete(vehicle)"

@@ -72,7 +72,7 @@ import { ref } from 'vue';
    Types
 ====================================================== */
 
-// Minimal Company type used in this page
+
 type Company = {
     id: number;
     company_name: string;
@@ -93,8 +93,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 ====================================================== */
 
 const props = defineProps<{
-    companies: any; // Paginated companies (LengthAwarePaginator)
-    filters: { search: string | null }; // Active filters
+    companies: any; 
+    filters: { search: string | null }; 
 }>();
 
 /* ======================================================
@@ -142,7 +142,7 @@ function openArchive(company: Company) {
             <!-- ======================================================
                  Companies Card
             ======================================================= -->
-            <Card class="">
+            <Card class="mx-10 mt-3">
                 <!-- Card Header -->
                 <CardHeader>
                     <CardTitle>Companies</CardTitle>
@@ -166,7 +166,7 @@ function openArchive(company: Company) {
                         </Button>
 
                         <!-- Open Create Company Dialog -->
-                        <Button size="sm" @click="createOpen = true">
+                        <Button class="cursor-pointer" size="sm" @click="createOpen = true">
                             <Plus class="mr-2 h-4 w-4" />
                             New Company
                         </Button>
@@ -194,12 +194,12 @@ function openArchive(company: Company) {
 
                         <!-- Import / Export Buttons -->
                         <div class="flex gap-2 sm:justify-end">
-                            <Button size="sm" variant="outline">
+                            <Button class="cursor-pointer" size="sm" variant="outline">
                                 <Upload class="mr-2 h-4 w-4" />
                                 Import
                             </Button>
 
-                            <Button size="sm" variant="outline">
+                            <Button class="cursor-pointer" size="sm" variant="outline">
                                 <Download class="mr-2 h-4 w-4" />
                                 Export
                             </Button>
@@ -253,6 +253,7 @@ function openArchive(company: Company) {
 
                                     <!-- Edit -->
                                     <Button
+                                        class="cursor-pointer"
                                         size="sm"
                                         variant="default"
                                         @click="openEdit(company)"
@@ -263,6 +264,7 @@ function openArchive(company: Company) {
 
                                     <!-- Archive -->
                                     <Button
+                                        class="cursor-pointer"
                                         size="sm"
                                         variant="archive"
                                         @click="openArchive(company)"
