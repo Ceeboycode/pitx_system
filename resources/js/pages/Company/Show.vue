@@ -13,8 +13,9 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { index, show } from '@/routes/companies';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
+import { ArrowLeft } from 'lucide-vue-next';
 
-const props = defineProps<{
+const { company } = defineProps<{
     company: {
         id: number;
         company_name: string;
@@ -27,10 +28,7 @@ const props = defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Companies', href: index().url },
-    {
-        title: 'Company Details',
-        href: show({ company: props.company.id }).url,
-    },
+    { title: 'Company Details', href: show({ company: company.id }).url },
 ];
 
 function formatDate(date?: string) {
@@ -64,7 +62,8 @@ function formatDate(date?: string) {
 
                         <CardAction>
                             <Button as-child variant="link" size="sm">
-                                <Link :href="index().url">
+                                <Link :href="index().url" class="cursor-pointer">
+                                    <ArrowLeft class="mr-2 h-4 w-4" />
                                     Back to Companies
                                 </Link>
                             </Button>

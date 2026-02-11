@@ -227,6 +227,7 @@ function openForceDelete(company: Company) {
                                 <TableCell class="space-x-2">
                                     <!-- Restore -->
                                     <Button
+                                        class="cursor-pointer"
                                         size="sm"
                                         variant="secondary"
                                         @click="openRestore(company)"
@@ -237,6 +238,7 @@ function openForceDelete(company: Company) {
 
                                     <!-- Force Delete -->
                                     <Button
+                                        class="cursor-pointer"
                                         size="sm"
                                         variant="destructive"
                                         @click="openForceDelete(company)"

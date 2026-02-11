@@ -36,6 +36,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { toast } from 'vue-sonner';
+import { ArrowLeft, Trash2, ArchiveRestore } from 'lucide-vue-next';
 
 interface Gate {
     id: number;
@@ -44,21 +45,12 @@ interface Gate {
 }
 
 defineProps<{
-    gates: {
-        data: Gate[];
-        links: [];
-    };
+    gates: any; // paginator
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Gates',
-        href: index().url,
-    },
-    {
-        title: 'Trash',
-        href: '#',
-    },
+    { title: 'Gates', href: index().url },
+    { title: 'Trash', href: '#' },
 ];
 
 const restoreGate = (gateId: number) => {
@@ -67,10 +59,7 @@ const restoreGate = (gateId: number) => {
         {},
         {
             preserveScroll: true,
-            onSuccess: () => {},
-            onError: () => {
-                toast.error('Failed to restore gate.');
-            },
+            onError: () => toast.error('Failed to restore gate.'),
         },
     );
 };
@@ -82,9 +71,7 @@ const forceDeleteGate = (gateId: number) => {
         onSuccess: () => {
             confirmDelete.value = '';
         },
-        onError: () => {
-            toast.error('Failed to delete gate permanently.');
-        },
+        onError: () => toast.error('Failed to delete gate permanently.'),
     });
 };
 </script>
@@ -96,21 +83,24 @@ const forceDeleteGate = (gateId: number) => {
         <div
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
-            <Card>
+            <Card class="mx-10 mt-3">
                 <CardHeader>
                     <CardTitle>Trashed Gates</CardTitle>
                     <CardDescription>
                         List of gates that have been moved to trash.
                     </CardDescription>
+
                     <CardAction>
                         <Button size="sm" variant="link" as-child>
-                            <Link :href="index().url"> Back to Gates</Link>
+                            <Link :href="index().url"> <ArrowLeft class="mr-2 h-4 w-4" /> Back to Gates</Link>
                         </Button>
                     </CardAction>
                 </CardHeader>
-                <CardContent>
+
+                <CardContent class="space-y-4">
                     <Table>
                         <TableCaption> List of trashed gates. </TableCaption>
+
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Gate Name</TableHead>
@@ -118,65 +108,83 @@ const forceDeleteGate = (gateId: number) => {
                                 <TableHead>Action</TableHead>
                             </TableRow>
                         </TableHeader>
+
                         <TableBody>
                             <TableRow v-for="gate in gates.data" :key="gate.id">
                                 <TableCell>{{ gate.gate_name }}</TableCell>
-                                <TableCell>{{
-                                    gate.deleted_at_human ?? 'N/A'
-                                }}</TableCell>
+
                                 <TableCell>
+                                    {{ gate.deleted_at_human ?? 'N/A' }}
+                                </TableCell>
+
+                                <TableCell class="space-x-2">
+                                    <!-- Restore -->
                                     <Dialog>
                                         <DialogTrigger as-child>
-                                            <Button size="sm">Restore</Button>
+                                            <Button
+                                                class="cursor-pointer"
+                                                size="sm"
+                                            >
+                                                <ArchiveRestore class="mr-2 h-4 w-4" />
+                                                Restore
+                                            </Button>
                                         </DialogTrigger>
+
                                         <DialogContent>
                                             <DialogHeader>
-                                                <DialogTitle
-                                                    >Restore Gate</DialogTitle
-                                                >
+                                                <DialogTitle>
+                                                    Restore Gate
+                                                </DialogTitle>
                                                 <DialogDescription>
                                                     Are you sure you want to
                                                     restore this gate?
                                                 </DialogDescription>
                                             </DialogHeader>
+
                                             <DialogFooter>
                                                 <DialogClose as-child>
-                                                    <Button variant="outline"
-                                                        >Cancel</Button
-                                                    >
+                                                    <Button variant="outline">
+                                                        Cancel
+                                                    </Button>
                                                 </DialogClose>
-                                                <Button
-                                                    @click="
-                                                        restoreGate(gate.id)
-                                                    "
-                                                    >Restore</Button
-                                                >
+
+                                                <DialogClose as-child>
+                                                    <Button
+                                                        @click="
+                                                            restoreGate(gate.id)
+                                                        "
+                                                    >
+                                                        Restore
+                                                    </Button>
+                                                </DialogClose>
                                             </DialogFooter>
                                         </DialogContent>
                                     </Dialog>
+
+                                    <!-- Delete permanently -->
                                     <Dialog>
                                         <DialogTrigger as-child>
                                             <Button
                                                 size="sm"
                                                 variant="destructive"
-                                                class="ml-2"
+                                                class="cursor-pointer"
                                             >
+                                                <Trash2 class="mr-2 h-4 w-4" />
                                                 Delete Permanently
                                             </Button>
                                         </DialogTrigger>
 
                                         <DialogContent>
                                             <DialogHeader>
-                                                <DialogTitle
-                                                    >Delete Gate
-                                                    Permanently</DialogTitle
-                                                >
+                                                <DialogTitle>
+                                                    Delete Gate Permanently
+                                                </DialogTitle>
                                                 <DialogDescription>
                                                     This action cannot be
                                                     undone. Please type
-                                                    <span class="text-red-500"
-                                                        >delete</span
-                                                    >
+                                                    <span class="text-red-500">
+                                                        delete
+                                                    </span>
                                                     to confirm.
                                                 </DialogDescription>
                                             </DialogHeader>
@@ -191,32 +199,54 @@ const forceDeleteGate = (gateId: number) => {
 
                                             <DialogFooter>
                                                 <DialogClose as-child>
-                                                    <Button variant="outline"
-                                                        >Cancel</Button
-                                                    >
+                                                    <Button variant="outline">
+                                                        Cancel
+                                                    </Button>
                                                 </DialogClose>
 
-                                                <Button
-                                                    variant="destructive"
-                                                    :disabled="
-                                                        confirmDelete !==
-                                                        'delete'
-                                                    "
-                                                    @click="
-                                                        forceDeleteGate(gate.id)
-                                                    "
-                                                >
-                                                    Delete Permanently
-                                                </Button>
+                                                <DialogClose as-child>
+                                                    <Button
+                                                        variant="destructive"
+                                                        :disabled="
+                                                            confirmDelete !==
+                                                            'delete'
+                                                        "
+                                                        @click="
+                                                            forceDeleteGate(
+                                                                gate.id,
+                                                            )
+                                                        "
+                                                    >
+                                                        Delete Permanently
+                                                    </Button>
+                                                </DialogClose>
                                             </DialogFooter>
                                         </DialogContent>
                                     </Dialog>
                                 </TableCell>
                             </TableRow>
+
+                            <TableRow v-if="gates.data.length === 0">
+                                <TableCell
+                                    colspan="3"
+                                    class="py-10 text-center text-muted-foreground"
+                                >
+                                    No trashed gates found.
+                                </TableCell>
+                            </TableRow>
                         </TableBody>
                     </Table>
+
+                    
+                    <InertiaPagination
+                        :links="gates.links"
+                        :meta="{
+                            from: gates.from,
+                            to: gates.to,
+                            total: gates.total,
+                        }"
+                    />
                 </CardContent>
-                <InertiaPagination :links="gates.links" />
             </Card>
         </div>
     </AppLayout>

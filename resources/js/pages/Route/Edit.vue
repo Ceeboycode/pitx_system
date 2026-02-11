@@ -25,7 +25,7 @@ import {
 import Button from '@/components/ui/button/Button.vue';
 import { edit, index, update } from '@/routes/routes';
 import { toast } from 'vue-sonner';
-import { Save } from 'lucide-vue-next';
+import { Save, ArrowLeft } from 'lucide-vue-next';
 
 /* =====================
    Types
@@ -105,7 +105,7 @@ const submit = () => {
 
                     <CardAction>
                         <Button as-child variant="link" size="sm">
-                            <Link :href="index().url">Back to Routes</Link>
+                            <Link :href="index().url"> <ArrowLeft class="mr-2 h-4 w-4" /> Back to Routes</Link>
                         </Button>
                     </CardAction>
                 </CardHeader>
