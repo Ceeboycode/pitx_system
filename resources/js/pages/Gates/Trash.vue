@@ -36,7 +36,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { toast } from 'vue-sonner';
-import { ArrowLeft } from 'lucide-vue-next';
+import { ArrowLeft, Trash2, ArchiveRestore } from 'lucide-vue-next';
 
 interface Gate {
     id: number;
@@ -125,6 +125,7 @@ const forceDeleteGate = (gateId: number) => {
                                                 class="cursor-pointer"
                                                 size="sm"
                                             >
+                                                <ArchiveRestore class="mr-2 h-4 w-4" />
                                                 Restore
                                             </Button>
                                         </DialogTrigger>
@@ -168,6 +169,7 @@ const forceDeleteGate = (gateId: number) => {
                                                 variant="destructive"
                                                 class="cursor-pointer"
                                             >
+                                                <Trash2 class="mr-2 h-4 w-4" />
                                                 Delete Permanently
                                             </Button>
                                         </DialogTrigger>
