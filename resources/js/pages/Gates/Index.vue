@@ -10,6 +10,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import SearchInput from '@/components/SearchInput.vue';
 import {
     Dialog,
     DialogClose,
@@ -36,7 +37,7 @@ import { User, type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { toast } from 'vue-sonner';
-import { Archive, Edit, Save, View, Plus } from "lucide-vue-next";
+import { Archive, Edit, Save, View, Plus, Omega, Search } from "lucide-vue-next";
 
 interface Gate {
     id: number;
@@ -132,7 +133,6 @@ const archiveGate = (gateId: number) => {
                         <CardTitle>Gates</CardTitle>
                         <CardDescription>List of all gates in the system.</CardDescription>
                     </div>
-
                     <div class="flex gap-2">
                         <!-- Trash Button -->
                         <Button asChild size="sm" variant="outline">

@@ -41,7 +41,11 @@ const summary = computed(() => {
                     size="sm"
                     :variant="link.active ? 'default' : 'outline'"
                 >
-                    <Link :href="link.url" v-html="link.label" />
+                    <Link
+                        :href="link.url"
+                        preserve-scroll
+                        v-html="link.label"
+                    />
                 </Button>
 
                 <span

@@ -145,7 +145,7 @@ function openForceDelete(company: Company) {
             <!-- ======================================================
                  Archived Companies Card
             ======================================================= -->
-            <Card class="mx-10 mt-4">
+            <Card class="mx-10">
                 <!-- Card Header -->
                 <CardHeader>
                     <CardTitle>Archived Companies</CardTitle>
@@ -180,7 +180,7 @@ function openForceDelete(company: Company) {
                                 :route="trash().url"
                                 :initial-value="filters.search"
                                 placeholder="Search archived companies..."
-                                :only="['companies', 'filters']"
+                                :only="['companies', 'filters', 'flash']"
                                 :debounce="350"
                             />
                         </div>

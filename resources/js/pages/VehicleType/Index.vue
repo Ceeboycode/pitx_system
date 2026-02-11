@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import DeleteVehicleTypeDialog from '@/components/vehicle_type/DeleteVehicleTypeDialog.vue';
-import CreateVehicleTypeDialog from '@/components/vehicle_type/CreateVehicleTypeDialog.vue';
-import EditVehicleTypeDialog from '@/components/vehicle_type/EditVehicleTypeDialog.vue';
+import CreateVehicleTypeDialog from '@/components/vehicleType/CreateVehicleTypeDialog.vue';
+import DeleteVehicleTypeDialog from '@/components/vehicleType/DeleteVehicleTypeDialog.vue';
+import EditVehicleTypeDialog from '@/components/vehicleType/EditVehicleTypeDialog.vue';
 
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
-import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,8 +25,6 @@ import {
 //     DialogTitle,
 //     DialogTrigger,
 // } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
     Table,
     TableBody,
@@ -40,20 +37,12 @@ import {
 
 import AppLayout from '@/layouts/AppLayout.vue';
 
-// import { toast } from 'vue-sonner';
 
-import { destroy, index, show, store, update } from '@/routes/vehicle-types';
+import { index, show } from '@/routes/vehicle-types';
 
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 
-import {
-    Download,
-    Edit,
-    Eye,
-    Plus,
-    Upload,
-    Trash2
-} from 'lucide-vue-next';
+import { Edit, Eye, Plus, Trash2 } from 'lucide-vue-next';
 
 import { type BreadcrumbItem } from '@/types';
 
@@ -97,7 +86,6 @@ function openDelete(vehicle_type: VehicleType) {
         <div
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
-
             <Card class="">
                 <CardHeader>
                     <CardTitle>Vehicle Types</CardTitle>
@@ -180,8 +168,9 @@ function openDelete(vehicle_type: VehicleType) {
                                     <Button as-child size="sm" variant="ghost">
                                         <Link
                                             :href="
-                                                show({ vehicle_type: vehicle.id })
-                                                    .url
+                                                show({
+                                                    vehicle_type: vehicle.id,
+                                                }).url
                                             "
                                         >
                                             <Eye class="mr-2 h-4 w-4" />

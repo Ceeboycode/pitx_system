@@ -12,17 +12,16 @@ import { create, index } from '@/routes/vehicles';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
 
-
+import { Button } from '@/components/ui/button';
 import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
+    Table,
+    TableBody,
+    TableCaption,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 
 defineProps<{
     vehicles: {
@@ -54,7 +53,9 @@ const breadcrumbs: BreadcrumbItem[] = [
                     </CardDescription>
                     <CardAction>
                         <Button size="sm" asChild>
-                            <Link :href="create().url"> <Plus /> Add Vehicle</Link>
+                            <Link :href="create().url">
+                                <Plus /> Add Vehicle</Link
+                            >
                         </Button>
                     </CardAction>
                 </CardHeader>
