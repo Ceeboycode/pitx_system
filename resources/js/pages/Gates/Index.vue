@@ -1,6 +1,12 @@
 <script setup lang="ts">
+/* ======================================================
+   Shared UI
+====================================================== */
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import InputError from '@/components/InputError.vue';
+import SearchInput from '@/components/SearchInput.vue';
+
+/* shadcn-vue */
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -32,92 +38,102 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+
+/* ======================================================
+   Layout, Routing & Inertia
+====================================================== */
 import AppLayout from '@/layouts/AppLayout.vue';
-import { User, type BreadcrumbItem } from '@/types';
+import { destroy, index, show, store, trash, update } from '@/routes/gates';
+import { type BreadcrumbItem, type User } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
+
+/* ======================================================
+   Icons
+====================================================== */
+import { Archive, ArchiveX, Download, Edit, Eye, Plus, Save, Upload } from 'lucide-vue-next';
+
+/* ======================================================
+   Vue Core
+====================================================== */
 import { ref } from 'vue';
 import { toast } from 'vue-sonner';
-import { Archive, Edit, Save, View, Plus, Omega, Search } from "lucide-vue-next";
+import { Archive, Edit, Save, View, Plus } from "lucide-vue-next";
 
+/* ======================================================
+   Types
+====================================================== */
 interface Gate {
     id: number;
     gate_name: string;
     creator: User | null;
 }
 
-defineProps<{
-    gates: {
-        data: Gate[];
-        links: [];
-    };
-}>();
+/* ======================================================
+   Breadcrumbs
+====================================================== */
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Gates', href: index().url }];
 
-import { destroy, index, show, store, trash, update } from '@/routes/gates';
-
-const breadcrumbs: BreadcrumbItem[] = [
+/* ======================================================
+   Props
+====================================================== */
+const props = withDefaults(
+    defineProps<{
+        gates: any; // LengthAwarePaginator
+        filters?: { search: string | null };
+    }>(),
     {
-        title: 'Gates',
-        href: index().url,
+        filters: () => ({ search: null }),
     },
-];
+);
 
+/* ======================================================
+   Form + Dialog State
+====================================================== */
 const form = useForm({
     gate_name: '',
 });
 
-// ---------- CREATE ----------
-const isCreateOpen = ref(false);
+const createOpen = ref(false);
+const editOpen = ref(false);
+const selectedGate = ref<Gate | null>(null);
 
+/* ======================================================
+   Actions
+====================================================== */
 const createGate = () => {
     form.submit(store(), {
         preserveScroll: true,
         onSuccess: () => {
-            isCreateOpen.value = false;
+            createOpen.value = false;
             form.reset();
-        },
-        onError: () => {
-            toast.error('Failed to create gate.');
         },
     });
 };
 
-// ---------- EDIT (FIXED) ----------
-const isEditOpen = ref(false);
-const selectedGate = ref<Gate | null>(null);
-
-const openEdit = (gate: Gate) => {
+function openEdit(gate: Gate) {
     selectedGate.value = gate;
     form.gate_name = gate.gate_name;
-    isEditOpen.value = true;
-};
+    editOpen.value = true;
+}
 
-const closeEdit = () => {
-    isEditOpen.value = false;
+function closeEdit() {
+    editOpen.value = false;
     selectedGate.value = null;
     form.reset();
-};
+}
 
 const editGate = () => {
     if (!selectedGate.value) return;
 
     form.submit(update(selectedGate.value.id), {
         preserveScroll: true,
-        onSuccess: () => {
-            closeEdit();
-        },
-        onError: () => {
-            toast.error('Failed to update gate.');
-        },
+        onSuccess: () => closeEdit(),
     });
 };
 
-// ---------- ARCHIVE ----------
 const archiveGate = (gateId: number) => {
     router.delete(destroy(gateId), {
         preserveScroll: true,
-        onError: () => {
-            toast.error('Failed to archive gate.');
-        },
     });
 };
 </script>
@@ -133,118 +149,176 @@ const archiveGate = (gateId: number) => {
                         <CardTitle>Gates</CardTitle>
                         <CardDescription>List of all gates in the system.</CardDescription>
                     </div>
+
                     <div class="flex gap-2">
                         <!-- Trash Button -->
                         <Button asChild size="sm" variant="outline">
                             <Link :href="trash().url"> <View /> View Trash</Link>
                         </Button>
 
-                        <!-- CREATE -->
-                        <Dialog v-model:open="isCreateOpen">
-                            <DialogTrigger asChild>
-                                <Button size="sm"> <Plus /> Create Gate</Button>
-                            </DialogTrigger>
-
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Add New Gate</DialogTitle>
-                                </DialogHeader>
-
-                                <form @submit.prevent="createGate">
-                                    <Label>Gate Name</Label>
-                                    <Input v-model="form.gate_name" class="mt-1 mb-2" />
-                                    <InputError :message="form.errors.gate_name" />
-
-                                    <DialogFooter>
-                                        <DialogClose asChild>
-                                            <Button variant="secondary" size="sm">
-                                                Cancel
-                                            </Button>
-                                        </DialogClose>
-                                        <Button size="sm" type="submit" :disabled="form.processing">
-                                            <Save />
-                                            Save
-                                        </Button>
-                                    </DialogFooter>
-                                </form>
-                            </DialogContent>
-                        </Dialog>
-                    </div>
+                        <Button class="cursor-pointer" size="sm" @click="createOpen = true">
+                            <Plus class="mr-2 h-4 w-4" />
+                            New Gate
+                        </Button>
+                    </CardAction>
                 </CardHeader>
 
+                <CardContent class="space-y-4">
 
-                <CardContent>
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="w-full max-w-sm">
+                            <SearchInput
+                                :route="index().url"
+                                :initial-value="props.filters?.search"
+                                placeholder="Search gates..."
+                                :only="['gates', 'filters']"
+                                :debounce="350"
+                            />
+                        </div>
+
+                        <div class="flex gap-2 sm:justify-end">
+                            <Button class="cursor-pointer" size="sm" variant="outline">
+                                <Upload class="mr-2 h-4 w-4" />
+                                Import
+                            </Button>
+
+                            <Button class="cursor-pointer" size="sm" variant="outline">
+                                <Download class="mr-2 h-4 w-4" />
+                                Export
+                            </Button>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
                     <Table>
+                        <TableCaption> List of gates. </TableCaption>
+
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Gate Name</TableHead>
                                 <TableHead>Created By</TableHead>
-                                <TableHead>Action</TableHead>
+                                <TableHead>Actions</TableHead>
                             </TableRow>
                         </TableHeader>
 
                         <TableBody>
                             <TableRow v-for="gate in gates.data" :key="gate.id">
-                                <TableCell>{{ gate.gate_name }}</TableCell>
-                                <TableCell>{{ gate.creator?.name ?? 'N/A' }}</TableCell>
+                                <TableCell class="capitalize">
+                                    {{ gate.gate_name }}
+                                </TableCell>
+
+                                <TableCell>
+                                    {{ gate.creator?.name ?? 'N/A' }}
+                                </TableCell>
 
                                 <TableCell class="space-x-2">
-                                    <Button asChild size="sm" variant="outline">
-                                        <Link :href="show(gate.id).url"> <View /> View</Link>
+                                    <!-- View -->
+                                    <Button as-child size="sm" variant="ghost">
+                                        <Link :href="show(gate.id).url">
+                                            <Eye class="mr-2 h-4 w-4" />
+                                            View
+                                        </Link>
                                     </Button>
 
-                                    <Button size="sm" variant="default" @click="openEdit(gate)">
-                                        <Edit /> Edit
+                                    <!-- Edit -->
+                                    <Button class="cursor-pointer" size="sm" variant="default" @click="openEdit(gate)">
+                                        <Edit class="mr-2 h-4 w-4" />
+                                        Edit
                                     </Button>
 
+                                    <!-- Archive -->
                                     <Dialog>
-                                        <DialogTrigger asChild>
-                                            <Button size="sm" variant="archive">
-                                                <Archive />
+                                        <DialogTrigger as-child>
+                                            <Button class="cursor-pointer" size="sm" variant="archive">
+                                                <ArchiveX class="mr-2 h-4 w-4" />
                                                 Archive
                                             </Button>
                                         </DialogTrigger>
+
                                         <DialogContent>
                                             <DialogHeader>
                                                 <DialogTitle class="flex items-center gap-2">
-                                                <Archive :size="18" class="text-muted-foreground" />
-                                                Archive Gate
+                                                    <ArchiveX :size="18" class="text-muted-foreground" />
+                                                    Archive Gate
                                                 </DialogTitle>
                                                 <DialogDescription>
-                                                Are you sure you want to archive this gate? You can restore it later from the Trash.
+                                                    Are you sure you want to archive this gate? You can restore it later
+                                                    from the Trash.
                                                 </DialogDescription>
                                             </DialogHeader>
+
                                             <DialogFooter>
-                                                <DialogClose asChild>
-                                                    <Button variant="secondary" size="sm">
-                                                        Cancel
+                                                <DialogClose as-child>
+                                                    <Button class="cursor-pointer" variant="secondary" size="sm">Cancel</Button>
+                                                </DialogClose>
+
+                                                <DialogClose as-child>
+                                                    <Button
+                                                        class="cursor-pointer"
+                                                        size="sm"
+                                                        variant="archive"
+                                                        @click="archiveGate(gate.id)"
+                                                    >
+                                                        Archive
                                                     </Button>
                                                 </DialogClose>
-                                                <Button
-                                                    size="sm"
-                                                    variant="archive"
-                                                    @click="archiveGate(gate.id)"
-                                                >
-                                                    Archive
-                                                </Button>
                                             </DialogFooter>
                                         </DialogContent>
                                     </Dialog>
                                 </TableCell>
                             </TableRow>
+
+                            <!-- Empty State -->
+                            <TableRow v-if="gates.data.length === 0">
+                                <TableCell colspan="3" class="py-10 text-center text-muted-foreground">
+                                    No gates found.
+                                </TableCell>
+                            </TableRow>
                         </TableBody>
                     </Table>
-                </CardContent>
 
-                <CardAction class="justify-end p-4">
-                    <InertiaPagination :links="gates.links" />
-                </CardAction>
+                    <!-- Pagination -->
+                    <InertiaPagination
+                        :links="gates.links"
+                        :meta="{
+                            from: gates.from,
+                            to: gates.to,
+                            total: gates.total,
+                        }"
+                    />
+                </CardContent>
             </Card>
         </div>
     </AppLayout>
 
-    <!-- EDIT DIALOG  -->
-    <Dialog v-model:open="isEditOpen">
+    <!-- CREATE DIALOG -->
+    <Dialog v-model:open="createOpen">
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Add New Gate</DialogTitle>
+            </DialogHeader>
+
+            <form @submit.prevent="createGate">
+                <Label>Gate Name</Label>
+                <Input v-model="form.gate_name" class="mt-1 mb-2" />
+                <InputError :message="form.errors.gate_name" />
+
+                <DialogFooter>
+                    <DialogClose as-child>
+                        <Button variant="secondary" size="sm">Cancel</Button>
+                    </DialogClose>
+
+                    <Button size="sm" type="submit" :disabled="form.processing">
+                        <Save class="mr-2 h-4 w-4" />
+                        Save
+                    </Button>
+                </DialogFooter>
+            </form>
+        </DialogContent>
+    </Dialog>
+
+    <!-- EDIT DIALOG -->
+    <Dialog v-model:open="editOpen">
         <DialogContent>
             <DialogHeader>
                 <DialogTitle>Edit Gate</DialogTitle>
@@ -256,13 +330,14 @@ const archiveGate = (gateId: number) => {
                 <InputError :message="form.errors.gate_name" />
 
                 <DialogFooter>
-                    <DialogClose asChild>
+                    <DialogClose as-child>
                         <Button variant="secondary" size="sm" @click="closeEdit">
                             Cancel
                         </Button>
                     </DialogClose>
+
                     <Button size="sm" type="submit" :disabled="form.processing">
-                        <Save />
+                        <Save class="mr-2 h-4 w-4" />
                         Save Changes
                     </Button>
                 </DialogFooter>

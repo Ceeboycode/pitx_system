@@ -34,10 +34,9 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import { forceDelete, index, restore, trash } from '@/routes/routes'
 import { type BreadcrumbItem } from '@/types'
 import { Head, Link, router, useForm } from '@inertiajs/vue3'
-import { Import } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { toast } from 'vue-sonner'
-import { Trash2, ArchiveRestoreIcon } from 'lucide-vue-next';
+import { Trash2, ArchiveRestoreIcon, ArrowLeft } from 'lucide-vue-next'
 
 interface Gate {
   id: number
@@ -51,11 +50,8 @@ interface Route {
   gate: Gate | null
 }
 
-defineProps<{
-  routes: {
-    data: Route[]
-    links: []
-  }
+const props = defineProps<{
+  routes: any // paginator
 }>()
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -90,21 +86,23 @@ const deleteRoutePermanently = (id: number) => {
 
   <AppLayout :breadcrumbs="breadcrumbs">
     <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-      <Card>
+      <Card class="mx-10 mt-3">
         <CardHeader>
           <CardTitle>Trashed Routes</CardTitle>
-          <CardDescription>
-            List of routes that have been moved to trash.
-          </CardDescription>
+          <CardDescription>List of routes that have been moved to trash.</CardDescription>
 
           <CardAction>
             <Button variant="link" size="sm" as-child>
-              <Link :href="index().url">Back to Routes</Link>
+              <Link :href="index().url" class="cursor-pointer">
+                <ArrowLeft class="mr-2 h-4 w-4" />
+                Back to Routes
+              </Link>
             </Button>
           </CardAction>
         </CardHeader>
 
-        <CardContent>
+        <!-- ✅ add space-y-4 so pagination spacing matches Companies -->
+        <CardContent class="space-y-4">
           <Table>
             <TableCaption>Trashed Routes</TableCaption>
 
@@ -132,12 +130,11 @@ const deleteRoutePermanently = (id: number) => {
                 </TableCell>
 
                 <TableCell>
-                  <!-- ✅ spaced buttons -->
                   <div class="flex items-center gap-2">
                     <Dialog>
                       <DialogTrigger as-child>
-                        <Button variant="secondary" size="sm">
-                        <ArchiveRestoreIcon/>
+                        <Button class="cursor-pointer" variant="secondary" size="sm">
+                          <ArchiveRestoreIcon class="mr-2 h-4 w-4" />
                           Restore
                         </Button>
                       </DialogTrigger>
@@ -152,28 +149,28 @@ const deleteRoutePermanently = (id: number) => {
 
                         <DialogFooter>
                           <DialogClose as-child>
-                            <Button variant="outline">Cancel</Button>
+                            <Button class="cursor-pointer" variant="outline">Cancel</Button>
                           </DialogClose>
-                          <Button @click="restoreRoute(route.id)">
-                            Restore
-                          </Button>
+                          <DialogClose as-child>
+                            <Button class="cursor-pointer" @click="restoreRoute(route.id)">
+                              Restore
+                            </Button>
+                          </DialogClose>
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>
 
                     <Dialog>
                       <DialogTrigger as-child>
-                        <Button variant="destructive" size="sm">
-                          <Trash2/>
+                        <Button class="cursor-pointer" variant="destructive" size="sm">
+                          <Trash2 class="mr-2 h-4 w-4" />
                           Delete Permanently
                         </Button>
                       </DialogTrigger>
 
                       <DialogContent>
                         <DialogHeader>
-                          <DialogTitle>
-                            Delete Route Permanently
-                          </DialogTitle>
+                          <DialogTitle>Delete Route Permanently</DialogTitle>
                           <DialogDescription>
                             Are you sure you want to delete this route permanently?
                           </DialogDescription>
@@ -195,23 +192,41 @@ const deleteRoutePermanently = (id: number) => {
                             <Button variant="outline">Cancel</Button>
                           </DialogClose>
 
-                          <Button
-                            variant="destructive"
-                            :disabled="deleteRoute !== 'delete'"
-                            @click="deleteRoutePermanently(route.id)"
-                          ><Trash2/>
-                            Delete Permanently
-                          </Button>
+                          <DialogClose as-child>
+                            <Button
+                              variant="destructive"
+                              :disabled="deleteRoute !== 'delete'"
+                              @click="deleteRoutePermanently(route.id)"
+                            >
+                              <Trash2 class="mr-2 h-4 w-4" />
+                              Delete Permanently
+                            </Button>
+                          </DialogClose>
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>
                   </div>
                 </TableCell>
               </TableRow>
+
+              <!-- Optional empty state -->
+              <TableRow v-if="routes.data.length === 0">
+                <TableCell colspan="4" class="py-10 text-center text-muted-foreground">
+                  No trashed routes found.
+                </TableCell>
+              </TableRow>
             </TableBody>
           </Table>
 
-          <InertiaPagination :links="routes.links" />
+          <!-- ✅ pagination placed AFTER table with proper spacing -->
+          <InertiaPagination
+            :links="routes.links"
+            :meta="{
+              from: routes.from,
+              to: routes.to,
+              total: routes.total,
+            }"
+          />
         </CardContent>
       </Card>
     </div>

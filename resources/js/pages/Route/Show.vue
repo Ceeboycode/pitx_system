@@ -22,6 +22,8 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import { index, show } from '@/routes/routes'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link } from '@inertiajs/vue3'
+import { ArrowLeft } from 'lucide-vue-next'
+
 
 interface Gate {
   id: number
@@ -74,7 +76,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
           <CardAction>
             <Button variant="link" as-child>
-              <Link :href="index().url">Back</Link>
+              <Link :href="index().url"><ArrowLeft class="mr-2 h-4 w-4" />Back</Link>
             </Button>
           </CardAction>
         </CardHeader>
