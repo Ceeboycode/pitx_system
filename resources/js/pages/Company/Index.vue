@@ -7,7 +7,7 @@
 import ArchiveCompanyDialog from '@/components/company/ArchiveCompanyDialog.vue';
 import CreateCompanyDialog from '@/components/company/CreateCompanyDialog.vue';
 import EditCompanyDialog from '@/components/company/EditCompanyDialog.vue';
-
+import { can } from '@/lib/can';
 // Shared components
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
@@ -142,7 +142,7 @@ function openArchive(company: Company) {
             <!-- ======================================================
                  Companies Card
             ======================================================= -->
-            <Card class="">
+            <Card class="mx-10">
                 <!-- Card Header -->
                 <CardHeader>
                     <CardTitle>Companies</CardTitle>
@@ -154,6 +154,7 @@ function openArchive(company: Company) {
                     <CardAction>
                         <!-- View Archived Companies -->
                         <Button
+                            v-if="can('company.viewAny')"
                             as-child
                             size="sm"
                             variant="outline"
@@ -166,7 +167,11 @@ function openArchive(company: Company) {
                         </Button>
 
                         <!-- Open Create Company Dialog -->
-                        <Button size="sm" @click="createOpen = true">
+                        <Button
+                            v-if="can('company.create')"
+                            size="sm"
+                            @click="createOpen = true"
+                        >
                             <Plus class="mr-2 h-4 w-4" />
                             New Company
                         </Button>
@@ -187,7 +192,7 @@ function openArchive(company: Company) {
                                 :route="index().url"
                                 :initial-value="filters.search"
                                 placeholder="Search companies..."
-                                :only="['companies', 'filters']"
+                                :only="['companies', 'filters', 'flash']"
                                 :debounce="350"
                             />
                         </div>
@@ -239,7 +244,7 @@ function openArchive(company: Company) {
                                 <!-- Action Buttons -->
                                 <TableCell class="space-x-2">
                                     <!-- View -->
-                                    <Button as-child size="sm" variant="ghost">
+                                    <Button v-if="can('company.view')" as-child size="sm" variant="ghost">
                                         <Link
                                             :href="
                                                 show({ company: company.id })
@@ -253,6 +258,7 @@ function openArchive(company: Company) {
 
                                     <!-- Edit -->
                                     <Button
+                                        v-if="can('company.update')"
                                         size="sm"
                                         variant="default"
                                         @click="openEdit(company)"
@@ -263,6 +269,7 @@ function openArchive(company: Company) {
 
                                     <!-- Archive -->
                                     <Button
+                                        v-if="can('company.delete')"
                                         size="sm"
                                         variant="archive"
                                         @click="openArchive(company)"
