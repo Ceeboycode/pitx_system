@@ -20,6 +20,7 @@ import { computed, watch } from 'vue';
 
 import { edit, index, update } from '@/routes/users';
 import { toast } from 'vue-sonner';
+import { Save, ArrowLeft } from 'lucide-vue-next';
 
 type UserPayload = {
     id: number;
@@ -34,20 +35,20 @@ const props = defineProps<{
 }>();
 
 const resolvedUser = computed<UserPayload | null>(() => {
-    if (!props.user) {
-        return null;
-    }
+    const u: any = props.user;
 
-    if ('data' in props.user && props.user.data) {
+    if (!u) return null;
+
+    if (typeof u === 'object' && 'data' in u && u.data) {
         return {
-            ...props.user.data,
-            roles: [...(props.user.data.roles ?? [])],
+            ...u.data,
+            roles: [...(u.data.roles ?? [])],
         };
     }
 
     return {
-        ...props.user,
-        roles: [...(props.user.roles ?? [])],
+        ...(u as UserPayload),
+        roles: [...((u as UserPayload).roles ?? [])],
     };
 });
 
@@ -55,10 +56,7 @@ const userId = computed(() => resolvedUser.value?.id ?? null);
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => {
     const items: BreadcrumbItem[] = [
-        {
-            title: 'Users Table',
-            href: index().url,
-        },
+        { title: 'Users Table', href: index().url },
     ];
 
     if (userId.value) {
@@ -85,9 +83,6 @@ watch(
         const changedUser = value?.id !== previousValue?.id;
 
         if (!value) {
-            form.name = '';
-            form.email = '';
-            form.roles = [];
             form.defaults({
                 name: '',
                 email: '',
@@ -95,13 +90,11 @@ watch(
                 password: '',
                 password_confirmation: '',
             });
+            form.reset();
             return;
         }
 
         if (changedUser || !previousValue) {
-            form.name = value.name;
-            form.email = value.email;
-            form.roles = [...(value.roles ?? [])];
             form.defaults({
                 name: value.name,
                 email: value.email,
@@ -109,23 +102,26 @@ watch(
                 password: '',
                 password_confirmation: '',
             });
+
+            form.name = value.name;
+            form.email = value.email;
+            form.roles = [...(value.roles ?? [])];
+
+            // keep passwords blank when editing
             form.reset('password', 'password_confirmation');
         }
     },
     { immediate: true },
 );
 
-const updateRoleSelection = (
-    role: string,
-    checked: boolean | 'indeterminate',
-) => {
-    if (checked === true && !form.roles.includes(role)) {
-        form.roles.push(role);
+const updateRoleSelection = (role: string, checked: boolean | 'indeterminate') => {
+    if (checked === true) {
+        if (!form.roles.includes(role)) form.roles.push(role);
         return;
     }
 
     if (checked === false) {
-        form.roles = form.roles.filter((assignedRole) => assignedRole !== role);
+        form.roles = form.roles.filter((r) => r !== role);
     }
 };
 
@@ -136,6 +132,7 @@ const submit = () => {
     }
 
     form.put(update(userId.value).url, {
+        preserveScroll: true,
         onSuccess: () => {
             toast.success('User updated successfully!');
             form.reset('password', 'password_confirmation');
@@ -144,7 +141,6 @@ const submit = () => {
             toast.error('Please check the form for errors.');
             form.reset('password', 'password_confirmation');
         },
-        preserveScroll: true,
     });
 };
 </script>
@@ -154,29 +150,25 @@ const submit = () => {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-1 items-start justify-center p-8">
-            <Card
-                class="w-full max-w-xl rounded-xl border bg-background shadow-sm"
-            >
-                <!-- Header -->
+            <Card class="w-full max-w-xl rounded-xl border bg-background shadow-sm">
                 <CardHeader class="space-y-1">
                     <div class="flex items-center justify-between">
                         <CardTitle class="text-lg font-medium">
                             Update user
                         </CardTitle>
 
-                        <!-- <Link
-                :href="index().url"
-                class="text-sm text-muted-foreground hover:text-foreground"
-            >
-                Back
-            </Link> -->
+                        <Button as-child variant="link" size="sm">
+                            <Link :href="index().url" class="flex items-center gap-1">
+                                <ArrowLeft class="h-4 w-4" />
+                                Back to Users
+                            </Link>
+                        </Button>
                     </div>
 
                     <CardDescription class="text-sm">
                         Update this user’s profile information.
                     </CardDescription>
                 </CardHeader>
-
                 <form @submit.prevent="submit">
                     <CardContent class="pt-6">
                         <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -187,6 +179,7 @@ const submit = () => {
                                     id="fullname"
                                     v-model="form.name"
                                     placeholder="John Doe"
+                                    :disabled="form.processing"
                                 />
                                 <InputError :message="form.errors.name" />
                             </div>
@@ -199,6 +192,7 @@ const submit = () => {
                                     v-model="form.email"
                                     type="email"
                                     placeholder="john@example.com"
+                                    :disabled="form.processing"
                                 />
                                 <InputError :message="form.errors.email" />
                             </div>
@@ -210,6 +204,7 @@ const submit = () => {
                                     id="password"
                                     v-model="form.password"
                                     type="password"
+                                    :disabled="form.processing"
                                 />
                                 <InputError :message="form.errors.password" />
                             </div>
@@ -223,13 +218,12 @@ const submit = () => {
                                     id="password_confirmation"
                                     v-model="form.password_confirmation"
                                     type="password"
+                                    :disabled="form.processing"
                                 />
-                                <InputError
-                                    :message="form.errors.password_confirmation"
-                                />
+                                <InputError :message="form.errors.password_confirmation" />
                             </div>
 
-                            <!-- Roles (now inside grid) -->
+                            <!-- Roles -->
                             <div class="space-y-2 md:col-span-2">
                                 <Label>Roles</Label>
 
@@ -241,17 +235,10 @@ const submit = () => {
                                     >
                                         <Checkbox
                                             :id="`role-${role}`"
-                                            :model-value="
-                                                form.roles.includes(role)
-                                            "
+                                            :model-value="form.roles.includes(role)"
                                             :disabled="form.processing"
-                                            @update:model-value="
-                                                (checked) =>
-                                                    updateRoleSelection(
-                                                        role,
-                                                        checked,
-                                                    )
-                                            "
+                                            @update:model-value="(checked) =>
+                                                updateRoleSelection(role, checked)"
                                         />
 
                                         <Label
@@ -268,19 +255,17 @@ const submit = () => {
                         </div>
                     </CardContent>
 
-                    <!-- Footer -->
                     <CardFooter class="flex justify-end gap-3 pt-6">
-                        <Link :href="index().url">
-                            <Button variant="outline" class="px-5">
-                                Cancel
-                            </Button>
-                        </Link>
+                        <Button as-child variant="outline" class="px-5">
+                            <Link :href="index().url">Cancel</Link>
+                        </Button>
 
                         <Button
                             type="submit"
                             class="px-6"
                             :disabled="form.processing"
                         >
+                            <Save class="mr-2 h-4 w-4" />
                             Update user
                         </Button>
                     </CardFooter>

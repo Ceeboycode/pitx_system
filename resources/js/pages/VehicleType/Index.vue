@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import DeleteVehicleTypeDialog from '@/components/vehicle_type/DeleteVehicleTypeDialog.vue';
-import CreateVehicleTypeDialog from '@/components/vehicle_type/CreateVehicleTypeDialog.vue';
-import EditVehicleTypeDialog from '@/components/vehicle_type/EditVehicleTypeDialog.vue';
+import CreateVehicleTypeDialog from '@/components/vehicleType/CreateVehicleTypeDialog.vue';
+import DeleteVehicleTypeDialog from '@/components/vehicleType/DeleteVehicleTypeDialog.vue';
+import EditVehicleTypeDialog from '@/components/vehicleType/EditVehicleTypeDialog.vue';
 
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
@@ -27,20 +27,12 @@ import {
 
 import AppLayout from '@/layouts/AppLayout.vue';
 
-// import { toast } from 'vue-sonner';
 
-import { destroy, index, show, store, update } from '@/routes/vehicle-types';
+import { index, show } from '@/routes/vehicle-types';
 
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 
-import {
-    Download,
-    Edit,
-    Eye,
-    Plus,
-    Upload,
-    Trash2
-} from 'lucide-vue-next';
+import { Edit, Eye, Plus, Trash2 } from 'lucide-vue-next';
 
 import { type BreadcrumbItem } from '@/types';
 
@@ -93,7 +85,7 @@ function openDelete(vehicle_type: VehicleType) {
                     </CardDescription>
 
                     <CardAction>
-                        <Button size="sm" @click="createOpen = true">
+                        <Button class="cursor-pointer" size="sm" @click="createOpen = true">
                             <Plus class="mr-2 h-4 w-4" />
                             New Vehicle Type
                         </Button>
@@ -115,12 +107,12 @@ function openDelete(vehicle_type: VehicleType) {
                         </div>
 
                         <div class="flex gap-2 sm:justify-end">
-                            <Button size="sm" variant="outline">
+                            <Button class="cursor-pointer" size="sm" variant="outline">
                                 <Upload class="mr-2 h-4 w-4" />
                                 Import
                             </Button>
 
-                            <Button size="sm" variant="outline">
+                            <Button class="cursor-pointer" size="sm" variant="outline">
                                 <Download class="mr-2 h-4 w-4" />
                                 Export
                             </Button>
@@ -151,7 +143,7 @@ function openDelete(vehicle_type: VehicleType) {
                                     <Badge
                                         :variant="
                                             vehicle.is_active
-                                                ? 'outline'
+                                                ? 'success'
                                                 : 'destructive'
                                         "
                                     >
@@ -167,8 +159,9 @@ function openDelete(vehicle_type: VehicleType) {
                                     <Button as-child size="sm" variant="ghost">
                                         <Link
                                             :href="
-                                                show({ vehicle_type: vehicle.id })
-                                                    .url
+                                                show({
+                                                    vehicle_type: vehicle.id,
+                                                }).url
                                             "
                                         >
                                             <Eye class="mr-2 h-4 w-4" />
@@ -178,6 +171,7 @@ function openDelete(vehicle_type: VehicleType) {
 
                                     <!-- Edit -->
                                     <Button
+                                        class="cursor-pointer"
                                         size="sm"
                                         variant="default"
                                         @click="openEdit(vehicle)"
@@ -187,6 +181,7 @@ function openDelete(vehicle_type: VehicleType) {
                                     </Button>
 
                                     <Button
+                                        class="cursor-pointer"
                                         size="sm"
                                         variant="destructive"
                                         @click="openDelete(vehicle)"

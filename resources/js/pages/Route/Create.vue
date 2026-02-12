@@ -32,6 +32,7 @@ defineProps<{
 }>();
 
 import { create, index, store } from '@/routes/routes';
+import { ArrowLeft, Import } from 'lucide-vue-next';
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Routes',
@@ -67,7 +68,7 @@ const submit = () => {
         <div
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
-            <Card class="w-full">
+            <Card class="mx-10 mt-3">
                 <CardHeader>
                     <CardTitle>Create Route</CardTitle>
                     <CardDescription>
@@ -75,7 +76,7 @@ const submit = () => {
                     </CardDescription>
                     <CardAction>
                         <Button as-child variant="link" size="sm">
-                            <Link :href="index().url">Back to Routes</Link>
+                            <Link :href="index().url"> <ArrowLeft class="mr-2 h-4 w-4" /> Back to Routes</Link>
                         </Button>
                     </CardAction>
                 </CardHeader>
