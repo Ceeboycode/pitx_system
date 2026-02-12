@@ -15,16 +15,6 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-// import {
-//     Dialog,
-//     DialogClose,
-//     DialogContent,
-//     DialogDescription,
-//     DialogFooter,
-//     DialogHeader,
-//     DialogTitle,
-//     DialogTrigger,
-// } from '@/components/ui/dialog';
 import {
     Table,
     TableBody,
@@ -60,7 +50,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const props = defineProps<{
     vehicleTypes: any;
-    filters: { search: string | null }; // Active filters
+    filters: { search: string | null };
 }>();
 
 const createOpen = ref(false);
