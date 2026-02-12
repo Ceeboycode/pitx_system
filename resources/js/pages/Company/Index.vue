@@ -7,7 +7,7 @@
 import ArchiveCompanyDialog from '@/components/company/ArchiveCompanyDialog.vue';
 import CreateCompanyDialog from '@/components/company/CreateCompanyDialog.vue';
 import EditCompanyDialog from '@/components/company/EditCompanyDialog.vue';
-
+import { can } from '@/lib/can';
 // Shared components
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
@@ -72,7 +72,7 @@ import { ref } from 'vue';
    Types
 ====================================================== */
 
-// Minimal Company type used in this page
+
 type Company = {
     id: number;
     company_name: string;
@@ -93,8 +93,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 ====================================================== */
 
 const props = defineProps<{
-    companies: any; // Paginated companies (LengthAwarePaginator)
-    filters: { search: string | null }; // Active filters
+    companies: any;
+    filters: { search: string | null };
 }>();
 
 /* ======================================================
@@ -154,6 +154,7 @@ function openArchive(company: Company) {
                     <CardAction>
                         <!-- View Archived Companies -->
                         <Button
+                            v-if="can('company.viewAny')"
                             as-child
                             size="sm"
                             variant="outline"
@@ -187,19 +188,19 @@ function openArchive(company: Company) {
                                 :route="index().url"
                                 :initial-value="filters.search"
                                 placeholder="Search companies..."
-                                :only="['companies', 'filters']"
+                                :only="['companies', 'filters', 'flash']"
                                 :debounce="350"
                             />
                         </div>
 
                         <!-- Import / Export Buttons -->
                         <div class="flex gap-2 sm:justify-end">
-                            <Button size="sm" variant="outline">
+                            <Button class="cursor-pointer" size="sm" variant="outline">
                                 <Upload class="mr-2 h-4 w-4" />
                                 Import
                             </Button>
 
-                            <Button size="sm" variant="outline">
+                            <Button class="cursor-pointer" size="sm" variant="outline">
                                 <Download class="mr-2 h-4 w-4" />
                                 Export
                             </Button>
@@ -239,7 +240,7 @@ function openArchive(company: Company) {
                                 <!-- Action Buttons -->
                                 <TableCell class="space-x-2">
                                     <!-- View -->
-                                    <Button as-child size="sm" variant="ghost">
+                                    <Button v-if="can('company.view')" as-child size="sm" variant="ghost">
                                         <Link
                                             :href="
                                                 show({ company: company.id })

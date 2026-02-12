@@ -8,12 +8,16 @@ use Illuminate\Auth\Access\Response;
 
 class VehiclePolicy
 {
+    public function before(User $user, string $ability): bool
+    {
+        return $user->hasRole('admin');
+    }
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_vehicles');
+        return $user->can('vehicle.viewAny');
     }
 
     /**
@@ -21,7 +25,7 @@ class VehiclePolicy
      */
     public function view(User $user, Vehicle $vehicle): bool
     {
-        return $user->can('view_vehicles');
+        return $user->can('vehicle.view');
     }
 
     /**
@@ -29,7 +33,7 @@ class VehiclePolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_vehicles');
+        return $user->can('vehicle.create');
     }
 
     /**
@@ -37,7 +41,7 @@ class VehiclePolicy
      */
     public function update(User $user, Vehicle $vehicle): bool
     {
-        return $user->can('update_vehicles');
+        return $user->can('vehicle.update');
     }
 
     /**
@@ -45,7 +49,7 @@ class VehiclePolicy
      */
     public function delete(User $user, Vehicle $vehicle): bool
     {
-        return $user->can('delete_vehicles');
+        return $user->can('vehicle.delete');
     }
 
     /**
@@ -53,7 +57,7 @@ class VehiclePolicy
      */
     public function restore(User $user, Vehicle $vehicle): bool
     {
-        return $user->can('restore_vehicles');
+        return $user->can('vehicle.restore');
     }
 
     /**
@@ -61,6 +65,6 @@ class VehiclePolicy
      */
     public function forceDelete(User $user, Vehicle $vehicle): bool
     {
-        return $user->can('force_delete_vehicles');
+        return $user->can('vehicle.forceDelete');
     }
 }

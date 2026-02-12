@@ -22,11 +22,6 @@ class VehicleTypeController extends Controller
     {
         Gate::authorize('viewAny', VehicleType::class);
 
-        // $vehicleTypes = VehicleType::select('id', 'type_name', 'is_active')
-        //     ->latest()
-        //     ->paginate(10)
-        //     ->withQueryString();
-
         $vehicleTypes = VehicleType::query()
             ->select('id', 'type_name', 'is_active')
             ->when($request->search, function ($query, $search) {

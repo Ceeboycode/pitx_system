@@ -75,7 +75,7 @@ const confirmArchive = () => {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-            <Card>
+            <Card class="mx-10 mt-3">
                 <CardHeader>
                     <CardTitle>Route Stops</CardTitle>
                     <CardDescription>Manage and view all route stops in the system.</CardDescription>

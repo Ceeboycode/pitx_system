@@ -1,113 +1,132 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue'
-import { type BreadcrumbItem } from '@/types'
-import { Head, Link } from '@inertiajs/vue3'
+import AppLayout from '@/layouts/AppLayout.vue';
+import { type BreadcrumbItem } from '@/types';
+import { Head, Link } from '@inertiajs/vue3';
 
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableRow, TableCell } from '@/components/ui/table'
+import {
+    Card,
+    CardAction,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableRow, TableCell } from '@/components/ui/table';
+import { ArrowLeft } from 'lucide-vue-next';
 
-const props = defineProps<{
-  vehicleType: {
-    id: number
-    type_name: string
-    is_active: boolean
-    created_at_human: string | null
-    updated_at_human: string | null
-    creator: { id: number; name: string } | null
-    updater: { id: number; name: string } | null
-  }
-}>()
+import { index, show } from '@/routes/vehicle-types';
 
-import { index, show } from '@/routes/vehicle-types'
+const { vehicleType } = defineProps<{
+    vehicleType: {
+        id: number;
+        type_name: string;
+        is_active: boolean;
+        created_at_human: string | null;
+        updated_at_human: string | null;
+        creator: { id: number; name: string } | null;
+        updater: { id: number; name: string } | null;
+    };
+}>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Vehicle Types Table', href: index().url },
-  { title: 'Vehicle Type Details', href: show(props.vehicleType.id).url },
-]
+    { title: 'Vehicle Types Table', href: index().url },
+    { title: 'Vehicle Type Details', href: show(vehicleType.id).url },
+];
 </script>
 
 <template>
-  <Head :title="`Vehicle Type - ${vehicleType.type_name}`" />
+    <Head :title="`Vehicle Type - ${vehicleType.type_name}`" />
 
-  <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="mx-auto w-full max-w-5xl space-y-6 p-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Vehicle Type Details</CardTitle>
-        </CardHeader>
+    <AppLayout :breadcrumbs="breadcrumbs">
+        <!-- Page wrapper (copied from Company show.vue) -->
+        <div class="w-full px-4 py-6 capitalize sm:px-6">
+            <!-- Centered container (copied from Company show.vue) -->
+            <div class="mx-auto w-full max-w-4xl">
+                <Card>
+                    <CardHeader>
+                        <!-- Title style (copied from Company show.vue) -->
+                        <CardTitle class="text-2xl">
+                            {{ vehicleType.type_name }}
+                        </CardTitle>
 
-        <CardContent>
-          <!-- details “table card” look -->
-          <div class="overflow-hidden rounded-lg border">
-            <Table class="w-full">
-              <TableBody>
-                <TableRow>
-                  <TableCell class="w-1/3 text-muted-foreground">
-                    Vehicle Type
-                  </TableCell>
-                  <TableCell class="w-2/3 text-right font-medium">
-                    {{ vehicleType.type_name }}
-                  </TableCell>
-                </TableRow>
+                        <CardDescription>
+                            Details for {{ vehicleType.type_name }}
+                        </CardDescription>
 
-                <TableRow>
-                  <TableCell class="text-muted-foreground">Status</TableCell>
-                  <TableCell class="text-right">
-                    <Badge
-                      class="rounded-full px-3 py-1 text-xs font-semibold"
-                      :class="
-                        vehicleType.is_active
-                          ? 'bg-green-100 text-green-700 hover:bg-green-100'
-                          : 'bg-red-100 text-red-700 hover:bg-red-100'
-                      "
-                    >
-                      {{ vehicleType.is_active ? 'Active' : 'Inactive' }}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
+                        <!-- Back button placement (copied from Company show.vue) -->
+                        <CardAction>
+                            <Button as-child variant="link" size="sm">
+                                <Link :href="index().url" class="cursor-pointer">
+                                    <ArrowLeft class="mr-2 h-4 w-4" />
+                                    Back to Vehicle Types
+                                </Link>
+                            </Button>
+                        </CardAction>
+                    </CardHeader>
 
-                <TableRow>
-                  <TableCell class="text-muted-foreground">Created By</TableCell>
-                  <TableCell class="text-right">
-                    {{ vehicleType.creator?.name ?? '—' }}
-                  </TableCell>
-                </TableRow>
+                    <CardContent>
+                        <Table class="w-full">
+                            <TableBody>
+                                <TableRow>
+                                    <TableCell
+                                        class="w-56 py-3 text-sm font-medium text-muted-foreground"
+                                    >
+                                        Status
+                                    </TableCell>
+                                    <TableCell class="py-3">
+                                        {{ vehicleType.is_active ? 'Active' : 'Inactive' }}
+                                    </TableCell>
+                                </TableRow>
 
-                <TableRow>
-                  <TableCell class="text-muted-foreground">Created</TableCell>
-                  <TableCell class="text-right">
-                    {{ vehicleType.created_at_human ?? '—' }}
-                  </TableCell>
-                </TableRow>
+                                <TableRow>
+                                    <TableCell
+                                        class="w-56 py-3 text-sm font-medium text-muted-foreground"
+                                    >
+                                        Created At
+                                    </TableCell>
+                                    <TableCell class="py-3">
+                                        {{ vehicleType.created_at_human ?? '—' }}
+                                    </TableCell>
+                                </TableRow>
 
-                <TableRow>
-                  <TableCell class="text-muted-foreground">
-                    Last Updated By
-                  </TableCell>
-                  <TableCell class="text-right">
-                    {{ vehicleType.updater?.name ?? '—' }}
-                  </TableCell>
-                </TableRow>
+                                <TableRow>
+                                    <TableCell
+                                        class="w-56 py-3 text-sm font-medium text-muted-foreground"
+                                    >
+                                        Created By
+                                    </TableCell>
+                                    <TableCell class="py-3">
+                                        {{ vehicleType.creator?.name ?? 'N/A' }}
+                                    </TableCell>
+                                </TableRow>
 
-                <TableRow>
-                  <TableCell class="text-muted-foreground">Last Updated</TableCell>
-                  <TableCell class="text-right">
-                    {{ vehicleType.updated_at_human ?? '—' }}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                                <TableRow>
+                                    <TableCell
+                                        class="w-56 py-3 text-sm font-medium text-muted-foreground"
+                                    >
+                                        Updated At
+                                    </TableCell>
+                                    <TableCell class="py-3">
+                                        {{ vehicleType.updated_at_human ?? '—' }}
+                                    </TableCell>
+                                </TableRow>
 
-      <div class="flex gap-2">
-        <Button as-child variant="secondary">
-          <Link :href="index().url">Back to List</Link>
-        </Button>
-      </div>
-    </div>
-  </AppLayout>
+                                <TableRow>
+                                    <TableCell
+                                        class="w-56 py-3 text-sm font-medium text-muted-foreground"
+                                    >
+                                        Updated By
+                                    </TableCell>
+                                    <TableCell class="py-3">
+                                        {{ vehicleType.updater?.name ?? 'N/A' }}
+                                    </TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    </AppLayout>
 </template>
