@@ -5,7 +5,6 @@ import EditVehicleTypeDialog from '@/components/vehicle_type/EditVehicleTypeDial
 
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
-import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,18 +15,6 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-// import {
-//     Dialog,
-//     DialogClose,
-//     DialogContent,
-//     DialogDescription,
-//     DialogFooter,
-//     DialogHeader,
-//     DialogTitle,
-//     DialogTrigger,
-// } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
     Table,
     TableBody,
@@ -71,7 +58,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const props = defineProps<{
     vehicleTypes: any;
-    filters: { search: string | null }; // Active filters
+    filters: { search: string | null };
 }>();
 
 const createOpen = ref(false);
@@ -127,7 +114,7 @@ function openDelete(vehicle_type: VehicleType) {
                             />
                         </div>
 
-                        <!-- <div class="flex gap-2 sm:justify-end">
+                        <div class="flex gap-2 sm:justify-end">
                             <Button size="sm" variant="outline">
                                 <Upload class="mr-2 h-4 w-4" />
                                 Import
@@ -137,7 +124,7 @@ function openDelete(vehicle_type: VehicleType) {
                                 <Download class="mr-2 h-4 w-4" />
                                 Export
                             </Button>
-                        </div> -->
+                        </div>
                     </div>
 
                     <Table>

@@ -161,8 +161,10 @@ const footerNavItems: NavFooterItem[] = [
         <SidebarHeader>
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton size="lg" as-child>
-                        <Link :href="dashboard().url" class="my-2">
+                    <SidebarMenuButton size="lg" as-child class="gap-0
+                        group-data-[state=expanded]:gap-2"
+                    >
+                        <Link :href="dashboard().url" class="my-2 mx-auto">
                             <AppLogo/>
                         </Link>
                     </SidebarMenuButton>
@@ -171,7 +173,7 @@ const footerNavItems: NavFooterItem[] = [
         </SidebarHeader>
 
         <SidebarContent>
-            <NavMain :items="visibleMainNavItems" />
+            <NavMain :items="visibleMainNavItems"/>
         </SidebarContent>
 
         <SidebarFooter>

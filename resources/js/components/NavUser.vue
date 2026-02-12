@@ -12,7 +12,7 @@ import {
     useSidebar,
 } from '@/components/ui/sidebar';
 import { usePage } from '@inertiajs/vue3';
-import { ChevronsUpDown } from 'lucide-vue-next';
+import { ChevronsUpDown, User } from 'lucide-vue-next';
 import UserMenuContent from './UserMenuContent.vue';
 
 const page = usePage();
@@ -24,7 +24,7 @@ const { isMobile, state } = useSidebar();
     <SidebarMenu class="pb-2">
         <SidebarMenuItem>
             <DropdownMenu>
-                <DropdownMenuTrigger as-child>
+                <DropdownMenuTrigger as-child class="mx-auto px-auto w-full" tooltip="">
                     <SidebarMenuButton
                         size="lg"
                         class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
