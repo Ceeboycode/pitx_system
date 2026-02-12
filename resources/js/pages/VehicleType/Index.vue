@@ -32,7 +32,7 @@ import { index, show } from '@/routes/vehicle-types';
 
 import { Head, Link } from '@inertiajs/vue3';
 
-import { Edit, Eye, Plus, Trash2 } from 'lucide-vue-next';
+import { Edit, Eye, Plus, Trash2, Upload, Download } from 'lucide-vue-next';
 
 import { type BreadcrumbItem } from '@/types';
 
