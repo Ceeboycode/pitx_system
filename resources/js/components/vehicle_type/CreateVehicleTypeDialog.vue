@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { store } from '@/routes/vehicle-types'
 import { useForm } from '@inertiajs/vue3'
 import { Save } from 'lucide-vue-next'
@@ -19,6 +20,7 @@ const open = defineModel<boolean>('open')
 
 const form = useForm({
     type_name: '',
+    is_active: 1,
 })
 
 function submit() {
@@ -56,6 +58,35 @@ function submit() {
                     <InputError :message="form.errors.type_name" />
                 </div>
 
+                <!-- <div class="space-y-2">
+                    <Label>Status</Label>
+                    <Select
+                        v-model="form.is_active"
+                        class="w-full rounded-md border px-3 py-2 text-sm"
+                    >
+                        <option :value="1">Active</option>
+                        <option :value="0">Inactive</option>
+                    </Select>
+                    <InputError :message="form.errors.is_active" />
+                </div> -->
+
+                <div class="space-y-2">
+                    <Label>Status</Label>
+
+                    <Select v-model="form.is_active">
+                        <SelectTrigger class="w-full">
+                        <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+
+                        <SelectContent>
+                        <SelectItem :value="1">Active</SelectItem>
+                        <SelectItem :value="0">Inactive</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <InputError :message="form.errors.is_active" />
+                </div>
+                
                 <DialogFooter>
                     <Button
                         variant="outline"

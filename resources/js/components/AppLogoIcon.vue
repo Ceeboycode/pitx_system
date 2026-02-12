@@ -20,5 +20,6 @@ defineProps<Props>()
         alt="PITX Logo"
         :class="className"
         v-bind="$attrs"
+        class="w-full object-contain"
     />
 </template>
