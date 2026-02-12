@@ -20,17 +20,27 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { create, index, store } from '@/routes/vehicles';
+import { edit, index, update } from '@/routes/vehicles';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Save } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
+import { toast } from 'vue-sonner';
 
 type NamedOption = {
     id: number;
 };
 
 const props = defineProps<{
+    vehicle: {
+        id: number;
+        plate_number: string;
+        body_number: string | null;
+        capacity: number | null;
+        company_id: number | null;
+        route_id: number | null;
+        vehicle_type_id: number | null;
+    };
     companies: (NamedOption & {
         company_name: string;
     })[];
@@ -73,32 +83,32 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: index().url,
     },
     {
-        title: 'Create Vehicle',
-        href: create().url,
+        title: 'Edit Vehicle',
+        href: edit({ vehicle: props.vehicle.id }).url,
     },
 ];
 
 const form = useForm({
-    plate_number: '',
-    body_number: '',
-    capacity: undefined as number | undefined,
-    company_id: null as number | null,
-    route_id: null as number | null,
-    vehicle_type_id: null as number | null,
+    plate_number: props.vehicle.plate_number ?? '',
+    body_number: props.vehicle.body_number ?? '',
+    capacity: props.vehicle.capacity ?? undefined,
+    company_id: props.vehicle.company_id,
+    route_id: props.vehicle.route_id,
+    vehicle_type_id: props.vehicle.vehicle_type_id,
 });
 
 const submit = () => {
-    form.post(store().url, {
+    form.put(update({ vehicle: props.vehicle.id }).url, {
         preserveScroll: true,
         onSuccess: () => {
-            form.reset();
+            toast.success('Vehicle updated successfully!');
         },
     });
 };
 </script>
 
 <template>
-    <Head title="Create Vehicle" />
+    <Head title="Edit Vehicle" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
@@ -106,11 +116,9 @@ const submit = () => {
         >
             <Card class="mx-5">
                 <CardHeader>
-                    <CardTitle>Create Vehicle</CardTitle>
+                    <CardTitle>Edit Vehicle</CardTitle>
                     <CardDescription>
-                        Fill in the details below. Fields marked with
-                        <span class="font-medium text-red-500">*</span>
-                        are required.
+                        Update the details for this vehicle.
                     </CardDescription>
                 </CardHeader>
 
@@ -121,10 +129,12 @@ const submit = () => {
 
                             <div class="grid gap-4 md:grid-cols-3">
                                 <div class="space-y-2">
-                                    <Label class="flex items-center gap-1"
+                                    <Label
                                         >Company
-                                        <span class="text-red-500">*</span>
-                                    </Label>
+                                        <span class="text-red-500"
+                                            >*</span
+                                        ></Label
+                                    >
                                     <Select v-model="form.company_id">
                                         <SelectTrigger class="w-full">
                                             <SelectValue
@@ -169,10 +179,12 @@ const submit = () => {
                                 </div>
 
                                 <div class="space-y-2">
-                                    <Label class="flex items-center gap-1"
+                                    <Label
                                         >Route
-                                        <span class="text-red-500">*</span>
-                                    </Label>
+                                        <span class="text-red-500"
+                                            >*</span
+                                        ></Label
+                                    >
                                     <Select v-model="form.route_id">
                                         <SelectTrigger class="w-full">
                                             <SelectValue
@@ -217,10 +229,12 @@ const submit = () => {
                                 </div>
 
                                 <div class="space-y-2">
-                                    <Label class="flex items-center gap-1"
+                                    <Label
                                         >Vehicle Type
-                                        <span class="text-red-500">*</span>
-                                    </Label>
+                                        <span class="text-red-500"
+                                            >*</span
+                                        ></Label
+                                    >
                                     <Select v-model="form.vehicle_type_id">
                                         <SelectTrigger class="w-full">
                                             <SelectValue
@@ -239,9 +253,9 @@ const submit = () => {
                                                         @keydown.stop
                                                     />
                                                 </div>
-                                                <SelectLabel>
-                                                    Vehicle Types
-                                                </SelectLabel>
+                                                <SelectLabel
+                                                    >Vehicle Types</SelectLabel
+                                                >
                                                 <SelectItem
                                                     v-for="vehicleType in filteredVehicleTypes"
                                                     :key="vehicleType.id"
@@ -273,12 +287,12 @@ const submit = () => {
 
                             <div class="grid gap-4 md:grid-cols-3">
                                 <div class="space-y-2">
-                                    <Label
-                                        for="plate_number"
-                                        class="flex items-center gap-1"
+                                    <Label for="plate_number"
                                         >Plate Number
-                                        <span class="text-red-500">*</span>
-                                    </Label>
+                                        <span class="text-red-500"
+                                            >*</span
+                                        ></Label
+                                    >
                                     <Input
                                         id="plate_number"
                                         v-model="form.plate_number"
@@ -328,16 +342,12 @@ const submit = () => {
                             <Button type="button" variant="outline" as-child>
                                 <Link :href="index().url">Cancel</Link>
                             </Button>
-                            <Button
-                                type="submit"
-                                :disabled="form.processing"
-                                class="cursor-pointer"
-                            >
+                            <Button type="submit" :disabled="form.processing">
                                 <Save class="mr-2 h-4 w-4" />
                                 {{
                                     form.processing
-                                        ? 'Creating...'
-                                        : 'Create Vehicle'
+                                        ? 'Saving...'
+                                        : 'Update Vehicle'
                                 }}
                             </Button>
                         </div>
