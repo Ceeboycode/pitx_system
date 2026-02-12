@@ -2,6 +2,7 @@
 import { destroy } from '@/routes/companies';
 import { router } from '@inertiajs/vue3';
 import { ArchiveX } from 'lucide-vue-next';
+import { ref } from 'vue';
 
 import {
     AlertDialog,
@@ -13,7 +14,6 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
 
 const open = defineModel<boolean>('open');
 
@@ -24,11 +24,18 @@ const props = defineProps<{
     };
 }>();
 
+const processing = ref(false);
+
 function archive() {
+    processing.value = true;
+
     router.delete(destroy({ company: props.company.id }).url, {
         preserveScroll: true,
         onSuccess: () => {
             open.value = false;
+        },
+        onFinish: () => {
+            processing.value = false;
         },
     });
 }
@@ -38,25 +45,37 @@ function archive() {
     <AlertDialog v-model:open="open">
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle> Archive Company </AlertDialogTitle>
+                <AlertDialogTitle>Archive Company</AlertDialogTitle>
 
-                <AlertDialogDescription>
-                    Are you sure you want to archive
-                    <span class="font-medium">
-                        {{ props.company.company_name }}
+                <AlertDialogDescription class="space-y-2">
+                    <span>
+                        Are you sure you want to archive
+                        <span class="font-medium">{{
+                            props.company.company_name
+                        }}</span
+                        >?
                     </span>
-                    ? You can restore it later from Trash.
+
+                    <span class="text-muted-foreground">
+                        You can restore it later from Trash.
+                    </span>
                 </AlertDialogDescription>
             </AlertDialogHeader>
 
             <AlertDialogFooter>
-                <AlertDialogCancel> Cancel </AlertDialogCancel>
+                <AlertDialogCancel
+                    class="cursor-pointer"
+                    :disabled="processing"
+                >
+                    Cancel
+                </AlertDialogCancel>
 
-                <AlertDialogAction as-child>
-                    <Button variant="default" @click="archive">
-                        <ArchiveX class="h-4 w-4" />
-                        Archive
-                    </Button>
+                <AlertDialogAction
+                    :disabled="processing"
+                    @click="archive"
+                >
+                    <ArchiveX class="mr-2 h-4 w-4" />
+                    {{ processing ? 'Archiving...' : 'Yes, Archive Company' }}
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>

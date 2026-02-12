@@ -42,7 +42,7 @@ import { index, show } from '@/routes/vehicle-types';
 
 import { Head, Link } from '@inertiajs/vue3';
 
-import { Edit, Eye, Plus, Trash2 } from 'lucide-vue-next';
+import { Edit, Eye, Plus, Trash2, Upload, Download } from 'lucide-vue-next';
 
 import { type BreadcrumbItem } from '@/types';
 
@@ -86,7 +86,6 @@ function openDelete(vehicle_type: VehicleType) {
         <div
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
-
             <Card class="">
                 <CardHeader>
                     <CardTitle>Vehicle Types</CardTitle>
@@ -95,7 +94,7 @@ function openDelete(vehicle_type: VehicleType) {
                     </CardDescription>
 
                     <CardAction>
-                        <Button class="cursor-pointer" size="sm" @click="createOpen = true">
+                        <Button size="sm" @click="createOpen = true">
                             <Plus class="mr-2 h-4 w-4" />
                             New Vehicle Type
                         </Button>
@@ -117,12 +116,12 @@ function openDelete(vehicle_type: VehicleType) {
                         </div>
 
                         <div class="flex gap-2 sm:justify-end">
-                            <Button class="cursor-pointer" size="sm" variant="outline">
+                            <Button size="sm" variant="outline">
                                 <Upload class="mr-2 h-4 w-4" />
                                 Import
                             </Button>
 
-                            <Button class="cursor-pointer" size="sm" variant="outline">
+                            <Button size="sm" variant="outline">
                                 <Download class="mr-2 h-4 w-4" />
                                 Export
                             </Button>
@@ -153,7 +152,7 @@ function openDelete(vehicle_type: VehicleType) {
                                     <Badge
                                         :variant="
                                             vehicle.is_active
-                                                ? 'success'
+                                                ? 'outline'
                                                 : 'destructive'
                                         "
                                     >
@@ -181,7 +180,6 @@ function openDelete(vehicle_type: VehicleType) {
 
                                     <!-- Edit -->
                                     <Button
-                                        class="cursor-pointer"
                                         size="sm"
                                         variant="default"
                                         @click="openEdit(vehicle)"
@@ -191,7 +189,6 @@ function openDelete(vehicle_type: VehicleType) {
                                     </Button>
 
                                     <Button
-                                        class="cursor-pointer"
                                         size="sm"
                                         variant="destructive"
                                         @click="openDelete(vehicle)"

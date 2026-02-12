@@ -9,6 +9,7 @@ use App\Models\Company;
 use App\Models\Route;
 use App\Models\VehicleType;
 use App\Http\Requests\Vehicle\VehicleStoreRequest;
+use App\Http\Requests\Vehicle\VehicleUpdateRequest;
 use App\Services\Vehicle\VehicleService;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Request;
@@ -55,7 +56,7 @@ class VehicleController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
         Gate::authorize('create', Vehicle::class);
 
@@ -78,6 +79,29 @@ class VehicleController extends Controller
         ]);
     }
 
+    public function edit(Request $request, Vehicle $vehicle)
+    {
+        Gate::authorize('update', $vehicle);
+
+        $companies = Company::select('id', 'company_name')
+            ->orderBy('company_name')
+            ->get();
+
+        $routes = Route::select('id', 'route_name')
+            ->orderBy('route_name')
+            ->get();
+
+        $vehicleTypes = VehicleType::select('id', 'type_name')
+            ->orderBy('type_name')
+            ->get();
+
+        return Inertia::render('Vehicles/Edit', [
+            'vehicle' => $vehicle->load(['company:id,company_name', 'route:id,route_name', 'vehicleType:id,type_name']),
+            'companies' => $companies,
+            'routes' => $routes,
+            'vehicleTypes' => $vehicleTypes,
+        ]);
+    }
 
     public function store(VehicleStoreRequest $request)
     {
@@ -88,5 +112,21 @@ class VehicleController extends Controller
         return back()->with('success', 'Vehicle created successfully.');
     }
 
+    public function update(VehicleUpdateRequest $request, Vehicle $vehicle)
+    {
+        Gate::authorize('update', $vehicle);
 
+        $this->vehicleService->updateVehicle($vehicle, $request->validated(), auth()->user()->id);
+
+        return to_route('vehicles.index')->with('success', 'Vehicle updated successfully.');
+    }
+
+    public function destroy(Vehicle $vehicle)
+    {
+        Gate::authorize('delete', $vehicle);
+
+        $this->vehicleService->deleteVehicle($vehicle, auth()->user()->id);
+
+        return back()->with('success', 'Vehicle deleted successfully.');
+    }
 }

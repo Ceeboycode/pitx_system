@@ -16,7 +16,6 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import SearchInput from '@/components/SearchInput.vue';
 import {
     Dialog,
     DialogClose,
@@ -50,14 +49,20 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 /* ======================================================
    Icons
 ====================================================== */
-import { Archive, ArchiveX, Download, Edit, Eye, Plus, Save, Upload } from 'lucide-vue-next';
+import {
+    ArchiveX,
+    Download,
+    Edit,
+    Eye,
+    Plus,
+    Save,
+    Upload,
+} from 'lucide-vue-next';
 
 /* ======================================================
    Vue Core
 ====================================================== */
 import { ref } from 'vue';
-import { toast } from 'vue-sonner';
-import { Archive, Edit, Save, View, Plus } from "lucide-vue-next";
 
 /* ======================================================
    Types
@@ -101,7 +106,7 @@ const selectedGate = ref<Gate | null>(null);
    Actions
 ====================================================== */
 const createGate = () => {
-    form.submit(store(), {
+    form.post(store(), {
         preserveScroll: true,
         onSuccess: () => {
             createOpen.value = false;
@@ -125,7 +130,7 @@ function closeEdit() {
 const editGate = () => {
     if (!selectedGate.value) return;
 
-    form.submit(update(selectedGate.value.id), {
+    form.put(update(selectedGate.value.id), {
         preserveScroll: true,
         onSuccess: () => closeEdit(),
     });
@@ -142,21 +147,29 @@ const archiveGate = (gateId: number) => {
     <Head title="Gates" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+        <div
+            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
+        >
             <Card>
-                <CardHeader class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <CardHeader
+                    class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+                >
                     <div>
                         <CardTitle>Gates</CardTitle>
-                        <CardDescription>List of all gates in the system.</CardDescription>
+                        <CardDescription
+                            >List of all gates in the system.</CardDescription
+                        >
                     </div>
 
-                    <div class="flex gap-2">
-                        <!-- Trash Button -->
-                        <Button asChild size="sm" variant="outline">
-                            <Link :href="trash().url"> <View /> View Trash</Link>
+                    <CardAction class="flex gap-2">
+                        <Button as-child size="sm" variant="outline">
+                            <Link :href="trash().url">
+                                <Eye class="mr-2 h-4 w-4" />
+                                View Trash
+                            </Link>
                         </Button>
 
-                        <Button class="cursor-pointer" size="sm" @click="createOpen = true">
+                        <Button size="sm" @click="createOpen = true">
                             <Plus class="mr-2 h-4 w-4" />
                             New Gate
                         </Button>
@@ -164,8 +177,9 @@ const archiveGate = (gateId: number) => {
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div
+                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                    >
                         <div class="w-full max-w-sm">
                             <SearchInput
                                 :route="index().url"
@@ -177,32 +191,34 @@ const archiveGate = (gateId: number) => {
                         </div>
 
                         <div class="flex gap-2 sm:justify-end">
-                            <Button class="cursor-pointer" size="sm" variant="outline">
+                            <Button size="sm" variant="outline">
                                 <Upload class="mr-2 h-4 w-4" />
                                 Import
                             </Button>
 
-                            <Button class="cursor-pointer" size="sm" variant="outline">
+                            <Button size="sm" variant="outline">
                                 <Download class="mr-2 h-4 w-4" />
                                 Export
                             </Button>
                         </div>
                     </div>
 
-                    <!-- Table -->
                     <Table>
-                        <TableCaption> List of gates. </TableCaption>
+                        <TableCaption>List of gates.</TableCaption>
 
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Gate Name</TableHead>
                                 <TableHead>Created By</TableHead>
-                                <TableHead>Actions</TableHead>
+                                <TableHead class="w-[260px]">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
 
                         <TableBody>
-                            <TableRow v-for="gate in gates.data" :key="gate.id">
+                            <TableRow
+                                v-for="gate in props.gates.data"
+                                :key="gate.id"
+                            >
                                 <TableCell class="capitalize">
                                     {{ gate.gate_name }}
                                 </TableCell>
@@ -212,7 +228,6 @@ const archiveGate = (gateId: number) => {
                                 </TableCell>
 
                                 <TableCell class="space-x-2">
-                                    <!-- View -->
                                     <Button as-child size="sm" variant="ghost">
                                         <Link :href="show(gate.id).url">
                                             <Eye class="mr-2 h-4 w-4" />
@@ -220,44 +235,53 @@ const archiveGate = (gateId: number) => {
                                         </Link>
                                     </Button>
 
-                                    <!-- Edit -->
-                                    <Button class="cursor-pointer" size="sm" variant="default" @click="openEdit(gate)">
+                                    <Button size="sm" @click="openEdit(gate)">
                                         <Edit class="mr-2 h-4 w-4" />
                                         Edit
                                     </Button>
 
-                                    <!-- Archive -->
                                     <Dialog>
                                         <DialogTrigger as-child>
-                                            <Button class="cursor-pointer" size="sm" variant="archive">
-                                                <ArchiveX class="mr-2 h-4 w-4" />
+                                            <Button
+                                                size="sm"
+                                                variant="destructive"
+                                            >
+                                                <ArchiveX
+                                                    class="mr-2 h-4 w-4"
+                                                />
                                                 Archive
                                             </Button>
                                         </DialogTrigger>
 
                                         <DialogContent>
                                             <DialogHeader>
-                                                <DialogTitle class="flex items-center gap-2">
-                                                    <ArchiveX :size="18" class="text-muted-foreground" />
-                                                    Archive Gate
-                                                </DialogTitle>
+                                                <DialogTitle
+                                                    >Archive Gate</DialogTitle
+                                                >
                                                 <DialogDescription>
-                                                    Are you sure you want to archive this gate? You can restore it later
-                                                    from the Trash.
+                                                    Are you sure you want to
+                                                    archive this gate? You can
+                                                    restore it later from the
+                                                    Trash.
                                                 </DialogDescription>
                                             </DialogHeader>
 
                                             <DialogFooter>
                                                 <DialogClose as-child>
-                                                    <Button class="cursor-pointer" variant="secondary" size="sm">Cancel</Button>
+                                                    <Button
+                                                        variant="secondary"
+                                                        size="sm"
+                                                        >Cancel</Button
+                                                    >
                                                 </DialogClose>
 
                                                 <DialogClose as-child>
                                                     <Button
-                                                        class="cursor-pointer"
                                                         size="sm"
-                                                        variant="archive"
-                                                        @click="archiveGate(gate.id)"
+                                                        variant="destructive"
+                                                        @click="
+                                                            archiveGate(gate.id)
+                                                        "
                                                     >
                                                         Archive
                                                     </Button>
@@ -268,22 +292,23 @@ const archiveGate = (gateId: number) => {
                                 </TableCell>
                             </TableRow>
 
-                            <!-- Empty State -->
-                            <TableRow v-if="gates.data.length === 0">
-                                <TableCell colspan="3" class="py-10 text-center text-muted-foreground">
+                            <TableRow v-if="props.gates.data.length === 0">
+                                <TableCell
+                                    colspan="3"
+                                    class="py-10 text-center text-muted-foreground"
+                                >
                                     No gates found.
                                 </TableCell>
                             </TableRow>
                         </TableBody>
                     </Table>
 
-                    <!-- Pagination -->
                     <InertiaPagination
-                        :links="gates.links"
+                        :links="props.gates.links"
                         :meta="{
-                            from: gates.from,
-                            to: gates.to,
-                            total: gates.total,
+                            from: props.gates.from,
+                            to: props.gates.to,
+                            total: props.gates.total,
                         }"
                     />
                 </CardContent>
@@ -291,7 +316,7 @@ const archiveGate = (gateId: number) => {
         </div>
     </AppLayout>
 
-    <!-- CREATE DIALOG -->
+    <!-- CREATE -->
     <Dialog v-model:open="createOpen">
         <DialogContent>
             <DialogHeader>
@@ -317,7 +342,7 @@ const archiveGate = (gateId: number) => {
         </DialogContent>
     </Dialog>
 
-    <!-- EDIT DIALOG -->
+    <!-- EDIT -->
     <Dialog v-model:open="editOpen">
         <DialogContent>
             <DialogHeader>
@@ -331,9 +356,9 @@ const archiveGate = (gateId: number) => {
 
                 <DialogFooter>
                     <DialogClose as-child>
-                        <Button variant="secondary" size="sm" @click="closeEdit">
-                            Cancel
-                        </Button>
+                        <Button variant="secondary" size="sm" @click="closeEdit"
+                            >Cancel</Button
+                        >
                     </DialogClose>
 
                     <Button size="sm" type="submit" :disabled="form.processing">

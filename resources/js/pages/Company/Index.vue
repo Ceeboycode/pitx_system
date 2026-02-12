@@ -72,7 +72,6 @@ import { ref } from 'vue';
    Types
 ====================================================== */
 
-
 type Company = {
     id: number;
     company_name: string;
@@ -142,12 +141,12 @@ function openArchive(company: Company) {
             <!-- ======================================================
                  Companies Card
             ======================================================= -->
-            <Card class="">
+            <Card class="mx-5">
                 <!-- Card Header -->
                 <CardHeader>
                     <CardTitle>Companies</CardTitle>
                     <CardDescription>
-                        Manage your companies here.
+                        List of all companies in the system.
                     </CardDescription>
 
                     <!-- Header Actions -->
@@ -167,7 +166,11 @@ function openArchive(company: Company) {
                         </Button>
 
                         <!-- Open Create Company Dialog -->
-                        <Button size="sm" @click="createOpen = true">
+                        <Button
+                            size="sm"
+                            @click="createOpen = true"
+                            class="cursor-pointer"
+                        >
                             <Plus class="mr-2 h-4 w-4" />
                             New Company
                         </Button>
@@ -195,12 +198,20 @@ function openArchive(company: Company) {
 
                         <!-- Import / Export Buttons -->
                         <div class="flex gap-2 sm:justify-end">
-                            <Button class="cursor-pointer" size="sm" variant="outline">
+                            <Button
+                                class="cursor-pointer"
+                                size="sm"
+                                variant="outline"
+                            >
                                 <Upload class="mr-2 h-4 w-4" />
                                 Import
                             </Button>
 
-                            <Button class="cursor-pointer" size="sm" variant="outline">
+                            <Button
+                                class="cursor-pointer"
+                                size="sm"
+                                variant="outline"
+                            >
                                 <Download class="mr-2 h-4 w-4" />
                                 Export
                             </Button>
@@ -218,13 +229,11 @@ function openArchive(company: Company) {
                             <TableRow>
                                 <TableHead>Company Name</TableHead>
                                 <TableHead>Created At</TableHead>
-                                <TableHead>Actions</TableHead>
+                                <TableHead class="text-right">Action</TableHead>
                             </TableRow>
                         </TableHeader>
 
-                        <!-- Table Body -->
                         <TableBody>
-                            <!-- Company Rows -->
                             <TableRow
                                 v-for="company in companies.data"
                                 :key="company.id"
@@ -237,47 +246,56 @@ function openArchive(company: Company) {
                                     {{ company.created_at_human }}
                                 </TableCell>
 
-                                <!-- Action Buttons -->
-                                <TableCell class="space-x-2">
-                                    <!-- View -->
-                                    <Button v-if="can('company.view')" as-child size="sm" variant="ghost">
-                                        <Link
-                                            :href="
-                                                show({ company: company.id })
-                                                    .url
-                                            "
+                                <TableCell class="text-right">
+                                    <div
+                                        class="flex flex-wrap justify-end gap-2"
+                                    >
+                                        <!-- View -->
+                                        <Button
+                                            v-if="can('company.view')"
+                                            as-child
+                                            size="sm"
+                                            variant="ghost"
                                         >
-                                            <Eye class="mr-2 h-4 w-4" />
-                                            View
-                                        </Link>
-                                    </Button>
+                                            <Link
+                                                :href="
+                                                    show({
+                                                        company: company.id,
+                                                    }).url
+                                                "
+                                            >
+                                                <Eye class="mr-2 h-4 w-4" />
+                                                View
+                                            </Link>
+                                        </Button>
 
-                                    <!-- Edit -->
-                                    <Button
-                                        size="sm"
-                                        variant="default"
-                                        @click="openEdit(company)"
-                                    >
-                                        <Edit class="mr-2 h-4 w-4" />
-                                        Edit
-                                    </Button>
+                                        <!-- Edit -->
+                                        <Button
+                                            class="cursor-pointer"
+                                            size="sm"
+                                            variant="default"
+                                            @click="openEdit(company)"
+                                        >
+                                            <Edit class="mr-2 h-4 w-4" />
+                                            Edit
+                                        </Button>
 
-                                    <!-- Archive -->
-                                    <Button
-                                        size="sm"
-                                        variant="archive"
-                                        @click="openArchive(company)"
-                                    >
-                                        <ArchiveX class="mr-2 h-4 w-4" />
-                                        Archive
-                                    </Button>
+                                        <!-- Archive -->
+                                        <Button
+                                            class="cursor-pointer"
+                                            size="sm"
+                                            variant="archive"
+                                            @click="openArchive(company)"
+                                        >
+                                            <ArchiveX class="mr-2 h-4 w-4" />
+                                            Archive
+                                        </Button>
+                                    </div>
                                 </TableCell>
                             </TableRow>
-
-                            <!-- Empty State -->
                             <TableRow v-if="companies.data.length === 0">
                                 <TableCell
-                                    colspan="3"
+                                    colspan="4"
                                     class="py-10 text-center text-muted-foreground"
                                 >
                                     No companies found.
