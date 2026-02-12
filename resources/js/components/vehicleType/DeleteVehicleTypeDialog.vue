@@ -2,18 +2,19 @@
 import { destroy } from '@/routes/vehicle-types';
 import { router } from '@inertiajs/vue3';
 import { Trash2 } from 'lucide-vue-next';
+import { computed, ref, watch } from 'vue';
 
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
 const open = defineModel<boolean>('open');
 
@@ -24,10 +25,23 @@ const props = defineProps<{
     };
 }>();
 
+const confirmation = ref('');
+
+
+const canDelete = computed(() => confirmation.value === 'DELETE');
+
+
+watch(open, (value) => {
+    if (value) confirmation.value = '';
+});
+
 function deletePermanently() {
+    if (!canDelete.value) return;
+
     router.delete(destroy({ vehicle_type: props.vehicle_type.id }).url, {
         preserveScroll: true,
         onSuccess: () => {
+            confirmation.value = '';
             open.value = false;
         },
     });
@@ -35,30 +49,52 @@ function deletePermanently() {
 </script>
 
 <template>
-    <AlertDialog v-model:open="open">
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle> Delete Vehicle Type </AlertDialogTitle>
+    <Dialog v-model:open="open">
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Delete Vehicle Type Permanently</DialogTitle>
 
-                <AlertDialogDescription>
-                    Are you sure you want to delete
-                    <span class="font-medium">
-                        {{ props.vehicle_type.type_name }}
-                    </span>
-                    <!-- ? You can restore it later from Trash. -->
-                </AlertDialogDescription>
-            </AlertDialogHeader>
+                <DialogDescription class="space-y-3">
+                    <p>
+                        This action cannot be undone. It will permanently delete
+                        <span class="font-medium">
+                            {{ props.vehicle_type.type_name }}
+                        </span>
+                        and remove it from the system.
+                    </p>
 
-            <AlertDialogFooter>
-                <AlertDialogCancel> Cancel </AlertDialogCancel>
+                    <p class="text-sm text-muted-foreground">
+                        To confirm, please type
+                        <span
+                            class="mx-1 font-mono font-semibold text-destructive/80"
+                            >DELETE</span
+                        >
+                        below.
+                    </p>
 
-                <AlertDialogAction as-child>
-                    <Button variant="default" @click="deletePermanently">
-                        <Trash2 class="h-4 w-4" />
-                        Delete
-                    </Button>
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
+                    <Input
+                        v-model="confirmation"
+                        placeholder="Type DELETE to confirm"
+                        class="mt-2"
+                    />
+                </DialogDescription>
+            </DialogHeader>
+
+            <DialogFooter>
+                <DialogClose as-child>
+                    <Button variant="outline">Cancel</Button>
+                </DialogClose>
+
+                <Button
+                    variant="destructive"
+                    :disabled="!canDelete"
+                    @click="deletePermanently"
+                >
+                    <Trash2 class="mr-2 h-4 w-4" />
+                    Delete Permanently
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
 </template>
+

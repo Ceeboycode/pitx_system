@@ -64,12 +64,12 @@ watch(
 
       >
         <SidebarMenuItem>
-          <CollapsibleTrigger as-child>
+          <CollapsibleTrigger as-child class="mx-auto px-auto w-full">
             <SidebarMenuButton
               :tooltip="item.title"
               class="flex w-full items-center gap-2"
             >
-              <component v-if="item.icon" :is="item.icon" />
+              <component v-if="item.icon" :is="item.icon"/>
               <span>{{ item.title }}</span>
               <ChevronRight
                 class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
