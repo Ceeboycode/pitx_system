@@ -27,6 +27,7 @@ import { index as routeStopsIndex } from '@/routes/route-stops'
 import { index as routesIndex } from '@/routes/routes'
 import { index as gateIndex } from '@/routes/gates'
 import { index as vehiclesIndex } from '@/routes/vehicles'
+import { index as dispatchesIndex } from '@/routes/dispatches'
 
 export interface Item {
     id: string
@@ -130,6 +131,19 @@ const mainNavItems: NavItem[] = [
             },
         ],
     },
+    {
+        id: 'dispatches',
+        title: 'Dispatches',
+        href: '#',
+        icon: BusFront,
+        items: [
+            {
+                id: 'dispatches',
+                title: 'Dispatches',
+                href: dispatchesIndex().url,
+            },
+        ],
+    }
 ]
 
 const visibleMainNavItems = computed(() =>

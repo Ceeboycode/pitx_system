@@ -4,10 +4,13 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -20,9 +23,12 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'username',
         'name',
         'email',
+        'phone_number',
         'password',
+        'company_id',
     ];
 
     /**
@@ -50,4 +56,34 @@ class User extends Authenticatable
             'two_factor_confirmed_at' => 'datetime',
         ];
     }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function scopeSearch(Builder $query, ?string $search): Builder
+    {
+        return $query->when(
+            filled($search),
+            fn (Builder $q) => $q->where(function (Builder $qq) use ($search) {
+                $like = '%' . $search . '%';
+
+                $qq->where('name', 'like', $like)
+                    ->orWhere('username', 'like', $like)
+                    ->orWhere('email', 'like', $like)
+                    ->orWhere('phone_number', 'like', $like)
+                    ->orWhereHas('company', fn (Builder $cq) => $cq
+                        ->where('company_name', 'like', $like)
+                        ->orWhere('company_code', 'like', $like)
+                    );
+            })
+        );
+    }
+
+    public function dispatchesAsDispatcher(): HasMany
+    {
+        return $this->hasMany(Dispatch::class, 'dispatcher_user_id');
+    }
+    
 }

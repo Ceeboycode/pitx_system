@@ -35,7 +35,6 @@ defineProps<{
         <Head title="Log in" />
 
         <Card class="mx-auto w-full max-w-md">
-            <!-- Card Header -->
             <CardHeader class="text-center">
                 <CardTitle>Welcome back</CardTitle>
                 <CardDescription>
@@ -43,9 +42,7 @@ defineProps<{
                 </CardDescription>
             </CardHeader>
 
-            <!-- Card Content -->
             <CardContent>
-                <!-- Status Message -->
                 <div
                     v-if="status"
                     class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-center text-sm font-medium text-green-700"
@@ -60,19 +57,19 @@ defineProps<{
                     class="flex flex-col gap-6"
                 >
                     <div class="grid gap-6">
-                        <!-- Email -->
+                        <!-- Email or Username -->
                         <div class="grid gap-2">
-                            <Label for="email">Email address</Label>
+                            <Label for="login">Email or Username</Label>
                             <Input
-                                id="email"
-                                type="email"
-                                name="email"
+                                id="login"
+                                type="text"
+                                name="login"
                                 required
                                 autofocus
-                                autocomplete="email"
-                                placeholder="dispatcher@pitx.ph"
+                                autocomplete="username"
+                                placeholder="admin or dispatcher@pitx.ph"
                             />
-                            <InputError :message="errors.email" />
+                            <InputError :message="errors.login" />
                         </div>
 
                         <!-- Password -->
@@ -120,7 +117,6 @@ defineProps<{
                 </Form>
             </CardContent>
 
-            <!-- Card Footer -->
             <CardFooter v-if="canRegister" class="flex justify-center text-sm">
                 Don’t have an account?
                 <TextLink :href="register()" class="ml-1 font-medium">

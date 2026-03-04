@@ -24,7 +24,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import { Archive, Download, Edit, Eye, Plus, Upload } from 'lucide-vue-next';
 
 import InertiaPagination from '@/components/InertiaPagination.vue';
-import { create, edit, index } from '@/routes/vehicles';
+import { create, edit, index, trash } from '@/routes/vehicles';
 import { type BreadcrumbItem } from '@/types';
 
 const props = defineProps<{
@@ -70,7 +70,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                             variant="outline"
                             class="mr-2"
                         >
-                            <Link :href="index().url">
+                            <Link :href="trash().url">
                                 <Archive class="mr-2 h-4 w-4" />
                                 View Archived
                             </Link>
@@ -200,7 +200,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                             </TableRow>
                             <TableRow v-if="vehicles.data.length === 0">
                                 <TableCell
-                                    colspan="7"
+                                    colspan="8"
                                     class="py-10 text-center text-muted-foreground"
                                 >
                                     No vehicles found.

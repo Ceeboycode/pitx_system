@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class PermissionSeeder extends Seeder
@@ -16,8 +15,7 @@ class PermissionSeeder extends Seeder
         $permissions = [
             'users.viewAny','users.view','users.create','users.edit','users.delete',
             'roles.viewAny','roles.view','roles.create','roles.edit','roles.delete',
-            'company.viewAny','company.view','company.create','company.update','company.restore', 'company.forceDelete',
-            'company.delete','company.restore','company.forceDelete',
+            'company.viewAny','company.view','company.create','company.update', 'company.delete','company.restore', 'company.forceDelete',
             'vehicle_type.viewAny','vehicle_type.view','vehicle_type.create',
             'vehicle_type.update','vehicle_type.delete',
             'vehicle_type.restore','vehicle_type.forceDelete',

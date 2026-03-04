@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import AppLayout from '@/layouts/AppLayout.vue';
+import { index, update } from '@/routes/users';
+import type { BreadcrumbItem } from '@/types';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Save } from 'lucide-vue-next';
+import { computed, watch } from 'vue';
+
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,267 +16,224 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 
-import AppLayout from '@/layouts/AppLayout.vue';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import { computed, watch } from 'vue';
-
-import { edit, index, update } from '@/routes/users';
-import { toast } from 'vue-sonner';
-import { Save, ArrowLeft } from 'lucide-vue-next';
-
-type UserPayload = {
+type Role = {
     id: number;
     name: string;
-    email: string;
-    roles?: string[];
+    type: 'internal' | 'external';
 };
 
 const props = defineProps<{
-    user: UserPayload | { data: UserPayload };
-    roles: string[];
+    user: {
+        id: number;
+        username: string | null;
+        name: string;
+        email: string;
+        phone_number: string | null;
+    };
+    roles: Role[];
+    selectedRole: string | null;
+    roleTypes: string[]; // ['internal','external']
+    initialRoleType: 'internal' | 'external' | 'mixed' | null;
 }>();
 
-const resolvedUser = computed<UserPayload | null>(() => {
-    const u: any = props.user;
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Users', href: index().url },
+    { title: 'Edit', href: '#' },
+];
 
-    if (!u) return null;
+// UI-only filter: prefer user's derived type, otherwise default internal
+const initialType =
+    props.initialRoleType === 'internal' || props.initialRoleType === 'external'
+        ? props.initialRoleType
+        : 'internal';
 
-    if (typeof u === 'object' && 'data' in u && u.data) {
-        return {
-            ...u.data,
-            roles: [...(u.data.roles ?? [])],
-        };
-    }
-
-    return {
-        ...(u as UserPayload),
-        roles: [...((u as UserPayload).roles ?? [])],
-    };
+const roleTypeForm = useForm({
+    role_type: initialType as 'internal' | 'external',
 });
 
-const userId = computed(() => resolvedUser.value?.id ?? null);
-
-const breadcrumbs = computed<BreadcrumbItem[]>(() => {
-    const items: BreadcrumbItem[] = [
-        { title: 'Users Table', href: index().url },
-    ];
-
-    if (userId.value) {
-        items.push({
-            title: 'Update User',
-            href: edit(userId.value).url,
-        });
-    }
-
-    return items;
-});
-
-const form = useForm({
-    name: '',
-    email: '',
-    password: '',
-    password_confirmation: '',
-    roles: [] as string[],
-});
-
-watch(
-    resolvedUser,
-    (value, previousValue) => {
-        const changedUser = value?.id !== previousValue?.id;
-
-        if (!value) {
-            form.defaults({
-                name: '',
-                email: '',
-                roles: [],
-                password: '',
-                password_confirmation: '',
-            });
-            form.reset();
-            return;
-        }
-
-        if (changedUser || !previousValue) {
-            form.defaults({
-                name: value.name,
-                email: value.email,
-                roles: [...(value.roles ?? [])],
-                password: '',
-                password_confirmation: '',
-            });
-
-            form.name = value.name;
-            form.email = value.email;
-            form.roles = [...(value.roles ?? [])];
-
-            // keep passwords blank when editing
-            form.reset('password', 'password_confirmation');
-        }
-    },
-    { immediate: true },
+const filteredRoles = computed(() =>
+    props.roles.filter((r) => r.type === roleTypeForm.role_type),
 );
 
-const updateRoleSelection = (role: string, checked: boolean | 'indeterminate') => {
-    if (checked === true) {
-        if (!form.roles.includes(role)) form.roles.push(role);
-        return;
-    }
+const form = useForm({
+    username: props.user.username ?? '',
+    name: props.user.name ?? '',
+    email: props.user.email ?? '',
+    phone_number: props.user.phone_number ?? '',
+    password: '',
 
-    if (checked === false) {
-        form.roles = form.roles.filter((r) => r !== role);
-    }
-};
+    // single role
+    role: props.selectedRole ?? '',
 
-const submit = () => {
-    if (!userId.value) {
-        toast.error('Unable to determine which user to update.');
-        return;
-    }
+    // optional: send to backend to validate role matches type
+    role_type: roleTypeForm.role_type,
+});
 
-    form.put(update(userId.value).url, {
-        preserveScroll: true,
-        onSuccess: () => {
-            toast.success('User updated successfully!');
-            form.reset('password', 'password_confirmation');
-        },
-        onError: () => {
-            toast.error('Please check the form for errors.');
-            form.reset('password', 'password_confirmation');
-        },
-    });
-};
+// keep form.role_type synced with UI selector
+watch(
+    () => roleTypeForm.role_type,
+    (t) => {
+        form.role_type = t;
+
+        // if current selected role not in filtered list, clear it
+        const allowed = new Set(filteredRoles.value.map((r) => r.name));
+        if (form.role && !allowed.has(form.role)) {
+            form.role = '';
+        }
+    },
+);
+
+// if user has a selected role but initialRoleType is mixed/null,
+// auto-detect the roleType from selectedRole
+if (
+    (!props.initialRoleType || props.initialRoleType === 'mixed') &&
+    props.selectedRole
+) {
+    const found = props.roles.find((r) => r.name === props.selectedRole);
+    if (found) {
+        roleTypeForm.role_type = found.type;
+        form.role_type = found.type;
+    }
+}
+
+function submit() {
+    form.put(update({ user: props.user.id }).url, { preserveScroll: true });
+}
 </script>
 
 <template>
-    <Head title="Update User" />
+    <Head title="Edit User" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex flex-1 items-start justify-center p-8">
-            <Card class="w-full max-w-xl rounded-xl border bg-background shadow-sm">
-                <CardHeader class="space-y-1">
-                    <div class="flex items-center justify-between">
-                        <CardTitle class="text-lg font-medium">
-                            Update user
-                        </CardTitle>
-
-                        <Button as-child variant="link" size="sm">
-                            <Link :href="index().url" class="flex items-center gap-1">
-                                <ArrowLeft class="h-4 w-4" />
-                                Back to Users
-                            </Link>
-                        </Button>
-                    </div>
-
-                    <CardDescription class="text-sm">
-                        Update this user’s profile information.
+        <div class="flex flex-1 flex-col gap-4 p-4">
+            <Card class="mx-5">
+                <CardHeader>
+                    <CardTitle>Edit User</CardTitle>
+                    <CardDescription>
+                        Update the user details and assign exactly one role.
                     </CardDescription>
                 </CardHeader>
-                <form @submit.prevent="submit">
-                    <CardContent class="pt-6">
-                        <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-                            <!-- Full name -->
-                            <div class="space-y-1.5 md:col-span-2">
-                                <Label for="fullname">Full name</Label>
-                                <Input
-                                    id="fullname"
-                                    v-model="form.name"
-                                    placeholder="John Doe"
-                                    :disabled="form.processing"
-                                />
-                                <InputError :message="form.errors.name" />
-                            </div>
 
-                            <!-- Email -->
-                            <div class="space-y-1.5 md:col-span-2">
-                                <Label for="email">Email</Label>
-                                <Input
-                                    id="email"
-                                    v-model="form.email"
-                                    type="email"
-                                    placeholder="john@example.com"
-                                    :disabled="form.processing"
-                                />
-                                <InputError :message="form.errors.email" />
-                            </div>
+                <Separator />
 
-                            <!-- Password -->
-                            <div class="space-y-1.5">
-                                <Label for="password">Password</Label>
-                                <Input
-                                    id="password"
-                                    v-model="form.password"
-                                    type="password"
-                                    :disabled="form.processing"
-                                />
-                                <InputError :message="form.errors.password" />
-                            </div>
+                <CardContent class="space-y-6 pt-6">
+                    <div class="space-y-2">
+                        <Label for="username">Username</Label>
+                        <Input
+                            id="username"
+                            v-model="form.username"
+                            placeholder="e.g. johndoe"
+                        />
+                        <InputError :message="form.errors.username" />
+                    </div>
 
-                            <!-- Password confirmation -->
-                            <div class="space-y-1.5">
-                                <Label for="password_confirmation">
-                                    Confirm password
-                                </Label>
-                                <Input
-                                    id="password_confirmation"
-                                    v-model="form.password_confirmation"
-                                    type="password"
-                                    :disabled="form.processing"
-                                />
-                                <InputError :message="form.errors.password_confirmation" />
-                            </div>
+                    <div class="space-y-2">
+                        <Label for="name">Name</Label>
+                        <Input
+                            id="name"
+                            v-model="form.name"
+                            placeholder="e.g. John Doe"
+                        />
+                        <InputError :message="form.errors.name" />
+                    </div>
 
-                            <!-- Roles -->
-                            <div class="space-y-2 md:col-span-2">
-                                <Label>Roles</Label>
+                    <div class="space-y-2">
+                        <Label for="email">Email</Label>
+                        <Input
+                            id="email"
+                            type="email"
+                            v-model="form.email"
+                            placeholder="e.g. john@email.com"
+                        />
+                        <InputError :message="form.errors.email" />
+                    </div>
 
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div
-                                        v-for="role in roles"
-                                        :key="role"
-                                        class="flex items-center gap-2"
-                                    >
-                                        <Checkbox
-                                            :id="`role-${role}`"
-                                            :model-value="form.roles.includes(role)"
-                                            :disabled="form.processing"
-                                            @update:model-value="(checked) =>
-                                                updateRoleSelection(role, checked)"
-                                        />
+                    <div class="space-y-2">
+                        <Label for="phone_number">Phone Number</Label>
+                        <Input
+                            id="phone_number"
+                            v-model="form.phone_number"
+                            placeholder="e.g. 09123456789"
+                        />
+                        <InputError :message="form.errors.phone_number" />
+                    </div>
 
-                                        <Label
-                                            :for="`role-${role}`"
-                                            class="cursor-pointer font-normal"
-                                        >
-                                            {{ role }}
-                                        </Label>
-                                    </div>
-                                </div>
+                    <div class="space-y-2">
+                        <Label for="password">New Password (optional)</Label>
+                        <Input
+                            id="password"
+                            type="password"
+                            v-model="form.password"
+                            placeholder="Leave blank to keep current password"
+                        />
+                        <InputError :message="form.errors.password" />
+                    </div>
 
-                                <InputError :message="form.errors.roles" />
-                            </div>
-                        </div>
-                    </CardContent>
+                    <!-- Role type filter (UI-only) -->
+                    <div class="space-y-2">
+                        <Label>Role Type</Label>
+                        <Select v-model="roleTypeForm.role_type">
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select role type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="t in props.roleTypes"
+                                    :key="t"
+                                    :value="t"
+                                >
+                                    {{ t }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <InputError :message="form.errors.role_type" />
+                    </div>
 
-                    <CardFooter class="flex justify-end gap-3 pt-6">
-                        <Button as-child variant="outline" class="px-5">
-                            <Link :href="index().url">Cancel</Link>
-                        </Button>
+                    <!-- Single role select -->
+                    <div class="space-y-2">
+                        <Label>Role</Label>
+                        <Select v-model="form.role">
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select one role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="r in filteredRoles"
+                                    :key="r.id"
+                                    :value="r.name"
+                                >
+                                    {{ r.name }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
 
-                        <Button
-                            type="submit"
-                            class="px-6"
-                            :disabled="form.processing"
-                        >
-                            <Save class="mr-2 h-4 w-4" />
-                            Update user
-                        </Button>
-                    </CardFooter>
-                </form>
+                        <InputError :message="form.errors.role" />
+                    </div>
+                </CardContent>
+
+                <Separator />
+
+                <CardFooter class="flex justify-end gap-2">
+                    <Button variant="outline" as-child>
+                        <Link :href="index().url">Cancel</Link>
+                    </Button>
+
+                    <Button :disabled="form.processing" @click="submit">
+                        <Save class="mr-2 h-4 w-4" />
+                        {{ form.processing ? 'Saving...' : 'Save changes' }}
+                    </Button>
+                </CardFooter>
             </Card>
         </div>
     </AppLayout>

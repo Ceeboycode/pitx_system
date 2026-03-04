@@ -20,11 +20,23 @@ class VehicleService
         return $vehicle;
     }
 
-    public function deleteVehicle(Vehicle $vehicle, int $userId): void
+    public function deleteVehicle(Vehicle $vehicle, int $userId): bool
     {
-        $vehicle->update(['deleted_by' => $userId]);
-        
-        $vehicle->delete();
+        $vehicle->deleted_by = $userId;
+        $vehicle->save();
+
+        return $vehicle->delete();
     }
+
+    public function restoreVehicle(Vehicle $vehicle): bool
+    {
+        return $vehicle->restore();
+    }
+
+    public function forceDeleteVehicle(Vehicle $vehicle): bool
+    {
+        return $vehicle->forceDelete();
+    }
+    
 }
 

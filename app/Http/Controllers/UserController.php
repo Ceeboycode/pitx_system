@@ -4,94 +4,163 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
-use App\Http\Resources\UserResource;
+use App\Models\Company;
+use App\Models\Role;
 use App\Models\User;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\DB;
 
-class UserController extends Controller implements HasMiddleware
+
+class UserController extends Controller
 {
-    public static function middleware(): array
-    {
-        return [
-            new Middleware('permission:users.viewAny', only: ['index']),
-            new Middleware('permission:users.view', only: ['show']),
-            new Middleware('permission:users.create', only: ['create', 'store']),
-            new Middleware('permission:users.edit', only: ['edit', 'update']),
-            new Middleware('permission:users.delete', only: ['destroy']),
-        ];
-    }
 
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with('roles:id,name')
-            ->latest()
+        $search = $request->input('search');
+        $type   = $request->input('type');
+
+        $users = User::query()
+            ->select(['id', 'username', 'name', 'email', 'phone_number', 'company_id'])
+            ->with(['roles:id,name,type', 'company:id,company_name,company_code'])
+            ->when($type, function ($query) use ($type) {
+                $query->whereHas('roles', fn ($q) => $q->where('type', $type));
+            })
+            ->search($search)
+            ->orderBy('name')
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Users/Index', [
-            'users' => UserResource::collection($users),
+            'users' => $users,
+            'filters' => [
+                'search' => $search,
+                'type'   => $type,
+            ],
         ]);
     }
 
     public function create()
     {
         return Inertia::render('Users/Create', [
-            'roles' => Role::orderBy('name')->pluck('name'),
+            'companies' => Company::orderBy('company_name')
+                ->get(['id', 'company_name', 'company_code']),
+
+            // IMPORTANT: include type
+            'roles' => Role::orderBy('name')
+                ->get(['id', 'name', 'type']),
         ]);
     }
 
     public function store(StoreUserRequest $request)
-    {
+{
+    $data = $request->validated();
+
+    $user = DB::transaction(function () use ($data) {
+        $type = $data['type'];
+
+        // Determine prefix
+        if ($type === 'external') {
+            $company = Company::query()
+                ->whereKey($data['company_id'])
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $prefix = $company->company_code . '-'; // e.g. SAS-
+        } else {
+            $prefix = now()->year . '-'; // e.g. 2026-
+        }
+
+        // Find latest username for this prefix (lock users rows to avoid duplicates)
+        $lastUsername = User::query()
+            ->where('username', 'like', $prefix . '%')
+            ->lockForUpdate()
+            ->orderByDesc('username') // works because 0001 padding keeps lexical order
+            ->value('username');
+
+        $nextNumber = 1;
+        if ($lastUsername) {
+            // username format: PREFIX + 4 digits (e.g. SAS-0007)
+            $lastDigits = substr($lastUsername, strlen($prefix)); // "0007"
+            $nextNumber = ((int) $lastDigits) + 1;
+        }
+
+        $username = $prefix . str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
+
+        // Create user
         $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
+            'username' => $username,
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'phone_number' => $data['phone_number'],
+            'type' => $type,
+            'company_id' => $type === 'external' ? $data['company_id'] : null,
+
+            // default password = phone number
+            'password' => Hash::make($data['phone_number']),
         ]);
 
-        $user->syncRoles($request->roles);
+        // Assign role (Spatie)
+        $user->assignRole($data['role']);
 
-        return to_route('users.index')
-            ->with('success', 'User created successfully.');
-    }
+        return $user;
+    });
 
-    public function show(User $user)
-    {
-        $user->load('roles:id,name');
-
-        return Inertia::render('Users/Show', [
-            'user' => new UserResource($user),
-        ]);
-    }
+    return redirect()
+        ->route('users.index')
+        ->with('success', "User created successfully. Username: {$user->username}");
+}
 
     public function edit(User $user)
     {
-        $user->load('roles:id,name');
+        $user->load('roles:id,name,type');
+
+        $selectedRole = $user->roles->first()?->name;
 
         return Inertia::render('Users/Edit', [
-            'user' => new UserResource($user),
-            'roles' => Role::orderBy('name')->pluck('name'),
-            'selectedRoles' => $user->roles->pluck('name'),
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone_number' => $user->phone_number,
+            ],
+            'roles' => Role::query()
+                ->select('id', 'name', 'type')
+                ->orderBy('type')
+                ->orderBy('name')
+                ->get(),
+            'selectedRole' => $selectedRole, // ✅ single value
+            'roleTypes' => ['internal', 'external'], // UI-only
+            'initialRoleType' => $user->user_type, // internal|external|null|mixed
         ]);
     }
 
     public function update(UpdateUserRequest $request, User $user)
     {
+        $validated = $request->validated();
+
+        // Optional (if Edit.vue submits role_type)
+        $this->assertRoleMatchesType(
+            $validated['role'],
+            $validated['role_type'] ?? null
+        );
+
         $user->update([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => $request->filled('password')
-                ? Hash::make($request->password)
+            'username' => $validated['username'] ?? $user->username,
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone_number' => $validated['phone_number'] ?? null,
+            'password' => !empty($validated['password'])
+                ? Hash::make($validated['password'])
                 : $user->password,
         ]);
 
-        $user->syncRoles($request->roles ?? []);
+        // ✅ single role
+        $user->syncRoles([$validated['role']]);
 
-        return to_route('users.index')
-            ->with('success', 'User updated successfully.');
+        return to_route('users.index')->with('success', 'User updated successfully.');
     }
 
     public function destroy(User $user)

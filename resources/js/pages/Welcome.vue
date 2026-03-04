@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { dashboard, login } from '@/routes';
+import { show } from '@/routes/company-registration';
 import { Head, Link } from '@inertiajs/vue3';
 
 withDefaults(defineProps<{ canRegister: boolean }>(), { canRegister: true });
@@ -38,6 +39,10 @@ withDefaults(defineProps<{ canRegister: boolean }>(), { canRegister: true });
                     <template v-else>
                         <Button variant="ghost" as-child>
                             <Link :href="login()">Log in</Link>
+                        </Button>
+
+                        <Button variant="ghost" as-child>
+                            <Link :href="show()">Register Company</Link>
                         </Button>
                     </template>
                 </nav>

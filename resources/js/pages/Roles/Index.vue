@@ -1,275 +1,354 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Link, router } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { create, destroy, edit, index } from '@/routes/roles';
+import { type BreadcrumbItem } from '@/types';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { Pencil, Trash2 } from 'lucide-vue-next';
+import { computed, ref, watch } from 'vue';
 
+import { Button } from '@/components/ui/button';
 import {
     Card,
+    CardAction,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-
+import { Input } from '@/components/ui/input';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 import {
     Table,
     TableBody,
+    TableCaption,
     TableCell,
     TableHead,
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
-import { create, destroy, edit, index } from '@/routes/roles';
-import { type BreadcrumbItem } from '@/types';
-import { can } from '@/lib/can';
-import { AlertTriangle } from 'lucide-vue-next'
-import { Plus, Edit, Trash2 } from 'lucide-vue-next';
-
-
-/* -------------------------------------------------------------------------- */
-/* Types                                                                       */
-/* -------------------------------------------------------------------------- */
-interface Permission {
+type Permission = {
     id: number;
     name: string;
-}
+};
 
-interface RawRole {
+type Role = {
     id: number;
     name: string;
-    permissions?: Permission[] | { data?: Permission[] };
-}
-
-interface Role {
-    id: number;
-    name: string;
+    type: 'internal' | 'external';
     permissions: Permission[];
-}
+};
 
-/* -------------------------------------------------------------------------- */
-/* Props                                                                       */
-/* -------------------------------------------------------------------------- */
 const props = defineProps<{
     roles: {
-        data: RawRole[];
-        meta: {
-            current_page: number;
-            last_page: number;
-        };
+        data: Role[];
+        links: any[];
+    };
+    filters: {
+        search?: string | null;
+        type?: string | null;
     };
 }>();
 
-/* -------------------------------------------------------------------------- */
-/* Normalize roles (🔥 FIX)                                                    */
-/* -------------------------------------------------------------------------- */
-const roles = computed<Role[]>(() =>
-    props.roles.data.map((role) => ({
-        id: role.id,
-        name: role.name,
-        permissions: Array.isArray(role.permissions)
-            ? role.permissions
-            : (role.permissions?.data ?? []),
-    })),
-);
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Roles', href: index().url }];
 
-/* -------------------------------------------------------------------------- */
-/* Breadcrumbs                                                                 */
-/* -------------------------------------------------------------------------- */
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Roles',
-        href: index().url,
-    },
-];
+// Filters (bind to inputs)
+const search = ref(props.filters.search ?? '');
+const roleType = ref(props.filters.type ?? 'all'); // all | internal | external
 
-/* -------------------------------------------------------------------------- */
-/* Delete dialog state                                                        */
-/* -------------------------------------------------------------------------- */
-const dialogOpen = ref(false);
-const deleteInput = ref('');
-const deletingRoleId = ref<number | null>(null);
+let filterTimer: number | null = null;
+function applyFilters() {
+    router.get(
+        index().url,
+        {
+            search: search.value || undefined,
+            type: roleType.value === 'all' ? undefined : roleType.value,
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+            only: ['roles', 'filters', 'flash'],
+        },
+    );
+}
 
-const openDeleteDialog = (id: number) => {
-    deletingRoleId.value = id;
-    deleteInput.value = '';
-    dialogOpen.value = true;
-};
+watch([search, roleType], () => {
+    if (filterTimer) window.clearTimeout(filterTimer);
+    filterTimer = window.setTimeout(() => applyFilters(), 350);
+});
 
-const confirmDelete = () => {
-    if (deleteInput.value !== 'delete' || deletingRoleId.value === null) {
-        return;
-    }
+/* Delete dialog */
+const open = ref(false);
+const selectedRole = ref<Role | null>(null);
+const confirmation = ref('');
+const processing = ref(false);
 
-    router.delete(destroy(deletingRoleId.value).url, {
+const canDelete = computed(() => confirmation.value.trim() === 'DELETE');
+
+watch(open, (value) => {
+    if (value) confirmation.value = '';
+});
+
+function openDelete(role: Role) {
+    selectedRole.value = role;
+    open.value = true;
+}
+
+function deleteRole() {
+    if (!canDelete.value || processing.value || !selectedRole.value) return;
+
+    processing.value = true;
+
+    router.delete(destroy({ role: selectedRole.value.id }).url, {
         preserveScroll: true,
         onFinish: () => {
-            dialogOpen.value = false;
-            deleteInput.value = '';
-            deletingRoleId.value = null;
+            processing.value = false;
+            open.value = false;
+            selectedRole.value = null;
         },
     });
-};
+}
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex flex-1 flex-col gap-4 p-4">
-            <Card class="mx-10 mt-3">
-                <!-- Header -->
-                <CardHeader class="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>Roles</CardTitle>
-                        <CardDescription>
-                            A list of all roles and their permissions
-                        </CardDescription>
-                    </div>
+    <Head title="Roles" />
 
-                    <Link :href="create().url" v-if="can('roles.create')">
-                        <Button size="sm"> <Plus /> Create New Role </Button>
-                    </Link>
+    <AppLayout :breadcrumbs="breadcrumbs">
+        <div
+            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
+        >
+            <Card class="mx-10 mt-3">
+                <CardHeader>
+                    <CardTitle>Roles</CardTitle>
+                    <CardDescription
+                        >Manage the roles of your application.</CardDescription
+                    >
+
+                    <CardAction>
+                        <Button
+                            variant="default"
+                            size="sm"
+                            as-child
+                            class="mr-2"
+                        >
+                            <Link :href="create().url">Create Role</Link>
+                        </Button>
+                    </CardAction>
                 </CardHeader>
 
-                <!-- Table -->
-                <CardContent>
+                <CardContent class="space-y-4">
+                    <!-- Filters -->
+                    <div
+                        class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                        <div class="w-full sm:max-w-sm">
+                            <Input
+                                v-model="search"
+                                placeholder="Search roles..."
+                            />
+                        </div>
+
+                        <div class="w-full sm:w-56">
+                            <Select v-model="roleType">
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Filter by type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all"
+                                        >All types</SelectItem
+                                    >
+                                    <SelectItem value="internal"
+                                        >Internal</SelectItem
+                                    >
+                                    <SelectItem value="external"
+                                        >External</SelectItem
+                                    >
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
                     <Table>
+                        <TableCaption
+                            >List of roles in the system.</TableCaption
+                        >
+
                         <TableHeader>
                             <TableRow>
-                                <TableHead>ID</TableHead>
                                 <TableHead>Name</TableHead>
+                                <TableHead>Type</TableHead>
                                 <TableHead>Permissions</TableHead>
-                                <TableHead class="text-right">
-                                    Actions
-                                </TableHead>
+                                <TableHead class="text-right"
+                                    >Actions</TableHead
+                                >
                             </TableRow>
                         </TableHeader>
 
-                        <TableBody v-if="roles.length">
-                            <TableRow v-for="role in roles" :key="role.id">
-                                <TableCell>{{ role.id }}</TableCell>
-
-                                <TableCell class="font-medium">
+                        <TableBody>
+                            <TableRow
+                                v-for="role in props.roles.data"
+                                :key="role.id"
+                            >
+                                <TableCell class="font-medium capitalize">
                                     {{ role.name }}
                                 </TableCell>
 
-                                <!-- ✅ SAFE PERMISSIONS -->
+                                <TableCell class="capitalize">
+                                    {{ role.type }}
+                                </TableCell>
+
                                 <TableCell>
                                     <span
-                                        v-if="role.permissions.length"
-                                        class="text-sm text-muted-foreground"
+                                        v-if="!role.permissions?.length"
+                                        class="text-muted-foreground"
                                     >
-                                        {{
-                                            role.permissions
-                                                .map((p) => p.name)
-                                                .join(', ')
-                                        }}
+                                        No permissions
                                     </span>
 
-                                    <span v-else class="text-muted-foreground">
-                                        —
-                                    </span>
+                                    <Popover v-else>
+                                        <PopoverTrigger as-child>
+                                            <Button variant="outline" size="sm">
+                                                {{ role.permissions.length }}
+                                                permissions
+                                            </Button>
+                                        </PopoverTrigger>
+
+                                        <PopoverContent
+                                            class="max-h-60 w-80 overflow-y-auto"
+                                        >
+                                            <div class="flex flex-wrap gap-2">
+                                                <span
+                                                    v-for="p in role.permissions"
+                                                    :key="p.id"
+                                                    class="rounded-md bg-muted px-2 py-1 text-xs"
+                                                >
+                                                    {{ p.name }}
+                                                </span>
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
                                 </TableCell>
 
-                                <TableCell class="space-x-2 text-right">
-
+                                <TableCell class="text-right">
+                                    <div class="flex justify-end gap-2">
                                         <Button
-                                            as-child
                                             variant="default"
                                             size="sm"
-                                            v-if="can('roles.edit')"
+                                            as-child
                                         >
-                                        <Link :href="edit(role.id).url"> <Edit/>
-                                            Edit
-                                        </Link>
+                                            <Link
+                                                :href="
+                                                    edit({ role: role.id }).url
+                                                "
+                                            >
+                                                <Pencil class="mr-2 h-4 w-4" />
+                                                Edit
+                                            </Link>
                                         </Button>
 
-                                    <Button
-                                        v-if="can('roles.delete')"
-                                        variant="destructive"
-                                        size="sm"
-                                        @click="openDeleteDialog(role.id)"
-                                    >
-                                    <Trash2/>
-                                        Delete
-                                    </Button>
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            @click="openDelete(role)"
+                                            class="cursor-pointer"
+                                        >
+                                            <Trash2 class="mr-2 h-4 w-4" />
+                                            Delete
+                                        </Button>
+                                    </div>
                                 </TableCell>
                             </TableRow>
-                        </TableBody>
 
-                        <TableBody v-else>
-                            <TableRow>
+                            <TableRow v-if="!props.roles.data.length">
                                 <TableCell
                                     colspan="4"
-                                    class="h-24 text-center text-muted-foreground"
+                                    class="py-6 text-center text-muted-foreground"
                                 >
-                                    No roles found
+                                    No roles found.
                                 </TableCell>
                             </TableRow>
                         </TableBody>
                     </Table>
+                </CardContent>
+            </Card>
 
-                    <Dialog v-model:open="dialogOpen">
-                        <DialogContent class="sm:max-w-md" :disableOutsidePointerEvents="true">
-                            <DialogHeader class="space-y-3">
-                            <div class="flex items-center gap-2 text-destructive">
-                                <AlertTriangle class="h-5 w-5" />
-                                <DialogTitle>Delete Role</DialogTitle>
-                            </div>
+            <AlertDialog v-model:open="open">
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle
+                            >Delete Role Permanently</AlertDialogTitle
+                        >
 
-                            <DialogDescription>
-                                This action is
-                                <span class="font-semibold text-destructive"> permanent</span>.
-                                Type <strong>delete</strong> to confirm.
-                            </DialogDescription>
-                            </DialogHeader>
+                        <AlertDialogDescription class="space-y-3">
+                            <p>
+                                This action cannot be undone. It will
+                                permanently delete
+                                <span class="font-medium">
+                                    {{ selectedRole?.name }}
+                                </span>
+                                and remove it from the system.
+                            </p>
+
+                            <p class="text-sm text-muted-foreground">
+                                To confirm, please type
+                                <span
+                                    class="mx-1 font-mono font-semibold text-destructive/80"
+                                >
+                                    DELETE
+                                </span>
+                                below.
+                            </p>
 
                             <Input
-                            v-model="deleteInput"
-                            placeholder="Type delete to confirm"
-                            class="focus-visible:ring-destructive"
+                                v-model="confirmation"
+                                placeholder="Type DELETE to confirm"
+                                class="mt-2"
                             />
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
 
-                            <DialogFooter class="gap-2">
-                            <Button
-                                variant="outline"
-                                @click="dialogOpen = false"
-                            >
-                                Cancel
-                            </Button>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
 
-                            <Button
-                                variant="destructive"
-                                :disabled="deleteInput.trim().toLowerCase() !== 'delete'"
-                                @click="confirmDelete"
-                            >
-                                Permanently Delete
-                            </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                        </Dialog>
-                </CardContent>
-
-                <!-- Pagination -->
-                <CardFooter class="flex items-center justify-between">
-                    <span class="text-sm text-muted-foreground">
-                        Page {{ props.roles.meta.current_page }} of
-                        {{ props.roles.meta.last_page }}
-                    </span>
-                </CardFooter>
-            </Card>
+                        <AlertDialogAction
+                            :disabled="!canDelete || processing"
+                            @click="deleteRole"
+                            class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            <Trash2 class="mr-2 h-4 w-4" />
+                            {{
+                                processing
+                                    ? 'Deleting...'
+                                    : 'Delete Permanently'
+                            }}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     </AppLayout>
 </template>
