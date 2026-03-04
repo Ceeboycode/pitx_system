@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\DispatchController;
 use App\Http\Controllers\GateController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -11,6 +12,9 @@ use App\Http\Controllers\RouteStopController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VehicleTypeController;
 use App\Http\Controllers\VehicleController;
+use App\Http\Controllers\CompanyDocumentController;
+use App\Http\Controllers\CompanyRegistration;
+
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -22,8 +26,15 @@ Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+Route::get('/company-registration', [CompanyRegistration::class, 'show'])
+    ->name('company-registration.show');
+
+
+
+
 Route::middleware('auth')->group(function () {
     Route::resource('users', UserController::class);
+
     Route::resource('roles', RoleController::class);
 
     Route::prefix('companies')
@@ -31,19 +42,34 @@ Route::middleware('auth')->group(function () {
         ->whereNumber('company')
         ->group(function () {
 
-            // Static routes FIRST
             Route::get('trash', [CompanyController::class, 'trash'])->name('trash');
 
-            // Resource routes
+            Route::get('{company}/documents/{document}/download', [CompanyDocumentController::class, 'download'])
+                ->name('documents.download');
+
+            Route::patch('{company}/documents/{document}/unverify', [CompanyDocumentController::class, 'unverify'])
+                ->name('documents.unverify');
+
+            //  Document actions
+            Route::patch('{company}/documents/{document}/verify', [CompanyDocumentController::class, 'verify'])
+                ->name('documents.verify');
+
+            Route::patch('{company}/documents/{document}/reject', [CompanyDocumentController::class, 'reject'])
+                ->name('documents.reject');
+
+            Route::delete('{company}/documents/{document}', [CompanyDocumentController::class, 'destroy'])
+                ->name('documents.destroy');
+
             Route::get('/', [CompanyController::class, 'index'])->name('index');
+            Route::get('create', [CompanyController::class, 'create'])->name('create');
             Route::post('/', [CompanyController::class, 'store'])->name('store');
 
-            // Dynamic routes
+            Route::get('{company}/edit', [CompanyController::class, 'edit'])->name('edit');
+
             Route::get('{company}', [CompanyController::class, 'show'])->name('show');
             Route::put('{company}', [CompanyController::class, 'update'])->name('update');
             Route::delete('{company}', [CompanyController::class, 'destroy'])->name('destroy');
 
-            // Soft-delete lifecycle
             Route::patch('{company}/restore', [CompanyController::class, 'restore'])
                 ->withTrashed()
                 ->name('restore');
@@ -52,7 +78,6 @@ Route::middleware('auth')->group(function () {
                 ->withTrashed()
                 ->name('forceDelete');
         });
-
 
     Route::resource('vehicle-types', VehicleTypeController::class);
 
@@ -82,9 +107,25 @@ Route::middleware('auth')->group(function () {
 
 
     Route::resource('vehicles', VehicleController::class);
+    Route::get('/vehicles-trash', [VehicleController::class, 'trash'])->name('vehicles.trash');
+    Route::post('/vehicles/{vehicle}/restore', [VehicleController::class, 'restore'])
+        ->withTrashed()
+        ->name('vehicles.restore');
+    Route::delete('/vehicles/{vehicle}/force-delete', [VehicleController::class, 'forceDelete'])
+        ->withTrashed()
+        ->name('vehicles.forceDelete');
+
     Route::get('/faq', function () {
         return Inertia::render('FAQ');
     })->name('faq');
+
+    Route::resource('dispatches', DispatchController::class)->except(['create', 'store']);
+
+    Route::get('/dispatches/create/{company}', [DispatchController::class, 'create'])
+        ->name('dispatches.create');
+
+    Route::post('/dispatches/{company}', [DispatchController::class, 'store'])
+    ->name('dispatches.store');
 });
 
 

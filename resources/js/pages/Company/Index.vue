@@ -8,11 +8,13 @@ import ArchiveCompanyDialog from '@/components/company/ArchiveCompanyDialog.vue'
 import CreateCompanyDialog from '@/components/company/CreateCompanyDialog.vue';
 import EditCompanyDialog from '@/components/company/EditCompanyDialog.vue';
 import { can } from '@/lib/can';
+
 // Shared components
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 
 // shadcn-vue UI components
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -36,16 +38,9 @@ import {
    Layout, Routing & Inertia
 ====================================================== */
 
-// Main application layout
 import AppLayout from '@/layouts/AppLayout.vue';
-
-// Wayfinder routes (type-safe route helpers)
-import { index, show, trash } from '@/routes/companies';
-
-// Breadcrumb type
+import { create, edit, index, show, trash } from '@/routes/companies';
 import { type BreadcrumbItem } from '@/types';
-
-// Inertia helpers
 import { Head, Link } from '@inertiajs/vue3';
 
 /* ======================================================
@@ -72,26 +67,38 @@ import { ref } from 'vue';
    Types
 ====================================================== */
 
+type CompanyStatus =
+    | 'draft'
+    | 'docs_completed'
+    | 'for_verification'
+    | 'verified'
+    | 'needs_revision'
+    | 'rejected'
+    | null;
+
 type Company = {
     id: number;
     company_name: string;
-    created_at_human?: string;
+    company_code: string;
+    company_email?: string | null;
+    company_phone?: string | null;
+    status?: CompanyStatus;
+    created_at_human?: string | null;
 };
 
 /* ======================================================
    Breadcrumbs
 ====================================================== */
 
-// Breadcrumbs shown in AppLayout
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Companies', href: index().url },
 ];
 
 /* ======================================================
-   Props from Inertia Controller
+   Props
 ====================================================== */
 
-const props = defineProps<{
+defineProps<{
     companies: any;
     filters: { search: string | null };
 }>();
@@ -100,58 +107,78 @@ const props = defineProps<{
    Dialog State
 ====================================================== */
 
-// Create dialog open state
 const createOpen = ref(false);
-
-// Edit dialog open state
 const editOpen = ref(false);
-
-// Archive dialog open state
 const archiveOpen = ref(false);
-
-// Currently selected company for edit/archive
 const selectedCompany = ref<Company | null>(null);
 
 /* ======================================================
    Actions
 ====================================================== */
 
-// Open edit dialog and set selected company
 function openEdit(company: Company) {
     selectedCompany.value = company;
     editOpen.value = true;
 }
 
-// Open archive dialog and set selected company
 function openArchive(company: Company) {
     selectedCompany.value = company;
     archiveOpen.value = true;
 }
+
+/* ======================================================
+   Status helpers (human readable + default badge variants)
+====================================================== */
+
+function humanizeStatus(status?: CompanyStatus): string {
+    if (!status) return '—';
+
+    const map: Record<string, string> = {
+        draft: 'Draft',
+        docs_completed: 'Documents Completed',
+        for_verification: 'For Verification',
+        verified: 'Verified',
+        needs_revision: 'Needs Revision',
+        rejected: 'Rejected',
+    };
+
+    return map[status] ?? status.replace(/_/g, ' ');
+}
+
+function statusBadgeVariant(
+    status?: CompanyStatus,
+): 'default' | 'secondary' | 'destructive' | 'outline' {
+    switch (status) {
+        case 'verified':
+            return 'default'; // primary
+        case 'docs_completed':
+        case 'for_verification':
+            return 'secondary'; // muted
+        case 'rejected':
+            return 'destructive'; // red
+        case 'draft':
+        case 'needs_revision':
+        default:
+            return 'outline'; // neutral
+    }
+}
 </script>
 
 <template>
-    <!-- Page title (used by browser + Inertia) -->
     <Head title="Companies" />
 
-    <!-- Main application layout -->
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
-            <!-- ======================================================
-                 Companies Card
-            ======================================================= -->
             <Card class="mx-5">
-                <!-- Card Header -->
                 <CardHeader>
                     <CardTitle>Companies</CardTitle>
-                    <CardDescription>
-                        List of all companies in the system.
-                    </CardDescription>
+                    <CardDescription
+                        >List of all companies in the system.</CardDescription
+                    >
 
-                    <!-- Header Actions -->
                     <CardAction>
-                        <!-- View Archived Companies -->
                         <Button
                             v-if="can('company.viewAny')"
                             as-child
@@ -165,27 +192,19 @@ function openArchive(company: Company) {
                             </Link>
                         </Button>
 
-                        <!-- Open Create Company Dialog -->
-                        <Button
-                            size="sm"
-                            @click="createOpen = true"
-                            class="cursor-pointer"
-                        >
-                            <Plus class="mr-2 h-4 w-4" />
-                            New Company
+                        <Button variant="default" size="sm" as-child>
+                            <Link :href="create().url">
+                                <Plus class="mr-2 h-4 w-4" />
+                                New Company
+                            </Link>
                         </Button>
                     </CardAction>
                 </CardHeader>
 
-                <!-- Card Content -->
                 <CardContent class="space-y-4">
-                    <!-- ======================================================
-                         Search & Import / Export Row
-                    ======================================================= -->
                     <div
                         class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
                     >
-                        <!-- Search Input -->
                         <div class="w-full max-w-sm">
                             <SearchInput
                                 :route="index().url"
@@ -196,7 +215,6 @@ function openArchive(company: Company) {
                             />
                         </div>
 
-                        <!-- Import / Export Buttons -->
                         <div class="flex gap-2 sm:justify-end">
                             <Button
                                 class="cursor-pointer"
@@ -218,16 +236,16 @@ function openArchive(company: Company) {
                         </div>
                     </div>
 
-                    <!-- ======================================================
-                         Companies Table
-                    ======================================================= -->
                     <Table>
-                        <TableCaption> List of companies. </TableCaption>
+                        <TableCaption>List of companies.</TableCaption>
 
-                        <!-- Table Header -->
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Company Name</TableHead>
+                                <TableHead>Company Code</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead>Phone</TableHead>
+                                <TableHead>Status</TableHead>
                                 <TableHead>Created At</TableHead>
                                 <TableHead class="text-right">Action</TableHead>
                             </TableRow>
@@ -243,14 +261,41 @@ function openArchive(company: Company) {
                                 </TableCell>
 
                                 <TableCell>
-                                    {{ company.created_at_human }}
+                                    {{ company.company_code }}
+                                </TableCell>
+
+                                <TableCell class="lowercase">
+                                    {{ company.company_email ?? '-' }}
+                                </TableCell>
+
+                                <TableCell>
+                                    {{ company.company_phone ?? '-' }}
+                                </TableCell>
+
+                                <TableCell>
+                                    <Badge
+                                        :variant="
+                                            statusBadgeVariant(
+                                                company.status ?? null,
+                                            )
+                                        "
+                                    >
+                                        {{
+                                            humanizeStatus(
+                                                company.status ?? null,
+                                            )
+                                        }}
+                                    </Badge>
+                                </TableCell>
+
+                                <TableCell>
+                                    {{ company.created_at_human ?? '-' }}
                                 </TableCell>
 
                                 <TableCell class="text-right">
                                     <div
                                         class="flex flex-wrap justify-end gap-2"
                                     >
-                                        <!-- View -->
                                         <Button
                                             v-if="can('company.view')"
                                             as-child
@@ -269,19 +314,23 @@ function openArchive(company: Company) {
                                             </Link>
                                         </Button>
 
-                                        <!-- Edit -->
                                         <Button
-                                            class="cursor-pointer"
+                                            v-if="can('company.update')"
                                             size="sm"
                                             variant="default"
-                                            @click="openEdit(company)"
+                                            as-child
                                         >
-                                            <Edit class="mr-2 h-4 w-4" />
-                                            Edit
+                                            <Link
+                                                :href="edit(company.id).url"
+                                                class="cursor-pointer"
+                                            >
+                                                <Edit class="mr-2 h-4 w-4" />
+                                                Edit
+                                            </Link>
                                         </Button>
 
-                                        <!-- Archive -->
                                         <Button
+                                            v-if="can('company.delete')"
                                             class="cursor-pointer"
                                             size="sm"
                                             variant="archive"
@@ -293,9 +342,10 @@ function openArchive(company: Company) {
                                     </div>
                                 </TableCell>
                             </TableRow>
+
                             <TableRow v-if="companies.data.length === 0">
                                 <TableCell
-                                    colspan="4"
+                                    colspan="7"
                                     class="py-10 text-center text-muted-foreground"
                                 >
                                     No companies found.
@@ -304,9 +354,6 @@ function openArchive(company: Company) {
                         </TableBody>
                     </Table>
 
-                    <!-- ======================================================
-                         Pagination
-                    ======================================================= -->
                     <InertiaPagination
                         :links="companies.links"
                         :meta="{
@@ -318,21 +365,15 @@ function openArchive(company: Company) {
                 </CardContent>
             </Card>
 
-            <!-- ======================================================
-                 Dialogs
-            ======================================================= -->
-
-            <!-- Create Company -->
+            <!-- Dialogs (if you still use them) -->
             <CreateCompanyDialog v-model:open="createOpen" />
 
-            <!-- Edit Company -->
             <EditCompanyDialog
                 v-if="selectedCompany"
                 v-model:open="editOpen"
                 :company="selectedCompany"
             />
 
-            <!-- Archive Company -->
             <ArchiveCompanyDialog
                 v-if="selectedCompany"
                 v-model:open="archiveOpen"

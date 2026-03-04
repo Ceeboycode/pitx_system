@@ -31,10 +31,12 @@ const props = defineProps<{
 const processing = ref(false);
 
 function archive() {
+    if (processing.value) return;
     processing.value = true;
 
     router.delete(destroy({ vehicle: props.vehicle.id }).url, {
         preserveScroll: true,
+
         onFinish: () => (processing.value = false),
     });
 }
@@ -84,7 +86,7 @@ function archive() {
                     @click="archive"
                     class="cursor-pointer"
                 >
-                 <ArchiveX class="mr-2 h-4 w-4" />
+                    <ArchiveX class="mr-2 h-4 w-4" />
                     {{ processing ? 'Archiving...' : 'Yes, Archive Vehicle' }}
                 </AlertDialogAction>
             </AlertDialogFooter>

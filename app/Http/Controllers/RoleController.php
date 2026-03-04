@@ -2,84 +2,85 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreRoleRequest;
 use App\Http\Requests\UpdateRoleRequest;
-use App\Http\Resources\Web\PermissionResource as WebPermissionResource;
-use App\Http\Resources\Web\RoleResource as WebRoleResource;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
+use App\Models\Role;
 
-class RoleController extends Controller implements HasMiddleware
+
+
+class RoleController extends Controller
 {
-    public static function middleware(): array
-    {
-        return [
-            new Middleware('permission:users.viewAny', only: ['index']),
-            new Middleware('permission:users.view', only: ['show']),
-            new Middleware('permission:roles.create', only: ['create', 'store']),
-            new Middleware('permission:roles.edit', only: ['edit', 'update']),
-            new Middleware('permission:roles.delete', only: ['destroy']),
-        ];
-    }
 
-    public function index()
+    public function index(Request $request)
     {
-        $roles = Role::with('permissions:id,name')
-            ->orderBy('name')
-            ->paginate(10)
+        $search = $request->input('search');
+        $type = $request->input('type');
+
+        $roles = Role::query()
+            ->select('id', 'name', 'type')
+            ->with(['permissions:id,name'])
+            ->when($search, fn ($q) => $q->where('name', 'like', "%{$search}%"))
+            ->when($type, fn ($q) => $q->where('type', $type))
+            ->latest()
+            ->paginate(20)
             ->withQueryString();
 
         return Inertia::render('Roles/Index', [
-            'roles' => WebRoleResource::collection($roles),
+            'roles' => $roles,
+            'filters' => [
+                'search' => $search,
+                'type' => $type,
+            ],
         ]);
     }
 
     public function create()
     {
         return Inertia::render('Roles/Create', [
-            'permissions' => WebPermissionResource::collection(
-                Permission::orderBy('name')->get(['id', 'name'])
-            ),
+            'permissions' => Permission::select('id', 'name')->orderBy('name')->get(),
+            'roleTypes' => ['internal', 'external'],
         ]);
     }
 
     public function store(StoreRoleRequest $request)
     {
-        $validated = $request->validated();
-
         $role = Role::create([
-            'name'       => $validated['name'],
+            'name' => $request->string('name')->toString(),
+            'type' => $request->string('type')->toString(),
             'guard_name' => config('auth.defaults.guard'),
         ]);
 
-        $role->syncPermissions($validated['permissions'] ?? []);
+        $role->syncPermissions($request->input('permissions', []));
 
-        return to_route('roles.index')
-            ->with('success', 'Role created successfully.');
+        return to_route('roles.index')->with('success', 'Role created successfully.');
     }
 
-    public function show(Role $role)
-    {
-        $role->load('permissions:id,name');
+    // public function show(Role $role)
+    // {
+    //     $role->load('permissions:id,name');
 
-        return Inertia::render('Roles/Show', [
-            'role' => new WebRoleResource($role),
-        ]);
-    }
+    //     return Inertia::render('Roles/Show', [
+    //         'role' => new WebRoleResource($role),
+    //     ]);
+    // }
 
     public function edit(Role $role)
     {
-        $role->load('permissions:id,name');
+        $role->load('permissions:id');
 
         return Inertia::render('Roles/Edit', [
-            'role' => new WebRoleResource($role),
-            'permissions' => WebPermissionResource::collection(
-                Permission::orderBy('name')->get(['id', 'name'])
-            ),
-            'selectedPermissions' => $role->permissions->pluck('id'),
+            'role' => [
+                'id' => $role->id,
+                'name' => $role->name,
+                'type' => $role->type,
+            ],
+            'permissions' => Permission::select('id', 'name')->orderBy('name')->get(),
+            'rolePermissionIds' => $role->permissions->pluck('id')->values(),
+            'roleTypes' => ['internal', 'external'],
         ]);
     }
 
@@ -89,12 +90,12 @@ class RoleController extends Controller implements HasMiddleware
 
         $role->update([
             'name' => $validated['name'],
+            'type' => $validated['type'],
         ]);
 
         $role->syncPermissions($validated['permissions'] ?? []);
 
-        return to_route('roles.index')
-            ->with('success', 'Role updated successfully.');
+        return back()->with('success', 'Role updated successfully.');
     }
 
     public function destroy(Role $role)

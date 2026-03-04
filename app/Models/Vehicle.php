@@ -7,6 +7,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Company;
+use App\Models\Route;
+use App\Models\User;
+use App\Models\VehicleType;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Vehicle extends Model
 {
@@ -21,6 +26,7 @@ class Vehicle extends Model
         'vehicle_type_id',
         'created_by',
         'updated_by',
+        'deleted_by',
     ];
 
     protected $appends = [
@@ -93,7 +99,12 @@ class Vehicle extends Model
     {
         return $this->belongsTo(User::class, 'deleted_by');
     }
-    
+
+    public function dispatches() : HasMany
+    {
+        return $this->hasMany(Dispatch::class);
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Accessors

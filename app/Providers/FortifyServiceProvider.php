@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -30,6 +32,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         $this->configureActions();
         $this->configureViews();
+        $this->configureAuthentication(); //
         $this->configureRateLimiting();
     }
 
@@ -74,6 +77,35 @@ class FortifyServiceProvider extends ServiceProvider
     }
 
     /**
+     *  Configure authentication: login via username OR email
+     *
+     * Requires config/fortify.php:
+     *   'username' => 'login'
+     */
+    private function configureAuthentication(): void
+    {
+        Fortify::authenticateUsing(function (Request $request) {
+            $login = trim((string) $request->input('login'));
+            $password = (string) $request->input('password');
+
+            if ($login === '' || $password === '') {
+                return null;
+            }
+
+            $user = User::query()
+                ->where('username', $login)
+                ->orWhere('email', $login)
+                ->first();
+
+            if ($user && Hash::check($password, $user->password)) {
+                return $user;
+            }
+
+            return null;
+        });
+    }
+
+    /**
      * Configure rate limiting.
      */
     private function configureRateLimiting(): void
@@ -83,7 +115,10 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
+            // After setting 'username' => 'login', Fortify::username() returns 'login'
+            $value = (string) $request->input(Fortify::username());
+
+            $throttleKey = Str::transliterate(Str::lower($value).'|'.$request->ip());
 
             return Limit::perMinute(5)->by($throttleKey);
         });

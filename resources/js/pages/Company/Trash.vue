@@ -81,6 +81,7 @@ import { ref } from 'vue';
 type Company = {
     id: number;
     company_name: string;
+    company_code: string;
     deleted_at_human?: string;
     deleter?: { id: number; name: string } | null;
 };
@@ -198,6 +199,7 @@ function openForceDelete(company: Company) {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Company Name</TableHead>
+                                <TableHead>Company Code</TableHead>
                                 <TableHead>Archived At</TableHead>
                                 <TableHead>Archived By</TableHead>
                                 <TableHead>Actions</TableHead>
@@ -216,6 +218,10 @@ function openForceDelete(company: Company) {
                                 </TableCell>
 
                                 <TableCell class="capitalize">
+                                    {{ company.company_code }}
+                                </TableCell>
+
+                                <TableCell>
                                     {{ company.deleted_at_human ?? '—' }}
                                 </TableCell>
 

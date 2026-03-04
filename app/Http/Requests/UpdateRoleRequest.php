@@ -29,6 +29,7 @@ class UpdateRoleRequest extends FormRequest
                 'max:255',
                 Rule::unique('roles', 'name')->ignore($this->role),
             ],
+            'type' => ['required', 'in:internal,external'],
             'permissions' => ['sometimes', 'array'],
             'permissions.*' => ['integer', 'exists:permissions,id'],
         ];

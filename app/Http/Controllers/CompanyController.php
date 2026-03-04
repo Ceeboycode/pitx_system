@@ -21,7 +21,7 @@ class CompanyController extends Controller
         Gate::authorize('viewAny', Company::class);
 
         $companies = Company::query()
-            ->select('id', 'company_name', 'created_at')
+            ->select('id', 'company_name', 'company_code', 'company_email', 'company_phone', 'status', 'created_at')
             ->search($request->search)
             ->latest()
             ->paginate(10)
@@ -42,6 +42,23 @@ class CompanyController extends Controller
         $company->load([
             'creator:id,name',
             'updater:id,name',
+            'documents' => function ($q) {
+                $q->select(
+                    'id',
+                    'company_id',
+                    'doc_type',
+                    'status',
+                    'remarks',
+                    'original_name',
+                    'file_path',
+                    'uploaded_by',
+                    'verified_by',
+                    'verified_at',
+                    'created_at'
+                )->latest();
+            },
+            'documents.uploader:id,name',
+            'documents.verifier:id,name',
         ]);
 
         return Inertia::render('Company/Show', [
@@ -54,7 +71,7 @@ class CompanyController extends Controller
         Gate::authorize('viewAny', Company::class);
 
         $companies = Company::onlyTrashed()
-            ->select('id', 'company_name', 'deleted_at', 'deleted_by')
+            ->select('id', 'company_name', 'company_code', 'deleted_at', 'deleted_by')
             ->with(['deleter:id,name'])
             ->search($request->search)
             ->latest('deleted_at')
@@ -69,36 +86,69 @@ class CompanyController extends Controller
         ]);
     }
 
+    public function create()
+    {
+        Gate::authorize('create', Company::class);
+
+        return Inertia::render('Company/Create');
+    }
+
     public function store(CompanyStoreRequest $request)
     {
         Gate::authorize('create', Company::class);
 
-        $this->companyService->createCompany(
+        $userId = $request->user()?->id;
+        abort_if(!$userId, 403);
+
+        $company = $this->companyService->createCompanyWithDocuments(
             $request->validated(),
-            auth()->user()->id
+            $request,
+            $userId
         );
 
-        return back()->with('success', 'Company created successfully.');
+        return redirect()
+            ->route('companies.show', ['company' => $company->id])
+            ->with('success', 'Company and documents submitted successfully.');
+    }
+
+    public function edit(Company $company)
+    {
+        Gate::authorize('update', $company);
+
+        $company->load([
+            'documents:id,company_id,doc_type,original_name,file_path,status',
+        ]);
+
+        return Inertia::render('Company/Edit', [
+            'company' => $company,
+        ]);
     }
 
     public function update(CompanyUpdateRequest $request, Company $company)
     {
         Gate::authorize('update', $company);
 
-        $this->companyService->updateCompany(
+        $userId = $request->user()?->id;
+        abort_if(!$userId, 403);
+
+        $this->companyService->updateCompanyWithDocuments(
             $company,
             $request->validated(),
-            auth()->user()->id
+            $request,
+            $userId
         );
 
         return back()->with('success', 'Company updated successfully.');
     }
 
-    public function destroy(Company $company)
+    public function destroy(Request $request, Company $company)
     {
         Gate::authorize('delete', $company);
 
-        $this->companyService->deleteCompany($company, auth()->user()->id);
+        $userId = $request->user()?->id;
+        abort_if(!$userId, 403);
+
+        $this->companyService->deleteCompany($company, $userId);
 
         return back()->with('success', 'Company archived successfully.');
     }

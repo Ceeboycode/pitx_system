@@ -3,30 +3,37 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreUserRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'string', 'email', 'max:150', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'roles' => ['array', 'min:1'],
-            'roles.*' => ['string', 'exists:roles,name'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'phone_number' => ['required', 'string', 'max:20'],
+
+            'type' => ['required', Rule::in(['internal', 'external'])],
+
+            'company_id' => [
+                'nullable',
+                'integer',
+                Rule::requiredIf(fn () => $this->input('type') === 'external'),
+                'exists:companies,id',
+            ],
+
+            'role' => [
+                'required',
+                'string',
+                // role name must exist AND match the selected type
+                Rule::exists('roles', 'name')->where(fn ($q) => $q->where('type', $this->input('type'))),
+            ],
         ];
     }
 }

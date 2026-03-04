@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Services\Route\RouteService;
 use App\Http\Requests\Route\RouteStoreRequest;
 use App\Http\Requests\Route\RouteUpdateRequest;

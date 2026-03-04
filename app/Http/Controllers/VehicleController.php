@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-
+use App\Http\Controllers\Controller;
 use App\Models\Vehicle;
 use Inertia\Inertia;
 use App\Models\Company;
@@ -128,5 +128,60 @@ class VehicleController extends Controller
         $this->vehicleService->deleteVehicle($vehicle, auth()->user()->id);
 
         return back()->with('success', 'Vehicle deleted successfully.');
+    }
+
+    public function trash(Request $request)
+    {
+        Gate::authorize('viewAny', Vehicle::class);
+
+        $search = $request->input('search');
+
+        $vehicles = Vehicle::onlyTrashed()
+            ->with([
+                'company:id,company_name',
+                'route:id,route_name',
+                'vehicleType:id,type_name',
+                'deleter:id,name',
+            ])
+            ->select([
+                'id',
+                'plate_number',
+                'body_number',
+                'capacity',
+                'company_id',
+                'route_id',
+                'vehicle_type_id',
+                'deleted_at',
+                'deleted_by',
+            ])
+            ->search($search)
+            ->latest('deleted_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return Inertia::render('Vehicles/Trash', [
+            'vehicles' => $vehicles,
+            'filters' => [
+                'search' => $search,
+            ],
+        ]);
+    }
+
+    public function restore(Vehicle $vehicle)
+    {
+        Gate::authorize('restore', $vehicle);
+
+        $this->vehicleService->restoreVehicle($vehicle);
+
+        return back()->with('success', 'Vehicle restored successfully.');
+    }
+
+    public function forceDelete(Vehicle $vehicle)
+    {
+        Gate::authorize('forceDelete', $vehicle);
+
+        $this->vehicleService->forceDeleteVehicle($vehicle);
+
+        return back()->with('success', 'Vehicle permanently deleted successfully.');
     }
 }
