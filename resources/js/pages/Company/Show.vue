@@ -1,3 +1,4 @@
+<!-- resources/js/Pages/Company/Show.vue -->
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
@@ -60,9 +61,18 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+
 import { index, show } from '@/routes/companies';
 import {
     destroy as destroyDoc,
+    downloadBulk,
     download as downloadCompanyDocument,
     reject,
     unverify,
@@ -74,6 +84,8 @@ import {
     Building2,
     CheckCircle2,
     Download,
+    Eye,
+    FileArchive,
     FileText,
     MessageSquareText,
     MoreHorizontal,
@@ -91,7 +103,10 @@ type CompanyDocument = {
     status: string;
     original_name?: string | null;
     file_path?: string;
-    created_at?: string | null; // Uploaded At
+    mime_type?: string | null;
+    created_at?: string | null;
+    issued_at?: string | null;
+    expires_at?: string | null;
     remarks?: string | null;
     uploader?: UserMini | null;
     verifier?: UserMini | null;
@@ -113,26 +128,27 @@ const props = defineProps<{
         updated_at_human?: string | null;
         creator?: { name: string } | null;
         updater?: { name: string } | null;
-
-        // ✅ Representative details (make sure backend sends these fields)
         authorized_representative_name?: string | null;
         authorized_representative_position?: string | null;
         authorized_representative_contact?: string | null;
-
         documents?: CompanyDocument[];
     };
 }>();
 
 const company = computed(() => props.company);
+const docs = computed(() => props.company.documents ?? []);
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Companies', href: index().url },
     { title: 'Company Details', href: show({ company: company.value.id }).url },
 ];
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatDate(date?: string | null) {
     if (!date) return '—';
-    return new Date(date).toLocaleDateString(undefined, {
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString(undefined, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -141,7 +157,9 @@ function formatDate(date?: string | null) {
 
 function formatDateTime(date?: string | null) {
     if (!date) return '—';
-    return new Date(date).toLocaleString(undefined, {
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleString(undefined, {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
@@ -154,6 +172,13 @@ function formatDateTime(date?: string | null) {
 function humanize(text?: string | null) {
     if (!text) return '—';
     return text.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function isExpired(expiresAt?: string | null): boolean {
+    if (!expiresAt) return false;
+    const d = new Date(expiresAt);
+    if (Number.isNaN(d.getTime())) return false;
+    return d.getTime() < Date.now();
 }
 
 function statusVariant(
@@ -174,14 +199,95 @@ function statusVariant(
     }
 }
 
-/**
- * Forms
- */
-const actionForm = useForm({}); // verify/unverify/delete
+// ─── Download VERIFIED docs as ZIP ────────────────────────────────────────────
+function downloadVerifiedZip() {
+    const { url } = downloadBulk({ company: company.value.id });
 
-/**
- * Confirm dialog for verify/unverify(delete)/download
- */
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = url;
+    form.style.display = 'none';
+
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = '_token';
+    csrf.value =
+        (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)
+            ?.content ?? '';
+    form.appendChild(csrf);
+
+    document.body.appendChild(form);
+    form.submit();
+
+    setTimeout(() => {
+        try {
+            document.body.removeChild(form);
+        } catch {}
+    }, 1000);
+}
+
+// Bulk confirm dialog
+const bulkConfirmOpen = ref(false);
+const verifiedCount = computed(
+    () => docs.value.filter((d) => d.status === 'verified').length,
+);
+
+function openBulkConfirm() {
+    bulkConfirmOpen.value = true;
+}
+function runBulkDownload() {
+    bulkConfirmOpen.value = false;
+    downloadVerifiedZip();
+}
+
+// ─── File preview helpers ──────────────────────────────────────────────────────
+function fileUrl(doc: CompanyDocument): string {
+    if (!doc.file_path) return '';
+    return `/storage/${doc.file_path}`;
+}
+
+function isImage(doc: CompanyDocument): boolean {
+    if (doc.mime_type) return doc.mime_type.startsWith('image/');
+    const ext = (doc.original_name ?? doc.file_path ?? '')
+        .split('.')
+        .pop()
+        ?.toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext ?? '');
+}
+
+function isPdf(doc: CompanyDocument): boolean {
+    if (doc.mime_type) return doc.mime_type === 'application/pdf';
+    const ext = (doc.original_name ?? doc.file_path ?? '')
+        .split('.')
+        .pop()
+        ?.toLowerCase();
+    return ext === 'pdf';
+}
+
+function canPreview(doc: CompanyDocument): boolean {
+    return isImage(doc) || isPdf(doc);
+}
+
+// ─── Preview dialog ───────────────────────────────────────────────────────────
+const previewOpen = ref(false);
+const previewDoc = ref<CompanyDocument | null>(null);
+const pdfLoadError = ref(false);
+
+function openPreview(doc: CompanyDocument) {
+    previewDoc.value = doc;
+    pdfLoadError.value = false;
+    previewOpen.value = true;
+}
+
+function closePreview() {
+    previewOpen.value = false;
+    previewDoc.value = null;
+}
+
+// ─── Action form ──────────────────────────────────────────────────────────────
+const actionForm = useForm({});
+
+// ─── Confirm dialog (row actions) ─────────────────────────────────────────────
 type ConfirmAction = 'verify' | 'unverify' | 'delete' | 'download';
 const confirmOpen = ref(false);
 const confirmAction = ref<ConfirmAction>('verify');
@@ -196,11 +302,6 @@ function openConfirm(action: ConfirmAction, doc: CompanyDocument) {
 function confirmTitle() {
     const doc = confirmDoc.value;
     if (!doc) return '';
-
-    if (confirmAction.value === 'unverify' && doc.status === 'invalid') {
-        return 'Uninvalid document?';
-    }
-
     switch (confirmAction.value) {
         case 'verify':
             return 'Verify document?';
@@ -217,11 +318,6 @@ function confirmDescription() {
     const doc = confirmDoc.value;
     if (!doc) return '';
     const name = doc.original_name ?? humanize(doc.doc_type);
-
-    if (confirmAction.value === 'unverify' && doc.status === 'invalid') {
-        return `This will move "${name}" back to pending.`;
-    }
-
     switch (confirmAction.value) {
         case 'verify':
             return `This will mark "${name}" as verified.`;
@@ -236,8 +332,7 @@ function confirmDescription() {
 
 function runConfirmedAction() {
     const doc = confirmDoc.value;
-    if (!doc) return;
-    if (actionForm.processing || rejectForm.processing) return;
+    if (!doc || actionForm.processing || rejectForm.processing) return;
 
     const urls = {
         verify: verify({ company: company.value.id, document: doc.id }).url,
@@ -276,24 +371,61 @@ function runConfirmedAction() {
     });
 }
 
-/**
- * Invalid/Reject remarks (BIG dialog)
- */
+// ─── Reject dialog + presets ─────────────────────────────────────────────────
+const remarkPresets = [
+    { value: 'missing_signature', label: 'Missing signature' },
+    { value: 'blurred', label: 'Blurred / unreadable file' },
+    { value: 'wrong_document', label: 'Wrong document uploaded' },
+    { value: 'expired', label: 'Expired document' },
+    { value: 'mismatch_name', label: 'Company name mismatch' },
+    { value: 'mismatch_details', label: 'Details mismatch / incomplete' },
+    { value: 'needs_stamp', label: 'Missing stamp / seal' },
+    { value: 'missing_pages', label: 'Missing pages / incomplete scan' },
+    { value: 'reupload_pdf', label: 'Please re-upload as PDF' },
+    { value: 'other', label: 'Other (write your own)' },
+] as const;
+
+const presetTextMap: Record<string, string> = {
+    missing_signature: 'Missing signature. Please upload a signed copy.',
+    blurred:
+        'The file is blurred/unreadable. Please upload a clearer scan/photo.',
+    wrong_document:
+        'Wrong document uploaded. Please upload the correct document.',
+    expired:
+        'Document appears expired. Please upload a valid/updated document.',
+    mismatch_name:
+        'Company name does not match our records. Please upload the correct document.',
+    mismatch_details:
+        'Some details are missing or do not match. Please review and re-upload.',
+    needs_stamp: 'Missing stamp/seal. Please upload a stamped/sealed copy.',
+    missing_pages:
+        'Incomplete document (missing pages). Please upload the complete file.',
+    reupload_pdf: 'Please re-upload the document as a PDF for verification.',
+    other: '',
+};
+
+const selectedRemarkPreset = ref<string | null>(null);
+
 const rejectOpen = ref(false);
 const rejectDocId = ref<number | null>(null);
 const rejectForm = useForm<{ remarks: string }>({ remarks: '' });
 
 function openReject(docId: number) {
     rejectDocId.value = docId;
+    selectedRemarkPreset.value = null;
     rejectForm.reset();
     rejectForm.clearErrors();
     rejectOpen.value = true;
 }
 
-function submitReject() {
-    if (!rejectDocId.value) return;
-    if (rejectForm.processing) return;
+function applyPreset(value: string) {
+    selectedRemarkPreset.value = value;
+    const text = presetTextMap[value] ?? '';
+    if (value !== 'other') rejectForm.remarks = text;
+}
 
+function submitReject() {
+    if (!rejectDocId.value || rejectForm.processing) return;
     rejectForm.patch(
         reject({ company: company.value.id, document: rejectDocId.value }).url,
         {
@@ -301,6 +433,7 @@ function submitReject() {
             onSuccess: () => {
                 rejectOpen.value = false;
                 rejectDocId.value = null;
+                selectedRemarkPreset.value = null;
                 rejectForm.reset();
             },
         },
@@ -360,9 +493,8 @@ const repHasAny = computed(() => {
                     </Badge>
                 </div>
 
-                <!-- Top grid: Company + Representative -->
+                <!-- Top grid -->
                 <div class="grid gap-4 lg:grid-cols-3">
-                    <!-- Company Details -->
                     <Card class="lg:col-span-2">
                         <CardHeader>
                             <div class="flex items-center gap-2">
@@ -378,7 +510,6 @@ const repHasAny = computed(() => {
                                 </div>
                             </div>
                         </CardHeader>
-
                         <CardContent>
                             <Table class="w-full">
                                 <TableBody>
@@ -449,7 +580,6 @@ const repHasAny = computed(() => {
                         </CardContent>
                     </Card>
 
-                    <!-- Representative Details -->
                     <Card>
                         <CardHeader>
                             <div class="flex items-center gap-2">
@@ -465,7 +595,6 @@ const repHasAny = computed(() => {
                                 </div>
                             </div>
                         </CardHeader>
-
                         <CardContent class="space-y-3">
                             <div class="space-y-1">
                                 <div class="text-xs text-muted-foreground">
@@ -478,7 +607,6 @@ const repHasAny = computed(() => {
                                     }}
                                 </div>
                             </div>
-
                             <div class="space-y-1">
                                 <div class="text-xs text-muted-foreground">
                                     Position
@@ -490,7 +618,6 @@ const repHasAny = computed(() => {
                                     }}
                                 </div>
                             </div>
-
                             <div class="space-y-1">
                                 <div class="text-xs text-muted-foreground">
                                     Contact
@@ -502,7 +629,6 @@ const repHasAny = computed(() => {
                                     }}
                                 </div>
                             </div>
-
                             <div
                                 v-if="!repHasAny"
                                 class="rounded-md border p-3 text-xs text-muted-foreground"
@@ -513,303 +639,536 @@ const repHasAny = computed(() => {
                     </Card>
                 </div>
 
-                <!-- Documents -->
+                <!-- Documents Card -->
                 <Card>
                     <CardHeader>
-                        <div class="flex items-center gap-2">
-                            <FileText class="h-5 w-5 text-muted-foreground" />
-                            <div>
-                                <CardTitle>Document Details</CardTitle>
-                                <CardDescription>
-                                    Review uploaded documents, verify, mark
-                                    invalid, download, or delete.
-                                </CardDescription>
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex items-center gap-2">
+                                <FileText
+                                    class="h-5 w-5 text-muted-foreground"
+                                />
+                                <div>
+                                    <CardTitle>Document Details</CardTitle>
+                                    <CardDescription
+                                        >Review, verify, preview, or download
+                                        submitted documents.</CardDescription
+                                    >
+                                </div>
                             </div>
+
+                            <Button
+                                v-if="docs.length > 0"
+                                variant="outline"
+                                size="sm"
+                                class="shrink-0"
+                                @click="openBulkConfirm"
+                            >
+                                <FileArchive class="mr-2 h-4 w-4" />
+                                Download All (Verified Only)
+                            </Button>
                         </div>
                     </CardHeader>
 
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>File</TableHead>
-                                    <TableHead>Remarks</TableHead>
-                                    <TableHead>Uploaded By</TableHead>
-                                    <TableHead>Uploaded At</TableHead>
-                                    <TableHead>Verified By</TableHead>
-                                    <TableHead>Verified At</TableHead>
-                                    <TableHead class="w-20 text-right"
-                                        >Action</TableHead
-                                    >
-                                </TableRow>
-                            </TableHeader>
-
-                            <TableBody>
-                                <TableRow
-                                    v-for="doc in company.documents ?? []"
-                                    :key="doc.id"
-                                >
-                                    <TableCell>{{
-                                        humanize(doc.doc_type)
-                                    }}</TableCell>
-
-                                    <TableCell>
-                                        <Badge
-                                            :variant="statusVariant(doc.status)"
+                        <div class="w-full overflow-x-auto">
+                            <Table class="min-w-[1200px]">
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead class="whitespace-nowrap"
+                                            >Type</TableHead
                                         >
-                                            {{ humanize(doc.status) }}
-                                        </Badge>
-                                    </TableCell>
+                                        <TableHead class="whitespace-nowrap"
+                                            >Status</TableHead
+                                        >
+                                        <TableHead class="whitespace-nowrap"
+                                            >File</TableHead
+                                        >
+                                        <TableHead class="whitespace-nowrap"
+                                            >Issued At</TableHead
+                                        >
+                                        <TableHead class="whitespace-nowrap"
+                                            >Expires At</TableHead
+                                        >
+                                        <TableHead class="whitespace-nowrap"
+                                            >Remarks</TableHead
+                                        >
+                                        <TableHead class="whitespace-nowrap"
+                                            >Uploaded By</TableHead
+                                        >
+                                        <TableHead class="whitespace-nowrap"
+                                            >Uploaded At</TableHead
+                                        >
+                                        <TableHead class="whitespace-nowrap"
+                                            >Verified By</TableHead
+                                        >
+                                        <TableHead class="whitespace-nowrap"
+                                            >Verified At</TableHead
+                                        >
+                                        <TableHead
+                                            class="w-20 text-right whitespace-nowrap"
+                                            >Action</TableHead
+                                        >
+                                    </TableRow>
+                                </TableHeader>
 
-                                    <TableCell
-                                        class="max-w-[240px] truncate"
-                                        :title="doc.original_name ?? ''"
-                                    >
-                                        {{ doc.original_name ?? '—' }}
-                                    </TableCell>
+                                <TableBody>
+                                    <TableRow v-for="doc in docs" :key="doc.id">
+                                        <TableCell class="whitespace-nowrap">{{
+                                            humanize(doc.doc_type)
+                                        }}</TableCell>
 
-                                    <!-- Remarks: clean View button -->
-                                    <TableCell class="w-28">
-                                        <template v-if="doc.remarks">
-                                            <Popover>
-                                                <PopoverTrigger as-child>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        class="h-8"
+                                        <TableCell class="whitespace-nowrap">
+                                            <Badge
+                                                :variant="
+                                                    statusVariant(doc.status)
+                                                "
+                                                >{{
+                                                    humanize(doc.status)
+                                                }}</Badge
+                                            >
+                                            <Badge
+                                                v-if="isExpired(doc.expires_at)"
+                                                variant="destructive"
+                                                class="ml-2"
+                                                >Expired</Badge
+                                            >
+                                        </TableCell>
+
+                                        <TableCell class="max-w-[320px]">
+                                            <button
+                                                v-if="canPreview(doc)"
+                                                class="flex w-full items-center gap-1.5 truncate text-left text-sm text-primary underline-offset-2 hover:underline"
+                                                :title="doc.original_name ?? ''"
+                                                @click="openPreview(doc)"
+                                            >
+                                                <Eye
+                                                    class="h-3.5 w-3.5 shrink-0"
+                                                />
+                                                <span class="truncate">{{
+                                                    doc.original_name ?? '—'
+                                                }}</span>
+                                            </button>
+
+                                            <span
+                                                v-else
+                                                class="block w-full truncate text-sm"
+                                                :title="doc.original_name ?? ''"
+                                            >
+                                                {{ doc.original_name ?? '—' }}
+                                            </span>
+                                        </TableCell>
+
+                                        <TableCell class="whitespace-nowrap">{{
+                                            formatDate(doc.issued_at ?? null)
+                                        }}</TableCell>
+
+                                        <TableCell class="whitespace-nowrap">
+                                            <span
+                                                :class="
+                                                    isExpired(doc.expires_at)
+                                                        ? 'font-medium text-destructive'
+                                                        : ''
+                                                "
+                                            >
+                                                {{
+                                                    formatDate(
+                                                        doc.expires_at ?? null,
+                                                    )
+                                                }}
+                                            </span>
+                                        </TableCell>
+
+                                        <TableCell
+                                            class="w-28 whitespace-nowrap"
+                                        >
+                                            <template v-if="doc.remarks">
+                                                <Popover>
+                                                    <PopoverTrigger as-child>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            class="h-8"
+                                                        >
+                                                            <MessageSquareText
+                                                                class="mr-2 h-4 w-4"
+                                                            />
+                                                            View
+                                                        </Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent
+                                                        align="start"
+                                                        class="w-80"
                                                     >
-                                                        <MessageSquareText
+                                                        <div class="space-y-2">
+                                                            <div
+                                                                class="text-sm font-medium"
+                                                            >
+                                                                Remarks
+                                                            </div>
+                                                            <div
+                                                                class="text-sm whitespace-pre-wrap text-muted-foreground"
+                                                            >
+                                                                {{
+                                                                    doc.remarks
+                                                                }}
+                                                            </div>
+                                                            <div
+                                                                class="text-xs text-muted-foreground"
+                                                            >
+                                                                {{
+                                                                    humanize(
+                                                                        doc.doc_type,
+                                                                    )
+                                                                }}
+                                                                •
+                                                                {{
+                                                                    humanize(
+                                                                        doc.status,
+                                                                    )
+                                                                }}
+                                                            </div>
+                                                        </div>
+                                                    </PopoverContent>
+                                                </Popover>
+                                            </template>
+                                            <template v-else>
+                                                <span
+                                                    class="text-muted-foreground"
+                                                    >—</span
+                                                >
+                                            </template>
+                                        </TableCell>
+
+                                        <TableCell class="whitespace-nowrap">{{
+                                            doc.uploader?.name ?? '—'
+                                        }}</TableCell>
+                                        <TableCell class="whitespace-nowrap">{{
+                                            formatDateTime(
+                                                doc.created_at ?? null,
+                                            )
+                                        }}</TableCell>
+                                        <TableCell class="whitespace-nowrap">{{
+                                            doc.verifier?.name ?? '—'
+                                        }}</TableCell>
+                                        <TableCell class="whitespace-nowrap">{{
+                                            formatDateTime(
+                                                doc.verified_at ?? null,
+                                            )
+                                        }}</TableCell>
+
+                                        <TableCell
+                                            class="text-right whitespace-nowrap"
+                                        >
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger as-child>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        :disabled="
+                                                            actionForm.processing ||
+                                                            rejectForm.processing
+                                                        "
+                                                    >
+                                                        <MoreHorizontal
+                                                            class="h-4 w-4"
+                                                        />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+
+                                                <DropdownMenuContent
+                                                    align="end"
+                                                    class="w-56"
+                                                >
+                                                    <DropdownMenuLabel
+                                                        >Actions</DropdownMenuLabel
+                                                    >
+                                                    <DropdownMenuSeparator />
+
+                                                    <DropdownMenuItem
+                                                        v-if="canPreview(doc)"
+                                                        class="cursor-pointer"
+                                                        @click="
+                                                            openPreview(doc)
+                                                        "
+                                                    >
+                                                        <Eye
                                                             class="mr-2 h-4 w-4"
                                                         />
-                                                        View
-                                                    </Button>
-                                                </PopoverTrigger>
+                                                        Preview
+                                                    </DropdownMenuItem>
 
-                                                <PopoverContent
-                                                    align="start"
-                                                    class="w-80"
-                                                >
-                                                    <div class="space-y-2">
-                                                        <div
-                                                            class="text-sm font-medium"
-                                                        >
-                                                            Remarks
-                                                        </div>
-                                                        <div
-                                                            class="text-sm whitespace-pre-wrap text-muted-foreground"
-                                                        >
-                                                            {{ doc.remarks }}
-                                                        </div>
-                                                        <div
-                                                            class="text-xs text-muted-foreground"
-                                                        >
-                                                            {{
-                                                                humanize(
-                                                                    doc.doc_type,
-                                                                )
-                                                            }}
-                                                            •
-                                                            {{
-                                                                humanize(
-                                                                    doc.status,
-                                                                )
-                                                            }}
-                                                        </div>
-                                                    </div>
-                                                </PopoverContent>
-                                            </Popover>
-                                        </template>
-
-                                        <template v-else>
-                                            <span class="text-muted-foreground"
-                                                >—</span
-                                            >
-                                        </template>
-                                    </TableCell>
-
-                                    <TableCell>{{
-                                        doc.uploader?.name ?? '—'
-                                    }}</TableCell>
-                                    <TableCell>{{
-                                        formatDateTime(doc.created_at ?? null)
-                                    }}</TableCell>
-                                    <TableCell>{{
-                                        doc.verifier?.name ?? '—'
-                                    }}</TableCell>
-                                    <TableCell>{{
-                                        formatDateTime(doc.verified_at ?? null)
-                                    }}</TableCell>
-
-                                    <!-- Actions dropdown -->
-                                    <TableCell class="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger as-child>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    :disabled="
-                                                        actionForm.processing ||
-                                                        rejectForm.processing
-                                                    "
-                                                >
-                                                    <MoreHorizontal
-                                                        class="h-4 w-4"
+                                                    <DropdownMenuSeparator
+                                                        v-if="canPreview(doc)"
                                                     />
-                                                </Button>
-                                            </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent
-                                                align="end"
-                                                class="w-56"
-                                            >
-                                                <DropdownMenuLabel
-                                                    >Actions</DropdownMenuLabel
-                                                >
-                                                <DropdownMenuSeparator />
+                                                    <DropdownMenuItem
+                                                        v-if="
+                                                            doc.status ===
+                                                            'verified'
+                                                        "
+                                                        class="cursor-pointer"
+                                                        @click="
+                                                            openConfirm(
+                                                                'unverify',
+                                                                doc,
+                                                            )
+                                                        "
+                                                    >
+                                                        <RotateCcw
+                                                            class="mr-2 h-4 w-4"
+                                                        />
+                                                        Unverify
+                                                    </DropdownMenuItem>
 
-                                                <DropdownMenuItem
-                                                    v-if="
-                                                        doc.status ===
-                                                        'verified'
-                                                    "
-                                                    class="cursor-pointer"
-                                                    @click="
-                                                        openConfirm(
-                                                            'unverify',
-                                                            doc,
-                                                        )
-                                                    "
-                                                >
-                                                    <RotateCcw
-                                                        class="mr-2 h-4 w-4"
-                                                    />
-                                                    Unverify
-                                                </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        v-else
+                                                        class="cursor-pointer"
+                                                        @click="
+                                                            openConfirm(
+                                                                'verify',
+                                                                doc,
+                                                            )
+                                                        "
+                                                    >
+                                                        <CheckCircle2
+                                                            class="mr-2 h-4 w-4"
+                                                        />
+                                                        Verify
+                                                    </DropdownMenuItem>
 
-                                                <DropdownMenuItem
-                                                    v-else-if="
-                                                        doc.status === 'invalid'
-                                                    "
-                                                    class="cursor-pointer"
-                                                    @click="
-                                                        openConfirm(
-                                                            'unverify',
-                                                            doc,
-                                                        )
-                                                    "
-                                                >
-                                                    <RotateCcw
-                                                        class="mr-2 h-4 w-4"
-                                                    />
-                                                    Uninvalid
-                                                </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        class="cursor-pointer"
+                                                        @click="
+                                                            openReject(doc.id)
+                                                        "
+                                                    >
+                                                        <XCircle
+                                                            class="mr-2 h-4 w-4"
+                                                        />
+                                                        Invalid (remarks)
+                                                    </DropdownMenuItem>
 
-                                                <DropdownMenuItem
-                                                    v-else
-                                                    class="cursor-pointer"
-                                                    @click="
-                                                        openConfirm(
-                                                            'verify',
-                                                            doc,
-                                                        )
-                                                    "
-                                                >
-                                                    <CheckCircle2
-                                                        class="mr-2 h-4 w-4"
-                                                    />
-                                                    Verify
-                                                </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
 
-                                                <DropdownMenuItem
-                                                    class="cursor-pointer"
-                                                    @click="openReject(doc.id)"
-                                                >
-                                                    <XCircle
-                                                        class="mr-2 h-4 w-4"
-                                                    />
-                                                    Invalid (remarks)
-                                                </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        class="cursor-pointer"
+                                                        @click="
+                                                            openConfirm(
+                                                                'download',
+                                                                doc,
+                                                            )
+                                                        "
+                                                    >
+                                                        <Download
+                                                            class="mr-2 h-4 w-4"
+                                                        />
+                                                        Download
+                                                    </DropdownMenuItem>
 
-                                                <DropdownMenuSeparator />
+                                                    <DropdownMenuItem
+                                                        class="cursor-pointer text-destructive focus:text-destructive"
+                                                        @click="
+                                                            openConfirm(
+                                                                'delete',
+                                                                doc,
+                                                            )
+                                                        "
+                                                    >
+                                                        <Trash2
+                                                            class="mr-2 h-4 w-4"
+                                                        />
+                                                        Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
 
-                                                <DropdownMenuItem
-                                                    class="cursor-pointer"
-                                                    @click="
-                                                        openConfirm(
-                                                            'download',
-                                                            doc,
-                                                        )
-                                                    "
-                                                >
-                                                    <Download
-                                                        class="mr-2 h-4 w-4"
-                                                    />
-                                                    Download
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuItem
-                                                    class="cursor-pointer text-destructive"
-                                                    @click="
-                                                        openConfirm(
-                                                            'delete',
-                                                            doc,
-                                                        )
-                                                    "
-                                                >
-                                                    <Trash2
-                                                        class="mr-2 h-4 w-4"
-                                                    />
-                                                    Delete
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-
-                                <TableRow
-                                    v-if="
-                                        (company.documents ?? []).length === 0
-                                    "
-                                >
-                                    <TableCell
-                                        colspan="9"
-                                        class="py-8 text-center text-muted-foreground"
-                                    >
-                                        No documents uploaded yet.
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
+                                    <TableRow v-if="docs.length === 0">
+                                        <TableCell
+                                            colspan="11"
+                                            class="py-8 text-center text-muted-foreground"
+                                        >
+                                            No documents uploaded yet.
+                                        </TableCell>
+                                    </TableRow>
+                                </TableBody>
+                            </Table>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
         </div>
 
-        <!-- Invalid remarks dialog -->
+        <!-- ── File Preview Dialog ─────────────────────────────────────────── -->
+        <Dialog v-model:open="previewOpen">
+            <DialogContent
+                class="flex max-h-[90vh] w-full max-w-4xl flex-col gap-0 overflow-hidden p-0"
+            >
+                <DialogHeader class="shrink-0 border-b px-6 py-4">
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="min-w-0 space-y-0.5">
+                            <DialogTitle class="truncate text-base">
+                                {{
+                                    previewDoc?.original_name ??
+                                    humanize(previewDoc?.doc_type)
+                                }}
+                            </DialogTitle>
+                            <DialogDescription
+                                class="flex items-center gap-2 text-xs"
+                            >
+                                <Badge
+                                    :variant="statusVariant(previewDoc?.status)"
+                                    class="text-[10px]"
+                                >
+                                    {{ humanize(previewDoc?.status) }}
+                                </Badge>
+                                <span>{{
+                                    humanize(previewDoc?.doc_type)
+                                }}</span>
+                                <span
+                                    v-if="previewDoc?.expires_at"
+                                    class="text-muted-foreground"
+                                >
+                                    • Expires:
+                                    {{ formatDate(previewDoc?.expires_at) }}
+                                </span>
+                            </DialogDescription>
+                        </div>
+
+                        <Button
+                            v-if="previewDoc"
+                            variant="outline"
+                            size="sm"
+                            class="shrink-0"
+                            as-child
+                        >
+                            <a
+                                :href="
+                                    downloadCompanyDocument({
+                                        company: company.id,
+                                        document: previewDoc.id,
+                                    }).url
+                                "
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <Download class="mr-2 h-4 w-4" />Download
+                            </a>
+                        </Button>
+                    </div>
+                </DialogHeader>
+
+                <div class="relative flex-1 overflow-auto bg-muted/30">
+                    <div
+                        v-if="previewDoc && isImage(previewDoc)"
+                        class="flex min-h-[50vh] items-center justify-center p-6"
+                    >
+                        <img
+                            :src="fileUrl(previewDoc)"
+                            :alt="
+                                previewDoc.original_name ?? previewDoc.doc_type
+                            "
+                            class="max-h-[70vh] max-w-full rounded-md object-contain shadow-md"
+                            @error="
+                                (e) => ((e.target as HTMLImageElement).src = '')
+                            "
+                        />
+                    </div>
+
+                    <div
+                        v-else-if="previewDoc && isPdf(previewDoc)"
+                        class="h-[70vh] w-full"
+                    >
+                        <iframe
+                            v-if="!pdfLoadError"
+                            :src="fileUrl(previewDoc)"
+                            class="h-full w-full border-0"
+                            @error="pdfLoadError = true"
+                        />
+                        <div
+                            v-else
+                            class="flex h-full flex-col items-center justify-center gap-4 text-muted-foreground"
+                        >
+                            <FileText class="h-12 w-12 opacity-30" />
+                            <p class="text-sm">
+                                Your browser cannot preview this PDF inline.
+                            </p>
+                            <Button as-child variant="secondary" size="sm">
+                                <a
+                                    :href="fileUrl(previewDoc)"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Eye class="mr-2 h-4 w-4" />Open in new tab
+                                </a>
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
+                <DialogFooter class="shrink-0 border-t px-6 py-3">
+                    <p class="flex-1 text-xs text-muted-foreground">
+                        Issued:
+                        {{ formatDate(previewDoc?.issued_at ?? null) }} •
+                        Expires:
+                        {{ formatDate(previewDoc?.expires_at ?? null) }} •
+                        Uploaded:
+                        {{ formatDateTime(previewDoc?.created_at ?? null) }}
+                    </p>
+                    <Button variant="outline" size="sm" @click="closePreview"
+                        >Close</Button
+                    >
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <!-- ── Reject dialog ──────────────────────────────────────────────── -->
         <Dialog v-model:open="rejectOpen">
             <DialogContent class="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>Invalid Document</DialogTitle>
-                    <DialogDescription
-                        >Add remarks so the company knows what to
-                        fix.</DialogDescription
-                    >
+                    <DialogDescription>
+                        Choose a preset remark (optional) then edit the message
+                        if needed.
+                    </DialogDescription>
                 </DialogHeader>
 
                 <Separator />
 
-                <div class="space-y-2">
-                    <Label>Remarks *</Label>
-                    <Textarea
-                        v-model="rejectForm.remarks"
-                        placeholder="Reason for invalid..."
-                    />
-                    <InputError
-                        class="mt-1"
-                        :message="rejectForm.errors.remarks"
-                    />
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <Label>Remarks Preset</Label>
+                        <Select
+                            :model-value="selectedRemarkPreset ?? undefined"
+                            @update:model-value="(v) => applyPreset(String(v))"
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a preset..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="p in remarkPresets"
+                                    :key="p.value"
+                                    :value="p.value"
+                                >
+                                    {{ p.label }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div class="space-y-2">
+                        <Label>Remarks *</Label>
+                        <Textarea
+                            v-model="rejectForm.remarks"
+                            placeholder="Reason for invalid..."
+                        />
+                        <InputError
+                            class="mt-1"
+                            :message="rejectForm.errors.remarks"
+                        />
+                    </div>
                 </div>
 
                 <DialogFooter class="gap-2">
@@ -835,7 +1194,7 @@ const repHasAny = computed(() => {
             </DialogContent>
         </Dialog>
 
-        <!-- Confirm dialog -->
+        <!-- ── Row action confirm dialog ───────────────────────────────────── -->
         <AlertDialog v-model:open="confirmOpen">
             <AlertDialogContent>
                 <AlertDialogHeader>
@@ -844,7 +1203,6 @@ const repHasAny = computed(() => {
                         confirmDescription()
                     }}</AlertDialogDescription>
                 </AlertDialogHeader>
-
                 <AlertDialogFooter>
                     <AlertDialogCancel
                         :disabled="actionForm.processing"
@@ -859,6 +1217,36 @@ const repHasAny = computed(() => {
                         {{
                             actionForm.processing ? 'Processing...' : 'Continue'
                         }}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <!-- ── Bulk Download Confirm ───────────────────────────────────────── -->
+        <AlertDialog v-model:open="bulkConfirmOpen">
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle
+                        >Download verified documents?</AlertDialogTitle
+                    >
+                    <AlertDialogDescription>
+                        This will download a ZIP containing only verified
+                        documents for this company.
+                        <span v-if="verifiedCount > 0">
+                            ({{ verifiedCount }} verified)</span
+                        >
+                        <span v-else> No verified documents found.</span>
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel @click="bulkConfirmOpen = false"
+                        >Cancel</AlertDialogCancel
+                    >
+                    <AlertDialogAction
+                        :disabled="verifiedCount === 0"
+                        @click="runBulkDownload"
+                    >
+                        Continue
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

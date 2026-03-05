@@ -1,9 +1,11 @@
 <?php
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('company_documents', function (Blueprint $table) {
@@ -13,42 +15,37 @@ return new class extends Migration {
                 ->constrained('companies')
                 ->cascadeOnDelete();
 
-            // Document type controls requirements
-            $table->enum('doc_type', [
-                'SEC_CERT',
-                'DTI_CERT',
-                'MAYORS_PERMIT',
-                'BIR_2303',
-                'AUTHORIZATION_LETTER', // or BOARD_RESOLUTION
-            ])->index();
-
-            // Storage info
+            $table->string('doc_type');          // MAYORS_PERMIT, BIR_2303, SEC_CERT, etc.
             $table->string('file_path');
             $table->string('original_name')->nullable();
             $table->string('mime_type')->nullable();
-            $table->unsignedBigInteger('file_size')->nullable();
+            $table->unsignedBigInteger('file_size')->nullable(); // bytes
 
-            // Optional document meta (handy for searching/expiry checks)
-            $table->string('document_number')->nullable()->index();
             $table->date('issued_at')->nullable();
-            $table->date('expires_at')->nullable()->index();
+            $table->date('expires_at')->nullable();
 
-            // Verification workflow
             $table->enum('status', ['pending', 'verified', 'invalid', 'expired'])
                 ->default('pending')
                 ->index();
 
             $table->text('remarks')->nullable();
 
-            // Auditing
-            $table->foreignId('uploaded_by')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('verified_by')->nullable()->constrained('users')->nullOnDelete();
+            // Who uploaded it
+            $table->foreignId('uploaded_by')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+
+            // Who verified / rejected it
+            $table->foreignId('verified_by')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+
             $table->timestamp('verified_at')->nullable();
 
-            // Prevent duplicates (one current doc per type per company)
-            $table->unique(['company_id', 'doc_type']);
-
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

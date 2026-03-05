@@ -36,8 +36,9 @@ return new class extends Migration
             ])->default('draft')->index();
 
             $table->foreignId('created_by')
+                ->nullable()
                 ->constrained('users')
-                ->cascadeOnDelete();
+                ->nullOnDelete();
             $table->foreignId('updated_by')
                 ->nullable()
                 ->constrained('users')

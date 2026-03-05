@@ -16,7 +16,8 @@ class RoleSeeder extends Seeder
     {
         $superAdmin = Role::firstOrCreate(['name' => 'super-admin', 'guard_name' => 'web']);
         $admin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-        $dispatcher = Role::firstOrCreate(['name' => 'dispatcher', 'guard_name' => 'web']);
+        $operator = Role::firstOrCreate(['name' => 'operator', 'guard_name' => 'web', 'type' => 'external']);
+        $dispatcher = Role::firstOrCreate(['name' => 'dispatcher', 'guard_name' => 'web', 'type' => 'external']);
 
         $superAdmin->syncPermissions(Permission::all());
     }

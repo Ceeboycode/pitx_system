@@ -1,22 +1,18 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 
-// shadcn-vue
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
 import {
     Select,
     SelectContent,
@@ -25,1003 +21,699 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+
+import AddressSelectPH from '@/components/AddressSelectPH.vue';
+
+// Wayfinder generated actions
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
+    resendStep1Otp,
+    resendStep2Otp,
+    storeStep1,
+    storeStep2,
+    storeStep3,
+    verifyStep1Otp,
+    verifyStep2Otp,
+} from '@/actions/App/Http/Controllers/CompanyRegistration';
 
-type Step = 1 | 2 | 3;
-const step = ref<Step>(1);
+import {
+    CheckCircle2,
+    Loader2,
+    Mail,
+    RefreshCcw,
+    ShieldCheck,
+} from 'lucide-vue-next';
 
-const form = useForm({
-    // Step 1
-    account_name: '',
-    account_email: '',
-    account_phone: '',
+/*
+|--------------------------------------------------------------------------
+| Sub-step model
+|
+| The visible step bubbles are 1, 2, 3.
+| Each step that requires OTP verification has a ".5" sub-step:
+|   1   → Account Details form
+|   1.5 → Account email OTP entry
+|   2   → Company Details form
+|   2.5 → Company email OTP entry
+|   3   → Documents upload & submit
+|--------------------------------------------------------------------------
+*/
+type SubStep = 1 | 1.5 | 2 | 2.5 | 3;
 
-    // Step 2
-    company_name: '',
-    company_email: '',
-    company_phone: '',
-    company_address: '',
-    business_type: '' as '' | 'corporate' | 'sole_proprietorship',
-    registration_number: '',
-    authorized_representative_name: '',
+const currentStep = ref<SubStep>(1);
+const totalSteps  = 3;
+
+// Which visible bubble (1/2/3) is active
+const visualStep = computed((): 1 | 2 | 3 => {
+    if (currentStep.value < 2)  return 1;
+    if (currentStep.value < 3)  return 2;
+    return 3;
+});
+
+const stepMeta = [
+    { number: 1, title: 'Account',   description: 'Your personal login details' },
+    { number: 2, title: 'Company',   description: 'Business information' },
+    { number: 3, title: 'Documents', description: 'Upload required files' },
+];
+
+// ─── Step 1 form ──────────────────────────────────────────────────────────────
+const step1 = useForm({
+    name:                  '',
+    email:                 '',
+    phone:                 '',
+    password:              '',
+    password_confirmation: '',
+});
+
+// ─── Account OTP form ─────────────────────────────────────────────────────────
+const otpAccount       = useForm({ otp: '' });
+const resendAccount    = useForm({});
+const resentAccountMsg = ref('');
+
+// ─── Step 2 form ──────────────────────────────────────────────────────────────
+const step2 = useForm({
+    company_name:                       '',
+    company_email:                      '',
+    company_phone:                      '',
+    company_address:                    '',
+    business_type:                      '' as 'corporate' | 'sole_proprietorship' | '',
+    registration_number:                '',
+    authorized_representative_name:     '',
     authorized_representative_position: '',
-    authorized_representative_contact: '',
-
-    // Step 3
-    AUTHORIZATION_LETTER: null as File | null,
-    SEC_CERT: null as File | null,
-    DTI_CERT: null as File | null,
-    MAYORS_PERMIT: null as File | null,
-    BIR_2303: null as File | null,
-    issued_at: '',
-    expires_at: '',
+    authorized_representative_contact:  '',
 });
 
-const progress = computed(() =>
-    step.value === 1 ? 33 : step.value === 2 ? 66 : 100,
-);
+const addressCodes = ref({ regionCode: '', provinceCode: '', cityMunCode: '', barangayCode: '' });
 
-const isCorporate = computed(() => form.business_type === 'corporate');
-const isSole = computed(() => form.business_type === 'sole_proprietorship');
+const positionOptions = [
+    'Owner', 'Proprietor', 'President', 'CEO', 'COO',
+    'General Manager', 'Operations Manager', 'HR Manager', 'Authorized Representative',
+] as const;
 
-const secRequired = computed(() => isCorporate.value);
-const dtiRequired = computed(() => isSole.value);
+const positionChoice = ref('');
 
-const stepTitle = computed(() => {
-    if (step.value === 1) return 'Account Information';
-    if (step.value === 2) return 'Company Details';
-    return 'Document Upload';
-});
-
-const stepDesc = computed(() => {
-    if (step.value === 1) return 'Tell us who is submitting this registration.';
-    if (step.value === 2)
-        return 'Enter your company profile and authorized representative.';
-    return 'Upload required documents. File types: PDF/JPG/PNG.';
-});
-
-const step1Valid = computed(
-    () => !!form.account_name.trim() && !!form.account_email.trim(),
-);
-
-const step2Valid = computed(() => {
-    return (
-        !!form.company_name.trim() &&
-        !!form.company_email.trim() &&
-        !!form.company_phone.trim() &&
-        !!form.company_address.trim() &&
-        !!form.business_type &&
-        !!form.registration_number.trim() &&
-        !!form.authorized_representative_name.trim() &&
-        !!form.authorized_representative_position.trim() &&
-        !!form.authorized_representative_contact.trim()
-    );
-});
-
-const step3Valid = computed(() => {
-    const base =
-        !!form.AUTHORIZATION_LETTER &&
-        !!form.MAYORS_PERMIT &&
-        !!form.BIR_2303 &&
-        !!form.issued_at &&
-        !!form.expires_at;
-
-    const typeDoc =
-        (secRequired.value ? !!form.SEC_CERT : true) &&
-        (dtiRequired.value ? !!form.DTI_CERT : true);
-
-    return base && typeDoc;
-});
-
-function next() {
-    if (step.value === 1 && !step1Valid.value) return;
-    if (step.value === 2 && !step2Valid.value) return;
-    if (step.value < 3) step.value = (step.value + 1) as Step;
-}
-
-function back() {
-    if (step.value > 1) step.value = (step.value - 1) as Step;
-}
-
-function setFile(field: keyof typeof form.data, e: Event) {
-    const input = e.target as HTMLInputElement;
-    const file = input.files?.[0] ?? null;
-    // @ts-expect-error inertia typing
-    form[field] = file;
-}
-
-function clearFile(field: keyof typeof form.data) {
-    // @ts-expect-error inertia typing
-    form[field] = null;
-}
-
-function humanSize(bytes: number) {
-    const units = ['B', 'KB', 'MB', 'GB'];
-    let size = bytes;
-    let i = 0;
-    while (size >= 1024 && i < units.length - 1) {
-        size /= 1024;
-        i++;
+watch(positionChoice, (val) => {
+    if (!val) return;
+    if (val !== 'other') {
+        step2.authorized_representative_position = val;
+        step2.clearErrors('authorized_representative_position');
+    } else if (positionOptions.includes(step2.authorized_representative_position as any)) {
+        step2.authorized_representative_position = '';
     }
-    return `${size.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+});
+
+// ─── Company OTP form ─────────────────────────────────────────────────────────
+const otpCompany      = useForm({ otp: '' });
+const resendCompany   = useForm({});
+const resentCompanyMsg = ref('');
+
+// ─── Step 3 form ──────────────────────────────────────────────────────────────
+const step3 = useForm({
+    documents: {
+        AUTHORIZATION_LETTER: { file: null as File | null, issued_at: '', expires_at: '' },
+        SEC_CERT:             { file: null as File | null, issued_at: '', expires_at: '' },
+        DTI_CERT:             { file: null as File | null, issued_at: '', expires_at: '' },
+        MAYORS_PERMIT:        { file: null as File | null, issued_at: '', expires_at: '' },
+        BIR_2303:             { file: null as File | null, issued_at: '', expires_at: '' },
+    } as Record<string, { file: File | null; issued_at: string; expires_at: string }>,
+});
+
+// ─── Derived ──────────────────────────────────────────────────────────────────
+const isCorporate = computed(() => step2.business_type === 'corporate');
+const isSole      = computed(() => step2.business_type === 'sole_proprietorship');
+
+const requiredDocs = computed<{ key: string; label: string; required: boolean }[]>(() => {
+    const base = [
+        { key: 'MAYORS_PERMIT', label: "Mayor's Permit", required: true },
+        { key: 'BIR_2303',      label: 'BIR Form 2303',  required: true },
+    ];
+
+    if (isCorporate.value) return [
+        { key: 'AUTHORIZATION_LETTER', label: 'Authorization Letter', required: true },
+        { key: 'SEC_CERT',             label: 'SEC Certificate',       required: true },
+        ...base,
+    ];
+
+    if (isSole.value) return [
+        { key: 'DTI_CERT', label: 'DTI Certificate', required: true },
+        ...base,
+    ];
+
+    // No type chosen yet — show all as optional preview
+    return [
+        { key: 'AUTHORIZATION_LETTER', label: 'Authorization Letter (Corporate)', required: false },
+        { key: 'SEC_CERT',             label: 'SEC Certificate (Corporate)',       required: false },
+        { key: 'DTI_CERT',             label: 'DTI Certificate (Sole Prop.)',      required: false },
+        ...base.map((d) => ({ ...d, required: false })),
+    ];
+});
+
+// ─── Navigation helpers ───────────────────────────────────────────────────────
+
+/** Step 1 → validate + send account OTP → advance to OTP screen */
+function submitStep1() {
+    step1.submit(storeStep1(), {
+        onSuccess: () => {
+            resentAccountMsg.value = '';
+            currentStep.value = 1.5;
+        },
+    });
 }
 
-function docBadge(isRequired: boolean, file: File | null) {
-    if (file) return { text: 'Selected', variant: 'secondary' as const };
-    if (isRequired)
-        return { text: 'Required', variant: 'destructive' as const };
-    return { text: 'Optional', variant: 'outline' as const };
+/** Step 1.5 → verify account OTP → advance to Step 2 */
+function submitAccountOtp() {
+    otpAccount.submit(verifyStep1Otp(), {
+        onSuccess: () => {
+            currentStep.value = 2;
+            otpAccount.reset();
+        },
+    });
 }
 
-function submitToConsole() {
-    const payload = form.data();
-    const files: Record<string, any> = {};
-    const fields: Record<string, any> = {};
+/** Step 2 → validate + send company OTP → advance to company OTP screen */
+function submitStep2() {
+    step2.submit(storeStep2(), {
+        onSuccess: () => {
+            resentCompanyMsg.value = '';
+            currentStep.value = 2.5;
+        },
+    });
+}
 
-    for (const [key, value] of Object.entries(payload)) {
-        if (value instanceof File) {
-            files[key] = {
-                name: value.name,
-                size: value.size,
-                type: value.type,
-            };
-        } else {
-            fields[key] = value;
-        }
+/** Step 2.5 → verify company OTP → advance to Step 3 */
+function submitCompanyOtp() {
+    otpCompany.submit(verifyStep2Otp(), {
+        onSuccess: () => {
+            currentStep.value = 3;
+            otpCompany.reset();
+        },
+    });
+}
+
+/** Step 3 → submit documents, backend redirects to status page */
+function submitStep3() {
+    step3.submit(storeStep3(), { forceFormData: true });
+}
+
+/** Resend account OTP */
+function doResendAccount() {
+    resentAccountMsg.value = '';
+    resendAccount.submit(resendStep1Otp(), {
+        onSuccess: () => {
+            resentAccountMsg.value = 'A new code was sent to your email.';
+            otpAccount.reset();
+        },
+    });
+}
+
+/** Resend company OTP */
+function doResendCompany() {
+    resentCompanyMsg.value = '';
+    resendCompany.submit(resendStep2Otp(), {
+        onSuccess: () => {
+            resentCompanyMsg.value = 'A new code was sent to your company email.';
+            otpCompany.reset();
+        },
+    });
+}
+
+/** Back navigation */
+function goBack() {
+    const map: Partial<Record<SubStep, SubStep>> = {
+        1.5: 1,
+        2:   1.5,
+        2.5: 2,
+        3:   2.5,
+    };
+    const prev = map[currentStep.value];
+    if (prev !== undefined) currentStep.value = prev;
+}
+
+// Auto-submit OTP when all 6 digits entered
+function onOtpInput(type: 'account' | 'company') {
+    const form = type === 'account' ? otpAccount : otpCompany;
+    if (form.otp.replace(/\D/g, '').length === 6) {
+        type === 'account' ? submitAccountOtp() : submitCompanyOtp();
     }
+}
 
-    console.group('✅ Company Registration (Console Only)');
-    console.log('Fields:', fields);
-    console.log('Files:', files);
-    console.log('Raw payload:', payload);
-    console.groupEnd();
+function handleFile(docKey: string, event: Event) {
+    const el = event.target as HTMLInputElement;
+    step3.documents[docKey].file = el.files?.[0] ?? null;
+    step3.clearErrors(`documents.${docKey}.file` as any);
+}
+
+function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): string | undefined {
+    return (step3.errors as Record<string, string>)[`documents.${docKey}.${field}`];
 }
 </script>
 
 <template>
     <Head title="Company Registration" />
 
-    <div class="min-h-screen bg-background">
-        <div class="mx-auto w-full max-w-5xl space-y-4 p-4">
+    <div class="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+        <div class="w-full max-w-2xl space-y-6">
+
+            <!-- ── Step progress indicator ───────────────────────────────── -->
+            <div class="flex items-center">
+                <template v-for="(step, idx) in stepMeta" :key="step.number">
+
+                    <!-- Step bubble -->
+                    <button
+                        type="button"
+                        class="flex flex-col items-center gap-1.5"
+                        :disabled="step.number > visualStep"
+                        @click="step.number < visualStep && (currentStep = (step.number as SubStep))"
+                    >
+                        <div
+                            class="flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all"
+                            :class="{
+                                'border-primary bg-primary text-primary-foreground scale-110': visualStep === step.number,
+                                'cursor-pointer border-primary/50 bg-primary/15 text-primary':  step.number < visualStep,
+                                'border-border bg-muted text-muted-foreground':                 step.number > visualStep,
+                            }"
+                        >
+                            <!-- Checkmark for completed steps -->
+                            <svg v-if="step.number < visualStep" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span v-else>{{ step.number }}</span>
+                        </div>
+                        <span
+                            class="hidden text-xs font-medium sm:block"
+                            :class="visualStep === step.number ? 'text-foreground' : 'text-muted-foreground'"
+                        >
+                            {{ step.title }}
+                        </span>
+                    </button>
+
+                    <!-- Connector line -->
+                    <div
+                        v-if="idx < stepMeta.length - 1"
+                        class="mx-3 h-px flex-1 transition-colors"
+                        :class="step.number < visualStep ? 'bg-primary/40' : 'bg-border'"
+                    />
+                </template>
+            </div>
+
+            <!-- ── Wizard card ────────────────────────────────────────────── -->
             <Card>
-                <CardHeader class="space-y-3">
-                    <div class="flex items-start justify-between gap-4">
-                        <div class="space-y-1">
-                            <CardTitle>Company Registration</CardTitle>
-                            <CardDescription
-                                >{{ stepTitle }} • Step {{ step }} of
-                                3</CardDescription
-                            >
-                            <p class="text-sm text-muted-foreground">
-                                {{ stepDesc }}
-                            </p>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <Badge variant="secondary">{{ stepTitle }}</Badge>
-                            <Badge variant="outline">{{ progress }}%</Badge>
-                        </div>
+                <CardHeader class="pb-0">
+                    <div class="flex items-center gap-2">
+                        <Badge variant="outline" class="text-xs">
+                            Step {{ visualStep }} of {{ totalSteps }}
+                        </Badge>
+                        <!-- OTP sub-step pill -->
+                        <Badge
+                            v-if="currentStep === 1.5 || currentStep === 2.5"
+                            variant="secondary"
+                            class="gap-1 text-xs"
+                        >
+                            <Mail class="h-3 w-3" />
+                            Email Verification
+                        </Badge>
                     </div>
-
-                    <Progress :model-value="progress" />
+                    <CardTitle class="mt-1 text-xl">
+                        <template v-if="currentStep === 1.5">Verify Account Email</template>
+                        <template v-else-if="currentStep === 2.5">Verify Company Email</template>
+                        <template v-else>{{ stepMeta[visualStep - 1].title }}</template>
+                    </CardTitle>
+                    <CardDescription>
+                        <template v-if="currentStep === 1.5">
+                            We sent a 6-digit code to <strong>{{ step1.email }}</strong>
+                        </template>
+                        <template v-else-if="currentStep === 2.5">
+                            We sent a 6-digit code to <strong>{{ step2.company_email }}</strong>
+                        </template>
+                        <template v-else>
+                            {{ stepMeta[visualStep - 1].description }}
+                        </template>
+                    </CardDescription>
                 </CardHeader>
 
-                <Separator />
+                <Separator class="mt-5" />
 
-                <CardContent class="space-y-6 pt-6">
-                    <Alert
-                        v-if="Object.keys(form.errors).length"
-                        variant="destructive"
-                    >
-                        <AlertTitle>There are validation errors</AlertTitle>
-                        <AlertDescription
-                            >Fix the fields marked in red on this
-                            step.</AlertDescription
-                        >
-                    </Alert>
+                <CardContent class="pt-6">
 
-                    <!-- STEP 1 -->
-                    <div v-if="step === 1" class="space-y-6">
-                        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                            <div class="grid gap-2">
-                                <Label for="account_name"
-                                    >Full Name
-                                    <span class="text-destructive"
-                                        >*</span
-                                    ></Label
-                                >
-                                <Input
-                                    id="account_name"
-                                    v-model="form.account_name"
-                                    placeholder="e.g., Juan Dela Cruz"
-                                />
-                                <p class="text-xs text-muted-foreground">
-                                    Name of the person submitting this
-                                    registration.
-                                </p>
-                                <p
-                                    v-if="form.errors.account_name"
-                                    class="text-sm text-destructive"
-                                >
-                                    {{ form.errors.account_name }}
-                                </p>
+                    <!-- ══════════════════════════════════════════════════════
+                         STEP 1 – Account Details
+                    ═══════════════════════════════════════════════════════ -->
+                    <div v-if="currentStep === 1" class="space-y-4">
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div class="space-y-1.5">
+                                <Label for="s1_name">Full Name</Label>
+                                <Input id="s1_name" v-model="step1.name" placeholder="Juan dela Cruz" autocomplete="name" />
+                                <p v-if="step1.errors.name" class="text-xs text-destructive">{{ step1.errors.name }}</p>
                             </div>
-
-                            <div class="grid gap-2">
-                                <Label for="account_email"
-                                    >Email
-                                    <span class="text-destructive"
-                                        >*</span
-                                    ></Label
-                                >
-                                <Input
-                                    id="account_email"
-                                    v-model="form.account_email"
-                                    type="email"
-                                    placeholder="e.g., juan@email.com"
-                                />
-                                <p class="text-xs text-muted-foreground">
-                                    We’ll use this to contact you about
-                                    verification.
-                                </p>
-                                <p
-                                    v-if="form.errors.account_email"
-                                    class="text-sm text-destructive"
-                                >
-                                    {{ form.errors.account_email }}
-                                </p>
+                            <div class="space-y-1.5">
+                                <Label for="s1_email">Email Address</Label>
+                                <Input id="s1_email" type="email" v-model="step1.email" placeholder="juan@example.com" autocomplete="email" />
+                                <p v-if="step1.errors.email" class="text-xs text-destructive">{{ step1.errors.email }}</p>
                             </div>
                         </div>
 
-                        <div class="grid gap-2">
-                            <Label for="account_phone">Phone (optional)</Label>
-                            <Input
-                                id="account_phone"
-                                v-model="form.account_phone"
-                                placeholder="e.g., 09xxxxxxxxx"
-                            />
-                            <p
-                                v-if="form.errors.account_phone"
-                                class="text-sm text-destructive"
-                            >
-                                {{ form.errors.account_phone }}
-                            </p>
+                        <div class="space-y-1.5">
+                            <Label for="s1_phone">Mobile / Phone</Label>
+                            <Input id="s1_phone" v-model="step1.phone" placeholder="+63 9XX XXX XXXX" autocomplete="tel" />
+                            <p v-if="step1.errors.phone" class="text-xs text-destructive">{{ step1.errors.phone }}</p>
+                        </div>
+
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div class="space-y-1.5">
+                                <Label for="s1_pw">Password</Label>
+                                <Input id="s1_pw" type="password" v-model="step1.password" placeholder="Min. 8 characters" autocomplete="new-password" />
+                                <p v-if="step1.errors.password" class="text-xs text-destructive">{{ step1.errors.password }}</p>
+                            </div>
+                            <div class="space-y-1.5">
+                                <Label for="s1_pwc">Confirm Password</Label>
+                                <Input id="s1_pwc" type="password" v-model="step1.password_confirmation" placeholder="Repeat password" autocomplete="new-password" />
+                                <p v-if="step1.errors.password_confirmation" class="text-xs text-destructive">{{ step1.errors.password_confirmation }}</p>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- STEP 2 -->
-                    <div v-else-if="step === 2" class="space-y-6">
-                        <div class="grid gap-2">
-                            <Label for="company_name"
-                                >Company Name
-                                <span class="text-destructive">*</span></Label
-                            >
+                    <!-- ══════════════════════════════════════════════════════
+                         STEP 1.5 – Account Email OTP
+                    ═══════════════════════════════════════════════════════ -->
+                    <div v-else-if="currentStep === 1.5" class="space-y-6">
+
+                        <!-- Icon banner -->
+                        <div class="flex flex-col items-center gap-3 rounded-xl border bg-muted/40 px-6 py-8 text-center">
+                            <div class="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 ring-4 ring-primary/10">
+                                <Mail class="h-7 w-7 text-primary" />
+                            </div>
+                            <p class="text-sm text-muted-foreground max-w-xs">
+                                Enter the 6-digit code we sent to
+                                <span class="font-semibold text-foreground">{{ step1.email }}</span>.
+                                It expires in 10 minutes.
+                            </p>
+                        </div>
+
+                        <!-- OTP input -->
+                        <div class="space-y-1.5">
+                            <Label for="otp_acc" class="sr-only">Verification Code</Label>
                             <Input
-                                id="company_name"
-                                v-model="form.company_name"
-                                placeholder="e.g., ABC Transport Services"
+                                id="otp_acc"
+                                v-model="otpAccount.otp"
+                                inputmode="numeric"
+                                maxlength="6"
+                                placeholder="0  0  0  0  0  0"
+                                class="h-14 text-center text-3xl font-mono tracking-[.6em] placeholder:text-muted-foreground/40"
+                                :disabled="otpAccount.processing"
+                                @input="onOtpInput('account')"
                             />
-                            <p
-                                v-if="form.errors.company_name"
-                                class="text-sm text-destructive"
-                            >
-                                {{ form.errors.company_name }}
+                            <p v-if="otpAccount.errors.otp" class="text-center text-xs text-destructive">
+                                {{ otpAccount.errors.otp }}
                             </p>
                         </div>
 
-                        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                            <div class="grid gap-2">
-                                <Label for="company_email"
-                                    >Company Email
-                                    <span class="text-destructive"
-                                        >*</span
-                                    ></Label
-                                >
-                                <Input
-                                    id="company_email"
-                                    v-model="form.company_email"
-                                    type="email"
-                                    placeholder="e.g., contact@company.com"
-                                />
-                                <p
-                                    v-if="form.errors.company_email"
-                                    class="text-sm text-destructive"
-                                >
-                                    {{ form.errors.company_email }}
-                                </p>
-                            </div>
+                        <!-- Success feedback after resend -->
+                        <div v-if="resentAccountMsg" class="flex items-center justify-center gap-1.5 text-xs text-primary">
+                            <CheckCircle2 class="h-3.5 w-3.5" />
+                            {{ resentAccountMsg }}
+                        </div>
 
-                            <div class="grid gap-2">
-                                <Label for="company_phone"
-                                    >Company Phone
-                                    <span class="text-destructive"
-                                        >*</span
-                                    ></Label
-                                >
-                                <Input
-                                    id="company_phone"
-                                    v-model="form.company_phone"
-                                    placeholder="e.g., (046) xxx-xxxx / 09xxxxxxxxx"
-                                />
-                                <p
-                                    v-if="form.errors.company_phone"
-                                    class="text-sm text-destructive"
-                                >
-                                    {{ form.errors.company_phone }}
-                                </p>
+                        <!-- Resend link -->
+                        <div class="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+                            Didn't receive it?
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-1 font-medium text-primary underline-offset-2 hover:underline disabled:opacity-50"
+                                :disabled="resendAccount.processing"
+                                @click="doResendAccount"
+                            >
+                                <RefreshCcw class="h-3 w-3" :class="resendAccount.processing ? 'animate-spin' : ''" />
+                                Resend code
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ══════════════════════════════════════════════════════
+                         STEP 2 – Company Details
+                    ═══════════════════════════════════════════════════════ -->
+                    <div v-else-if="currentStep === 2" class="space-y-4">
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div class="space-y-1.5">
+                                <Label for="s2_cname">Company Name</Label>
+                                <Input id="s2_cname" v-model="step2.company_name" placeholder="Acme Corp." />
+                                <p v-if="step2.errors.company_name" class="text-xs text-destructive">{{ step2.errors.company_name }}</p>
+                            </div>
+                            <div class="space-y-1.5">
+                                <Label for="s2_cemail">Company Email</Label>
+                                <Input id="s2_cemail" type="email" v-model="step2.company_email" placeholder="info@acme.com" />
+                                <p v-if="step2.errors.company_email" class="text-xs text-destructive">{{ step2.errors.company_email }}</p>
                             </div>
                         </div>
 
-                        <div class="grid gap-2">
-                            <Label for="company_address"
-                                >Company Address
-                                <span class="text-destructive">*</span></Label
-                            >
-                            <Textarea
-                                id="company_address"
-                                v-model="form.company_address"
-                                rows="3"
-                                placeholder="Complete address..."
-                            />
-                            <p
-                                v-if="form.errors.company_address"
-                                class="text-sm text-destructive"
-                            >
-                                {{ form.errors.company_address }}
-                            </p>
-                        </div>
-
-                        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                            <div class="grid gap-2">
-                                <Label
-                                    >Business Type
-                                    <span class="text-destructive"
-                                        >*</span
-                                    ></Label
-                                >
-                                <Select v-model="form.business_type">
-                                    <SelectTrigger>
-                                        <SelectValue
-                                            placeholder="Select business type"
-                                        />
-                                    </SelectTrigger>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div class="space-y-1.5">
+                                <Label for="s2_cphone">Company Phone</Label>
+                                <Input id="s2_cphone" v-model="step2.company_phone" placeholder="+63 2 XXXX XXXX" />
+                                <p v-if="step2.errors.company_phone" class="text-xs text-destructive">{{ step2.errors.company_phone }}</p>
+                            </div>
+                            <div class="space-y-1.5">
+                                <Label for="s2_btype">Business Type</Label>
+                                <Select v-model="step2.business_type">
+                                    <SelectTrigger id="s2_btype"><SelectValue placeholder="Select type…" /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="sole_proprietorship"
-                                            >Sole Proprietorship
-                                            (DTI)</SelectItem
-                                        >
-                                        <SelectItem value="corporate"
-                                            >Corporate (SEC)</SelectItem
-                                        >
+                                        <SelectItem value="corporate">Corporate</SelectItem>
+                                        <SelectItem value="sole_proprietorship">Sole Proprietorship</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <p class="text-xs text-muted-foreground">
-                                    {{
-                                        form.business_type
-                                            ? isCorporate
-                                                ? 'Corporate requires SEC Certificate.'
-                                                : 'Sole proprietorship requires DTI Certificate.'
-                                            : 'Choose based on your registration.'
-                                    }}
-                                </p>
-                                <p
-                                    v-if="form.errors.business_type"
-                                    class="text-sm text-destructive"
-                                >
-                                    {{ form.errors.business_type }}
-                                </p>
-                            </div>
-
-                            <div class="grid gap-2">
-                                <Label for="registration_number"
-                                    >Registration Number
-                                    <span class="text-destructive"
-                                        >*</span
-                                    ></Label
-                                >
-                                <Input
-                                    id="registration_number"
-                                    v-model="form.registration_number"
-                                    placeholder="DTI/SEC registration number"
-                                />
-                                <p
-                                    v-if="form.errors.registration_number"
-                                    class="text-sm text-destructive"
-                                >
-                                    {{ form.errors.registration_number }}
-                                </p>
+                                <p v-if="step2.errors.business_type" class="text-xs text-destructive">{{ step2.errors.business_type }}</p>
                             </div>
                         </div>
 
-                        <Separator />
+                        <AddressSelectPH
+                            v-model:address="step2.company_address"
+                            v-model:codes="addressCodes"
+                            label="Company Address"
+                            street-label="Street / Building / Unit"
+                        />
+                        <p v-if="step2.errors.company_address" class="text-xs text-destructive">{{ step2.errors.company_address }}</p>
 
-                        <div class="space-y-4">
-                            <div class="font-medium">
-                                Authorized Representative
-                            </div>
+                        <div v-if="step2.business_type" class="space-y-1.5">
+                            <Label for="s2_regno">{{ isCorporate ? 'SEC Registration Number' : 'DTI Registration Number' }}</Label>
+                            <Input id="s2_regno" v-model="step2.registration_number" placeholder="Enter registration number" />
+                            <p v-if="step2.errors.registration_number" class="text-xs text-destructive">{{ step2.errors.registration_number }}</p>
+                        </div>
 
-                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div class="grid gap-2">
-                                    <Label for="ar_name"
-                                        >Name
-                                        <span class="text-destructive"
-                                            >*</span
-                                        ></Label
-                                    >
-                                    <Input
-                                        id="ar_name"
-                                        v-model="
-                                            form.authorized_representative_name
-                                        "
-                                        placeholder="Full name"
-                                    />
-                                    <p
-                                        v-if="
-                                            form.errors
-                                                .authorized_representative_name
-                                        "
-                                        class="text-sm text-destructive"
-                                    >
-                                        {{
-                                            form.errors
-                                                .authorized_representative_name
-                                        }}
-                                    </p>
+                        <template v-if="step2.business_type">
+                            <Separator />
+                            <p class="text-sm font-medium">Authorized Representative</p>
+
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                <div class="space-y-1.5">
+                                    <Label for="s2_rname">Full Name</Label>
+                                    <Input id="s2_rname" v-model="step2.authorized_representative_name" placeholder="Representative name" />
+                                    <p v-if="step2.errors.authorized_representative_name" class="text-xs text-destructive">{{ step2.errors.authorized_representative_name }}</p>
                                 </div>
 
-                                <div class="grid gap-2">
-                                    <Label for="ar_position"
-                                        >Position
-                                        <span class="text-destructive"
-                                            >*</span
-                                        ></Label
-                                    >
+                                <div class="space-y-1.5">
+                                    <Label for="s2_rpos">Position</Label>
+                                    <Select v-model="positionChoice">
+                                        <SelectTrigger id="s2_rpos"><SelectValue placeholder="Select position…" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem v-for="p in positionOptions" :key="p" :value="p">{{ p }}</SelectItem>
+                                            <SelectItem value="other">Other (type manually)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                     <Input
-                                        id="ar_position"
-                                        v-model="
-                                            form.authorized_representative_position
-                                        "
-                                        placeholder="e.g., General Manager"
+                                        v-if="positionChoice === 'other'"
+                                        class="mt-2"
+                                        v-model="step2.authorized_representative_position"
+                                        placeholder="Type position…"
                                     />
-                                    <p
-                                        v-if="
-                                            form.errors
-                                                .authorized_representative_position
-                                        "
-                                        class="text-sm text-destructive"
-                                    >
-                                        {{
-                                            form.errors
-                                                .authorized_representative_position
-                                        }}
-                                    </p>
+                                    <p v-if="step2.errors.authorized_representative_position" class="text-xs text-destructive">{{ step2.errors.authorized_representative_position }}</p>
                                 </div>
                             </div>
 
-                            <div class="grid gap-2">
-                                <Label for="ar_contact"
-                                    >Contact
-                                    <span class="text-destructive"
-                                        >*</span
-                                    ></Label
-                                >
-                                <Input
-                                    id="ar_contact"
-                                    v-model="
-                                        form.authorized_representative_contact
-                                    "
-                                    placeholder="Phone or email"
-                                />
-                                <p
-                                    v-if="
-                                        form.errors
-                                            .authorized_representative_contact
-                                    "
-                                    class="text-sm text-destructive"
-                                >
-                                    {{
-                                        form.errors
-                                            .authorized_representative_contact
-                                    }}
-                                </p>
+                            <div class="space-y-1.5">
+                                <Label for="s2_rcont">Contact Number</Label>
+                                <Input id="s2_rcont" v-model="step2.authorized_representative_contact" placeholder="+63 9XX XXX XXXX" />
+                                <p v-if="step2.errors.authorized_representative_contact" class="text-xs text-destructive">{{ step2.errors.authorized_representative_contact }}</p>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- ══════════════════════════════════════════════════════
+                         STEP 2.5 – Company Email OTP
+                    ═══════════════════════════════════════════════════════ -->
+                    <div v-else-if="currentStep === 2.5" class="space-y-6">
+
+                        <div class="flex flex-col items-center gap-3 rounded-xl border bg-muted/40 px-6 py-8 text-center">
+                            <div class="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 ring-4 ring-primary/10">
+                                <ShieldCheck class="h-7 w-7 text-primary" />
+                            </div>
+                            <p class="max-w-xs text-sm text-muted-foreground">
+                                Enter the 6-digit code sent to
+                                <span class="font-semibold text-foreground">{{ step2.company_email }}</span>.
+                                It expires in 10 minutes.
+                            </p>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <Label for="otp_comp" class="sr-only">Verification Code</Label>
+                            <Input
+                                id="otp_comp"
+                                v-model="otpCompany.otp"
+                                inputmode="numeric"
+                                maxlength="6"
+                                placeholder="0  0  0  0  0  0"
+                                class="h-14 text-center text-3xl font-mono tracking-[.6em] placeholder:text-muted-foreground/40"
+                                :disabled="otpCompany.processing"
+                                @input="onOtpInput('company')"
+                            />
+                            <p v-if="otpCompany.errors.otp" class="text-center text-xs text-destructive">
+                                {{ otpCompany.errors.otp }}
+                            </p>
+                        </div>
+
+                        <div v-if="resentCompanyMsg" class="flex items-center justify-center gap-1.5 text-xs text-primary">
+                            <CheckCircle2 class="h-3.5 w-3.5" />
+                            {{ resentCompanyMsg }}
+                        </div>
+
+                        <div class="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+                            Didn't receive it?
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-1 font-medium text-primary underline-offset-2 hover:underline disabled:opacity-50"
+                                :disabled="resendCompany.processing"
+                                @click="doResendCompany"
+                            >
+                                <RefreshCcw class="h-3 w-3" :class="resendCompany.processing ? 'animate-spin' : ''" />
+                                Resend code
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ══════════════════════════════════════════════════════
+                         STEP 3 – Documents
+                    ═══════════════════════════════════════════════════════ -->
+                    <div v-else-if="currentStep === 3" class="space-y-5">
+
+                        <div
+                            v-if="step2.business_type"
+                            class="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2 text-sm text-muted-foreground"
+                        >
+                            <svg class="h-4 w-4 shrink-0 text-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10"/><path stroke-linecap="round" d="M12 8v4m0 4h.01"/>
+                            </svg>
+                            Showing required documents for
+                            <Badge variant="secondary" class="text-xs capitalize">
+                                {{ step2.business_type.replace('_', ' ') }}
+                            </Badge>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div
+                                v-for="doc in requiredDocs"
+                                :key="doc.key"
+                                class="space-y-3 rounded-lg border p-4 transition-colors"
+                                :class="step3.documents[doc.key].file ? 'border-primary/40 bg-primary/5' : ''"
+                            >
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <svg class="h-4 w-4 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        <span class="text-sm font-medium">{{ doc.label }}</span>
+                                        <Badge v-if="doc.required" variant="destructive" class="px-1.5 py-0 text-[10px]">Required</Badge>
+                                        <Badge v-else variant="outline" class="px-1.5 py-0 text-[10px]">Optional</Badge>
+                                    </div>
+                                    <!-- Tick when file chosen -->
+                                    <svg v-if="step3.documents[doc.key].file" class="h-4 w-4 text-primary" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </div>
+
+                                <div class="space-y-1">
+                                    <Input
+                                        :id="doc.key"
+                                        type="file"
+                                        accept=".pdf,.jpg,.jpeg,.png"
+                                        class="cursor-pointer text-sm"
+                                        @change="handleFile(doc.key, $event)"
+                                    />
+                                    <p v-if="step3.documents[doc.key].file" class="truncate text-xs text-muted-foreground">
+                                        {{ step3.documents[doc.key].file?.name }}
+                                    </p>
+                                    <p v-if="docError(doc.key, 'file')" class="text-xs text-destructive">{{ docError(doc.key, 'file') }}</p>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="space-y-1">
+                                        <Label :for="`${doc.key}_iss`" class="text-xs text-muted-foreground">Issued At</Label>
+                                        <Input :id="`${doc.key}_iss`" type="date" v-model="step3.documents[doc.key].issued_at" class="h-8 text-sm" />
+                                        <p v-if="docError(doc.key, 'issued_at')" class="text-xs text-destructive">{{ docError(doc.key, 'issued_at') }}</p>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <Label :for="`${doc.key}_exp`" class="text-xs text-muted-foreground">Expires At</Label>
+                                        <Input :id="`${doc.key}_exp`" type="date" v-model="step3.documents[doc.key].expires_at" class="h-8 text-sm" />
+                                        <p v-if="docError(doc.key, 'expires_at')" class="text-xs text-destructive">{{ docError(doc.key, 'expires_at') }}</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- STEP 3 -->
-                    <div v-else class="space-y-6">
-                        <div class="space-y-2 rounded-lg border p-4">
-                            <div class="font-medium">Review Summary</div>
-                            <div class="text-sm text-muted-foreground">
-                                <div>
-                                    <span class="font-medium text-foreground"
-                                        >Company:</span
-                                    >
-                                    {{ form.company_name || '—' }}
-                                </div>
-                                <div>
-                                    <span class="font-medium text-foreground"
-                                        >Business Type:</span
-                                    >
-                                    {{ form.business_type || '—' }}
-                                </div>
-                                <div>
-                                    <span class="font-medium text-foreground"
-                                        >Registration #:</span
-                                    >
-                                    {{ form.registration_number || '—' }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                            <div class="grid gap-2">
-                                <Label for="issued_at"
-                                    >Issued At
-                                    <span class="text-destructive"
-                                        >*</span
-                                    ></Label
-                                >
-                                <Input
-                                    id="issued_at"
-                                    v-model="form.issued_at"
-                                    type="date"
-                                />
-                                <p
-                                    v-if="form.errors.issued_at"
-                                    class="text-sm text-destructive"
-                                >
-                                    {{ form.errors.issued_at }}
-                                </p>
-                            </div>
-
-                            <div class="grid gap-2">
-                                <Label for="expires_at"
-                                    >Expires At
-                                    <span class="text-destructive"
-                                        >*</span
-                                    ></Label
-                                >
-                                <Input
-                                    id="expires_at"
-                                    v-model="form.expires_at"
-                                    type="date"
-                                />
-                                <p
-                                    v-if="form.errors.expires_at"
-                                    class="text-sm text-destructive"
-                                >
-                                    {{ form.errors.expires_at }}
-                                </p>
-                            </div>
-                        </div>
-
-                        <Separator />
-
-                        <div class="space-y-4">
-                            <div>
-                                <div class="font-medium">Upload Documents</div>
-                                <div class="text-sm text-muted-foreground">
-                                    Allowed: PDF/JPG/PNG.
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div class="space-y-2">
-                                    <div
-                                        class="flex items-center justify-between"
-                                    >
-                                        <Label
-                                            >Authorization Letter
-                                            <span class="text-destructive"
-                                                >*</span
-                                            ></Label
-                                        >
-                                        <Badge
-                                            :variant="
-                                                docBadge(
-                                                    true,
-                                                    form.AUTHORIZATION_LETTER,
-                                                ).variant
-                                            "
-                                            >{{
-                                                docBadge(
-                                                    true,
-                                                    form.AUTHORIZATION_LETTER,
-                                                ).text
-                                            }}</Badge
-                                        >
-                                    </div>
-                                    <Input
-                                        type="file"
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                        @change="
-                                            (e) =>
-                                                setFile(
-                                                    'AUTHORIZATION_LETTER',
-                                                    e,
-                                                )
-                                        "
-                                    />
-                                </div>
-
-                                <div class="space-y-2">
-                                    <div
-                                        class="flex items-center justify-between"
-                                    >
-                                        <Label
-                                            >Mayor’s Permit
-                                            <span class="text-destructive"
-                                                >*</span
-                                            ></Label
-                                        >
-                                        <Badge
-                                            :variant="
-                                                docBadge(
-                                                    true,
-                                                    form.MAYORS_PERMIT,
-                                                ).variant
-                                            "
-                                            >{{
-                                                docBadge(
-                                                    true,
-                                                    form.MAYORS_PERMIT,
-                                                ).text
-                                            }}</Badge
-                                        >
-                                    </div>
-                                    <Input
-                                        type="file"
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                        @change="
-                                            (e) => setFile('MAYORS_PERMIT', e)
-                                        "
-                                    />
-                                </div>
-
-                                <div class="space-y-2">
-                                    <div
-                                        class="flex items-center justify-between"
-                                    >
-                                        <Label
-                                            >BIR 2303
-                                            <span class="text-destructive"
-                                                >*</span
-                                            ></Label
-                                        >
-                                        <Badge
-                                            :variant="
-                                                docBadge(true, form.BIR_2303)
-                                                    .variant
-                                            "
-                                            >{{
-                                                docBadge(true, form.BIR_2303)
-                                                    .text
-                                            }}</Badge
-                                        >
-                                    </div>
-                                    <Input
-                                        type="file"
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                        @change="(e) => setFile('BIR_2303', e)"
-                                    />
-                                </div>
-
-                                <div class="space-y-2">
-                                    <div
-                                        class="flex items-center justify-between"
-                                    >
-                                        <Label>
-                                            SEC Certificate
-                                            <span
-                                                v-if="secRequired"
-                                                class="text-destructive"
-                                                >*</span
-                                            >
-                                            <span
-                                                v-else
-                                                class="text-muted-foreground"
-                                                >(optional)</span
-                                            >
-                                        </Label>
-                                        <Badge
-                                            :variant="
-                                                docBadge(
-                                                    secRequired,
-                                                    form.SEC_CERT,
-                                                ).variant
-                                            "
-                                            >{{
-                                                docBadge(
-                                                    secRequired,
-                                                    form.SEC_CERT,
-                                                ).text
-                                            }}</Badge
-                                        >
-                                    </div>
-                                    <Input
-                                        type="file"
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                        @change="(e) => setFile('SEC_CERT', e)"
-                                    />
-                                </div>
-
-                                <div class="space-y-2">
-                                    <div
-                                        class="flex items-center justify-between"
-                                    >
-                                        <Label>
-                                            DTI Certificate
-                                            <span
-                                                v-if="dtiRequired"
-                                                class="text-destructive"
-                                                >*</span
-                                            >
-                                            <span
-                                                v-else
-                                                class="text-muted-foreground"
-                                                >(optional)</span
-                                            >
-                                        </Label>
-                                        <Badge
-                                            :variant="
-                                                docBadge(
-                                                    dtiRequired,
-                                                    form.DTI_CERT,
-                                                ).variant
-                                            "
-                                            >{{
-                                                docBadge(
-                                                    dtiRequired,
-                                                    form.DTI_CERT,
-                                                ).text
-                                            }}</Badge
-                                        >
-                                    </div>
-                                    <Input
-                                        type="file"
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                        @change="(e) => setFile('DTI_CERT', e)"
-                                    />
-                                </div>
-                            </div>
-
-                            <div class="rounded-lg border">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Document</TableHead>
-                                            <TableHead>File</TableHead>
-                                            <TableHead
-                                                class="w-[120px] text-right"
-                                                >Action</TableHead
-                                            >
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        <TableRow>
-                                            <TableCell class="font-medium"
-                                                >Authorization Letter</TableCell
-                                            >
-                                            <TableCell>
-                                                <span
-                                                    v-if="
-                                                        form.AUTHORIZATION_LETTER
-                                                    "
-                                                    >{{
-                                                        form
-                                                            .AUTHORIZATION_LETTER
-                                                            .name
-                                                    }}
-                                                    •
-                                                    {{
-                                                        humanSize(
-                                                            form
-                                                                .AUTHORIZATION_LETTER
-                                                                .size,
-                                                        )
-                                                    }}</span
-                                                >
-                                                <span
-                                                    v-else
-                                                    class="text-muted-foreground"
-                                                    >No file selected</span
-                                                >
-                                            </TableCell>
-                                            <TableCell class="text-right">
-                                                <Button
-                                                    v-if="
-                                                        form.AUTHORIZATION_LETTER
-                                                    "
-                                                    variant="outline"
-                                                    size="sm"
-                                                    @click="
-                                                        clearFile(
-                                                            'AUTHORIZATION_LETTER',
-                                                        )
-                                                    "
-                                                    >Remove</Button
-                                                >
-                                            </TableCell>
-                                        </TableRow>
-
-                                        <TableRow>
-                                            <TableCell class="font-medium"
-                                                >Mayor’s Permit</TableCell
-                                            >
-                                            <TableCell>
-                                                <span v-if="form.MAYORS_PERMIT"
-                                                    >{{
-                                                        form.MAYORS_PERMIT.name
-                                                    }}
-                                                    •
-                                                    {{
-                                                        humanSize(
-                                                            form.MAYORS_PERMIT
-                                                                .size,
-                                                        )
-                                                    }}</span
-                                                >
-                                                <span
-                                                    v-else
-                                                    class="text-muted-foreground"
-                                                    >No file selected</span
-                                                >
-                                            </TableCell>
-                                            <TableCell class="text-right">
-                                                <Button
-                                                    v-if="form.MAYORS_PERMIT"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    @click="
-                                                        clearFile(
-                                                            'MAYORS_PERMIT',
-                                                        )
-                                                    "
-                                                    >Remove</Button
-                                                >
-                                            </TableCell>
-                                        </TableRow>
-
-                                        <TableRow>
-                                            <TableCell class="font-medium"
-                                                >BIR 2303</TableCell
-                                            >
-                                            <TableCell>
-                                                <span v-if="form.BIR_2303"
-                                                    >{{ form.BIR_2303.name }} •
-                                                    {{
-                                                        humanSize(
-                                                            form.BIR_2303.size,
-                                                        )
-                                                    }}</span
-                                                >
-                                                <span
-                                                    v-else
-                                                    class="text-muted-foreground"
-                                                    >No file selected</span
-                                                >
-                                            </TableCell>
-                                            <TableCell class="text-right">
-                                                <Button
-                                                    v-if="form.BIR_2303"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    @click="
-                                                        clearFile('BIR_2303')
-                                                    "
-                                                    >Remove</Button
-                                                >
-                                            </TableCell>
-                                        </TableRow>
-
-                                        <TableRow>
-                                            <TableCell class="font-medium"
-                                                >SEC Certificate</TableCell
-                                            >
-                                            <TableCell>
-                                                <span v-if="form.SEC_CERT"
-                                                    >{{ form.SEC_CERT.name }} •
-                                                    {{
-                                                        humanSize(
-                                                            form.SEC_CERT.size,
-                                                        )
-                                                    }}</span
-                                                >
-                                                <span
-                                                    v-else
-                                                    class="text-muted-foreground"
-                                                    >No file selected</span
-                                                >
-                                            </TableCell>
-                                            <TableCell class="text-right">
-                                                <Button
-                                                    v-if="form.SEC_CERT"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    @click="
-                                                        clearFile('SEC_CERT')
-                                                    "
-                                                    >Remove</Button
-                                                >
-                                            </TableCell>
-                                        </TableRow>
-
-                                        <TableRow>
-                                            <TableCell class="font-medium"
-                                                >DTI Certificate</TableCell
-                                            >
-                                            <TableCell>
-                                                <span v-if="form.DTI_CERT"
-                                                    >{{ form.DTI_CERT.name }} •
-                                                    {{
-                                                        humanSize(
-                                                            form.DTI_CERT.size,
-                                                        )
-                                                    }}</span
-                                                >
-                                                <span
-                                                    v-else
-                                                    class="text-muted-foreground"
-                                                    >No file selected</span
-                                                >
-                                            </TableCell>
-                                            <TableCell class="text-right">
-                                                <Button
-                                                    v-if="form.DTI_CERT"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    @click="
-                                                        clearFile('DTI_CERT')
-                                                    "
-                                                    >Remove</Button
-                                                >
-                                            </TableCell>
-                                        </TableRow>
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        </div>
-                    </div>
                 </CardContent>
 
+                <!-- ── Footer: Back + primary action ─────────────────────── -->
                 <Separator />
+                <div class="flex items-center justify-between p-6">
 
-                <CardFooter class="flex items-center justify-between py-4">
                     <Button
+                        type="button"
                         variant="outline"
-                        :disabled="step === 1"
-                        @click="back"
-                        >Back</Button
+                        :disabled="currentStep === 1"
+                        @click="goBack"
                     >
+                        ← Back
+                    </Button>
 
-                    <div class="flex items-center gap-2">
-                        <Button
-                            v-if="step < 3"
-                            :disabled="step === 1 ? !step1Valid : !step2Valid"
-                            @click="next"
-                        >
-                            Next
-                        </Button>
+                    <!-- Step 1 → send OTP & advance to 1.5 -->
+                    <Button v-if="currentStep === 1" type="button" :disabled="step1.processing" @click="submitStep1">
+                        <Loader2 v-if="step1.processing" class="mr-2 h-4 w-4 animate-spin" />
+                        {{ step1.processing ? 'Sending code…' : 'Continue →' }}
+                    </Button>
 
-                        <Button
-                            v-else
-                            :disabled="!step3Valid"
-                            @click="submitToConsole"
-                        >
-                            Console Submit
-                        </Button>
-                    </div>
-                </CardFooter>
+                    <!-- Step 1.5 → verify account OTP -->
+                    <Button
+                        v-else-if="currentStep === 1.5"
+                        type="button"
+                        :disabled="otpAccount.processing || otpAccount.otp.length < 6"
+                        @click="submitAccountOtp"
+                    >
+                        <Loader2 v-if="otpAccount.processing" class="mr-2 h-4 w-4 animate-spin" />
+                        {{ otpAccount.processing ? 'Verifying…' : 'Verify & Continue →' }}
+                    </Button>
+
+                    <!-- Step 2 → send company OTP & advance to 2.5 -->
+                    <Button v-else-if="currentStep === 2" type="button" :disabled="step2.processing" @click="submitStep2">
+                        <Loader2 v-if="step2.processing" class="mr-2 h-4 w-4 animate-spin" />
+                        {{ step2.processing ? 'Sending code…' : 'Continue →' }}
+                    </Button>
+
+                    <!-- Step 2.5 → verify company OTP -->
+                    <Button
+                        v-else-if="currentStep === 2.5"
+                        type="button"
+                        :disabled="otpCompany.processing || otpCompany.otp.length < 6"
+                        @click="submitCompanyOtp"
+                    >
+                        <Loader2 v-if="otpCompany.processing" class="mr-2 h-4 w-4 animate-spin" />
+                        {{ otpCompany.processing ? 'Verifying…' : 'Verify & Continue →' }}
+                    </Button>
+
+                    <!-- Step 3 → submit application -->
+                    <Button v-else-if="currentStep === 3" type="button" :disabled="step3.processing" @click="submitStep3">
+                        <Loader2 v-if="step3.processing" class="mr-2 h-4 w-4 animate-spin" />
+                        {{ step3.processing ? 'Submitting…' : 'Submit Application' }}
+                    </Button>
+
+                </div>
             </Card>
+
         </div>
     </div>
 </template>
