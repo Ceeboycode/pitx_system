@@ -665,14 +665,14 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
                     <Button
                         type="button"
                         variant="outline"
-                        :disabled="currentStep === 1"
                         @click="goBack"
+                        class="cursor-pointer"
                     >
                         ← Back
                     </Button>
 
                     <!-- Step 1 → send OTP & advance to 1.5 -->
-                    <Button v-if="currentStep === 1" type="button" :disabled="step1.processing" @click="submitStep1">
+                    <Button v-if="currentStep === 1" type="button" :disabled="step1.processing" @click="submitStep1" class="cursor-pointer">
                         <Loader2 v-if="step1.processing" class="mr-2 h-4 w-4 animate-spin" />
                         {{ step1.processing ? 'Sending code…' : 'Continue →' }}
                     </Button>
@@ -683,13 +683,14 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
                         type="button"
                         :disabled="otpAccount.processing || otpAccount.otp.length < 6"
                         @click="submitAccountOtp"
+                        class="cursor-pointer"
                     >
                         <Loader2 v-if="otpAccount.processing" class="mr-2 h-4 w-4 animate-spin" />
                         {{ otpAccount.processing ? 'Verifying…' : 'Verify & Continue →' }}
                     </Button>
 
                     <!-- Step 2 → send company OTP & advance to 2.5 -->
-                    <Button v-else-if="currentStep === 2" type="button" :disabled="step2.processing" @click="submitStep2">
+                    <Button v-else-if="currentStep === 2" type="button" :disabled="step2.processing" @click="submitStep2" class="cursor-pointer">
                         <Loader2 v-if="step2.processing" class="mr-2 h-4 w-4 animate-spin" />
                         {{ step2.processing ? 'Sending code…' : 'Continue →' }}
                     </Button>
@@ -700,13 +701,14 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
                         type="button"
                         :disabled="otpCompany.processing || otpCompany.otp.length < 6"
                         @click="submitCompanyOtp"
+                        class="cursor-pointer"
                     >
                         <Loader2 v-if="otpCompany.processing" class="mr-2 h-4 w-4 animate-spin" />
                         {{ otpCompany.processing ? 'Verifying…' : 'Verify & Continue →' }}
                     </Button>
 
                     <!-- Step 3 → submit application -->
-                    <Button v-else-if="currentStep === 3" type="button" :disabled="step3.processing" @click="submitStep3">
+                    <Button v-else-if="currentStep === 3" type="button" :disabled="step3.processing" @click="submitStep3" class="cursor-pointer">
                         <Loader2 v-if="step3.processing" class="mr-2 h-4 w-4 animate-spin" />
                         {{ step3.processing ? 'Submitting…' : 'Submit Application' }}
                     </Button>
