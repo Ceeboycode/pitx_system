@@ -21,7 +21,7 @@ class CompanyController extends Controller
         Gate::authorize('viewAny', Company::class);
 
         $companies = Company::query()
-            ->select('id', 'company_name', 'company_code', 'company_email', 'company_phone', 'status', 'created_at')
+            ->select('id', 'company_name', 'company_code', 'company_email', 'company_phone', 'business_type', 'status', 'created_at')
             ->search($request->search)
             ->latest()
             ->paginate(10)
@@ -29,9 +29,7 @@ class CompanyController extends Controller
 
         return Inertia::render('Company/Index', [
             'companies' => $companies,
-            'filters' => [
-                'search' => $request->search,
-            ],
+            'filters'   => ['search' => $request->search],
         ]);
     }
 
@@ -44,20 +42,10 @@ class CompanyController extends Controller
             'updater:id,name',
             'documents' => function ($q) {
                 $q->select(
-                    'id',
-                    'company_id',
-                    'doc_type',
-                    'status',
-                    'remarks',
-                    'original_name',
-                    'file_path',
-                    'mime_type',
-                    'issued_at',
-                    'expires_at',  
-                    'uploaded_by',
-                    'verified_by',
-                    'verified_at',
-                    'created_at'
+                    'id', 'company_id', 'doc_type', 'status', 'remarks',
+                    'original_name', 'file_path', 'mime_type',
+                    'issued_at', 'expires_at', 'uploaded_by',
+                    'verified_by', 'verified_at', 'created_at'
                 )->latest();
             },
             'documents.uploader:id,name',
@@ -74,7 +62,7 @@ class CompanyController extends Controller
         Gate::authorize('viewAny', Company::class);
 
         $companies = Company::onlyTrashed()
-            ->select('id', 'company_name', 'company_code', 'deleted_at', 'deleted_by')
+            ->select('id', 'company_name', 'company_code', 'company_email', 'company_phone', 'business_type', 'deleted_at', 'deleted_by')
             ->with(['deleter:id,name'])
             ->search($request->search)
             ->latest('deleted_at')
@@ -83,9 +71,7 @@ class CompanyController extends Controller
 
         return Inertia::render('Company/Trash', [
             'companies' => $companies,
-            'filters' => [
-                'search' => $request->search,
-            ],
+            'filters'   => ['search' => $request->search],
         ]);
     }
 
@@ -101,7 +87,7 @@ class CompanyController extends Controller
         Gate::authorize('create', Company::class);
 
         $userId = $request->user()?->id;
-        abort_if(!$userId, 403);
+        abort_if(! $userId, 403);
 
         $company = $this->companyService->createCompanyWithDocuments(
             $request->validated(),
@@ -114,42 +100,38 @@ class CompanyController extends Controller
             ->with('success', 'Company and documents submitted successfully.');
     }
 
-    public function edit(Company $company)
-    {
-        Gate::authorize('update', $company);
+    // public function edit(Company $company)
+    // {
+    //     Gate::authorize('update', $company);
 
-        $company->load([
-            'documents:id,company_id,doc_type,original_name,file_path,status',
-        ]);
+    //     $company->load([
+    //         'documents:id,company_id,doc_type,original_name,file_path,status',
+    //     ]);
 
-        return Inertia::render('Company/Edit', [
-            'company' => $company,
-        ]);
-    }
+    //     return Inertia::render('Company/Edit', [
+    //         'company' => $company,
+    //     ]);
+    // }
 
     public function update(CompanyUpdateRequest $request, Company $company)
     {
         Gate::authorize('update', $company);
 
-        $userId = $request->user()?->id;
-        abort_if(!$userId, 403);
-
-        $this->companyService->updateCompanyWithDocuments(
-            $company,
-            $request->validated(),
-            $request,
-            $userId
-        );
+        $company->update([
+            'company_name' => $request->string('company_name')->toString(),
+            'status' => $request->string('status')->toString(),
+        ]);
 
         return back()->with('success', 'Company updated successfully.');
     }
+
 
     public function destroy(Request $request, Company $company)
     {
         Gate::authorize('delete', $company);
 
         $userId = $request->user()?->id;
-        abort_if(!$userId, 403);
+        abort_if(! $userId, 403);
 
         $this->companyService->deleteCompany($company, $userId);
 
@@ -171,6 +153,6 @@ class CompanyController extends Controller
 
         $this->companyService->forceDeleteCompany($company);
 
-        return back()->with('success', 'Company permanently deleted successfully.');
+        return back()->with('success', 'Company permanently deleted.');
     }
 }

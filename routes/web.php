@@ -107,7 +107,11 @@ Route::middleware(['auth', 'role.type:internal'])->group(function () {
     */
     Route::resource('users', UserController::class);
     Route::resource('roles', RoleController::class);
+    Route::get('/companies/export', [\App\Http\Controllers\CompanyBackupController::class, 'export'])
+        ->name('companies.export');
 
+    Route::post('/companies/import', [\App\Http\Controllers\CompanyBackupController::class, 'import'])
+        ->name('companies.import');
     /*
     |--------------------------------------------------------------------------
     | Companies + Document management
