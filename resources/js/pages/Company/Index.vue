@@ -1,19 +1,12 @@
 <script setup lang="ts">
-/* ======================================================
-   Component Imports (Dialogs & Shared UI)
-====================================================== */
-
-// Dialogs for CRUD actions
 import ArchiveCompanyDialog from '@/components/company/ArchiveCompanyDialog.vue';
 import CreateCompanyDialog from '@/components/company/CreateCompanyDialog.vue';
 import EditCompanyDialog from '@/components/company/EditCompanyDialog.vue';
-import { can } from '@/lib/can';
-
-// Shared components
+import ImportCompanyDialog from '@/components/company/ImportCompanyDialog.vue';
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
+import { can } from '@/lib/can';
 
-// shadcn-vue UI components
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +18,14 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
     Table,
     TableBody,
     TableCaption,
@@ -33,39 +34,32 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-
-/* ======================================================
-   Layout, Routing & Inertia
-====================================================== */
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 import AppLayout from '@/layouts/AppLayout.vue';
-import { create, edit, index, show, trash } from '@/routes/companies';
+import { index, show, trash } from '@/routes/companies';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/vue3';
-
-/* ======================================================
-   Icons
-====================================================== */
+import { Head, Link, router } from '@inertiajs/vue3';
 
 import {
     Archive,
-    ArchiveX,
+    ChevronRight,
     Download,
-    Edit,
-    Eye,
-    Plus,
+    FileSearch,
+    Loader2,
+    MoreHorizontal,
+    Pencil,
     Upload,
 } from 'lucide-vue-next';
 
-/* ======================================================
-   Vue Core
-====================================================== */
-
 import { ref } from 'vue';
 
-/* ======================================================
-   Types
-====================================================== */
+/* ── Types ─────────────────────────────────────────────────────────────── */
 
 type CompanyStatus =
     | 'draft'
@@ -86,35 +80,38 @@ type Company = {
     created_at_human?: string | null;
 };
 
-/* ======================================================
-   Breadcrumbs
-====================================================== */
+/* ── Breadcrumbs ───────────────────────────────────────────────────────── */
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Companies', href: index().url },
 ];
 
-/* ======================================================
-   Props
-====================================================== */
+/* ── Props ─────────────────────────────────────────────────────────────── */
 
 defineProps<{
-    companies: any;
-    filters: { search: string | null };
+    companies: {
+        data: Company[];
+        links: Array<{
+            url: string | null;
+            label: string;
+            active: boolean;
+        }>;
+        from: number | null;
+        to: number | null;
+        total: number;
+    };
+    filters: {
+        search: string | null;
+    };
 }>();
 
-/* ======================================================
-   Dialog State
-====================================================== */
+/* ── Dialog state ──────────────────────────────────────────────────────── */
 
 const createOpen = ref(false);
 const editOpen = ref(false);
 const archiveOpen = ref(false);
+const importOpen = ref(false);
 const selectedCompany = ref<Company | null>(null);
-
-/* ======================================================
-   Actions
-====================================================== */
 
 function openEdit(company: Company) {
     selectedCompany.value = company;
@@ -126,14 +123,38 @@ function openArchive(company: Company) {
     archiveOpen.value = true;
 }
 
-/* ======================================================
-   Status helpers (human readable + default badge variants)
-====================================================== */
+/* ── Export ────────────────────────────────────────────────────────────── */
+
+const exporting = ref(false);
+
+function triggerExport() {
+    exporting.value = true;
+
+    const a = document.createElement('a');
+    a.href = '/companies/export';
+    a.style.display = 'none';
+
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(() => {
+        exporting.value = false;
+    }, 2000);
+}
+
+/* ── Import done ───────────────────────────────────────────────────────── */
+
+function onImportDone() {
+    router.reload({ only: ['companies'] });
+}
+
+/* ── Status helpers ────────────────────────────────────────────────────── */
 
 function humanizeStatus(status?: CompanyStatus): string {
     if (!status) return '—';
 
-    const map: Record<string, string> = {
+    const map: Record<Exclude<CompanyStatus, null>, string> = {
         draft: 'Draft',
         docs_completed: 'Documents Completed',
         for_verification: 'For Verification',
@@ -150,16 +171,17 @@ function statusBadgeVariant(
 ): 'default' | 'secondary' | 'destructive' | 'outline' {
     switch (status) {
         case 'verified':
-            return 'default'; // primary
+            return 'default';
+
         case 'docs_completed':
         case 'for_verification':
-            return 'secondary'; // muted
+            return 'secondary';
+
         case 'rejected':
-            return 'destructive'; // red
-        case 'draft':
-        case 'needs_revision':
+            return 'destructive';
+
         default:
-            return 'outline'; // neutral
+            return 'outline';
     }
 }
 </script>
@@ -168,15 +190,13 @@ function statusBadgeVariant(
     <Head title="Companies" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
-        >
+        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
             <Card class="mx-5">
                 <CardHeader>
                     <CardTitle>Companies</CardTitle>
-                    <CardDescription
-                        >List of all companies in the system.</CardDescription
-                    >
+                    <CardDescription>
+                        Manage company records, review submissions, and monitor verification status.
+                    </CardDescription>
 
                     <CardAction>
                         <Button
@@ -191,20 +211,11 @@ function statusBadgeVariant(
                                 View Archived
                             </Link>
                         </Button>
-
-                        <Button variant="default" size="sm" as-child>
-                            <Link :href="create().url">
-                                <Plus class="mr-2 h-4 w-4" />
-                                New Company
-                            </Link>
-                        </Button>
                     </CardAction>
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-                    <div
-                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                    >
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div class="w-full max-w-sm">
                             <SearchInput
                                 :route="index().url"
@@ -216,23 +227,51 @@ function statusBadgeVariant(
                         </div>
 
                         <div class="flex gap-2 sm:justify-end">
-                            <Button
-                                class="cursor-pointer"
-                                size="sm"
-                                variant="outline"
-                            >
-                                <Upload class="mr-2 h-4 w-4" />
-                                Import
-                            </Button>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger as-child>
+                                        <Button
+                                            class="cursor-pointer"
+                                            size="sm"
+                                            variant="outline"
+                                            @click="importOpen = true"
+                                        >
+                                            <Upload class="mr-2 h-4 w-4" />
+                                            Import
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        Restore companies from a backup ZIP
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
 
-                            <Button
-                                class="cursor-pointer"
-                                size="sm"
-                                variant="outline"
-                            >
-                                <Download class="mr-2 h-4 w-4" />
-                                Export
-                            </Button>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger as-child>
+                                        <Button
+                                            class="cursor-pointer"
+                                            size="sm"
+                                            variant="outline"
+                                            :disabled="exporting"
+                                            @click="triggerExport"
+                                        >
+                                            <Loader2
+                                                v-if="exporting"
+                                                class="mr-2 h-4 w-4 animate-spin"
+                                            />
+                                            <Download
+                                                v-else
+                                                class="mr-2 h-4 w-4"
+                                            />
+                                            {{ exporting ? 'Exporting…' : 'Export' }}
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        Download all companies as a backup ZIP
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         </div>
                     </div>
 
@@ -247,7 +286,7 @@ function statusBadgeVariant(
                                 <TableHead>Phone</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Created At</TableHead>
-                                <TableHead class="text-right">Action</TableHead>
+                                <TableHead class="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
 
@@ -255,6 +294,7 @@ function statusBadgeVariant(
                             <TableRow
                                 v-for="company in companies.data"
                                 :key="company.id"
+                                class="group"
                             >
                                 <TableCell class="capitalize">
                                     {{ company.company_name }}
@@ -273,18 +313,8 @@ function statusBadgeVariant(
                                 </TableCell>
 
                                 <TableCell>
-                                    <Badge
-                                        :variant="
-                                            statusBadgeVariant(
-                                                company.status ?? null,
-                                            )
-                                        "
-                                    >
-                                        {{
-                                            humanizeStatus(
-                                                company.status ?? null,
-                                            )
-                                        }}
+                                    <Badge :variant="statusBadgeVariant(company.status ?? null)">
+                                        {{ humanizeStatus(company.status ?? null) }}
                                     </Badge>
                                 </TableCell>
 
@@ -293,53 +323,63 @@ function statusBadgeVariant(
                                 </TableCell>
 
                                 <TableCell class="text-right">
-                                    <div
-                                        class="flex flex-wrap justify-end gap-2"
-                                    >
-                                        <Button
-                                            v-if="can('company.view')"
-                                            as-child
-                                            size="sm"
-                                            variant="ghost"
-                                        >
-                                            <Link
-                                                :href="
-                                                    show({
-                                                        company: company.id,
-                                                    }).url
-                                                "
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger as-child>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                class="h-8 w-8"
                                             >
-                                                <Eye class="mr-2 h-4 w-4" />
-                                                View
-                                            </Link>
-                                        </Button>
+                                                <MoreHorizontal class="h-4 w-4" />
+                                                <span class="sr-only">Open actions</span>
+                                            </Button>
+                                        </DropdownMenuTrigger>
 
-                                        <Button
-                                            v-if="can('company.update')"
-                                            size="sm"
-                                            variant="default"
-                                            as-child
-                                        >
-                                            <Link
-                                                :href="edit(company.id).url"
-                                                class="cursor-pointer"
+                                        <DropdownMenuContent align="end" class="w-52">
+                                            <DropdownMenuLabel
+                                                class="text-xs font-normal text-muted-foreground"
                                             >
-                                                <Edit class="mr-2 h-4 w-4" />
-                                                Edit
-                                            </Link>
-                                        </Button>
+                                                {{ company.company_name }}
+                                            </DropdownMenuLabel>
 
-                                        <Button
-                                            v-if="can('company.delete')"
-                                            class="cursor-pointer"
-                                            size="sm"
-                                            variant="archive"
-                                            @click="openArchive(company)"
-                                        >
-                                            <ArchiveX class="mr-2 h-4 w-4" />
-                                            Archive
-                                        </Button>
-                                    </div>
+                                            <DropdownMenuSeparator />
+
+                                            <DropdownMenuItem
+                                                v-if="can('company.view')"
+                                                as-child
+                                            >
+                                                <Link
+                                                    :href="show({ company: company.id }).url"
+                                                    class="flex items-center"
+                                                >
+                                                    <FileSearch class="mr-2 h-4 w-4" />
+                                                    Review Company
+                                                    <ChevronRight
+                                                        class="ml-auto h-3.5 w-3.5 text-muted-foreground"
+                                                    />
+                                                </Link>
+                                            </DropdownMenuItem>
+
+                                            <DropdownMenuItem
+                                                v-if="can('company.update')"
+                                                @click="openEdit(company)"
+                                            >
+                                                <Pencil class="mr-2 h-4 w-4" />
+                                                Edit Company
+                                            </DropdownMenuItem>
+
+                                            <DropdownMenuSeparator v-if="can('company.delete')" />
+
+                                            <DropdownMenuItem
+                                                v-if="can('company.delete')"
+                                                class="text-destructive focus:text-destructive"
+                                                @click="openArchive(company)"
+                                            >
+                                                <Archive class="mr-2 h-4 w-4" />
+                                                Archive Company
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </TableCell>
                             </TableRow>
 
@@ -364,21 +404,25 @@ function statusBadgeVariant(
                     />
                 </CardContent>
             </Card>
-
-            <!-- Dialogs (if you still use them) -->
-            <CreateCompanyDialog v-model:open="createOpen" />
-
-            <EditCompanyDialog
-                v-if="selectedCompany"
-                v-model:open="editOpen"
-                :company="selectedCompany"
-            />
-
-            <ArchiveCompanyDialog
-                v-if="selectedCompany"
-                v-model:open="archiveOpen"
-                :company="selectedCompany"
-            />
         </div>
+
+        <CreateCompanyDialog v-model:open="createOpen" />
+
+        <EditCompanyDialog
+            v-if="selectedCompany"
+            v-model:open="editOpen"
+            :company="selectedCompany"
+        />
+
+        <ArchiveCompanyDialog
+            v-if="selectedCompany"
+            v-model:open="archiveOpen"
+            :company="selectedCompany"
+        />
+
+        <ImportCompanyDialog
+            v-model:open="importOpen"
+            @done="onImportDone"
+        />
     </AppLayout>
 </template>
