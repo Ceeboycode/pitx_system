@@ -1,0 +1,1 @@
+import{d as t,o,c as n,y as r,b as c,B as l,I as p}from"./app-C0rV8Q65.js";const i=t({__name:"TableCaption",props:{class:{}},setup(s){const a=s;return(e,m)=>(o(),n("caption",{"data-slot":"table-caption",class:r(c(l)("text-muted-foreground mt-4 text-sm",a.class))},[p(e.$slots,"default")],2))}});export{i as _};
