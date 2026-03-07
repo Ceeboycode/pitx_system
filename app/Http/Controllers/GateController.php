@@ -21,7 +21,7 @@ class GateController extends Controller
     {
         Gate::authorize('viewAny', GateModel::class);
 
-        $gates = GateModel::select('id', 'gate_name', 'created_by')
+        $gates = GateModel::select('id', 'gate_name', 'status', 'bays', 'created_by')
             ->with('creator:id,name')
             ->latest()
             ->paginate(10)
@@ -69,7 +69,7 @@ class GateController extends Controller
         Gate::authorize('viewTrash', GateModel::class);
 
         $gates = GateModel::onlyTrashed()
-            ->select('id', 'gate_name', 'deleted_at')
+            ->select('id', 'gate_name', 'status', 'bays', 'deleted_at')
             ->latest('deleted_at')
             ->paginate(10)
             ->withQueryString();

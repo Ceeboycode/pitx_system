@@ -13,6 +13,8 @@ class Gate extends Model
 
     protected $fillable = [
         'gate_name',
+        'status',
+        'bays',
         'created_by',
         'updated_by',
     ];
