@@ -2,6 +2,7 @@
 
 namespace App\Services\Route;
 
+use App\Enums\RouteStatus;
 use App\Models\Route;
 use Illuminate\Support\Facades\DB;
 
@@ -67,12 +68,32 @@ class RouteService
 
     public function deleteRoute(Route $route): void
     {
-        $route->delete();
+        DB::transaction(function () use ($route) {
+            // Automatically mark inactive before archiving so that
+            // if the route is later restored it won't go live without
+            // a deliberate re-activation.
+            $route->update([
+                'status'     => RouteStatus::Inactive,
+                'updated_by' => auth()->id(),
+            ]);
+
+            $route->delete();
+        });
     }
 
     public function restoreRoute(Route $route): void
     {
-        $route->restore();
+        DB::transaction(function () use ($route) {
+            // Automatically mark Active before archiving so that
+            // if the route is later restored it won't go live without
+            // a deliberate re-activation.
+            $route->update([
+                'status'     => RouteStatus::Active,
+                'updated_by' => auth()->id(),
+            ]);
+
+            $route->restore();
+        });
     }
 
     public function forceDeleteRoute(Route $route): void
