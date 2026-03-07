@@ -26,18 +26,16 @@ import {
 
 import {
     Bus,
-    CircleDot,
+    Clock3,
     GitBranch,
+    GripVertical,
     MapPinned,
-    Map as MapIcon,
+    Milestone,
     Route as RouteIcon,
     Search,
     Sparkles,
     Trash2,
     Wand2,
-    GripVertical,
-    Clock3,
-    Milestone,
 } from 'lucide-vue-next';
 
 import { store } from '@/actions/App/Http/Controllers/RouteController';
@@ -78,6 +76,13 @@ type AlternativeRoute = {
 };
 
 type Waypoint = { lng: number; lat: number };
+
+type RouteSnapshot = {
+    geometry: any;
+    distance: number;
+    duration: number;
+    coordinates: [number, number][];
+};
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Props
@@ -131,6 +136,7 @@ const routeCoordinates = ref<[number, number][]>([]);
 const alternativeRoutes = ref<AlternativeRoute[]>([]);
 const selectedRouteIndex = ref(0);
 const showAlternatives = ref(false);
+const originalPrimaryRoute = ref<RouteSnapshot | null>(null);
 
 // Detour waypoints
 const waypoints = ref<Waypoint[]>([]);
@@ -358,6 +364,60 @@ function fmtDuration(s: number) {
     }
 
     return `${Math.ceil(s / 60)} min`;
+}
+
+function getRouteSnapshot(): RouteSnapshot | null {
+    if (!form.route_geometry || form.distance_meters === null || form.duration_seconds === null) {
+        return null;
+    }
+
+    try {
+        return {
+            geometry: JSON.parse(form.route_geometry),
+            distance: form.distance_meters,
+            duration: form.duration_seconds,
+            coordinates: [...routeCoordinates.value],
+        };
+    } catch {
+        return null;
+    }
+}
+
+function applyRouteSnapshot(snapshot: RouteSnapshot) {
+    form.distance_meters = Math.round(snapshot.distance);
+    form.duration_seconds = Math.round(snapshot.duration);
+    form.route_geometry = JSON.stringify(snapshot.geometry);
+    routeCoordinates.value = [...snapshot.coordinates];
+
+    const primarySrc = map.value?.getSource('route-line') as
+        | mapboxgl.GeoJSONSource
+        | undefined;
+
+    primarySrc?.setData({
+        type: 'FeatureCollection',
+        features: [{ type: 'Feature', properties: {}, geometry: snapshot.geometry }],
+    });
+
+    renderStopMarkers();
+    renderWaypointMarkers();
+    fitMap();
+}
+
+function refreshAlternativeRouteLayers() {
+    for (let i = 1; i <= 2; i++) {
+        const src = map.value?.getSource(`alt-route-${i}`) as
+            | mapboxgl.GeoJSONSource
+            | undefined;
+
+        const alt = alternativeRoutes.value.find((route) => route.index === i);
+
+        src?.setData({
+            type: 'FeatureCollection',
+            features: alt
+                ? [{ type: 'Feature', properties: {}, geometry: alt.geometry }]
+                : [],
+        });
+    }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -751,61 +811,45 @@ function removeAllWaypoints() {
 ───────────────────────────────────────────────────────────────────────────── */
 
 function selectAlternativeRoute(index: number) {
+    if (!map.value) return;
+
+    if (index === 0) {
+        if (!originalPrimaryRoute.value) return;
+
+        selectedRouteIndex.value = 0;
+        applyRouteSnapshot(originalPrimaryRoute.value);
+        lineClickMessage.value = 'Switched back to Route 1.';
+        return;
+    }
+
     const alt = alternativeRoutes.value.find((route) => route.index === index);
     if (!alt) return;
 
-    const prevPrimaryGeom = form.route_geometry ? JSON.parse(form.route_geometry) : null;
-    const prevPrimaryDist = form.distance_meters ?? 0;
-    const prevPrimaryDur = form.duration_seconds ?? 0;
-    const prevPrimaryCoords = [...routeCoordinates.value];
-
     selectedRouteIndex.value = index;
-    form.distance_meters = Math.round(alt.distance);
-    form.duration_seconds = Math.round(alt.duration);
-    form.route_geometry = JSON.stringify(alt.geometry);
-    routeCoordinates.value = alt.coordinates;
 
-    const primarySrc = map.value?.getSource('route-line') as mapboxgl.GeoJSONSource;
-    primarySrc?.setData({
-        type: 'FeatureCollection',
-        features: [{ type: 'Feature', properties: {}, geometry: alt.geometry }],
+    applyRouteSnapshot({
+        geometry: alt.geometry,
+        distance: alt.distance,
+        duration: alt.duration,
+        coordinates: alt.coordinates,
     });
 
-    if (prevPrimaryGeom) {
-        const altSrc = map.value?.getSource(`alt-route-${index}`) as mapboxgl.GeoJSONSource;
-
-        altSrc?.setData({
-            type: 'FeatureCollection',
-            features: [{ type: 'Feature', properties: {}, geometry: prevPrimaryGeom }],
-        });
-
-        const existingIdx = alternativeRoutes.value.findIndex((route) => route.index === index);
-
-        if (existingIdx !== -1) {
-            alternativeRoutes.value[existingIdx] = {
-                index,
-                geometry: prevPrimaryGeom,
-                distance: prevPrimaryDist,
-                duration: prevPrimaryDur,
-                coordinates: prevPrimaryCoords,
-            };
-        }
-    }
-
-    renderStopMarkers();
-    renderWaypointMarkers();
-
-    lineClickMessage.value = `Switched to Route option ${index + 1}.`;
+    lineClickMessage.value = `Switched to Route ${index + 1}.`;
 }
 
 function clearAlternativeRouteLayers() {
     for (let i = 1; i <= 2; i++) {
-        const src = map.value?.getSource(`alt-route-${i}`) as mapboxgl.GeoJSONSource;
+        const src = map.value?.getSource(`alt-route-${i}`) as
+            | mapboxgl.GeoJSONSource
+            | undefined;
+
         src?.setData({ type: 'FeatureCollection', features: [] });
     }
 
     alternativeRoutes.value = [];
+    originalPrimaryRoute.value = null;
     showAlternatives.value = false;
+    selectedRouteIndex.value = 0;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -906,6 +950,7 @@ async function suggestLandmarks() {
 
     loadingLandmarks.value = true;
     landmarkSuggestions.value = [];
+    showLandmarks.value = false;
 
     try {
         const sampleCoords =
@@ -1066,6 +1111,7 @@ async function redrawRoute() {
         form.duration_seconds = null;
         form.route_geometry = null;
         routeCoordinates.value = [];
+        originalPrimaryRoute.value = null;
         clearRouteLine();
         clearAlternativeRouteLayers();
         return;
@@ -1079,6 +1125,13 @@ async function redrawRoute() {
     routeCoordinates.value = primary.geometry.coordinates as [number, number][];
     selectedRouteIndex.value = 0;
 
+    originalPrimaryRoute.value = {
+        geometry: primary.geometry,
+        distance: primary.distance,
+        duration: primary.duration,
+        coordinates: primary.geometry.coordinates as [number, number][],
+    };
+
     const primarySrc = map.value.getSource('route-line') as mapboxgl.GeoJSONSource;
 
     primarySrc.setData({
@@ -1087,11 +1140,6 @@ async function redrawRoute() {
     });
 
     alternativeRoutes.value = [];
-
-    for (let i = 1; i <= 2; i++) {
-        const altSrc = map.value.getSource(`alt-route-${i}`) as mapboxgl.GeoJSONSource;
-        altSrc?.setData({ type: 'FeatureCollection', features: [] });
-    }
 
     const alts = data.routes.slice(1, 3);
 
@@ -1103,18 +1151,11 @@ async function redrawRoute() {
             geometry: alt.geometry,
             distance: alt.distance,
             duration: alt.duration,
-            coordinates: alt.geometry.coordinates,
-        });
-
-        const altSrc = map.value?.getSource(
-            `alt-route-${altIndex}`,
-        ) as mapboxgl.GeoJSONSource;
-
-        altSrc?.setData({
-            type: 'FeatureCollection',
-            features: [{ type: 'Feature', properties: {}, geometry: alt.geometry }],
+            coordinates: alt.geometry.coordinates as [number, number][],
         });
     });
+
+    refreshAlternativeRouteLayers();
 
     showAlternatives.value = alternativeRoutes.value.length > 0;
 
@@ -1122,6 +1163,10 @@ async function redrawRoute() {
     renderWaypointMarkers();
     fitMap();
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Map fit
+───────────────────────────────────────────────────────────────────────────── */
 
 function fitMap() {
     if (!map.value) return;
@@ -1213,6 +1258,7 @@ function clearDestination() {
     alternativeRoutes.value = [];
     showAlternatives.value = false;
     selectedRouteIndex.value = 0;
+    originalPrimaryRoute.value = null;
 
     waypoints.value = [];
 
@@ -1288,7 +1334,6 @@ onBeforeUnmount(() => {
 
     <AppLayout>
         <div class="space-y-6 p-4 sm:p-6">
-            <!-- Page header -->
             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div class="space-y-2">
                     <div class="flex flex-wrap items-center gap-2">
@@ -1332,7 +1377,6 @@ onBeforeUnmount(() => {
                 </div>
             </div>
 
-            <!-- Summary cards -->
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <Card class="rounded-2xl">
                     <CardHeader class="pb-3">
@@ -1383,7 +1427,6 @@ onBeforeUnmount(() => {
                 </Card>
             </div>
 
-            <!-- Basic details -->
             <Card class="rounded-2xl">
                 <CardHeader>
                     <CardTitle>Basic Details</CardTitle>
@@ -1438,11 +1481,8 @@ onBeforeUnmount(() => {
                 </CardContent>
             </Card>
 
-            <!-- Main builder -->
             <div class="grid gap-6 xl:grid-cols-[1.4fr_0.8fr]">
-                <!-- Left workspace -->
                 <div class="space-y-6">
-                    <!-- Destination search -->
                     <Card class="rounded-2xl">
                         <CardHeader>
                             <CardTitle>Select Destination</CardTitle>
@@ -1490,8 +1530,7 @@ onBeforeUnmount(() => {
                         </CardContent>
                     </Card>
 
-                    <!-- Map -->
-                    <Card class="rounded-2xl overflow-hidden">
+                    <Card class="overflow-hidden rounded-2xl">
                         <CardHeader>
                             <CardTitle>Map Workspace</CardTitle>
                             <CardDescription>
@@ -1569,7 +1608,6 @@ onBeforeUnmount(() => {
                         </CardContent>
                     </Card>
 
-                    <!-- Alternative routes -->
                     <Card
                         v-if="showAlternatives && alternativeRoutes.length"
                         class="rounded-2xl"
@@ -1590,7 +1628,7 @@ onBeforeUnmount(() => {
                                         ? 'border-blue-500 bg-blue-50'
                                         : 'hover:bg-muted/40',
                                 ]"
-                                @click="selectedRouteIndex = 0"
+                                @click="selectAlternativeRoute(0)"
                             >
                                 <div class="flex items-start gap-3">
                                     <div class="rounded-md bg-blue-100 p-2 text-blue-700">
@@ -1599,15 +1637,15 @@ onBeforeUnmount(() => {
 
                                     <div class="min-w-0 flex-1">
                                         <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                                            <p class="font-medium">Route 1 (current)</p>
+                                            <p class="font-medium">Route 1</p>
                                             <p class="text-xs text-muted-foreground">
-                                                {{ form.distance_meters ? fmtDistance(form.distance_meters) : '—' }}
+                                                {{ originalPrimaryRoute ? fmtDistance(originalPrimaryRoute.distance) : '—' }}
                                                 ·
-                                                {{ form.duration_seconds ? fmtDuration(form.duration_seconds) : '—' }}
+                                                {{ originalPrimaryRoute ? fmtDuration(originalPrimaryRoute.duration) : '—' }}
                                             </p>
                                         </div>
                                         <p class="mt-1 text-xs text-muted-foreground">
-                                            Solid blue route currently applied to the builder.
+                                            Main route currently stored as the primary option.
                                         </p>
                                     </div>
                                 </div>
@@ -1646,9 +1684,7 @@ onBeforeUnmount(() => {
                         </CardContent>
                     </Card>
 
-                    <!-- Route tools -->
                     <div class="grid gap-6 lg:grid-cols-2">
-                        <!-- Search stop -->
                         <Card
                             v-if="hasDestination"
                             class="rounded-2xl"
@@ -1710,7 +1746,6 @@ onBeforeUnmount(() => {
                             </CardContent>
                         </Card>
 
-                        <!-- Auto tools -->
                         <Card
                             v-if="hasDestination"
                             class="rounded-2xl"
@@ -1811,9 +1846,7 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
 
-                <!-- Right sidebar -->
                 <div class="space-y-6">
-                    <!-- Progress / status -->
                     <Card class="rounded-2xl">
                         <CardHeader>
                             <CardTitle>Builder Status</CardTitle>
@@ -1861,7 +1894,6 @@ onBeforeUnmount(() => {
                         </CardContent>
                     </Card>
 
-                    <!-- Route stats -->
                     <Card class="rounded-2xl">
                         <CardHeader>
                             <CardTitle>Route Summary</CardTitle>
@@ -1907,7 +1939,6 @@ onBeforeUnmount(() => {
                         </CardContent>
                     </Card>
 
-                    <!-- Detour waypoints -->
                     <Card
                         v-if="waypoints.length"
                         class="rounded-2xl"
@@ -1957,7 +1988,6 @@ onBeforeUnmount(() => {
                         </CardContent>
                     </Card>
 
-                    <!-- Stops preview -->
                     <Card class="rounded-2xl">
                         <CardHeader>
                             <CardTitle>Stops Preview</CardTitle>

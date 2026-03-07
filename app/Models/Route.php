@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\RouteStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,21 +25,22 @@ class Route extends Model
         'distance_meters',
         'duration_seconds',
         'route_geometry',
+        'status',
         'created_by',
         'updated_by',
     ];
 
     protected $casts = [
-        'origin_lat'       => 'decimal:7',
-        'origin_lng'       => 'decimal:7',
-        'destination_lat'  => 'decimal:7',
-        'destination_lng'  => 'decimal:7',
-        // Store as plain text — it's already a JSON string from Mapbox.
-        // Do NOT cast as 'array' or 'json' or it will double-encode.
-        'route_geometry'   => 'string',
-        'created_at'       => 'datetime',
-        'updated_at'       => 'datetime',
-        'deleted_at'       => 'datetime',
+        'origin_lat'      => 'decimal:7',
+        'origin_lng'      => 'decimal:7',
+        'destination_lat' => 'decimal:7',
+        'destination_lng' => 'decimal:7',
+        // Already a JSON string from Mapbox — do NOT cast as array/json.
+        'route_geometry'  => 'string',
+        'status'          => RouteStatus::class,
+        'created_at'      => 'datetime',
+        'updated_at'      => 'datetime',
+        'deleted_at'      => 'datetime',
     ];
 
     protected $appends = [
@@ -46,6 +48,8 @@ class Route extends Model
         'updated_at_human',
         'deleted_at_human',
     ];
+
+    // ── Relations ─────────────────────────────────────────────────────────────
 
     public function creator(): BelongsTo
     {
@@ -67,6 +71,8 @@ class Route extends Model
         return $this->hasMany(RouteStop::class)->orderBy('stop_order');
     }
 
+    // ── Accessors ─────────────────────────────────────────────────────────────
+
     public function getCreatedAtHumanAttribute(): ?string
     {
         return $this->created_at?->diffForHumans();
@@ -80,5 +86,20 @@ class Route extends Model
     public function getDeletedAtHumanAttribute(): ?string
     {
         return $this->deleted_at?->diffForHumans();
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    public function isActive(): bool
+    {
+        return $this->status === RouteStatus::Active;
+    }
+
+    public function toggleStatus(): void
+    {
+        $this->update([
+            'status'     => $this->isActive() ? RouteStatus::Inactive : RouteStatus::Active,
+            'updated_by' => auth()->id(),
+        ]);
     }
 }

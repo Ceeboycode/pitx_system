@@ -23,14 +23,26 @@ class RouteController extends Controller
     {
         Gate::authorize('viewAny', Route::class);
 
-        $routes = Route::select('id', 'route_name', 'gate_id', 'created_at')
+        $search = request('search');
+
+        $routes = Route::select('id', 'route_name', 'gate_id', 'status', 'created_at')
             ->with('gate:id,gate_name')
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('route_name', 'like', "%{$search}%")
+                      ->orWhere('status', 'like', "%{$search}%")
+                      ->orWhereHas('gate', fn ($g) =>
+                          $g->where('gate_name', 'like', "%{$search}%")
+                      );
+                });
+            })
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Route/Index', [
-            'routes' => $routes,
+            'routes'  => $routes,
+            'filters' => ['search' => $search],
         ]);
     }
 
@@ -123,21 +135,46 @@ class RouteController extends Controller
         return to_route('routes.index')->with('success', 'Route updated successfully.');
     }
 
+    // ── Toggle status ─────────────────────────────────────────────────────────
+
+    public function toggleStatus(Route $route)
+    {
+        Gate::authorize('update', Route::class);
+
+        $route->toggleStatus();
+
+        $label = $route->fresh()->status->label();
+
+        return back()->with('success', "Route marked as {$label}.");
+    }
+
     // ── Trash ─────────────────────────────────────────────────────────────────
 
     public function trash(): Response
     {
         Gate::authorize('viewTrash', Route::class);
 
+        $search = request('search');
+
         $routes = Route::onlyTrashed()
-            ->select('id', 'route_name', 'gate_id', 'deleted_at')
+            ->select('id', 'route_name', 'gate_id', 'status', 'deleted_at')
             ->with('gate:id,gate_name')
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('route_name', 'like', "%{$search}%")
+                      ->orWhere('status', 'like', "%{$search}%")
+                      ->orWhereHas('gate', fn ($g) =>
+                          $g->where('gate_name', 'like', "%{$search}%")
+                      );
+                });
+            })
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Route/Trash', [
-            'routes' => $routes,
+            'routes'  => $routes,
+            'filters' => ['search' => $search],
         ]);
     }
 

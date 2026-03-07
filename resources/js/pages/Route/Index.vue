@@ -19,8 +19,14 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
     Table,
     TableBody,
@@ -31,7 +37,15 @@ import {
 } from '@/components/ui/table';
 
 import AppLayout from '@/layouts/AppLayout.vue';
-import { create, destroy, edit, index, show, trash } from '@/routes/routes';
+import {
+    create,
+    destroy,
+    edit,
+    index,
+    show,
+    trash,
+    toggleStatus,
+} from '@/actions/App/Http/Controllers/RouteController';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
@@ -42,9 +56,14 @@ import {
     Download,
     Edit as EditIcon,
     Eye,
+    MoreHorizontal,
     Plus,
+    PowerOff,
     Upload,
+    Zap,
 } from 'lucide-vue-next';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Gate {
     id: number;
@@ -54,48 +73,60 @@ interface Gate {
 interface RouteRow {
     id: number;
     route_name: string;
+    status: 'active' | 'inactive';
     created_at_human: string | null;
     gate: Gate | null;
 }
 
+// ─── Props ────────────────────────────────────────────────────────────────────
+
 const props = withDefaults(
     defineProps<{
-        routes: any; // paginator
+        routes: any;
         filters?: { search: string | null };
     }>(),
-    {
-        filters: () => ({ search: null }),
-    },
+    { filters: () => ({ search: null }) },
 );
 
+// ─── Breadcrumbs ──────────────────────────────────────────────────────────────
+
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Routes',
-        href: index().url,
-    },
+    { title: 'Routes', href: index().url },
 ];
 
-const archivingId = ref<number | null>(null);
+// ─── Archive dialog ───────────────────────────────────────────────────────────
 
-const confirmArchive = () => {
+const archivingId  = ref<number | null>(null);
+const archiveOpen  = ref(false);
+
+function openArchiveDialog(id: number) {
+    archivingId.value = id;
+    archiveOpen.value = true;
+}
+
+function confirmArchive() {
     if (!archivingId.value) return;
-
     router.delete(destroy(archivingId.value).url, {
         preserveScroll: true,
         onFinish: () => {
             archivingId.value = null;
+            archiveOpen.value = false;
         },
     });
-};
+}
+
+// ─── Toggle status ────────────────────────────────────────────────────────────
+
+function handleToggleStatus(id: number) {
+    router.patch(toggleStatus(id).url, {}, { preserveScroll: true });
+}
 </script>
 
 <template>
     <Head title="Routes" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
-        >
+        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
             <Card class="mx-10 mt-3">
                 <CardHeader>
                     <CardTitle>Routes</CardTitle>
@@ -104,20 +135,14 @@ const confirmArchive = () => {
                     </CardDescription>
 
                     <CardAction>
-                        <Button
-                            as-child
-                            size="sm"
-                            variant="outline"
-                            class="mr-2"
-                        >
-                            <Link :href="trash().url" class="cursor-pointer">
+                        <Button as-child size="sm" variant="outline" class="mr-2">
+                            <Link :href="trash().url">
                                 <Archive class="mr-2 h-4 w-4" />
                                 View Archived
                             </Link>
                         </Button>
-
                         <Button as-child size="sm">
-                            <Link :href="create().url" class="cursor-pointer">
+                            <Link :href="create().url">
                                 <Plus class="mr-2 h-4 w-4" />
                                 Create Route
                             </Link>
@@ -127,9 +152,7 @@ const confirmArchive = () => {
 
                 <CardContent class="space-y-4">
                     <!-- Search + Import/Export -->
-                    <div
-                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                    >
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div class="w-full max-w-sm">
                             <SearchInput
                                 :route="index().url"
@@ -139,24 +162,12 @@ const confirmArchive = () => {
                                 :debounce="350"
                             />
                         </div>
-
                         <div class="flex gap-2 sm:justify-end">
-                            <Button
-                                class="cursor-pointer"
-                                size="sm"
-                                variant="outline"
-                            >
-                                <Upload class="mr-2 h-4 w-4" />
-                                Import
+                            <Button size="sm" variant="outline">
+                                <Upload class="mr-2 h-4 w-4" />Import
                             </Button>
-
-                            <Button
-                                class="cursor-pointer"
-                                size="sm"
-                                variant="outline"
-                            >
-                                <Download class="mr-2 h-4 w-4" />
-                                Export
+                            <Button size="sm" variant="outline">
+                                <Download class="mr-2 h-4 w-4" />Export
                             </Button>
                         </div>
                     </div>
@@ -166,9 +177,10 @@ const confirmArchive = () => {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Route Name</TableHead>
-                                <TableHead>Gate Name</TableHead>
-                                <TableHead>Created At</TableHead>
-                                <TableHead>Actions</TableHead>
+                                <TableHead>Gate</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Created</TableHead>
+                                <TableHead class="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
 
@@ -177,113 +189,108 @@ const confirmArchive = () => {
                                 v-for="routeItem in (props.routes.data as RouteRow[])"
                                 :key="routeItem.id"
                             >
-                                <TableCell class="capitalize">
+                                <!-- Route name -->
+                                <TableCell class="font-medium capitalize">
                                     {{ routeItem.route_name }}
                                 </TableCell>
 
-                                <TableCell>
-                                    {{ routeItem.gate?.gate_name ?? 'N/A' }}
+                                <!-- Gate -->
+                                <TableCell class="text-muted-foreground">
+                                    {{ routeItem.gate?.gate_name ?? '—' }}
                                 </TableCell>
 
+                                <!-- Status badge -->
                                 <TableCell>
-                                    {{ routeItem.created_at_human || 'N/A' }}
+                                    <span
+                                        :class="[
+                                            'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
+                                            routeItem.status === 'active'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-zinc-100 text-zinc-600',
+                                        ]"
+                                    >
+                                        <!-- pulsing dot -->
+                                        <span
+                                            :class="[
+                                                'h-1.5 w-1.5 rounded-full',
+                                                routeItem.status === 'active'
+                                                    ? 'bg-green-500 animate-pulse'
+                                                    : 'bg-zinc-400',
+                                            ]"
+                                        />
+                                        {{ routeItem.status === 'active' ? 'Active' : 'Inactive' }}
+                                    </span>
                                 </TableCell>
 
-                                <TableCell class="space-x-2">
-                                    <Button as-child size="sm" variant="ghost">
-                                        <Link
-                                            :href="show(routeItem.id).url"
-                                            class="cursor-pointer"
-                                        >
-                                            <Eye class="mr-2 h-4 w-4" />
-                                            View
-                                        </Link>
-                                    </Button>
+                                <!-- Created at -->
+                                <TableCell class="text-muted-foreground text-sm">
+                                    {{ routeItem.created_at_human ?? '—' }}
+                                </TableCell>
 
-                                    <Button as-child size="sm" variant="default">
-                                        <Link
-                                            :href="edit(routeItem.id).url"
-                                            class="cursor-pointer"
-                                        >
-                                            <EditIcon class="mr-2 h-4 w-4" />
-                                            Edit
-                                        </Link>
-                                    </Button>
-
-                                    <Dialog>
-                                        <DialogTrigger as-child>
-                                            <Button
-                                                class="cursor-pointer"
-                                                size="sm"
-                                                variant="archive"
-                                                @click="
-                                                    archivingId = routeItem.id
-                                                "
-                                            >
-                                                <ArchiveIcon class="mr-2 h-4 w-4" />
-                                                Archive
+                                <!-- 3-dot actions -->
+                                <TableCell class="text-right">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger as-child>
+                                            <Button variant="ghost" size="icon" class="h-8 w-8">
+                                                <MoreHorizontal class="h-4 w-4" />
+                                                <span class="sr-only">Open menu</span>
                                             </Button>
-                                        </DialogTrigger>
+                                        </DropdownMenuTrigger>
 
-                                        <DialogContent>
-                                            <DialogHeader>
-                                                <DialogTitle
-                                                    class="flex items-center gap-2"
-                                                >
-                                                    <Archive
-                                                        :size="18"
-                                                        class="text-muted-foreground"
-                                                    />
-                                                    Archive Route
-                                                </DialogTitle>
-                                                <DialogDescription>
-                                                    Are you sure you want to
-                                                    archive this route? You can
-                                                    restore it later from the
-                                                    Trash.
-                                                </DialogDescription>
-                                            </DialogHeader>
+                                        <DropdownMenuContent align="end" class="w-44">
+                                            <!-- View -->
+                                            <DropdownMenuItem as-child>
+                                                <Link :href="show(routeItem.id).url" class="flex items-center gap-2 cursor-pointer">
+                                                    <Eye class="h-4 w-4" />
+                                                    View
+                                                </Link>
+                                            </DropdownMenuItem>
 
-                                            <DialogFooter class="gap-2">
-                                                <DialogClose as-child>
-                                                    <Button
-                                                        class="cursor-pointer"
-                                                        variant="outline"
-                                                        @click="archivingId = null"
-                                                    >
-                                                        Cancel
-                                                    </Button>
-                                                </DialogClose>
+                                            <!-- Edit -->
+                                            <DropdownMenuItem as-child>
+                                                <Link :href="edit(routeItem.id).url" class="flex items-center gap-2 cursor-pointer">
+                                                    <EditIcon class="h-4 w-4" />
+                                                    Edit
+                                                </Link>
+                                            </DropdownMenuItem>
 
-                                                <DialogClose as-child>
-                                                    <Button
-                                                        class="cursor-pointer"
-                                                        variant="archive"
-                                                        @click="confirmArchive"
-                                                    >
-                                                        <ArchiveIcon class="mr-2 h-4 w-4" />
-                                                        Archive
-                                                    </Button>
-                                                </DialogClose>
-                                            </DialogFooter>
-                                        </DialogContent>
-                                    </Dialog>
+                                            <DropdownMenuSeparator />
+
+                                            <!-- Toggle Active / Inactive -->
+                                            <DropdownMenuItem
+                                                class="flex items-center gap-2 cursor-pointer"
+                                                :class="routeItem.status === 'active' ? 'text-amber-600 focus:text-amber-700' : 'text-green-600 focus:text-green-700'"
+                                                @click="handleToggleStatus(routeItem.id)"
+                                            >
+                                                <Zap v-if="routeItem.status === 'inactive'" class="h-4 w-4" />
+                                                <PowerOff v-else class="h-4 w-4" />
+                                                {{ routeItem.status === 'active' ? 'Set Inactive' : 'Set Active' }}
+                                            </DropdownMenuItem>
+
+                                            <DropdownMenuSeparator />
+
+                                            <!-- Archive -->
+                                            <DropdownMenuItem
+                                                class="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
+                                                @click="openArchiveDialog(routeItem.id)"
+                                            >
+                                                <ArchiveIcon class="h-4 w-4" />
+                                                Archive
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </TableCell>
                             </TableRow>
 
-                            <!-- Empty State -->
+                            <!-- Empty state -->
                             <TableRow v-if="props.routes.data.length === 0">
-                                <TableCell
-                                    colspan="4"
-                                    class="py-10 text-center text-muted-foreground"
-                                >
+                                <TableCell colspan="5" class="py-10 text-center text-muted-foreground">
                                     No routes found.
                                 </TableCell>
                             </TableRow>
                         </TableBody>
                     </Table>
 
-                    <!-- Pagination (Companies/Gates placement) -->
                     <InertiaPagination
                         :links="props.routes.links"
                         :meta="{
@@ -295,5 +302,33 @@ const confirmArchive = () => {
                 </CardContent>
             </Card>
         </div>
+
+        <!-- Archive confirmation dialog (controlled, not nested in loop) -->
+        <Dialog :open="archiveOpen" @update:open="archiveOpen = $event">
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle class="flex items-center gap-2">
+                        <Archive :size="18" class="text-muted-foreground" />
+                        Archive Route
+                    </DialogTitle>
+                    <DialogDescription>
+                        Are you sure you want to archive this route?
+                        You can restore it later from the Archived Routes page.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <DialogFooter class="gap-2">
+                    <DialogClose as-child>
+                        <Button variant="outline" @click="archivingId = null">
+                            Cancel
+                        </Button>
+                    </DialogClose>
+                    <Button variant="destructive" @click="confirmArchive">
+                        <ArchiveIcon class="mr-2 h-4 w-4" />
+                        Archive
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>
