@@ -104,7 +104,7 @@ return [
             explode(',', (string) env('APP_PREVIOUS_KEYS', ''))
         ),
     ],
-
+'mapbox_public_token' => env('VITE_MAPBOX_TOKEN'),
     /*
     |--------------------------------------------------------------------------
     | Maintenance Mode Driver
