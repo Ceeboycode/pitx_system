@@ -28,6 +28,8 @@ class GateUpdateRequest extends FormRequest
                     Rule::unique('gates', 'gate_name')
                         ->ignore($this->route('gate')->id),
             ],
+            'status' => ['required', Rule::in(['active', 'inactive'])],
+            'bays' => ['required', 'integer', 'min:0'],
         ];
     }
 }

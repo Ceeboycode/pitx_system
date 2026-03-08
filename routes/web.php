@@ -183,8 +183,9 @@ Route::middleware(['auth', 'role.type:internal'])->group(function () {
 
     Route::resource('routes', RouteController::class);
     Route::get('routes-trash', [RouteController::class, 'trash'])->name('routes.trash');
-    Route::post('routes/{route}/restore', [RouteController::class, 'restore'])->withTrashed()->name('routes.restore');
+    Route::patch('routes/{route}/restore', [RouteController::class, 'restore'])->withTrashed()->name('routes.restore');
     Route::delete('routes/{route}/force-delete', [RouteController::class, 'forceDelete'])->withTrashed()->name('routes.forceDelete');
+    Route::patch('/{route}/toggle-status', [RouteController::class, 'toggleStatus'])->name('toggleStatus');
 
     Route::resource('vehicles', VehicleController::class);
     Route::get('vehicles-trash', [VehicleController::class, 'trash'])->name('vehicles.trash');

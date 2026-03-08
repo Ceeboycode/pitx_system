@@ -190,12 +190,15 @@ function statusBadgeVariant(
     <Head title="Companies" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+        <div
+            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
+        >
             <Card class="mx-5">
                 <CardHeader>
                     <CardTitle>Companies</CardTitle>
                     <CardDescription>
-                        Manage company records, review submissions, and monitor verification status.
+                        Manage company records, review submissions, and monitor
+                        verification status.
                     </CardDescription>
 
                     <CardAction>
@@ -215,7 +218,9 @@ function statusBadgeVariant(
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div
+                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                    >
                         <div class="w-full max-w-sm">
                             <SearchInput
                                 :route="index().url"
@@ -264,7 +269,11 @@ function statusBadgeVariant(
                                                 v-else
                                                 class="mr-2 h-4 w-4"
                                             />
-                                            {{ exporting ? 'Exporting…' : 'Export' }}
+                                            {{
+                                                exporting
+                                                    ? 'Exporting…'
+                                                    : 'Export'
+                                            }}
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
@@ -286,7 +295,9 @@ function statusBadgeVariant(
                                 <TableHead>Phone</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Created At</TableHead>
-                                <TableHead class="text-right">Actions</TableHead>
+                                <TableHead class="text-right"
+                                    >Actions</TableHead
+                                >
                             </TableRow>
                         </TableHeader>
 
@@ -313,8 +324,18 @@ function statusBadgeVariant(
                                 </TableCell>
 
                                 <TableCell>
-                                    <Badge :variant="statusBadgeVariant(company.status ?? null)">
-                                        {{ humanizeStatus(company.status ?? null) }}
+                                    <Badge
+                                        :variant="
+                                            statusBadgeVariant(
+                                                company.status ?? null,
+                                            )
+                                        "
+                                    >
+                                        {{
+                                            humanizeStatus(
+                                                company.status ?? null,
+                                            )
+                                        }}
                                     </Badge>
                                 </TableCell>
 
@@ -330,12 +351,19 @@ function statusBadgeVariant(
                                                 size="icon"
                                                 class="h-8 w-8"
                                             >
-                                                <MoreHorizontal class="h-4 w-4" />
-                                                <span class="sr-only">Open actions</span>
+                                                <MoreHorizontal
+                                                    class="h-4 w-4"
+                                                />
+                                                <span class="sr-only"
+                                                    >Open actions</span
+                                                >
                                             </Button>
                                         </DropdownMenuTrigger>
 
-                                        <DropdownMenuContent align="end" class="w-52">
+                                        <DropdownMenuContent
+                                            align="end"
+                                            class="w-52"
+                                        >
                                             <DropdownMenuLabel
                                                 class="text-xs font-normal text-muted-foreground"
                                             >
@@ -349,10 +377,16 @@ function statusBadgeVariant(
                                                 as-child
                                             >
                                                 <Link
-                                                    :href="show({ company: company.id }).url"
+                                                    :href="
+                                                        show({
+                                                            company: company.id,
+                                                        }).url
+                                                    "
                                                     class="flex items-center"
                                                 >
-                                                    <FileSearch class="mr-2 h-4 w-4" />
+                                                    <FileSearch
+                                                        class="mr-2 h-4 w-4"
+                                                    />
                                                     Review Company
                                                     <ChevronRight
                                                         class="ml-auto h-3.5 w-3.5 text-muted-foreground"
@@ -368,7 +402,9 @@ function statusBadgeVariant(
                                                 Edit Company
                                             </DropdownMenuItem>
 
-                                            <DropdownMenuSeparator v-if="can('company.delete')" />
+                                            <DropdownMenuSeparator
+                                                v-if="can('company.delete')"
+                                            />
 
                                             <DropdownMenuItem
                                                 v-if="can('company.delete')"
@@ -420,9 +456,6 @@ function statusBadgeVariant(
             :company="selectedCompany"
         />
 
-        <ImportCompanyDialog
-            v-model:open="importOpen"
-            @done="onImportDone"
-        />
+        <ImportCompanyDialog v-model:open="importOpen" @done="onImportDone" />
     </AppLayout>
 </template>
