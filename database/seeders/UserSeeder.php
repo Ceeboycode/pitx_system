@@ -38,6 +38,21 @@ class UserSeeder extends Seeder
 
         $admin->syncRoles(['admin']);
 
+        // COMMUTER (mobile CRM user)
+        $commuter = User::updateOrCreate(
+            ['username' => 'commuter1'],
+            [
+                'name' => 'Commuter User',
+                'email' => 'commuter@gmail.com',
+                'phone_number' => '09123456780',
+                'email_verified_at' => now(),
+                'password' => Hash::make('admin123'),
+                'company_id' => null,
+            ]
+        );
+
+        $commuter->syncRoles(['commuter']);
+
         // DISPATCHERS (avoid duplicates if seed is re-run)
         User::factory()
             ->count(5)
