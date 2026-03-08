@@ -52,6 +52,12 @@ class CompanyController extends Controller
             'documents.verifier:id,name',
         ]);
 
+        // Append the resolved public URL for the logo
+        // $company->logo stores the relative path e.g. "company-logos/uuid.jpg"
+        $company->logo_url = filled($company->logo)
+            ? \Illuminate\Support\Facades\Storage::disk('public')->url($company->logo)
+            : null;
+
         return Inertia::render('Company/Show', [
             'company' => $company,
         ]);
