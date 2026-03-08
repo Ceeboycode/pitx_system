@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             RouteStopSeeder::class,
             VehicleTypeSeeder::class,
             VehicleSeeder::class,
+            CrmThreadSeeder::class,
         ]);
 
         Schema::enableForeignKeyConstraints();

@@ -12,28 +12,19 @@ use App\Http\Controllers\RouteStopController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VehicleTypeController;
+use App\Http\Controllers\Crm\CrmThreadController;
+use App\Http\Controllers\Crm\CrmMessageController;
+use App\Http\Controllers\Crm\CrmMessageAttachmentController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
-/*
-|--------------------------------------------------------------------------
-| Public — Welcome
-|--------------------------------------------------------------------------
-*/
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canRegister' => Features::enabled(Features::registration()),
     ]);
 })->name('home');
 
-/*
-|--------------------------------------------------------------------------
-| Company Registration Wizard
-|--------------------------------------------------------------------------
-| ✅ GET is public (prevents redirect loops if user is logged in)
-| ✅ POST steps are guest-only
-*/
 Route::get('company-registration', [CompanyRegistration::class, 'show'])
     ->name('company-registration.show');
 
@@ -60,12 +51,6 @@ Route::middleware('guest')->group(function () {
         ->name('company-registration.storeStep3');
 });
 
-/*
-|--------------------------------------------------------------------------
-| EXTERNAL (Portal) — Auth + role.type:external
-|--------------------------------------------------------------------------
-| External users should not access admin modules.
-*/
 Route::middleware(['auth', 'role.type:external'])->group(function () {
 
     // Status page is for external users (do NOT put company.verified here)
@@ -80,31 +65,55 @@ Route::middleware(['auth', 'role.type:external'])->group(function () {
     Route::middleware('company.verified')->group(function () {
         Route::get('company/dashboard', [CompanyDashboardController::class, 'index'])
             ->name('company.dashboard');
+        
+        Route::prefix('support')
+            ->name('support.')
+            ->whereNumber('support')
+            ->group(function () {
+
+            Route::get('threads', [CrmThreadController::class, 'index'])->name('threads.index');
+            Route::get('threads/{thread}', [CrmThreadController::class, 'show'])->name('threads.show');
+            Route::post('threads', [CrmThreadController::class, 'store'])->name('threads.store');
+
+            Route::post('threads/{thread}/messages', [CrmMessageController::class, 'store'])
+                ->name('threads.messages.store');
+
+            Route::post('threads/{thread}/messages/{message}/attachments', [CrmMessageAttachmentController::class, 'store'])
+                ->name('threads.messages.attachments.store');
+
+            Route::get('attachments/{attachment}/download', [CrmMessageAttachmentController::class, 'download'])
+                ->name('attachments.download');
+
+        });
     });
 });
 
-/*
-|--------------------------------------------------------------------------
-| INTERNAL (Admin) — Auth + role.type:internal
-|--------------------------------------------------------------------------
-| Internal users should not access external portal.
-*/
 Route::middleware(['auth', 'role.type:internal'])->group(function () {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Admin Dashboard
-    |--------------------------------------------------------------------------
-    */
     Route::get('dashboard', function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Users & Roles
-    |--------------------------------------------------------------------------
-    */
+    Route::prefix('crm')
+        ->name('crm.')
+        ->whereNumber('crm')
+        ->group(function () {
+
+        Route::get('threads', [CrmThreadController::class, 'index'])->name('threads.index');
+        Route::get('threads/{thread}', [CrmThreadController::class, 'show'])->name('threads.show');
+        Route::post('threads', [CrmThreadController::class, 'store'])->name('threads.store');
+
+        Route::post('threads/{thread}/messages', [CrmMessageController::class, 'store'])
+            ->name('threads.messages.store');
+
+        Route::post('threads/{thread}/messages/{message}/attachments', [CrmMessageAttachmentController::class, 'store'])
+            ->name('threads.messages.attachments.store');
+
+        Route::get('attachments/{attachment}/download', [CrmMessageAttachmentController::class, 'download'])
+            ->name('attachments.download');
+
+    });
+
     Route::resource('users', UserController::class);
     Route::resource('roles', RoleController::class);
     Route::get('/companies/export', [\App\Http\Controllers\CompanyBackupController::class, 'export'])
@@ -112,11 +121,7 @@ Route::middleware(['auth', 'role.type:internal'])->group(function () {
 
     Route::post('/companies/import', [\App\Http\Controllers\CompanyBackupController::class, 'import'])
         ->name('companies.import');
-    /*
-    |--------------------------------------------------------------------------
-    | Companies + Document management
-    |--------------------------------------------------------------------------
-    */
+
     Route::prefix('companies')
         ->name('companies.')
         ->whereNumber('company')
@@ -162,67 +167,34 @@ Route::middleware(['auth', 'role.type:internal'])->group(function () {
                 ->name('forceDelete');
         });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Vehicle Types
-    |--------------------------------------------------------------------------
-    */
+
     Route::resource('vehicle-types', VehicleTypeController::class);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Gates
-    |--------------------------------------------------------------------------
-    */
+
     Route::resource('gates', GateController::class);
     Route::get('gates-trash', [GateController::class, 'trash'])->name('gates.trash');
     Route::post('gates/{gate}/restore', [GateController::class, 'restore'])->name('gates.restore');
     Route::delete('gates/{gate}/force-delete', [GateController::class, 'forceDelete'])->name('gates.forceDelete');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Route Stops
-    |--------------------------------------------------------------------------
-    */
     Route::resource('route-stops', RouteStopController::class);
     Route::get('route-stops-trash', [RouteStopController::class, 'trash'])->name('route-stops.trash');
     Route::post('route-stops/{route_stop}/restore', [RouteStopController::class, 'restore'])->name('route-stops.restore');
     Route::delete('route-stops/{route_stop}/force-delete', [RouteStopController::class, 'forceDelete'])->name('route-stops.forceDelete');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Routes
-    |--------------------------------------------------------------------------
-    */
     Route::resource('routes', RouteController::class);
     Route::get('routes-trash', [RouteController::class, 'trash'])->name('routes.trash');
     Route::post('routes/{route}/restore', [RouteController::class, 'restore'])->withTrashed()->name('routes.restore');
     Route::delete('routes/{route}/force-delete', [RouteController::class, 'forceDelete'])->withTrashed()->name('routes.forceDelete');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Vehicles
-    |--------------------------------------------------------------------------
-    */
     Route::resource('vehicles', VehicleController::class);
     Route::get('vehicles-trash', [VehicleController::class, 'trash'])->name('vehicles.trash');
     Route::post('vehicles/{vehicle}/restore', [VehicleController::class, 'restore'])->withTrashed()->name('vehicles.restore');
     Route::delete('vehicles/{vehicle}/force-delete', [VehicleController::class, 'forceDelete'])->withTrashed()->name('vehicles.forceDelete');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Admin Dispatches
-    |--------------------------------------------------------------------------
-    */
     Route::resource('dispatches', DispatchController::class)->except(['create', 'store']);
     Route::get('dispatches/create/{company}', [DispatchController::class, 'create'])->name('dispatches.create');
     Route::post('dispatches/{company}', [DispatchController::class, 'store'])->name('dispatches.store');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Misc
-    |--------------------------------------------------------------------------
-    */
     Route::get('faq', fn () => Inertia::render('FAQ'))->name('faq');
 });
 
