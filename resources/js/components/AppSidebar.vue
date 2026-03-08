@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Link } from '@inertiajs/vue3'
-import { BookOpen, Building2, User, BusFront, House, MessageCircleQuestion } from 'lucide-vue-next'
+import { BookOpen, Building2, User, BusFront, House, MessageCircleQuestion, LayoutList, Headset, MessagesSquare } from 'lucide-vue-next'
 import NavFooter from '@/components/NavFooter.vue'
 import NavMain from '@/components/NavMain.vue'
 import NavUser from '@/components/NavUser.vue'
@@ -19,6 +19,7 @@ import { can } from '@/lib/can'
 
 // Routes
 import { dashboard } from '@/routes'
+import { index as crmIndex } from '@/routes/crm/threads'
 import { index as usersIndex } from '@/routes/users'
 import { index as rolesIndex } from '@/routes/roles'
 import { index as companiesIndex } from '@/routes/companies'
@@ -28,6 +29,7 @@ import { index as routesIndex } from '@/routes/routes'
 import { index as gateIndex } from '@/routes/gates'
 import { index as vehiclesIndex } from '@/routes/vehicles'
 import { index as dispatchesIndex } from '@/routes/dispatches'
+import Layout from '@/layouts/settings/Layout.vue'
 
 export interface Item {
     id: string
@@ -62,6 +64,19 @@ const mainNavItems: NavItem[] = [
                 id: 'dashboard',
                 title: 'Dashboard',
                 href: dashboard().url,
+            },
+        ],
+    },
+    {
+        id: 'crm',
+        title: 'Customer Relations',
+        href: '#',
+        icon: LayoutList,
+        items: [
+            {
+            id: 'threads',
+            title: 'Threads',
+            href: crmIndex().url,
             },
         ],
     },
@@ -157,6 +172,12 @@ const visibleMainNavItems = computed(() =>
 )
 
 const footerNavItems: NavFooterItem[] = [
+    {
+        title: 'Support',
+        href: crmIndex().url,
+        // href: '#',
+        icon: Headset,
+    },
     {
         title: 'FAQ',
         href: 'faq',
