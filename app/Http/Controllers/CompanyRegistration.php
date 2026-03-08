@@ -151,7 +151,7 @@ class CompanyRegistration extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Step 2 – Validate company details → send OTP to company email
+    | Step 2 – Validate company details + optional logo → send OTP to company email
     |--------------------------------------------------------------------------
     */
     public function storeStep2(Request $request): RedirectResponse
@@ -166,14 +166,40 @@ class CompanyRegistration extends Controller
             'authorized_representative_name'     => ['required', 'string', 'max:255'],
             'authorized_representative_position' => ['required', 'string', 'max:255'],
             'authorized_representative_contact'  => ['required', 'string', 'max:20'],
+
+            // Logo is optional — jpeg/png/webp, max 2 MB
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ], [
             'business_type.in' => 'Business type must be Corporate or Sole Proprietorship.',
+            'logo.image'       => 'The logo must be an image file.',
+            'logo.mimes'       => 'Logo must be a JPG, PNG, or WebP file.',
+            'logo.max'         => 'Logo must not exceed 2 MB.',
         ]);
 
         $otp   = $this->generateOtp();
         $step1 = $request->session()->get('registration.step1');
 
-        $request->session()->put('registration.step2', $validated);
+        // Store logo temporarily on the local (private) disk so it survives
+        // the session between Step 2 and Step 3 without being publicly accessible.
+        $logoTempPath = null;
+        if ($request->hasFile('logo')) {
+            $logoTempPath = $request->file('logo')->store('registration-logos/temp', 'local');
+        }
+
+        // Clean out any previous temp logo if the user is re-submitting Step 2
+        $previousTemp = $request->session()->get('registration.step2.logo_temp_path');
+        if ($previousTemp && Storage::disk('local')->exists($previousTemp)) {
+            Storage::disk('local')->delete($previousTemp);
+        }
+
+        // Remove the logo key from $validated — it holds an UploadedFile object
+        // which cannot be serialized into the session. We store the temp path instead.
+        unset($validated['logo']);
+
+        $request->session()->put('registration.step2', array_merge(
+            $validated,
+            ['logo_temp_path' => $logoTempPath]
+        ));
 
         $request->session()->put('registration.otp.company', [
             'code'       => Hash::make($otp),
@@ -242,7 +268,7 @@ class CompanyRegistration extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Step 3 – Documents → create company/user/docs
+    | Step 3 – Documents → create company / user / docs
     |--------------------------------------------------------------------------
     */
     public function storeStep3(Request $request): RedirectResponse
@@ -293,6 +319,24 @@ class CompanyRegistration extends Controller
             $companyCode = $this->generateUniqueCompanyCode3($step2['company_name']);
             $username    = $this->nextUsernameForCompanyCode($companyCode);
 
+            // ── Move temp logo to permanent public storage ──────────────
+            $logoPublicPath = null;
+            $logoTempPath   = $step2['logo_temp_path'] ?? null;
+
+            if ($logoTempPath && Storage::disk('local')->exists($logoTempPath)) {
+                $ext            = pathinfo($logoTempPath, PATHINFO_EXTENSION);
+                $logoPublicPath = 'company-logos/' . Str::uuid() . '.' . $ext;
+
+                Storage::disk('public')->put(
+                    $logoPublicPath,
+                    Storage::disk('local')->get($logoTempPath)
+                );
+
+                // Clean up the temp file
+                Storage::disk('local')->delete($logoTempPath);
+            }
+
+            // ── Create company ──────────────────────────────────────────
             $company = Company::create([
                 'company_name'                       => $step2['company_name'],
                 'company_code'                       => $companyCode,
@@ -304,10 +348,12 @@ class CompanyRegistration extends Controller
                 'authorized_representative_name'     => $step2['authorized_representative_name'],
                 'authorized_representative_position' => $step2['authorized_representative_position'],
                 'authorized_representative_contact'  => $step2['authorized_representative_contact'],
+                'logo'                               => $logoPublicPath,
                 'status'                             => 'for_verification',
                 'created_by'                         => null,
             ]);
 
+            // ── Create user ─────────────────────────────────────────────
             $user = User::create([
                 'name'         => $step1['name'],
                 'email'        => $step1['email'],
@@ -320,6 +366,7 @@ class CompanyRegistration extends Controller
             $this->assignDispatcherRole($user);
             $company->update(['created_by' => $user->id]);
 
+            // ── Upload documents ────────────────────────────────────────
             $companySlug = $this->companySlugUpper($company->company_name);
 
             foreach ($request->input('documents', []) as $docType => $docData) {
@@ -427,13 +474,12 @@ class CompanyRegistration extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | ✅ NEW: Resubmit invalid documents (POST)
+    | Resubmit invalid documents
     |--------------------------------------------------------------------------
-    | Called by inline uploader on RegistrationStatus.vue
     */
     public function storeResubmission(Request $request): RedirectResponse
     {
-        $user = $request->user();
+        $user    = $request->user();
         $company = $user?->company;
 
         if (! $user || ! $company) {
@@ -450,24 +496,24 @@ class CompanyRegistration extends Controller
             return redirect()->route('registration.status');
         }
 
-        // Validate only invalid docs
+        // Build validation rules only for invalid docs
         $rules = [];
         foreach ($invalidDocs as $doc) {
             $t = $doc->doc_type;
 
-            $rules["documents.$t.file"] = ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'];
-            $rules["documents.$t.issued_at"] = ['required', 'date', 'before_or_equal:today'];
+            $rules["documents.$t.file"]       = ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'];
+            $rules["documents.$t.issued_at"]  = ['required', 'date', 'before_or_equal:today'];
             $rules["documents.$t.expires_at"] = ['required', 'date', "after:documents.$t.issued_at"];
         }
 
         $request->validate($rules, $this->documentMessages());
 
         DB::transaction(function () use ($request, $user, $company, $invalidDocs) {
-            $disk = Storage::disk('public');
+            $disk        = Storage::disk('public');
             $companySlug = $this->companySlugUpper($company->company_name);
 
             foreach ($invalidDocs as $doc) {
-                $type = $doc->doc_type;
+                $type    = $doc->doc_type;
                 $fileKey = "documents.$type.file";
 
                 if (! $request->hasFile($fileKey)) {
@@ -483,7 +529,7 @@ class CompanyRegistration extends Controller
                     'public'
                 );
 
-                // delete old file (optional)
+                // Delete old file
                 if ($doc->file_path && $disk->exists($doc->file_path)) {
                     $disk->delete($doc->file_path);
                 }
@@ -507,7 +553,7 @@ class CompanyRegistration extends Controller
                 ]);
             }
 
-            // back to review queue
+            // Back to review queue
             $company->update(['status' => 'for_verification']);
         });
 
@@ -518,7 +564,7 @@ class CompanyRegistration extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Helpers
+    | Private helpers
     |--------------------------------------------------------------------------
     */
     private function normalizePhMobile(?string $raw): ?string

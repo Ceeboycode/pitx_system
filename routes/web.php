@@ -3,6 +3,7 @@
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CompanyDashboardController;
 use App\Http\Controllers\CompanyDocumentController;
+use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CompanyRegistration;
 use App\Http\Controllers\DispatchController;
 use App\Http\Controllers\GateController;
@@ -80,6 +81,10 @@ Route::middleware(['auth', 'role.type:external'])->group(function () {
     Route::middleware('company.verified')->group(function () {
         Route::get('company/dashboard', [CompanyDashboardController::class, 'index'])
             ->name('company.dashboard');
+
+        Route::get('/profile', [CompanyProfileController::class, 'show'])->name('profile');
+        Route::post('/profile/logo', [CompanyProfileController::class, 'updateLogo'])->name('profile.logo.update');
+        Route::delete('/profile/logo/remove', [CompanyProfileController::class, 'removeLogo'])->name('profile.logo.remove');
     });
 });
 
