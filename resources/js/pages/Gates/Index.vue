@@ -7,6 +7,7 @@ import InputError from '@/components/InputError.vue';
 import SearchInput from '@/components/SearchInput.vue';
 
 /* shadcn-vue */
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -28,6 +29,13 @@ import {
 } from '@/components/ui/dialog';
 import Input from '@/components/ui/input/Input.vue';
 import Label from '@/components/ui/label/Label.vue';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import {
     Table,
     TableBody,
@@ -70,6 +78,8 @@ import { ref } from 'vue';
 interface Gate {
     id: number;
     gate_name: string;
+    status: 'active' | 'inactive';
+    bays: number;
     creator: User | null;
 }
 
@@ -83,7 +93,13 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Gates', href: index().url }];
 ====================================================== */
 const props = withDefaults(
     defineProps<{
-        gates: any; // LengthAwarePaginator
+        gates: {
+            data: Gate[];
+            links: any[];
+            from: number | null;
+            to: number | null;
+            total: number;
+        };
         filters?: { search: string | null };
     }>(),
     {
@@ -92,15 +108,30 @@ const props = withDefaults(
 );
 
 /* ======================================================
+   Suggested Options
+====================================================== */
+const gateSuggestions = Array.from({ length: 20 }, (_, index) => `Gate ${index + 1}`);
+const baySuggestions = Array.from({ length: 20 }, (_, index) => String(index + 1));
+
+/* ======================================================
    Form + Dialog State
 ====================================================== */
 const form = useForm({
     gate_name: '',
+    status: 'active' as 'active' | 'inactive',
+    bays: '' as number | string,
 });
 
 const createOpen = ref(false);
 const editOpen = ref(false);
 const selectedGate = ref<Gate | null>(null);
+
+/* ======================================================
+   Helpers
+====================================================== */
+function badgeVariant(status: Gate['status']) {
+    return status === 'active' ? 'default' : 'secondary';
+}
 
 /* ======================================================
    Actions
@@ -111,6 +142,9 @@ const createGate = () => {
         onSuccess: () => {
             createOpen.value = false;
             form.reset();
+            form.gate_name = '';
+            form.status = 'active';
+            form.bays = '';
         },
     });
 };
@@ -118,6 +152,8 @@ const createGate = () => {
 function openEdit(gate: Gate) {
     selectedGate.value = gate;
     form.gate_name = gate.gate_name;
+    form.status = gate.status;
+    form.bays = gate.bays;
     editOpen.value = true;
 }
 
@@ -125,6 +161,9 @@ function closeEdit() {
     editOpen.value = false;
     selectedGate.value = null;
     form.reset();
+    form.gate_name = '';
+    form.status = 'active';
+    form.bays = '';
 }
 
 const editGate = () => {
@@ -156,9 +195,9 @@ const archiveGate = (gateId: number) => {
                 >
                     <div>
                         <CardTitle>Gates</CardTitle>
-                        <CardDescription
-                            >List of all gates in the system.</CardDescription
-                        >
+                        <CardDescription>
+                            List of all gates in the system.
+                        </CardDescription>
                     </div>
 
                     <CardAction class="flex gap-2">
@@ -209,6 +248,8 @@ const archiveGate = (gateId: number) => {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Gate Name</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Bays</TableHead>
                                 <TableHead>Created By</TableHead>
                                 <TableHead class="w-[260px]">Actions</TableHead>
                             </TableRow>
@@ -222,6 +263,17 @@ const archiveGate = (gateId: number) => {
                                 <TableCell class="capitalize">
                                     {{ gate.gate_name }}
                                 </TableCell>
+
+                                <TableCell>
+                                    <Badge
+                                        :variant="badgeVariant(gate.status)"
+                                        class="capitalize"
+                                    >
+                                        {{ gate.status }}
+                                    </Badge>
+                                </TableCell>
+
+                                <TableCell>{{ gate.bays }}</TableCell>
 
                                 <TableCell>
                                     {{ gate.creator?.name ?? 'N/A' }}
@@ -246,18 +298,16 @@ const archiveGate = (gateId: number) => {
                                                 size="sm"
                                                 variant="destructive"
                                             >
-                                                <ArchiveX
-                                                    class="mr-2 h-4 w-4"
-                                                />
+                                                <ArchiveX class="mr-2 h-4 w-4" />
                                                 Archive
                                             </Button>
                                         </DialogTrigger>
 
                                         <DialogContent>
                                             <DialogHeader>
-                                                <DialogTitle
-                                                    >Archive Gate</DialogTitle
-                                                >
+                                                <DialogTitle>
+                                                    Archive Gate
+                                                </DialogTitle>
                                                 <DialogDescription>
                                                     Are you sure you want to
                                                     archive this gate? You can
@@ -271,8 +321,9 @@ const archiveGate = (gateId: number) => {
                                                     <Button
                                                         variant="secondary"
                                                         size="sm"
-                                                        >Cancel</Button
                                                     >
+                                                        Cancel
+                                                    </Button>
                                                 </DialogClose>
 
                                                 <DialogClose as-child>
@@ -294,7 +345,7 @@ const archiveGate = (gateId: number) => {
 
                             <TableRow v-if="props.gates.data.length === 0">
                                 <TableCell
-                                    colspan="3"
+                                    colspan="5"
                                     class="py-10 text-center text-muted-foreground"
                                 >
                                     No gates found.
@@ -318,19 +369,72 @@ const archiveGate = (gateId: number) => {
 
     <!-- CREATE -->
     <Dialog v-model:open="createOpen">
-        <DialogContent>
+        <DialogContent class="sm:max-w-md">
             <DialogHeader>
                 <DialogTitle>Add New Gate</DialogTitle>
+                <DialogDescription>
+                    Create a new gate with status and number of bays.
+                </DialogDescription>
             </DialogHeader>
 
-            <form @submit.prevent="createGate">
-                <Label>Gate Name</Label>
-                <Input v-model="form.gate_name" class="mt-1 mb-2" />
-                <InputError :message="form.errors.gate_name" />
+            <form class="space-y-4" @submit.prevent="createGate">
+                <div class="space-y-2">
+                    <Label for="create_gate_name">Gate Name</Label>
+                    <Input
+                        id="create_gate_name"
+                        v-model="form.gate_name"
+                        list="gate-name-suggestions"
+                        placeholder="Type gate name or select Gate 1 - Gate 20"
+                    />
+                    <datalist id="gate-name-suggestions">
+                        <option
+                            v-for="gateOption in gateSuggestions"
+                            :key="gateOption"
+                            :value="gateOption"
+                        />
+                    </datalist>
+                    <InputError :message="form.errors.gate_name" />
+                </div>
+
+                <div class="space-y-2">
+                    <Label for="create_status">Status</Label>
+                    <Select v-model="form.status">
+                        <SelectTrigger id="create_status" class="w-full">
+                            <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="form.errors.status" />
+                </div>
+
+                <div class="space-y-2">
+                    <Label for="create_bays">Bays</Label>
+                    <Input
+                        id="create_bays"
+                        v-model="form.bays"
+                        list="bay-suggestions"
+                        type="number"
+                        min="0"
+                        placeholder="Type bays or select 1 - 20"
+                    />
+                    <datalist id="bay-suggestions">
+                        <option
+                            v-for="bayOption in baySuggestions"
+                            :key="bayOption"
+                            :value="bayOption"
+                        />
+                    </datalist>
+                    <InputError :message="form.errors.bays" />
+                </div>
 
                 <DialogFooter>
                     <DialogClose as-child>
-                        <Button variant="secondary" size="sm">Cancel</Button>
+                        <Button variant="secondary" size="sm">
+                            Cancel
+                        </Button>
                     </DialogClose>
 
                     <Button size="sm" type="submit" :disabled="form.processing">
@@ -344,21 +448,62 @@ const archiveGate = (gateId: number) => {
 
     <!-- EDIT -->
     <Dialog v-model:open="editOpen">
-        <DialogContent>
+        <DialogContent class="sm:max-w-md">
             <DialogHeader>
                 <DialogTitle>Edit Gate</DialogTitle>
+                <DialogDescription>
+                    Update the gate details.
+                </DialogDescription>
             </DialogHeader>
 
-            <form @submit.prevent="editGate">
-                <Label>Gate Name</Label>
-                <Input v-model="form.gate_name" class="mt-1 mb-2" />
-                <InputError :message="form.errors.gate_name" />
+            <form class="space-y-4" @submit.prevent="editGate">
+                <div class="space-y-2">
+                    <Label for="edit_gate_name">Gate Name</Label>
+                    <Input
+                        id="edit_gate_name"
+                        v-model="form.gate_name"
+                        list="gate-name-suggestions"
+                        placeholder="Type gate name or select Gate 1 - Gate 20"
+                    />
+                    <InputError :message="form.errors.gate_name" />
+                </div>
+
+                <div class="space-y-2">
+                    <Label for="edit_status">Status</Label>
+                    <Select v-model="form.status">
+                        <SelectTrigger id="edit_status" class="w-full">
+                            <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="form.errors.status" />
+                </div>
+
+                <div class="space-y-2">
+                    <Label for="edit_bays">Bays</Label>
+                    <Input
+                        id="edit_bays"
+                        v-model="form.bays"
+                        list="bay-suggestions"
+                        type="number"
+                        min="0"
+                        placeholder="Type bays or select 1 - 20"
+                    />
+                    <InputError :message="form.errors.bays" />
+                </div>
 
                 <DialogFooter>
                     <DialogClose as-child>
-                        <Button variant="secondary" size="sm" @click="closeEdit"
-                            >Cancel</Button
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            @click="closeEdit"
                         >
+                            Cancel
+                        </Button>
                     </DialogClose>
 
                     <Button size="sm" type="submit" :disabled="form.processing">

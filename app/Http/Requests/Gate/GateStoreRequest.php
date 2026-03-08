@@ -28,6 +28,8 @@ class GateStoreRequest extends FormRequest
                 Rule::unique('gates', 'gate_name')
                     ->whereNull('deleted_at'),
             ],
+            'status' => ['required', Rule::in(['active', 'inactive'])],
+            'bays' => ['required', 'integer', 'min:0'],
         ];
     }
 }
