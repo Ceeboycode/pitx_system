@@ -5,6 +5,7 @@ use App\Http\Controllers\CompanyDashboardController;
 use App\Http\Controllers\CompanyDocumentController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CompanyRegistration;
+use App\Http\Controllers\CompanyVehicleController;
 use App\Http\Controllers\DispatchController;
 use App\Http\Controllers\GateController;
 use App\Http\Controllers\RoleController;
@@ -66,6 +67,28 @@ Route::middleware(['auth', 'role.type:external'])->group(function () {
     Route::middleware('company.verified')->group(function () {
         Route::get('company/dashboard', [CompanyDashboardController::class, 'index'])
             ->name('company.dashboard');
+
+        Route::get('/profile', [CompanyProfileController::class, 'show'])->name('profile');
+        Route::post('/profile/logo',        [CompanyProfileController::class, 'updateLogo'])->name('profile.logo.update');
+        Route::delete('/profile/logo/remove', [CompanyProfileController::class, 'removeLogo'])->name('profile.logo.remove');
+
+        Route::get('company/vehicles', [CompanyVehicleController::class, 'index'])
+            ->name('company.vehicles.index');
+
+        Route::get('company/vehicles/create', [CompanyVehicleController::class, 'create'])
+            ->name('company.vehicles.create');
+
+        Route::post('company/vehicles', [CompanyVehicleController::class, 'store'])
+            ->name('company.vehicles.store');
+        Route::get('company/vehicles/{vehicle}', [CompanyVehicleController::class, 'show'])
+            ->name('company.vehicles.show');
+        Route::get('company/vehicles/{vehicle}/edit', [CompanyVehicleController::class, 'edit'])
+            ->name('company.vehicles.edit');
+        Route::put('company/vehicles/{vehicle}', [CompanyVehicleController::class, 'update'])
+            ->name('company.vehicles.update');
+        Route::get('company/vehicles/{vehicle}/documents/{document}/download', [CompanyVehicleController::class, 'downloadDocument'])
+            ->name('company.vehicles.documents.download');
+        Route::patch('company/vehicles/{vehicle}/toggle-status', [CompanyVehicleController::class, 'toggleStatus'])->name('company.vehicles.toggle-status');
     });
 });
 
@@ -169,6 +192,15 @@ Route::middleware(['auth', 'role.type:internal'])->group(function () {
     Route::patch('/{route}/toggle-status', [RouteController::class, 'toggleStatus'])->name('toggleStatus');
 
     Route::resource('vehicles', VehicleController::class);
+    Route::patch('/vehicles/{vehicle}/documents/{document}/verify', [VehicleController::class, 'verifyDocument'])
+        ->name('vehicles.documents.verify');
+    Route::patch('/vehicles/{vehicle}/documents/{document}/invalidate', [VehicleController::class, 'invalidateDocument'])
+        ->name('vehicles.documents.invalidate');
+    Route::patch('/vehicles/{vehicle}/documents/{document}/unverify', [VehicleController::class, 'unverifyDocument'])
+        ->name('vehicles.documents.unverify');
+    Route::patch('/vehicles/{vehicle}/toggle-status', [VehicleController::class, 'toggleStatus'])
+        ->name('vehicles.toggle-status');
+
     Route::get('vehicles-trash', [VehicleController::class, 'trash'])->name('vehicles.trash');
     Route::post('vehicles/{vehicle}/restore', [VehicleController::class, 'restore'])->withTrashed()->name('vehicles.restore');
     Route::delete('vehicles/{vehicle}/force-delete', [VehicleController::class, 'forceDelete'])->withTrashed()->name('vehicles.forceDelete');
