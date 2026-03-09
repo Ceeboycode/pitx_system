@@ -15,11 +15,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 import CompanyProfileController from '@/actions/App/Http/Controllers/CompanyProfileController';
+import CompanyVehicleController from '@/actions/App/Http/Controllers/CompanyVehicleController';
 import { logout } from '@/routes';
 
+import { toast } from 'vue-sonner';
 import {
     Building2,
     ChevronRight,
@@ -49,7 +52,7 @@ const props = defineProps<{
     };
 }>();
 
-// ── Active route detection ─────────────────────────────────────────
+// ── Page / Active route detection ──────────────────────────────────
 const page = usePage();
 const currentUrl = computed(() => page.url);
 
@@ -65,9 +68,9 @@ const navItems = [
         href: '/company/dashboard',
     },
     {
-        label: 'Dispatches',
+        label: 'Registered Vehicles',
         icon: Truck,
-        href: '/company/dispatches',
+        href: CompanyVehicleController.index().url,
     },
     {
         label: 'Documents',
@@ -132,6 +135,20 @@ function humanize(text?: string | null) {
 const statusVariant = computed(() =>
     props.company.status === 'verified' ? 'default' : 'secondary',
 );
+
+// ── Toast flash watcher ────────────────────────────────────────────
+watch(
+    () => page.props.flash,
+    (flash: any) => {
+        if (!flash) return;
+
+        if (flash.success) toast.success(flash.success);
+        if (flash.error) toast.error(flash.error);
+        if (flash.info) toast.info(flash.info);
+        if (flash.warning) toast.warning(flash.warning);
+    },
+    { deep: true, immediate: true },
+);
 </script>
 
 <template>
@@ -169,13 +186,6 @@ const statusVariant = computed(() =>
                             Company Portal
                         </p>
                     </div>
-
-                    <Badge
-                        :variant="statusVariant"
-                        class="shrink-0 px-1.5 py-0 text-[10px]"
-                    >
-                        {{ humanize(company.status) }}
-                    </Badge>
                 </div>
 
                 <!-- Nav links -->
@@ -424,6 +434,7 @@ const statusVariant = computed(() =>
                 <!-- Page slot -->
                 <main class="flex-1">
                     <slot />
+                    <Toaster position="top-right" />
                 </main>
             </div>
         </div>
