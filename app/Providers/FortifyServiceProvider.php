@@ -9,6 +9,7 @@ use App\Http\Responses\RoleBasedTwoFactorLoginResponse;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -21,51 +22,32 @@ use Laravel\Fortify\Fortify;
 
 class FortifyServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
-        /**
-         * ✅ Redirect after successful login (and after 2FA) based on roles.type
-         * - external -> route('company.dashboard')
-         * - internal -> route('dashboard')
-         */
         $this->app->singleton(LoginResponseContract::class, RoleBasedLoginResponse::class);
-
-        // If you don't use 2FA, you can remove this binding + class.
         $this->app->singleton(TwoFactorLoginResponseContract::class, RoleBasedTwoFactorLoginResponse::class);
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         $this->configureActions();
         $this->configureViews();
-        $this->configureAuthentication(); // login via username OR email (field: login)
+        $this->configureAuthentication();
         $this->configureRateLimiting();
     }
 
-    /**
-     * Configure Fortify actions.
-     */
     private function configureActions(): void
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
     }
 
-    /**
-     * Configure Fortify views.
-     */
     private function configureViews(): void
     {
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/Login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
-            'canRegister'      => Features::enabled(Features::registration()),
-            'status'           => $request->session()->get('status'),
+            'canRegister' => Features::enabled(Features::registration()),
+            'status' => $request->session()->get('status'),
         ]));
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/ResetPassword', [
@@ -88,38 +70,42 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::confirmPasswordView(fn () => Inertia::render('auth/ConfirmPassword'));
     }
 
-    /**
-     * Configure authentication: login via username OR email
-     *
-     * Requires config/fortify.php:
-     *   'username' => 'login'
-     */
     private function configureAuthentication(): void
     {
         Fortify::authenticateUsing(function (Request $request) {
-            $login    = trim((string) $request->input('login'));
+            $login = trim((string) $request->input('login'));
             $password = (string) $request->input('password');
 
             if ($login === '' || $password === '') {
                 return null;
             }
 
+            $loginLower = Str::lower($login);
+
             $user = User::query()
-                ->where('username', $login)
-                ->orWhere('email', $login)
+                ->with('roles')
+                ->where(function ($query) use ($login, $loginLower) {
+                    $query->whereRaw('LOWER(username) = ?', [$loginLower])
+                        ->orWhereRaw('LOWER(email) = ?', [$loginLower]);
+                })
                 ->first();
 
-            if ($user && Hash::check($password, $user->password)) {
-                return $user;
+            if (! $user) {
+                return null;
             }
 
-            return null;
+            if (! Hash::check($password, $user->password)) {
+                return null;
+            }
+
+            if (in_array($user->status, ['inactive', 'suspended'], true)) {
+                return null;
+            }
+
+            return $user;
         });
     }
 
-    /**
-     * Configure rate limiting.
-     */
     private function configureRateLimiting(): void
     {
         RateLimiter::for('two-factor', function (Request $request) {
@@ -127,9 +113,7 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('login', function (Request $request) {
-            // After setting 'username' => 'login', Fortify::username() returns 'login'
-            $value = (string) $request->input(Fortify::username());
-
+            $value = trim((string) $request->input(Fortify::username()));
             $throttleKey = Str::transliterate(Str::lower($value) . '|' . $request->ip());
 
             return Limit::perMinute(5)->by($throttleKey);

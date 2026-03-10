@@ -20,6 +20,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 
 import CompanyProfileController from '@/actions/App/Http/Controllers/CompanyProfileController';
 import CompanyVehicleController from '@/actions/App/Http/Controllers/CompanyVehicleController';
+import CompanyUserController from '@/actions/App/Http/Controllers/CompanyUserController';
 import { logout } from '@/routes';
 
 import { toast } from 'vue-sonner';
@@ -73,9 +74,9 @@ const navItems = [
         href: CompanyVehicleController.index().url,
     },
     {
-        label: 'Documents',
+        label: 'Employee',
         icon: FileText,
-        href: '/company/documents',
+        href: CompanyUserController.index().url,
     },
     {
         label: 'Company Profile',

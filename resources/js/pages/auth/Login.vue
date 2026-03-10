@@ -57,9 +57,8 @@ defineProps<{
                     class="flex flex-col gap-6"
                 >
                     <div class="grid gap-6">
-                        <!-- Email or Username -->
                         <div class="grid gap-2">
-                            <Label for="login">Email or Username</Label>
+                            <Label for="login">Username or Email</Label>
                             <Input
                                 id="login"
                                 type="text"
@@ -67,12 +66,11 @@ defineProps<{
                                 required
                                 autofocus
                                 autocomplete="username"
-                                placeholder="admin or dispatcher@pitx.ph"
+                                placeholder="Enter your username or email"
                             />
                             <InputError :message="errors.login" />
                         </div>
 
-                        <!-- Password -->
                         <div class="grid gap-2">
                             <div class="flex items-center justify-between">
                                 <Label for="password">Password</Label>
@@ -95,7 +93,6 @@ defineProps<{
                             <InputError :message="errors.password" />
                         </div>
 
-                        <!-- Remember me -->
                         <Label
                             for="remember"
                             class="flex items-center space-x-3 text-sm"
@@ -104,7 +101,6 @@ defineProps<{
                             <span>Remember this device</span>
                         </Label>
 
-                        <!-- Submit -->
                         <Button
                             type="submit"
                             class="w-full bg-red-600 hover:bg-red-700"
