@@ -40,6 +40,25 @@ test('commuter can login and receive bearer token', function () {
     expect($user->fresh()->api_token)->not->toBeNull();
 });
 
+test('commuter can register and receive bearer token', function () {
+    $response = $this->postJson('/api/v1/auth/register', [
+        'name' => 'New Commuter',
+        'email' => 'new.commuter@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('data.token_type', 'Bearer')
+        ->assertJsonPath('data.user.email', 'new.commuter@example.com');
+
+    $user = User::query()->where('email', 'new.commuter@example.com')->first();
+
+    expect($user)->not->toBeNull();
+    expect($user->hasRole('commuter'))->toBeTrue();
+    expect($user->api_token)->not->toBeNull();
+});
+
 test('non commuter users are blocked from commuter login', function () {
     Role::firstOrCreate([
         'name' => 'admin',
