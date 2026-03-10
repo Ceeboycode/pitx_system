@@ -18,6 +18,7 @@ class Company extends Model
         // Core identity
         'company_name',
         'company_code',
+        'logo',
 
         // Contact
         'company_email',

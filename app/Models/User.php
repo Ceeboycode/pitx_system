@@ -29,6 +29,8 @@ class User extends Authenticatable
         'phone_number',
         'password',
         'company_id',
+        'status',
+        'must_change_password',
     ];
 
     /**
@@ -55,6 +57,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'must_change_password' => 'boolean',
         ];
     }
 
@@ -86,5 +89,5 @@ class User extends Authenticatable
     {
         return $this->hasMany(Dispatch::class, 'dispatcher_user_id');
     }
-    
+
 }

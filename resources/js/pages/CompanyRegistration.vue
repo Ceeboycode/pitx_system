@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +24,6 @@ import { Separator } from '@/components/ui/separator';
 
 import AddressSelectPH from '@/components/AddressSelectPH.vue';
 
-// Wayfinder generated actions
 import {
     resendStep1Otp,
     resendStep2Otp,
@@ -36,24 +35,19 @@ import {
 } from '@/actions/App/Http/Controllers/CompanyRegistration';
 
 import {
+    Building2,
     CheckCircle2,
+    ImagePlus,
     Loader2,
     Mail,
     RefreshCcw,
     ShieldCheck,
+    X,
 } from 'lucide-vue-next';
 
 /*
 |--------------------------------------------------------------------------
 | Sub-step model
-|
-| The visible step bubbles are 1, 2, 3.
-| Each step that requires OTP verification has a ".5" sub-step:
-|   1   → Account Details form
-|   1.5 → Account email OTP entry
-|   2   → Company Details form
-|   2.5 → Company email OTP entry
-|   3   → Documents upload & submit
 |--------------------------------------------------------------------------
 */
 type SubStep = 1 | 1.5 | 2 | 2.5 | 3;
@@ -61,7 +55,6 @@ type SubStep = 1 | 1.5 | 2 | 2.5 | 3;
 const currentStep = ref<SubStep>(1);
 const totalSteps  = 3;
 
-// Which visible bubble (1/2/3) is active
 const visualStep = computed((): 1 | 2 | 3 => {
     if (currentStep.value < 2)  return 1;
     if (currentStep.value < 3)  return 2;
@@ -83,7 +76,7 @@ const step1 = useForm({
     password_confirmation: '',
 });
 
-// ─── Account OTP form ─────────────────────────────────────────────────────────
+// ─── Account OTP ──────────────────────────────────────────────────────────────
 const otpAccount       = useForm({ otp: '' });
 const resendAccount    = useForm({});
 const resentAccountMsg = ref('');
@@ -99,8 +92,34 @@ const step2 = useForm({
     authorized_representative_name:     '',
     authorized_representative_position: '',
     authorized_representative_contact:  '',
+
+    // ── Logo (optional) ──
+    logo: null as File | null,
 });
 
+// ─── Logo preview ─────────────────────────────────────────────────────────────
+const logoPreview    = ref<string | null>(null);
+const logoInputRef   = ref<HTMLInputElement | null>(null);
+
+function handleLogoChange(e: Event) {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    step2.logo = file;
+    step2.clearErrors('logo');
+
+    const reader = new FileReader();
+    reader.onload = (ev) => { logoPreview.value = ev.target?.result as string; };
+    reader.readAsDataURL(file);
+}
+
+function removeLogo() {
+    step2.logo = null;
+    logoPreview.value = null;
+    if (logoInputRef.value) logoInputRef.value.value = '';
+}
+
+// ─── Step 2 address / position helpers ───────────────────────────────────────
 const addressCodes = ref({ regionCode: '', provinceCode: '', cityMunCode: '', barangayCode: '' });
 
 const positionOptions = [
@@ -120,9 +139,9 @@ watch(positionChoice, (val) => {
     }
 });
 
-// ─── Company OTP form ─────────────────────────────────────────────────────────
-const otpCompany      = useForm({ otp: '' });
-const resendCompany   = useForm({});
+// ─── Company OTP ──────────────────────────────────────────────────────────────
+const otpCompany       = useForm({ otp: '' });
+const resendCompany    = useForm({});
 const resentCompanyMsg = ref('');
 
 // ─── Step 3 form ──────────────────────────────────────────────────────────────
@@ -157,7 +176,6 @@ const requiredDocs = computed<{ key: string; label: string; required: boolean }[
         ...base,
     ];
 
-    // No type chosen yet — show all as optional preview
     return [
         { key: 'AUTHORIZATION_LETTER', label: 'Authorization Letter (Corporate)', required: false },
         { key: 'SEC_CERT',             label: 'SEC Certificate (Corporate)',       required: false },
@@ -166,88 +184,56 @@ const requiredDocs = computed<{ key: string; label: string; required: boolean }[
     ];
 });
 
-// ─── Navigation helpers ───────────────────────────────────────────────────────
-
-/** Step 1 → validate + send account OTP → advance to OTP screen */
+// ─── Navigation ───────────────────────────────────────────────────────────────
 function submitStep1() {
     step1.submit(storeStep1(), {
-        onSuccess: () => {
-            resentAccountMsg.value = '';
-            currentStep.value = 1.5;
-        },
+        onSuccess: () => { resentAccountMsg.value = ''; currentStep.value = 1.5; },
     });
 }
 
-/** Step 1.5 → verify account OTP → advance to Step 2 */
 function submitAccountOtp() {
     otpAccount.submit(verifyStep1Otp(), {
-        onSuccess: () => {
-            currentStep.value = 2;
-            otpAccount.reset();
-        },
+        onSuccess: () => { currentStep.value = 2; otpAccount.reset(); },
     });
 }
 
-/** Step 2 → validate + send company OTP → advance to company OTP screen */
 function submitStep2() {
     step2.submit(storeStep2(), {
-        onSuccess: () => {
-            resentCompanyMsg.value = '';
-            currentStep.value = 2.5;
-        },
+        forceFormData: true,   // required for file upload
+        onSuccess: () => { resentCompanyMsg.value = ''; currentStep.value = 2.5; },
     });
 }
 
-/** Step 2.5 → verify company OTP → advance to Step 3 */
 function submitCompanyOtp() {
     otpCompany.submit(verifyStep2Otp(), {
-        onSuccess: () => {
-            currentStep.value = 3;
-            otpCompany.reset();
-        },
+        onSuccess: () => { currentStep.value = 3; otpCompany.reset(); },
     });
 }
 
-/** Step 3 → submit documents, backend redirects to status page */
 function submitStep3() {
     step3.submit(storeStep3(), { forceFormData: true });
 }
 
-/** Resend account OTP */
 function doResendAccount() {
     resentAccountMsg.value = '';
     resendAccount.submit(resendStep1Otp(), {
-        onSuccess: () => {
-            resentAccountMsg.value = 'A new code was sent to your email.';
-            otpAccount.reset();
-        },
+        onSuccess: () => { resentAccountMsg.value = 'A new code was sent to your email.'; otpAccount.reset(); },
     });
 }
 
-/** Resend company OTP */
 function doResendCompany() {
     resentCompanyMsg.value = '';
     resendCompany.submit(resendStep2Otp(), {
-        onSuccess: () => {
-            resentCompanyMsg.value = 'A new code was sent to your company email.';
-            otpCompany.reset();
-        },
+        onSuccess: () => { resentCompanyMsg.value = 'A new code was sent to your company email.'; otpCompany.reset(); },
     });
 }
 
-/** Back navigation */
 function goBack() {
-    const map: Partial<Record<SubStep, SubStep>> = {
-        1.5: 1,
-        2:   1.5,
-        2.5: 2,
-        3:   2.5,
-    };
+    const map: Partial<Record<SubStep, SubStep>> = { 1.5: 1, 2: 1.5, 2.5: 2, 3: 2.5 };
     const prev = map[currentStep.value];
     if (prev !== undefined) currentStep.value = prev;
 }
 
-// Auto-submit OTP when all 6 digits entered
 function onOtpInput(type: 'account' | 'company') {
     const form = type === 'account' ? otpAccount : otpCompany;
     if (form.otp.replace(/\D/g, '').length === 6) {
@@ -275,8 +261,6 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
             <!-- ── Step progress indicator ───────────────────────────────── -->
             <div class="flex items-center">
                 <template v-for="(step, idx) in stepMeta" :key="step.number">
-
-                    <!-- Step bubble -->
                     <button
                         type="button"
                         class="flex flex-col items-center gap-1.5"
@@ -291,7 +275,6 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
                                 'border-border bg-muted text-muted-foreground':                 step.number > visualStep,
                             }"
                         >
-                            <!-- Checkmark for completed steps -->
                             <svg v-if="step.number < visualStep" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                             </svg>
@@ -304,8 +287,6 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
                             {{ step.title }}
                         </span>
                     </button>
-
-                    <!-- Connector line -->
                     <div
                         v-if="idx < stepMeta.length - 1"
                         class="mx-3 h-px flex-1 transition-colors"
@@ -321,7 +302,6 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
                         <Badge variant="outline" class="text-xs">
                             Step {{ visualStep }} of {{ totalSteps }}
                         </Badge>
-                        <!-- OTP sub-step pill -->
                         <Badge
                             v-if="currentStep === 1.5 || currentStep === 2.5"
                             variant="secondary"
@@ -353,9 +333,7 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
 
                 <CardContent class="pt-6">
 
-                    <!-- ══════════════════════════════════════════════════════
-                         STEP 1 – Account Details
-                    ═══════════════════════════════════════════════════════ -->
+                    <!-- ══ STEP 1 – Account Details ══════════════════════════ -->
                     <div v-if="currentStep === 1" class="space-y-4">
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div class="space-y-1.5">
@@ -390,12 +368,8 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
                         </div>
                     </div>
 
-                    <!-- ══════════════════════════════════════════════════════
-                         STEP 1.5 – Account Email OTP
-                    ═══════════════════════════════════════════════════════ -->
+                    <!-- ══ STEP 1.5 – Account Email OTP ══════════════════════ -->
                     <div v-else-if="currentStep === 1.5" class="space-y-6">
-
-                        <!-- Icon banner -->
                         <div class="flex flex-col items-center gap-3 rounded-xl border bg-muted/40 px-6 py-8 text-center">
                             <div class="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 ring-4 ring-primary/10">
                                 <Mail class="h-7 w-7 text-primary" />
@@ -407,7 +381,6 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
                             </p>
                         </div>
 
-                        <!-- OTP input -->
                         <div class="space-y-1.5">
                             <Label for="otp_acc" class="sr-only">Verification Code</Label>
                             <Input
@@ -420,18 +393,14 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
                                 :disabled="otpAccount.processing"
                                 @input="onOtpInput('account')"
                             />
-                            <p v-if="otpAccount.errors.otp" class="text-center text-xs text-destructive">
-                                {{ otpAccount.errors.otp }}
-                            </p>
+                            <p v-if="otpAccount.errors.otp" class="text-center text-xs text-destructive">{{ otpAccount.errors.otp }}</p>
                         </div>
 
-                        <!-- Success feedback after resend -->
                         <div v-if="resentAccountMsg" class="flex items-center justify-center gap-1.5 text-xs text-primary">
                             <CheckCircle2 class="h-3.5 w-3.5" />
                             {{ resentAccountMsg }}
                         </div>
 
-                        <!-- Resend link -->
                         <div class="flex items-center justify-center gap-1 text-xs text-muted-foreground">
                             Didn't receive it?
                             <button
@@ -446,10 +415,79 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
                         </div>
                     </div>
 
-                    <!-- ══════════════════════════════════════════════════════
-                         STEP 2 – Company Details
-                    ═══════════════════════════════════════════════════════ -->
+                    <!-- ══ STEP 2 – Company Details ══════════════════════════ -->
                     <div v-else-if="currentStep === 2" class="space-y-4">
+
+                        <!-- ── Company Logo upload ── -->
+                        <div class="space-y-2">
+                            <Label>
+                                Company Logo
+                                <span class="ml-1 font-normal text-muted-foreground">(optional)</span>
+                            </Label>
+
+                            <div class="flex items-center gap-4">
+                                <!-- Preview box -->
+                                <div
+                                    class="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-muted transition-colors"
+                                    :class="logoPreview ? 'border-primary/50' : 'border-dashed border-muted-foreground/30'"
+                                >
+                                    <img
+                                        v-if="logoPreview"
+                                        :src="logoPreview"
+                                        alt="Logo preview"
+                                        class="h-full w-full object-cover"
+                                    />
+                                    <div
+                                        v-else
+                                        class="flex h-full w-full flex-col items-center justify-center gap-1 text-muted-foreground"
+                                    >
+                                        <Building2 class="h-6 w-6" />
+                                        <span class="text-[10px]">No logo</span>
+                                    </div>
+
+                                    <!-- Remove button -->
+                                    <button
+                                        v-if="logoPreview"
+                                        type="button"
+                                        @click="removeLogo"
+                                        class="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow hover:bg-destructive/90 transition-colors"
+                                    >
+                                        <X class="h-3 w-3" />
+                                    </button>
+                                </div>
+
+                                <!-- Upload trigger -->
+                                <div class="space-y-1.5">
+                                    <label
+                                        for="logo-upload"
+                                        class="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-muted"
+                                    >
+                                        <ImagePlus class="h-4 w-4" />
+                                        {{ logoPreview ? 'Change logo' : 'Upload logo' }}
+                                        <input
+                                            id="logo-upload"
+                                            ref="logoInputRef"
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp"
+                                            class="sr-only"
+                                            @change="handleLogoChange"
+                                        />
+                                    </label>
+                                    <p class="text-xs text-muted-foreground leading-relaxed">
+                                        JPG, PNG or WebP · max 2 MB<br />
+                                        Recommended: square, 200 × 200 px+
+                                    </p>
+                                </div>
+                            </div>
+
+                            <p v-if="step2.errors.logo" class="text-xs text-destructive">
+                                {{ step2.errors.logo }}
+                            </p>
+                        </div>
+
+                        <Separator />
+
+                        <!-- ── Company core fields ── -->
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div class="space-y-1.5">
                                 <Label for="s2_cname">Company Name</Label>
@@ -491,7 +529,9 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
                         <p v-if="step2.errors.company_address" class="text-xs text-destructive">{{ step2.errors.company_address }}</p>
 
                         <div v-if="step2.business_type" class="space-y-1.5">
-                            <Label for="s2_regno">{{ isCorporate ? 'SEC Registration Number' : 'DTI Registration Number' }}</Label>
+                            <Label for="s2_regno">
+                                {{ isCorporate ? 'SEC Registration Number' : 'DTI Registration Number' }}
+                            </Label>
                             <Input id="s2_regno" v-model="step2.registration_number" placeholder="Enter registration number" />
                             <p v-if="step2.errors.registration_number" class="text-xs text-destructive">{{ step2.errors.registration_number }}</p>
                         </div>
@@ -534,11 +574,8 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
                         </template>
                     </div>
 
-                    <!-- ══════════════════════════════════════════════════════
-                         STEP 2.5 – Company Email OTP
-                    ═══════════════════════════════════════════════════════ -->
+                    <!-- ══ STEP 2.5 – Company Email OTP ══════════════════════ -->
                     <div v-else-if="currentStep === 2.5" class="space-y-6">
-
                         <div class="flex flex-col items-center gap-3 rounded-xl border bg-muted/40 px-6 py-8 text-center">
                             <div class="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 ring-4 ring-primary/10">
                                 <ShieldCheck class="h-7 w-7 text-primary" />
@@ -562,9 +599,7 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
                                 :disabled="otpCompany.processing"
                                 @input="onOtpInput('company')"
                             />
-                            <p v-if="otpCompany.errors.otp" class="text-center text-xs text-destructive">
-                                {{ otpCompany.errors.otp }}
-                            </p>
+                            <p v-if="otpCompany.errors.otp" class="text-center text-xs text-destructive">{{ otpCompany.errors.otp }}</p>
                         </div>
 
                         <div v-if="resentCompanyMsg" class="flex items-center justify-center gap-1.5 text-xs text-primary">
@@ -586,11 +621,8 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
                         </div>
                     </div>
 
-                    <!-- ══════════════════════════════════════════════════════
-                         STEP 3 – Documents
-                    ═══════════════════════════════════════════════════════ -->
+                    <!-- ══ STEP 3 – Documents ════════════════════════════════ -->
                     <div v-else-if="currentStep === 3" class="space-y-5">
-
                         <div
                             v-if="step2.business_type"
                             class="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2 text-sm text-muted-foreground"
@@ -620,7 +652,6 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
                                         <Badge v-if="doc.required" variant="destructive" class="px-1.5 py-0 text-[10px]">Required</Badge>
                                         <Badge v-else variant="outline" class="px-1.5 py-0 text-[10px]">Optional</Badge>
                                     </div>
-                                    <!-- Tick when file chosen -->
                                     <svg v-if="step3.documents[doc.key].file" class="h-4 w-4 text-primary" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                                     </svg>
@@ -658,61 +689,37 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
 
                 </CardContent>
 
-                <!-- ── Footer: Back + primary action ─────────────────────── -->
+                <!-- ── Footer ─────────────────────────────────────────────── -->
                 <Separator />
                 <div class="flex items-center justify-between p-6">
-
-                    <Button
-                        type="button"
-                        variant="outline"
-                        @click="goBack"
-                        class="cursor-pointer"
-                    >
+                    <Button type="button" variant="outline" @click="goBack" class="cursor-pointer">
                         ← Back
                     </Button>
 
-                    <!-- Step 1 → send OTP & advance to 1.5 -->
                     <Button v-if="currentStep === 1" type="button" :disabled="step1.processing" @click="submitStep1" class="cursor-pointer">
                         <Loader2 v-if="step1.processing" class="mr-2 h-4 w-4 animate-spin" />
                         {{ step1.processing ? 'Sending code…' : 'Continue →' }}
                     </Button>
 
-                    <!-- Step 1.5 → verify account OTP -->
-                    <Button
-                        v-else-if="currentStep === 1.5"
-                        type="button"
-                        :disabled="otpAccount.processing || otpAccount.otp.length < 6"
-                        @click="submitAccountOtp"
-                        class="cursor-pointer"
-                    >
+                    <Button v-else-if="currentStep === 1.5" type="button" :disabled="otpAccount.processing || otpAccount.otp.length < 6" @click="submitAccountOtp" class="cursor-pointer">
                         <Loader2 v-if="otpAccount.processing" class="mr-2 h-4 w-4 animate-spin" />
                         {{ otpAccount.processing ? 'Verifying…' : 'Verify & Continue →' }}
                     </Button>
 
-                    <!-- Step 2 → send company OTP & advance to 2.5 -->
                     <Button v-else-if="currentStep === 2" type="button" :disabled="step2.processing" @click="submitStep2" class="cursor-pointer">
                         <Loader2 v-if="step2.processing" class="mr-2 h-4 w-4 animate-spin" />
                         {{ step2.processing ? 'Sending code…' : 'Continue →' }}
                     </Button>
 
-                    <!-- Step 2.5 → verify company OTP -->
-                    <Button
-                        v-else-if="currentStep === 2.5"
-                        type="button"
-                        :disabled="otpCompany.processing || otpCompany.otp.length < 6"
-                        @click="submitCompanyOtp"
-                        class="cursor-pointer"
-                    >
+                    <Button v-else-if="currentStep === 2.5" type="button" :disabled="otpCompany.processing || otpCompany.otp.length < 6" @click="submitCompanyOtp" class="cursor-pointer">
                         <Loader2 v-if="otpCompany.processing" class="mr-2 h-4 w-4 animate-spin" />
                         {{ otpCompany.processing ? 'Verifying…' : 'Verify & Continue →' }}
                     </Button>
 
-                    <!-- Step 3 → submit application -->
                     <Button v-else-if="currentStep === 3" type="button" :disabled="step3.processing" @click="submitStep3" class="cursor-pointer">
                         <Loader2 v-if="step3.processing" class="mr-2 h-4 w-4 animate-spin" />
                         {{ step3.processing ? 'Submitting…' : 'Submit Application' }}
                     </Button>
-
                 </div>
             </Card>
 

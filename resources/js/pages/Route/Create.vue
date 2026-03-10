@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import InputError from '@/components/InputError.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardHeader,
@@ -23,22 +22,28 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-
+import { Separator } from '@/components/ui/separator';
+import type { BreadcrumbItem } from '@/types';
 import {
+    ArrowLeft,
     Bus,
+    CheckCircle2,
     Clock3,
-    GitBranch,
+    DoorOpen,
     GripVertical,
+    MapPin,
     MapPinned,
     Milestone,
+    Navigation,
     Route as RouteIcon,
+    Save,
     Search,
     Sparkles,
-    Trash2,
     Wand2,
+    X,
 } from 'lucide-vue-next';
 
-import { store } from '@/actions/App/Http/Controllers/RouteController';
+import { index, store } from '@/actions/App/Http/Controllers/RouteController';
 
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -47,7 +52,10 @@ import 'mapbox-gl/dist/mapbox-gl.css';
    Types
 ───────────────────────────────────────────────────────────────────────────── */
 
-type Gate = { id: number; gate_name: string };
+type Gate = {
+    id: number;
+    gate_name: string;
+};
 
 type SearchSuggestion = {
     id: string;
@@ -75,7 +83,10 @@ type AlternativeRoute = {
     coordinates: [number, number][];
 };
 
-type Waypoint = { lng: number; lat: number };
+type Waypoint = {
+    lng: number;
+    lat: number;
+};
 
 type RouteSnapshot = {
     geometry: any;
@@ -92,7 +103,11 @@ const props = defineProps<{
     gates: Gate[];
     mapConfig: {
         mapboxToken: string;
-        pitx: { name: string; lat: number; lng: number };
+        pitx: {
+            name: string;
+            lat: number;
+            lng: number;
+        };
     };
 }>();
 
@@ -108,22 +123,23 @@ const map = ref<mapboxgl.Map | null>(null);
 const destinationQuery = ref('');
 const destinationSuggestions = ref<SearchSuggestion[]>([]);
 const destinationMarker = ref<mapboxgl.Marker | null>(null);
+
 const stopMarkers = ref<mapboxgl.Marker[]>([]);
+const waypointMarkers = ref<mapboxgl.Marker[]>([]);
 
 const loadingDestination = ref(false);
+const loadingStopSearch = ref(false);
+const loadingAutoGenerate = ref(false);
+const loadingLandmarks = ref(false);
+
 const lineClickMessage = ref('');
 const routeNameTouched = ref(false);
 const ignoreNextMapClick = ref(false);
 
 const stopQuery = ref('');
 const stopSuggestions = ref<SearchSuggestion[]>([]);
-const loadingStopSearch = ref(false);
-const showStopSearch = ref(false);
-
 const autoGenerateInterval = ref(5);
-const loadingAutoGenerate = ref(false);
 
-const loadingLandmarks = ref(false);
 const landmarkSuggestions = ref<SearchSuggestion[]>([]);
 const showLandmarks = ref(false);
 
@@ -132,15 +148,12 @@ const dragOverIndex = ref<number | null>(null);
 
 const routeCoordinates = ref<[number, number][]>([]);
 
-// Alternative routes
 const alternativeRoutes = ref<AlternativeRoute[]>([]);
 const selectedRouteIndex = ref(0);
 const showAlternatives = ref(false);
 const originalPrimaryRoute = ref<RouteSnapshot | null>(null);
 
-// Detour waypoints
 const waypoints = ref<Waypoint[]>([]);
-const waypointMarkers = ref<mapboxgl.Marker[]>([]);
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Origin
@@ -199,6 +212,12 @@ const routeHealthText = computed(() => {
     return 'Route is ready. You can add stops or detour points.';
 });
 
+const routeHealthStatus = computed<'idle' | 'loading' | 'ready'>(() => {
+    if (!hasDestination.value) return 'idle';
+    if (!routeCoordinates.value.length) return 'loading';
+    return 'ready';
+});
+
 /* ─────────────────────────────────────────────────────────────────────────────
    Watchers
 ───────────────────────────────────────────────────────────────────────────── */
@@ -214,7 +233,9 @@ watch(
 );
 
 watch(destinationQuery, async (value) => {
-    if (!value.trim()) {
+    const query = value.trim();
+
+    if (!query) {
         destinationSuggestions.value = [];
         return;
     }
@@ -222,19 +243,16 @@ watch(destinationQuery, async (value) => {
     loadingDestination.value = true;
 
     try {
-        destinationSuggestions.value = await searchPlaces(value);
+        destinationSuggestions.value = await searchPlaces(query);
     } finally {
         loadingDestination.value = false;
     }
 });
 
 watch(stopQuery, async (value) => {
-    if (!value.trim()) {
-        stopSuggestions.value = [];
-        return;
-    }
+    const query = value.trim();
 
-    if (routeCoordinates.value.length < 2) {
+    if (!query || routeCoordinates.value.length < 2) {
         stopSuggestions.value = [];
         return;
     }
@@ -242,7 +260,7 @@ watch(stopQuery, async (value) => {
     loadingStopSearch.value = true;
 
     try {
-        stopSuggestions.value = await searchPlacesAlongRoute(value);
+        stopSuggestions.value = await searchPlacesAlongRoute(query);
     } finally {
         loadingStopSearch.value = false;
     }
@@ -359,28 +377,8 @@ function fmtDuration(s: number) {
     const hours = Math.floor(s / 3600);
     const minutes = Math.ceil((s % 3600) / 60);
 
-    if (hours > 0) {
-        return `${hours} hr ${minutes} min`;
-    }
-
+    if (hours > 0) return `${hours} hr ${minutes} min`;
     return `${Math.ceil(s / 60)} min`;
-}
-
-function getRouteSnapshot(): RouteSnapshot | null {
-    if (!form.route_geometry || form.distance_meters === null || form.duration_seconds === null) {
-        return null;
-    }
-
-    try {
-        return {
-            geometry: JSON.parse(form.route_geometry),
-            distance: form.distance_meters,
-            duration: form.duration_seconds,
-            coordinates: [...routeCoordinates.value],
-        };
-    } catch {
-        return null;
-    }
 }
 
 function applyRouteSnapshot(snapshot: RouteSnapshot) {
@@ -395,7 +393,13 @@ function applyRouteSnapshot(snapshot: RouteSnapshot) {
 
     primarySrc?.setData({
         type: 'FeatureCollection',
-        features: [{ type: 'Feature', properties: {}, geometry: snapshot.geometry }],
+        features: [
+            {
+                type: 'Feature',
+                properties: {},
+                geometry: snapshot.geometry,
+            },
+        ],
     });
 
     renderStopMarkers();
@@ -414,7 +418,13 @@ function refreshAlternativeRouteLayers() {
         src?.setData({
             type: 'FeatureCollection',
             features: alt
-                ? [{ type: 'Feature', properties: {}, geometry: alt.geometry }]
+                ? [
+                      {
+                          type: 'Feature',
+                          properties: {},
+                          geometry: alt.geometry,
+                      },
+                  ]
                 : [],
         });
     }
@@ -431,7 +441,7 @@ function initMap() {
         container: mapEl.value,
         style: 'mapbox://styles/mapbox/streets-v12',
         center: [origin.lng, origin.lat],
-        zoom: 12,
+        zoom: 11.8,
     });
 
     map.value.addControl(new mapboxgl.NavigationControl(), 'top-right');
@@ -491,14 +501,20 @@ function initMap() {
             id: 'route-line-layer-hit',
             type: 'line',
             source: 'route-line',
-            paint: { 'line-width': 18, 'line-opacity': 0 },
+            paint: {
+                'line-width': 18,
+                'line-opacity': 0,
+            },
         });
 
         map.value!.addLayer({
             id: 'route-line-layer',
             type: 'line',
             source: 'route-line',
-            paint: { 'line-width': 5, 'line-color': '#2563eb' },
+            paint: {
+                'line-width': 5,
+                'line-color': '#2563eb',
+            },
         });
 
         map.value!.on('mouseenter', 'route-line-layer-hit', () => {
@@ -547,7 +563,7 @@ async function searchPlaces(query: string): Promise<SearchSuggestion[]> {
 
     url.searchParams.set('access_token', mapboxgl.accessToken);
     url.searchParams.set('autocomplete', 'true');
-    url.searchParams.set('limit', '5');
+    url.searchParams.set('limit', '6');
     url.searchParams.set('country', 'ph');
     url.searchParams.set('language', 'en');
 
@@ -600,7 +616,10 @@ async function searchPlacesAlongRoute(query: string): Promise<SearchSuggestion[]
         .filter((candidate) => {
             const snapped = snapToRoute(candidate.longitude, candidate.latitude);
 
-            if (haversine(snapped, [candidate.longitude, candidate.latitude]) > MAX_STOP_DISTANCE_M) {
+            if (
+                haversine(snapped, [candidate.longitude, candidate.latitude]) >
+                MAX_STOP_DISTANCE_M
+            ) {
                 return false;
             }
 
@@ -622,7 +641,7 @@ async function searchPlacesAlongRoute(query: string): Promise<SearchSuggestion[]
 
             return true;
         })
-        .slice(0, 5);
+        .slice(0, 6);
 }
 
 async function reversePlace(lng: number, lat: number) {
@@ -653,6 +672,7 @@ async function setDestinationFromSuggestion(item: SearchSuggestion) {
     destinationQuery.value = item.full_address;
     destinationSuggestions.value = [];
     lineClickMessage.value = '';
+    form.clearErrors('destination_name');
 
     destinationMarker.value?.remove();
 
@@ -673,7 +693,8 @@ async function setDestinationFromSuggestion(item: SearchSuggestion) {
         const place = await reversePlace(ll.lng, ll.lat);
 
         if (place) {
-            form.destination_name = place.text || place.place_name || form.destination_name;
+            form.destination_name =
+                place.text || place.place_name || form.destination_name;
             destinationQuery.value = place.place_name || form.destination_name;
         }
 
@@ -755,15 +776,8 @@ function renderWaypointMarkers() {
     waypoints.value.forEach((wp, index) => {
         const el = document.createElement('div');
         el.title = 'Drag to reshape route';
-        el.style.cssText = `
-            width:18px;
-            height:18px;
-            background:#7c3aed;
-            border:3px solid white;
-            border-radius:50%;
-            cursor:grab;
-            box-shadow:0 2px 6px rgba(0,0,0,0.35);
-        `;
+        el.style.cssText =
+            'width:18px;height:18px;background:#7c3aed;border:3px solid white;border-radius:50%;cursor:grab;box-shadow:0 2px 6px rgba(0,0,0,0.35);';
 
         const marker = new mapboxgl.Marker({
             element: el,
@@ -823,6 +837,7 @@ function selectAlternativeRoute(index: number) {
     }
 
     const alt = alternativeRoutes.value.find((route) => route.index === index);
+
     if (!alt) return;
 
     selectedRouteIndex.value = index;
@@ -843,7 +858,10 @@ function clearAlternativeRouteLayers() {
             | mapboxgl.GeoJSONSource
             | undefined;
 
-        src?.setData({ type: 'FeatureCollection', features: [] });
+        src?.setData({
+            type: 'FeatureCollection',
+            features: [],
+        });
     }
 
     alternativeRoutes.value = [];
@@ -858,13 +876,15 @@ function clearAlternativeRouteLayers() {
 
 async function addStopFromSuggestion(item: SearchSuggestion) {
     const alreadyExists = form.stops.some(
-        (stop) => stop.stop_name.toLowerCase().trim() === item.name.toLowerCase().trim(),
+        (stop) =>
+            stop.stop_name.toLowerCase().trim() ===
+            item.name.toLowerCase().trim(),
     );
 
     if (alreadyExists) {
+        lineClickMessage.value = `"${item.name}" is already added as a stop.`;
         stopQuery.value = '';
         stopSuggestions.value = [];
-        lineClickMessage.value = `"${item.name}" is already added as a stop.`;
         return;
     }
 
@@ -876,12 +896,17 @@ async function addStopFromSuggestion(item: SearchSuggestion) {
 
     if (
         form.stops.some(
-            (stop) => haversine([stop.longitude, stop.latitude], [finalLng, finalLat]) < 50,
+            (stop) =>
+                haversine(
+                    [stop.longitude, stop.latitude],
+                    [finalLng, finalLat],
+                ) < 50,
         )
     ) {
+        lineClickMessage.value =
+            `A stop already exists very close to "${item.name}".`;
         stopQuery.value = '';
         stopSuggestions.value = [];
-        lineClickMessage.value = `A stop already exists very close to "${item.name}".`;
         return;
     }
 
@@ -897,8 +922,6 @@ async function addStopFromSuggestion(item: SearchSuggestion) {
 
     stopQuery.value = '';
     stopSuggestions.value = [];
-    showStopSearch.value = false;
-
     renderStopMarkers();
     await redrawRoute();
 }
@@ -987,7 +1010,6 @@ async function suggestLandmarks() {
             for (const f of data.features ?? []) {
                 if (!seen.has(f.id)) {
                     seen.add(f.id);
-
                     results.push({
                         id: f.id,
                         name: f.text || f.place_name,
@@ -1026,7 +1048,9 @@ function renderStopMarkers() {
             draggable: true,
         })
             .setLngLat([stop.longitude, stop.latitude])
-            .setPopup(new mapboxgl.Popup().setText(`${index + 2}. ${stop.stop_name}`))
+            .setPopup(
+                new mapboxgl.Popup().setText(`${index + 2}. ${stop.stop_name}`),
+            )
             .addTo(map.value!);
 
         marker.on('dragend', async () => {
@@ -1045,7 +1069,10 @@ function renderStopMarkers() {
 
             if (place) {
                 form.stops[index].stop_name =
-                    place.text || place.place_name || form.stops[index].stop_name;
+                    place.text ||
+                    place.place_name ||
+                    form.stops[index].stop_name;
+
                 form.stops[index].address =
                     place.place_name || form.stops[index].address;
             }
@@ -1067,7 +1094,10 @@ function clearRouteLine() {
         | mapboxgl.GeoJSONSource
         | undefined;
 
-    src?.setData({ type: 'FeatureCollection', features: [] });
+    src?.setData({
+        type: 'FeatureCollection',
+        features: [],
+    });
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -1075,14 +1105,20 @@ function clearRouteLine() {
 ───────────────────────────────────────────────────────────────────────────── */
 
 async function redrawRoute() {
-    if (!form.destination_lat || !form.destination_lng || !map.value) {
+    if (
+        form.destination_lat === null ||
+        form.destination_lng === null ||
+        !map.value
+    ) {
         form.distance_meters = null;
         form.duration_seconds = null;
         form.route_geometry = null;
         routeCoordinates.value = [];
+
         clearRouteLine();
         clearAlternativeRouteLayers();
         clearStopMarkers();
+
         return;
     }
 
@@ -1112,6 +1148,7 @@ async function redrawRoute() {
         form.route_geometry = null;
         routeCoordinates.value = [];
         originalPrimaryRoute.value = null;
+
         clearRouteLine();
         clearAlternativeRouteLayers();
         return;
@@ -1136,14 +1173,18 @@ async function redrawRoute() {
 
     primarySrc.setData({
         type: 'FeatureCollection',
-        features: [{ type: 'Feature', properties: {}, geometry: primary.geometry }],
+        features: [
+            {
+                type: 'Feature',
+                properties: {},
+                geometry: primary.geometry,
+            },
+        ],
     });
 
     alternativeRoutes.value = [];
 
-    const alts = data.routes.slice(1, 3);
-
-    alts.forEach((alt: any, i: number) => {
+    data.routes.slice(1, 3).forEach((alt: any, i: number) => {
         const altIndex = i + 1;
 
         alternativeRoutes.value.push({
@@ -1156,7 +1197,6 @@ async function redrawRoute() {
     });
 
     refreshAlternativeRouteLayers();
-
     showAlternatives.value = alternativeRoutes.value.length > 0;
 
     renderStopMarkers();
@@ -1164,17 +1204,13 @@ async function redrawRoute() {
     fitMap();
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Map fit
-───────────────────────────────────────────────────────────────────────────── */
-
 function fitMap() {
     if (!map.value) return;
 
     const bounds = new mapboxgl.LngLatBounds();
     bounds.extend([origin.lng, origin.lat]);
 
-    if (form.destination_lat && form.destination_lng) {
+    if (form.destination_lat !== null && form.destination_lng !== null) {
         bounds.extend([form.destination_lng, form.destination_lat]);
     }
 
@@ -1183,7 +1219,10 @@ function fitMap() {
         bounds.extend([waypoint.lng, waypoint.lat]),
     );
 
-    map.value.fitBounds(bounds, { padding: 60, maxZoom: 14 });
+    map.value.fitBounds(bounds, {
+        padding: 60,
+        maxZoom: 14,
+    });
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -1200,10 +1239,7 @@ function onDragOver(event: DragEvent, index: number) {
 }
 
 function onDrop(index: number) {
-    if (
-        draggedStopIndex.value === null ||
-        draggedStopIndex.value === index
-    ) {
+    if (draggedStopIndex.value === null || draggedStopIndex.value === index) {
         draggedStopIndex.value = null;
         dragOverIndex.value = null;
         return;
@@ -1240,7 +1276,6 @@ function clearDestination() {
     form.destination_name = '';
     form.destination_lat = null;
     form.destination_lng = null;
-
     destinationQuery.value = '';
     destinationSuggestions.value = [];
 
@@ -1261,6 +1296,8 @@ function clearDestination() {
     originalPrimaryRoute.value = null;
 
     waypoints.value = [];
+    stopQuery.value = '';
+    stopSuggestions.value = [];
 
     destinationMarker.value?.remove();
     destinationMarker.value = null;
@@ -1303,7 +1340,11 @@ function buildRouteStopsForSubmit(): StopItem[] {
 }
 
 async function submit() {
-    if (!form.destination_name || !form.destination_lat || !form.destination_lng) {
+    if (
+        !form.destination_name ||
+        form.destination_lat === null ||
+        form.destination_lng === null
+    ) {
         form.setError('destination_name', 'Please select or pin a destination.');
         return;
     }
@@ -1312,7 +1353,8 @@ async function submit() {
     form.stops = buildRouteStopsForSubmit();
 
     await nextTick();
-    form.post(store());
+
+    form.post(store().url);
 }
 
 onMounted(async () => {
@@ -1327,326 +1369,317 @@ onBeforeUnmount(() => {
     clearWaypointMarkers();
     map.value?.remove();
 });
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Routes', href: index().url },
+    { title: 'Create', href: '#' },
+];
 </script>
 
 <template>
     <Head title="Create Route" />
 
-    <AppLayout>
-        <div class="space-y-6 p-4 sm:p-6">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div class="space-y-2">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" class="gap-1">
-                            <RouteIcon class="h-3.5 w-3.5" />
-                            Route Builder
-                        </Badge>
-
-                        <Badge variant="secondary">
-                            Fixed Origin: {{ form.origin_name }}
-                        </Badge>
+    <AppLayout :breadcrumbs="breadcrumbs">
+        <div class="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+            <div class="flex h-14 items-center justify-between gap-4 px-4 sm:px-6">
+                <div class="flex min-w-0 items-center gap-3">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                        <RouteIcon class="h-4 w-4" />
                     </div>
 
-                    <div>
-                        <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">
-                            Create Route
-                        </h1>
-                        <p class="mt-1 text-sm text-muted-foreground">
-                            Set the destination, shape the path, add bus stops, then save the final route.
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2 text-sm font-semibold">
+                            <span class="truncate">Create Route</span>
+                            <span
+                                v-if="form.destination_name"
+                                class="hidden shrink-0 text-muted-foreground sm:inline"
+                            >
+                                → {{ form.destination_name }}
+                            </span>
+                        </div>
+                        <p class="truncate text-xs text-muted-foreground">
+                            Fixed origin:
+                            <span class="font-medium text-foreground">{{ form.origin_name }}</span>
                         </p>
                     </div>
                 </div>
 
-                <div class="flex flex-wrap gap-3">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        :disabled="!hasDestination"
-                        @click="clearDestination"
-                    >
-                        <Trash2 class="mr-2 h-4 w-4" />
-                        Clear Route
-                    </Button>
+                <div class="flex shrink-0 items-center gap-2">
+                    <div class="hidden items-center gap-1.5 sm:flex">
+                        <span
+                            class="h-2 w-2 rounded-full"
+                            :class="{
+                                'bg-muted-foreground': routeHealthStatus === 'idle',
+                                'animate-pulse bg-amber-400': routeHealthStatus === 'loading',
+                                'bg-green-500': routeHealthStatus === 'ready',
+                            }"
+                        />
+                        <span class="text-xs text-muted-foreground">{{ routeHealthText }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                    <Button
-                        :disabled="form.processing"
-                        @click="submit"
-                    >
-                        Save Route
-                    </Button>
+        <div class="p-4 sm:p-6">
+            <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div class="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                        <MapPinned class="h-4 w-4" />
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                            Destination
+                        </p>
+                        <p class="truncate text-sm font-semibold">
+                            {{ form.destination_name || '—' }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                        <Milestone class="h-4 w-4" />
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                            Distance
+                        </p>
+                        <p class="text-sm font-semibold">
+                            {{ form.distance_meters ? fmtDistance(form.distance_meters) : '—' }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                        <Clock3 class="h-4 w-4" />
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                            Duration
+                        </p>
+                        <p class="text-sm font-semibold">
+                            {{ form.duration_seconds ? fmtDuration(form.duration_seconds) : '—' }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-600">
+                        <Bus class="h-4 w-4" />
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                            Total Stops
+                        </p>
+                        <p class="text-sm font-semibold">{{ totalVisibleStops }}</p>
+                    </div>
                 </div>
             </div>
 
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <Card class="rounded-2xl">
-                    <CardHeader class="pb-3">
-                        <CardDescription class="flex items-center gap-2">
-                            <MapPinned class="h-4 w-4" />
-                            Destination
-                        </CardDescription>
-                        <CardTitle class="text-base sm:text-lg">
-                            {{ form.destination_name || 'Not selected yet' }}
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
-
-                <Card class="rounded-2xl">
-                    <CardHeader class="pb-3">
-                        <CardDescription class="flex items-center gap-2">
-                            <Milestone class="h-4 w-4" />
-                            Distance
-                        </CardDescription>
-                        <CardTitle class="text-base sm:text-lg">
-                            {{ form.distance_meters ? fmtDistance(form.distance_meters) : '—' }}
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
-
-                <Card class="rounded-2xl">
-                    <CardHeader class="pb-3">
-                        <CardDescription class="flex items-center gap-2">
-                            <Clock3 class="h-4 w-4" />
-                            Duration
-                        </CardDescription>
-                        <CardTitle class="text-base sm:text-lg">
-                            {{ form.duration_seconds ? fmtDuration(form.duration_seconds) : '—' }}
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
-
-                <Card class="rounded-2xl">
-                    <CardHeader class="pb-3">
-                        <CardDescription class="flex items-center gap-2">
-                            <Bus class="h-4 w-4" />
-                            Stops in Preview
-                        </CardDescription>
-                        <CardTitle class="text-base sm:text-lg">
-                            {{ totalVisibleStops }}
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
-            </div>
-
-            <Card class="rounded-2xl">
-                <CardHeader>
-                    <CardTitle>Basic Details</CardTitle>
-                    <CardDescription>
-                        Set the route name and assign the gate before saving.
-                    </CardDescription>
-                </CardHeader>
-
-                <CardContent class="grid gap-4 md:grid-cols-2">
-                    <div class="space-y-2">
-                        <Label for="route_name">Route Name</Label>
-                        <Input
-                            id="route_name"
-                            :model-value="form.route_name"
-                            placeholder="Enter route name"
-                            @update:model-value="onRouteNameInput"
-                        />
-                        <div class="flex items-center justify-between gap-3">
-                            <p class="text-xs text-muted-foreground">
-                                Suggested: {{ defaultRouteName }}
-                            </p>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                @click="resetRouteNameToDefault"
-                            >
-                                Use Suggested Name
-                            </Button>
-                        </div>
-                        <InputError :message="form.errors.route_name" />
-                    </div>
-
-                    <div class="space-y-2">
-                        <Label for="gate_id">Gate</Label>
-                        <Select v-model="form.gate_id">
-                            <SelectTrigger id="gate_id">
-                                <SelectValue placeholder="Select gate" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem
-                                    v-for="gate in gates"
-                                    :key="gate.id"
-                                    :value="String(gate.id)"
-                                >
-                                    {{ gate.gate_name }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <InputError :message="form.errors.gate_id" />
-                    </div>
-                </CardContent>
-            </Card>
-
-            <div class="grid gap-6 xl:grid-cols-[1.4fr_0.8fr]">
-                <div class="space-y-6">
-                    <Card class="rounded-2xl">
-                        <CardHeader>
-                            <CardTitle>Select Destination</CardTitle>
-                            <CardDescription>
-                                Search a destination or click directly on the map to pin one.
-                            </CardDescription>
-                        </CardHeader>
-
-                        <CardContent class="space-y-3">
-                            <div class="space-y-2">
-                                <Label>Destination Search</Label>
-                                <div class="relative">
-                                    <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                    <Input
-                                        v-model="destinationQuery"
-                                        class="pl-9"
-                                        placeholder="Search destination in the Philippines..."
-                                    />
-                                </div>
-
-                                <div
-                                    v-if="destinationSuggestions.length"
-                                    class="rounded-xl border bg-background shadow-sm"
-                                >
-                                    <button
-                                        v-for="item in destinationSuggestions"
-                                        :key="item.id"
-                                        type="button"
-                                        class="block w-full border-b px-4 py-3 text-left last:border-b-0 hover:bg-muted/50"
-                                        @click="setDestinationFromSuggestion(item)"
-                                    >
-                                        <div class="font-medium">{{ item.name }}</div>
-                                        <div class="text-xs text-muted-foreground">
-                                            {{ item.full_address }}
-                                        </div>
-                                    </button>
-                                </div>
-
-                                <p class="text-xs text-muted-foreground">
-                                    Tip: Before a destination is selected, clicking the map will pin the destination.
-                                </p>
-                            </div>
-
-                            <InputError :message="form.errors.destination_name" />
-                        </CardContent>
-                    </Card>
-
+            <div class="grid gap-6 xl:grid-cols-[1fr_380px]">
+                <div class="space-y-5">
                     <Card class="overflow-hidden rounded-2xl">
-                        <CardHeader>
-                            <CardTitle>Map Workspace</CardTitle>
-                            <CardDescription>
-                                Build and inspect the route visually.
-                            </CardDescription>
-                            <CardAction>
-                                <Badge variant="secondary">
-                                    {{ routeHealthText }}
+                        <CardHeader class="pb-3">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <CardTitle class="text-base">Map Workspace</CardTitle>
+                                    <CardDescription class="text-xs">
+                                        Search on the map, pin destination, and shape the route.
+                                    </CardDescription>
+                                </div>
+
+                                <Badge
+                                    :variant="routeHealthStatus === 'ready' ? 'default' : 'secondary'"
+                                    class="shrink-0 text-xs"
+                                >
+                                    <span
+                                        class="mr-1.5 h-1.5 w-1.5 rounded-full"
+                                        :class="{
+                                            'bg-muted-foreground': routeHealthStatus === 'idle',
+                                            'bg-amber-400': routeHealthStatus === 'loading',
+                                            'bg-green-400': routeHealthStatus === 'ready',
+                                        }"
+                                    />
+                                    {{ routeHealthStatus === 'ready' ? 'Route ready' : routeHealthStatus === 'loading' ? 'Computing…' : 'Awaiting destination' }}
                                 </Badge>
-                            </CardAction>
+                            </div>
                         </CardHeader>
 
-                        <CardContent class="space-y-4">
+                        <CardContent class="space-y-3 pt-0">
                             <div
                                 v-if="lineClickMessage"
-                                class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700"
+                                class="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-700"
                             >
+                                <Navigation class="mt-0.5 h-3.5 w-3.5 shrink-0" />
                                 {{ lineClickMessage }}
                             </div>
 
                             <div
                                 v-if="hasDestination"
-                                class="rounded-xl border border-purple-200 bg-purple-50 p-4"
+                                class="flex items-start gap-2 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2.5"
                             >
-                                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                    <div class="space-y-1">
-                                        <p class="text-sm font-semibold text-purple-800">
-                                            Route Reshaping
-                                        </p>
-                                        <p class="text-xs text-purple-700">
-                                            Click the blue line to add a detour point. Drag the purple marker to reshape the route. Right-click a purple marker to remove it.
-                                        </p>
-                                    </div>
+                                <div class="mt-1 h-2 w-2 shrink-0 rounded-full bg-purple-500" />
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-xs font-medium text-purple-800">Route Reshaping</p>
+                                    <p class="text-xs text-purple-600">
+                                        Click the blue line to add a detour point. Drag purple markers to reshape. Right-click to remove.
+                                    </p>
+                                </div>
+                                <Button
+                                    v-if="waypoints.length"
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    class="h-7 shrink-0 border border-purple-300 text-xs text-purple-700 hover:bg-purple-100"
+                                    @click="removeAllWaypoints"
+                                >
+                                    Clear ({{ waypoints.length }})
+                                </Button>
+                            </div>
 
-                                    <Button
-                                        v-if="waypoints.length"
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        class="border-purple-300 text-purple-700 hover:bg-purple-100"
-                                        @click="removeAllWaypoints"
-                                    >
-                                        Clear Detour Points
-                                    </Button>
+                            <div class="relative">
+                                <div
+                                    ref="mapEl"
+                                    class="h-[500px] w-full overflow-hidden rounded-xl border sm:h-[620px]"
+                                />
+
+                                <div class="pointer-events-none absolute inset-x-3 top-3 z-10 sm:left-3 sm:right-auto sm:w-[420px]">
+                                    <div class="pointer-events-auto rounded-2xl border bg-background/95 p-3 shadow-lg backdrop-blur">
+                                        <div class="mb-2">
+                                            <p class="text-sm font-semibold">Destination</p>
+                                            <p class="text-xs text-muted-foreground">
+                                                Search here or click the map to pin destination.
+                                            </p>
+                                        </div>
+
+                                        <div class="relative">
+                                            <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                            <Input
+                                                v-model="destinationQuery"
+                                                class="h-10 pl-9 pr-9"
+                                                placeholder="Search destination..."
+                                            />
+                                            <button
+                                                v-if="destinationQuery"
+                                                type="button"
+                                                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                                @click="destinationQuery = ''; destinationSuggestions = []"
+                                            >
+                                                <X class="h-3.5 w-3.5" />
+                                            </button>
+                                        </div>
+
+                                        <div
+                                            v-if="destinationSuggestions.length"
+                                            class="mt-2 overflow-hidden rounded-xl border bg-background shadow-sm"
+                                        >
+                                            <button
+                                                v-for="item in destinationSuggestions"
+                                                :key="item.id"
+                                                type="button"
+                                                class="flex w-full items-start gap-3 border-b px-3 py-3 text-left last:border-b-0 hover:bg-muted/50"
+                                                @click="setDestinationFromSuggestion(item)"
+                                            >
+                                                <MapPin class="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />
+                                                <div class="min-w-0">
+                                                    <div class="truncate text-sm font-medium">{{ item.name }}</div>
+                                                    <div class="truncate text-xs text-muted-foreground">
+                                                        {{ item.full_address }}
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        </div>
+
+                                        <div
+                                            v-if="hasDestination"
+                                            class="mt-2 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2"
+                                        >
+                                            <MapPinned class="h-3.5 w-3.5 shrink-0 text-red-600" />
+                                            <span class="min-w-0 truncate text-sm font-medium text-red-800">
+                                                {{ form.destination_name }}
+                                            </span>
+                                            <CheckCircle2 class="ml-auto h-3.5 w-3.5 shrink-0 text-red-500" />
+                                        </div>
+
+                                        <p v-else class="mt-2 text-xs text-muted-foreground">
+                                            Click anywhere on the map to set destination.
+                                        </p>
+
+                                        <InputError :message="form.errors.destination_name" />
+                                    </div>
                                 </div>
                             </div>
 
-                            <div
-                                ref="mapEl"
-                                class="h-[420px] w-full rounded-xl border sm:h-[560px]"
-                            />
-
-                            <div class="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                            <div class="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-muted-foreground">
                                 <span class="flex items-center gap-1.5">
-                                    <span class="inline-block h-2.5 w-2.5 rounded-full bg-green-600" />
+                                    <span class="inline-block h-2 w-2 rounded-full bg-green-600" />
                                     Origin
                                 </span>
                                 <span class="flex items-center gap-1.5">
-                                    <span class="inline-block h-2.5 w-2.5 rounded-full bg-red-600" />
+                                    <span class="inline-block h-2 w-2 rounded-full bg-red-600" />
                                     Destination
                                 </span>
                                 <span class="flex items-center gap-1.5">
-                                    <span class="inline-block h-2.5 w-2.5 rounded-full bg-yellow-500" />
+                                    <span class="inline-block h-2 w-2 rounded-full bg-yellow-500" />
                                     Bus stops
                                 </span>
                                 <span class="flex items-center gap-1.5">
-                                    <span class="inline-block h-2.5 w-2.5 rounded-full bg-purple-600" />
-                                    Detour points
+                                    <span class="inline-block h-2 w-2 rounded-full bg-purple-600" />
+                                    Detour pts
                                 </span>
                                 <span class="flex items-center gap-1.5">
                                     <span class="inline-block w-5 border-t-2 border-dashed border-slate-400" />
-                                    Alternative routes
+                                    Alternatives
                                 </span>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card
-                        v-if="showAlternatives && alternativeRoutes.length"
-                        class="rounded-2xl"
-                    >
-                        <CardHeader>
-                            <CardTitle>Alternative Routes</CardTitle>
-                            <CardDescription>
-                                Click a dashed line on the map or choose an option below.
+                    <Card v-if="showAlternatives && alternativeRoutes.length" class="rounded-2xl">
+                        <CardHeader class="pb-3">
+                            <CardTitle class="text-base">Alternative Routes</CardTitle>
+                            <CardDescription class="text-xs">
+                                Click a dashed line on the map or choose below.
                             </CardDescription>
                         </CardHeader>
 
-                        <CardContent class="space-y-3">
+                        <CardContent class="space-y-2 pt-0">
                             <button
                                 type="button"
                                 :class="[
-                                    'w-full rounded-xl border p-4 text-left transition',
+                                    'w-full rounded-xl border p-3.5 text-left transition-colors',
                                     selectedRouteIndex === 0
-                                        ? 'border-blue-500 bg-blue-50'
+                                        ? 'border-primary/50 bg-primary/5'
                                         : 'hover:bg-muted/40',
                                 ]"
                                 @click="selectAlternativeRoute(0)"
                             >
-                                <div class="flex items-start gap-3">
-                                    <div class="rounded-md bg-blue-100 p-2 text-blue-700">
-                                        <RouteIcon class="h-4 w-4" />
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        :class="[
+                                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold',
+                                            selectedRouteIndex === 0
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'bg-muted text-muted-foreground',
+                                        ]"
+                                    >
+                                        1
                                     </div>
-
                                     <div class="min-w-0 flex-1">
-                                        <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                                            <p class="font-medium">Route 1</p>
-                                            <p class="text-xs text-muted-foreground">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <p class="text-sm font-medium">
+                                                Route 1
+                                                <span class="ml-1 text-xs font-normal text-muted-foreground">
+                                                    (Primary)
+                                                </span>
+                                            </p>
+                                            <p class="shrink-0 text-xs text-muted-foreground">
                                                 {{ originalPrimaryRoute ? fmtDistance(originalPrimaryRoute.distance) : '—' }}
                                                 ·
                                                 {{ originalPrimaryRoute ? fmtDuration(originalPrimaryRoute.duration) : '—' }}
                                             </p>
                                         </div>
-                                        <p class="mt-1 text-xs text-muted-foreground">
-                                            Main route currently stored as the primary option.
-                                        </p>
                                     </div>
                                 </div>
                             </button>
@@ -1656,112 +1689,115 @@ onBeforeUnmount(() => {
                                 :key="alt.index"
                                 type="button"
                                 :class="[
-                                    'w-full rounded-xl border p-4 text-left transition',
+                                    'w-full rounded-xl border p-3.5 text-left transition-colors',
                                     selectedRouteIndex === alt.index
-                                        ? 'border-blue-500 bg-blue-50'
+                                        ? 'border-primary/50 bg-primary/5'
                                         : 'hover:bg-muted/40',
                                 ]"
                                 @click="selectAlternativeRoute(alt.index)"
                             >
-                                <div class="flex items-start gap-3">
-                                    <div class="rounded-md bg-slate-100 p-2 text-slate-700">
-                                        <GitBranch class="h-4 w-4" />
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        :class="[
+                                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold',
+                                            selectedRouteIndex === alt.index
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'bg-muted text-muted-foreground',
+                                        ]"
+                                    >
+                                        {{ alt.index + 1 }}
                                     </div>
-
                                     <div class="min-w-0 flex-1">
-                                        <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                                            <p class="font-medium">Route {{ alt.index + 1 }}</p>
-                                            <p class="text-xs text-muted-foreground">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <p class="text-sm font-medium">
+                                                Route {{ alt.index + 1 }}
+                                                <span class="ml-1 text-xs font-normal text-muted-foreground">
+                                                    Alternate
+                                                </span>
+                                            </p>
+                                            <p class="shrink-0 text-xs text-muted-foreground">
                                                 {{ fmtDistance(alt.distance) }} · {{ fmtDuration(alt.duration) }}
                                             </p>
                                         </div>
-                                        <p class="mt-1 text-xs text-muted-foreground">
-                                            Alternate suggestion shown as a dashed line on the map.
-                                        </p>
                                     </div>
                                 </div>
                             </button>
                         </CardContent>
                     </Card>
 
-                    <div class="grid gap-6 lg:grid-cols-2">
-                        <Card
-                            v-if="hasDestination"
-                            class="rounded-2xl"
-                        >
-                            <CardHeader>
-                                <CardTitle>Add Stop by Search</CardTitle>
-                                <CardDescription>
-                                    Search places close to the active route.
-                                </CardDescription>
+                    <div v-if="hasDestination" class="grid gap-5 sm:grid-cols-2">
+                        <Card class="rounded-2xl">
+                            <CardHeader class="pb-3">
+                                <div>
+                                    <CardTitle class="text-base">Add Stop</CardTitle>
+                                    <CardDescription class="text-xs">
+                                        Search stops within 500 m of the active route.
+                                    </CardDescription>
+                                </div>
                             </CardHeader>
 
-                            <CardContent class="space-y-3">
-                                <div class="flex items-center justify-between gap-3">
-                                    <p class="text-xs text-muted-foreground">
-                                        Only results within 500m of the route are shown.
-                                    </p>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        @click="showStopSearch = !showStopSearch"
-                                    >
-                                        {{ showStopSearch ? 'Hide Search' : 'Show Search' }}
-                                    </Button>
-                                </div>
-
-                                <div v-if="showStopSearch" class="space-y-2">
+                            <CardContent class="space-y-2 pt-0">
+                                <div class="relative">
+                                    <Search class="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                                     <Input
                                         v-model="stopQuery"
-                                        placeholder="Search a stop along the route..."
+                                        class="h-10 pl-9 pr-9 text-sm"
+                                        placeholder="Search route stop..."
                                         :disabled="loadingStopSearch"
                                     />
-
-                                    <div
-                                        v-if="stopSuggestions.length"
-                                        class="rounded-xl border bg-background"
+                                    <button
+                                        v-if="stopQuery"
+                                        type="button"
+                                        class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                        @click="stopQuery = ''; stopSuggestions = []"
                                     >
-                                        <button
-                                            v-for="item in stopSuggestions"
-                                            :key="item.id"
-                                            type="button"
-                                            class="block w-full border-b px-4 py-3 text-left last:border-b-0 hover:bg-muted/50"
-                                            @click="addStopFromSuggestion(item)"
-                                        >
-                                            <div class="font-medium">{{ item.name }}</div>
-                                            <div class="text-xs text-muted-foreground">
+                                        <X class="h-3.5 w-3.5" />
+                                    </button>
+                                </div>
+
+                                <div
+                                    v-if="stopSuggestions.length"
+                                    class="overflow-hidden rounded-xl border bg-background shadow-sm"
+                                >
+                                    <button
+                                        v-for="item in stopSuggestions"
+                                        :key="item.id"
+                                        type="button"
+                                        class="flex w-full items-start gap-2.5 border-b px-3.5 py-2.5 text-left last:border-b-0 hover:bg-muted/50"
+                                        @click="addStopFromSuggestion(item)"
+                                    >
+                                        <Bus class="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+                                        <div class="min-w-0">
+                                            <div class="truncate text-sm font-medium">{{ item.name }}</div>
+                                            <div class="truncate text-xs text-muted-foreground">
                                                 {{ item.full_address }}
                                             </div>
-                                        </button>
-                                    </div>
-
-                                    <p
-                                        v-if="stopSuggestions.length === 0 && stopQuery && !loadingStopSearch"
-                                        class="text-xs text-amber-600"
-                                    >
-                                        No places found within 500m of the route.
-                                    </p>
+                                        </div>
+                                    </button>
                                 </div>
+
+                                <p
+                                    v-if="!stopSuggestions.length && stopQuery && !loadingStopSearch"
+                                    class="text-xs text-amber-600"
+                                >
+                                    No places found within 500 m of the route.
+                                </p>
                             </CardContent>
                         </Card>
 
-                        <Card
-                            v-if="hasDestination"
-                            class="rounded-2xl"
-                        >
-                            <CardHeader>
-                                <CardTitle>Auto Tools</CardTitle>
-                                <CardDescription>
-                                    Generate stops or suggest landmarks faster.
+                        <Card class="rounded-2xl">
+                            <CardHeader class="pb-3">
+                                <CardTitle class="text-base">Auto Tools</CardTitle>
+                                <CardDescription class="text-xs">
+                                    Generate or suggest stops automatically.
                                 </CardDescription>
                             </CardHeader>
 
-                            <CardContent class="space-y-5">
-                                <div class="space-y-2 rounded-xl border p-4">
-                                    <div class="flex items-center gap-2">
-                                        <Wand2 class="h-4 w-4 text-muted-foreground" />
-                                        <p class="text-sm font-medium">Auto-Generate Stops</p>
+                            <CardContent class="space-y-4 pt-0">
+                                <div class="space-y-2 rounded-xl border bg-muted/30 p-3">
+                                    <div class="flex items-center gap-1.5 text-xs font-medium">
+                                        <Wand2 class="h-3.5 w-3.5 text-muted-foreground" />
+                                        Auto-Generate Stops
                                     </div>
 
                                     <div class="flex items-center gap-2">
@@ -1770,12 +1806,15 @@ onBeforeUnmount(() => {
                                             type="number"
                                             min="1"
                                             max="50"
-                                            class="w-24"
+                                            class="h-8 w-20 text-sm"
                                         />
+                                        <span class="text-xs text-muted-foreground">km apart</span>
+
                                         <Button
                                             type="button"
                                             size="sm"
                                             variant="secondary"
+                                            class="ml-auto h-8 text-xs"
                                             :disabled="loadingAutoGenerate || routeCoordinates.length < 2"
                                             @click="autoGenerateStops"
                                         >
@@ -1783,21 +1822,22 @@ onBeforeUnmount(() => {
                                         </Button>
                                     </div>
 
-                                    <p class="text-xs text-muted-foreground">
-                                        Replaces current stops with evenly spaced stops.
+                                    <p class="text-[11px] text-muted-foreground">
+                                        Replaces all current stops.
                                     </p>
                                 </div>
 
-                                <div class="space-y-2 rounded-xl border p-4">
-                                    <div class="flex items-center gap-2">
-                                        <Sparkles class="h-4 w-4 text-muted-foreground" />
-                                        <p class="text-sm font-medium">Landmark Suggestions</p>
+                                <div class="space-y-2 rounded-xl border bg-muted/30 p-3">
+                                    <div class="flex items-center gap-1.5 text-xs font-medium">
+                                        <Sparkles class="h-3.5 w-3.5 text-muted-foreground" />
+                                        Landmark Suggestions
                                     </div>
 
                                     <Button
                                         type="button"
                                         size="sm"
                                         variant="secondary"
+                                        class="h-8 w-full text-xs"
                                         :disabled="loadingLandmarks"
                                         @click="suggestLandmarks"
                                     >
@@ -1806,27 +1846,24 @@ onBeforeUnmount(() => {
 
                                     <div
                                         v-if="showLandmarks && landmarkSuggestions.length"
-                                        class="max-h-56 overflow-y-auto rounded-xl border bg-background"
+                                        class="max-h-48 overflow-y-auto rounded-xl border bg-background"
                                     >
                                         <div
                                             v-for="item in landmarkSuggestions"
                                             :key="item.id"
-                                            class="flex items-center justify-between gap-3 border-b px-4 py-3 last:border-b-0"
+                                            class="flex items-center gap-2 border-b px-3 py-2.5 last:border-b-0"
                                         >
-                                            <div class="min-w-0">
-                                                <div class="truncate text-sm font-medium">
-                                                    {{ item.name }}
-                                                </div>
-                                                <div class="text-xs text-muted-foreground">
+                                            <div class="min-w-0 flex-1">
+                                                <div class="truncate text-xs font-medium">{{ item.name }}</div>
+                                                <div class="truncate text-[11px] text-muted-foreground">
                                                     {{ item.full_address }}
                                                 </div>
                                             </div>
-
                                             <Button
                                                 type="button"
                                                 size="sm"
                                                 variant="outline"
-                                                class="shrink-0"
+                                                class="h-6 shrink-0 px-2 text-xs"
                                                 @click="addLandmarkAsStop(item)"
                                             >
                                                 Add
@@ -1838,7 +1875,7 @@ onBeforeUnmount(() => {
                                         v-if="showLandmarks && !landmarkSuggestions.length && !loadingLandmarks"
                                         class="text-xs text-muted-foreground"
                                     >
-                                        No additional landmarks found.
+                                        No landmarks found.
                                     </p>
                                 </div>
                             </CardContent>
@@ -1846,246 +1883,308 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
 
-                <div class="space-y-6">
+                <div class="space-y-5">
                     <Card class="rounded-2xl">
-                        <CardHeader>
-                            <CardTitle>Builder Status</CardTitle>
-                            <CardDescription>
-                                Quick overview of the current route setup.
-                            </CardDescription>
+                        <CardHeader class="pb-2">
+                            <CardTitle class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                                Route Summary
+                            </CardTitle>
                         </CardHeader>
 
-                        <CardContent class="space-y-4 text-sm">
-                            <div class="grid gap-3">
-                                <div class="rounded-xl border p-4">
-                                    <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                        Route Name
-                                    </p>
-                                    <p class="mt-1 font-semibold">
-                                        {{ form.route_name || defaultRouteName }}
+                        <CardContent class="space-y-0 pt-0">
+                            <div class="flex items-center gap-3 border-b py-3">
+                                <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-600 text-[10px] font-bold text-white">
+                                    A
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Origin</p>
+                                    <p class="truncate text-sm font-medium">{{ form.origin_name }}</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-3 border-b py-3">
+                                <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
+                                    B
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Destination</p>
+                                    <p class="truncate text-sm font-medium">
+                                        {{ form.destination_name || '—' }}
                                     </p>
                                 </div>
+                            </div>
 
-                                <div class="rounded-xl border p-4">
-                                    <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                        Origin
-                                    </p>
-                                    <p class="mt-1 font-semibold">{{ form.origin_name }}</p>
-                                    <p class="mt-1 text-xs text-muted-foreground">
-                                        {{ form.origin_lat }}, {{ form.origin_lng }}
+                            <div class="grid grid-cols-2 gap-x-3 gap-y-0">
+                                <div class="border-b border-r py-3 pr-3">
+                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Distance</p>
+                                    <p class="text-sm font-semibold">
+                                        {{ form.distance_meters ? fmtDistance(form.distance_meters) : '—' }}
                                     </p>
                                 </div>
-
-                                <div class="rounded-xl border p-4">
-                                    <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                        Destination
+                                <div class="border-b py-3 pl-3">
+                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Duration</p>
+                                    <p class="text-sm font-semibold">
+                                        {{ form.duration_seconds ? fmtDuration(form.duration_seconds) : '—' }}
                                     </p>
-                                    <p class="mt-1 font-semibold">
-                                        {{ form.destination_name || 'No destination selected' }}
-                                    </p>
-                                    <p
-                                        v-if="form.destination_lat && form.destination_lng"
-                                        class="mt-1 text-xs text-muted-foreground"
-                                    >
-                                        {{ form.destination_lat }}, {{ form.destination_lng }}
+                                </div>
+                                <div class="border-b border-r py-3 pr-3">
+                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Stops</p>
+                                    <p class="text-sm font-semibold">{{ totalBusStops }}</p>
+                                </div>
+                                <div class="border-b py-3 pl-3">
+                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Detours</p>
+                                    <p class="text-sm font-semibold">{{ waypoints.length }}</p>
+                                </div>
+                                <div v-if="alternativeRoutes.length" class="col-span-2 py-3">
+                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Selected Route</p>
+                                    <p class="text-sm font-semibold">
+                                        {{ selectedRouteIndex + 1 }} / {{ alternativeRoutes.length + 1 }}
                                     </p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card class="rounded-2xl">
-                        <CardHeader>
-                            <CardTitle>Route Summary</CardTitle>
-                            <CardDescription>
-                                Live values update as you edit the map.
-                            </CardDescription>
-                        </CardHeader>
-
-                        <CardContent class="space-y-3 text-sm">
-                            <div class="flex items-center justify-between rounded-lg border px-3 py-2">
-                                <span class="text-muted-foreground">Distance</span>
-                                <span class="font-medium">
-                                    {{ form.distance_meters ? fmtDistance(form.distance_meters) : '—' }}
-                                </span>
-                            </div>
-
-                            <div class="flex items-center justify-between rounded-lg border px-3 py-2">
-                                <span class="text-muted-foreground">Duration</span>
-                                <span class="font-medium">
-                                    {{ form.duration_seconds ? fmtDuration(form.duration_seconds) : '—' }}
-                                </span>
-                            </div>
-
-                            <div class="flex items-center justify-between rounded-lg border px-3 py-2">
-                                <span class="text-muted-foreground">Bus Stops</span>
-                                <span class="font-medium">{{ totalBusStops }}</span>
-                            </div>
-
-                            <div class="flex items-center justify-between rounded-lg border px-3 py-2">
-                                <span class="text-muted-foreground">Detour Points</span>
-                                <span class="font-medium">{{ waypoints.length }}</span>
-                            </div>
-
-                            <div
-                                v-if="alternativeRoutes.length"
-                                class="flex items-center justify-between rounded-lg border px-3 py-2"
-                            >
-                                <span class="text-muted-foreground">Selected Route Option</span>
-                                <span class="font-medium">
-                                    {{ selectedRouteIndex + 1 }} / {{ alternativeRoutes.length + 1 }}
-                                </span>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card
-                        v-if="waypoints.length"
-                        class="rounded-2xl"
-                    >
-                        <CardHeader>
-                            <CardTitle>Detour Points</CardTitle>
-                            <CardDescription>
-                                These shape the route but are not saved as bus stops.
-                            </CardDescription>
-                        </CardHeader>
-
-                        <CardContent class="space-y-3">
-                            <div
-                                v-for="(wp, index) in waypoints"
-                                :key="index"
-                                class="flex items-start justify-between gap-3 rounded-xl border border-purple-200 bg-purple-50 p-3"
-                            >
-                                <div>
-                                    <p class="font-medium text-purple-800">
-                                        Waypoint {{ index + 1 }}
-                                    </p>
-                                    <p class="text-xs text-purple-700">
-                                        {{ wp.lat.toFixed(5) }}, {{ wp.lng.toFixed(5) }}
-                                    </p>
-                                </div>
-
+                    <Card v-if="waypoints.length" class="rounded-2xl">
+                        <CardHeader class="pb-2">
+                            <div class="flex items-center justify-between gap-2">
+                                <CardTitle class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                                    Detour Points
+                                </CardTitle>
                                 <Button
                                     type="button"
                                     size="sm"
                                     variant="ghost"
-                                    class="text-red-500 hover:text-red-700"
-                                    @click="waypoints.splice(index, 1); renderWaypointMarkers(); redrawRoute()"
+                                    class="h-6 text-xs text-muted-foreground hover:text-destructive"
+                                    @click="removeAllWaypoints"
                                 >
-                                    Remove
+                                    Clear all
                                 </Button>
                             </div>
+                        </CardHeader>
 
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                class="w-full border-purple-300 text-purple-700 hover:bg-purple-100"
-                                @click="removeAllWaypoints"
+                        <CardContent class="space-y-2 pt-0">
+                            <div
+                                v-for="(wp, index) in waypoints"
+                                :key="index"
+                                class="flex items-center gap-2.5 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2"
                             >
-                                Clear All Detour Points
-                            </Button>
+                                <div class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-purple-600 text-[10px] font-bold text-white">
+                                    {{ index + 1 }}
+                                </div>
+                                <p class="flex-1 font-mono text-xs text-purple-700">
+                                    {{ wp.lat.toFixed(4) }}, {{ wp.lng.toFixed(4) }}
+                                </p>
+                                <button
+                                    type="button"
+                                    class="text-purple-400 hover:text-red-500"
+                                    @click="waypoints.splice(index, 1); renderWaypointMarkers(); redrawRoute()"
+                                >
+                                    <X class="h-3.5 w-3.5" />
+                                </button>
+                            </div>
                         </CardContent>
                     </Card>
 
                     <Card class="rounded-2xl">
-                        <CardHeader>
-                            <CardTitle>Stops Preview</CardTitle>
-                            <CardDescription>
-                                Drag to reorder intermediate bus stops.
-                            </CardDescription>
+                        <CardHeader class="pb-2">
+                            <div class="flex items-center justify-between gap-2">
+                                <div>
+                                    <CardTitle class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                                        Stops Preview
+                                    </CardTitle>
+                                    <CardDescription class="text-xs">
+                                        Drag intermediate stops to reorder.
+                                    </CardDescription>
+                                </div>
+                                <Badge variant="secondary" class="text-xs">{{ totalVisibleStops }}</Badge>
+                            </div>
                         </CardHeader>
 
-                        <CardContent class="space-y-3">
-                            <div class="rounded-xl border border-green-200 bg-green-50 p-4">
-                                <div class="flex items-start gap-3">
-                                    <div class="rounded-full bg-green-600 px-2 py-0.5 text-xs font-semibold text-white">
-                                        1
-                                    </div>
-                                    <div>
-                                        <p class="font-medium">{{ form.origin_name }}</p>
-                                        <p class="text-[11px] uppercase tracking-wide text-muted-foreground">
-                                            Origin
-                                        </p>
-                                    </div>
-                                </div>
+                        <CardContent class="pt-0">
+                            <div
+                                v-if="!hasDestination"
+                                class="rounded-xl border border-dashed px-4 py-6 text-center text-xs text-muted-foreground"
+                            >
+                                Set a destination to see the stop sequence.
                             </div>
 
-                            <div
-                                v-for="(stop, index) in form.stops"
-                                :key="`${stop.stop_name}-${stop.latitude}-${index}`"
-                                :draggable="true"
-                                :class="[
-                                    'cursor-grab select-none rounded-xl border p-4 transition',
-                                    dragOverIndex === index ? 'border-blue-400 bg-blue-50' : '',
-                                    draggedStopIndex === index ? 'opacity-60' : '',
-                                ]"
-                                @dragstart="onDragStart(index)"
-                                @dragover="onDragOver($event, index)"
-                                @drop="onDrop(index)"
-                                @dragend="onDragEnd"
-                            >
-                                <div class="flex items-start justify-between gap-3">
-                                    <div class="flex min-w-0 items-start gap-3">
-                                        <GripVertical class="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                            <div v-else class="relative">
+                                <div class="absolute bottom-6 left-[18px] top-6 w-px bg-border" />
 
-                                        <div class="min-w-0">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <span class="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white">
-                                                    {{ index + 2 }}
-                                                </span>
-                                                <p class="font-medium">
-                                                    {{ stop.stop_name }}
-                                                </p>
-                                            </div>
-
-                                            <p class="mt-1 text-xs text-muted-foreground">
-                                                {{ stop.address || 'No address available' }}
-                                            </p>
-
-                                            <p class="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                                                {{ stop.stop_type }}
+                                <div class="space-y-1">
+                                    <div class="relative flex items-start gap-3 rounded-xl px-3 py-3">
+                                        <div class="relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-600 ring-2 ring-background text-[9px] font-bold text-white">
+                                            1
+                                        </div>
+                                        <div class="min-w-0 pt-0.5">
+                                            <p class="text-sm font-medium leading-tight">{{ form.origin_name }}</p>
+                                            <p class="text-[10px] uppercase tracking-wide text-green-600">
+                                                Origin
                                             </p>
                                         </div>
                                     </div>
 
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="destructive"
-                                        class="shrink-0"
-                                        @click="removeStop(index)"
+                                    <div
+                                        v-for="(stop, index) in form.stops"
+                                        :key="`${stop.stop_name}-${stop.latitude}-${index}`"
+                                        :draggable="true"
+                                        :class="[
+                                            'relative flex cursor-grab select-none items-start gap-3 rounded-xl px-3 py-3 transition-colors',
+                                            dragOverIndex === index ? 'bg-blue-50 ring-1 ring-blue-300' : 'hover:bg-muted/40',
+                                            draggedStopIndex === index ? 'opacity-50' : '',
+                                        ]"
+                                        @dragstart="onDragStart(index)"
+                                        @dragover="onDragOver($event, index)"
+                                        @drop="onDrop(index)"
+                                        @dragend="onDragEnd"
                                     >
-                                        Remove
-                                    </Button>
-                                </div>
-                            </div>
+                                        <div class="relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-500 ring-2 ring-background text-[9px] font-bold text-white">
+                                            {{ index + 2 }}
+                                        </div>
 
-                            <div
-                                v-if="hasDestination"
-                                class="rounded-xl border border-red-200 bg-red-50 p-4"
-                            >
-                                <div class="flex items-start gap-3">
-                                    <div class="rounded-full bg-red-600 px-2 py-0.5 text-xs font-semibold text-white">
-                                        {{ form.stops.length + 2 }}
+                                        <div class="min-w-0 flex-1 pt-0.5">
+                                            <p class="truncate text-sm font-medium leading-tight">{{ stop.stop_name }}</p>
+                                            <p class="truncate text-[11px] text-muted-foreground">
+                                                {{ stop.address || 'No address' }}
+                                            </p>
+                                        </div>
+
+                                        <div class="flex shrink-0 items-center gap-1">
+                                            <GripVertical class="h-3.5 w-3.5 text-muted-foreground/50" />
+                                            <button
+                                                type="button"
+                                                class="rounded p-0.5 text-muted-foreground/50 hover:text-destructive"
+                                                @click="removeStop(index)"
+                                            >
+                                                <X class="h-3.5 w-3.5" />
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p class="font-medium">{{ form.destination_name }}</p>
-                                        <p class="text-[11px] uppercase tracking-wide text-muted-foreground">
-                                            Destination
-                                        </p>
+
+                                    <div class="relative flex items-start gap-3 rounded-xl px-3 py-3">
+                                        <div class="relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-600 ring-2 ring-background text-[9px] font-bold text-white">
+                                            {{ form.stops.length + 2 }}
+                                        </div>
+                                        <div class="min-w-0 pt-0.5">
+                                            <p class="text-sm font-medium leading-tight">{{ form.destination_name }}</p>
+                                            <p class="text-[10px] uppercase tracking-wide text-red-600">
+                                                Destination
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div
-                                v-if="!hasDestination"
-                                class="rounded-xl border border-dashed p-4 text-sm text-muted-foreground"
-                            >
-                                Set a destination to preview the complete route stop sequence.
                             </div>
                         </CardContent>
                     </Card>
+
+                    <div class="rounded-2xl border bg-card p-4 shadow-sm">
+                        <div class="space-y-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <p class="text-sm font-semibold">Route Details</p>
+                                    <p class="text-xs text-muted-foreground">
+                                        Enter the route name, select the gate, then save.
+                                    </p>
+                                </div>
+
+                                <Button
+                                    v-if="hasDestination"
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    class="h-8 text-muted-foreground hover:text-destructive"
+                                    @click="clearDestination"
+                                >
+                                    <X class="mr-1.5 h-3.5 w-3.5" />
+                                    Clear
+                                </Button>
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <Label for="route_name_sidebar" class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                    Route Name
+                                </Label>
+                                <Input
+                                    id="route_name_sidebar"
+                                    :model-value="form.route_name"
+                                    placeholder="Enter route name"
+                                    class="h-10"
+                                    @update:model-value="onRouteNameInput"
+                                />
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-xs text-muted-foreground">
+                                        Suggested:
+                                        <span class="italic">{{ defaultRouteName }}</span>
+                                    </p>
+                                    <button
+                                        type="button"
+                                        class="text-xs text-primary underline underline-offset-2 hover:no-underline"
+                                        @click="resetRouteNameToDefault"
+                                    >
+                                        Use suggested
+                                    </button>
+                                </div>
+                                <InputError :message="form.errors.route_name" />
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <Label for="gate_id_sidebar" class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                    <DoorOpen class="mr-1 inline h-3.5 w-3.5" />
+                                    Gate Assignment
+                                </Label>
+
+                                <Select v-model="form.gate_id">
+                                    <SelectTrigger id="gate_id_sidebar" class="h-10">
+                                        <SelectValue placeholder="Select a gate…" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem
+                                            v-for="gate in gates"
+                                            :key="gate.id"
+                                            :value="String(gate.id)"
+                                        >
+                                            {{ gate.gate_name }}
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                <InputError :message="form.errors.gate_id" />
+                            </div>
+
+                            <Separator />
+
+                            <div class="grid gap-2 sm:grid-cols-2">
+                                <Button
+                                    as-child
+                                    type="button"
+                                    variant="outline"
+                                    class="w-full"
+                                >
+                                    <Link :href="index().url">
+                                        <ArrowLeft class="mr-2 h-4 w-4" />
+                                        Back to Routes
+                                    </Link>
+                                </Button>
+
+                                <Button
+                                    class="w-full"
+                                    :disabled="form.processing || !routeReady"
+                                    @click="submit"
+                                >
+                                    <Save class="mr-2 h-4 w-4" />
+                                    {{ form.processing ? 'Saving Route…' : 'Save Route' }}
+                                </Button>
+                            </div>
+
+                            <p
+                                v-if="!routeReady"
+                                class="text-center text-[11px] text-muted-foreground"
+                            >
+                                {{ !hasDestination ? 'Select a destination first.' : 'Waiting for route to compute.' }}
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

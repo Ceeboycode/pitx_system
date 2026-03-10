@@ -1,17 +1,24 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3'
+import { Head } from '@inertiajs/vue3'
 import { computed } from 'vue'
 
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 
-import { Building2, CheckCircle2, FileText, LayoutDashboard, Truck, User2, LogOut } from 'lucide-vue-next'
+import {
+  ArrowRight,
+  Building2,
+  CheckCircle2,
+  Clock,
+  FileText,
+  TrendingUp,
+  Truck,
+} from 'lucide-vue-next'
 
-// ✅ Wayfinder routes (adjust import paths to your generated routes index)
-import { logout } from '@/routes'
+import ExternalLayout from '@/layouts/ExternalLayout.vue'
 
+// ── Props ──────────────────────────────────────────────────────────
 const props = defineProps<{
   company: {
     id: number
@@ -22,6 +29,7 @@ const props = defineProps<{
     status: string
     business_type?: string | null
     authorized_representative_name?: string | null
+    logo_url?: string | null
   }
   user: {
     id: number
@@ -43,9 +51,9 @@ function humanize(text?: string | null) {
 }
 
 const greeting = computed(() => {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 17) return 'Good afternoon'
+  const h = new Date().getHours()
+  if (h < 12) return 'Good morning'
+  if (h < 17) return 'Good afternoon'
   return 'Good evening'
 })
 
@@ -55,160 +63,209 @@ const statCards = computed(() => [
     value: props.stats.total_dispatches,
     sub: `${props.stats.pending_dispatches} pending`,
     icon: Truck,
-    color: 'text-blue-500',
-    bg: 'bg-blue-50 dark:bg-blue-950/40',
+    color: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-blue-50 dark:bg-blue-950/50',
+    border: 'border-blue-100 dark:border-blue-900',
   },
   {
     title: 'Documents',
     value: props.stats.total_documents,
     sub: `${props.stats.verified_documents} verified`,
     icon: FileText,
-    color: 'text-emerald-500',
-    bg: 'bg-emerald-50 dark:bg-emerald-950/40',
+    color: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-emerald-50 dark:bg-emerald-950/50',
+    border: 'border-emerald-100 dark:border-emerald-900',
+  },
+  {
+    title: 'Pending Review',
+    value: props.stats.pending_dispatches,
+    sub: 'awaiting action',
+    icon: Clock,
+    color: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-amber-50 dark:bg-amber-950/50',
+    border: 'border-amber-100 dark:border-amber-900',
+  },
+  {
+    title: 'Verified Docs',
+    value: props.stats.verified_documents,
+    sub: `of ${props.stats.total_documents} total`,
+    icon: CheckCircle2,
+    color: 'text-violet-600 dark:text-violet-400',
+    bg: 'bg-violet-50 dark:bg-violet-950/50',
+    border: 'border-violet-100 dark:border-violet-900',
   },
 ])
+
+const companyInitials = computed(() =>
+  (props.company.company_code ?? props.company.company_name)
+    .slice(0, 2)
+    .toUpperCase(),
+)
 </script>
 
 <template>
-  <Head :title="`${company.company_name} — Dashboard`" />
+  <Head :title="`Dashboard — ${company.company_name}`" />
 
-  <div class="min-h-screen bg-muted/30">
-    <!-- ── Top nav bar ─────────────────────────────────────────────── -->
-    <header class="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
-      <div class="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4 sm:px-6">
-        <div class="flex items-center gap-2.5">
-          <LayoutDashboard class="h-5 w-5 text-primary" />
-          <span class="text-sm font-semibold">{{ company.company_code }}</span>
-          <Badge variant="outline" class="hidden text-xs sm:inline-flex">Company Portal</Badge>
+  <ExternalLayout :company="company" :user="user">
+    <div class="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6">
+
+      <!-- ── Greeting ────────────────────────────────────────────── -->
+      <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 class="text-xl font-semibold tracking-tight sm:text-2xl">
+            {{ greeting }}, {{ user.name.split(' ')[0] }} 👋
+          </h1>
+          <p class="mt-0.5 text-sm text-muted-foreground">
+            Here's what's happening with
+            <span class="font-medium text-foreground">{{ company.company_name }}</span> today.
+          </p>
         </div>
-
-        <div class="flex items-center gap-2">
-          <span class="hidden text-xs text-muted-foreground sm:block">{{ user.name }}</span>
-
-          <!-- Profile (Wayfinder) -->
-          <!-- <Button variant="ghost" size="sm" as-child>
-            <Link :href="userProfile().url">
-              <User2 class="h-4 w-4" />
-            </Link>
-          </Button> -->
-
-          <!-- Logout (Wayfinder) -->
-          <Button variant="ghost" size="sm" as-child>
-            <Link
-              :href="logout().url"
-              method="post"
-              as="button"
-              class="inline-flex items-center"
-            >
-              <LogOut class="h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
-      </div>
-    </header>
-
-    <!-- ── Page body ──────────────────────────────────────────────── -->
-    <main class="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6">
-      <!-- Greeting -->
-      <div class="space-y-1">
-        <h1 class="text-2xl font-semibold tracking-tight">
-          {{ greeting }}, {{ user.name.split(' ')[0] }} 👋
-        </h1>
-        <p class="text-sm text-muted-foreground">
-          Here's what's happening with <strong>{{ company.company_name }}</strong> today.
-        </p>
+        <Badge
+          :variant="company.status === 'verified' ? 'default' : 'secondary'"
+          class="w-fit gap-1.5 self-start sm:self-auto"
+        >
+          <CheckCircle2 v-if="company.status === 'verified'" class="h-3 w-3" />
+          {{ humanize(company.status) }}
+        </Badge>
       </div>
 
-      <!-- Stat cards -->
-      <div class="grid gap-4 sm:grid-cols-2">
-        <Card v-for="stat in statCards" :key="stat.title">
-          <CardContent class="flex items-center gap-4 p-5">
-            <div :class="['flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', stat.bg]">
-              <component :is="stat.icon" :class="['h-5 w-5', stat.color]" />
-            </div>
-            <div>
-              <p class="text-2xl font-bold leading-none">{{ stat.value }}</p>
-              <p class="mt-0.5 text-xs text-muted-foreground">{{ stat.title }}</p>
-              <p class="text-xs text-muted-foreground">{{ stat.sub }}</p>
+      <!-- ── Stat cards ──────────────────────────────────────────── -->
+      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Card
+          v-for="stat in statCards"
+          :key="stat.title"
+          :class="['border transition-shadow hover:shadow-sm', stat.border]"
+        >
+          <CardContent class="p-5">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-xs font-medium text-muted-foreground">{{ stat.title }}</p>
+                <p class="mt-1.5 text-3xl font-bold tracking-tight">{{ stat.value }}</p>
+                <p class="mt-0.5 text-xs text-muted-foreground">{{ stat.sub }}</p>
+              </div>
+              <div :class="['flex h-9 w-9 items-center justify-center rounded-lg', stat.bg]">
+                <component :is="stat.icon" :class="['h-4 w-4', stat.color]" />
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <!-- Company info card -->
-      <Card>
-        <CardHeader>
-          <div class="flex items-center gap-2">
-            <Building2 class="h-5 w-5 text-muted-foreground" />
-            <div>
-              <CardTitle>Company Profile</CardTitle>
-              <CardDescription>Your registered business details.</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <Separator />
-        <CardContent class="pt-5">
-          <dl class="grid gap-3 sm:grid-cols-2">
-            <div class="space-y-0.5">
-              <dt class="text-xs font-medium text-muted-foreground">Company Name</dt>
-              <dd class="text-sm">{{ company.company_name }}</dd>
-            </div>
-            <div class="space-y-0.5">
-              <dt class="text-xs font-medium text-muted-foreground">Company Code</dt>
-              <dd class="text-sm font-mono">{{ company.company_code ?? '—' }}</dd>
-            </div>
-            <div class="space-y-0.5">
-              <dt class="text-xs font-medium text-muted-foreground">Email</dt>
-              <dd class="text-sm">{{ company.company_email ?? '—' }}</dd>
-            </div>
-            <div class="space-y-0.5">
-              <dt class="text-xs font-medium text-muted-foreground">Phone</dt>
-              <dd class="text-sm">{{ company.company_phone ?? '—' }}</dd>
-            </div>
-            <div class="space-y-0.5">
-              <dt class="text-xs font-medium text-muted-foreground">Business Type</dt>
-              <dd class="text-sm">{{ humanize(company.business_type) }}</dd>
-            </div>
-            <div class="space-y-0.5">
-              <dt class="text-xs font-medium text-muted-foreground">Status</dt>
-              <dd>
-                <Badge :variant="company.status === 'verified' ? 'default' : 'secondary'" class="gap-1 text-xs">
+      <!-- ── Bottom grid ─────────────────────────────────────────── -->
+      <div class="grid gap-4 lg:grid-cols-5">
+
+        <!-- Company Profile — 3 cols -->
+        <Card class="lg:col-span-3">
+          <CardHeader class="pb-3">
+            <div class="flex items-start gap-4">
+
+              <!-- ── Company Logo ── -->
+              <div
+                class="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 bg-muted shadow-sm"
+              >
+                <img
+                  v-if="company.logo_url"
+                  :src="company.logo_url"
+                  :alt="company.company_name"
+                  class="h-full w-full object-cover"
+                />
+                <div
+                  v-else
+                  class="flex h-full w-full items-center justify-center bg-primary/10 text-xl font-bold text-primary"
+                >
+                  {{ companyInitials }}
+                </div>
+              </div>
+
+              <div class="flex-1">
+                <CardTitle class="text-base">{{ company.company_name }}</CardTitle>
+                <CardDescription class="mt-0.5 font-mono text-xs">
+                  {{ company.company_code ?? '—' }}
+                </CardDescription>
+                <Badge
+                  :variant="company.status === 'verified' ? 'default' : 'secondary'"
+                  class="mt-1.5 gap-1 text-xs"
+                >
                   <CheckCircle2 v-if="company.status === 'verified'" class="h-3 w-3" />
                   {{ humanize(company.status) }}
                 </Badge>
-              </dd>
+              </div>
             </div>
-            <div v-if="company.authorized_representative_name" class="space-y-0.5 sm:col-span-2">
-              <dt class="text-xs font-medium text-muted-foreground">Authorized Representative</dt>
-              <dd class="text-sm">{{ company.authorized_representative_name }}</dd>
-            </div>
-          </dl>
-        </CardContent>
-      </Card>
+          </CardHeader>
 
-      <!-- Quick actions -->
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common tasks for your company account.</CardDescription>
-        </CardHeader>
-        <Separator />
-        <CardContent class="flex flex-wrap gap-3 pt-5">
-          <!-- <Button as-child variant="outline" size="sm">
-            <Link :href="dispatchesCreate({ company: company.id }).url">
-              <Truck class="mr-2 h-4 w-4" />
-              New Dispatch
-            </Link>
-          </Button> -->
+          <Separator />
 
-          <!-- <Button as-child variant="outline" size="sm">
-            <Link :href="registrationStatus().url">
-              <FileText class="mr-2 h-4 w-4" />
-              View Documents
-            </Link>
-          </Button> -->
-        </CardContent>
-      </Card>
-    </main>
-  </div>
+          <CardContent class="pt-4">
+            <dl class="grid gap-y-3 sm:grid-cols-2">
+              <div class="space-y-0.5">
+                <dt class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Email</dt>
+                <dd class="text-sm">{{ company.company_email ?? '—' }}</dd>
+              </div>
+              <div class="space-y-0.5">
+                <dt class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Phone</dt>
+                <dd class="text-sm">{{ company.company_phone ?? '—' }}</dd>
+              </div>
+              <div class="space-y-0.5">
+                <dt class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Business Type</dt>
+                <dd class="text-sm">{{ humanize(company.business_type) }}</dd>
+              </div>
+              <div v-if="company.authorized_representative_name" class="space-y-0.5">
+                <dt class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Representative</dt>
+                <dd class="text-sm">{{ company.authorized_representative_name }}</dd>
+              </div>
+            </dl>
+          </CardContent>
+        </Card>
+
+        <!-- Quick Actions — 2 cols -->
+        <Card class="lg:col-span-2">
+          <CardHeader class="pb-3">
+            <CardTitle class="text-base">Quick Actions</CardTitle>
+            <CardDescription class="text-xs">Common tasks for your account</CardDescription>
+          </CardHeader>
+          <Separator />
+          <CardContent class="space-y-2 pt-4">
+
+            <button
+              class="group flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+            >
+              <div class="flex items-center gap-2.5">
+                <div class="flex h-7 w-7 items-center justify-center rounded-md bg-blue-50 dark:bg-blue-950/50">
+                  <Truck class="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <span class="font-medium">New Dispatch</span>
+              </div>
+              <ArrowRight class="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+            </button>
+
+            <button
+              class="group flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+            >
+              <div class="flex items-center gap-2.5">
+                <div class="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-50 dark:bg-emerald-950/50">
+                  <FileText class="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <span class="font-medium">View Documents</span>
+              </div>
+              <ArrowRight class="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+            </button>
+
+            <button
+              class="group flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+            >
+              <div class="flex items-center gap-2.5">
+                <div class="flex h-7 w-7 items-center justify-center rounded-md bg-violet-50 dark:bg-violet-950/50">
+                  <TrendingUp class="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+                </div>
+                <span class="font-medium">View Reports</span>
+              </div>
+              <ArrowRight class="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+            </button>
+
+          </CardContent>
+        </Card>
+
+      </div>
+    </div>
+  </ExternalLayout>
 </template>

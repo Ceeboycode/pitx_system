@@ -2,78 +2,41 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\Company;
-use App\Models\Route;
-use App\Models\User;
-use App\Models\VehicleType;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Vehicle extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public const REQUIRED_DOCUMENT_TYPES = [
+        'ltfrb_certificate',
+        'cpc',
+        'or_cr',
+    ];
+
     protected $fillable = [
+        'company_id',
+        'route_id',
+        'vehicle_type',
         'plate_number',
         'body_number',
         'capacity',
-        'company_id',
-        'route_id',
-        'vehicle_type_id',
+        'color',
+        'engine_number',
+        'chassis_number',
+        'make_model',
+        'status',
+        'remarks',
         'created_by',
         'updated_by',
         'deleted_by',
     ];
 
-    protected $appends = [
-    'created_at_human',
-    'updated_at_human',
-    'deleted_at_human',
-    ];
-
-    /*
-    |--------------------------------------------------------------------------
-    | Scopes
-    |--------------------------------------------------------------------------
-    */
-
-    public function scopeSearch(Builder $query, ?string $search): Builder
-    {
-        return $query->when(
-            filled($search),
-            function (Builder $q) use ($search) {
-                $q->where(function (Builder $sub) use ($search) {
-                    $sub->where('plate_number', 'like', "%{$search}%")
-                        ->orWhere('body_number', 'like', "%{$search}%")
-                        ->orWhere('capacity', 'like', "%{$search}%")
-                        ->orWhereHas('company', fn ($c) =>
-                            $c->where('company_name', 'like', "%{$search}%")
-                        )
-                        ->orWhereHas('route', fn ($r) =>
-                            $r->where('route_name', 'like', "%{$search}%")
-                        )
-                        ->orWhereHas('vehicleType', fn ($t) =>
-                            $t->where('type_name', 'like', "%{$search}%")
-                        );
-                });
-            }
-        );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Relationships
-    |--------------------------------------------------------------------------
-    */
-
-    public function vehicleType(): BelongsTo
-    {
-        return $this->belongsTo(VehicleType::class);
-    }
+    protected $appends = ['docs_status'];
 
     public function company(): BelongsTo
     {
@@ -83,6 +46,11 @@ class Vehicle extends Model
     public function route(): BelongsTo
     {
         return $this->belongsTo(Route::class);
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(VehicleDocument::class);
     }
 
     public function creator(): BelongsTo
@@ -100,30 +68,37 @@ class Vehicle extends Model
         return $this->belongsTo(User::class, 'deleted_by');
     }
 
-    public function dispatches() : HasMany
+    public function scopeSearch($query, ?string $term)
     {
-        return $this->hasMany(Dispatch::class);
+        if (! $term) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($term) {
+            $q->where('plate_number', 'like', "%{$term}%")
+                ->orWhere('body_number', 'like', "%{$term}%")
+                ->orWhere('make_model', 'like', "%{$term}%")
+                ->orWhere('vehicle_type', 'like', "%{$term}%")
+                ->orWhere('status', 'like', "%{$term}%");
+        });
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Accessors
-    |--------------------------------------------------------------------------
-    */
-
-    public function getCreatedAtHumanAttribute(): ?string
+    public function getDocsStatusAttribute(): string
     {
-        return $this->created_at?->diffForHumans();
-    }
+        $documents = $this->documents()
+            ->whereIn('document_type', self::REQUIRED_DOCUMENT_TYPES)
+            ->get();
 
-    public function getUpdatedAtHumanAttribute(): ?string
-    {
-        return $this->updated_at?->diffForHumans();
-    }
+        if ($documents->isEmpty()) {
+            return 'none';
+        }
 
-    public function getDeletedAtHumanAttribute(): ?string
-    {
-        return $this->deleted_at?->diffForHumans();
-    }
+        $verified = $documents->where('status', 'verified')->count();
 
+        if ($verified === count(self::REQUIRED_DOCUMENT_TYPES)) {
+            return 'complete';
+        }
+
+        return 'partial';
+    }
 }

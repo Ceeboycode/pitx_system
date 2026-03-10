@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'company.verified' => \App\Http\Middleware\CompanyVerified::class,
             // 'company.verified' => \App\Http\Middleware\EnsureCompanyVerified::class,
             'role.type' => \App\Http\Middleware\EnsureRoleType::class,
+            'password.change.required' => \App\Http\Middleware\EnsurePasswordIsChanged::class,
         ]);
 
         $middleware->web(append: [

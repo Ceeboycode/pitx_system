@@ -3,7 +3,10 @@
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CompanyDashboardController;
 use App\Http\Controllers\CompanyDocumentController;
+use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CompanyRegistration;
+use App\Http\Controllers\CompanyUserController;
+use App\Http\Controllers\CompanyVehicleController;
 use App\Http\Controllers\DispatchController;
 use App\Http\Controllers\GateController;
 use App\Http\Controllers\RoleController;
@@ -15,6 +18,7 @@ use App\Http\Controllers\VehicleTypeController;
 use App\Http\Controllers\Crm\CrmThreadController;
 use App\Http\Controllers\Crm\CrmMessageController;
 use App\Http\Controllers\Crm\CrmMessageAttachmentController;
+use App\Http\Controllers\ForcePasswordController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -53,38 +57,62 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware(['auth', 'role.type:external'])->group(function () {
 
-    // Status page is for external users (do NOT put company.verified here)
     Route::get('registration/status', [CompanyRegistration::class, 'status'])
         ->name('registration.status');
-    // Route::get('registration/resubmit', [CompanyRegistration::class, 'editResubmission'])
-    //     ->name('registration.resubmit');
 
     Route::post('registration/resubmit', [CompanyRegistration::class, 'storeResubmission'])
         ->name('registration.resubmit.store');
-    // Only verified company can access portal dashboard
-    Route::middleware('company.verified')->group(function () {
+
+    // force password page
+    Route::get('/force-password-reset', [ForcePasswordController::class, 'edit'])
+        ->name('force-password.edit');
+
+    Route::post('/force-password-reset', [ForcePasswordController::class, 'update'])
+        ->name('force-password.update');
+
+    // protected external pages
+    Route::middleware(['company.verified', 'password.change.required'])->group(function () {
         Route::get('company/dashboard', [CompanyDashboardController::class, 'index'])
             ->name('company.dashboard');
-        
-        Route::prefix('support')
-            ->name('support.')
-            ->whereNumber('support')
-            ->group(function () {
 
-            Route::get('threads', [CrmThreadController::class, 'index'])->name('threads.index');
-            Route::get('threads/{thread}', [CrmThreadController::class, 'show'])->name('threads.show');
-            Route::post('threads', [CrmThreadController::class, 'store'])->name('threads.store');
+        Route::get('/profile', [CompanyProfileController::class, 'show'])->name('profile');
+        Route::post('/profile/logo', [CompanyProfileController::class, 'updateLogo'])->name('profile.logo.update');
+        Route::delete('/profile/logo/remove', [CompanyProfileController::class, 'removeLogo'])->name('profile.logo.remove');
 
-            Route::post('threads/{thread}/messages', [CrmMessageController::class, 'store'])
-                ->name('threads.messages.store');
+        Route::get('company/vehicles', [CompanyVehicleController::class, 'index'])
+            ->name('company.vehicles.index');
 
-            Route::post('threads/{thread}/messages/{message}/attachments', [CrmMessageAttachmentController::class, 'store'])
-                ->name('threads.messages.attachments.store');
+        Route::get('company/vehicles/create', [CompanyVehicleController::class, 'create'])
+            ->name('company.vehicles.create');
 
-            Route::get('attachments/{attachment}/download', [CrmMessageAttachmentController::class, 'download'])
-                ->name('attachments.download');
+        Route::post('company/vehicles', [CompanyVehicleController::class, 'store'])
+            ->name('company.vehicles.store');
 
-        });
+        Route::get('company/vehicles/{vehicle}', [CompanyVehicleController::class, 'show'])
+            ->name('company.vehicles.show');
+
+        Route::get('company/vehicles/{vehicle}/edit', [CompanyVehicleController::class, 'edit'])
+            ->name('company.vehicles.edit');
+
+        Route::put('company/vehicles/{vehicle}', [CompanyVehicleController::class, 'update'])
+            ->name('company.vehicles.update');
+
+        Route::get('company/vehicles/{vehicle}/documents/{document}/download', [CompanyVehicleController::class, 'downloadDocument'])
+            ->name('company.vehicles.documents.download');
+
+        Route::patch('company/vehicles/{vehicle}/toggle-status', [CompanyVehicleController::class, 'toggleStatus'])
+            ->name('company.vehicles.toggle-status');
+
+        Route::resource('employee-users', CompanyUserController::class)
+            ->parameters([
+                'employee-users' => 'employeeUser',
+            ]);
+
+        Route::patch('employee-users/{employeeUser}/toggle-status', [CompanyUserController::class, 'toggleStatus'])
+            ->name('employee-users.toggle-status');
+
+        Route::patch('employee-users/{employeeUser}/reset-password', [CompanyUserController::class, 'resetPassword'])
+            ->name('employee-users.reset-password');
     });
 });
 
@@ -188,6 +216,15 @@ Route::middleware(['auth', 'role.type:internal'])->group(function () {
     Route::patch('/{route}/toggle-status', [RouteController::class, 'toggleStatus'])->name('toggleStatus');
 
     Route::resource('vehicles', VehicleController::class);
+    Route::patch('/vehicles/{vehicle}/documents/{document}/verify', [VehicleController::class, 'verifyDocument'])
+        ->name('vehicles.documents.verify');
+    Route::patch('/vehicles/{vehicle}/documents/{document}/invalidate', [VehicleController::class, 'invalidateDocument'])
+        ->name('vehicles.documents.invalidate');
+    Route::patch('/vehicles/{vehicle}/documents/{document}/unverify', [VehicleController::class, 'unverifyDocument'])
+        ->name('vehicles.documents.unverify');
+    Route::patch('/vehicles/{vehicle}/toggle-status', [VehicleController::class, 'toggleStatus'])
+        ->name('vehicles.toggle-status');
+
     Route::get('vehicles-trash', [VehicleController::class, 'trash'])->name('vehicles.trash');
     Route::post('vehicles/{vehicle}/restore', [VehicleController::class, 'restore'])->withTrashed()->name('vehicles.restore');
     Route::delete('vehicles/{vehicle}/force-delete', [VehicleController::class, 'forceDelete'])->withTrashed()->name('vehicles.forceDelete');
