@@ -167,11 +167,11 @@ watch(
         >
             <Card class="mx-5">
               <div
-                  class="grid min-h-[36rem] grid-cols-1 lg:grid-cols-[20rem_minmax(0,1fr)]"
+                  class="grid h-auto grid-cols-1 lg:grid-cols-[20rem_minmax(0,1fr)]"
               >
                 <section
                     :class="[
-                        'flex min-h-[36rem] min-w-0 flex-col overflow-hidden border-b lg:border-b-0 lg:border-r gap-6',
+                        'flex min-h-60 min-w-0 flex-col overflow-hidden border-b lg:border-b-0 lg:border-r gap-6',
                         isThreadListOpen ? 'block' : 'hidden lg:block',
                     ]"
                 >
@@ -243,7 +243,7 @@ watch(
 
                 <section
                     :class="[
-                        'flex min-h-[36rem] min-w-0 flex-col overflow-hidden bg-card',
+                        'flex min-h-60 min-w-0 flex-col overflow-hidden bg-card',
                         isThreadListOpen ? 'hidden lg:block' : 'block',
                     ]"
                 >
