@@ -5,6 +5,7 @@ use App\Http\Controllers\CompanyDashboardController;
 use App\Http\Controllers\CompanyDocumentController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CompanyRegistration;
+use App\Http\Controllers\CompanyUserController;
 use App\Http\Controllers\CompanyVehicleController;
 use App\Http\Controllers\DispatchController;
 use App\Http\Controllers\GateController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\VehicleTypeController;
 use App\Http\Controllers\Crm\CrmThreadController;
 use App\Http\Controllers\Crm\CrmMessageController;
 use App\Http\Controllers\Crm\CrmMessageAttachmentController;
+use App\Http\Controllers\ForcePasswordController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -55,21 +57,26 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware(['auth', 'role.type:external'])->group(function () {
 
-    // Status page is for external users (do NOT put company.verified here)
     Route::get('registration/status', [CompanyRegistration::class, 'status'])
         ->name('registration.status');
-    // Route::get('registration/resubmit', [CompanyRegistration::class, 'editResubmission'])
-    //     ->name('registration.resubmit');
 
     Route::post('registration/resubmit', [CompanyRegistration::class, 'storeResubmission'])
         ->name('registration.resubmit.store');
-    // Only verified company can access portal dashboard
-    Route::middleware('company.verified')->group(function () {
+
+    // force password page
+    Route::get('/force-password-reset', [ForcePasswordController::class, 'edit'])
+        ->name('force-password.edit');
+
+    Route::post('/force-password-reset', [ForcePasswordController::class, 'update'])
+        ->name('force-password.update');
+
+    // protected external pages
+    Route::middleware(['company.verified', 'password.change.required'])->group(function () {
         Route::get('company/dashboard', [CompanyDashboardController::class, 'index'])
             ->name('company.dashboard');
 
         Route::get('/profile', [CompanyProfileController::class, 'show'])->name('profile');
-        Route::post('/profile/logo',        [CompanyProfileController::class, 'updateLogo'])->name('profile.logo.update');
+        Route::post('/profile/logo', [CompanyProfileController::class, 'updateLogo'])->name('profile.logo.update');
         Route::delete('/profile/logo/remove', [CompanyProfileController::class, 'removeLogo'])->name('profile.logo.remove');
 
         Route::get('company/vehicles', [CompanyVehicleController::class, 'index'])
@@ -80,15 +87,32 @@ Route::middleware(['auth', 'role.type:external'])->group(function () {
 
         Route::post('company/vehicles', [CompanyVehicleController::class, 'store'])
             ->name('company.vehicles.store');
+
         Route::get('company/vehicles/{vehicle}', [CompanyVehicleController::class, 'show'])
             ->name('company.vehicles.show');
+
         Route::get('company/vehicles/{vehicle}/edit', [CompanyVehicleController::class, 'edit'])
             ->name('company.vehicles.edit');
+
         Route::put('company/vehicles/{vehicle}', [CompanyVehicleController::class, 'update'])
             ->name('company.vehicles.update');
+
         Route::get('company/vehicles/{vehicle}/documents/{document}/download', [CompanyVehicleController::class, 'downloadDocument'])
             ->name('company.vehicles.documents.download');
-        Route::patch('company/vehicles/{vehicle}/toggle-status', [CompanyVehicleController::class, 'toggleStatus'])->name('company.vehicles.toggle-status');
+
+        Route::patch('company/vehicles/{vehicle}/toggle-status', [CompanyVehicleController::class, 'toggleStatus'])
+            ->name('company.vehicles.toggle-status');
+
+        Route::resource('employee-users', CompanyUserController::class)
+            ->parameters([
+                'employee-users' => 'employeeUser',
+            ]);
+
+        Route::patch('employee-users/{employeeUser}/toggle-status', [CompanyUserController::class, 'toggleStatus'])
+            ->name('employee-users.toggle-status');
+
+        Route::patch('employee-users/{employeeUser}/reset-password', [CompanyUserController::class, 'resetPassword'])
+            ->name('employee-users.reset-password');
     });
 });
 
