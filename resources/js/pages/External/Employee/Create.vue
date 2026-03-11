@@ -171,21 +171,7 @@ function submit() {
                                         <InputError :message="form.errors.role" />
                                     </div>
 
-                                    <div class="space-y-2">
-                                        <Label>Status</Label>
-                                        <div
-                                            class="flex h-10 items-center rounded-md border bg-muted/40 px-3 text-sm"
-                                        >
-                                            <Badge variant="secondary">
-                                                {{ humanize(defaultStatus) }}
-                                            </Badge>
-                                        </div>
-                                        <p class="text-xs text-muted-foreground">
-                                            New accounts are created with pending status.
-                                        </p>
-                                    </div>
-
-                                    <div class="space-y-2 md:col-span-2">
+                                    <!-- <div class="space-y-2 md:col-span-2">
                                         <Label>Default Password</Label>
                                         <div
                                             class="flex h-10 items-center rounded-md border bg-muted/40 px-3 text-sm"
@@ -195,7 +181,7 @@ function submit() {
                                         <p class="text-xs text-muted-foreground">
                                             The employee can use this password on first login.
                                         </p>
-                                    </div>
+                                    </div> -->
 
                                     <div class="space-y-2 md:col-span-2">
                                         <Label>Generated Username</Label>
