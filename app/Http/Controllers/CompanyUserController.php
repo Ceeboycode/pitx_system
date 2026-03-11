@@ -91,7 +91,7 @@ class CompanyUserController extends Controller
                 'email' => $validated['email'] ?? null,
                 'phone_number' => $validated['phone_number'] ?? null,
                 'company_id' => $company->id,
-                'status' => 'pending',
+                'status' => 'active',
                 'password' => 'pitx@123',
                 'must_change_password' => true,
             ]);
