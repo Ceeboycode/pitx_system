@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\Auth\AuthTokenController;
 use App\Http\Controllers\Api\V1\Crm\CommuterMessageController;
 use App\Http\Controllers\Api\V1\Crm\CommuterThreadController;
+use App\Http\Controllers\Api\V1\RouteFinding\CommuterRouteFindingController;
 use Illuminate\Support\Facades\Route;
 
 // production test endpoint
@@ -23,5 +24,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::get('crm/threads/{thread}/messages', [CommuterMessageController::class, 'index'])->name('crm.threads.messages.index');
         Route::post('crm/threads/{thread}/messages', [CommuterMessageController::class, 'store'])->name('crm.threads.messages.store');
+
+        Route::get('route-finding/nearest-stops', [CommuterRouteFindingController::class, 'nearestStops'])
+            ->name('route-finding.nearest-stops');
     });
 });

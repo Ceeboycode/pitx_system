@@ -8,8 +8,16 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 // import ArchiveVehicleDialog from '@/components/vehicle/ArchiveVehicleDialog.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import axios from 'axios';
 import { Head } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 
@@ -20,6 +28,7 @@ import { type BreadcrumbItem } from '@/types';
 
 type ThreadSummary = {
     id: number | string;
+    assigned_to_user_id?: number | null;
     subject?: string | null;
     category?: string | null;
     is_closed?: boolean;
@@ -51,6 +60,12 @@ type ThreadDetail = ThreadSummary & {
     messages?: ThreadMessage[];
 };
 
+type AssignableAdmin = {
+    id: number;
+    name: string;
+    email: string;
+};
+
 const props = defineProps<{
     threads: {
         data: ThreadSummary[];
@@ -66,6 +81,8 @@ const props = defineProps<{
     filters: {
         search: string | null;
     };
+    canAssign: boolean;
+    assignableAdmins: AssignableAdmin[];
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -76,7 +93,13 @@ const selectedThreadId = ref<number | string | null>(null);
 const selectedThread = ref<ThreadDetail | null>(null);
 const loadingThread = ref(false);
 const threadError = ref<string | null>(null);
+const assigningThread = ref(false);
+const assignError = ref<string | null>(null);
+const selectedAssignee = ref('unassigned');
 const isThreadListOpen = ref(true);
+const draftMessage = ref('');
+const sendingMessage = ref(false);
+const sendMessageError = ref<string | null>(null);
 let activeRequest = 0;
 
 async function loadThread(threadId: number | string | null) {
@@ -129,6 +152,74 @@ function selectThread(threadId: number | string) {
     }
 }
 
+async function assignThread(nextAssignee: string) {
+    if (!selectedThread.value || !selectedThreadId.value || !props.canAssign) {
+        return;
+    }
+
+    selectedAssignee.value = nextAssignee;
+    assignError.value = null;
+    assigningThread.value = true;
+
+    const assigneeId = nextAssignee === 'unassigned'
+        ? null
+        : Number(nextAssignee);
+
+    try {
+        const response = await axios.patch(`/crm/threads/${selectedThreadId.value}/assign`, {
+            assigned_to_user_id: assigneeId,
+        });
+
+        selectedThread.value = response.data?.data ?? selectedThread.value;
+    } catch (error: any) {
+        assignError.value = error?.response?.data?.message
+            ?? error?.response?.data?.errors?.assigned_to_user_id?.[0]
+            ?? 'Failed to update assignee.';
+        await loadThread(selectedThreadId.value);
+    } finally {
+        assigningThread.value = false;
+    }
+}
+
+async function sendMessage() {
+    if (!selectedThreadId.value || !selectedThread.value) {
+        return;
+    }
+
+    const body = draftMessage.value.trim();
+    if (!body) {
+        return;
+    }
+
+    sendMessageError.value = null;
+    sendingMessage.value = true;
+
+    try {
+        const response = await axios.post(`/crm/threads/${selectedThreadId.value}/messages`, {
+            body,
+        });
+
+        const createdMessage = response.data?.data as ThreadMessage | undefined;
+        draftMessage.value = '';
+
+        if (!createdMessage) {
+            await loadThread(selectedThreadId.value);
+            return;
+        }
+
+        selectedThread.value = {
+            ...selectedThread.value,
+            messages: [...(selectedThread.value.messages ?? []), createdMessage],
+        };
+    } catch (error: any) {
+        sendMessageError.value = error?.response?.data?.message
+            ?? error?.response?.data?.errors?.body?.[0]
+            ?? 'Failed to send message.';
+    } finally {
+        sendingMessage.value = false;
+    }
+}
+
 watch(
     () => props.threads.data,
     (threads) => {
@@ -152,7 +243,21 @@ watch(
 watch(
     selectedThreadId,
     (threadId) => {
+        draftMessage.value = '';
+        sendMessageError.value = null;
         void loadThread(threadId);
+    },
+    { immediate: true },
+);
+
+watch(
+    selectedThread,
+    (thread) => {
+        selectedAssignee.value = thread?.assigned_to_user_id
+            ? String(thread.assigned_to_user_id)
+            : 'unassigned';
+        assignError.value = null;
+        sendMessageError.value = null;
     },
     { immediate: true },
 );
@@ -310,6 +415,44 @@ watch(
                         </div>
 
                         <div
+                            v-if="canAssign"
+                            class="space-y-2 rounded-md border px-3 py-3"
+                        >
+                            <p class="text-xs font-medium text-muted-foreground">
+                                Assign Thread (Super Admin)
+                            </p>
+
+                            <Select
+                                :model-value="selectedAssignee"
+                                :disabled="assigningThread"
+                                @update:model-value="(value) => assignThread(String(value))"
+                            >
+                                <SelectTrigger class="w-full">
+                                    <SelectValue placeholder="Select admin" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="unassigned">
+                                        Unassigned
+                                    </SelectItem>
+                                    <SelectItem
+                                        v-for="admin in assignableAdmins"
+                                        :key="admin.id"
+                                        :value="String(admin.id)"
+                                    >
+                                        {{ admin.name }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            <p
+                                v-if="assignError"
+                                class="text-xs text-destructive"
+                            >
+                                {{ assignError }}
+                            </p>
+                        </div>
+
+                        <div
                             v-if="
                                 (selectedThread.messages?.length ?? 0) >
                                 0
@@ -359,6 +502,32 @@ watch(
                             class="rounded-md border border-dashed px-4 py-10 text-center text-sm text-muted-foreground"
                         >
                             No messages in this thread yet.
+                        </div>
+
+                        <div class="space-y-2 rounded-md border px-3 py-3">
+                            <p class="text-xs font-medium text-muted-foreground">
+                                Reply
+                            </p>
+                            <textarea
+                                v-model="draftMessage"
+                                rows="3"
+                                class="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                                placeholder="Type your message..."
+                            />
+                            <div class="flex justify-end">
+                                <Button
+                                    :disabled="sendingMessage || !draftMessage.trim()"
+                                    @click="sendMessage"
+                                >
+                                    {{ sendingMessage ? 'Sending...' : 'Send message' }}
+                                </Button>
+                            </div>
+                            <p
+                                v-if="sendMessageError"
+                                class="text-xs text-destructive"
+                            >
+                                {{ sendMessageError }}
+                            </p>
                         </div>
                     </div>
 

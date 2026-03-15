@@ -130,6 +130,9 @@ Route::middleware(['auth', 'role.type:internal'])->group(function () {
         Route::get('threads', [CrmThreadController::class, 'index'])->name('threads.index');
         Route::get('threads/{thread}', [CrmThreadController::class, 'show'])->name('threads.show');
         Route::post('threads', [CrmThreadController::class, 'store'])->name('threads.store');
+        Route::patch('threads/{thread}/assign', [CrmThreadController::class, 'assign'])
+            ->middleware('role:super-admin')
+            ->name('threads.assign');
 
         Route::post('threads/{thread}/messages', [CrmMessageController::class, 'store'])
             ->name('threads.messages.store');

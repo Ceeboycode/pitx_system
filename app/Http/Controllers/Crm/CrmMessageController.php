@@ -59,6 +59,15 @@ class CrmMessageController extends Controller
     {
         $user = $request->user();
 
+        if ($user->hasRole('super-admin')) {
+            return;
+        }
+
+        if ($user->hasRole('admin')) {
+            abort_unless((int) $thread->assigned_to_user_id === (int) $user->id, 403);
+            return;
+        }
+
         if ($this->isTerminalStaff($user)) {
             return;
         }
@@ -70,6 +79,6 @@ class CrmMessageController extends Controller
 
     private function isTerminalStaff($user): bool
     {
-        return (string) optional($user->role)->type === 'internal';
+        return $user->roles()->where('type', 'internal')->exists();
     }
 }

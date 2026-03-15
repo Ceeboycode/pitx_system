@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Crm;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Crm\AssignCrmThreadRequest;
 use App\Models\CrmThread;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -30,13 +33,26 @@ class CrmThreadController extends Controller
 
     public function index(Request $request)
     {
-        $threads = CrmThread::query()
-            ->latest('last_message_at')
-            ->paginate(20);
+        $user = $request->user();
+        $canAssign = $user->hasRole('super-admin');
+
+        $query = CrmThread::query()
+            ->with(['company:id,company_name'])
+            ->latest('last_message_at');
+
+        if ($user->hasRole('admin') && ! $canAssign) {
+            $query->where('assigned_to_user_id', $user->id);
+        }
+
+        $threads = $query->paginate(20);
 
         return Inertia::render('Crm/Threads/Index', [
             'threads' => $threads,
             'filters' => request()->only(['category','status','search']),
+            'canAssign' => $canAssign,
+            'assignableAdmins' => $canAssign
+                ? $this->assignableAdmins()
+                : [],
         ]);
     }
 
@@ -96,6 +112,25 @@ class CrmThreadController extends Controller
         ]);
     }
 
+    public function assign(AssignCrmThreadRequest $request, CrmThread $thread)
+    {
+        $this->authorizeThreadAccess($request, $thread);
+
+        $validated = $request->validated();
+
+        $thread->update([
+            'assigned_to_user_id' => $validated['assigned_to_user_id'] ?? null,
+        ]);
+
+        return response()->json([
+            'data' => $thread->fresh()->load([
+                'company:id,company_name',
+                'createdBy:id,name',
+                'assignedTo:id,name',
+            ]),
+        ]);
+    }
+
     public function update(Request $request, CrmThread $thread)
     {
         $user = $request->user();
@@ -149,6 +184,15 @@ class CrmThreadController extends Controller
     {
         $user = $request->user();
 
+        if ($user->hasRole('super-admin')) {
+            return;
+        }
+
+        if ($user->hasRole('admin')) {
+            abort_unless((int) $thread->assigned_to_user_id === (int) $user->id, 403);
+            return;
+        }
+
         if ($this->isTerminalStaff($user)) {
             return;
         }
@@ -160,8 +204,22 @@ class CrmThreadController extends Controller
 
     private function isTerminalStaff($user): bool
     {
-        // Adjust this based on your roles table:
-        // Example if you have $user->role->type = 'internal' for terminal staff:
-        return (string) optional($user->role)->type === 'internal';
+        return $user->roles()->where('type', 'internal')->exists();
+    }
+
+    /**
+     * @return Collection<int, array{id:int,name:string,email:string}>
+     */
+    private function assignableAdmins(): Collection
+    {
+        return User::query()
+            ->whereHas('roles', fn ($query) => $query->where('name', 'admin'))
+            ->orderBy('name')
+            ->get(['id', 'name', 'email'])
+            ->map(fn (User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => (string) $user->email,
+            ]);
     }
 }
