@@ -9,17 +9,18 @@ import VehicleDocumentsForm from '@/components/company/vehicles/VehicleDocuments
 import VehicleRouteAssignment from '@/components/company/vehicles/VehicleRouteAssignment.vue'
 import VehicleSummaryCard from '@/components/company/vehicles/VehicleSummaryCard.vue'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card'
 
 import CompanyVehicleController from '@/actions/App/Http/Controllers/CompanyVehicleController'
+
+import {
+    ArrowLeft,
+    ArrowUp,
+    Building2,
+    FileText,
+    MapPin,
+    Truck,
+} from 'lucide-vue-next'
 
 type Company = {
     id: number
@@ -112,19 +113,30 @@ const form = useForm({
     })),
 })
 
-const selectedRoute = computed(() => {
-    return (
-        props.routes.find(
-            (route) => String(route.id) === String(form.route_id),
-        ) ?? null
-    )
-})
+const selectedRoute = computed(() =>
+    props.routes.find((route) => String(route.id) === String(form.route_id)) ?? null,
+)
 
 const requiredDocumentsCount = computed(() => form.documents.length)
+
+const uploadedDocumentsCount = computed(() =>
+    form.documents.filter((doc) => doc.file !== null).length,
+)
 
 function setDocumentFile(index: number, event: Event) {
     const input = event.target as HTMLInputElement
     form.documents[index].file = input.files?.[0] ?? null
+}
+
+function scrollToSummary() {
+    const summarySection = document.getElementById('submission-summary')
+
+    if (summarySection) {
+        summarySection.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+        })
+    }
 }
 
 function submit() {
@@ -138,148 +150,258 @@ function submit() {
     <Head title="Register Vehicle" />
 
     <ExternalLayout :company="company" :user="user">
-        <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
-            <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div class="space-y-1">
-                    <div class="flex items-center gap-2">
-                        <Badge variant="secondary">Vehicles</Badge>
-                        <Badge variant="outline">Create</Badge>
+        <div class="min-h-screen bg-slate-50/60">
+            <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
+
+                <!-- ── Page header ─────────────────────────────────────── -->
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                            <Building2 class="h-3.5 w-3.5" />
+                            {{ company.company_code ?? company.company_name }}
+                            <span class="text-slate-300">·</span>
+                            <span>Vehicles</span>
+                            <span class="text-slate-300">·</span>
+                            <span>Register</span>
+                        </div>
+                        <div class="flex items-center gap-2.5">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700">
+                                <Truck class="h-4 w-4 text-white" />
+                            </div>
+                            <h1 class="text-2xl font-bold tracking-tight text-slate-900">Register Vehicle</h1>
+                        </div>
+                        <p class="text-sm text-slate-500">
+                            Add a vehicle, assign a route, and upload the required documents.
+                        </p>
                     </div>
 
-                    <h1 class="text-2xl font-semibold tracking-tight">
-                        Register Vehicle
-                    </h1>
-
-                    <p class="text-sm text-muted-foreground">
-                        Add a vehicle, assign a route, and upload the required documents.
-                    </p>
+                    <Button
+                        as-child
+                        variant="outline"
+                        class="shrink-0 self-start rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+                    >
+                        <Link :href="CompanyVehicleController.index().url">
+                            <ArrowLeft class="mr-2 h-4 w-4" />
+                            Back to Vehicles
+                        </Link>
+                    </Button>
                 </div>
 
-                <Button as-child variant="outline">
-                    <Link :href="CompanyVehicleController.index().url">
-                        Back to Vehicles
-                    </Link>
-                </Button>
+                <!-- ── Form ────────────────────────────────────────────── -->
+                <form class="space-y-6" @submit.prevent="submit">
+                    <div class="grid gap-6 xl:grid-cols-[1fr_320px]">
+
+                        <!-- Left column -->
+                        <div class="space-y-6">
+
+                            <!-- Company Information -->
+                            <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+                                <div class="border-b border-slate-100 px-6 py-4">
+                                    <h2 class="text-base font-semibold text-slate-800">Company Information</h2>
+                                    <p class="mt-0.5 text-xs text-slate-400">This vehicle will be registered under your company account.</p>
+                                </div>
+                                <div class="grid gap-4 p-6 md:grid-cols-2">
+                                    <div class="space-y-1.5">
+                                        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">Company</p>
+                                        <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700">
+                                            {{ company.company_name }}
+                                        </div>
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">Company Code</p>
+                                        <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-sm font-semibold text-slate-700">
+                                            {{ company.company_code ?? '—' }}
+                                        </div>
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">Representative</p>
+                                        <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700">
+                                            {{ user.name }}
+                                        </div>
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">Account Email</p>
+                                        <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700">
+                                            {{ user.email }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Route Assignment -->
+                            <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+                                <div class="border-b border-slate-100 px-6 py-4">
+                                    <div class="flex items-center gap-2">
+                                        <div class="flex h-6 w-6 items-center justify-center rounded-md bg-sky-100">
+                                            <MapPin class="h-3.5 w-3.5 text-sky-600" />
+                                        </div>
+                                        <h2 class="text-base font-semibold text-slate-800">Route Assignment</h2>
+                                    </div>
+                                    <p class="mt-1 text-xs text-slate-400">Select the operating route for this vehicle.</p>
+                                </div>
+                                <div class="p-6">
+                                    <VehicleRouteAssignment
+                                        v-model="form.route_id"
+                                        :routes="routes"
+                                        :gates="gates"
+                                        :error="form.errors.route_id"
+                                        :map-config="mapConfig"
+                                    />
+                                </div>
+                            </div>
+
+                            <!-- Vehicle Information -->
+                            <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+                                <div class="border-b border-slate-100 px-6 py-4">
+                                    <div class="flex items-center gap-2">
+                                        <div class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-100">
+                                            <Truck class="h-3.5 w-3.5 text-blue-700" />
+                                        </div>
+                                        <h2 class="text-base font-semibold text-slate-800">Vehicle Information</h2>
+                                    </div>
+                                    <p class="mt-1 text-xs text-slate-400">Enter the primary details of the vehicle.</p>
+                                </div>
+                                <div class="p-6">
+                                    <VehicleBasicInfoForm
+                                        :form="form"
+                                        :vehicle-types="vehicleTypes"
+                                    />
+                                </div>
+                            </div>
+
+                            <!-- Required Documents -->
+                            <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+                                <div class="border-b border-slate-100 px-6 py-4">
+                                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div>
+                                            <div class="flex items-center gap-2">
+                                                <div class="flex h-6 w-6 items-center justify-center rounded-md bg-violet-100">
+                                                    <FileText class="h-3.5 w-3.5 text-violet-600" />
+                                                </div>
+                                                <h2 class="text-base font-semibold text-slate-800">Required Documents</h2>
+                                            </div>
+                                            <p class="mt-1 text-xs text-slate-400">
+                                                Upload all required supporting files for this vehicle.
+                                            </p>
+                                        </div>
+
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-semibold tabular-nums text-slate-400">
+                                                {{ uploadedDocumentsCount }} / {{ requiredDocumentsCount }} uploaded
+                                            </span>
+
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+                                                @click="scrollToSummary"
+                                            >
+                                                <ArrowUp class="mr-2 h-4 w-4" />
+                                                View Summary
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="p-6">
+                                    <VehicleDocumentsForm
+                                        :documents="form.documents"
+                                        :doc-types="docTypes"
+                                        :errors="form.errors"
+                                        @set-file="setDocumentFile"
+                                    />
+
+                                    <div class="mt-6 flex justify-end">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+                                            @click="scrollToSummary"
+                                        >
+                                            <ArrowUp class="mr-2 h-4 w-4" />
+                                            Go to Submission Summary
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Right sidebar -->
+                        <div class="space-y-4">
+
+                            <!-- Submission Summary -->
+                            <div
+                                id="submission-summary"
+                                class="rounded-xl border border-slate-200 bg-white shadow-sm"
+                            >
+                                <div class="border-b border-slate-100 px-5 py-4">
+                                    <h3 class="text-sm font-semibold text-slate-800">Submission Summary</h3>
+                                    <p class="mt-0.5 text-xs text-slate-400">Review the important details before saving.</p>
+                                </div>
+                                <div class="p-5">
+                                    <VehicleSummaryCard
+                                        :form="form"
+                                        :selected-route-name="selectedRoute?.route_name"
+                                        :required-documents-count="requiredDocumentsCount"
+                                        :user-name="user.name"
+                                        submit-label="Register Vehicle"
+                                    />
+                                </div>
+                            </div>
+
+                            <!-- Registration Notes -->
+                            <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+                                <div class="border-b border-slate-100 px-5 py-4">
+                                    <h3 class="text-sm font-semibold text-slate-800">Registration Notes</h3>
+                                    <p class="mt-0.5 text-xs text-slate-400">Keep these in mind before submitting.</p>
+                                </div>
+                                <div class="divide-y divide-slate-100">
+
+                                    <div class="flex gap-3 px-5 py-4">
+                                        <div class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-sky-100">
+                                            <MapPin class="h-3.5 w-3.5 text-sky-600" />
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-semibold uppercase tracking-widest text-sky-700">Route Assignment</p>
+                                            <p class="mt-0.5 text-xs text-slate-500">
+                                                Make sure the selected route matches the vehicle's intended operating line.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex gap-3 px-5 py-4">
+                                        <div class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-violet-100">
+                                            <FileText class="h-3.5 w-3.5 text-violet-600" />
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-semibold uppercase tracking-widest text-violet-700">Required Documents</p>
+                                            <p class="mt-0.5 text-xs text-slate-500">
+                                                All documents must be uploaded before the vehicle can be activated.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex gap-3 px-5 py-4">
+                                        <div class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-blue-100">
+                                            <Truck class="h-3.5 w-3.5 text-blue-700" />
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-semibold uppercase tracking-widest text-blue-700">Vehicle Details</p>
+                                            <p class="mt-0.5 text-xs text-slate-500">
+                                                Plate number and engine details must match official registration records.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </form>
+
             </div>
-
-            <form class="space-y-6" @submit.prevent="submit">
-                <div class="grid gap-6 xl:grid-cols-[1fr_320px]">
-                    <div class="space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Company Information</CardTitle>
-                                <CardDescription>
-                                    This vehicle will be registered under your company account.
-                                </CardDescription>
-                            </CardHeader>
-
-                            <CardContent class="grid gap-4 md:grid-cols-2">
-                                <div class="space-y-2">
-                                    <p class="text-sm font-medium">Company</p>
-                                    <p class="rounded-md border px-3 py-2 text-sm">
-                                        {{ company.company_name }}
-                                    </p>
-                                </div>
-
-                                <div class="space-y-2">
-                                    <p class="text-sm font-medium">Company Code</p>
-                                    <p class="rounded-md border px-3 py-2 text-sm">
-                                        {{ company.company_code ?? '—' }}
-                                    </p>
-                                </div>
-
-                                <div class="space-y-2">
-                                    <p class="text-sm font-medium">Representative</p>
-                                    <p class="rounded-md border px-3 py-2 text-sm">
-                                        {{ user.name }}
-                                    </p>
-                                </div>
-
-                                <div class="space-y-2">
-                                    <p class="text-sm font-medium">Account Email</p>
-                                    <p class="rounded-md border px-3 py-2 text-sm">
-                                        {{ user.email }}
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Route Assignment</CardTitle>
-                                <CardDescription>
-                                    Select the operating route for this vehicle.
-                                </CardDescription>
-                            </CardHeader>
-
-                            <CardContent>
-                                <VehicleRouteAssignment
-                                    v-model="form.route_id"
-                                    :routes="routes"
-                                    :gates="gates"
-                                    :error="form.errors.route_id"
-                                    :map-config="mapConfig"
-                                />
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Vehicle Information</CardTitle>
-                                <CardDescription>
-                                    Enter the primary details of the vehicle.
-                                </CardDescription>
-                            </CardHeader>
-
-                            <CardContent>
-                                <VehicleBasicInfoForm
-                                    :form="form"
-                                    :vehicle-types="vehicleTypes"
-                                />
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Required Documents</CardTitle>
-                                <CardDescription>
-                                    Upload all required supporting files for this vehicle.
-                                </CardDescription>
-                            </CardHeader>
-
-                            <CardContent>
-                                <VehicleDocumentsForm
-                                    :documents="form.documents"
-                                    :doc-types="docTypes"
-                                    :errors="form.errors"
-                                    @set-file="setDocumentFile"
-                                />
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    <div class="space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Submission Summary</CardTitle>
-                                <CardDescription>
-                                    Review the important details before saving.
-                                </CardDescription>
-                            </CardHeader>
-
-                            <CardContent>
-                                <VehicleSummaryCard
-                                    :form="form"
-                                    :selected-route-name="selectedRoute?.route_name"
-                                    :required-documents-count="requiredDocumentsCount"
-                                    :user-name="user.name"
-                                    submit-label="Register Vehicle"
-                                />
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
-            </form>
         </div>
     </ExternalLayout>
 </template>

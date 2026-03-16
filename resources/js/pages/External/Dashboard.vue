@@ -63,36 +63,36 @@ const statCards = computed(() => [
     value: props.stats.total_dispatches,
     sub: `${props.stats.pending_dispatches} pending`,
     icon: Truck,
-    color: 'text-blue-600 dark:text-blue-400',
-    bg: 'bg-blue-50 dark:bg-blue-950/50',
-    border: 'border-blue-100 dark:border-blue-900',
+    color: 'text-blue-700',
+    bg: 'bg-blue-50',
+    border: 'border-blue-100',
   },
   {
     title: 'Documents',
     value: props.stats.total_documents,
     sub: `${props.stats.verified_documents} verified`,
     icon: FileText,
-    color: 'text-emerald-600 dark:text-emerald-400',
-    bg: 'bg-emerald-50 dark:bg-emerald-950/50',
-    border: 'border-emerald-100 dark:border-emerald-900',
+    color: 'text-blue-700',
+    bg: 'bg-blue-50',
+    border: 'border-blue-100',
   },
   {
     title: 'Pending Review',
     value: props.stats.pending_dispatches,
     sub: 'awaiting action',
     icon: Clock,
-    color: 'text-amber-600 dark:text-amber-400',
-    bg: 'bg-amber-50 dark:bg-amber-950/50',
-    border: 'border-amber-100 dark:border-amber-900',
+    color: 'text-red-600',
+    bg: 'bg-red-50',
+    border: 'border-red-100',
   },
   {
     title: 'Verified Docs',
     value: props.stats.verified_documents,
     sub: `of ${props.stats.total_documents} total`,
     icon: CheckCircle2,
-    color: 'text-violet-600 dark:text-violet-400',
-    bg: 'bg-violet-50 dark:bg-violet-950/50',
-    border: 'border-violet-100 dark:border-violet-900',
+    color: 'text-green-700',
+    bg: 'bg-green-50',
+    border: 'border-green-100',
   },
 ])
 
@@ -121,8 +121,12 @@ const companyInitials = computed(() =>
           </p>
         </div>
         <Badge
-          :variant="company.status === 'verified' ? 'default' : 'secondary'"
-          class="w-fit gap-1.5 self-start sm:self-auto"
+          :class="[
+            'w-fit gap-1.5 self-start sm:self-auto border-0',
+            company.status === 'verified'
+              ? 'bg-green-100 text-green-700'
+              : 'bg-amber-100 text-amber-700',
+          ]"
         >
           <CheckCircle2 v-if="company.status === 'verified'" class="h-3 w-3" />
           {{ humanize(company.status) }}
@@ -159,10 +163,8 @@ const companyInitials = computed(() =>
           <CardHeader class="pb-3">
             <div class="flex items-start gap-4">
 
-              <!-- ── Company Logo ── -->
-              <div
-                class="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 bg-muted shadow-sm"
-              >
+              <!-- Company Logo -->
+              <div class="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 bg-muted shadow-sm">
                 <img
                   v-if="company.logo_url"
                   :src="company.logo_url"
@@ -171,7 +173,7 @@ const companyInitials = computed(() =>
                 />
                 <div
                   v-else
-                  class="flex h-full w-full items-center justify-center bg-primary/10 text-xl font-bold text-primary"
+                  class="flex h-full w-full items-center justify-center bg-blue-50 text-xl font-bold text-blue-800"
                 >
                   {{ companyInitials }}
                 </div>
@@ -183,8 +185,12 @@ const companyInitials = computed(() =>
                   {{ company.company_code ?? '—' }}
                 </CardDescription>
                 <Badge
-                  :variant="company.status === 'verified' ? 'default' : 'secondary'"
-                  class="mt-1.5 gap-1 text-xs"
+                  :class="[
+                    'mt-1.5 gap-1 text-xs border-0',
+                    company.status === 'verified'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-amber-100 text-amber-700',
+                  ]"
                 >
                   <CheckCircle2 v-if="company.status === 'verified'" class="h-3 w-3" />
                   {{ humanize(company.status) }}
@@ -198,19 +204,19 @@ const companyInitials = computed(() =>
           <CardContent class="pt-4">
             <dl class="grid gap-y-3 sm:grid-cols-2">
               <div class="space-y-0.5">
-                <dt class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Email</dt>
+                <dt class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Email</dt>
                 <dd class="text-sm">{{ company.company_email ?? '—' }}</dd>
               </div>
               <div class="space-y-0.5">
-                <dt class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Phone</dt>
+                <dt class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Phone</dt>
                 <dd class="text-sm">{{ company.company_phone ?? '—' }}</dd>
               </div>
               <div class="space-y-0.5">
-                <dt class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Business Type</dt>
+                <dt class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Business Type</dt>
                 <dd class="text-sm">{{ humanize(company.business_type) }}</dd>
               </div>
               <div v-if="company.authorized_representative_name" class="space-y-0.5">
-                <dt class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Representative</dt>
+                <dt class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Representative</dt>
                 <dd class="text-sm">{{ company.authorized_representative_name }}</dd>
               </div>
             </dl>
@@ -227,39 +233,39 @@ const companyInitials = computed(() =>
           <CardContent class="space-y-2 pt-4">
 
             <button
-              class="group flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+              class="group flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition-colors hover:border-blue-800/30 hover:bg-blue-50"
             >
               <div class="flex items-center gap-2.5">
-                <div class="flex h-7 w-7 items-center justify-center rounded-md bg-blue-50 dark:bg-blue-950/50">
-                  <Truck class="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                <div class="flex h-7 w-7 items-center justify-center rounded-md bg-blue-50">
+                  <Truck class="h-3.5 w-3.5 text-blue-700" />
                 </div>
                 <span class="font-medium">New Dispatch</span>
               </div>
-              <ArrowRight class="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight class="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
             </button>
 
             <button
-              class="group flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+              class="group flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition-colors hover:border-blue-800/30 hover:bg-blue-50"
             >
               <div class="flex items-center gap-2.5">
-                <div class="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-50 dark:bg-emerald-950/50">
-                  <FileText class="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                <div class="flex h-7 w-7 items-center justify-center rounded-md bg-blue-50">
+                  <FileText class="h-3.5 w-3.5 text-blue-700" />
                 </div>
                 <span class="font-medium">View Documents</span>
               </div>
-              <ArrowRight class="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight class="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-blue-700" />
             </button>
 
             <button
-              class="group flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+              class="group flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition-colors hover:border-red-600/30 hover:bg-red-50"
             >
               <div class="flex items-center gap-2.5">
-                <div class="flex h-7 w-7 items-center justify-center rounded-md bg-violet-50 dark:bg-violet-950/50">
-                  <TrendingUp class="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+                <div class="flex h-7 w-7 items-center justify-center rounded-md bg-red-50">
+                  <TrendingUp class="h-3.5 w-3.5 text-red-600" />
                 </div>
                 <span class="font-medium">View Reports</span>
               </div>
-              <ArrowRight class="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight class="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-red-600" />
             </button>
 
           </CardContent>

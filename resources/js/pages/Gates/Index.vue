@@ -137,7 +137,7 @@ function badgeVariant(status: Gate['status']) {
    Actions
 ====================================================== */
 const createGate = () => {
-    form.post(store(), {
+    form.post(store().url, {
         preserveScroll: true,
         onSuccess: () => {
             createOpen.value = false;
@@ -169,14 +169,14 @@ function closeEdit() {
 const editGate = () => {
     if (!selectedGate.value) return;
 
-    form.put(update(selectedGate.value.id), {
+    form.put(update(selectedGate.value.id).url, {
         preserveScroll: true,
         onSuccess: () => closeEdit(),
     });
 };
 
 const archiveGate = (gateId: number) => {
-    router.delete(destroy(gateId), {
+    router.delete(destroy(gateId).url, {
         preserveScroll: true,
     });
 };
