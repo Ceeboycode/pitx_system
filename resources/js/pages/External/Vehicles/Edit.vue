@@ -12,12 +12,14 @@ import VehicleSummaryCard from '@/components/company/vehicles/VehicleSummaryCard
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+    ArrowLeft,
+    ArrowUp,
+    Eye,
+    FileText,
+    Hash,
+    MapPin,
+    AlertCircle,
+} from 'lucide-vue-next';
 
 import CompanyVehicleController from '@/actions/App/Http/Controllers/CompanyVehicleController';
 
@@ -133,7 +135,6 @@ const form = useForm({
         const existing = props.vehicle.documents.find(
             (doc) => doc.document_type === docType,
         );
-
         return {
             id: existing?.id ?? null,
             document_type: docType,
@@ -146,33 +147,68 @@ const form = useForm({
     }),
 });
 
-const selectedRoute = computed(() => {
-    return (
-        props.routes.find(
-            (route) => String(route.id) === String(form.route_id),
-        ) ?? null
-    );
-});
+const selectedRoute = computed(() =>
+    props.routes.find((route) => String(route.id) === String(form.route_id)) ?? null,
+);
 
-const requiredDocumentsCount = computed(
-    () => Object.keys(props.docTypes).length,
+const requiredDocumentsCount = computed(() => Object.keys(props.docTypes).length);
+
+const uploadedDocumentsCount = computed(() =>
+    form.documents.filter((doc) => doc.existing_file_name || doc.file).length,
+);
+
+const pendingDocumentsCount = computed(() =>
+    form.documents.filter((doc) => doc.status === 'pending').length,
 );
 
 function submit() {
-    form.transform((data) => ({
-        ...data,
-        _method: 'put',
-    })).post(`/company/vehicles/${props.vehicle.id}`, {
-        forceFormData: true,
-        onFinish: () => {
-            form.transform((data) => data);
+    form.transform((data) => ({ ...data, _method: 'put' })).post(
+        `/company/vehicles/${props.vehicle.id}`,
+        {
+            forceFormData: true,
+            onFinish: () => {
+                form.transform((data) => data);
+            },
         },
-    });
+    );
 }
 
 function setDocumentFile(index: number, event: Event) {
     const input = event.target as HTMLInputElement;
     form.documents[index].file = input.files?.[0] ?? null;
+}
+
+function scrollToSummary() {
+    const summarySection = document.getElementById('update-summary');
+
+    if (summarySection) {
+        summarySection.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+        });
+    }
+}
+
+function humanize(value?: string | null) {
+    if (!value) return '—';
+    return value.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function statusClass(status?: string | null) {
+    switch (status) {
+        case 'active':
+        case 'approved':
+        case 'verified':
+            return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        case 'pending':
+        case 'for_verification':
+            return 'bg-amber-100 text-amber-700 border-amber-200';
+        case 'rejected':
+        case 'inactive':
+            return 'bg-rose-100 text-rose-600 border-rose-200';
+        default:
+            return 'bg-slate-100 text-slate-600 border-0';
+    }
 }
 </script>
 
@@ -180,182 +216,336 @@ function setDocumentFile(index: number, event: Event) {
     <Head :title="`Edit Vehicle ${vehicle.plate_number}`" />
 
     <ExternalLayout :company="company" :user="user">
-        <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
-            <div
-                class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between"
-            >
-                <div class="space-y-1">
-                    <div class="flex items-center gap-2">
-                        <Badge variant="secondary">Vehicles</Badge>
-                        <Badge variant="outline">Edit</Badge>
+        <div class="min-h-screen bg-slate-50/60">
+            <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
+                <!-- ── Page header ─────────────────────────────────────── -->
+                <div class="rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 p-6 shadow-sm">
+                    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                        <div class="space-y-3">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-xs font-semibold uppercase tracking-widest text-blue-300">
+                                    {{ company.company_code ?? company.company_name }}
+                                </span>
+                                <span class="text-blue-500">·</span>
+                                <span class="text-xs font-semibold uppercase tracking-widest text-blue-300">
+                                    Vehicles
+                                </span>
+                                <span class="text-blue-500">·</span>
+                                <span class="text-xs font-semibold uppercase tracking-widest text-blue-300">
+                                    Edit
+                                </span>
+                                <Badge :class="['ml-1 border font-medium', statusClass(vehicle.status)]">
+                                    {{ humanize(vehicle.status) }}
+                                </Badge>
+                            </div>
+                            <div>
+                                <h1 class="text-2xl font-bold tracking-tight text-white md:text-3xl">
+                                    Edit Vehicle
+                                </h1>
+                                <p class="mt-1 text-sm text-blue-200">
+                                    Update vehicle details, route assignment, and required documents.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 md:shrink-0">
+                            <Button
+                                as-child
+                                class="rounded-lg border-0 bg-white font-semibold text-blue-900 shadow-sm hover:bg-blue-50"
+                            >
+                                <Link :href="CompanyVehicleController.show(vehicle.id).url">
+                                    <Eye class="mr-2 h-4 w-4" />
+                                    View Vehicle
+                                </Link>
+                            </Button>
+                            <Button
+                                as-child
+                                variant="outline"
+                                class="rounded-lg border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                            >
+                                <Link :href="CompanyVehicleController.index().url">
+                                    <ArrowLeft class="mr-2 h-4 w-4" />
+                                    Back to Vehicles
+                                </Link>
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Stat cards ──────────────────────────────────────── -->
+                <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700">
+                            <Hash class="h-4 w-4 text-white" />
+                        </div>
+                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            Plate Number
+                        </p>
+                        <p class="mt-0.5 truncate font-mono text-lg font-bold text-slate-900">
+                            {{ form.plate_number || '—' }}
+                        </p>
                     </div>
 
-                    <h1 class="text-2xl font-semibold tracking-tight">
-                        Edit Vehicle
-                    </h1>
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600">
+                            <MapPin class="h-4 w-4 text-white" />
+                        </div>
+                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            Selected Route
+                        </p>
+                        <p class="mt-0.5 truncate text-sm font-bold text-slate-900">
+                            {{ selectedRoute?.route_name || 'No route selected' }}
+                        </p>
+                    </div>
 
-                    <p class="text-sm text-muted-foreground">
-                        Update vehicle details and route assignment.
-                    </p>
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600">
+                            <FileText class="h-4 w-4 text-white" />
+                        </div>
+                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            Documents Ready
+                        </p>
+                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">
+                            {{ uploadedDocumentsCount }}
+                            <span class="text-lg font-medium text-slate-400">/ {{ requiredDocumentsCount }}</span>
+                        </p>
+                    </div>
+
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500">
+                            <AlertCircle class="h-4 w-4 text-white" />
+                        </div>
+                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            Pending Docs
+                        </p>
+                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">
+                            {{ pendingDocumentsCount }}
+                        </p>
+                    </div>
                 </div>
 
-                <div class="flex gap-2">
-                    <Button as-child variant="outline">
-                        <Link
-                            :href="
-                                CompanyVehicleController.show(vehicle.id).url
-                            "
-                        >
-                            View Vehicle
-                        </Link>
-                    </Button>
+                <!-- ── Form ────────────────────────────────────────────── -->
+                <form class="space-y-6" @submit.prevent="submit">
+                    <div class="grid gap-6 xl:grid-cols-[1fr_320px]">
+                        <!-- Left column -->
+                        <div class="space-y-6">
+                            <!-- Company Information -->
+                            <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+                                <div class="border-b border-slate-100 px-6 py-4">
+                                    <h2 class="text-base font-semibold text-slate-800">Company Information</h2>
+                                    <p class="mt-0.5 text-xs text-slate-400">
+                                        This vehicle is registered under your company account.
+                                    </p>
+                                </div>
+                                <div class="grid gap-4 p-6 md:grid-cols-2">
+                                    <div class="space-y-1.5">
+                                        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                                            Company
+                                        </p>
+                                        <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700">
+                                            {{ company.company_name }}
+                                        </div>
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                                            Company Code
+                                        </p>
+                                        <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-sm font-semibold text-slate-700">
+                                            {{ company.company_code ?? '—' }}
+                                        </div>
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                                            Representative
+                                        </p>
+                                        <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700">
+                                            {{ user.name }}
+                                        </div>
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                                            Account Email
+                                        </p>
+                                        <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700">
+                                            {{ user.email }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                    <Button as-child variant="outline">
-                        <Link :href="CompanyVehicleController.index().url">
-                            Back to Vehicles
-                        </Link>
-                    </Button>
-                </div>
+                            <!-- Route Assignment -->
+                            <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+                                <div class="border-b border-slate-100 px-6 py-4">
+                                    <h2 class="text-base font-semibold text-slate-800">Route Assignment</h2>
+                                    <p class="mt-0.5 text-xs text-slate-400">
+                                        Update the operating route for this vehicle.
+                                    </p>
+                                </div>
+                                <div class="p-6">
+                                    <VehicleRouteAssignment
+                                        v-model="form.route_id"
+                                        :routes="routes"
+                                        :gates="gates"
+                                        :error="form.errors.route_id"
+                                        :map-config="mapConfig"
+                                    />
+                                </div>
+                            </div>
+
+                            <!-- Vehicle Information -->
+                            <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+                                <div class="border-b border-slate-100 px-6 py-4">
+                                    <h2 class="text-base font-semibold text-slate-800">Vehicle Information</h2>
+                                    <p class="mt-0.5 text-xs text-slate-400">
+                                        Update the primary details of the vehicle.
+                                    </p>
+                                </div>
+                                <div class="p-6">
+                                    <VehicleBasicInfoForm
+                                        :form="form"
+                                        :vehicle-types="vehicleTypes"
+                                    />
+                                </div>
+                            </div>
+
+                            <!-- Required Documents -->
+                            <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+                                <div class="border-b border-slate-100 px-6 py-4">
+                                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div>
+                                            <h2 class="text-base font-semibold text-slate-800">
+                                                Required Documents
+                                            </h2>
+                                            <p class="mt-0.5 text-xs text-slate-400">
+                                                Reupload is allowed only when a document is pending or rejected.
+                                            </p>
+                                        </div>
+
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-semibold tabular-nums text-slate-400">
+                                                {{ uploadedDocumentsCount }} / {{ requiredDocumentsCount }} ready
+                                            </span>
+
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+                                                @click="scrollToSummary"
+                                            >
+                                                <ArrowUp class="mr-2 h-4 w-4" />
+                                                View Summary
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="p-6">
+                                    <VehicleDocumentsForm
+                                        :documents="form.documents"
+                                        :doc-types="docTypes"
+                                        :errors="form.errors"
+                                        @set-file="setDocumentFile"
+                                    />
+
+                                    <div class="mt-6 flex justify-end">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+                                            @click="scrollToSummary"
+                                        >
+                                            <ArrowUp class="mr-2 h-4 w-4" />
+                                            Go to Update Summary
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right sidebar -->
+                        <div class="space-y-4">
+                            <!-- Update Summary -->
+                            <div
+                                id="update-summary"
+                                class="rounded-xl border border-slate-200 bg-white shadow-sm"
+                            >
+                                <div class="border-b border-slate-100 px-5 py-4">
+                                    <h3 class="text-sm font-semibold text-slate-800">Update Summary</h3>
+                                    <p class="mt-0.5 text-xs text-slate-400">
+                                        Review the details before saving changes.
+                                    </p>
+                                </div>
+                                <div class="p-5">
+                                    <VehicleSummaryCard
+                                        :form="form"
+                                        :selected-route-name="selectedRoute?.route_name"
+                                        :required-documents-count="requiredDocumentsCount"
+                                        :user-name="user.name"
+                                        submit-label="Save Changes"
+                                    />
+                                </div>
+                            </div>
+
+                            <!-- Editing Notes -->
+                            <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+                                <div class="border-b border-slate-100 px-5 py-4">
+                                    <h3 class="text-sm font-semibold text-slate-800">Editing Notes</h3>
+                                    <p class="mt-0.5 text-xs text-slate-400">
+                                        Keep these in mind before submitting.
+                                    </p>
+                                </div>
+                                <div class="divide-y divide-slate-100">
+                                    <div class="flex gap-3 px-5 py-4">
+                                        <div class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-blue-100">
+                                            <MapPin class="h-3.5 w-3.5 text-blue-700" />
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-semibold uppercase tracking-widest text-blue-700">
+                                                Route Assignment
+                                            </p>
+                                            <p class="mt-0.5 text-xs text-slate-500">
+                                                Make sure the selected route matches the vehicle's active operating line.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex gap-3 px-5 py-4">
+                                        <div class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-amber-100">
+                                            <FileText class="h-3.5 w-3.5 text-amber-700" />
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-semibold uppercase tracking-widest text-amber-700">
+                                                Document Updates
+                                            </p>
+                                            <p class="mt-0.5 text-xs text-slate-500">
+                                                Only replace pending or rejected documents to avoid confusion during review.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center justify-between px-5 py-4">
+                                        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                                            Vehicle Status
+                                        </p>
+                                        <Badge :class="['border font-medium', statusClass(vehicle.status)]">
+                                            {{ humanize(vehicle.status) }}
+                                        </Badge>
+                                    </div>
+
+                                    <div class="flex items-center justify-between px-5 py-4">
+                                        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                                            Plate Number
+                                        </p>
+                                        <span class="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-700">
+                                            {{ vehicle.plate_number }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </div>
-
-            <form class="space-y-6" @submit.prevent="submit">
-                <div class="grid gap-6 xl:grid-cols-[1fr_320px]">
-                    <div class="space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Company Information</CardTitle>
-                                <CardDescription>
-                                    This vehicle is registered under your
-                                    company account.
-                                </CardDescription>
-                            </CardHeader>
-
-                            <CardContent class="grid gap-4 md:grid-cols-2">
-                                <div class="space-y-2">
-                                    <p class="text-sm font-medium">Company</p>
-                                    <p
-                                        class="rounded-md border px-3 py-2 text-sm"
-                                    >
-                                        {{ company.company_name }}
-                                    </p>
-                                </div>
-
-                                <div class="space-y-2">
-                                    <p class="text-sm font-medium">
-                                        Company Code
-                                    </p>
-                                    <p
-                                        class="rounded-md border px-3 py-2 text-sm"
-                                    >
-                                        {{ company.company_code ?? '—' }}
-                                    </p>
-                                </div>
-
-                                <div class="space-y-2">
-                                    <p class="text-sm font-medium">
-                                        Representative
-                                    </p>
-                                    <p
-                                        class="rounded-md border px-3 py-2 text-sm"
-                                    >
-                                        {{ user.name }}
-                                    </p>
-                                </div>
-
-                                <div class="space-y-2">
-                                    <p class="text-sm font-medium">
-                                        Account Email
-                                    </p>
-                                    <p
-                                        class="rounded-md border px-3 py-2 text-sm"
-                                    >
-                                        {{ user.email }}
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Route Assignment</CardTitle>
-                                <CardDescription>
-                                    Update the operating route for this vehicle.
-                                </CardDescription>
-                            </CardHeader>
-
-                            <CardContent>
-                                <VehicleRouteAssignment
-                                    v-model="form.route_id"
-                                    :routes="routes"
-                                    :gates="gates"
-                                    :error="form.errors.route_id"
-                                    :map-config="mapConfig"
-                                />
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Vehicle Information</CardTitle>
-                                <CardDescription>
-                                    Update the primary details of the vehicle.
-                                </CardDescription>
-                            </CardHeader>
-
-                            <CardContent>
-                                <VehicleBasicInfoForm
-                                    :form="form"
-                                    :vehicle-types="vehicleTypes"
-                                />
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Required Documents</CardTitle>
-                                <CardDescription>
-                                    Reupload is allowed only when a document is
-                                    pending or rejected.
-                                </CardDescription>
-                            </CardHeader>
-
-                            <CardContent>
-                                <VehicleDocumentsForm
-                                    :documents="form.documents"
-                                    :doc-types="docTypes"
-                                    :errors="form.errors"
-                                    @set-file="setDocumentFile"
-                                />
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    <div class="space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Update Summary</CardTitle>
-                                <CardDescription>
-                                    Review the details before saving changes.
-                                </CardDescription>
-                            </CardHeader>
-
-                            <CardContent>
-                                <VehicleSummaryCard
-                                    :form="form"
-                                    :selected-route-name="
-                                        selectedRoute?.route_name
-                                    "
-                                    :required-documents-count="
-                                        requiredDocumentsCount
-                                    "
-                                    :user-name="user.name"
-                                    submit-label="Save Changes"
-                                />
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
-            </form>
         </div>
     </ExternalLayout>
 </template>

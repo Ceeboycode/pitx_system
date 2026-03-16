@@ -13,7 +13,6 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -34,7 +33,6 @@ import {
 import {
     Table,
     TableBody,
-    TableCaption,
     TableCell,
     TableHead,
     TableHeader,
@@ -45,14 +43,19 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
     Archive,
+    Bus,
+    ChevronRight,
     Download,
+    FileSearch,
     MoreHorizontal,
-    Plus,
+    Pencil,
+    Power,
+    Route as RouteIcon,
     Upload,
 } from 'lucide-vue-next';
 import { ref } from 'vue';
 
-import { create, destroy, edit, index, show, trash } from '@/routes/vehicles';
+import { destroy, edit, index, show, trash } from '@/routes/vehicles';
 import { type BreadcrumbItem } from '@/types';
 
 type VehicleItem = {
@@ -63,29 +66,19 @@ type VehicleItem = {
     body_number?: string | null;
     capacity?: string | number | null;
     created_at?: string | null;
-    company?: {
-        company_name?: string | null;
-    } | null;
-    route?: {
-        route_name?: string | null;
-    } | null;
+    company?: { company_name?: string | null } | null;
+    route?: { route_name?: string | null } | null;
 };
 
 const props = defineProps<{
     vehicles: {
         data: VehicleItem[];
-        links: {
-            url: string | null;
-            label: string;
-            active: boolean;
-        }[];
+        links: { url: string | null; label: string; active: boolean }[];
         from: number | null;
         to: number | null;
         total: number;
     };
-    filters: {
-        search: string | null;
-    };
+    filters: { search: string | null };
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -93,43 +86,58 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const archiveDialogOpen = ref(false);
-const selectedVehicle = ref<VehicleItem | null>(null);
-const statusDialogOpen = ref(false);
-const statusVehicle = ref<VehicleItem | null>(null);
+const selectedVehicle   = ref<VehicleItem | null>(null);
+const statusDialogOpen  = ref(false);
+const statusVehicle     = ref<VehicleItem | null>(null);
 
 const formatDate = (value?: string | null) => {
-    if (!value) return '-';
-
+    if (!value) return '—';
     return new Date(value).toLocaleDateString('en-PH', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
+        year: 'numeric', month: 'short', day: 'numeric',
     });
 };
 
-const statusVariant = (status?: string | null) => {
+function statusClass(status?: string | null): string {
     switch (status) {
         case 'active':
-        case 'verified':
-            return 'default' as const;
+        case 'verified':         return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        case 'for_verification': return 'bg-violet-100 text-violet-700 border-violet-200';
         case 'draft':
-        case 'pending':
-        case 'for_verification':
-            return 'secondary' as const;
+        case 'pending':          return 'bg-amber-100 text-amber-700 border-amber-200';
         case 'invalid':
         case 'inactive':
-        case 'needs_revision':
-            return 'destructive' as const;
-        default:
-            return 'outline' as const;
+        case 'needs_revision':   return 'bg-rose-100 text-rose-600 border-rose-200';
+        default:                 return 'bg-slate-100 text-slate-500 border-0';
     }
-};
+}
+
+function statusDot(status?: string | null): string {
+    switch (status) {
+        case 'active':
+        case 'verified':         return 'bg-emerald-500';
+        case 'for_verification': return 'bg-violet-500';
+        case 'draft':
+        case 'pending':          return 'bg-amber-500';
+        case 'invalid':
+        case 'inactive':
+        case 'needs_revision':   return 'bg-rose-500';
+        default:                 return 'bg-slate-400';
+    }
+}
+
+function toggleStatusClass(status?: string | null): string {
+    return status === 'active'
+        ? 'text-rose-600 focus:bg-rose-50 focus:text-rose-600'
+        : 'text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700';
+}
 
 const humanize = (text?: string | null) => {
-    if (!text) return 'N/A';
-
+    if (!text) return '—';
     return text.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 };
+
+const toggleLabel = (status?: string | null) =>
+    status === 'active' ? 'Set Inactive' : 'Set Active';
 
 const openArchiveDialog = (vehicle: VehicleItem) => {
     selectedVehicle.value = vehicle;
@@ -141,38 +149,23 @@ const openStatusDialog = (vehicle: VehicleItem) => {
     statusDialogOpen.value = true;
 };
 
-const toggleLabel = (status?: string | null) =>
-    status === 'active' ? 'Set Inactive' : 'Set Active';
-
 const confirmToggleStatus = () => {
     if (!statusVehicle.value) return;
-
     router.patch(
         `/vehicles/${statusVehicle.value.id}/toggle-status`,
         {},
         {
             preserveScroll: true,
-            onSuccess: () => {
-                statusDialogOpen.value = false;
-                statusVehicle.value = null;
-            },
+            onSuccess: () => { statusDialogOpen.value = false; statusVehicle.value = null; },
         },
     );
 };
 
 const archiveVehicle = (vehicle: VehicleItem) => {
-    router.delete(
-        destroy({
-            vehicle: vehicle.id,
-        }).url,
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                archiveDialogOpen.value = false;
-                selectedVehicle.value = null;
-            },
-        },
-    );
+    router.delete(destroy({ vehicle: vehicle.id }).url, {
+        preserveScroll: true,
+        onSuccess: () => { archiveDialogOpen.value = false; selectedVehicle.value = null; },
+    });
 };
 </script>
 
@@ -180,42 +173,43 @@ const archiveVehicle = (vehicle: VehicleItem) => {
     <Head title="Vehicles" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
-        >
+        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
             <Card class="mx-5">
                 <CardHeader>
-                    <CardTitle>Vehicles</CardTitle>
-                    <CardDescription
-                        >List of all vehicles in the system.</CardDescription
-                    >
+                    <div>
+                        <CardTitle class="flex items-center gap-2">
+                            <Bus class="h-5 w-5 text-blue-700" />
+                            Vehicles
+                        </CardTitle>
+                        <CardDescription class="mt-1">
+                            List of all vehicles in the system.
+                        </CardDescription>
+                    </div>
 
-                    <CardAction class="flex flex-wrap gap-2">
-                        <Button as-child size="sm" variant="outline">
+                    <CardAction class="flex items-center gap-2">
+                        <Button
+                            as-child
+                            size="sm"
+                            variant="outline"
+                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
+                        >
                             <Link :href="trash().url">
                                 <Archive class="mr-2 h-4 w-4" />
                                 View Archived
-                            </Link>
-                        </Button>
-
-                        <Button as-child size="sm">
-                            <Link :href="create().url">
-                                <Plus class="mr-2 h-4 w-4" />
-                                Add Vehicle
                             </Link>
                         </Button>
                     </CardAction>
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-                    <div
-                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                    >
+
+                    <!-- Search + bulk actions -->
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div class="w-full max-w-sm">
                             <SearchInput
                                 :route="index().url"
                                 :initial-value="filters.search"
-                                placeholder="Search vehicles..."
+                                placeholder="Search vehicles…"
                                 :only="['vehicles', 'filters', 'flash']"
                                 :debounce="350"
                             />
@@ -223,18 +217,18 @@ const archiveVehicle = (vehicle: VehicleItem) => {
 
                         <div class="flex gap-2 sm:justify-end">
                             <Button
-                                class="cursor-pointer"
                                 size="sm"
                                 variant="outline"
+                                class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
                             >
                                 <Upload class="mr-2 h-4 w-4" />
                                 Import
                             </Button>
 
                             <Button
-                                class="cursor-pointer"
                                 size="sm"
                                 variant="outline"
+                                class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
                             >
                                 <Download class="mr-2 h-4 w-4" />
                                 Export
@@ -242,149 +236,160 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                         </div>
                     </div>
 
-                    <Table>
-                        <TableCaption>List of vehicles.</TableCaption>
+                    <!-- Table -->
+                    <div class="overflow-x-auto rounded-lg border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow class="bg-muted/40 hover:bg-muted/40">
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Company</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Route</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Vehicle Info</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Plate Number</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Cap.</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Status</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Created</TableHead>
+                                    <TableHead class="text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
 
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Company</TableHead>
-                                <TableHead>Route</TableHead>
-                                <TableHead>Vehicle Type</TableHead>
-                                <TableHead>Plate Number</TableHead>
-                                <TableHead>Body Number</TableHead>
-                                <TableHead>Capacity</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Created At</TableHead>
-                                <TableHead class="text-right">Action</TableHead>
-                            </TableRow>
-                        </TableHeader>
+                            <TableBody>
+                                <!-- Empty state -->
+                                <TableRow v-if="vehicles.data.length === 0" class="hover:bg-transparent">
+                                    <TableCell colspan="8" class="py-20 text-center">
+                                        <div class="flex flex-col items-center gap-3">
+                                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+                                                <Bus class="h-6 w-6 text-muted-foreground/40" />
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-semibold text-foreground">No vehicles found</p>
+                                                <p class="mt-0.5 text-xs text-muted-foreground">Try adjusting your search.</p>
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
 
-                        <TableBody>
-                            <TableRow
-                                v-for="vehicle in vehicles.data"
-                                :key="vehicle.id"
-                            >
-                                <TableCell>
-                                    {{ vehicle.company?.company_name || 'N/A' }}
-                                </TableCell>
-
-                                <TableCell>
-                                    {{ vehicle.route?.route_name || 'N/A' }}
-                                </TableCell>
-
-                                <TableCell>
-                                    {{ vehicle.vehicle_type || 'N/A' }}
-                                </TableCell>
-
-                                <TableCell>
-                                    {{ vehicle.plate_number || 'N/A' }}
-                                </TableCell>
-
-                                <TableCell>
-                                    {{ vehicle.body_number || 'N/A' }}
-                                </TableCell>
-
-                                <TableCell>
-                                    {{ vehicle.capacity || 'N/A' }}
-                                </TableCell>
-
-                                <TableCell>
-                                    <Badge
-                                        :variant="statusVariant(vehicle.status)"
-                                    >
-                                        {{ humanize(vehicle.status) }}
-                                    </Badge>
-                                </TableCell>
-
-                                <TableCell>
-                                    {{ formatDate(vehicle.created_at) }}
-                                </TableCell>
-
-                                <TableCell class="text-right">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger as-child>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                class="h-8 w-8 p-0"
-                                            >
-                                                <MoreHorizontal
-                                                    class="h-4 w-4"
-                                                />
-                                                <span class="sr-only"
-                                                    >Open actions</span
-                                                >
-                                            </Button>
-                                        </DropdownMenuTrigger>
-
-                                        <DropdownMenuContent
-                                            align="end"
-                                            class="w-40"
-                                        >
-                                            <DropdownMenuLabel
-                                                >Actions</DropdownMenuLabel
-                                            >
-                                            <DropdownMenuSeparator />
-
-                                            <DropdownMenuItem as-child>
-                                                <Link
-                                                    :href="
-                                                        show({
-                                                            vehicle: vehicle.id,
-                                                        }).url
-                                                    "
-                                                >
-                                                    Review
-                                                </Link>
-                                            </DropdownMenuItem>
-
-                                            <DropdownMenuItem as-child>
-                                                <Link
-                                                    :href="
-                                                        edit({
-                                                            vehicle: vehicle.id,
-                                                        }).url
-                                                    "
-                                                >
-                                                    Edit
-                                                </Link>
-                                            </DropdownMenuItem>
-
-                                            <DropdownMenuItem
-                                                @click="
-                                                    openStatusDialog(vehicle)
-                                                "
-                                            >
-                                                {{
-                                                    toggleLabel(vehicle.status)
-                                                }}
-                                            </DropdownMenuItem>
-
-                                            <DropdownMenuSeparator />
-
-                                            <DropdownMenuItem
-                                                class="text-destructive focus:text-destructive"
-                                                @click="
-                                                    openArchiveDialog(vehicle)
-                                                "
-                                            >
-                                                Archive
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
-                            </TableRow>
-
-                            <TableRow v-if="vehicles.data.length === 0">
-                                <TableCell
-                                    colspan="9"
-                                    class="py-10 text-center text-muted-foreground"
+                                <TableRow
+                                    v-for="vehicle in vehicles.data"
+                                    :key="vehicle.id"
+                                    class="transition-colors hover:bg-muted/30"
                                 >
-                                    No vehicles found.
-                                </TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
+                                    <!-- Company -->
+                                    <TableCell class="text-sm font-medium">
+                                        {{ vehicle.company?.company_name || '—' }}
+                                    </TableCell>
+
+                                    <!-- Route -->
+                                    <TableCell>
+                                        <div v-if="vehicle.route?.route_name" class="flex items-center gap-1.5">
+                                            <RouteIcon class="h-3.5 w-3.5 shrink-0 text-sky-600" />
+                                            <span class="text-sm">{{ vehicle.route.route_name }}</span>
+                                        </div>
+                                        <span v-else class="text-sm text-muted-foreground">—</span>
+                                    </TableCell>
+
+                                    <!-- Vehicle Info -->
+                                    <TableCell>
+                                        <div class="flex items-center gap-2">
+                                            <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-100">
+                                                <Bus class="h-3.5 w-3.5 text-blue-700" />
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-medium">{{ humanize(vehicle.vehicle_type) }}</p>
+                                                <p class="text-xs text-muted-foreground">{{ vehicle.body_number || '—' }}</p>
+                                            </div>
+                                        </div>
+                                    </TableCell>
+
+                                    <!-- Plate Number -->
+                                    <TableCell>
+                                        <span class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
+                                            {{ vehicle.plate_number || '—' }}
+                                        </span>
+                                    </TableCell>
+
+                                    <!-- Capacity -->
+                                    <TableCell class="text-sm text-muted-foreground tabular-nums">
+                                        {{ vehicle.capacity || '—' }}
+                                    </TableCell>
+
+                                    <!-- Status -->
+                                    <TableCell>
+                                        <Badge :class="['gap-1.5', statusClass(vehicle.status)]">
+                                            <span :class="['h-1.5 w-1.5 rounded-full', statusDot(vehicle.status)]" />
+                                            {{ humanize(vehicle.status) }}
+                                        </Badge>
+                                    </TableCell>
+
+                                    <!-- Created -->
+                                    <TableCell class="text-sm text-muted-foreground">
+                                        {{ formatDate(vehicle.created_at) }}
+                                    </TableCell>
+
+                                    <!-- Actions -->
+                                    <TableCell class="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger as-child>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                >
+                                                    <MoreHorizontal class="h-4 w-4" />
+                                                    <span class="sr-only">Open actions</span>
+                                                </Button>
+                                            </DropdownMenuTrigger>
+
+                                            <DropdownMenuContent align="end" class="w-52 rounded-xl border-slate-200 shadow-lg">
+                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                                    {{ vehicle.plate_number || 'Vehicle' }}
+                                                </DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
+
+                                                <DropdownMenuItem
+                                                    as-child
+                                                    class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700"
+                                                >
+                                                    <Link :href="show({ vehicle: vehicle.id }).url" class="flex items-center">
+                                                        <FileSearch class="mr-2 h-4 w-4" />
+                                                        Review
+                                                        <ChevronRight class="ml-auto h-3.5 w-3.5 text-blue-400" />
+                                                    </Link>
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuItem
+                                                    as-child
+                                                    class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700"
+                                                >
+                                                    <Link :href="edit({ vehicle: vehicle.id }).url">
+                                                        <Pencil class="mr-2 h-4 w-4" />
+                                                        Edit
+                                                    </Link>
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuItem
+                                                    :class="['rounded-lg', toggleStatusClass(vehicle.status)]"
+                                                    @click="openStatusDialog(vehicle)"
+                                                >
+                                                    <Power class="mr-2 h-4 w-4" />
+                                                    {{ toggleLabel(vehicle.status) }}
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuSeparator />
+
+                                                <DropdownMenuItem
+                                                    class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600"
+                                                    @click="openArchiveDialog(vehicle)"
+                                                >
+                                                    <Archive class="mr-2 h-4 w-4" />
+                                                    Archive
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </div>
 
                     <InertiaPagination
                         :links="vehicles.links"
@@ -398,30 +403,22 @@ const archiveVehicle = (vehicle: VehicleItem) => {
             </Card>
         </div>
 
+        <!-- Archive dialog -->
         <AlertDialog v-model:open="archiveDialogOpen">
-            <AlertDialogContent>
+            <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
                     <AlertDialogTitle>Archive Vehicle</AlertDialogTitle>
                     <AlertDialogDescription>
                         You are about to archive
-                        <span class="font-medium text-foreground">
-                            {{
-                                selectedVehicle?.plate_number || 'this vehicle'
-                            }}
-                        </span>
-                        . You can restore it later from Archived Vehicles.
+                        <span class="font-semibold text-foreground">{{ selectedVehicle?.plate_number || 'this vehicle' }}</span>.
+                        You can restore it later from Archived Vehicles.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-
                 <AlertDialogFooter>
-                    <AlertDialogCancel @click="selectedVehicle = null">
-                        Cancel
-                    </AlertDialogCancel>
+                    <AlertDialogCancel class="rounded-lg" @click="selectedVehicle = null">Cancel</AlertDialogCancel>
                     <AlertDialogAction
-                        class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        @click="
-                            selectedVehicle && archiveVehicle(selectedVehicle)
-                        "
+                        class="rounded-lg bg-rose-600 text-white hover:bg-rose-700 border-0"
+                        @click="selectedVehicle && archiveVehicle(selectedVehicle)"
                     >
                         Archive
                     </AlertDialogAction>
@@ -429,30 +426,24 @@ const archiveVehicle = (vehicle: VehicleItem) => {
             </AlertDialogContent>
         </AlertDialog>
 
+        <!-- Status dialog -->
         <AlertDialog v-model:open="statusDialogOpen">
-            <AlertDialogContent>
+            <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
                     <AlertDialogTitle>
-                        {{
-                            statusVehicle
-                                ? toggleLabel(statusVehicle.status)
-                                : 'Update Status'
-                        }}
+                        {{ statusVehicle ? toggleLabel(statusVehicle.status) : 'Update Status' }}
                     </AlertDialogTitle>
                     <AlertDialogDescription>
                         Update status for
-                        <span class="font-medium text-foreground">
-                            {{ statusVehicle?.plate_number || 'this vehicle' }}
-                        </span>
-                        ?
+                        <span class="font-semibold text-foreground">{{ statusVehicle?.plate_number || 'this vehicle' }}</span>?
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-
                 <AlertDialogFooter>
-                    <AlertDialogCancel @click="statusVehicle = null">
-                        Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction @click="confirmToggleStatus">
+                    <AlertDialogCancel class="rounded-lg" @click="statusVehicle = null">Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                        class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0"
+                        @click="confirmToggleStatus"
+                    >
                         Confirm
                     </AlertDialogAction>
                 </AlertDialogFooter>

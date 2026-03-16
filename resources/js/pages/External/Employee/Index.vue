@@ -52,6 +52,9 @@ import {
     Trash2,
     UserSquare2,
     Users,
+    TruckIcon,
+    Radio,
+    Building2,
 } from 'lucide-vue-next'
 
 type Company = {
@@ -117,7 +120,6 @@ const props = defineProps<{
 
 function humanize(value?: string | null) {
     if (!value) return '—'
-
     return value
         .replace(/_/g, ' ')
         .replace(/\b\w/g, (char) => char.toUpperCase())
@@ -125,7 +127,6 @@ function humanize(value?: string | null) {
 
 function formatDate(value?: string | null) {
     if (!value) return '—'
-
     return new Date(value).toLocaleDateString('en-PH', {
         year: 'numeric',
         month: 'short',
@@ -137,103 +138,85 @@ function roleName(employee: EmployeeUser) {
     return employee.roles?.[0]?.name ?? '—'
 }
 
-function statusVariant(status?: string | null) {
-    if (status === 'active') return 'default'
-    if (status === 'pending') return 'secondary'
-    if (status === 'suspended') return 'destructive'
-    return 'outline'
+function roleClass(employee: EmployeeUser) {
+    const role = roleName(employee).toLowerCase()
+    if (role === 'driver')     return 'bg-sky-100 text-sky-700 border-sky-200 font-medium'
+    if (role === 'dispatcher') return 'bg-violet-100 text-violet-700 border-violet-200 font-medium'
+    return 'bg-slate-100 text-slate-500 border-0'
+}
+
+function statusClass(status?: string | null) {
+    if (status === 'active')    return 'bg-emerald-100 text-emerald-700 border-emerald-200 font-medium'
+    if (status === 'pending')   return 'bg-amber-100 text-amber-700 border-amber-200 font-medium'
+    if (status === 'suspended') return 'bg-rose-100 text-rose-600 border-rose-200 font-medium'
+    if (status === 'inactive')  return 'bg-slate-100 text-slate-500 border-0'
+    return 'bg-slate-100 text-slate-500 border-0'
+}
+
+function statusDot(status?: string | null) {
+    if (status === 'active')    return 'bg-emerald-500'
+    if (status === 'pending')   return 'bg-amber-500'
+    if (status === 'suspended') return 'bg-rose-500'
+    return 'bg-slate-400'
 }
 
 function toggleStatusLabel(status?: string | null) {
-    if (status === 'active') return 'Set Inactive'
-    if (status === 'inactive') return 'Set Active'
-    if (status === 'pending') return 'Activate Account'
+    if (status === 'active')    return 'Set Inactive'
+    if (status === 'inactive')  return 'Set Active'
+    if (status === 'pending')   return 'Activate Account'
     if (status === 'suspended') return 'Set Active'
     return 'Update Status'
+}
+
+function toggleStatusClass(status?: string | null) {
+    if (status === 'active') return 'text-rose-600 focus:text-rose-600 focus:bg-rose-50'
+    return 'text-emerald-700 focus:text-emerald-700 focus:bg-emerald-50'
 }
 
 const totalEmployees = computed(() => props.users.total ?? 0)
 
 const totalDrivers = computed(() =>
-    props.users.data.filter((employee) => roleName(employee) === 'driver').length,
+    props.users.data.filter((e) => roleName(e).toLowerCase() === 'driver').length,
 )
 
 const totalDispatchers = computed(() =>
-    props.users.data.filter((employee) => roleName(employee) === 'dispatcher').length,
+    props.users.data.filter((e) => roleName(e).toLowerCase() === 'dispatcher').length,
 )
 
-const deleteDialog = reactive({
-    open: false,
-    employee: null as EmployeeUser | null,
-})
+const activeCount = computed(() =>
+    props.users.data.filter((e) => e.status === 'active').length,
+)
 
-const statusDialog = reactive({
-    open: false,
-    employee: null as EmployeeUser | null,
-})
+const deleteDialog = reactive({ open: false, employee: null as EmployeeUser | null })
+const statusDialog = reactive({ open: false, employee: null as EmployeeUser | null })
+const resetPasswordDialog = reactive({ open: false, employee: null as EmployeeUser | null })
 
-const resetPasswordDialog = reactive({
-    open: false,
-    employee: null as EmployeeUser | null,
-})
-
-function openDeleteDialog(employee: EmployeeUser) {
-    deleteDialog.employee = employee
-    deleteDialog.open = true
-}
-
-function openStatusDialog(employee: EmployeeUser) {
-    statusDialog.employee = employee
-    statusDialog.open = true
-}
-
-function openResetPasswordDialog(employee: EmployeeUser) {
-    resetPasswordDialog.employee = employee
-    resetPasswordDialog.open = true
-}
+function openDeleteDialog(employee: EmployeeUser) { deleteDialog.employee = employee; deleteDialog.open = true }
+function openStatusDialog(employee: EmployeeUser) { statusDialog.employee = employee; statusDialog.open = true }
+function openResetPasswordDialog(employee: EmployeeUser) { resetPasswordDialog.employee = employee; resetPasswordDialog.open = true }
 
 function confirmDelete() {
     if (!deleteDialog.employee) return
-
     router.delete(`/employee-users/${deleteDialog.employee.id}`, {
         preserveScroll: true,
-        onSuccess: () => {
-            deleteDialog.open = false
-            deleteDialog.employee = null
-        },
+        onSuccess: () => { deleteDialog.open = false; deleteDialog.employee = null },
     })
 }
 
 function confirmToggleStatus() {
     if (!statusDialog.employee) return
-
-    router.patch(
-        `/employee-users/${statusDialog.employee.id}/toggle-status`,
-        {},
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                statusDialog.open = false
-                statusDialog.employee = null
-            },
-        },
-    )
+    router.patch(`/employee-users/${statusDialog.employee.id}/toggle-status`, {}, {
+        preserveScroll: true,
+        onSuccess: () => { statusDialog.open = false; statusDialog.employee = null },
+    })
 }
 
 function confirmResetPassword() {
     if (!resetPasswordDialog.employee) return
-
-    router.patch(
-        `/employee-users/${resetPasswordDialog.employee.id}/reset-password`,
-        {},
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                resetPasswordDialog.open = false
-                resetPasswordDialog.employee = null
-            },
-        },
-    )
+    router.patch(`/employee-users/${resetPasswordDialog.employee.id}/reset-password`, {}, {
+        preserveScroll: true,
+        onSuccess: () => { resetPasswordDialog.open = false; resetPasswordDialog.employee = null },
+    })
 }
 </script>
 
@@ -241,182 +224,206 @@ function confirmResetPassword() {
     <Head title="Employee Accounts" />
 
     <ExternalLayout :company="company" :user="user">
-        <div class="space-y-6 p-4 md:p-6">
-            <div
-                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
-            >
-                <div>
-                    <h1 class="text-2xl font-semibold tracking-tight">
-                        Employee Accounts
-                    </h1>
-                    <p class="text-sm text-muted-foreground">
-                        Manage your company drivers and dispatchers.
-                    </p>
+        <div class="min-h-screen bg-slate-50/60">
+            <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
+
+                <!-- ── Page header ─────────────────────────────────────── -->
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                            <Building2 class="h-3.5 w-3.5" />
+                            {{ company.company_code ?? company.company_name }}
+                        </div>
+                        <h1 class="text-2xl font-bold tracking-tight text-slate-900">Employee Accounts</h1>
+                        <p class="text-sm text-slate-500">Manage drivers and dispatchers for your company.</p>
+                    </div>
+                    <Button
+                        as-child
+                        class="shrink-0 bg-blue-700 text-white hover:bg-blue-800 border-0 shadow-sm gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all"
+                    >
+                        <Link href="/employee-users/create">
+                            <Plus class="h-4 w-4" />
+                            Add Employee
+                        </Link>
+                    </Button>
                 </div>
 
-                <Button as-child>
-                    <Link href="/employee-users/create">
-                        <Plus class="mr-2 h-4 w-4" />
-                        Add Employee
-                    </Link>
-                </Button>
-            </div>
+                <!-- ── Stat cards ────────────────────────────────────────── -->
+                <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
 
-            <div class="grid gap-4 md:grid-cols-4">
-                <Card>
-                    <CardHeader class="pb-2">
-                        <CardDescription>Total Employees</CardDescription>
-                        <CardTitle class="text-2xl">
-                            {{ totalEmployees }}
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
-
-                <Card>
-                    <CardHeader class="pb-2">
-                        <CardDescription>Drivers</CardDescription>
-                        <CardTitle class="text-2xl">
-                            {{ totalDrivers }}
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
-
-                <Card>
-                    <CardHeader class="pb-2">
-                        <CardDescription>Dispatchers</CardDescription>
-                        <CardTitle class="text-2xl">
-                            {{ totalDispatchers }}
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
-
-                <Card>
-                    <CardHeader class="pb-2">
-                        <CardDescription>Company</CardDescription>
-                        <CardTitle class="text-base">
-                            {{ company.company_code ?? company.company_name }}
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
-            </div>
-
-            <Card>
-                <CardHeader class="space-y-4">
-                    <div>
-                        <CardTitle>Employee List</CardTitle>
-                        <CardDescription>
-                            Search employees by name, username, email, or phone.
-                        </CardDescription>
+                    <!-- Total -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700">
+                            <Users class="h-4 w-4 text-white" />
+                        </div>
+                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Total</p>
+                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">{{ totalEmployees }}</p>
                     </div>
 
-                    <SearchInput
-                        route="/employee-users"
-                        :initial-value="filters.search"
-                        placeholder="Search employees..."
-                        :only="['users', 'filters']"
-                    />
-                </CardHeader>
+                    <!-- Drivers -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600">
+                            <TruckIcon class="h-4 w-4 text-white" />
+                        </div>
+                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Drivers</p>
+                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">{{ totalDrivers }}</p>
+                    </div>
 
-                <CardContent class="space-y-4">
-                    <div class="overflow-x-auto rounded-md border">
+                    <!-- Dispatchers -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-violet-600">
+                            <Radio class="h-4 w-4 text-white" />
+                        </div>
+                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Dispatchers</p>
+                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">{{ totalDispatchers }}</p>
+                    </div>
+
+                    <!-- Active -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600">
+                            <Power class="h-4 w-4 text-white" />
+                        </div>
+                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Active</p>
+                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">{{ activeCount }}</p>
+                    </div>
+
+                </div>
+
+                <!-- ── Employee table ────────────────────────────────────── -->
+                <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+
+                    <!-- Table header / search -->
+                    <div class="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 class="text-base font-semibold text-slate-800">Employee List</h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Search by name, username, email, or phone.</p>
+                        </div>
+                        <div class="sm:w-72">
+                            <SearchInput
+                                route="/employee-users"
+                                :initial-value="filters.search"
+                                placeholder="Search employees…"
+                                :only="['users', 'filters']"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="overflow-x-auto">
                         <Table>
                             <TableHeader>
-                                <TableRow>
-                                    <TableHead>Username</TableHead>
-                                    <TableHead>Employee</TableHead>
-                                    <TableHead>Role</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Phone</TableHead>
-                                    <TableHead>Created</TableHead>
-                                    <TableHead class="text-right">
-                                        Action
-                                    </TableHead>
+                                <TableRow class="border-slate-100 bg-slate-50/70 hover:bg-slate-50/70">
+                                    <TableHead class="pl-5 text-[11px] font-bold uppercase tracking-widest text-slate-400">Username</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Employee</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Role</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Status</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Phone</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Created</TableHead>
+                                    <TableHead class="pr-5 text-right text-[11px] font-bold uppercase tracking-widest text-slate-400">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
 
                             <TableBody>
-                                <TableRow v-if="users.data.length === 0">
-                                    <TableCell
-                                        colspan="7"
-                                        class="py-10 text-center text-sm text-muted-foreground"
-                                    >
-                                        No employees found.
+                                <!-- Empty state -->
+                                <TableRow v-if="users.data.length === 0" class="hover:bg-transparent">
+                                    <TableCell colspan="7" class="py-20 text-center">
+                                        <div class="flex flex-col items-center gap-3">
+                                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
+                                                <Users class="h-6 w-6 text-slate-400" />
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-semibold text-slate-600">No employees found</p>
+                                                <p class="text-xs text-slate-400 mt-0.5">Try adjusting your search.</p>
+                                            </div>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
 
                                 <TableRow
                                     v-for="employee in users.data"
                                     :key="employee.id"
+                                    class="border-slate-100 transition-colors hover:bg-slate-50/80"
                                 >
-                                    <TableCell class="font-medium">
-                                        {{ employee.username }}
+                                    <!-- Username -->
+                                    <TableCell class="pl-5">
+                                        <span class="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-700">
+                                            {{ employee.username }}
+                                        </span>
                                     </TableCell>
 
+                                    <!-- Employee info -->
                                     <TableCell>
-                                        <div class="space-y-1">
-                                            <div class="flex items-center gap-2">
-                                                <UserSquare2
-                                                    class="h-4 w-4 text-muted-foreground"
-                                                />
-                                                <span>{{ employee.name }}</span>
+                                        <div class="flex items-center gap-2.5">
+                                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-xs font-bold uppercase">
+                                                {{ employee.name.charAt(0) }}
                                             </div>
-
-                                            <p class="text-xs text-muted-foreground">
-                                                {{ employee.email || '—' }}
-                                            </p>
+                                            <div>
+                                                <p class="text-sm font-semibold text-slate-800">{{ employee.name }}</p>
+                                                <p class="text-xs text-slate-400">{{ employee.email || '—' }}</p>
+                                            </div>
                                         </div>
                                     </TableCell>
 
+                                    <!-- Role -->
                                     <TableCell>
-                                        <Badge variant="outline">
+                                        <Badge :class="['rounded-full border px-2.5 py-0.5 text-xs', roleClass(employee)]">
                                             {{ humanize(roleName(employee)) }}
                                         </Badge>
                                     </TableCell>
 
+                                    <!-- Status -->
                                     <TableCell>
-                                        <Badge :variant="statusVariant(employee.status)">
+                                        <span :class="['inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs', statusClass(employee.status)]">
+                                            <span :class="['h-1.5 w-1.5 rounded-full', statusDot(employee.status)]" />
                                             {{ humanize(employee.status) }}
-                                        </Badge>
+                                        </span>
                                     </TableCell>
 
-                                    <TableCell class="text-sm text-muted-foreground">
+                                    <!-- Phone -->
+                                    <TableCell class="text-sm text-slate-500 tabular-nums">
                                         {{ employee.phone_number || '—' }}
                                     </TableCell>
 
-                                    <TableCell class="text-sm text-muted-foreground">
+                                    <!-- Created -->
+                                    <TableCell class="text-sm text-slate-400">
                                         {{ formatDate(employee.created_at) }}
                                     </TableCell>
 
-                                    <TableCell class="text-right">
+                                    <!-- Actions -->
+                                    <TableCell class="pr-5 text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
-                                                <Button variant="ghost" size="icon">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    class="h-8 w-8 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                                                >
                                                     <MoreHorizontal class="h-4 w-4" />
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent align="end" class="w-52">
-                                                <DropdownMenuLabel>
+                                            <DropdownMenuContent align="end" class="w-52 rounded-xl shadow-lg border-slate-200">
+                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-slate-400">
                                                     Actions
                                                 </DropdownMenuLabel>
+                                                <DropdownMenuSeparator class="bg-slate-100" />
 
-                                                <DropdownMenuSeparator />
-
-                                                <DropdownMenuItem as-child>
+                                                <DropdownMenuItem as-child class="rounded-lg text-slate-700 focus:text-blue-700 focus:bg-blue-50">
                                                     <Link :href="`/employee-users/${employee.id}`">
                                                         <Eye class="mr-2 h-4 w-4" />
-                                                        View
+                                                        View Profile
                                                     </Link>
                                                 </DropdownMenuItem>
 
-                                                <DropdownMenuItem as-child>
+                                                <DropdownMenuItem as-child class="rounded-lg text-slate-700 focus:text-amber-700 focus:bg-amber-50">
                                                     <Link :href="`/employee-users/${employee.id}/edit`">
                                                         <Pencil class="mr-2 h-4 w-4" />
-                                                        Edit
+                                                        Edit Details
                                                     </Link>
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
+                                                    :class="['rounded-lg', toggleStatusClass(employee.status)]"
                                                     @click="openStatusDialog(employee)"
                                                 >
                                                     <Power class="mr-2 h-4 w-4" />
@@ -424,18 +431,21 @@ function confirmResetPassword() {
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
+                                                    class="rounded-lg text-slate-700 focus:text-blue-700 focus:bg-blue-50"
                                                     @click="openResetPasswordDialog(employee)"
                                                 >
                                                     <KeyRound class="mr-2 h-4 w-4" />
                                                     Reset Password
                                                 </DropdownMenuItem>
 
+                                                <DropdownMenuSeparator class="bg-slate-100" />
+
                                                 <DropdownMenuItem
-                                                    class="text-destructive focus:text-destructive"
+                                                    class="rounded-lg text-rose-600 focus:text-rose-600 focus:bg-rose-50"
                                                     @click="openDeleteDialog(employee)"
                                                 >
                                                     <Trash2 class="mr-2 h-4 w-4" />
-                                                    Delete
+                                                    Delete Account
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -445,95 +455,91 @@ function confirmResetPassword() {
                         </Table>
                     </div>
 
-                    <InertiaPagination
-                        v-if="users.last_page > 1"
-                        :links="users.links"
-                        :meta="{
-                            from: users.from,
-                            to: users.to,
-                            total: users.total,
-                        }"
-                    />
-                </CardContent>
-            </Card>
+                    <!-- Pagination -->
+                    <div v-if="users.last_page > 1" class="border-t border-slate-100 px-5 py-3">
+                        <InertiaPagination
+                            :links="users.links"
+                            :meta="{
+                                from: users.from,
+                                to: users.to,
+                                total: users.total,
+                            }"
+                        />
+                    </div>
+                </div>
 
-            <AlertDialog v-model:open="statusDialog.open">
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>
-                            {{ toggleStatusLabel(statusDialog.employee?.status) }}
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will update the status of
-                            <span class="font-medium text-foreground">
-                                {{ statusDialog.employee?.name || 'this employee' }}
-                            </span>.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-
-                    <AlertDialogFooter>
-                        <AlertDialogCancel @click="statusDialog.employee = null">
-                            Cancel
-                        </AlertDialogCancel>
-                        <AlertDialogAction @click="confirmToggleStatus">
-                            Confirm
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            <AlertDialog v-model:open="resetPasswordDialog.open">
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>
-                            Reset employee password?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will reset the password of
-                            <span class="font-medium text-foreground">
-                                {{ resetPasswordDialog.employee?.name || 'this employee' }}
-                            </span>
-                            to
-                            <span class="font-medium text-foreground">pitx@123</span>.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-
-                    <AlertDialogFooter>
-                        <AlertDialogCancel @click="resetPasswordDialog.employee = null">
-                            Cancel
-                        </AlertDialogCancel>
-                        <AlertDialogAction @click="confirmResetPassword">
-                            Reset Password
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            <AlertDialog v-model:open="deleteDialog.open">
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>
-                            Delete employee account?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will permanently remove
-                            <span class="font-medium text-foreground">
-                                {{ deleteDialog.employee?.name || 'this employee' }}
-                            </span>
-                            from your employee list.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-
-                    <AlertDialogFooter>
-                        <AlertDialogCancel @click="deleteDialog.employee = null">
-                            Cancel
-                        </AlertDialogCancel>
-                        <AlertDialogAction @click="confirmDelete">
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            </div>
         </div>
+
+        <!-- ── Status dialog ─────────────────────────────────────────── -->
+        <AlertDialog v-model:open="statusDialog.open">
+            <AlertDialogContent class="rounded-2xl">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>{{ toggleStatusLabel(statusDialog.employee?.status) }}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This will update the account status of
+                        <span class="font-semibold text-slate-800">{{ statusDialog.employee?.name || 'this employee' }}</span>.
+                        Are you sure you want to continue?
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel class="rounded-lg" @click="statusDialog.employee = null">Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                        class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0"
+                        @click="confirmToggleStatus"
+                    >
+                        Confirm
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <!-- ── Reset password dialog ─────────────────────────────────── -->
+        <AlertDialog v-model:open="resetPasswordDialog.open">
+            <AlertDialogContent class="rounded-2xl">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Reset employee password?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        The password for
+                        <span class="font-semibold text-slate-800">{{ resetPasswordDialog.employee?.name || 'this employee' }}</span>
+                        will be reset to
+                        <code class="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-mono font-semibold text-slate-700">pitx@123</code>.
+                        They should change it on next login.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel class="rounded-lg" @click="resetPasswordDialog.employee = null">Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                        class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0"
+                        @click="confirmResetPassword"
+                    >
+                        Reset Password
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <!-- ── Delete dialog ─────────────────────────────────────────── -->
+        <AlertDialog v-model:open="deleteDialog.open">
+            <AlertDialogContent class="rounded-2xl">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Delete employee account?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        <span class="font-semibold text-slate-800">{{ deleteDialog.employee?.name || 'This employee' }}</span>
+                        will be permanently removed from your employee list. This action cannot be undone.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel class="rounded-lg" @click="deleteDialog.employee = null">Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                        class="rounded-lg bg-rose-600 text-white hover:bg-rose-700 border-0"
+                        @click="confirmDelete"
+                    >
+                        Delete Account
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
     </ExternalLayout>
 </template>

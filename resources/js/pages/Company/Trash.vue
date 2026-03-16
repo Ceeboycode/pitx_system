@@ -1,31 +1,11 @@
 <script setup lang="ts">
-/* ======================================================
-   Shared Components
-====================================================== */
-
-// Pagination component for Inertia responses
 import InertiaPagination from '@/components/InertiaPagination.vue';
-
-// Reusable debounced search input
 import SearchInput from '@/components/SearchInput.vue';
 
-// shadcn-vue button
-import { Button } from '@/components/ui/button';
-
-/* ======================================================
-   Dialog Components
-====================================================== */
-
-// Dialog to permanently delete a company
 import ForceDeleteCompanyDialog from '@/components/company/ForceDeleteCompanyDialog.vue';
-
-// Dialog to restore an archived company
 import RestoreCompanyDialog from '@/components/company/RestoreCompanyDialog.vue';
 
-/* ======================================================
-   shadcn-vue UI Components
-====================================================== */
-
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardAction,
@@ -34,50 +14,41 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
     Table,
     TableBody,
-    TableCaption,
     TableCell,
     TableHead,
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
 
-/* ======================================================
-   Layout, Routing & Inertia
-====================================================== */
-
-// Main application layout
 import AppLayout from '@/layouts/AppLayout.vue';
-
-// Wayfinder routes
 import { index, trash } from '@/routes/companies';
-
-// Breadcrumb type
 import { type BreadcrumbItem } from '@/types';
-
-// Inertia helpers
 import { Head, Link } from '@inertiajs/vue3';
 
-/* ======================================================
-   Icons
-====================================================== */
-
-import { ArrowLeft, RotateCcw, Trash2 } from 'lucide-vue-next';
-
-/* ======================================================
-   Vue Core
-====================================================== */
+import {
+    Archive,
+    ArrowLeft,
+    Building2,
+    MoreHorizontal,
+    RotateCcw,
+    Trash2,
+} from 'lucide-vue-next';
 
 import { ref } from 'vue';
 
-/* ======================================================
-   Types
-====================================================== */
+/* ── Types ──────────────────────────────────────────────────────────── */
 
-// Company shape for archived records
 type Company = {
     id: number;
     company_name: string;
@@ -86,48 +57,31 @@ type Company = {
     deleter?: { id: number; name: string } | null;
 };
 
-/* ======================================================
-   Breadcrumbs
-====================================================== */
+/* ── Breadcrumbs ─────────────────────────────────────────────────── */
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Companies', href: index().url },
     { title: 'Archived', href: trash().url },
 ];
 
-/* ======================================================
-   Props from Inertia Controller
-====================================================== */
+/* ── Props ───────────────────────────────────────────────────────── */
 
 const props = defineProps<{
-    companies: any; // Paginated archived companies
-    filters: { search: string | null }; // Active search filter
+    companies: any;
+    filters: { search: string | null };
 }>();
 
-/* ======================================================
-   Dialog State
-====================================================== */
+/* ── Dialog state ────────────────────────────────────────────────── */
 
-// Restore dialog open state
-const restoreOpen = ref(false);
-
-// Force delete dialog open state
+const restoreOpen     = ref(false);
 const forceDeleteOpen = ref(false);
-
-// Currently selected company (restore / delete)
 const selectedCompany = ref<Company | null>(null);
 
-/* ======================================================
-   Actions
-====================================================== */
-
-// Open restore dialog for selected company
 function openRestore(company: Company) {
     selectedCompany.value = company;
     restoreOpen.value = true;
 }
 
-// Open force delete dialog for selected company
 function openForceDelete(company: Company) {
     selectedCompany.value = company;
     forceDeleteOpen.value = true;
@@ -135,30 +89,29 @@ function openForceDelete(company: Company) {
 </script>
 
 <template>
-    <!-- Page title -->
     <Head title="Archived Companies" />
 
-    <!-- Main application layout -->
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
-        >
-            <!-- ======================================================
-                 Archived Companies Card
-            ======================================================= -->
-            <Card class="mx-10">
-                <!-- Card Header -->
+        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+            <Card class="mx-5">
                 <CardHeader>
-                    <CardTitle>Archived Companies</CardTitle>
-                    <CardDescription>
-                        Archived companies can be restored or permanently
-                        deleted.
-                    </CardDescription>
+                    <div>
+                        <CardTitle class="flex items-center gap-2">
+                            <Archive class="h-5 w-5 text-muted-foreground" />
+                            Archived Companies
+                        </CardTitle>
+                        <CardDescription class="mt-1">
+                            Archived companies can be restored or permanently deleted.
+                        </CardDescription>
+                    </div>
 
-                    <!-- Header Action -->
                     <CardAction>
-                        <!-- Back to active companies -->
-                        <Button as-child size="sm" variant="link" class="mr-2">
+                        <Button
+                            as-child
+                            size="sm"
+                            variant="outline"
+                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
+                        >
                             <Link :href="index().url">
                                 <ArrowLeft class="mr-2 h-4 w-4" />
                                 Back to Companies
@@ -167,109 +120,123 @@ function openForceDelete(company: Company) {
                     </CardAction>
                 </CardHeader>
 
-                <!-- Card Content -->
                 <CardContent class="space-y-4">
-                    <!-- ======================================================
-                         Search Row
-                    ======================================================= -->
-                    <div
-                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                        <!-- Search archived companies -->
+
+                    <!-- Search -->
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <div class="w-full max-w-sm">
                             <SearchInput
                                 :route="trash().url"
                                 :initial-value="filters.search"
-                                placeholder="Search archived companies..."
+                                placeholder="Search archived companies…"
                                 :only="['companies', 'filters', 'flash']"
                                 :debounce="350"
                             />
                         </div>
                     </div>
 
-                    <!-- ======================================================
-                         Archived Companies Table
-                    ======================================================= -->
-                    <Table>
-                        <TableCaption>
-                            List of archived companies.
-                        </TableCaption>
+                    <!-- Table -->
+                    <div class="overflow-x-auto rounded-lg border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow class="bg-muted/40 hover:bg-muted/40">
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Company Name</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Code</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Archived At</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Archived By</TableHead>
+                                    <TableHead class="text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
 
-                        <!-- Table Header -->
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Company Name</TableHead>
-                                <TableHead>Company Code</TableHead>
-                                <TableHead>Archived At</TableHead>
-                                <TableHead>Archived By</TableHead>
-                                <TableHead>Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
+                            <TableBody>
+                                <!-- Empty state -->
+                                <TableRow v-if="companies.data.length === 0" class="hover:bg-transparent">
+                                    <TableCell colspan="5" class="py-20 text-center">
+                                        <div class="flex flex-col items-center gap-3">
+                                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+                                                <Building2 class="h-6 w-6 text-muted-foreground/40" />
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-semibold text-foreground">No archived companies</p>
+                                                <p class="mt-0.5 text-xs text-muted-foreground">Nothing has been archived yet.</p>
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
 
-                        <!-- Table Body -->
-                        <TableBody>
-                            <!-- Company Rows -->
-                            <TableRow
-                                v-for="company in companies.data"
-                                :key="company.id"
-                            >
-                                <TableCell class="capitalize">
-                                    {{ company.company_name }}
-                                </TableCell>
-
-                                <TableCell class="capitalize">
-                                    {{ company.company_code }}
-                                </TableCell>
-
-                                <TableCell>
-                                    {{ company.deleted_at_human ?? '—' }}
-                                </TableCell>
-
-                                <TableCell class="capitalize">
-                                    {{ company.deleter?.name ?? '—' }}
-                                </TableCell>
-
-                                <!-- Action Buttons -->
-                                <TableCell class="space-x-2">
-                                    <!-- Restore -->
-                                    <Button
-                                        class="cursor-pointer"
-                                        size="sm"
-                                        variant="secondary"
-                                        @click="openRestore(company)"
-                                    >
-                                        <RotateCcw class="mr-2 h-4 w-4" />
-                                        Restore
-                                    </Button>
-
-                                    <!-- Force Delete -->
-                                    <Button
-                                        class="cursor-pointer"
-                                        size="sm"
-                                        variant="destructive"
-                                        @click="openForceDelete(company)"
-                                    >
-                                        <Trash2 class="mr-2 h-4 w-4" />
-                                        Delete Permanently
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-
-                            <!-- Empty State -->
-                            <TableRow v-if="companies.data.length === 0">
-                                <TableCell
-                                    colspan="4"
-                                    class="py-10 text-center text-muted-foreground"
+                                <TableRow
+                                    v-for="company in companies.data"
+                                    :key="company.id"
+                                    class="transition-colors hover:bg-muted/30"
                                 >
-                                    No archived companies found.
-                                </TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
+                                    <!-- Company Name -->
+                                    <TableCell>
+                                        <p class="text-sm font-semibold capitalize">{{ company.company_name }}</p>
+                                    </TableCell>
 
-                    <!-- ======================================================
-                         Pagination
-                    ======================================================= -->
+                                    <!-- Code -->
+                                    <TableCell>
+                                        <span class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
+                                            {{ company.company_code }}
+                                        </span>
+                                    </TableCell>
+
+                                    <!-- Archived At -->
+                                    <TableCell class="text-sm text-muted-foreground">
+                                        {{ company.deleted_at_human ?? '—' }}
+                                    </TableCell>
+
+                                    <!-- Archived By -->
+                                    <TableCell class="text-sm capitalize text-muted-foreground">
+                                        {{ company.deleter?.name ?? '—' }}
+                                    </TableCell>
+
+                                    <!-- Actions -->
+                                    <TableCell class="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger as-child>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                >
+                                                    <MoreHorizontal class="h-4 w-4" />
+                                                    <span class="sr-only">Open actions</span>
+                                                </Button>
+                                            </DropdownMenuTrigger>
+
+                                            <DropdownMenuContent align="end" class="w-52 rounded-xl border-slate-200 shadow-lg">
+                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                                    {{ company.company_name }}
+                                                </DropdownMenuLabel>
+
+                                                <DropdownMenuSeparator />
+
+                                                <DropdownMenuItem
+                                                    class="rounded-lg text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700"
+                                                    @click="openRestore(company)"
+                                                >
+                                                    <RotateCcw class="mr-2 h-4 w-4" />
+                                                    Restore Company
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuSeparator />
+
+                                                <DropdownMenuItem
+                                                    class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600"
+                                                    @click="openForceDelete(company)"
+                                                >
+                                                    <Trash2 class="mr-2 h-4 w-4" />
+                                                    Delete Permanently
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </div>
+
                     <InertiaPagination
                         :links="companies.links"
                         :meta="{
@@ -281,18 +248,12 @@ function openForceDelete(company: Company) {
                 </CardContent>
             </Card>
 
-            <!-- ======================================================
-                 Dialogs
-            ======================================================= -->
-
-            <!-- Restore Company Dialog -->
             <RestoreCompanyDialog
                 v-if="selectedCompany"
                 v-model:open="restoreOpen"
                 :company="selectedCompany"
             />
 
-            <!-- Force Delete Company Dialog -->
             <ForceDeleteCompanyDialog
                 v-if="selectedCompany"
                 v-model:open="forceDeleteOpen"
