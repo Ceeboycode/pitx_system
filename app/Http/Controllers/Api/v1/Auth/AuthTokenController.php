@@ -4,15 +4,55 @@ namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
+use App\Http\Requests\Api\V1\Auth\RegisterRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 class AuthTokenController extends Controller
 {
-    public function store(LoginRequest $request): JsonResponse
+    public function register(RegisterRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $role = Role::firstOrCreate([
+            'name' => 'commuter',
+            'guard_name' => 'web',
+        ], [
+            'type' => 'commuter',
+        ]);
+
+        if ((string) $role->type !== 'commuter') {
+            $role->update(['type' => 'commuter']);
+        }
+
+        $user = User::query()->create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone_number' => $validated['phone_number'] ?? null,
+            'username' => $validated['username'] ?? $this->generateUsername($validated['email']),
+            'email_verified_at' => now(),
+            'password' => Hash::make($validated['password']),
+            'company_id' => null,
+        ]);
+
+        $user->assignRole($role);
+        $plainToken = $this->issueToken($user);
+
+        return response()->json([
+            'message' => 'Registration successful.',
+            'data' => [
+                'token' => $plainToken,
+                'token_type' => 'Bearer',
+                'user' => new UserResource($user->load('roles')),
+            ],
+        ], 201);
+    }
+
+    public function login(LoginRequest $request): JsonResponse
     {
         $credentials = $request->validated();
 
@@ -33,11 +73,7 @@ class AuthTokenController extends Controller
             ], 403);
         }
 
-        $plainToken = Str::random(60);
-
-        $user->forceFill([
-            'api_token' => hash('sha256', $plainToken),
-        ])->save();
+        $plainToken = $this->issueToken($user);
 
         return response()->json([
             'message' => 'Login successful.',
@@ -71,5 +107,36 @@ class AuthTokenController extends Controller
         return response()->json([
             'message' => 'Logged out successfully.',
         ]);
+    }
+
+    private function issueToken(User $user): string
+    {
+        $plainToken = Str::random(60);
+
+        $user->forceFill([
+            'api_token' => hash('sha256', $plainToken),
+        ])->save();
+
+        return $plainToken;
+    }
+
+    private function generateUsername(string $email): string
+    {
+        $base = Str::lower((string) Str::of($email)->before('@')->replaceMatches('/[^a-zA-Z0-9_]/', ''));
+        $base = trim($base, '_');
+
+        if ($base === '') {
+            $base = 'commuter';
+        }
+
+        $username = $base;
+        $suffix = 1;
+
+        while (User::query()->where('username', $username)->exists()) {
+            $username = $base . $suffix;
+            $suffix++;
+        }
+
+        return $username;
     }
 }

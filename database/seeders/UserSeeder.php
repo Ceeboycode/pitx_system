@@ -53,6 +53,20 @@ class UserSeeder extends Seeder
 
         $commuter->syncRoles(['commuter']);
 
+        $commuter = User::updateOrCreate(
+            ['username' => 'commuter2'],
+            [
+                'name' => 'Commuter2 User',
+                'email' => 'commuter2@gmail.com',
+                'phone_number' => '09222222222',
+                'email_verified_at' => now(),
+                'password' => Hash::make('admin123'),
+                'company_id' => null,
+            ]
+        );
+
+        $commuter->syncRoles(['commuter']);
+
         // DISPATCHERS (avoid duplicates if seed is re-run)
         User::factory()
             ->count(5)
