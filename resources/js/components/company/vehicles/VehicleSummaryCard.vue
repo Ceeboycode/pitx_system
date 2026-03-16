@@ -84,10 +84,10 @@ const uploadedCount = computed(() => {
         <Button
             v-if="!readonly"
             type="submit"
-            class="w-full"
+            class="w-full bg-blue-600 text-white hover:bg-blue-900"
             :disabled="form.processing"
         >
-            <Save class="mr-2 h-4 w-4" />
+            <Save class="mr-2 h-4 w-4 " />
             {{ form.processing ? 'Saving...' : (submitLabel || 'Save Vehicle') }}
         </Button>
     </div>

@@ -86,11 +86,11 @@ const mainNavItems: NavItem[] = [
         href: '#',
         icon: BusFront,
         items: [
-            {
-                id: 'vehicle_types',
-                title: 'Vehicles Types',
-                href: vehicleTypesIndex().url,
-            },
+            //{
+                //id: 'vehicle_types',
+                //title: 'Vehicles Types',
+                //href: vehicleTypesIndex().url,
+            //},
             {
                 id: 'companies',
                 title: 'Companies',
@@ -119,11 +119,11 @@ const mainNavItems: NavItem[] = [
                 title: 'Routes',
                 href: routesIndex().url,
             },
-            {
-                id: 'route_stops',
-                title: 'Route Stops',
-                href: routeStopsIndex().url,
-            },
+            //{
+                //id: 'route_stops',
+               //title: 'Route Stops',
+                //href: routeStopsIndex().url,
+            //},
         ],
     },
     {
