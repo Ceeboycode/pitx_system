@@ -9,20 +9,20 @@ class Dispatch extends Model
 {
     use SoftDeletes;
 
-    public const STATUS_PENDING   = 'pending';
-    public const STATUS_ARRIVED   = 'arrived';
-    public const STATUS_DEPARTED  = 'departed';
-    public const STATUS_SETTLED   = 'settled';
-    public const STATUS_CANCELLED = 'cancelled';
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_ARRIVED = 'arrived';
+    public const STATUS_DEPARTED = 'departed';
 
     protected $fillable = [
         'company_id',
         'vehicle_id',
+        'gate_id',
         'plate_number',
         'pax_count',
         'bay_number',
         'remarks',
         'dispatcher_user_id',
+        'driver_user_id',
         'arrived_at',
         'departed_at',
         'dispatched_at',
@@ -33,8 +33,8 @@ class Dispatch extends Model
     ];
 
     protected $casts = [
-        'arrived_at'    => 'datetime',
-        'departed_at'   => 'datetime',
+        'arrived_at' => 'datetime',
+        'departed_at' => 'datetime',
         'dispatched_at' => 'datetime',
     ];
 
@@ -67,9 +67,19 @@ class Dispatch extends Model
         return $this->belongsTo(Vehicle::class);
     }
 
+    public function gate()
+    {
+        return $this->belongsTo(Gate::class);
+    }
+
     public function dispatcher()
     {
         return $this->belongsTo(User::class, 'dispatcher_user_id');
+    }
+
+    public function driver()
+    {
+        return $this->belongsTo(User::class, 'driver_user_id');
     }
 
     public function creator()

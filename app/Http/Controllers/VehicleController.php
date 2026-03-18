@@ -350,7 +350,7 @@ class VehicleController extends Controller
     {
         Gate::authorize('update', $vehicle);
 
-        $nextStatus = $vehicle->status === 'active' ? 'inactive' : 'active';
+        $nextStatus = $vehicle->status === 'suspended' ? 'active' : 'suspended';
 
         $vehicle->update([
             'status' => $nextStatus,

@@ -2,16 +2,23 @@
 
 namespace App\Http\Requests\Dispatch;
 
+use App\Models\Dispatch;
 use App\Models\Gate;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreDispatchRequest extends FormRequest
+class UpdateDispatchRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->check() && auth()->user()?->company_id !== null;
+        /** @var \App\Models\Dispatch|null $dispatch */
+        $dispatch = $this->route('dispatch');
+
+        return auth()->check()
+            && auth()->user()?->company_id !== null
+            && $dispatch !== null
+            && $dispatch->status !== Dispatch::STATUS_DEPARTED;
     }
 
     public function rules(): array

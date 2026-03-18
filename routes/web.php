@@ -158,6 +158,28 @@ Route::middleware(['auth', 'role.type:external'])->group(function () {
         Route::patch('employee-users/{employeeUser}/reset-password', [CompanyUserController::class, 'resetPassword'])
             ->name('employee-users.reset-password');
     });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Dispatching
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('company/dispatches', [DispatchController::class, 'index'])
+            ->name('company.dispatches.index');
+
+        Route::get('company/dispatches/{dispatch}', [DispatchController::class, 'show'])
+            ->name('company.dispatches.show');
+
+        Route::post('company/dispatches', [DispatchController::class, 'store'])
+            ->name('company.dispatches.store');
+
+        Route::put('company/dispatches/{dispatch}', [DispatchController::class, 'update'])
+            ->name('company.dispatches.update');
+
+        Route::patch('company/dispatches/{dispatch}/depart', [DispatchController::class, 'depart'])
+            ->name('company.dispatches.depart');
+
 });
 
 /*
@@ -348,9 +370,8 @@ Route::middleware(['auth', 'role.type:internal'])->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::resource('dispatches', DispatchController::class)->except(['create', 'store']);
-    Route::get('dispatches/create/{company}', [DispatchController::class, 'create'])->name('dispatches.create');
-    Route::post('dispatches/{company}', [DispatchController::class, 'store'])->name('dispatches.store');
+
+
 
     /*
     |--------------------------------------------------------------------------
