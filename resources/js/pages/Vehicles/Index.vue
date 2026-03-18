@@ -49,8 +49,9 @@ import {
     FileSearch,
     MoreHorizontal,
     Pencil,
-    Power,
     Route as RouteIcon,
+    ShieldCheck,
+    ShieldOff,
     Upload,
 } from 'lucide-vue-next';
 import { ref } from 'vue';
@@ -104,6 +105,7 @@ function statusClass(status?: string | null): string {
         case 'for_verification': return 'bg-violet-100 text-violet-700 border-violet-200';
         case 'draft':
         case 'pending':          return 'bg-amber-100 text-amber-700 border-amber-200';
+        case 'suspended':        return 'bg-orange-100 text-orange-700 border-orange-200';
         case 'invalid':
         case 'inactive':
         case 'needs_revision':   return 'bg-rose-100 text-rose-600 border-rose-200';
@@ -118,6 +120,7 @@ function statusDot(status?: string | null): string {
         case 'for_verification': return 'bg-violet-500';
         case 'draft':
         case 'pending':          return 'bg-amber-500';
+        case 'suspended':        return 'bg-orange-500';
         case 'invalid':
         case 'inactive':
         case 'needs_revision':   return 'bg-rose-500';
@@ -126,9 +129,9 @@ function statusDot(status?: string | null): string {
 }
 
 function toggleStatusClass(status?: string | null): string {
-    return status === 'active'
-        ? 'text-rose-600 focus:bg-rose-50 focus:text-rose-600'
-        : 'text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700';
+    return status === 'suspended'
+        ? 'text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700'
+        : 'text-orange-600 focus:bg-orange-50 focus:text-orange-600';
 }
 
 const humanize = (text?: string | null) => {
@@ -137,7 +140,7 @@ const humanize = (text?: string | null) => {
 };
 
 const toggleLabel = (status?: string | null) =>
-    status === 'active' ? 'Set Inactive' : 'Set Active';
+    status === 'suspended' ? 'Unsuspend' : 'Suspend';
 
 const openArchiveDialog = (vehicle: VehicleItem) => {
     selectedVehicle.value = vehicle;
@@ -370,7 +373,8 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     :class="['rounded-lg', toggleStatusClass(vehicle.status)]"
                                                     @click="openStatusDialog(vehicle)"
                                                 >
-                                                    <Power class="mr-2 h-4 w-4" />
+                                                    <ShieldCheck v-if="vehicle.status === 'suspended'" class="mr-2 h-4 w-4" />
+                                                    <ShieldOff v-else class="mr-2 h-4 w-4" />
                                                     {{ toggleLabel(vehicle.status) }}
                                                 </DropdownMenuItem>
 
@@ -434,17 +438,29 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                         {{ statusVehicle ? toggleLabel(statusVehicle.status) : 'Update Status' }}
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                        Update status for
-                        <span class="font-semibold text-foreground">{{ statusVehicle?.plate_number || 'this vehicle' }}</span>?
+                        <template v-if="statusVehicle?.status === 'suspended'">
+                            Unsuspending
+                            <span class="font-semibold text-foreground">{{ statusVehicle?.plate_number || 'this vehicle' }}</span>
+                            will set its status back to <span class="font-semibold text-foreground">Active</span>.
+                        </template>
+                        <template v-else>
+                            Are you sure you want to suspend
+                            <span class="font-semibold text-foreground">{{ statusVehicle?.plate_number || 'this vehicle' }}</span>?
+                        </template>
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel class="rounded-lg" @click="statusVehicle = null">Cancel</AlertDialogCancel>
                     <AlertDialogAction
-                        class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0"
+                        :class="[
+                            'rounded-lg border-0 text-white',
+                            statusVehicle?.status === 'suspended'
+                                ? 'bg-emerald-600 hover:bg-emerald-700'
+                                : 'bg-orange-500 hover:bg-orange-600',
+                        ]"
                         @click="confirmToggleStatus"
                     >
-                        Confirm
+                        {{ statusVehicle ? toggleLabel(statusVehicle.status) : 'Confirm' }}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

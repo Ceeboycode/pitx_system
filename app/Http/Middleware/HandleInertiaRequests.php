@@ -11,37 +11,31 @@ class HandleInertiaRequests extends Middleware
     /**
      * The root template that's loaded on the first page visit.
      *
-     * @see https://inertiajs.com/server-side-setup#root-template
-     *
      * @var string
      */
     protected $rootView = 'app';
 
-    /**
-     * Determines the current asset version.
-     *
-     * @see https://inertiajs.com/asset-versioning
-     */
     public function version(Request $request): ?string
     {
         return parent::version($request);
     }
 
-    /**
-     * Define the props that are shared by default.
-     *
-     * @see https://inertiajs.com/shared-data
-     *
-     * @return array<string, mixed>
-     */
     public function share(Request $request): array
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
+        $user = $request->user();
+        $company = $user?->company;
+
         return [
             ...parent::share($request),
+
             'name' => config('app.name'),
-            'quote' => ['message' => trim($message), 'author' => trim($author)],
+
+            'quote' => [
+                'message' => trim($message),
+                'author' => trim($author),
+            ],
 
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
@@ -51,11 +45,28 @@ class HandleInertiaRequests extends Middleware
             ],
 
             'auth' => [
-                'user' => $request->user(),
-                'permissions' => fn() => $request->user()?->getAllPermissions()->pluck('name') ?? [],
+                'user' => $user ? [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'type' => $user->type,
+                    'status' => $user->status,
+                ] : null,
+
+                'company' => $company ? [
+                    'id' => $company->id,
+                    'company_name' => $company->company_name,
+                    'company_code' => $company->company_code,
+                    'status' => $company->status,
+                    'logo_url' => $company->logo_url,
+                ] : null,
+
+                'permissions' => fn () => $user?->getAllPermissions()->pluck('name')->values() ?? [],
             ],
 
-            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'sidebarOpen' => ! $request->hasCookie('sidebar_state')
+                || $request->cookie('sidebar_state') === 'true',
         ];
     }
 }

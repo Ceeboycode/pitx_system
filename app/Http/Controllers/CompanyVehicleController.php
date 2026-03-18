@@ -273,6 +273,7 @@ class CompanyVehicleController extends Controller
         $company = $user->company;
 
         abort_unless($vehicle->company_id === $company->id, 404);
+        abort_if($vehicle->status === 'suspended', 403, 'Suspended vehicles cannot be edited.');
 
         $vehicle->load([
             'documents:id,vehicle_id,document_type,file_name,status,issued_at,expires_at,created_at',
@@ -363,6 +364,7 @@ class CompanyVehicleController extends Controller
         $user = $request->user();
 
         abort_unless($vehicle->company_id === $company->id, 404);
+        abort_if($vehicle->status === 'suspended', 403, 'Suspended vehicles cannot be updated.');
 
         $validated = $request->validated();
 
@@ -450,6 +452,11 @@ class CompanyVehicleController extends Controller
         $company = $request->user()->company;
 
         abort_unless($vehicle->company_id === $company->id, 404);
+
+        if ($vehicle->status === 'suspended') {
+            return to_route('company.vehicles.index')
+                ->with('error', 'Suspended vehicles cannot change status.');
+        }
 
         if (! $vehicle->documents()->exists()) {
             return to_route('company.vehicles.index')
