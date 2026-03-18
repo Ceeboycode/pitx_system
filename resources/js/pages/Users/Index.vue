@@ -183,7 +183,7 @@ function roleBadgeClass(role: Role) {
                     </div>
 
                     <Table>
-                        <TableCaption>List of Users</TableCaption>
+                        <!-- <TableCaption>List of Users</TableCaption> -->
 
                         <TableHeader>
                             <TableRow>

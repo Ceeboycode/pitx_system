@@ -119,7 +119,7 @@ function openDelete(vehicle_type: VehicleType) {
                     </div>
 
                     <Table>
-                        <TableCaption> List of vehicle types. </TableCaption>
+                        <!-- <TableCaption> List of vehicle types. </TableCaption> -->
 
                         <TableHeader>
                             <TableRow>

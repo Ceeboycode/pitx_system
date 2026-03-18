@@ -243,7 +243,7 @@ const archiveGate = (gateId: number) => {
                     </div>
 
                     <Table>
-                        <TableCaption>List of gates.</TableCaption>
+                        <!-- <TableCaption>List of gates.</TableCaption> -->
 
                         <TableHeader>
                             <TableRow>

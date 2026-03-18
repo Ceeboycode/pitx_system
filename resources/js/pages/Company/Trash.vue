@@ -191,9 +191,9 @@ function openForceDelete(company: Company) {
                          Archived Companies Table
                     ======================================================= -->
                     <Table>
-                        <TableCaption>
+                        <!-- <TableCaption>
                             List of archived companies.
-                        </TableCaption>
+                        </TableCaption> -->
 
                         <!-- Table Header -->
                         <TableHeader>

@@ -243,7 +243,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                     </div>
 
                     <Table>
-                        <TableCaption>List of vehicles.</TableCaption>
+                        <!-- <TableCaption>List of vehicles.</TableCaption> -->
 
                         <TableHeader>
                             <TableRow>

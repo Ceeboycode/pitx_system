@@ -16,11 +16,11 @@ class VehicleTypeFactory extends Factory
      */
     public function definition(): array
     {
-        return [
-            'type_name' => $this->faker->unique()->word . ' Bus',
-            'is_active' => true,
-            'created_by' => 1,
-            'updated_by' => 1,
-        ];
+        // return [
+        //     'type_name' => $this->faker->unique()->word . ' Bus',
+        //     'is_active' => true,
+        //     'created_by' => 1,
+        //     'updated_by' => 1,
+        // ];
     }
 }
