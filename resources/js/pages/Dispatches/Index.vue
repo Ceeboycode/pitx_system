@@ -111,10 +111,10 @@ function badgeVariant(status: string) {
 
                 <CardContent>
                     <Table>
-                        <TableCaption
+                        <!-- <TableCaption
                             >Dispatch history and movement
                             records.</TableCaption
-                        >
+                        > -->
 
                         <TableHeader>
                             <TableRow>

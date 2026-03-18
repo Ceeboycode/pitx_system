@@ -68,11 +68,11 @@ class UserSeeder extends Seeder
         $commuter->syncRoles(['commuter']);
 
         // DISPATCHERS (avoid duplicates if seed is re-run)
-        User::factory()
-            ->count(5)
-            ->create()
-            ->each(function (User $user) {
-                $user->assignRole('dispatcher');
-            });
+        // User::factory()
+        //     ->count(5)
+        //     ->create()
+        //     ->each(function (User $user) {
+        //         $user->assignRole('dispatcher');
+        //     });
     }
 }

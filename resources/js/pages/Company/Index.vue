@@ -285,7 +285,7 @@ function statusBadgeVariant(
                     </div>
 
                     <Table>
-                        <TableCaption>List of companies.</TableCaption>
+                        <!-- <TableCaption>List of companies.</TableCaption> -->
 
                         <TableHeader>
                             <TableRow>

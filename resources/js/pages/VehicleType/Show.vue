@@ -122,6 +122,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                         {{ vehicleType.updater?.name ?? 'N/A' }}
                                     </TableCell>
                                 </TableRow>
+
                             </TableBody>
                         </Table>
                     </CardContent>

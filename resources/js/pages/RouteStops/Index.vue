@@ -97,10 +97,27 @@ const confirmArchive = () => {
                                 <TableCell>{{ stop.stop_name }}</TableCell>
                                 <TableCell>{{ stop.order }}</TableCell>
                             </TableRow>
+                            <TableRow v-if="routeStops.data.length === 0">
+                                <TableCell
+                                    colspan="3"
+                                    class="py-10 text-center text-muted-foreground"
+                                >
+                                    No route stops found.
+                                </TableCell>
+                            </TableRow>
                         </TableBody>
                     </Table>
 
-                    <InertiaPagination :links="routeStops.links" class="mt-4" />
+                    <!-- <InertiaPagination :links="routeStops.links" class="mt-4" /> -->
+
+                    <InertiaPagination
+                        :links="routeStops.links"
+                        :meta="{
+                            from: routeStops.from,
+                            to: routeStops.to,
+                            total: routeStops.total,
+                        }"
+                    />
                 </CardContent>
             </Card>
         </div>

@@ -36,7 +36,7 @@ const props = withDefaults(
 
 <template>
     <Table>
-        <TableCaption>{{ caption }}</TableCaption>
+        <!-- <TableCaption>{{ caption }}</TableCaption> -->
 
         <TableHeader>
             <TableRow>

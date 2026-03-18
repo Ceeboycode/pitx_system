@@ -101,7 +101,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                     </div>
 
                     <Table>
-                        <TableCaption>Archived Vehicles</TableCaption>
+                        <!-- <TableCaption>Archived Vehicles</TableCaption> -->
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Company</TableHead>
@@ -145,6 +145,14 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     <ForceDeleteVehicleDialog
                                         :vehicle="vehicle"
                                     />
+                                </TableCell>
+                            </TableRow>
+                            <TableRow v-if="vehicles.data.length === 0">
+                                <TableCell
+                                    colspan="9"
+                                    class="py-10 text-center text-muted-foreground"
+                                >
+                                    No archived vehicles found.
                                 </TableCell>
                             </TableRow>
                         </TableBody>
