@@ -15,29 +15,19 @@ class Company extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        // Core identity
         'company_name',
         'company_code',
         'logo',
-
-        // Contact
         'company_email',
+        'company_email_verified_at',
         'company_phone',
         'company_address',
-
-        // Business info
-        'business_type',          // corporate | sole_proprietorship
+        'business_type',
         'registration_number',
-
-        // Authorized representative
         'authorized_representative_name',
         'authorized_representative_position',
         'authorized_representative_contact',
-
-        // Workflow
         'status',
-
-        // Auditing
         'created_by',
         'updated_by',
         'deleted_by',
@@ -45,6 +35,7 @@ class Company extends Model
 
     protected $casts = [
         'deleted_at' => 'datetime',
+        'company_email_verified_at' => 'datetime',
     ];
 
     protected $appends = [
@@ -53,13 +44,9 @@ class Company extends Model
         'deleted_at_human',
         'is_docs_complete',
         'is_verified',
+        'is_company_email_verified',
     ];
 
-    /*
-    |--------------------------------------------------------------------------
-    | Scopes
-    |--------------------------------------------------------------------------
-    */
     public function scopeSearch(Builder $query, ?string $search): Builder
     {
         return $query->when(
@@ -73,11 +60,6 @@ class Company extends Model
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Relationships (Auditing)
-    |--------------------------------------------------------------------------
-    */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -93,11 +75,6 @@ class Company extends Model
         return $this->belongsTo(User::class, 'deleted_by');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Relationships (Business)
-    |--------------------------------------------------------------------------
-    */
     public function documents(): HasMany
     {
         return $this->hasMany(CompanyDocument::class);
@@ -113,11 +90,6 @@ class Company extends Model
         return $this->hasMany(User::class);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Computed attributes
-    |--------------------------------------------------------------------------
-    */
     public function getCreatedAtHumanAttribute(): ?string
     {
         return $this->created_at?->diffForHumans();
@@ -138,17 +110,33 @@ class Company extends Model
         return $this->status === 'verified';
     }
 
-    /**
-     * Checks if the required company documents are uploaded.
-     *
-     * Corporate requires: SEC_CERT + MAYORS_PERMIT + BIR_2303
-     * Sole prop requires: DTI_CERT + MAYORS_PERMIT + BIR_2303
-     *
-     * AUTHORIZATION_LETTER is conditional, so NOT included here.
-     */
+    public function getIsCompanyEmailVerifiedAttribute(): bool
+    {
+        return ! is_null($this->company_email_verified_at);
+    }
+
+    public function hasVerifiedCompanyEmail(): bool
+    {
+        return ! is_null($this->company_email_verified_at);
+    }
+
+    public function markCompanyEmailAsVerified(): bool
+    {
+        return $this->forceFill([
+            'company_email_verified_at' => now(),
+        ])->save();
+    }
+
+    public function markCompanyEmailAsUnverified(): bool
+    {
+        return $this->forceFill([
+            'company_email_verified_at' => null,
+        ])->save();
+    }
+
     public function getIsDocsCompleteAttribute(): bool
     {
-        if (!filled($this->business_type)) {
+        if (! filled($this->business_type)) {
             return false;
         }
 
@@ -165,17 +153,8 @@ class Company extends Model
         return empty(array_diff($required, $existing));
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Helpers (optional but useful)
-    |--------------------------------------------------------------------------
-    */
     public function requiresAuthorizationLetter(?int $transactingUserId = null): bool
     {
-        // If you have a field for "authorized representative user id" you can compare properly.
-        // For now, just provide a placeholder logic:
-        // return $transactingUserId !== $this->authorized_representative_user_id;
-
         return false;
     }
 }

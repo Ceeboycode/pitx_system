@@ -42,6 +42,13 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
     Table,
     TableBody,
     TableCell,
@@ -179,14 +186,13 @@ const invalidCount = computed(
 const expiredCount = computed(
     () => docs.value.filter((d) => isExpired(d.expires_at)).length,
 );
-const actionRequiredCount = computed(
-    () =>
-        docs.value.filter(
-            (d) =>
-                d.status === 'pending' ||
-                d.status === 'invalid' ||
-                isExpired(d.expires_at),
-        ).length,
+const actionRequiredCount = computed(() =>
+    docs.value.filter(
+        (d) =>
+            d.status === 'pending' ||
+            d.status === 'invalid' ||
+            isExpired(d.expires_at),
+    ).length,
 );
 const docsCompletionRate = computed(() => {
     if (!docs.value.length) return 0;
@@ -398,7 +404,13 @@ function openPreview(doc: VehicleDocument) {
     previewOpen.value = true;
 }
 
-/* verify / unverify dialog */
+function closePreview() {
+    previewOpen.value = false;
+    previewDoc.value = null;
+    pdfLoadError.value = false;
+}
+
+/* verify / unverify only from preview */
 const actionForm = useForm({});
 const confirmOpen = ref(false);
 const actionType = ref<'verify' | 'unverify'>('verify');
@@ -408,6 +420,11 @@ function openConfirm(type: 'verify' | 'unverify', doc: VehicleDocument) {
     actionType.value = type;
     actionDoc.value = doc;
     confirmOpen.value = true;
+}
+
+function openConfirmFromPreview(type: 'verify' | 'unverify') {
+    if (!previewDoc.value) return;
+    openConfirm(type, previewDoc.value);
 }
 
 function submitConfirm() {
@@ -423,19 +440,58 @@ function submitConfirm() {
         onSuccess: () => {
             confirmOpen.value = false;
             actionDoc.value = null;
+            closePreview();
         },
     });
 }
 
-/* invalidate dialog */
-const invalidateForm = useForm({ remarks: '' });
+/* invalidate dialog with preset + manual remarks */
+const invalidPresets = [
+    { value: 'blurred', label: 'Blurred or unreadable file' },
+    { value: 'expired', label: 'Expired document' },
+    { value: 'wrong_document', label: 'Wrong document uploaded' },
+    { value: 'missing_pages', label: 'Missing pages or incomplete scan' },
+    { value: 'mismatch', label: 'Vehicle details do not match' },
+    { value: 'reupload_pdf', label: 'Please upload as PDF' },
+    { value: 'other', label: 'Other reason' },
+] as const;
+
+const invalidPresetMessages: Record<string, string> = {
+    blurred: 'The uploaded document is blurred or unreadable. Please upload a clearer copy.',
+    expired: 'The uploaded document is already expired. Please upload a valid updated copy.',
+    wrong_document: 'The uploaded file is the wrong document. Please upload the correct requirement.',
+    missing_pages: 'The uploaded document is incomplete or has missing pages. Please upload the full copy.',
+    mismatch: 'The document details do not match the assigned vehicle information. Please review and re-upload.',
+    reupload_pdf: 'Please re-upload this requirement as a PDF file.',
+    other: '',
+};
+
+const invalidateForm = useForm({
+    preset: '',
+    remarks: '',
+});
 const invalidateOpen = ref(false);
 
 function openInvalidate(doc: VehicleDocument) {
     actionDoc.value = doc;
-    invalidateForm.remarks = doc.remarks ?? '';
+    invalidateForm.reset();
     invalidateForm.clearErrors();
+    invalidateForm.preset = '';
+    invalidateForm.remarks = doc.remarks ?? '';
     invalidateOpen.value = true;
+}
+
+function openInvalidateFromPreview() {
+    if (!previewDoc.value) return;
+    openInvalidate(previewDoc.value);
+    closePreview();
+}
+
+function applyInvalidPreset(value: string) {
+    invalidateForm.preset = value;
+    if (value !== 'other') {
+        invalidateForm.remarks = invalidPresetMessages[value] ?? '';
+    }
 }
 
 function submitInvalidate() {
@@ -448,6 +504,7 @@ function submitInvalidate() {
             onSuccess: () => {
                 invalidateOpen.value = false;
                 actionDoc.value = null;
+                invalidateForm.reset();
             },
         },
     );
@@ -564,9 +621,7 @@ function submitInvalidate() {
                     <div class="grid gap-4 lg:grid-cols-2">
                         <Card>
                             <CardHeader>
-                                <CardTitle class="text-base"
-                                    >Vehicle Details</CardTitle
-                                >
+                                <CardTitle class="text-base">Vehicle Details</CardTitle>
                             </CardHeader>
 
                             <CardContent class="grid gap-4 sm:grid-cols-2">
@@ -623,9 +678,7 @@ function submitInvalidate() {
 
                         <Card>
                             <CardHeader>
-                                <CardTitle class="text-base"
-                                    >Company Details</CardTitle
-                                >
+                                <CardTitle class="text-base">Company Details</CardTitle>
                             </CardHeader>
 
                             <CardContent class="space-y-4">
@@ -673,9 +726,7 @@ function submitInvalidate() {
                                 class="flex flex-wrap items-center justify-between gap-3"
                             >
                                 <div>
-                                    <CardTitle class="text-base"
-                                        >Route Overview</CardTitle
-                                    >
+                                    <CardTitle class="text-base">Route Overview</CardTitle>
                                     <p class="text-sm text-muted-foreground">
                                         {{ sortedStops.length }} stops
                                         configured. Open the map or stops list
@@ -770,33 +821,28 @@ function submitInvalidate() {
                                 class="flex flex-wrap items-center justify-between gap-3"
                             >
                                 <div>
-                                    <CardTitle class="text-base"
-                                        >Documents</CardTitle
-                                    >
+                                    <CardTitle class="text-base">Documents</CardTitle>
                                     <p class="text-sm text-muted-foreground">
-                                        Review every document and update its
-                                        status.
+                                        Review every document and update its status.
                                     </p>
                                 </div>
 
                                 <div class="flex flex-wrap gap-2">
-                                    <Badge variant="outline"
-                                        >{{ verifiedCount }}/{{
-                                            docs.length
-                                        }}
-                                        verified</Badge
-                                    >
+                                    <Badge variant="outline">
+                                        {{ verifiedCount }}/{{ docs.length }} verified
+                                    </Badge>
                                     <Badge
                                         v-if="actionRequiredCount > 0"
                                         variant="secondary"
-                                        >{{ actionRequiredCount }} need
-                                        action</Badge
                                     >
+                                        {{ actionRequiredCount }} need action
+                                    </Badge>
                                     <Badge
                                         v-if="expiredCount > 0"
                                         variant="destructive"
-                                        >{{ expiredCount }} expired</Badge
                                     >
+                                        {{ expiredCount }} expired
+                                    </Badge>
                                 </div>
                             </div>
                         </CardHeader>
@@ -806,22 +852,11 @@ function submitInvalidate() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead class="w-[28%] pl-6"
-                                                >Document</TableHead
-                                            >
-                                            <TableHead class="w-[14%]"
-                                                >Status</TableHead
-                                            >
-                                            <TableHead class="w-[20%]"
-                                                >Dates</TableHead
-                                            >
-                                            <TableHead class="w-[30%]"
-                                                >File</TableHead
-                                            >
-                                            <TableHead
-                                                class="w-[8%] pr-4 text-right"
-                                                >Actions</TableHead
-                                            >
+                                            <TableHead class="w-[28%] pl-6">Document</TableHead>
+                                            <TableHead class="w-[14%]">Status</TableHead>
+                                            <TableHead class="w-[20%]">Dates</TableHead>
+                                            <TableHead class="w-[30%]">File</TableHead>
+                                            <TableHead class="w-[8%] pr-4 text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
 
@@ -833,11 +868,7 @@ function submitInvalidate() {
                                             <TableCell class="pl-6">
                                                 <div class="space-y-1">
                                                     <p class="font-medium">
-                                                        {{
-                                                            requiredLabel(
-                                                                doc.document_type,
-                                                            )
-                                                        }}
+                                                        {{ requiredLabel(doc.document_type) }}
                                                     </p>
                                                     <p
                                                         v-if="doc.remarks"
@@ -850,71 +881,42 @@ function submitInvalidate() {
 
                                             <TableCell>
                                                 <div class="space-y-1.5">
-                                                    <div
-                                                        class="flex flex-wrap gap-1.5"
-                                                    >
-                                                        <Badge
-                                                            :variant="
-                                                                statusVariant(
-                                                                    doc.status,
-                                                                )
-                                                            "
-                                                        >
-                                                            {{
-                                                                humanize(
-                                                                    doc.status,
-                                                                )
-                                                            }}
+                                                    <div class="flex flex-wrap gap-1.5">
+                                                        <Badge :variant="statusVariant(doc.status)">
+                                                            {{ humanize(doc.status) }}
                                                         </Badge>
                                                         <Badge
-                                                            v-if="
-                                                                isExpired(
-                                                                    doc.expires_at,
-                                                                )
-                                                            "
+                                                            v-if="isExpired(doc.expires_at)"
                                                             variant="destructive"
                                                         >
                                                             Expired
                                                         </Badge>
                                                     </div>
+
                                                     <p
-                                                        v-if="
-                                                            doc.status ===
-                                                            'pending'
-                                                        "
+                                                        v-if="doc.status === 'pending'"
                                                         class="text-xs text-muted-foreground"
                                                     >
                                                         Waiting for review.
                                                     </p>
+
                                                     <p
-                                                        v-else-if="
-                                                            doc.status ===
-                                                            'invalid'
-                                                        "
+                                                        v-else-if="doc.status === 'invalid'"
                                                         class="text-xs text-destructive"
                                                     >
-                                                        Needs correction before
-                                                        approval.
+                                                        Needs correction before approval.
                                                     </p>
 
                                                     <Popover
-                                                        v-if="
-                                                            doc.status ===
-                                                                'invalid' &&
-                                                            doc.remarks
-                                                        "
+                                                        v-if="doc.status === 'invalid' && doc.remarks"
                                                     >
-                                                        <PopoverTrigger
-                                                            as-child
-                                                        >
+                                                        <PopoverTrigger as-child>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
                                                                 class="h-auto px-0 py-0 text-xs text-destructive hover:bg-transparent"
                                                             >
-                                                                <CircleHelp
-                                                                    class="mr-1 h-3.5 w-3.5"
-                                                                />
+                                                                <CircleHelp class="mr-1 h-3.5 w-3.5" />
                                                                 Why invalid?
                                                             </Button>
                                                         </PopoverTrigger>
@@ -922,41 +924,23 @@ function submitInvalidate() {
                                                             align="start"
                                                             class="max-w-72 text-xs"
                                                         >
-                                                            <p
-                                                                class="font-medium text-foreground"
-                                                            >
+                                                            <p class="font-medium text-foreground">
                                                                 Invalid reason
                                                             </p>
-                                                            <p
-                                                                class="mt-1 whitespace-pre-wrap text-muted-foreground"
-                                                            >
-                                                                {{
-                                                                    doc.remarks
-                                                                }}
+                                                            <p class="mt-1 whitespace-pre-wrap text-muted-foreground">
+                                                                {{ doc.remarks }}
                                                             </p>
                                                         </PopoverContent>
                                                     </Popover>
                                                 </div>
                                             </TableCell>
 
-                                            <TableCell
-                                                class="text-xs text-muted-foreground"
-                                            >
+                                            <TableCell class="text-xs text-muted-foreground">
                                                 <div>
-                                                    Issued:
-                                                    {{
-                                                        formatDate(
-                                                            doc.issued_at,
-                                                        )
-                                                    }}
+                                                    Issued: {{ formatDate(doc.issued_at) }}
                                                 </div>
                                                 <div>
-                                                    Expires:
-                                                    {{
-                                                        formatDate(
-                                                            doc.expires_at,
-                                                        )
-                                                    }}
+                                                    Expires: {{ formatDate(doc.expires_at) }}
                                                 </div>
                                             </TableCell>
 
@@ -965,69 +949,42 @@ function submitInvalidate() {
                                                     <button
                                                         v-if="canPreview(doc)"
                                                         class="flex w-full items-center gap-1.5 text-left text-sm text-primary hover:underline"
-                                                        @click="
-                                                            openPreview(doc)
-                                                        "
+                                                        @click="openPreview(doc)"
                                                     >
-                                                        <Eye
-                                                            class="h-3.5 w-3.5 shrink-0"
-                                                        />
-                                                        <span
-                                                            class="min-w-0 flex-1 truncate"
-                                                            >{{
-                                                                doc.file_name ??
-                                                                '—'
-                                                            }}</span
-                                                        >
+                                                        <Eye class="h-3.5 w-3.5 shrink-0" />
+                                                        <span class="min-w-0 flex-1 truncate">
+                                                            {{ doc.file_name ?? '—' }}
+                                                        </span>
                                                     </button>
                                                     <span
                                                         v-else
                                                         class="block truncate text-sm text-muted-foreground"
-                                                        :title="
-                                                            doc.file_name ?? '—'
-                                                        "
+                                                        :title="doc.file_name ?? '—'"
                                                     >
-                                                        {{
-                                                            doc.file_name ?? '—'
-                                                        }}
+                                                        {{ doc.file_name ?? '—' }}
                                                     </span>
-                                                    <p
-                                                        class="text-xs text-muted-foreground"
-                                                    >
-                                                        {{
-                                                            formatBytes(
-                                                                doc.file_size,
-                                                            )
-                                                        }}
+                                                    <p class="text-xs text-muted-foreground">
+                                                        {{ formatBytes(doc.file_size) }}
                                                     </p>
                                                     <p
                                                         v-if="!fileUrl(doc)"
                                                         class="text-xs text-destructive"
                                                     >
-                                                        File link is
-                                                        unavailable.
+                                                        File link is unavailable.
                                                     </p>
                                                 </div>
                                             </TableCell>
 
                                             <TableCell class="pr-4 text-right">
                                                 <DropdownMenu>
-                                                    <DropdownMenuTrigger
-                                                        as-child
-                                                    >
+                                                    <DropdownMenuTrigger as-child>
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
                                                             class="h-8 w-8 p-0"
                                                         >
-                                                            <MoreHorizontal
-                                                                class="h-4 w-4"
-                                                            />
-                                                            <span
-                                                                class="sr-only"
-                                                                >Open
-                                                                actions</span
-                                                            >
+                                                            <MoreHorizontal class="h-4 w-4" />
+                                                            <span class="sr-only">Open actions</span>
                                                         </Button>
                                                     </DropdownMenuTrigger>
 
@@ -1035,23 +992,15 @@ function submitInvalidate() {
                                                         align="end"
                                                         class="w-48"
                                                     >
-                                                        <DropdownMenuLabel
-                                                            >Actions</DropdownMenuLabel
-                                                        >
+                                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                         <DropdownMenuSeparator />
 
                                                         <DropdownMenuItem
-                                                            v-if="
-                                                                canPreview(doc)
-                                                            "
-                                                            @click="
-                                                                openPreview(doc)
-                                                            "
+                                                            v-if="canPreview(doc)"
+                                                            @click="openPreview(doc)"
                                                         >
-                                                            <Eye
-                                                                class="mr-2 h-4 w-4"
-                                                            />
-                                                            Preview
+                                                            <Eye class="mr-2 h-4 w-4" />
+                                                            Review Document
                                                         </DropdownMenuItem>
 
                                                         <DropdownMenuItem
@@ -1059,70 +1008,14 @@ function submitInvalidate() {
                                                             as-child
                                                         >
                                                             <a
-                                                                :href="
-                                                                    fileUrl(doc)
-                                                                "
+                                                                :href="fileUrl(doc)"
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
                                                                 download
                                                             >
-                                                                <Download
-                                                                    class="mr-2 h-4 w-4"
-                                                                />
+                                                                <Download class="mr-2 h-4 w-4" />
                                                                 Download
                                                             </a>
-                                                        </DropdownMenuItem>
-
-                                                        <DropdownMenuSeparator />
-
-                                                        <DropdownMenuItem
-                                                            v-if="
-                                                                doc.status !==
-                                                                'verified'
-                                                            "
-                                                            @click="
-                                                                openConfirm(
-                                                                    'verify',
-                                                                    doc,
-                                                                )
-                                                            "
-                                                        >
-                                                            <CheckCircle2
-                                                                class="mr-2 h-4 w-4 text-green-600"
-                                                            />
-                                                            Verify
-                                                        </DropdownMenuItem>
-
-                                                        <DropdownMenuItem
-                                                            v-if="
-                                                                doc.status ===
-                                                                'verified'
-                                                            "
-                                                            @click="
-                                                                openConfirm(
-                                                                    'unverify',
-                                                                    doc,
-                                                                )
-                                                            "
-                                                        >
-                                                            <RotateCcw
-                                                                class="mr-2 h-4 w-4"
-                                                            />
-                                                            Move to Pending
-                                                        </DropdownMenuItem>
-
-                                                        <DropdownMenuItem
-                                                            class="text-destructive focus:text-destructive"
-                                                            @click="
-                                                                openInvalidate(
-                                                                    doc,
-                                                                )
-                                                            "
-                                                        >
-                                                            <XCircle
-                                                                class="mr-2 h-4 w-4"
-                                                            />
-                                                            Mark Invalid
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -1147,9 +1040,7 @@ function submitInvalidate() {
                 <div class="space-y-5">
                     <Card>
                         <CardHeader>
-                            <CardTitle class="text-base"
-                                >Quick Summary</CardTitle
-                            >
+                            <CardTitle class="text-base">Quick Summary</CardTitle>
                         </CardHeader>
 
                         <CardContent class="space-y-4">
@@ -1158,9 +1049,7 @@ function submitInvalidate() {
                                     Vehicle Status
                                 </p>
                                 <div class="mt-2">
-                                    <Badge
-                                        :variant="statusVariant(vehicle.status)"
-                                    >
+                                    <Badge :variant="statusVariant(vehicle.status)">
                                         {{ humanize(vehicle.status) }}
                                     </Badge>
                                 </div>
@@ -1171,30 +1060,29 @@ function submitInvalidate() {
                                     Document Health
                                 </p>
                                 <div class="mt-2 flex flex-wrap gap-2">
-                                    <Badge variant="outline"
-                                        >{{ verifiedCount }} verified</Badge
-                                    >
+                                    <Badge variant="outline">{{ verifiedCount }} verified</Badge>
                                     <Badge
                                         v-if="pendingCount > 0"
                                         variant="secondary"
-                                        >{{ pendingCount }} pending</Badge
                                     >
+                                        {{ pendingCount }} pending
+                                    </Badge>
                                     <Badge
                                         v-if="invalidCount > 0"
                                         variant="destructive"
-                                        >{{ invalidCount }} invalid</Badge
                                     >
+                                        {{ invalidCount }} invalid
+                                    </Badge>
                                     <Badge
                                         v-if="expiredCount > 0"
                                         variant="destructive"
-                                        >{{ expiredCount }} expired</Badge
                                     >
+                                        {{ expiredCount }} expired
+                                    </Badge>
                                 </div>
                             </div>
 
-                            <div
-                                class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1"
-                            >
+                            <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
                                 <div class="rounded-lg border p-4">
                                     <p class="text-xs text-muted-foreground">
                                         Verification Rate
@@ -1209,10 +1097,7 @@ function submitInvalidate() {
                                         Assigned Company
                                     </p>
                                     <p class="mt-1 text-sm font-semibold">
-                                        {{
-                                            company?.company_name ??
-                                            'No company'
-                                        }}
+                                        {{ company?.company_name ?? 'No company' }}
                                     </p>
                                 </div>
 
@@ -1277,9 +1162,9 @@ function submitInvalidate() {
                                     <p class="text-sm font-medium">
                                         {{ i + 1 }}. {{ stop.stop_name }}
                                     </p>
-                                    <Badge variant="outline">{{
-                                        stopTypeLabel(stop.stop_type)
-                                    }}</Badge>
+                                    <Badge variant="outline">
+                                        {{ stopTypeLabel(stop.stop_type) }}
+                                    </Badge>
                                 </div>
                                 <p class="mt-1 text-sm text-muted-foreground">
                                     {{ stop.address || 'No address provided' }}
@@ -1301,9 +1186,9 @@ function submitInvalidate() {
                 </div>
 
                 <DialogFooter>
-                    <Button variant="outline" @click="stopsDialogOpen = false"
-                        >Close</Button
-                    >
+                    <Button variant="outline" @click="stopsDialogOpen = false">
+                        Close
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -1324,20 +1209,13 @@ function submitInvalidate() {
                             <DialogDescription
                                 class="mt-1 flex flex-wrap items-center gap-2 text-xs"
                             >
-                                <Badge
-                                    :variant="statusVariant(previewDoc?.status)"
-                                >
+                                <Badge :variant="statusVariant(previewDoc?.status)">
                                     {{ humanize(previewDoc?.status) }}
                                 </Badge>
-                                <span>{{
-                                    humanize(previewDoc?.document_type)
-                                }}</span>
-                                <span v-if="previewDoc?.expires_at"
-                                    >· Expires
-                                    {{
-                                        formatDate(previewDoc.expires_at)
-                                    }}</span
-                                >
+                                <span>{{ humanize(previewDoc?.document_type) }}</span>
+                                <span v-if="previewDoc?.expires_at">
+                                    · Expires {{ formatDate(previewDoc.expires_at) }}
+                                </span>
                             </DialogDescription>
                         </div>
 
@@ -1367,13 +1245,9 @@ function submitInvalidate() {
                     >
                         <img
                             :src="fileUrl(previewDoc)"
-                            :alt="
-                                previewDoc.file_name ?? previewDoc.document_type
-                            "
+                            :alt="previewDoc.file_name ?? previewDoc.document_type"
                             class="max-h-[70vh] max-w-full rounded-lg object-contain shadow-md"
-                            @error="
-                                (e) => ((e.target as HTMLImageElement).src = '')
-                            "
+                            @error="(e) => ((e.target as HTMLImageElement).src = '')"
                         />
                     </div>
 
@@ -1392,9 +1266,7 @@ function submitInvalidate() {
                             class="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground"
                         >
                             <FileText class="h-12 w-12 opacity-30" />
-                            <p class="text-sm">
-                                Cannot preview this PDF inline.
-                            </p>
+                            <p class="text-sm">Cannot preview this PDF inline.</p>
                             <Button as-child variant="secondary" size="sm">
                                 <a
                                     :href="fileUrl(previewDoc)"
@@ -1417,12 +1289,48 @@ function submitInvalidate() {
                 </div>
 
                 <DialogFooter class="shrink-0 border-t px-6 py-3">
+                    <div class="flex flex-1 flex-wrap items-center gap-2">
+                        <Button
+                            v-if="previewDoc && previewDoc.status !== 'verified'"
+                            size="sm"
+                            class="bg-emerald-600 text-white hover:bg-emerald-700"
+                            :disabled="actionForm.processing"
+                            @click="openConfirmFromPreview('verify')"
+                        >
+                            <CheckCircle2 class="mr-1.5 h-4 w-4" />
+                            Verify
+                        </Button>
+
+                        <Button
+                            v-if="previewDoc && previewDoc.status === 'verified'"
+                            variant="outline"
+                            size="sm"
+                            :disabled="actionForm.processing"
+                            @click="openConfirmFromPreview('unverify')"
+                        >
+                            <RotateCcw class="mr-1.5 h-4 w-4" />
+                            Move to Pending
+                        </Button>
+
+                        <Button
+                            v-if="previewDoc"
+                            variant="destructive"
+                            size="sm"
+                            :disabled="invalidateForm.processing"
+                            @click="openInvalidateFromPreview"
+                        >
+                            <XCircle class="mr-1.5 h-4 w-4" />
+                            Mark Invalid
+                        </Button>
+                    </div>
+
                     <Button
                         variant="outline"
                         size="sm"
-                        @click="previewOpen = false"
-                        >Close</Button
+                        @click="closePreview"
                     >
+                        Close
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -1448,9 +1356,9 @@ function submitInvalidate() {
                 </AlertDialogHeader>
 
                 <AlertDialogFooter>
-                    <AlertDialogCancel :disabled="actionForm.processing"
-                        >Cancel</AlertDialogCancel
-                    >
+                    <AlertDialogCancel :disabled="actionForm.processing">
+                        Cancel
+                    </AlertDialogCancel>
                     <AlertDialogAction
                         :disabled="actionForm.processing"
                         @click="submitConfirm"
@@ -1466,28 +1374,49 @@ function submitInvalidate() {
                 <DialogHeader>
                     <DialogTitle>Mark as Invalid</DialogTitle>
                     <DialogDescription>
-                        Add a remark so the company knows what needs to be
-                        corrected for
-                        <span class="font-medium text-foreground">{{
-                            humanize(actionDoc?.document_type)
-                        }}</span
-                        >.
+                        Choose an optional reason or type your own remarks for
+                        <span class="font-medium text-foreground">
+                            {{ humanize(actionDoc?.document_type) }}
+                        </span>.
                     </DialogDescription>
                 </DialogHeader>
 
-                <div class="space-y-3 py-2">
-                    <Label for="inv-remarks">
-                        Remarks <span class="text-destructive">*</span>
-                    </Label>
+                <div class="space-y-4 py-2">
+                    <div class="space-y-2">
+                        <Label>Suggested Reason (Optional)</Label>
+                        <Select
+                            :model-value="invalidateForm.preset"
+                            @update:model-value="(value) => applyInvalidPreset(String(value))"
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a reason" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="preset in invalidPresets"
+                                    :key="preset.value"
+                                    :value="preset.value"
+                                >
+                                    {{ preset.label }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
 
-                    <Textarea
-                        id="inv-remarks"
-                        v-model="invalidateForm.remarks"
-                        placeholder="Example: document is blurry, incomplete, or expired."
-                        :rows="3"
-                    />
+                    <div class="space-y-2">
+                        <Label for="inv-remarks">
+                            Remarks <span class="text-destructive">*</span>
+                        </Label>
 
-                    <InputError :message="invalidateForm.errors.remarks" />
+                        <Textarea
+                            id="inv-remarks"
+                            v-model="invalidateForm.remarks"
+                            placeholder="Type why this document is invalid..."
+                            :rows="4"
+                        />
+
+                        <InputError :message="invalidateForm.errors.remarks" />
+                    </div>
                 </div>
 
                 <DialogFooter class="gap-2">
