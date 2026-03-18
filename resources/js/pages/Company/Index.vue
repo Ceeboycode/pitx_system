@@ -48,10 +48,13 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import {
     Archive,
     Building2,
+    CheckCircle2,
     ChevronRight,
     Download,
     FileSearch,
     Loader2,
+    MailCheck,
+    MailX,
     MoreHorizontal,
     Pencil,
     Plus,
@@ -76,6 +79,7 @@ type Company = {
     company_name: string;
     company_code: string;
     company_email?: string | null;
+    company_email_verified_at?: string | null;
     company_phone?: string | null;
     status?: CompanyStatus;
     created_at_human?: string | null;
@@ -102,11 +106,11 @@ defineProps<{
 
 /* ── Dialog state ────────────────────────────────────────────────── */
 
-const createOpen       = ref(false);
-const editOpen         = ref(false);
-const archiveOpen      = ref(false);
-const importOpen       = ref(false);
-const selectedCompany  = ref<Company | null>(null);
+const createOpen = ref(false);
+const editOpen = ref(false);
+const archiveOpen = ref(false);
+const importOpen = ref(false);
+const selectedCompany = ref<Company | null>(null);
 
 function openEdit(company: Company) {
     selectedCompany.value = company;
@@ -130,7 +134,9 @@ function triggerExport() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(() => { exporting.value = false; }, 2000);
+    setTimeout(() => {
+        exporting.value = false;
+    }, 2000);
 }
 
 function onImportDone() {
@@ -141,14 +147,16 @@ function onImportDone() {
 
 function humanizeStatus(status?: CompanyStatus): string {
     if (!status) return '—';
+
     const map: Record<Exclude<CompanyStatus, null>, string> = {
-        draft:            'Draft',
-        docs_completed:   'Docs Completed',
+        draft: 'Draft',
+        docs_completed: 'Docs Completed',
         for_verification: 'For Verification',
-        verified:         'Verified',
-        needs_revision:   'Needs Revision',
-        rejected:         'Rejected',
+        verified: 'Verified',
+        needs_revision: 'Needs Revision',
+        rejected: 'Rejected',
     };
+
     return map[status] ?? status.replace(/_/g, ' ');
 }
 
@@ -172,13 +180,23 @@ function statusClass(status?: CompanyStatus): string {
 
 function statusDot(status?: CompanyStatus): string {
     switch (status) {
-        case 'verified':         return 'bg-emerald-500';
-        case 'docs_completed':   return 'bg-blue-500';
-        case 'for_verification': return 'bg-violet-500';
-        case 'needs_revision':   return 'bg-amber-500';
-        case 'rejected':         return 'bg-rose-500';
-        default:                 return 'bg-slate-400';
+        case 'verified':
+            return 'bg-emerald-500';
+        case 'docs_completed':
+            return 'bg-blue-500';
+        case 'for_verification':
+            return 'bg-violet-500';
+        case 'needs_revision':
+            return 'bg-amber-500';
+        case 'rejected':
+            return 'bg-rose-500';
+        default:
+            return 'bg-slate-400';
     }
+}
+
+function hasVerifiedEmail(company: Company): boolean {
+    return !!company.company_email_verified_at;
 }
 </script>
 
@@ -216,7 +234,7 @@ function statusDot(status?: CompanyStatus): string {
                         <Button
                             v-if="can('company.create')"
                             size="sm"
-                            class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0 shadow-sm"
+                            class="rounded-lg border-0 bg-blue-700 text-white shadow-sm hover:bg-blue-800"
                             @click="createOpen = true"
                         >
                             <Plus class="mr-2 h-4 w-4" />
@@ -226,8 +244,6 @@ function statusDot(status?: CompanyStatus): string {
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-
-                    <!-- Search + bulk actions -->
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div class="w-full max-w-sm">
                             <SearchInput
@@ -278,7 +294,6 @@ function statusDot(status?: CompanyStatus): string {
                         </div>
                     </div>
 
-                    <!-- Table -->
                     <div class="overflow-x-auto rounded-lg border">
                         <Table>
                             <TableHeader>
@@ -294,7 +309,6 @@ function statusDot(status?: CompanyStatus): string {
                             </TableHeader>
 
                             <TableBody>
-                                <!-- Empty state -->
                                 <TableRow v-if="companies.data.length === 0" class="hover:bg-transparent">
                                     <TableCell colspan="7" class="py-20 text-center">
                                         <div class="flex flex-col items-center gap-3">
@@ -303,7 +317,7 @@ function statusDot(status?: CompanyStatus): string {
                                             </div>
                                             <div>
                                                 <p class="text-sm font-semibold text-foreground">No companies found</p>
-                                                <p class="text-xs text-muted-foreground mt-0.5">Try adjusting your search.</p>
+                                                <p class="mt-0.5 text-xs text-muted-foreground">Try adjusting your search.</p>
                                             </div>
                                         </div>
                                     </TableCell>
@@ -314,29 +328,39 @@ function statusDot(status?: CompanyStatus): string {
                                     :key="company.id"
                                     class="group transition-colors hover:bg-muted/30"
                                 >
-                                    <!-- Company Name -->
                                     <TableCell>
                                         <p class="text-sm font-semibold capitalize">{{ company.company_name }}</p>
                                     </TableCell>
 
-                                    <!-- Code -->
                                     <TableCell>
                                         <span class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
                                             {{ company.company_code }}
                                         </span>
                                     </TableCell>
 
-                                    <!-- Email -->
-                                    <TableCell class="text-sm lowercase text-muted-foreground">
-                                        {{ company.company_email ?? '—' }}
+                                    <TableCell>
+                                        <div class="space-y-1">
+                                            <p class="text-sm lowercase text-muted-foreground">
+                                                {{ company.company_email ?? '—' }}
+                                            </p>
+
+                                            <div v-if="company.company_email" class="flex items-center gap-1.5">
+                                                <Badge
+                                                    :variant="hasVerifiedEmail(company) ? 'default' : 'outline'"
+                                                    class="gap-1 text-[10px]"
+                                                >
+                                                    <MailCheck v-if="hasVerifiedEmail(company)" class="h-3 w-3" />
+                                                    <MailX v-else class="h-3 w-3" />
+                                                    {{ hasVerifiedEmail(company) ? 'Verified' : 'Not Verified' }}
+                                                </Badge>
+                                            </div>
+                                        </div>
                                     </TableCell>
 
-                                    <!-- Phone -->
                                     <TableCell class="text-sm text-muted-foreground">
                                         {{ company.company_phone ?? '—' }}
                                     </TableCell>
 
-                                    <!-- Status -->
                                     <TableCell>
                                         <Badge :class="['gap-1.5', statusClass(company.status ?? null)]">
                                             <span :class="['h-1.5 w-1.5 rounded-full', statusDot(company.status ?? null)]" />
@@ -344,12 +368,10 @@ function statusDot(status?: CompanyStatus): string {
                                         </Badge>
                                     </TableCell>
 
-                                    <!-- Created -->
                                     <TableCell class="text-sm text-muted-foreground">
                                         {{ company.created_at_human ?? '—' }}
                                     </TableCell>
 
-                                    <!-- Actions -->
                                     <TableCell class="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>

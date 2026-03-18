@@ -20,11 +20,6 @@ use Inertia\Response;
 
 class CompanyRegistration extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Show wizard
-    |--------------------------------------------------------------------------
-    */
     public function show(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
@@ -44,51 +39,45 @@ class CompanyRegistration extends Controller
         return Inertia::render('CompanyRegistration');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Step 1 – Validate account details → send OTP to personal email
-    |--------------------------------------------------------------------------
-    */
     public function storeStep1(Request $request): RedirectResponse
     {
-        // Normalize phone BEFORE validate so unique works properly
         $request->merge([
             'phone' => $this->normalizePhMobile($request->input('phone')),
         ]);
 
         $validated = $request->validate([
-            'name'                  => ['required', 'string', 'max:255'],
-            'email'                 => ['required', 'email', 'max:255', 'unique:users,email'],
-            'phone'                 => [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'phone' => [
                 'required',
                 'string',
                 'max:20',
                 'regex:/^\+639\d{9}$/',
                 'unique:users,phone_number',
             ],
-            'password'              => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
             'password_confirmation' => ['required', 'string'],
         ], [
-            'email.unique'       => 'This email address is already registered.',
-            'phone.regex'        => 'Phone number must be a valid PH mobile number (09XXXXXXXXX or +639XXXXXXXXX).',
-            'phone.unique'       => 'This phone number is already registered.',
+            'email.unique' => 'This email address is already registered.',
+            'phone.regex' => 'Phone number must be a valid PH mobile number (09XXXXXXXXX or +639XXXXXXXXX).',
+            'phone.unique' => 'This phone number is already registered.',
             'password.confirmed' => 'Password confirmation does not match.',
-            'password.min'       => 'Password must be at least 8 characters.',
+            'password.min' => 'Password must be at least 8 characters.',
         ]);
 
         $otp = $this->generateOtp();
 
         $request->session()->put('registration.step1', [
-            'name'     => $validated['name'],
-            'email'    => $validated['email'],
-            'phone'    => $validated['phone'],
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
             'password' => $validated['password'],
         ]);
 
         $request->session()->put('registration.otp.account', [
-            'code'       => Hash::make($otp),
+            'code' => Hash::make($otp),
             'expires_at' => now()->addMinutes(10)->toIso8601String(),
-            'verified'   => false,
+            'verified' => false,
         ]);
 
         Mail::to($validated['email'])->send(
@@ -109,16 +98,23 @@ class CompanyRegistration extends Controller
         $stored = $request->session()->get('registration.otp.account');
 
         if (! $stored) {
-            return redirect()->back(303)->withErrors(['otp' => 'No code was sent. Please go back and retry.']);
+            return redirect()->back(303)->withErrors([
+                'otp' => 'No code was sent. Please go back and retry.',
+            ]);
         }
 
         if (now()->isAfter($stored['expires_at'])) {
             $request->session()->forget('registration.otp.account');
-            return redirect()->back(303)->withErrors(['otp' => 'Code expired. Please request a new one.']);
+
+            return redirect()->back(303)->withErrors([
+                'otp' => 'Code expired. Please request a new one.',
+            ]);
         }
 
         if (! Hash::check($request->input('otp'), $stored['code'])) {
-            return redirect()->back(303)->withErrors(['otp' => 'Invalid code. Please try again.']);
+            return redirect()->back(303)->withErrors([
+                'otp' => 'Invalid code. Please try again.',
+            ]);
         }
 
         $request->session()->put('registration.otp.account.verified', true);
@@ -131,15 +127,17 @@ class CompanyRegistration extends Controller
         $step1 = $request->session()->get('registration.step1');
 
         if (! $step1) {
-            return redirect()->back(303)->withErrors(['otp' => 'Session expired. Please start over.']);
+            return redirect()->back(303)->withErrors([
+                'otp' => 'Session expired. Please start over.',
+            ]);
         }
 
         $otp = $this->generateOtp();
 
         $request->session()->put('registration.otp.account', [
-            'code'       => Hash::make($otp),
+            'code' => Hash::make($otp),
             'expires_at' => now()->addMinutes(10)->toIso8601String(),
-            'verified'   => false,
+            'verified' => false,
         ]);
 
         Mail::to($step1['email'])->send(
@@ -149,51 +147,40 @@ class CompanyRegistration extends Controller
         return redirect()->back(303)->with('resent', 'A new code has been sent to your email.');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Step 2 – Validate company details + optional logo → send OTP to company email
-    |--------------------------------------------------------------------------
-    */
     public function storeStep2(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'company_name'                       => ['required', 'string', 'max:255'],
-            'company_email'                      => ['required', 'email', 'max:255'],
-            'company_phone'                      => ['required', 'string', 'max:20'],
-            'company_address'                    => ['required', 'string', 'max:500'],
-            'business_type'                      => ['required', 'in:corporate,sole_proprietorship'],
-            'registration_number'                => ['required', 'string', 'max:100'],
-            'authorized_representative_name'     => ['required', 'string', 'max:255'],
+            'company_name' => ['required', 'string', 'max:255'],
+            'company_email' => ['required', 'email', 'max:255'],
+            'company_phone' => ['required', 'string', 'max:20'],
+            'company_address' => ['required', 'string', 'max:500'],
+            'business_type' => ['required', 'in:corporate,sole_proprietorship'],
+            'registration_number' => ['required', 'string', 'max:100'],
+            'authorized_representative_name' => ['required', 'string', 'max:255'],
             'authorized_representative_position' => ['required', 'string', 'max:255'],
-            'authorized_representative_contact'  => ['required', 'string', 'max:20'],
-
-            // Logo is optional — jpeg/png/webp, max 2 MB
+            'authorized_representative_contact' => ['required', 'string', 'max:20'],
             'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ], [
             'business_type.in' => 'Business type must be Corporate or Sole Proprietorship.',
-            'logo.image'       => 'The logo must be an image file.',
-            'logo.mimes'       => 'Logo must be a JPG, PNG, or WebP file.',
-            'logo.max'         => 'Logo must not exceed 2 MB.',
+            'logo.image' => 'The logo must be an image file.',
+            'logo.mimes' => 'Logo must be a JPG, PNG, or WebP file.',
+            'logo.max' => 'Logo must not exceed 2 MB.',
         ]);
 
-        $otp   = $this->generateOtp();
+        $otp = $this->generateOtp();
         $step1 = $request->session()->get('registration.step1');
 
-        // Store logo temporarily on the local (private) disk so it survives
-        // the session between Step 2 and Step 3 without being publicly accessible.
         $logoTempPath = null;
+
         if ($request->hasFile('logo')) {
             $logoTempPath = $request->file('logo')->store('registration-logos/temp', 'local');
         }
 
-        // Clean out any previous temp logo if the user is re-submitting Step 2
         $previousTemp = $request->session()->get('registration.step2.logo_temp_path');
         if ($previousTemp && Storage::disk('local')->exists($previousTemp)) {
             Storage::disk('local')->delete($previousTemp);
         }
 
-        // Remove the logo key from $validated — it holds an UploadedFile object
-        // which cannot be serialized into the session. We store the temp path instead.
         unset($validated['logo']);
 
         $request->session()->put('registration.step2', array_merge(
@@ -202,9 +189,9 @@ class CompanyRegistration extends Controller
         ));
 
         $request->session()->put('registration.otp.company', [
-            'code'       => Hash::make($otp),
+            'code' => Hash::make($otp),
             'expires_at' => now()->addMinutes(10)->toIso8601String(),
-            'verified'   => false,
+            'verified' => false,
         ]);
 
         Mail::to($validated['company_email'])->send(
@@ -225,16 +212,23 @@ class CompanyRegistration extends Controller
         $stored = $request->session()->get('registration.otp.company');
 
         if (! $stored) {
-            return redirect()->back(303)->withErrors(['otp' => 'No code was sent. Please go back and retry.']);
+            return redirect()->back(303)->withErrors([
+                'otp' => 'No code was sent. Please go back and retry.',
+            ]);
         }
 
         if (now()->isAfter($stored['expires_at'])) {
             $request->session()->forget('registration.otp.company');
-            return redirect()->back(303)->withErrors(['otp' => 'Code expired. Please request a new one.']);
+
+            return redirect()->back(303)->withErrors([
+                'otp' => 'Code expired. Please request a new one.',
+            ]);
         }
 
         if (! Hash::check($request->input('otp'), $stored['code'])) {
-            return redirect()->back(303)->withErrors(['otp' => 'Invalid code. Please try again.']);
+            return redirect()->back(303)->withErrors([
+                'otp' => 'Invalid code. Please try again.',
+            ]);
         }
 
         $request->session()->put('registration.otp.company.verified', true);
@@ -248,15 +242,17 @@ class CompanyRegistration extends Controller
         $step2 = $request->session()->get('registration.step2');
 
         if (! $step2) {
-            return redirect()->back(303)->withErrors(['otp' => 'Session expired. Please go back to step 2.']);
+            return redirect()->back(303)->withErrors([
+                'otp' => 'Session expired. Please go back to step 2.',
+            ]);
         }
 
         $otp = $this->generateOtp();
 
         $request->session()->put('registration.otp.company', [
-            'code'       => Hash::make($otp),
+            'code' => Hash::make($otp),
             'expires_at' => now()->addMinutes(10)->toIso8601String(),
-            'verified'   => false,
+            'verified' => false,
         ]);
 
         Mail::to($step2['company_email'])->send(
@@ -266,11 +262,6 @@ class CompanyRegistration extends Controller
         return redirect()->back(303)->with('resent', 'A new code has been sent to your company email.');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Step 3 – Documents → create company / user / docs
-    |--------------------------------------------------------------------------
-    */
     public function storeStep3(Request $request): RedirectResponse
     {
         $step1 = $request->session()->get('registration.step1');
@@ -283,48 +274,50 @@ class CompanyRegistration extends Controller
         }
 
         if (! $request->session()->get('registration.otp.account.verified')) {
-            return redirect()->back(303)->withErrors(['session' => 'Please verify your account email before submitting.']);
+            return redirect()->back(303)->withErrors([
+                'session' => 'Please verify your account email before submitting.',
+            ]);
         }
 
         if (! $request->session()->get('registration.otp.company.verified')) {
-            return redirect()->back(303)->withErrors(['session' => 'Please verify your company email before submitting.']);
+            return redirect()->back(303)->withErrors([
+                'session' => 'Please verify your company email before submitting.',
+            ]);
         }
 
         $isCorporate = $step2['business_type'] === 'corporate';
 
         $request->validate([
-            'documents.MAYORS_PERMIT.file'       => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'documents.MAYORS_PERMIT.issued_at'  => ['required', 'date', 'before_or_equal:today'],
+            'documents.MAYORS_PERMIT.file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'documents.MAYORS_PERMIT.issued_at' => ['required', 'date', 'before_or_equal:today'],
             'documents.MAYORS_PERMIT.expires_at' => ['required', 'date', 'after:documents.MAYORS_PERMIT.issued_at'],
 
-            'documents.BIR_2303.file'       => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'documents.BIR_2303.issued_at'  => ['required', 'date', 'before_or_equal:today'],
+            'documents.BIR_2303.file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'documents.BIR_2303.issued_at' => ['required', 'date', 'before_or_equal:today'],
             'documents.BIR_2303.expires_at' => ['required', 'date', 'after:documents.BIR_2303.issued_at'],
 
-            'documents.AUTHORIZATION_LETTER.file'       => [$isCorporate ? 'required' : 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'documents.AUTHORIZATION_LETTER.issued_at'  => [$isCorporate ? 'required' : 'nullable', 'date', 'before_or_equal:today'],
+            'documents.AUTHORIZATION_LETTER.file' => [$isCorporate ? 'required' : 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'documents.AUTHORIZATION_LETTER.issued_at' => [$isCorporate ? 'required' : 'nullable', 'date', 'before_or_equal:today'],
             'documents.AUTHORIZATION_LETTER.expires_at' => [$isCorporate ? 'required' : 'nullable', 'date', 'after:documents.AUTHORIZATION_LETTER.issued_at'],
 
-            'documents.SEC_CERT.file'       => [$isCorporate ? 'required' : 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'documents.SEC_CERT.issued_at'  => [$isCorporate ? 'required' : 'nullable', 'date', 'before_or_equal:today'],
+            'documents.SEC_CERT.file' => [$isCorporate ? 'required' : 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'documents.SEC_CERT.issued_at' => [$isCorporate ? 'required' : 'nullable', 'date', 'before_or_equal:today'],
             'documents.SEC_CERT.expires_at' => [$isCorporate ? 'required' : 'nullable', 'date', 'after:documents.SEC_CERT.issued_at'],
 
-            'documents.DTI_CERT.file'       => [! $isCorporate ? 'required' : 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'documents.DTI_CERT.issued_at'  => [! $isCorporate ? 'required' : 'nullable', 'date', 'before_or_equal:today'],
+            'documents.DTI_CERT.file' => [! $isCorporate ? 'required' : 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'documents.DTI_CERT.issued_at' => [! $isCorporate ? 'required' : 'nullable', 'date', 'before_or_equal:today'],
             'documents.DTI_CERT.expires_at' => [! $isCorporate ? 'required' : 'nullable', 'date', 'after:documents.DTI_CERT.issued_at'],
         ], $this->documentMessages());
 
         $user = DB::transaction(function () use ($request, $step1, $step2) {
-
             $companyCode = $this->generateUniqueCompanyCode3($step2['company_name']);
-            $username    = $this->nextUsernameForCompanyCode($companyCode);
+            $username = $this->nextUsernameForCompanyCode($companyCode);
 
-            // ── Move temp logo to permanent public storage ──────────────
             $logoPublicPath = null;
-            $logoTempPath   = $step2['logo_temp_path'] ?? null;
+            $logoTempPath = $step2['logo_temp_path'] ?? null;
 
             if ($logoTempPath && Storage::disk('local')->exists($logoTempPath)) {
-                $ext            = pathinfo($logoTempPath, PATHINFO_EXTENSION);
+                $ext = pathinfo($logoTempPath, PATHINFO_EXTENSION);
                 $logoPublicPath = 'company-logos/' . Str::uuid() . '.' . $ext;
 
                 Storage::disk('public')->put(
@@ -332,49 +325,52 @@ class CompanyRegistration extends Controller
                     Storage::disk('local')->get($logoTempPath)
                 );
 
-                // Clean up the temp file
                 Storage::disk('local')->delete($logoTempPath);
             }
 
-            // ── Create company ──────────────────────────────────────────
             $company = Company::create([
-                'company_name'                       => $step2['company_name'],
-                'company_code'                       => $companyCode,
-                'company_email'                      => $step2['company_email'],
-                'company_phone'                      => $step2['company_phone'],
-                'company_address'                    => $step2['company_address'],
-                'business_type'                      => $step2['business_type'],
-                'registration_number'                => $step2['registration_number'],
-                'authorized_representative_name'     => $step2['authorized_representative_name'],
+                'company_name' => $step2['company_name'],
+                'company_code' => $companyCode,
+                'company_email' => $step2['company_email'],
+                'company_email_verified_at' => now(),
+                'company_phone' => $step2['company_phone'],
+                'company_address' => $step2['company_address'],
+                'business_type' => $step2['business_type'],
+                'registration_number' => $step2['registration_number'],
+                'authorized_representative_name' => $step2['authorized_representative_name'],
                 'authorized_representative_position' => $step2['authorized_representative_position'],
-                'authorized_representative_contact'  => $step2['authorized_representative_contact'],
-                'logo'                               => $logoPublicPath,
-                'status'                             => 'for_verification',
-                'created_by'                         => null,
+                'authorized_representative_contact' => $step2['authorized_representative_contact'],
+                'logo' => $logoPublicPath,
+                'status' => 'for_verification',
+                'created_by' => null,
             ]);
 
-            // ── Create user ─────────────────────────────────────────────
             $user = User::create([
-                'name'         => $step1['name'],
-                'email'        => $step1['email'],
+                'name' => $step1['name'],
+                'email' => $step1['email'],
+                'email_verified_at' => now(),
                 'phone_number' => $step1['phone'],
-                'password'     => Hash::make($step1['password']),
-                'username'     => $username,
-                'company_id'   => $company->id,
+                'password' => Hash::make($step1['password']),
+                'username' => $username,
+                'company_id' => $company->id,
+                'status' => 'active',
+                'must_change_password' => false,
             ]);
 
             $this->assignDispatcherRole($user);
             $company->update(['created_by' => $user->id]);
 
-            // ── Upload documents ────────────────────────────────────────
             $companySlug = $this->companySlugUpper($company->company_name);
 
             foreach ($request->input('documents', []) as $docType => $docData) {
                 $fileKey = "documents.{$docType}.file";
-                if (! $request->hasFile($fileKey)) continue;
+
+                if (! $request->hasFile($fileKey)) {
+                    continue;
+                }
 
                 $file = $request->file($fileKey);
-                $ext  = strtolower($file->getClientOriginalExtension() ?: 'bin');
+                $ext = strtolower($file->getClientOriginalExtension() ?: 'bin');
 
                 $path = $file->storeAs(
                     "company-documents/{$company->id}/{$docType}",
@@ -389,17 +385,17 @@ class CompanyRegistration extends Controller
                 );
 
                 CompanyDocument::create([
-                    'company_id'    => $company->id,
-                    'doc_type'      => $docType,
-                    'file_path'     => $path,
+                    'company_id' => $company->id,
+                    'doc_type' => $docType,
+                    'file_path' => $path,
                     'original_name' => $uniformOriginal,
-                    'mime_type'     => $file->getMimeType(),
-                    'file_size'     => $file->getSize(),
-                    'issued_at'     => $docData['issued_at'] ?? null,
-                    'expires_at'    => $docData['expires_at'] ?? null,
-                    'status'        => 'pending',
-                    'remarks'       => null,
-                    'uploaded_by'   => $user->id,
+                    'mime_type' => $file->getMimeType(),
+                    'file_size' => $file->getSize(),
+                    'issued_at' => $docData['issued_at'] ?? null,
+                    'expires_at' => $docData['expires_at'] ?? null,
+                    'status' => 'pending',
+                    'remarks' => null,
+                    'uploaded_by' => $user->id,
                 ]);
             }
 
@@ -412,14 +408,9 @@ class CompanyRegistration extends Controller
         return redirect()->route('registration.status');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Registration Status
-    |--------------------------------------------------------------------------
-    */
     public function status(Request $request): Response|RedirectResponse
     {
-        $user    = $request->user();
+        $user = $request->user();
         $company = $user?->company;
 
         if (! $user) {
@@ -430,6 +421,7 @@ class CompanyRegistration extends Controller
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
+
             return redirect()->route('company-registration.show');
         }
 
@@ -439,32 +431,41 @@ class CompanyRegistration extends Controller
 
         $meta = [
             'draft' => [
-                'title'       => 'Registration Incomplete',
+                'title' => 'Registration Incomplete',
                 'description' => 'Your registration was not completed. Please contact support.',
-                'icon'        => 'draft',
-                'color'       => 'muted',
+                'icon' => 'draft',
+                'color' => 'muted',
             ],
             'for_verification' => [
-                'title'       => 'Under Review',
+                'title' => 'Under Review',
                 'description' => 'Your documents have been submitted and are currently being reviewed by our team. We\'ll notify you once verified.',
-                'icon'        => 'clock',
-                'color'       => 'warning',
+                'icon' => 'clock',
+                'color' => 'warning',
             ],
             'needs_revision' => [
-                'title'       => 'Action Required',
+                'title' => 'Action Required',
                 'description' => 'One or more documents were flagged. Please review the remarks below and resubmit the corrected files.',
-                'icon'        => 'warning',
-                'color'       => 'destructive',
+                'icon' => 'warning',
+                'color' => 'destructive',
+            ],
+            'verified' => [
+                'title' => 'Approved',
+                'description' => 'Your company documents have been approved.',
+                'icon' => 'check',
+                'color' => 'success',
             ],
         ];
 
         return Inertia::render('RegistrationStatus', [
             'company' => [
-                'id'           => $company->id,
+                'id' => $company->id,
                 'company_name' => $company->company_name,
                 'company_code' => $company->company_code,
-                'status'       => $company->status,
-                'documents'    => $company->documents()
+                'company_email' => $company->company_email,
+                'company_email_verified_at' => $company->company_email_verified_at,
+                'is_company_email_verified' => $company->hasVerifiedCompanyEmail(),
+                'status' => $company->status,
+                'documents' => $company->documents()
                     ->select(['id', 'doc_type', 'status', 'remarks', 'original_name'])
                     ->get(),
             ],
@@ -472,14 +473,9 @@ class CompanyRegistration extends Controller
         ]);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Resubmit invalid documents
-    |--------------------------------------------------------------------------
-    */
     public function storeResubmission(Request $request): RedirectResponse
     {
-        $user    = $request->user();
+        $user = $request->user();
         $company = $user?->company;
 
         if (! $user || ! $company) {
@@ -496,24 +492,23 @@ class CompanyRegistration extends Controller
             return redirect()->route('registration.status');
         }
 
-        // Build validation rules only for invalid docs
         $rules = [];
         foreach ($invalidDocs as $doc) {
             $t = $doc->doc_type;
 
-            $rules["documents.$t.file"]       = ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'];
-            $rules["documents.$t.issued_at"]  = ['required', 'date', 'before_or_equal:today'];
+            $rules["documents.$t.file"] = ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'];
+            $rules["documents.$t.issued_at"] = ['required', 'date', 'before_or_equal:today'];
             $rules["documents.$t.expires_at"] = ['required', 'date', "after:documents.$t.issued_at"];
         }
 
         $request->validate($rules, $this->documentMessages());
 
         DB::transaction(function () use ($request, $user, $company, $invalidDocs) {
-            $disk        = Storage::disk('public');
+            $disk = Storage::disk('public');
             $companySlug = $this->companySlugUpper($company->company_name);
 
             foreach ($invalidDocs as $doc) {
-                $type    = $doc->doc_type;
+                $type = $doc->doc_type;
                 $fileKey = "documents.$type.file";
 
                 if (! $request->hasFile($fileKey)) {
@@ -521,7 +516,7 @@ class CompanyRegistration extends Controller
                 }
 
                 $file = $request->file($fileKey);
-                $ext  = strtolower($file->getClientOriginalExtension() ?: 'bin');
+                $ext = strtolower($file->getClientOriginalExtension() ?: 'bin');
 
                 $newPath = $file->storeAs(
                     "company-documents/{$company->id}/{$type}",
@@ -529,7 +524,6 @@ class CompanyRegistration extends Controller
                     'public'
                 );
 
-                // Delete old file
                 if ($doc->file_path && $disk->exists($doc->file_path)) {
                     $disk->delete($doc->file_path);
                 }
@@ -541,19 +535,18 @@ class CompanyRegistration extends Controller
                 );
 
                 $doc->update([
-                    'file_path'     => $newPath,
+                    'file_path' => $newPath,
                     'original_name' => $uniformOriginal,
-                    'mime_type'     => $file->getMimeType(),
-                    'file_size'     => $file->getSize(),
-                    'issued_at'     => data_get($request->input('documents'), "$type.issued_at"),
-                    'expires_at'    => data_get($request->input('documents'), "$type.expires_at"),
-                    'status'        => 'pending',
-                    'remarks'       => null,
-                    'uploaded_by'   => $user->id,
+                    'mime_type' => $file->getMimeType(),
+                    'file_size' => $file->getSize(),
+                    'issued_at' => data_get($request->input('documents'), "$type.issued_at"),
+                    'expires_at' => data_get($request->input('documents'), "$type.expires_at"),
+                    'status' => 'pending',
+                    'remarks' => null,
+                    'uploaded_by' => $user->id,
                 ]);
             }
 
-            // Back to review queue
             $company->update(['status' => 'for_verification']);
         });
 
@@ -562,14 +555,11 @@ class CompanyRegistration extends Controller
             ->with('status', 'Your corrected documents were submitted for review.');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Private helpers
-    |--------------------------------------------------------------------------
-    */
     private function normalizePhMobile(?string $raw): ?string
     {
-        if ($raw === null) return null;
+        if ($raw === null) {
+            return null;
+        }
 
         $phone = preg_replace('/\s+/', '', trim($raw));
 
@@ -593,21 +583,21 @@ class CompanyRegistration extends Controller
     {
         $labels = [
             'AUTHORIZATION_LETTER' => 'Authorization Letter',
-            'SEC_CERT'             => 'SEC Certificate',
-            'DTI_CERT'             => 'DTI Certificate',
-            'MAYORS_PERMIT'        => "Mayor's Permit",
-            'BIR_2303'             => 'BIR Form 2303',
+            'SEC_CERT' => 'SEC Certificate',
+            'DTI_CERT' => 'DTI Certificate',
+            'MAYORS_PERMIT' => "Mayor's Permit",
+            'BIR_2303' => 'BIR Form 2303',
         ];
 
         $messages = [];
         foreach ($labels as $key => $label) {
-            $messages["documents.{$key}.file.required"]       = "{$label} file is required.";
-            $messages["documents.{$key}.file.mimes"]          = "{$label} must be a PDF, JPG, or PNG.";
-            $messages["documents.{$key}.file.max"]            = "{$label} must not exceed 5 MB.";
-            $messages["documents.{$key}.issued_at.required"]  = "{$label}: issue date is required.";
-            $messages["documents.{$key}.issued_at.date"]      = "{$label}: issue date must be a valid date.";
+            $messages["documents.{$key}.file.required"] = "{$label} file is required.";
+            $messages["documents.{$key}.file.mimes"] = "{$label} must be a PDF, JPG, or PNG.";
+            $messages["documents.{$key}.file.max"] = "{$label} must not exceed 5 MB.";
+            $messages["documents.{$key}.issued_at.required"] = "{$label}: issue date is required.";
+            $messages["documents.{$key}.issued_at.date"] = "{$label}: issue date must be a valid date.";
             $messages["documents.{$key}.expires_at.required"] = "{$label}: expiry date is required.";
-            $messages["documents.{$key}.expires_at.after"]    = "{$label}: expiry date must be after the issue date.";
+            $messages["documents.{$key}.expires_at.after"] = "{$label}: expiry date must be after the issue date.";
         }
 
         return $messages;
@@ -615,8 +605,8 @@ class CompanyRegistration extends Controller
 
     private function generateUniqueCompanyCode3(string $companyName): string
     {
-        $letters    = strtoupper(preg_replace('/[^A-Z]/i', '', $companyName));
-        $letters    = str_pad($letters, 3, 'X');
+        $letters = strtoupper(preg_replace('/[^A-Z]/i', '', $companyName));
+        $letters = str_pad($letters, 3, 'X');
         $candidates = [substr($letters, 0, 3)];
 
         for ($i = 1; $i <= strlen($letters) - 3; $i++) {
@@ -624,17 +614,22 @@ class CompanyRegistration extends Controller
         }
 
         foreach (array_unique($candidates) as $code) {
-            if (! Company::where('company_code', $code)->exists()) return $code;
+            if (! Company::where('company_code', $code)->exists()) {
+                return $code;
+            }
         }
 
         $hash = strtoupper(md5($letters));
         for ($i = 0; $i < strlen($hash) - 2; $i++) {
             $code = substr($hash, $i, 3);
-            if (! Company::where('company_code', $code)->exists()) return $code;
+            if (! Company::where('company_code', $code)->exists()) {
+                return $code;
+            }
         }
 
-        do { $code = strtoupper(Str::random(3)); }
-        while (Company::where('company_code', $code)->exists());
+        do {
+            $code = strtoupper(Str::random(3));
+        } while (Company::where('company_code', $code)->exists());
 
         return $code;
     }

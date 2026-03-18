@@ -1,4 +1,3 @@
-<!-- resources/js/Pages/Company/Show.vue -->
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
@@ -25,14 +24,6 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 
 import {
@@ -87,6 +78,8 @@ import {
     Eye,
     FileArchive,
     FileText,
+    MailCheck,
+    MailX,
     MessageSquareText,
     MoreHorizontal,
     RotateCcw,
@@ -119,6 +112,7 @@ const props = defineProps<{
         company_name: string;
         company_code?: string | null;
         company_email?: string | null;
+        company_email_verified_at?: string | null;
         company_phone?: string | null;
         company_address?: string | null;
         business_type?: 'corporate' | 'sole_proprietorship' | null;
@@ -138,11 +132,13 @@ const props = defineProps<{
 }>();
 
 const company = computed(() => props.company);
-const docs    = computed(() => props.company.documents ?? []);
+const docs = computed(() => props.company.documents ?? []);
+
+const isCompanyEmailVerified = computed(() => !!company.value.company_email_verified_at);
 
 // ── Logo helpers ──────────────────────────────────────────────────
 const logoError = ref(false);
-const showLogo  = computed(() => !!company.value.logo_url && !logoError.value);
+const showLogo = computed(() => !!company.value.logo_url && !logoError.value);
 
 const companyInitials = computed(() =>
     (company.value.company_code ?? company.value.company_name ?? '')
@@ -169,8 +165,12 @@ function formatDateTime(date?: string | null) {
     const d = new Date(date);
     if (Number.isNaN(d.getTime())) return '—';
     return d.toLocaleString(undefined, {
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', hour12: true,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
     });
 }
 
@@ -188,27 +188,37 @@ function isExpired(expiresAt?: string | null): boolean {
 
 function statusClass(status?: string | null): string {
     switch (status) {
-        case 'verified':         return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        case 'verified':
+            return 'border-emerald-200 bg-emerald-100 text-emerald-700';
         case 'for_verification':
-        case 'docs_completed':   return 'bg-violet-100 text-violet-700 border-violet-200';
-        case 'pending':          return 'bg-amber-100 text-amber-700 border-amber-200';
+        case 'docs_completed':
+            return 'border-violet-200 bg-violet-100 text-violet-700';
+        case 'pending':
+            return 'border-amber-200 bg-amber-100 text-amber-700';
         case 'invalid':
         case 'expired':
-        case 'rejected':         return 'bg-rose-100 text-rose-600 border-rose-200';
-        default:                 return 'bg-slate-100 text-slate-500 border-0';
+        case 'rejected':
+            return 'border-rose-200 bg-rose-100 text-rose-600';
+        default:
+            return 'border-0 bg-slate-100 text-slate-500';
     }
 }
 
 function statusDot(status?: string | null): string {
     switch (status) {
-        case 'verified':         return 'bg-emerald-500';
+        case 'verified':
+            return 'bg-emerald-500';
         case 'for_verification':
-        case 'docs_completed':   return 'bg-violet-500';
-        case 'pending':          return 'bg-amber-500';
+        case 'docs_completed':
+            return 'bg-violet-500';
+        case 'pending':
+            return 'bg-amber-500';
         case 'invalid':
         case 'expired':
-        case 'rejected':         return 'bg-rose-500';
-        default:                 return 'bg-slate-400';
+        case 'rejected':
+            return 'bg-rose-500';
+        default:
+            return 'bg-slate-400';
     }
 }
 
@@ -219,50 +229,68 @@ function downloadVerifiedZip() {
     form.method = 'POST';
     form.action = url;
     form.style.display = 'none';
+
     const csrf = document.createElement('input');
     csrf.type = 'hidden';
     csrf.name = '_token';
     csrf.value = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
+
     form.appendChild(csrf);
     document.body.appendChild(form);
     form.submit();
-    setTimeout(() => { try { document.body.removeChild(form); } catch {} }, 1000);
+
+    setTimeout(() => {
+        try {
+            document.body.removeChild(form);
+        } catch {}
+    }, 1000);
 }
 
 const bulkConfirmOpen = ref(false);
-const verifiedCount   = computed(() => docs.value.filter((d) => d.status === 'verified').length);
-function openBulkConfirm() { bulkConfirmOpen.value = true; }
-function runBulkDownload()  { bulkConfirmOpen.value = false; downloadVerifiedZip(); }
+const verifiedCount = computed(() => docs.value.filter((d) => d.status === 'verified').length);
+
+function openBulkConfirm() {
+    bulkConfirmOpen.value = true;
+}
+
+function runBulkDownload() {
+    bulkConfirmOpen.value = false;
+    downloadVerifiedZip();
+}
 
 // ── File preview helpers ──────────────────────────────────────────
 function fileUrl(doc: CompanyDocument): string {
     if (!doc.file_path) return '';
     return `/storage/${doc.file_path}`;
 }
+
 function isImage(doc: CompanyDocument): boolean {
     if (doc.mime_type) return doc.mime_type.startsWith('image/');
     const ext = (doc.original_name ?? doc.file_path ?? '').split('.').pop()?.toLowerCase();
     return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext ?? '');
 }
+
 function isPdf(doc: CompanyDocument): boolean {
     if (doc.mime_type) return doc.mime_type === 'application/pdf';
     const ext = (doc.original_name ?? doc.file_path ?? '').split('.').pop()?.toLowerCase();
     return ext === 'pdf';
 }
+
 function canPreview(doc: CompanyDocument): boolean {
     return isImage(doc) || isPdf(doc);
 }
 
 // ── Preview dialog ────────────────────────────────────────────────
-const previewOpen    = ref(false);
-const previewDoc     = ref<CompanyDocument | null>(null);
-const pdfLoadError   = ref(false);
+const previewOpen = ref(false);
+const previewDoc = ref<CompanyDocument | null>(null);
+const pdfLoadError = ref(false);
 
 function openPreview(doc: CompanyDocument) {
     previewDoc.value = doc;
     pdfLoadError.value = false;
     previewOpen.value = true;
 }
+
 function closePreview() {
     previewOpen.value = false;
     previewDoc.value = null;
@@ -272,10 +300,10 @@ function closePreview() {
 const actionForm = useForm({});
 
 // ── Confirm dialog ────────────────────────────────────────────────
-type ConfirmAction = 'verify' | 'unverify' | 'delete' | 'download';
-const confirmOpen   = ref(false);
-const confirmAction = ref<ConfirmAction>('verify');
-const confirmDoc    = ref<CompanyDocument | null>(null);
+type ConfirmAction = 'delete' | 'download';
+const confirmOpen = ref(false);
+const confirmAction = ref<ConfirmAction>('download');
+const confirmDoc = ref<CompanyDocument | null>(null);
 
 function openConfirm(action: ConfirmAction, doc: CompanyDocument) {
     confirmAction.value = action;
@@ -285,10 +313,10 @@ function openConfirm(action: ConfirmAction, doc: CompanyDocument) {
 
 function confirmTitle() {
     switch (confirmAction.value) {
-        case 'verify':   return 'Verify document?';
-        case 'unverify': return 'Unverify document?';
-        case 'delete':   return 'Delete document?';
-        case 'download': return 'Download document?';
+        case 'delete':
+            return 'Delete document?';
+        case 'download':
+            return 'Download document?';
     }
 }
 
@@ -296,73 +324,102 @@ function confirmDescription() {
     const doc = confirmDoc.value;
     if (!doc) return '';
     const name = doc.original_name ?? humanize(doc.doc_type);
+
     switch (confirmAction.value) {
-        case 'verify':   return `This will mark "${name}" as verified.`;
-        case 'unverify': return `This will set "${name}" back to pending.`;
-        case 'delete':   return `This will permanently remove "${name}" and delete the file.`;
-        case 'download': return `This will open "${name}" in a new tab.`;
+        case 'delete':
+            return `This will permanently remove "${name}" and delete the file.`;
+        case 'download':
+            return `This will open "${name}" in a new tab.`;
     }
 }
 
 function runConfirmedAction() {
     const doc = confirmDoc.value;
     if (!doc || actionForm.processing || rejectForm.processing) return;
+
     const urls = {
-        verify:   verify({ company: company.value.id, document: doc.id }).url,
-        unverify: unverify({ company: company.value.id, document: doc.id }).url,
-        delete:   destroyDoc({ company: company.value.id, document: doc.id }).url,
+        delete: destroyDoc({ company: company.value.id, document: doc.id }).url,
         download: downloadCompanyDocument({ company: company.value.id, document: doc.id }).url,
     } as const;
+
     if (confirmAction.value === 'download') {
         window.open(urls.download, '_blank', 'noopener,noreferrer');
         confirmOpen.value = false;
         confirmDoc.value = null;
         return;
     }
-    if (confirmAction.value === 'delete') {
-        actionForm.delete(urls.delete, {
-            preserveScroll: true,
-            onSuccess: () => { confirmOpen.value = false; confirmDoc.value = null; },
-        });
-        return;
-    }
-    actionForm.patch(urls[confirmAction.value], {
+
+    actionForm.delete(urls.delete, {
         preserveScroll: true,
-        onSuccess: () => { confirmOpen.value = false; confirmDoc.value = null; },
+        onSuccess: () => {
+            confirmOpen.value = false;
+            confirmDoc.value = null;
+        },
     });
+}
+
+// ── Verify / Unverify from preview ────────────────────────────────
+function verifyFromPreview() {
+    const doc = previewDoc.value;
+    if (!doc || actionForm.processing || rejectForm.processing) return;
+
+    actionForm.patch(
+        verify({ company: company.value.id, document: doc.id }).url,
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                closePreview();
+            },
+        },
+    );
+}
+
+function unverifyFromPreview() {
+    const doc = previewDoc.value;
+    if (!doc || actionForm.processing || rejectForm.processing) return;
+
+    actionForm.patch(
+        unverify({ company: company.value.id, document: doc.id }).url,
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                closePreview();
+            },
+        },
+    );
 }
 
 // ── Reject dialog ─────────────────────────────────────────────────
 const remarkPresets = [
     { value: 'missing_signature', label: 'Missing signature' },
-    { value: 'blurred',           label: 'Blurred / unreadable file' },
-    { value: 'wrong_document',    label: 'Wrong document uploaded' },
-    { value: 'expired',           label: 'Expired document' },
-    { value: 'mismatch_name',     label: 'Company name mismatch' },
-    { value: 'mismatch_details',  label: 'Details mismatch / incomplete' },
-    { value: 'needs_stamp',       label: 'Missing stamp / seal' },
-    { value: 'missing_pages',     label: 'Missing pages / incomplete scan' },
-    { value: 'reupload_pdf',      label: 'Please re-upload as PDF' },
-    { value: 'other',             label: 'Other (write your own)' },
+    { value: 'blurred', label: 'Blurred / unreadable file' },
+    { value: 'wrong_document', label: 'Wrong document uploaded' },
+    { value: 'expired', label: 'Expired document' },
+    { value: 'mismatch_name', label: 'Company name mismatch' },
+    { value: 'mismatch_details', label: 'Details mismatch / incomplete' },
+    { value: 'needs_stamp', label: 'Missing stamp / seal' },
+    { value: 'missing_pages', label: 'Missing pages / incomplete scan' },
+    { value: 'reupload_pdf', label: 'Please re-upload as PDF' },
+    { value: 'other', label: 'Other (write your own)' },
 ] as const;
 
 const presetTextMap: Record<string, string> = {
     missing_signature: 'Missing signature. Please upload a signed copy.',
-    blurred:           'The file is blurred/unreadable. Please upload a clearer scan/photo.',
-    wrong_document:    'Wrong document uploaded. Please upload the correct document.',
-    expired:           'Document appears expired. Please upload a valid/updated document.',
-    mismatch_name:     'Company name does not match our records. Please upload the correct document.',
-    mismatch_details:  'Some details are missing or do not match. Please review and re-upload.',
-    needs_stamp:       'Missing stamp/seal. Please upload a stamped/sealed copy.',
-    missing_pages:     'Incomplete document (missing pages). Please upload the complete file.',
-    reupload_pdf:      'Please re-upload the document as a PDF for verification.',
-    other:             '',
+    blurred: 'The file is blurred/unreadable. Please upload a clearer scan/photo.',
+    wrong_document: 'Wrong document uploaded. Please upload the correct document.',
+    expired: 'Document appears expired. Please upload a valid/updated document.',
+    mismatch_name: 'Company name does not match our records. Please upload the correct document.',
+    mismatch_details: 'Some details are missing or do not match. Please review and re-upload.',
+    needs_stamp: 'Missing stamp/seal. Please upload a stamped/sealed copy.',
+    missing_pages: 'Incomplete document (missing pages). Please upload the complete file.',
+    reupload_pdf: 'Please re-upload the document as a PDF for verification.',
+    other: '',
 };
 
 const selectedRemarkPreset = ref<string | null>(null);
-const rejectOpen  = ref(false);
+const rejectOpen = ref(false);
 const rejectDocId = ref<number | null>(null);
-const rejectForm  = useForm<{ remarks: string }>({ remarks: '' });
+const rejectForm = useForm<{ remarks: string }>({ remarks: '' });
 
 function openReject(docId: number) {
     rejectDocId.value = docId;
@@ -380,6 +437,7 @@ function applyPreset(value: string) {
 
 function submitReject() {
     if (!rejectDocId.value || rejectForm.processing) return;
+
     rejectForm.patch(
         reject({ company: company.value.id, document: rejectDocId.value }).url,
         {
@@ -394,9 +452,21 @@ function submitReject() {
     );
 }
 
+function openRejectFromPreview() {
+    const doc = previewDoc.value;
+    if (!doc) return;
+
+    closePreview();
+    openReject(doc.id);
+}
+
 const repHasAny = computed(() => {
     const c = company.value;
-    return !!(c.authorized_representative_name || c.authorized_representative_position || c.authorized_representative_contact);
+    return !!(
+        c.authorized_representative_name ||
+        c.authorized_representative_position ||
+        c.authorized_representative_contact
+    );
 });
 </script>
 
@@ -406,8 +476,6 @@ const repHasAny = computed(() => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="w-full px-4 py-6 sm:px-6">
             <div class="mx-auto w-full max-w-6xl space-y-6">
-
-                <!-- ── Page header ────────────────────────────────── -->
                 <div class="flex items-start justify-between gap-4">
                     <div class="flex items-center gap-4">
                         <div class="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border-2 bg-muted shadow-sm">
@@ -446,24 +514,20 @@ const repHasAny = computed(() => {
                     </Button>
                 </div>
 
-                <!-- Summary badges -->
                 <div class="flex flex-wrap items-center gap-2">
-                    <Badge class="gap-1.5 bg-muted text-foreground border-0 font-mono">
+                    <Badge class="gap-1.5 border-0 bg-muted font-mono text-foreground">
                         {{ company.company_code ?? '—' }}
                     </Badge>
                     <Badge :class="['gap-1.5', statusClass(company.status)]">
                         <span :class="['h-1.5 w-1.5 rounded-full', statusDot(company.status)]" />
                         {{ humanize(company.status) }}
                     </Badge>
-                    <Badge class="bg-slate-100 text-slate-600 border-0">
+                    <Badge class="border-0 bg-slate-100 text-slate-600">
                         {{ company.business_type ? humanize(company.business_type) : '—' }}
                     </Badge>
                 </div>
 
-                <!-- ── Top grid ───────────────────────────────────── -->
                 <div class="grid gap-4 lg:grid-cols-3">
-
-                    <!-- Company details -->
                     <Card class="lg:col-span-2">
                         <CardHeader class="border-b border-slate-100 pb-4">
                             <div class="flex items-center gap-3">
@@ -485,29 +549,47 @@ const repHasAny = computed(() => {
                                 </div>
                             </div>
                         </CardHeader>
+
                         <CardContent class="divide-y divide-slate-100 p-0">
                             <div class="flex items-center justify-between px-6 py-3">
                                 <span class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Email</span>
-                                <span class="text-sm">{{ company.company_email ?? '—' }}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm">{{ company.company_email ?? '—' }}</span>
+
+                                    <Badge
+                                        v-if="company.company_email"
+                                        :variant="isCompanyEmailVerified ? 'default' : 'outline'"
+                                        class="gap-1 text-[10px]"
+                                    >
+                                        <MailCheck v-if="isCompanyEmailVerified" class="h-3 w-3" />
+                                        <MailX v-else class="h-3 w-3" />
+                                        {{ isCompanyEmailVerified ? 'Verified' : 'Not Verified' }}
+                                    </Badge>
+                                </div>
                             </div>
+
                             <div class="flex items-center justify-between px-6 py-3">
                                 <span class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Phone</span>
                                 <span class="text-sm">{{ company.company_phone ?? '—' }}</span>
                             </div>
+
                             <div class="flex items-start justify-between gap-4 px-6 py-3">
                                 <span class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Address</span>
                                 <span class="text-right text-sm">{{ company.company_address ?? '—' }}</span>
                             </div>
+
                             <div class="flex items-center justify-between px-6 py-3">
                                 <span class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Registration No.</span>
                                 <span class="font-mono text-sm">{{ company.registration_number ?? '—' }}</span>
                             </div>
+
                             <div class="flex items-center justify-between px-6 py-3">
                                 <span class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Created</span>
                                 <span class="text-sm text-muted-foreground">
                                     {{ formatDate(company.created_at) }} · {{ company.creator?.name ?? 'N/A' }}
                                 </span>
                             </div>
+
                             <div class="flex items-center justify-between px-6 py-3">
                                 <span class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Last Updated</span>
                                 <span class="text-sm text-muted-foreground">
@@ -517,7 +599,6 @@ const repHasAny = computed(() => {
                         </CardContent>
                     </Card>
 
-                    <!-- Representative -->
                     <Card>
                         <CardHeader class="border-b border-slate-100 pb-4">
                             <CardTitle class="flex items-center gap-2 text-base">
@@ -546,7 +627,6 @@ const repHasAny = computed(() => {
                     </Card>
                 </div>
 
-                <!-- ── Documents card ─────────────────────────────── -->
                 <Card>
                     <CardHeader class="border-b border-slate-100 pb-4">
                         <div class="flex items-start justify-between gap-4">
@@ -556,7 +636,7 @@ const repHasAny = computed(() => {
                                     Document Details
                                 </CardTitle>
                                 <CardDescription class="mt-0.5">
-                                    Review, verify, preview, or download submitted documents.
+                                    Review documents first before verifying them.
                                 </CardDescription>
                             </div>
 
@@ -574,8 +654,6 @@ const repHasAny = computed(() => {
                     </CardHeader>
 
                     <CardContent class="p-0">
-
-                        <!-- Empty state -->
                         <div v-if="docs.length === 0" class="flex flex-col items-center gap-3 py-20 text-center">
                             <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
                                 <FileText class="h-6 w-6 text-muted-foreground/40" />
@@ -586,30 +664,28 @@ const repHasAny = computed(() => {
                             </div>
                         </div>
 
-                        <!-- Document rows -->
                         <div v-else class="divide-y divide-slate-100">
                             <div
                                 v-for="doc in docs"
                                 :key="doc.id"
                                 class="grid grid-cols-[1fr_auto] gap-4 px-6 py-4 transition-colors hover:bg-muted/30"
                             >
-                                <!-- Left: doc info -->
                                 <div class="min-w-0 space-y-2">
-
-                                    <!-- Type + Status row -->
                                     <div class="flex flex-wrap items-center gap-2">
                                         <p class="text-sm font-semibold text-foreground">{{ humanize(doc.doc_type) }}</p>
                                         <Badge :class="['gap-1.5', statusClass(doc.status)]">
                                             <span :class="['h-1.5 w-1.5 rounded-full', statusDot(doc.status)]" />
                                             {{ humanize(doc.status) }}
                                         </Badge>
-                                        <Badge v-if="isExpired(doc.expires_at)" class="bg-rose-100 text-rose-600 border-rose-200 gap-1.5">
+                                        <Badge
+                                            v-if="isExpired(doc.expires_at)"
+                                            class="gap-1.5 border-rose-200 bg-rose-100 text-rose-600"
+                                        >
                                             <span class="h-1.5 w-1.5 rounded-full bg-rose-500" />
                                             Expired
                                         </Badge>
                                     </div>
 
-                                    <!-- File name -->
                                     <div>
                                         <button
                                             v-if="canPreview(doc)"
@@ -618,14 +694,13 @@ const repHasAny = computed(() => {
                                             @click="openPreview(doc)"
                                         >
                                             <Eye class="h-3.5 w-3.5 shrink-0" />
-                                            <span class="truncate max-w-xs">{{ doc.original_name ?? '—' }}</span>
+                                            <span class="max-w-xs truncate">{{ doc.original_name ?? '—' }}</span>
                                         </button>
                                         <span v-else class="text-sm text-muted-foreground">
                                             {{ doc.original_name ?? '—' }}
                                         </span>
                                     </div>
 
-                                    <!-- Meta row -->
                                     <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                                         <span v-if="doc.issued_at">
                                             Issued: <span class="font-medium text-foreground">{{ formatDate(doc.issued_at) }}</span>
@@ -648,7 +723,6 @@ const repHasAny = computed(() => {
                                         </span>
                                     </div>
 
-                                    <!-- Remarks -->
                                     <div v-if="doc.remarks">
                                         <Popover>
                                             <PopoverTrigger as-child>
@@ -674,7 +748,6 @@ const repHasAny = computed(() => {
                                     </div>
                                 </div>
 
-                                <!-- Right: actions dropdown -->
                                 <div class="flex items-start pt-0.5">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger as-child>
@@ -689,7 +762,7 @@ const repHasAny = computed(() => {
                                             </Button>
                                         </DropdownMenuTrigger>
 
-                                        <DropdownMenuContent align="end" class="w-52 rounded-xl border-slate-200 shadow-lg">
+                                        <DropdownMenuContent align="end" class="w-56 rounded-xl border-slate-200 shadow-lg">
                                             <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                                 {{ humanize(doc.doc_type) }}
                                             </DropdownMenuLabel>
@@ -701,27 +774,7 @@ const repHasAny = computed(() => {
                                                 @click="openPreview(doc)"
                                             >
                                                 <Eye class="mr-2 h-4 w-4" />
-                                                Preview
-                                            </DropdownMenuItem>
-
-                                            <DropdownMenuSeparator v-if="canPreview(doc)" />
-
-                                            <DropdownMenuItem
-                                                v-if="doc.status === 'verified'"
-                                                class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700"
-                                                @click="openConfirm('unverify', doc)"
-                                            >
-                                                <RotateCcw class="mr-2 h-4 w-4" />
-                                                Unverify
-                                            </DropdownMenuItem>
-
-                                            <DropdownMenuItem
-                                                v-else
-                                                class="rounded-lg text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700"
-                                                @click="openConfirm('verify', doc)"
-                                            >
-                                                <CheckCircle2 class="mr-2 h-4 w-4" />
-                                                Verify
+                                                Review Document
                                             </DropdownMenuItem>
 
                                             <DropdownMenuItem
@@ -756,11 +809,9 @@ const repHasAny = computed(() => {
                         </div>
                     </CardContent>
                 </Card>
-
             </div>
         </div>
 
-        <!-- ── File Preview Dialog ────────────────────────────────── -->
         <Dialog v-model:open="previewOpen">
             <DialogContent class="flex max-h-[90vh] w-full max-w-4xl flex-col gap-0 overflow-hidden rounded-2xl p-0">
                 <DialogHeader class="shrink-0 border-b border-slate-100 bg-slate-50 px-6 py-4">
@@ -780,12 +831,25 @@ const repHasAny = computed(() => {
                                 </span>
                             </DialogDescription>
                         </div>
-                        <Button v-if="previewDoc" variant="outline" size="sm" class="shrink-0 rounded-lg" as-child>
-                            <a :href="downloadCompanyDocument({ company: company.id, document: previewDoc.id }).url" target="_blank" rel="noopener noreferrer">
-                                <Download class="mr-2 h-4 w-4" />
-                                Download
-                            </a>
-                        </Button>
+
+                        <div class="flex items-center gap-2">
+                            <Button
+                                v-if="previewDoc"
+                                variant="outline"
+                                size="sm"
+                                class="shrink-0 rounded-lg"
+                                as-child
+                            >
+                                <a
+                                    :href="downloadCompanyDocument({ company: company.id, document: previewDoc.id }).url"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Download class="mr-2 h-4 w-4" />
+                                    Download
+                                </a>
+                            </Button>
+                        </div>
                     </div>
                 </DialogHeader>
 
@@ -798,17 +862,34 @@ const repHasAny = computed(() => {
                             @error="(e) => ((e.target as HTMLImageElement).src = '')"
                         />
                     </div>
+
                     <div v-else-if="previewDoc && isPdf(previewDoc)" class="h-[70vh] w-full">
-                        <iframe v-if="!pdfLoadError" :src="fileUrl(previewDoc)" class="h-full w-full border-0" @error="pdfLoadError = true" />
+                        <iframe
+                            v-if="!pdfLoadError"
+                            :src="fileUrl(previewDoc)"
+                            class="h-full w-full border-0"
+                            @error="pdfLoadError = true"
+                        />
                         <div v-else class="flex h-full flex-col items-center justify-center gap-4 text-muted-foreground">
                             <FileText class="h-12 w-12 opacity-30" />
                             <p class="text-sm">Your browser cannot preview this PDF inline.</p>
                             <Button as-child variant="outline" size="sm" class="rounded-lg">
                                 <a :href="fileUrl(previewDoc)" target="_blank" rel="noopener noreferrer">
-                                    <Eye class="mr-2 h-4 w-4" />Open in new tab
+                                    <Eye class="mr-2 h-4 w-4" />
+                                    Open in new tab
                                 </a>
                             </Button>
                         </div>
+                    </div>
+
+                    <div
+                        v-else
+                        class="flex h-[50vh] flex-col items-center justify-center gap-4 px-6 text-center text-muted-foreground"
+                    >
+                        <FileText class="h-12 w-12 opacity-30" />
+                        <p class="text-sm">
+                            This file type cannot be previewed inline. Please download it to review the document.
+                        </p>
                     </div>
                 </div>
 
@@ -818,12 +899,51 @@ const repHasAny = computed(() => {
                         Expires: {{ formatDate(previewDoc?.expires_at ?? null) }} ·
                         Uploaded: {{ formatDateTime(previewDoc?.created_at ?? null) }}
                     </p>
-                    <Button variant="outline" size="sm" class="rounded-lg" @click="closePreview">Close</Button>
+
+                    <div class="flex items-center gap-2">
+                        <Button
+                            v-if="previewDoc && previewDoc.status !== 'verified'"
+                            variant="outline"
+                            size="sm"
+                            class="rounded-lg border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                            :disabled="actionForm.processing || rejectForm.processing"
+                            @click="openRejectFromPreview"
+                        >
+                            <XCircle class="mr-2 h-4 w-4" />
+                            Invalid
+                        </Button>
+
+                        <Button
+                            v-if="previewDoc && previewDoc.status !== 'verified'"
+                            size="sm"
+                            class="rounded-lg border-0 bg-emerald-600 text-white hover:bg-emerald-700"
+                            :disabled="actionForm.processing || rejectForm.processing"
+                            @click="verifyFromPreview"
+                        >
+                            <CheckCircle2 class="mr-2 h-4 w-4" />
+                            {{ actionForm.processing ? 'Verifying…' : 'Verify' }}
+                        </Button>
+
+                        <Button
+                            v-if="previewDoc && previewDoc.status === 'verified'"
+                            size="sm"
+                            variant="outline"
+                            class="rounded-lg border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+                            :disabled="actionForm.processing || rejectForm.processing"
+                            @click="unverifyFromPreview"
+                        >
+                            <RotateCcw class="mr-2 h-4 w-4" />
+                            {{ actionForm.processing ? 'Updating…' : 'Unverify' }}
+                        </Button>
+
+                        <Button variant="outline" size="sm" class="rounded-lg" @click="closePreview">
+                            Close
+                        </Button>
+                    </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
 
-        <!-- ── Reject dialog ──────────────────────────────────────── -->
         <Dialog v-model:open="rejectOpen">
             <DialogContent class="rounded-2xl sm:max-w-lg">
                 <DialogHeader>
@@ -832,7 +952,9 @@ const repHasAny = computed(() => {
                         Choose a preset remark (optional) then edit the message if needed.
                     </DialogDescription>
                 </DialogHeader>
+
                 <Separator />
+
                 <div class="space-y-4">
                     <div class="space-y-1.5">
                         <Label class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Remarks Preset</Label>
@@ -840,40 +962,62 @@ const repHasAny = computed(() => {
                             :model-value="selectedRemarkPreset ?? undefined"
                             @update:model-value="(v) => applyPreset(String(v))"
                         >
-                            <SelectTrigger class="rounded-lg"><SelectValue placeholder="Select a preset…" /></SelectTrigger>
+                            <SelectTrigger class="rounded-lg">
+                                <SelectValue placeholder="Select a preset…" />
+                            </SelectTrigger>
                             <SelectContent class="rounded-xl">
-                                <SelectItem v-for="p in remarkPresets" :key="p.value" :value="p.value" class="rounded-lg">
+                                <SelectItem
+                                    v-for="p in remarkPresets"
+                                    :key="p.value"
+                                    :value="p.value"
+                                    class="rounded-lg"
+                                >
                                     {{ p.label }}
                                 </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
+
                     <div class="space-y-1.5">
                         <Label class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Remarks *</Label>
                         <Textarea v-model="rejectForm.remarks" placeholder="Reason for invalid…" class="rounded-lg" />
                         <InputError class="mt-1" :message="rejectForm.errors.remarks" />
                     </div>
                 </div>
+
                 <DialogFooter class="gap-2">
-                    <Button variant="outline" class="rounded-lg" :disabled="rejectForm.processing" @click="rejectOpen = false">Cancel</Button>
-                    <Button class="rounded-lg bg-rose-600 text-white hover:bg-rose-700 border-0" :disabled="rejectForm.processing" @click="submitReject">
+                    <Button
+                        variant="outline"
+                        class="rounded-lg"
+                        :disabled="rejectForm.processing"
+                        @click="rejectOpen = false"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        class="rounded-lg border-0 bg-rose-600 text-white hover:bg-rose-700"
+                        :disabled="rejectForm.processing"
+                        @click="submitReject"
+                    >
                         {{ rejectForm.processing ? 'Invalidating…' : 'Mark as Invalid' }}
                     </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
 
-        <!-- ── Row action confirm dialog ─────────────────────────── -->
         <AlertDialog v-model:open="confirmOpen">
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
                     <AlertDialogTitle>{{ confirmTitle() }}</AlertDialogTitle>
                     <AlertDialogDescription>{{ confirmDescription() }}</AlertDialogDescription>
                 </AlertDialogHeader>
+
                 <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg" :disabled="actionForm.processing" @click="confirmOpen = false">Cancel</AlertDialogCancel>
+                    <AlertDialogCancel class="rounded-lg" :disabled="actionForm.processing" @click="confirmOpen = false">
+                        Cancel
+                    </AlertDialogCancel>
                     <AlertDialogAction
-                        class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0"
+                        class="rounded-lg border-0 bg-blue-700 text-white hover:bg-blue-800"
                         :disabled="actionForm.processing"
                         @click="runConfirmedAction"
                     >
@@ -883,7 +1027,6 @@ const repHasAny = computed(() => {
             </AlertDialogContent>
         </AlertDialog>
 
-        <!-- ── Bulk Download Confirm ──────────────────────────────── -->
         <AlertDialog v-model:open="bulkConfirmOpen">
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
@@ -897,7 +1040,7 @@ const repHasAny = computed(() => {
                 <AlertDialogFooter>
                     <AlertDialogCancel class="rounded-lg" @click="bulkConfirmOpen = false">Cancel</AlertDialogCancel>
                     <AlertDialogAction
-                        class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0"
+                        class="rounded-lg border-0 bg-blue-700 text-white hover:bg-blue-800"
                         :disabled="verifiedCount === 0"
                         @click="runBulkDownload"
                     >
