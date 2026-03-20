@@ -36,6 +36,11 @@ class Gate extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function dispatches()
+    {
+        return $this->hasMany(Dispatch::class);
+    }
+
     public function updater()
     {
         return $this->belongsTo(User::class, 'updated_by');

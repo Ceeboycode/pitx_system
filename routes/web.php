@@ -10,6 +10,7 @@ use App\Http\Controllers\CompanyVehicleController;
 use App\Http\Controllers\Crm\CrmMessageAttachmentController;
 use App\Http\Controllers\Crm\CrmMessageController;
 use App\Http\Controllers\Crm\CrmThreadController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DispatchController;
 use App\Http\Controllers\ForcePasswordController;
 use App\Http\Controllers\GateController;
@@ -194,9 +195,7 @@ Route::middleware(['auth', 'role.type:external'])->group(function () {
 */
 
 Route::middleware(['auth', 'role.type:internal', 'password.change.required'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     /*
     |--------------------------------------------------------------------------
