@@ -17,14 +17,21 @@ class DatabaseSeeder extends Seeder
         $this->call([
             PermissionSeeder::class,
             RoleSeeder::class,
+            RolePermissionSeeder::class,
+
             UserSeeder::class,
-            GateSeeder::class,
+
             CompanySeeder::class,
+            GateSeeder::class,
+            VehicleTypeSeeder::class,
             RouteSeeder::class,
             RouteStopSeeder::class,
-            VehicleTypeSeeder::class,
             VehicleSeeder::class,
-            CrmThreadSeeder::class,
+            CompanyDocumentSeeder::class,
+            VehicleDocumentSeeder::class,
+            DispatchSeeder::class,
+
+            // CrmThreadSeeder::class,
         ]);
 
         Schema::enableForeignKeyConstraints();

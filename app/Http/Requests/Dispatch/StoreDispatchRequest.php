@@ -28,7 +28,7 @@ class StoreDispatchRequest extends FormRequest
                 Rule::exists('gates', 'id'),
             ],
             'driver_user_id' => [
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists('users', 'id'),
             ],
@@ -61,11 +61,6 @@ class StoreDispatchRequest extends FormRequest
                     }
                 },
             ],
-            'pax_count' => [
-                'required',
-                'integer',
-                'min:0',
-            ],
             'remarks' => [
                 'nullable',
                 'string',
@@ -81,7 +76,6 @@ class StoreDispatchRequest extends FormRequest
             'gate_id.required' => 'Please select a gate.',
             'driver_user_id.exists' => 'The selected driver is invalid.',
             'bay_number.required' => 'Please select a bay number.',
-            'pax_count.required' => 'Passenger count is required.',
         ];
     }
 }

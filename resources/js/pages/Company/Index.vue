@@ -48,7 +48,6 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import {
     Archive,
     Building2,
-    CheckCircle2,
     ChevronRight,
     Download,
     FileSearch,
@@ -56,12 +55,10 @@ import {
     MailCheck,
     MailX,
     MoreHorizontal,
-    Pencil,
-    Plus,
     Upload,
 } from 'lucide-vue-next';
 
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 /* ── Types ──────────────────────────────────────────────────────────── */
 
@@ -93,7 +90,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 /* ── Props ───────────────────────────────────────────────────────── */
 
-defineProps<{
+const props = defineProps<{
     companies: {
         data: Company[];
         links: Array<{ url: string | null; label: string; active: boolean }>;
@@ -103,6 +100,16 @@ defineProps<{
     };
     filters: { search: string | null };
 }>();
+
+/* ── Permissions ─────────────────────────────────────────────────── */
+
+const canViewArchived = computed(() => can('companies.viewAny'));
+const canViewCompany = computed(() => can('companies.view'));
+const canArchiveCompany = computed(() => can('companies.delete'));
+
+/* create/update are not active in controller yet */
+// const canCreateCompany = computed(() => can('companies.create'));
+// const canEditCompany = computed(() => can('companies.update'));
 
 /* ── Dialog state ────────────────────────────────────────────────── */
 
@@ -217,9 +224,8 @@ function hasVerifiedEmail(company: Company): boolean {
                         </CardDescription>
                     </div>
 
-                    <CardAction class="flex items-center gap-2">
+                    <CardAction v-if="canViewArchived" class="flex items-center gap-2">
                         <Button
-                            v-if="can('company.viewAny')"
                             as-child
                             size="sm"
                             variant="outline"
@@ -230,16 +236,6 @@ function hasVerifiedEmail(company: Company): boolean {
                                 View Archived
                             </Link>
                         </Button>
-
-                        <Button
-                            v-if="can('company.create')"
-                            size="sm"
-                            class="rounded-lg border-0 bg-blue-700 text-white shadow-sm hover:bg-blue-800"
-                            @click="createOpen = true"
-                        >
-                            <Plus class="mr-2 h-4 w-4" />
-                            New Company
-                        </Button>
                     </CardAction>
                 </CardHeader>
 
@@ -248,7 +244,7 @@ function hasVerifiedEmail(company: Company): boolean {
                         <div class="w-full max-w-sm">
                             <SearchInput
                                 :route="index().url"
-                                :initial-value="filters.search"
+                                :initial-value="props.filters.search"
                                 placeholder="Search companies…"
                                 :only="['companies', 'filters', 'flash']"
                                 :debounce="350"
@@ -309,7 +305,7 @@ function hasVerifiedEmail(company: Company): boolean {
                             </TableHeader>
 
                             <TableBody>
-                                <TableRow v-if="companies.data.length === 0" class="hover:bg-transparent">
+                                <TableRow v-if="props.companies.data.length === 0" class="hover:bg-transparent">
                                     <TableCell colspan="7" class="py-20 text-center">
                                         <div class="flex flex-col items-center gap-3">
                                             <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
@@ -324,7 +320,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                 </TableRow>
 
                                 <TableRow
-                                    v-for="company in companies.data"
+                                    v-for="company in props.companies.data"
                                     :key="company.id"
                                     class="group transition-colors hover:bg-muted/30"
                                 >
@@ -373,7 +369,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                     </TableCell>
 
                                     <TableCell class="text-right">
-                                        <DropdownMenu>
+                                        <DropdownMenu v-if="canViewCompany || canArchiveCompany">
                                             <DropdownMenuTrigger as-child>
                                                 <Button
                                                     variant="ghost"
@@ -390,10 +386,10 @@ function hasVerifiedEmail(company: Company): boolean {
                                                     {{ company.company_name }}
                                                 </DropdownMenuLabel>
 
-                                                <DropdownMenuSeparator />
+                                                <DropdownMenuSeparator v-if="canViewCompany" />
 
                                                 <DropdownMenuItem
-                                                    v-if="can('company.view')"
+                                                    v-if="canViewCompany"
                                                     as-child
                                                     class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700"
                                                 >
@@ -404,19 +400,10 @@ function hasVerifiedEmail(company: Company): boolean {
                                                     </Link>
                                                 </DropdownMenuItem>
 
-                                                <DropdownMenuItem
-                                                    v-if="can('company.update')"
-                                                    class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700"
-                                                    @click="openEdit(company)"
-                                                >
-                                                    <Pencil class="mr-2 h-4 w-4" />
-                                                    Edit Company
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuSeparator v-if="can('company.delete')" />
+                                                <DropdownMenuSeparator v-if="canArchiveCompany" />
 
                                                 <DropdownMenuItem
-                                                    v-if="can('company.delete')"
+                                                    v-if="canArchiveCompany"
                                                     class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600"
                                                     @click="openArchive(company)"
                                                 >
@@ -432,11 +419,11 @@ function hasVerifiedEmail(company: Company): boolean {
                     </div>
 
                     <InertiaPagination
-                        :links="companies.links"
+                        :links="props.companies.links"
                         :meta="{
-                            from: companies.from,
-                            to: companies.to,
-                            total: companies.total,
+                            from: props.companies.from,
+                            to: props.companies.to,
+                            total: props.companies.total,
                         }"
                     />
                 </CardContent>

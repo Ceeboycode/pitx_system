@@ -4,67 +4,61 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\Vehicle;
-use Illuminate\Auth\Access\Response;
 
 class VehiclePolicy
 {
-    public function before(User $user, string $ability): bool
-    {
-        return $user->hasRole('admin');
-    }
-    /**
-     * Determine whether the user can view any models.
-     */
     public function viewAny(User $user): bool
     {
-        return $user->can('vehicle.viewAny');
+        return $user->can('vehicles.viewAny');
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, Vehicle $vehicle): bool
     {
-        return $user->can('vehicle.view');
+        return $user->can('vehicles.view');
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        return $user->can('vehicle.create');
+        return $user->can('vehicles.create');
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
     public function update(User $user, Vehicle $vehicle): bool
     {
-        return $user->can('vehicle.update');
+        return $user->can('vehicles.update');
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, Vehicle $vehicle): bool
     {
-        return $user->can('vehicle.delete');
+        return $user->can('vehicles.delete');
     }
 
-    /**
-     * Determine whether the user can restore the model.
-     */
     public function restore(User $user, Vehicle $vehicle): bool
     {
-        return $user->can('vehicle.restore');
+        return $user->can('vehicles.restore');
     }
 
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
     public function forceDelete(User $user, Vehicle $vehicle): bool
     {
-        return $user->can('vehicle.forceDelete');
+        return $user->can('vehicles.forceDelete');
+    }
+
+    public function verifyDocument(User $user, Vehicle $vehicle): bool
+    {
+        return $user->can('vehicle_documents.verify');
+    }
+
+    public function invalidateDocument(User $user, Vehicle $vehicle): bool
+    {
+        return $user->can('vehicle_documents.invalidate');
+    }
+
+    public function unverifyDocument(User $user, Vehicle $vehicle): bool
+    {
+        return $user->can('vehicle_documents.unverify');
+    }
+
+    public function toggleStatus(User $user, Vehicle $vehicle): bool
+    {
+        return $user->can('vehicles.toggleStatus');
     }
 }

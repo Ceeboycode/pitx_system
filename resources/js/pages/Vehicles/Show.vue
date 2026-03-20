@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
-import type { BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import AppLayout from '@/layouts/AppLayout.vue'
+import type { BreadcrumbItem } from '@/types'
+import { Head, Link, useForm } from '@inertiajs/vue3'
+import { computed, ref } from 'vue'
 
-import InputError from '@/components/InputError.vue';
-import RouteMapDialog from '@/components/routes/RouteMapDialog.vue';
+import InputError from '@/components/InputError.vue'
+import RouteMapDialog from '@/components/routes/RouteMapDialog.vue'
+import { can } from '@/lib/can'
 import {
     AlertDialog,
     AlertDialogAction,
@@ -15,10 +16,10 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+} from '@/components/ui/alert-dialog'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
     Dialog,
     DialogContent,
@@ -26,7 +27,7 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/components/ui/dialog'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -34,20 +35,20 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Label } from '@/components/ui/label';
+} from '@/components/ui/dropdown-menu'
+import { Label } from '@/components/ui/label'
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-} from '@/components/ui/popover';
+} from '@/components/ui/popover'
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
+} from '@/components/ui/select'
 import {
     Table,
     TableBody,
@@ -55,10 +56,10 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
+} from '@/components/ui/table'
+import { Textarea } from '@/components/ui/textarea'
 
-import { edit } from '@/routes/vehicles';
+import { edit } from '@/routes/vehicles'
 import {
     ArrowLeft,
     CheckCircle2,
@@ -73,94 +74,94 @@ import {
     Route as RouteIcon,
     Truck,
     XCircle,
-} from 'lucide-vue-next';
+} from 'lucide-vue-next'
 
-type UserMini = { id?: number; name: string };
+type UserMini = { id?: number; name: string }
 
 type VehicleDocument = {
-    id: number;
-    document_type: string;
-    file_name?: string | null;
-    file_mime_type?: string | null;
-    file_size?: number | null;
-    file_url?: string | null;
-    status?: string | null;
-    issued_at?: string | null;
-    expires_at?: string | null;
-    remarks?: string | null;
-    created_at?: string | null;
-    updated_at?: string | null;
-};
+    id: number
+    document_type: string
+    file_name?: string | null
+    file_mime_type?: string | null
+    file_size?: number | null
+    file_url?: string | null
+    status?: string | null
+    issued_at?: string | null
+    expires_at?: string | null
+    remarks?: string | null
+    created_at?: string | null
+    updated_at?: string | null
+}
 
 type RouteStop = {
-    id: number;
-    stop_name: string;
-    stop_type: 'origin' | 'stop' | 'destination' | 'landmark' | string;
-    address: string | null;
-    latitude: number;
-    longitude: number;
-    stop_order: number;
-};
+    id: number
+    stop_name: string
+    stop_type: 'origin' | 'stop' | 'destination' | 'landmark' | string
+    address: string | null
+    latitude: number
+    longitude: number
+    stop_order: number
+}
 
 type RouteData = {
-    id: number;
-    route_name: string;
-    gate: { id: number; gate_name: string } | null;
-    origin_name: string;
-    origin_lat: number;
-    origin_lng: number;
-    destination_name: string;
-    destination_lat: number;
-    destination_lng: number;
-    distance_meters: number | null;
-    duration_seconds: number | null;
-    route_geometry: string | null;
-    status: string | null;
-    stops: RouteStop[];
-} | null;
+    id: number
+    route_name: string
+    gate: { id: number; gate_name: string } | null
+    origin_name: string
+    origin_lat: number
+    origin_lng: number
+    destination_name: string
+    destination_lat: number
+    destination_lng: number
+    distance_meters: number | null
+    duration_seconds: number | null
+    route_geometry: string | null
+    status: string | null
+    stops: RouteStop[]
+} | null
 
 type VehicleModel = {
-    id: number;
-    vehicle_type?: string | null;
-    plate_number?: string | null;
-    body_number?: string | null;
-    capacity?: string | number | null;
-    color?: string | null;
-    engine_number?: string | null;
-    chassis_number?: string | null;
-    make_model?: string | null;
-    status?: string | null;
-    docs_status?: string | null;
-    remarks?: string | null;
-    created_at?: string | null;
-    updated_at?: string | null;
-    deleted_at?: string | null;
+    id: number
+    vehicle_type?: string | null
+    plate_number?: string | null
+    body_number?: string | null
+    capacity?: string | number | null
+    color?: string | null
+    engine_number?: string | null
+    chassis_number?: string | null
+    make_model?: string | null
+    status?: string | null
+    docs_status?: string | null
+    remarks?: string | null
+    created_at?: string | null
+    updated_at?: string | null
+    deleted_at?: string | null
     company?: {
-        id: number;
-        company_name: string;
-        company_code?: string | null;
-        company_email?: string | null;
-        company_phone?: string | null;
-        company_address?: string | null;
-    } | null;
-    route?: RouteData;
-    documents?: VehicleDocument[];
-    creator?: UserMini | null;
-    updater?: UserMini | null;
-    deleter?: UserMini | null;
-};
+        id: number
+        company_name: string
+        company_code?: string | null
+        company_email?: string | null
+        company_phone?: string | null
+        company_address?: string | null
+    } | null
+    route?: RouteData
+    documents?: VehicleDocument[]
+    creator?: UserMini | null
+    updater?: UserMini | null
+    deleter?: UserMini | null
+}
 
 const props = defineProps<{
-    vehicle: VehicleModel;
-    mapConfig: { mapboxToken: string };
-}>();
+    vehicle: VehicleModel
+    mapConfig: { mapboxToken: string }
+}>()
 
-const vehicle = computed(() => props.vehicle);
-const company = computed(() => props.vehicle.company ?? null);
-const route = computed(() => props.vehicle.route ?? null);
-const docs = computed(() => props.vehicle.documents ?? []);
+const vehicle = computed(() => props.vehicle)
+const company = computed(() => props.vehicle.company ?? null)
+const route = computed(() => props.vehicle.route ?? null)
+const docs = computed(() => props.vehicle.documents ?? [])
 
-const VEHICLES_INDEX_URL = '/vehicles';
+const VEHICLES_INDEX_URL = '/vehicles'
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Vehicles', href: VEHICLES_INDEX_URL },
@@ -168,24 +169,30 @@ const breadcrumbs: BreadcrumbItem[] = [
         title: vehicle.value.plate_number || `Vehicle #${vehicle.value.id}`,
         href: '#',
     },
-];
+]
+
+const canViewVehicle = can('vehicles.view')
+const canUpdateVehicle = can('vehicles.update')
+const canVerifyVehicleDocument = can('vehicle_documents.verify')
+const canUnverifyVehicleDocument = can('vehicle_documents.unverify')
+const canInvalidateVehicleDocument = can('vehicle_documents.invalidate')
 
 const sortedStops = computed(() =>
     [...(route.value?.stops ?? [])].sort((a, b) => a.stop_order - b.stop_order),
-);
+)
 
 const verifiedCount = computed(
     () => docs.value.filter((d) => d.status === 'verified').length,
-);
+)
 const pendingCount = computed(
     () => docs.value.filter((d) => d.status === 'pending').length,
-);
+)
 const invalidCount = computed(
     () => docs.value.filter((d) => d.status === 'invalid').length,
-);
+)
 const expiredCount = computed(
     () => docs.value.filter((d) => isExpired(d.expires_at)).length,
-);
+)
 const actionRequiredCount = computed(() =>
     docs.value.filter(
         (d) =>
@@ -193,45 +200,45 @@ const actionRequiredCount = computed(() =>
             d.status === 'invalid' ||
             isExpired(d.expires_at),
     ).length,
-);
+)
 const docsCompletionRate = computed(() => {
-    if (!docs.value.length) return 0;
-    return Math.round((verifiedCount.value / docs.value.length) * 100);
-});
+    if (!docs.value.length) return 0
+    return Math.round((verifiedCount.value / docs.value.length) * 100)
+})
 
 function humanize(text?: string | null) {
-    if (!text) return '—';
-    return text.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    if (!text) return '—'
+    return text.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 function requiredLabel(type?: string | null) {
     switch (type) {
         case 'ltfrb_certificate':
-            return 'LTFRB Certificate';
+            return 'LTFRB Certificate'
         case 'cpc':
-            return 'Certificate of Public Convenience';
+            return 'Certificate of Public Convenience'
         case 'or_cr':
-            return 'OR / CR';
+            return 'OR / CR'
         default:
-            return humanize(type);
+            return humanize(type)
     }
 }
 
 function formatDate(date?: string | null) {
-    if (!date) return '—';
-    const d = new Date(date);
-    if (Number.isNaN(d.getTime())) return '—';
+    if (!date) return '—'
+    const d = new Date(date)
+    if (Number.isNaN(d.getTime())) return '—'
     return d.toLocaleDateString('en-PH', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
-    });
+    })
 }
 
 function formatDateTime(date?: string | null) {
-    if (!date) return '—';
-    const d = new Date(date);
-    if (Number.isNaN(d.getTime())) return '—';
+    if (!date) return '—'
+    const d = new Date(date)
+    if (Number.isNaN(d.getTime())) return '—'
     return d.toLocaleString('en-PH', {
         year: 'numeric',
         month: 'short',
@@ -239,39 +246,39 @@ function formatDateTime(date?: string | null) {
         hour: '2-digit',
         minute: '2-digit',
         hour12: true,
-    });
+    })
 }
 
 function fmtDistance(m?: number | null) {
-    if (!m) return '—';
-    return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(2)} km`;
+    if (!m) return '—'
+    return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(2)} km`
 }
 
 function fmtDuration(s?: number | null) {
-    if (!s) return '—';
-    const h = Math.floor(s / 3600);
-    const m = Math.ceil((s % 3600) / 60);
-    return h > 0 ? `${h}h ${m}m` : `${Math.ceil(s / 60)}m`;
+    if (!s) return '—'
+    const h = Math.floor(s / 3600)
+    const m = Math.ceil((s % 3600) / 60)
+    return h > 0 ? `${h}h ${m}m` : `${Math.ceil(s / 60)}m`
 }
 
 function formatBytes(value?: number | null) {
-    if (!value) return '—';
-    const units = ['B', 'KB', 'MB', 'GB'];
-    let size = value;
-    let unitIndex = 0;
+    if (!value) return '—'
+    const units = ['B', 'KB', 'MB', 'GB']
+    let size = value
+    let unitIndex = 0
 
     while (size >= 1024 && unitIndex < units.length - 1) {
-        size /= 1024;
-        unitIndex++;
+        size /= 1024
+        unitIndex++
     }
 
-    return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+    return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
 }
 
 function isExpired(expiresAt?: string | null) {
-    if (!expiresAt) return false;
-    const d = new Date(expiresAt);
-    return !Number.isNaN(d.getTime()) && d.getTime() < Date.now();
+    if (!expiresAt) return false
+    const d = new Date(expiresAt)
+    return !Number.isNaN(d.getTime()) && d.getTime() < Date.now()
 }
 
 function statusVariant(
@@ -281,101 +288,88 @@ function statusVariant(
         case 'verified':
         case 'active':
         case 'complete':
-            return 'default';
+            return 'default'
         case 'pending':
         case 'draft':
         case 'for_verification':
         case 'partial':
-            return 'secondary';
+            return 'secondary'
         case 'invalid':
         case 'expired':
         case 'needs_revision':
         case 'none':
-            return 'destructive';
+            return 'destructive'
         default:
-            return 'outline';
+            return 'outline'
     }
 }
 
 function fileUrl(doc: VehicleDocument) {
-    return doc.file_url ?? '';
+    return doc.file_url ?? ''
 }
 
 function isImage(doc: VehicleDocument) {
-    if (doc.file_mime_type) return doc.file_mime_type.startsWith('image/');
+    if (doc.file_mime_type) return doc.file_mime_type.startsWith('image/')
     return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(
         (doc.file_name ?? '').split('.').pop()?.toLowerCase() ?? '',
-    );
+    )
 }
 
 function isPdf(doc: VehicleDocument) {
-    if (doc.file_mime_type) return doc.file_mime_type === 'application/pdf';
-    return (doc.file_name ?? '').split('.').pop()?.toLowerCase() === 'pdf';
+    if (doc.file_mime_type) return doc.file_mime_type === 'application/pdf'
+    return (doc.file_name ?? '').split('.').pop()?.toLowerCase() === 'pdf'
 }
 
 function canPreview(doc: VehicleDocument) {
-    return Boolean(fileUrl(doc)) && (isImage(doc) || isPdf(doc));
-}
-
-function markerColor(type: RouteStop['stop_type']) {
-    switch (type) {
-        case 'origin':
-            return '#16a34a';
-        case 'destination':
-            return '#dc2626';
-        case 'landmark':
-            return '#8b5cf6';
-        default:
-            return '#f59e0b';
-    }
+    return Boolean(fileUrl(doc)) && (isImage(doc) || isPdf(doc))
 }
 
 function stopTypeLabel(type: RouteStop['stop_type']) {
     switch (type) {
         case 'origin':
-            return 'Origin';
+            return 'Origin'
         case 'destination':
-            return 'Destination';
+            return 'Destination'
         case 'landmark':
-            return 'Landmark';
+            return 'Landmark'
         default:
-            return 'Stop';
+            return 'Stop'
     }
 }
 
 function stopDotClass(type: RouteStop['stop_type']) {
     switch (type) {
         case 'origin':
-            return 'bg-green-600';
+            return 'bg-green-600'
         case 'destination':
-            return 'bg-red-600';
+            return 'bg-red-600'
         case 'landmark':
-            return 'bg-violet-500';
+            return 'bg-violet-500'
         default:
-            return 'bg-amber-500';
+            return 'bg-amber-500'
     }
 }
 
-const mapDialogOpen = ref(false);
+const mapDialogOpen = ref(false)
 const parsedRouteGeometry = computed(() => {
-    if (!route.value?.route_geometry) return null;
+    if (!route.value?.route_geometry) return null
 
     try {
-        const parsed = JSON.parse(route.value.route_geometry);
+        const parsed = JSON.parse(route.value.route_geometry)
 
-        if (parsed?.type === 'LineString') return parsed;
+        if (parsed?.type === 'LineString') return parsed
         if (
             parsed?.type === 'Feature' &&
             parsed.geometry?.type === 'LineString'
         ) {
-            return parsed.geometry;
+            return parsed.geometry
         }
     } catch {
-        return null;
+        return null
     }
 
-    return null;
-});
+    return null
+})
 
 const routeMapStops = computed(() =>
     sortedStops.value.map((stop) => ({
@@ -387,62 +381,62 @@ const routeMapStops = computed(() =>
         latitude: stop.latitude,
         longitude: stop.longitude,
     })),
-);
+)
 
 /* stops dialog */
-const stopsDialogOpen = ref(false);
+const stopsDialogOpen = ref(false)
 
 /* preview dialog */
-const previewOpen = ref(false);
-const previewDoc = ref<VehicleDocument | null>(null);
-const pdfLoadError = ref(false);
+const previewOpen = ref(false)
+const previewDoc = ref<VehicleDocument | null>(null)
+const pdfLoadError = ref(false)
 
 function openPreview(doc: VehicleDocument) {
-    if (!canPreview(doc)) return;
-    previewDoc.value = doc;
-    pdfLoadError.value = false;
-    previewOpen.value = true;
+    if (!canPreview(doc)) return
+    previewDoc.value = doc
+    pdfLoadError.value = false
+    previewOpen.value = true
 }
 
 function closePreview() {
-    previewOpen.value = false;
-    previewDoc.value = null;
-    pdfLoadError.value = false;
+    previewOpen.value = false
+    previewDoc.value = null
+    pdfLoadError.value = false
 }
 
 /* verify / unverify only from preview */
-const actionForm = useForm({});
-const confirmOpen = ref(false);
-const actionType = ref<'verify' | 'unverify'>('verify');
-const actionDoc = ref<VehicleDocument | null>(null);
+const actionForm = useForm({})
+const confirmOpen = ref(false)
+const actionType = ref<'verify' | 'unverify'>('verify')
+const actionDoc = ref<VehicleDocument | null>(null)
 
 function openConfirm(type: 'verify' | 'unverify', doc: VehicleDocument) {
-    actionType.value = type;
-    actionDoc.value = doc;
-    confirmOpen.value = true;
+    actionType.value = type
+    actionDoc.value = doc
+    confirmOpen.value = true
 }
 
 function openConfirmFromPreview(type: 'verify' | 'unverify') {
-    if (!previewDoc.value) return;
-    openConfirm(type, previewDoc.value);
+    if (!previewDoc.value) return
+    openConfirm(type, previewDoc.value)
 }
 
 function submitConfirm() {
-    if (!actionDoc.value) return;
+    if (!actionDoc.value) return
 
     const url =
         actionType.value === 'verify'
             ? `/vehicles/${vehicle.value.id}/documents/${actionDoc.value.id}/verify`
-            : `/vehicles/${vehicle.value.id}/documents/${actionDoc.value.id}/unverify`;
+            : `/vehicles/${vehicle.value.id}/documents/${actionDoc.value.id}/unverify`
 
     actionForm.patch(url, {
         preserveScroll: true,
         onSuccess: () => {
-            confirmOpen.value = false;
-            actionDoc.value = null;
-            closePreview();
+            confirmOpen.value = false
+            actionDoc.value = null
+            closePreview()
         },
-    });
+    })
 }
 
 /* invalidate dialog with preset + manual remarks */
@@ -454,7 +448,7 @@ const invalidPresets = [
     { value: 'mismatch', label: 'Vehicle details do not match' },
     { value: 'reupload_pdf', label: 'Please upload as PDF' },
     { value: 'other', label: 'Other reason' },
-] as const;
+] as const
 
 const invalidPresetMessages: Record<string, string> = {
     blurred: 'The uploaded document is blurred or unreadable. Please upload a clearer copy.',
@@ -464,50 +458,50 @@ const invalidPresetMessages: Record<string, string> = {
     mismatch: 'The document details do not match the assigned vehicle information. Please review and re-upload.',
     reupload_pdf: 'Please re-upload this requirement as a PDF file.',
     other: '',
-};
+}
 
 const invalidateForm = useForm({
     preset: '',
     remarks: '',
-});
-const invalidateOpen = ref(false);
+})
+const invalidateOpen = ref(false)
 
 function openInvalidate(doc: VehicleDocument) {
-    actionDoc.value = doc;
-    invalidateForm.reset();
-    invalidateForm.clearErrors();
-    invalidateForm.preset = '';
-    invalidateForm.remarks = doc.remarks ?? '';
-    invalidateOpen.value = true;
+    actionDoc.value = doc
+    invalidateForm.reset()
+    invalidateForm.clearErrors()
+    invalidateForm.preset = ''
+    invalidateForm.remarks = doc.remarks ?? ''
+    invalidateOpen.value = true
 }
 
 function openInvalidateFromPreview() {
-    if (!previewDoc.value) return;
-    openInvalidate(previewDoc.value);
-    closePreview();
+    if (!previewDoc.value) return
+    openInvalidate(previewDoc.value)
+    closePreview()
 }
 
 function applyInvalidPreset(value: string) {
-    invalidateForm.preset = value;
+    invalidateForm.preset = value
     if (value !== 'other') {
-        invalidateForm.remarks = invalidPresetMessages[value] ?? '';
+        invalidateForm.remarks = invalidPresetMessages[value] ?? ''
     }
 }
 
 function submitInvalidate() {
-    if (!actionDoc.value) return;
+    if (!actionDoc.value) return
 
     invalidateForm.patch(
         `/vehicles/${vehicle.value.id}/documents/${actionDoc.value.id}/invalidate`,
         {
             preserveScroll: true,
             onSuccess: () => {
-                invalidateOpen.value = false;
-                actionDoc.value = null;
-                invalidateForm.reset();
+                invalidateOpen.value = false
+                actionDoc.value = null
+                invalidateForm.reset()
             },
         },
-    );
+    )
 }
 </script>
 
@@ -560,7 +554,7 @@ function submitInvalidate() {
                         </Link>
                     </Button>
 
-                    <Button size="sm" as-child>
+                    <Button v-if="canUpdateVehicle" size="sm" as-child>
                         <Link :href="edit({ vehicle: vehicle.id }).url">
                             <Pencil class="mr-1.5 h-4 w-4" />
                             Edit
@@ -736,6 +730,7 @@ function submitInvalidate() {
 
                                 <div class="flex flex-wrap gap-2">
                                     <Button
+                                        v-if="canViewVehicle"
                                         variant="outline"
                                         size="sm"
                                         @click="mapDialogOpen = true"
@@ -745,6 +740,7 @@ function submitInvalidate() {
                                     </Button>
 
                                     <Button
+                                        v-if="canViewVehicle"
                                         variant="outline"
                                         size="sm"
                                         @click="stopsDialogOpen = true"
@@ -990,7 +986,7 @@ function submitInvalidate() {
 
                                                     <DropdownMenuContent
                                                         align="end"
-                                                        class="w-48"
+                                                        class="w-52"
                                                     >
                                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                         <DropdownMenuSeparator />
@@ -1016,6 +1012,39 @@ function submitInvalidate() {
                                                                 <Download class="mr-2 h-4 w-4" />
                                                                 Download
                                                             </a>
+                                                        </DropdownMenuItem>
+
+                                                        <DropdownMenuSeparator
+                                                            v-if="
+                                                                canVerifyVehicleDocument ||
+                                                                canUnverifyVehicleDocument ||
+                                                                canInvalidateVehicleDocument
+                                                            "
+                                                        />
+
+                                                        <DropdownMenuItem
+                                                            v-if="canVerifyVehicleDocument && doc.status !== 'verified'"
+                                                            @click="openConfirm('verify', doc)"
+                                                        >
+                                                            <CheckCircle2 class="mr-2 h-4 w-4" />
+                                                            Verify
+                                                        </DropdownMenuItem>
+
+                                                        <DropdownMenuItem
+                                                            v-if="canUnverifyVehicleDocument && doc.status === 'verified'"
+                                                            @click="openConfirm('unverify', doc)"
+                                                        >
+                                                            <RotateCcw class="mr-2 h-4 w-4" />
+                                                            Move to Pending
+                                                        </DropdownMenuItem>
+
+                                                        <DropdownMenuItem
+                                                            v-if="canInvalidateVehicleDocument"
+                                                            class="text-destructive focus:text-destructive"
+                                                            @click="openInvalidate(doc)"
+                                                        >
+                                                            <XCircle class="mr-2 h-4 w-4" />
+                                                            Mark Invalid
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -1121,6 +1150,7 @@ function submitInvalidate() {
         </div>
 
         <RouteMapDialog
+            v-if="canViewVehicle"
             v-model:open="mapDialogOpen"
             :route-name="route?.route_name"
             :origin-name="route?.origin_name"
@@ -1291,7 +1321,7 @@ function submitInvalidate() {
                 <DialogFooter class="shrink-0 border-t px-6 py-3">
                     <div class="flex flex-1 flex-wrap items-center gap-2">
                         <Button
-                            v-if="previewDoc && previewDoc.status !== 'verified'"
+                            v-if="previewDoc && previewDoc.status !== 'verified' && canVerifyVehicleDocument"
                             size="sm"
                             class="bg-emerald-600 text-white hover:bg-emerald-700"
                             :disabled="actionForm.processing"
@@ -1302,7 +1332,7 @@ function submitInvalidate() {
                         </Button>
 
                         <Button
-                            v-if="previewDoc && previewDoc.status === 'verified'"
+                            v-if="previewDoc && previewDoc.status === 'verified' && canUnverifyVehicleDocument"
                             variant="outline"
                             size="sm"
                             :disabled="actionForm.processing"
@@ -1313,7 +1343,7 @@ function submitInvalidate() {
                         </Button>
 
                         <Button
-                            v-if="previewDoc"
+                            v-if="previewDoc && canInvalidateVehicleDocument"
                             variant="destructive"
                             size="sm"
                             :disabled="invalidateForm.processing"

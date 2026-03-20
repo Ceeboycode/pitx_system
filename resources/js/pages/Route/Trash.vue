@@ -1,7 +1,11 @@
 <script setup lang="ts">
+/* ======================================================
+   Shared UI
+====================================================== */
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 
+/* shadcn-vue */
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -12,21 +16,17 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import Input from '@/components/ui/input/Input.vue';
+import Label from '@/components/ui/label/Label.vue';
 import {
     Table,
     TableBody,
@@ -36,6 +36,9 @@ import {
     TableRow,
 } from '@/components/ui/table';
 
+/* ======================================================
+   Layout, Routing & Inertia
+====================================================== */
 import AppLayout from '@/layouts/AppLayout.vue';
 import {
     forceDelete,
@@ -45,17 +48,33 @@ import {
 } from '@/actions/App/Http/Controllers/RouteController';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
 
-import {
-    ArrowLeft,
-    MoreHorizontal,
-    RotateCcw,
-    Trash2,
-} from 'lucide-vue-next';
+/* ======================================================
+   Icons
+====================================================== */
+import { ArchiveRestore, ArrowLeft, Route as RouteIcon, Trash2 } from 'lucide-vue-next';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+/* ======================================================
+   Vue Core
+====================================================== */
+import { computed, ref } from 'vue';
 
+/* ======================================================
+   Toaster
+====================================================== */
+import { toast } from 'vue-sonner';
+
+/* ======================================================
+   Permissions
+====================================================== */
+import { can } from '@/lib/can';
+
+const canRestore     = can('routes.restore');
+const canForceDelete = can('routes.forceDelete');
+
+/* ======================================================
+   Types
+====================================================== */
 interface Gate {
     id: number;
     gate_name: string;
@@ -69,47 +88,95 @@ interface RouteRow {
     gate: Gate | null;
 }
 
-// ─── Props ────────────────────────────────────────────────────────────────────
+interface PaginatedRoutes {
+    data: RouteRow[];
+    links: any[];
+    from: number | null;
+    to: number | null;
+    total: number;
+}
 
+/* ======================================================
+   Props
+====================================================== */
 const props = withDefaults(
     defineProps<{
-        routes: any;
+        routes: PaginatedRoutes;
         filters?: { search: string | null };
     }>(),
     { filters: () => ({ search: null }) },
 );
 
-// ─── Breadcrumbs ──────────────────────────────────────────────────────────────
-
+/* ======================================================
+   Breadcrumbs
+====================================================== */
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Routes', href: index().url },
-    { title: 'Archived', href: trash().url },
+    { title: 'Archived Routes', href: trash().url },
 ];
 
-// ─── Restore ─────────────────────────────────────────────────────────────────
+/* ======================================================
+   Dialog state
+====================================================== */
+const restoreOpen   = ref(false);
+const deleteOpen    = ref(false);
+const selectedRoute = ref<RouteRow | null>(null);
+const confirmText   = ref('');
 
-function handleRestore(id: number) {
-    router.patch(restore(id).url, {}, { preserveScroll: true });
+const canConfirmForceDelete = computed(() => confirmText.value.trim() === 'delete');
+
+/* ======================================================
+   Dialog helpers
+====================================================== */
+function openRestoreDialog(route: RouteRow) {
+    selectedRoute.value = route;
+    restoreOpen.value   = true;
 }
 
-// ─── Force delete dialog ──────────────────────────────────────────────────────
-
-const deletingId   = ref<number | null>(null);
-const deleteOpen   = ref(false);
-
-function openDeleteDialog(id: number) {
-    deletingId.value = id;
-    deleteOpen.value = true;
+function closeRestoreDialog() {
+    restoreOpen.value   = false;
+    selectedRoute.value = null;
 }
 
-function confirmForceDelete() {
-    if (!deletingId.value) return;
-    router.delete(forceDelete(deletingId.value).url, {
-        preserveScroll: true,
-        onFinish: () => {
-            deletingId.value = null;
-            deleteOpen.value  = false;
+function openDeleteDialog(route: RouteRow) {
+    selectedRoute.value = route;
+    confirmText.value   = '';
+    deleteOpen.value    = true;
+}
+
+function closeDeleteDialog() {
+    deleteOpen.value    = false;
+    selectedRoute.value = null;
+    confirmText.value   = '';
+}
+
+/* ======================================================
+   Actions
+====================================================== */
+function restoreRoute() {
+    if (!selectedRoute.value) return;
+
+    router.post(
+        restore(selectedRoute.value.id).url,
+        {},
+        {
+            preserveScroll: true,
+            onSuccess: () => closeRestoreDialog(),
+            onError:   () => toast.error('Failed to restore route.'),
         },
+    );
+}
+
+function forceDeleteRoute() {
+    if (!selectedRoute.value || !canConfirmForceDelete.value) return;
+
+    router.delete(forceDelete(selectedRoute.value.id).url, {
+        preserveScroll: true,
+        onSuccess: () => {
+            toast.success('Route permanently deleted.');
+            closeDeleteDialog();
+        },
+        onError: () => toast.error('Failed to permanently delete route.'),
     });
 }
 </script>
@@ -120,14 +187,16 @@ function confirmForceDelete() {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
             <Card class="mx-10 mt-3">
-                <CardHeader>
-                    <CardTitle>Archived Routes</CardTitle>
-                    <CardDescription>
-                        Routes that have been soft-deleted. Restore or permanently delete them.
-                    </CardDescription>
+                <CardHeader class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <CardTitle>Archived Routes</CardTitle>
+                        <CardDescription>
+                            Routes that have been archived. Restore or permanently delete them.
+                        </CardDescription>
+                    </div>
 
                     <CardAction>
-                        <Button as-child size="sm" variant="outline">
+                        <Button size="sm" variant="outline" as-child>
                             <Link :href="index().url">
                                 <ArrowLeft class="mr-2 h-4 w-4" />
                                 Back to Routes
@@ -148,32 +217,33 @@ function confirmForceDelete() {
                         />
                     </div>
 
-                    <!-- Table -->
                     <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Route Name</TableHead>
                                 <TableHead>Gate</TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead>Archived</TableHead>
-                                <TableHead class="text-right">Actions</TableHead>
+                                <TableHead>Archived At</TableHead>
+                                <TableHead class="w-[220px]">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
 
                         <TableBody>
                             <TableRow
-                                v-for="routeItem in (props.routes.data as RouteRow[])"
+                                v-for="routeItem in props.routes.data"
                                 :key="routeItem.id"
                             >
                                 <TableCell class="font-medium capitalize">
-                                    {{ routeItem.route_name }}
+                                    <div class="flex items-center gap-2">
+                                        <RouteIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
+                                        {{ routeItem.route_name }}
+                                    </div>
                                 </TableCell>
 
                                 <TableCell class="text-muted-foreground">
                                     {{ routeItem.gate?.gate_name ?? '—' }}
                                 </TableCell>
 
-                                <!-- Status badge (read-only on trash page) -->
                                 <TableCell>
                                     <span
                                         :class="[
@@ -186,55 +256,46 @@ function confirmForceDelete() {
                                         <span
                                             :class="[
                                                 'h-1.5 w-1.5 rounded-full',
-                                                routeItem.status === 'active' ? 'bg-green-500' : 'bg-zinc-400',
+                                                routeItem.status === 'active'
+                                                    ? 'animate-pulse bg-green-500'
+                                                    : 'bg-zinc-400',
                                             ]"
                                         />
                                         {{ routeItem.status === 'active' ? 'Active' : 'Inactive' }}
                                     </span>
                                 </TableCell>
 
-                                <TableCell class="text-muted-foreground text-sm">
+                                <TableCell class="text-sm text-muted-foreground">
                                     {{ routeItem.deleted_at_human ?? '—' }}
                                 </TableCell>
 
-                                <!-- 3-dot actions -->
-                                <TableCell class="text-right">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger as-child>
-                                            <Button variant="ghost" size="icon" class="h-8 w-8">
-                                                <MoreHorizontal class="h-4 w-4" />
-                                                <span class="sr-only">Open menu</span>
-                                            </Button>
-                                        </DropdownMenuTrigger>
+                                <TableCell class="space-x-2">
+                                    <Button
+                                        v-if="canRestore"
+                                        size="sm"
+                                        @click="openRestoreDialog(routeItem)"
+                                    >
+                                        <ArchiveRestore class="mr-2 h-4 w-4" />
+                                        Restore
+                                    </Button>
 
-                                        <DropdownMenuContent align="end" class="w-44">
-                                            <!-- Restore -->
-                                            <DropdownMenuItem
-                                                class="flex items-center gap-2 cursor-pointer text-green-600 focus:text-green-700"
-                                                @click="handleRestore(routeItem.id)"
-                                            >
-                                                <RotateCcw class="h-4 w-4" />
-                                                Restore
-                                            </DropdownMenuItem>
-
-                                            <DropdownMenuSeparator />
-
-                                            <!-- Force delete -->
-                                            <DropdownMenuItem
-                                                class="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
-                                                @click="openDeleteDialog(routeItem.id)"
-                                            >
-                                                <Trash2 class="h-4 w-4" />
-                                                Delete Permanently
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
+                                    <Button
+                                        v-if="canForceDelete"
+                                        size="sm"
+                                        variant="destructive"
+                                        @click="openDeleteDialog(routeItem)"
+                                    >
+                                        <Trash2 class="mr-2 h-4 w-4" />
+                                        Delete Permanently
+                                    </Button>
                                 </TableCell>
                             </TableRow>
 
-                            <!-- Empty state -->
                             <TableRow v-if="props.routes.data.length === 0">
-                                <TableCell colspan="5" class="py-10 text-center text-muted-foreground">
+                                <TableCell
+                                    colspan="5"
+                                    class="py-10 text-center text-muted-foreground"
+                                >
                                     No archived routes found.
                                 </TableCell>
                             </TableRow>
@@ -252,31 +313,74 @@ function confirmForceDelete() {
                 </CardContent>
             </Card>
         </div>
-
-        <!-- Force delete confirmation dialog -->
-        <Dialog :open="deleteOpen" @update:open="deleteOpen = $event">
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle class="flex items-center gap-2 text-destructive">
-                        <Trash2 :size="18" />
-                        Delete Permanently
-                    </DialogTitle>
-                    <DialogDescription>
-                        This action <strong>cannot be undone</strong>. The route and all its stops
-                        will be permanently removed from the database.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <DialogFooter class="gap-2">
-                    <DialogClose as-child>
-                        <Button variant="outline" @click="deletingId = null">Cancel</Button>
-                    </DialogClose>
-                    <Button variant="destructive" @click="confirmForceDelete">
-                        <Trash2 class="mr-2 h-4 w-4" />
-                        Delete Permanently
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
     </AppLayout>
+
+    <!-- RESTORE DIALOG -->
+    <AlertDialog v-if="canRestore" v-model:open="restoreOpen">
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle class="flex items-center gap-2">
+                    <ArchiveRestore class="h-5 w-5 text-emerald-600" />
+                    Restore Route
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                    Are you sure you want to restore
+                    <span class="font-medium text-foreground">
+                        {{ selectedRoute?.route_name ?? 'this route' }}
+                    </span>?
+                    It will be moved back to the active routes list.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <AlertDialogFooter>
+                <AlertDialogCancel @click="closeRestoreDialog">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                    class="bg-emerald-600 hover:bg-emerald-700 focus-visible:ring-emerald-500"
+                    @click="restoreRoute"
+                >
+                    Restore Route
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+
+    <!-- FORCE DELETE DIALOG -->
+    <AlertDialog v-if="canForceDelete" v-model:open="deleteOpen">
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle class="flex items-center gap-2">
+                    <Trash2 class="h-5 w-5 text-destructive" />
+                    Delete Permanently
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action <span class="font-semibold text-destructive">cannot be undone</span>.
+                    Type <span class="font-mono font-semibold text-destructive">delete</span> below
+                    to permanently remove
+                    <span class="font-medium text-foreground">
+                        {{ selectedRoute?.route_name ?? 'this route' }}
+                    </span>.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <div class="space-y-2 px-1">
+                <Label for="confirm_delete">Confirmation</Label>
+                <Input
+                    id="confirm_delete"
+                    v-model="confirmText"
+                    placeholder="Type delete to confirm"
+                />
+            </div>
+
+            <AlertDialogFooter>
+                <AlertDialogCancel @click="closeDeleteDialog">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                    class="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:pointer-events-none disabled:opacity-50"
+                    :disabled="!canConfirmForceDelete"
+                    @click="forceDeleteRoute"
+                >
+                    Delete Permanently
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
 </template>
