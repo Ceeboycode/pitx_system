@@ -2,39 +2,41 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Services\Gate\GateService;
-use Illuminate\Support\Facades\Gate;
 use App\Http\Requests\Gate\GateStoreRequest;
 use App\Http\Requests\Gate\GateUpdateRequest;
 use App\Models\Gate as GateModel;
+use App\Services\Gate\GateService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class GateController extends Controller
 {
     public function __construct(
-        private GateService $gateService
+        private GateService $gateService,
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
         Gate::authorize('viewAny', GateModel::class);
 
-        $gates = GateModel::select('id', 'gate_name', 'status', 'bays', 'created_by')
+        $gates = GateModel::query()
+            ->select('id', 'gate_name', 'status', 'bays', 'created_by')
             ->with('creator:id,name')
+            ->when($request->search, fn ($q, $s) => $q->where('gate_name', 'like', "%{$s}%"))
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Gates/Index', [
-            'gates' => $gates,
+            'gates'   => $gates,
+            'filters' => $request->only('search'),
         ]);
     }
 
     public function show(GateModel $gate)
     {
-        Gate::authorize('view', GateModel::class);
+        Gate::authorize('view', $gate);  // pass instance, not class
 
         return Inertia::render('Gates/Show', [
             'gate' => $gate->load(['creator', 'updater']),
@@ -45,53 +47,51 @@ class GateController extends Controller
     {
         Gate::authorize('create', GateModel::class);
 
-        $this->gateService->createGate(
-            $request->validated(),
-        );
+        $this->gateService->createGate($request->validated());
 
         return to_route('gates.index')->with('success', 'Gate created successfully.');
     }
 
     public function update(GateUpdateRequest $request, GateModel $gate)
     {
-        Gate::authorize('update', GateModel::class);
+        Gate::authorize('update', $gate);  // pass instance
 
-        $this->gateService->updateGate(
-            $gate,
-            $request->validated(),
-        );
+        $this->gateService->updateGate($gate, $request->validated());
 
         return redirect()->back()->with('success', 'Gate updated successfully.');
     }
 
-    public function trash()
+    public function trash(Request $request)
     {
         Gate::authorize('viewTrash', GateModel::class);
 
         $gates = GateModel::onlyTrashed()
             ->select('id', 'gate_name', 'status', 'bays', 'deleted_at')
+            ->when($request->search, fn ($q, $s) => $q->where('gate_name', 'like', "%{$s}%"))
             ->latest('deleted_at')
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Gates/Trash', [
-            'gates' => $gates,
+            'gates'   => $gates,
+            'filters' => $request->only('search'),
         ]);
     }
 
     public function destroy(GateModel $gate)
     {
-        Gate::authorize('delete', GateModel::class);
+        Gate::authorize('delete', $gate);  // pass instance
 
         $this->gateService->deleteGate($gate);
 
-        return redirect()->back()->with('success', 'Gate deleted successfully.');
+        return redirect()->back()->with('success', 'Gate archived successfully.');
     }
 
     public function restore(int $id)
     {
         $gate = GateModel::onlyTrashed()->findOrFail($id);
-        Gate::authorize('restore', GateModel::class);
+
+        Gate::authorize('restore', $gate);  // pass instance, correct order
 
         $this->gateService->restoreGate($gate);
 
@@ -101,11 +101,11 @@ class GateController extends Controller
     public function forceDelete(int $id)
     {
         $gate = GateModel::onlyTrashed()->findOrFail($id);
-        Gate::authorize('forceDelete', GateModel::class);
+
+        Gate::authorize('forceDelete', $gate);  // pass instance, correct order
 
         $this->gateService->forceDeleteGate($gate);
 
-        return redirect()->back()->with('success', 'Gate permanently deleted successfully.');
+        return redirect()->back()->with('success', 'Gate permanently deleted.');
     }
-
 }

@@ -1,34 +1,33 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { Head, Link, router, useForm } from '@inertiajs/vue3'
+import { computed, ref, watch } from 'vue'
 
-import InertiaPagination from '@/components/InertiaPagination.vue';
-import InputError from '@/components/InputError.vue';
-import SearchInput from '@/components/SearchInput.vue';
-import ExternalLayout from '@/layouts/ExternalLayout.vue';
+import InertiaPagination from '@/components/InertiaPagination.vue'
+import InputError from '@/components/InputError.vue'
+import SearchInput from '@/components/SearchInput.vue'
+import ExternalLayout from '@/layouts/ExternalLayout.vue'
 
-import DispatchController from '@/actions/App/Http/Controllers/DispatchController';
+import DispatchController from '@/actions/App/Http/Controllers/DispatchController'
 
 import {
     AlertDialog,
-    AlertDialogAction,
     AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
+} from '@/components/ui/alert-dialog'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
 import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle,
-} from '@/components/ui/card';
+} from '@/components/ui/card'
 import {
     Dialog,
     DialogContent,
@@ -36,29 +35,29 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/components/ui/dialog'
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-} from '@/components/ui/popover';
+} from '@/components/ui/popover'
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
+} from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
 import {
     Table,
     TableBody,
@@ -66,13 +65,13 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from '@/components/ui/table';
+} from '@/components/ui/table'
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from '@/components/ui/tooltip'
 
 import {
     ArrowUpRight,
@@ -92,136 +91,126 @@ import {
     UserRound,
     Users,
     X,
-} from 'lucide-vue-next';
+} from 'lucide-vue-next'
 
 import {
     CalendarDate,
     DateFormatter,
     getLocalTimeZone,
     today,
-} from '@internationalized/date';
-
-// ── Types ─────────────────────────────────────────────────────────────────────
+} from '@internationalized/date'
 
 type Company = {
-    id: number;
-    company_name: string;
-    company_code?: string | null;
-};
+    id: number
+    company_name: string
+    company_code?: string | null
+}
 
 type Vehicle = {
-    id: number;
-    plate_number: string;
-    body_number?: string | null;
-    vehicle_type?: string | null;
-    make_model?: string | null;
-    status?: string | null;
-    label: string;
-};
+    id: number
+    plate_number: string
+    body_number?: string | null
+    vehicle_type?: string | null
+    make_model?: string | null
+    status?: string | null
+    label: string
+}
 
 type Driver = {
-    id: number;
-    name: string;
-    username?: string | null;
-    email?: string | null;
-    label: string;
-};
+    id: number
+    name: string
+    username?: string | null
+    email?: string | null
+    label: string
+}
 
 type Gate = {
-    id: number;
-    gate_name: string;
-    bays: number;
-    status?: string | null;
-    label: string;
-    bay_options: Array<{ value: number; label: string }>;
-};
+    id: number
+    gate_name: string
+    bays: number
+    status?: string | null
+    label: string
+    bay_options: Array<{ value: number; label: string }>
+}
 
 type DispatchItem = {
-    id: number;
-    plate_number: string;
-    pax_count: number;
-    bay_number: string | number;
-    remarks?: string | null;
-    status: string;
-    arrived_at_formatted?: string | null;
-    departed_at_formatted?: string | null;
-    dispatched_at_formatted?: string | null;
+    id: number
+    plate_number: string
+    pax_count: number
+    bay_number: string | number
+    remarks?: string | null
+    status: string
+    arrived_at_formatted?: string | null
+    departed_at_formatted?: string | null
+    dispatched_at_formatted?: string | null
     vehicle?: {
-        id: number;
-        plate_number: string;
-        body_number?: string | null;
-        vehicle_type?: string | null;
-        make_model?: string | null;
-    } | null;
-    dispatcher?: { id: number; name: string; username?: string | null } | null;
-    driver?: { id: number; name: string; username?: string | null } | null;
-    gate?: { id: number; gate_name: string } | null;
-};
+        id: number
+        plate_number: string
+        body_number?: string | null
+        vehicle_type?: string | null
+        make_model?: string | null
+    } | null
+    dispatcher?: { id: number; name: string; username?: string | null } | null
+    driver?: { id: number; name: string; username?: string | null } | null
+    gate?: { id: number; gate_name: string } | null
+}
 
 type Paginated<T> = {
-    data: T[];
-    links: Array<{ url: string | null; label: string; active: boolean }>;
-    current_page: number;
-    last_page: number;
-    per_page: number;
-    total: number;
-    from: number | null;
-    to: number | null;
-};
-
-// ── Props ─────────────────────────────────────────────────────────────────────
+    data: T[]
+    links: Array<{ url: string | null; label: string; active: boolean }>
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+    from: number | null
+    to: number | null
+}
 
 const props = defineProps<{
-    company: Company;
-    vehicles: Vehicle[];
-    drivers: Driver[];
-    gates: Gate[];
-    dispatches: Paginated<DispatchItem>;
+    company: Company
+    vehicles: Vehicle[]
+    drivers: Driver[]
+    gates: Gate[]
+    dispatches: Paginated<DispatchItem>
     filters?: {
-        search?: string | null;
-        status?: string | null;
-        date?: string | null;
-    };
-}>();
+        search?: string | null
+        status?: string | null
+        date?: string | null
+    }
+}>()
 
-// ── Date filter ───────────────────────────────────────────────────────────────
-
-const df = new DateFormatter('en-US', { dateStyle: 'medium' });
-
-// BUG FIX: resolve the timezone once so it is stable and reusable
-// in both script and template without re-calling getLocalTimeZone() each time.
-const localTz = getLocalTimeZone();
+const df = new DateFormatter('en-US', { dateStyle: 'medium' })
+const localTz = getLocalTimeZone()
 
 function parseDateFilter(dateStr?: string | null): CalendarDate | undefined {
-    if (!dateStr) return undefined;
-    const [y, m, d] = dateStr.split('-').map(Number);
-    if (!y || !m || !d) return undefined;
-    return new CalendarDate(y, m, d);
+    if (!dateStr) return undefined
+    const [y, m, d] = dateStr.split('-').map(Number)
+    if (!y || !m || !d) return undefined
+    return new CalendarDate(y, m, d)
 }
 
 const selectedDate = ref<CalendarDate | undefined>(
     parseDateFilter(props.filters?.date),
-);
-const calendarOpen = ref(false);
+)
+const calendarOpen = ref(false)
 
 const selectedDateLabel = computed(() => {
-    if (!selectedDate.value) return null;
-    const t = today(localTz);
-    if (selectedDate.value.compare(t) === 0) return 'Today';
-    const yesterday = t.subtract({ days: 1 });
-    if (selectedDate.value.compare(yesterday) === 0) return 'Yesterday';
-    return df.format(selectedDate.value.toDate(localTz));
-});
+    if (!selectedDate.value) return null
+    const t = today(localTz)
+    if (selectedDate.value.compare(t) === 0) return 'Today'
+    const yesterday = t.subtract({ days: 1 })
+    if (selectedDate.value.compare(yesterday) === 0) return 'Yesterday'
+    return df.format(selectedDate.value.toDate(localTz))
+})
 
 function applyDateFilter(date: CalendarDate | undefined) {
-    selectedDate.value = date;
-    calendarOpen.value = false;
+    selectedDate.value = date
+    calendarOpen.value = false
+
     router.get(
         DispatchController.index().url,
         {
             search: props.filters?.search || undefined,
-            // BUG FIX: preserve the current status filter correctly —
-            // 'all' should be sent as undefined so it doesn't pollute the URL.
             status:
                 !props.filters?.status || props.filters.status === 'all'
                     ? undefined
@@ -230,196 +219,227 @@ function applyDateFilter(date: CalendarDate | undefined) {
                 ? `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`
                 : undefined,
         },
-        { preserveState: true, preserveScroll: true, replace: true, only: ['dispatches', 'filters'] },
-    );
+        {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ['dispatches', 'filters'],
+        },
+    )
 }
 
 function clearDateFilter() {
-    applyDateFilter(undefined);
+    applyDateFilter(undefined)
 }
 
-function setToday()     { applyDateFilter(today(localTz)); }
-function setYesterday() { applyDateFilter(today(localTz).subtract({ days: 1 })); }
+function setToday() {
+    applyDateFilter(today(localTz))
+}
 
-// ── Dialog / modal state ──────────────────────────────────────────────────────
+function setYesterday() {
+    applyDateFilter(today(localTz).subtract({ days: 1 }))
+}
 
-const dialogOpen        = ref(false);
-const editingDispatchId = ref<number | null>(null);
-const confirmDepartOpen = ref(false);
-const pendingDepartId   = ref<number | null>(null);
-const remarksViewOpen   = ref(false);
-const viewingDispatch   = ref<DispatchItem | null>(null);
+const dialogOpen = ref(false)
+const editingDispatchId = ref<number | null>(null)
 
-// ── Form ──────────────────────────────────────────────────────────────────────
+const confirmDepartOpen = ref(false)
+const pendingDepartId = ref<number | null>(null)
+const pendingDepartDispatch = ref<DispatchItem | null>(null)
+
+const remarksViewOpen = ref(false)
+const viewingDispatch = ref<DispatchItem | null>(null)
 
 const form = useForm({
-    vehicle_id:     '',
+    vehicle_id: '',
     driver_user_id: 'unassigned',
-    gate_id:        '',
-    bay_number:     '',
-    pax_count:      '',
-    remarks:        '',
-});
+    gate_id: '',
+    bay_number: '',
+    remarks: '',
+})
+
+const departForm = useForm({
+    pax_count: '',
+})
 
 const selectedVehicle = computed(() =>
     props.vehicles.find((v) => String(v.id) === String(form.vehicle_id)) ?? null,
-);
+)
+
 const selectedGate = computed(() =>
     props.gates.find((g) => String(g.id) === String(form.gate_id)) ?? null,
-);
-const selectedDriver = computed(() => {
-    if (form.driver_user_id === 'unassigned') return null;
-    return props.drivers.find((d) => String(d.id) === String(form.driver_user_id)) ?? null;
-});
-const bayOptions = computed(() => selectedGate.value?.bay_options ?? []);
-const isEditing  = computed(() => editingDispatchId.value !== null);
+)
 
-// ── Dialog helpers ────────────────────────────────────────────────────────────
+const selectedDriver = computed(() => {
+    if (form.driver_user_id === 'unassigned') return null
+
+    return (
+        props.drivers.find(
+            (d) => String(d.id) === String(form.driver_user_id),
+        ) ?? null
+    )
+})
+
+const bayOptions = computed(() => selectedGate.value?.bay_options ?? [])
+const isEditing = computed(() => editingDispatchId.value !== null)
 
 function onGateChange(value: string) {
-    form.gate_id    = value;
-    form.bay_number = '';
+    form.gate_id = value
+    form.bay_number = ''
 }
 
 function resetForm() {
-    // BUG FIX: always reset the transform FIRST before resetting field values,
-    // so a failed previous submit's stale transform can never leak into the next one.
-    form.transform((d) => d);
-    form.reset();
-    form.driver_user_id = 'unassigned';
-    form.clearErrors();
+    form.transform((d) => d)
+    form.reset()
+    form.driver_user_id = 'unassigned'
+    form.clearErrors()
+}
+
+function resetDepartForm() {
+    departForm.reset()
+    departForm.clearErrors()
 }
 
 function openCreateDialog() {
-    editingDispatchId.value = null;
-    resetForm();
-    dialogOpen.value = true;
+    editingDispatchId.value = null
+    resetForm()
+    dialogOpen.value = true
 }
 
 function openEditDialog(dispatch: DispatchItem) {
-    if (dispatch.status === 'departed') return;
-    editingDispatchId.value = dispatch.id;
-    // BUG FIX: reset transform before populating so any previous submit's
-    // transform doesn't affect this edit session.
-    form.transform((d) => d);
-    form.clearErrors();
-    form.vehicle_id     = dispatch.vehicle?.id ? String(dispatch.vehicle.id) : '';
-    form.driver_user_id = dispatch.driver?.id  ? String(dispatch.driver.id)  : 'unassigned';
-    form.gate_id        = dispatch.gate?.id    ? String(dispatch.gate.id)    : '';
-    form.bay_number     = String(dispatch.bay_number ?? '');
-    form.pax_count      = String(dispatch.pax_count  ?? '');
-    form.remarks        = dispatch.remarks ?? '';
-    dialogOpen.value = true;
+    if (dispatch.status === 'departed') return
+
+    editingDispatchId.value = dispatch.id
+    form.transform((d) => d)
+    form.clearErrors()
+    form.vehicle_id = dispatch.vehicle?.id ? String(dispatch.vehicle.id) : ''
+    form.driver_user_id = dispatch.driver?.id
+        ? String(dispatch.driver.id)
+        : 'unassigned'
+    form.gate_id = dispatch.gate?.id ? String(dispatch.gate.id) : ''
+    form.bay_number = String(dispatch.bay_number ?? '')
+    form.remarks = dispatch.remarks ?? ''
+    dialogOpen.value = true
 }
 
 function openRemarksDialog(dispatch: DispatchItem) {
-    viewingDispatch.value = dispatch;
-    remarksViewOpen.value = true;
+    viewingDispatch.value = dispatch
+    remarksViewOpen.value = true
 }
 
-// ── Submit ────────────────────────────────────────────────────────────────────
-
 function submit() {
-    // BUG FIX: build the payload from current form data *before* calling
-    // transform(), then reset the transform immediately after the request
-    // completes (success OR error) so it never leaks into the next submit.
     const payload = {
         ...form.data(),
         driver_user_id:
             form.driver_user_id && form.driver_user_id !== 'unassigned'
                 ? form.driver_user_id
                 : null,
-    };
+    }
 
     const afterRequest = () => {
-        // Always reset the transform after the request so future submits
-        // start clean, regardless of success or failure.
-        form.transform((d) => d);
-    };
+        form.transform((d) => d)
+    }
 
     const options = {
         preserveScroll: true,
         onSuccess: () => {
-            dialogOpen.value        = false;
-            editingDispatchId.value = null;
-            resetForm();
+            dialogOpen.value = false
+            editingDispatchId.value = null
+            resetForm()
         },
         onError: afterRequest,
-        // BUG FIX: reset the transform even on finish (covers cancel/network errors).
         onFinish: afterRequest,
-    };
+    }
 
-    form.transform(() => payload);
+    form.transform(() => payload)
 
     if (isEditing.value && editingDispatchId.value) {
-        form.put(DispatchController.update(editingDispatchId.value).url, options);
-        return;
+        form.put(DispatchController.update(editingDispatchId.value).url, options)
+        return
     }
-    form.post(DispatchController.store().url, options);
+
+    form.post(DispatchController.store().url, options)
 }
 
-// ── Depart ────────────────────────────────────────────────────────────────────
-
-function askDepart(dispatchId: number) {
-    pendingDepartId.value   = dispatchId;
-    confirmDepartOpen.value = true;
+function askDepart(dispatch: DispatchItem) {
+    pendingDepartId.value = dispatch.id
+    pendingDepartDispatch.value = dispatch
+    resetDepartForm()
+    departForm.pax_count = String(dispatch.pax_count ?? '')
+    confirmDepartOpen.value = true
 }
 
 function confirmDepart() {
-    if (!pendingDepartId.value) return;
-    router.patch(DispatchController.depart(pendingDepartId.value).url, {}, {
+    if (!pendingDepartId.value) return
+
+    departForm.patch(DispatchController.depart(pendingDepartId.value).url, {
         preserveScroll: true,
         onSuccess: () => {
-            confirmDepartOpen.value = false;
-            pendingDepartId.value   = null;
+            confirmDepartOpen.value = false
+            pendingDepartId.value = null
+            pendingDepartDispatch.value = null
+            resetDepartForm()
         },
-    });
+    })
 }
 
-// ── Utilities ─────────────────────────────────────────────────────────────────
-
-function statusVariant(status?: string | null): 'default' | 'secondary' | 'outline' | 'destructive' {
+function statusVariant(
+    status?: string | null,
+): 'default' | 'secondary' | 'outline' | 'destructive' {
     switch (status) {
-        case 'departed': return 'outline';
-        case 'arrived':  return 'default';
-        case 'pending':  return 'secondary';
-        default:         return 'secondary';
+        case 'departed':
+            return 'outline'
+        case 'arrived':
+            return 'default'
+        case 'pending':
+            return 'secondary'
+        default:
+            return 'secondary'
     }
 }
 
 function statusLabel(status?: string | null) {
-    if (!status) return 'Unknown';
-    return status.replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    if (!status) return 'Unknown'
+
+    return status
+        .replaceAll('_', ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 function statusDot(status: string) {
-    if (status === 'arrived')  return 'bg-emerald-500';
-    if (status === 'departed') return 'bg-slate-400';
-    if (status === 'pending')  return 'bg-amber-400';
-    return 'bg-slate-400';
+    if (status === 'arrived') return 'bg-emerald-500'
+    if (status === 'departed') return 'bg-slate-400'
+    if (status === 'pending') return 'bg-amber-400'
+    return 'bg-slate-400'
 }
 
-// ── Stats ─────────────────────────────────────────────────────────────────────
+const arrivedCount = computed(
+    () => props.dispatches.data.filter((d) => d.status === 'arrived').length,
+)
 
-const arrivedCount  = computed(() => props.dispatches.data.filter((d) => d.status === 'arrived').length);
-const departedCount = computed(() => props.dispatches.data.filter((d) => d.status === 'departed').length);
-const totalPax      = computed(() => props.dispatches.data.reduce((s, d) => s + (d.pax_count ?? 0), 0));
+const departedCount = computed(
+    () => props.dispatches.data.filter((d) => d.status === 'departed').length,
+)
 
-// ── Watchers ──────────────────────────────────────────────────────────────────
+const totalPax = computed(() =>
+    props.dispatches.data.reduce((s, d) => s + (d.pax_count ?? 0), 0),
+)
 
 watch(dialogOpen, (open) => {
     if (!open) {
-        // BUG FIX: reset transform on close so a dialog closed mid-flight
-        // (e.g. user presses Escape) doesn't leave a stale transform.
-        editingDispatchId.value = null;
-        form.transform((d) => d);
-        form.clearErrors();
+        editingDispatchId.value = null
+        form.transform((d) => d)
+        form.clearErrors()
     }
-});
+})
 
 watch(confirmDepartOpen, (open) => {
-    if (!open) pendingDepartId.value = null;
-});
+    if (!open) {
+        pendingDepartId.value = null
+        pendingDepartDispatch.value = null
+        resetDepartForm()
+    }
+})
 </script>
 
 <template>
@@ -427,8 +447,6 @@ watch(confirmDepartOpen, (open) => {
         <Head title="Dispatches" />
 
         <div class="space-y-5 p-4 md:p-6">
-
-            <!-- ── Page Header ── -->
             <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div class="space-y-1">
                     <div class="flex items-center gap-2">
@@ -449,7 +467,6 @@ watch(confirmDepartOpen, (open) => {
                 </Button>
             </div>
 
-            <!-- ── Stat Cards ── -->
             <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
                 <div class="rounded-xl border bg-card p-4 shadow-sm">
                     <div class="flex items-center justify-between">
@@ -488,7 +505,6 @@ watch(confirmDepartOpen, (open) => {
                 </div>
             </div>
 
-            <!-- ── Records Card ── -->
             <Card class="shadow-sm">
                 <CardHeader class="pb-4">
                     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -499,10 +515,7 @@ watch(confirmDepartOpen, (open) => {
                             </CardDescription>
                         </div>
 
-                        <!-- ── Filters ── -->
                         <div class="flex flex-col gap-2 md:flex-row md:items-center">
-
-                            <!-- Search -->
                             <SearchInput
                                 :route="DispatchController.index().url"
                                 :initial-value="props.filters?.search ?? ''"
@@ -511,8 +524,6 @@ watch(confirmDepartOpen, (open) => {
                                 class="w-full md:w-56"
                             />
 
-                            <!-- Status filter -->
-                            <!-- BUG FIX: preserve date when changing status -->
                             <Select
                                 :model-value="props.filters?.status ?? 'all'"
                                 @update:model-value="(value) => {
@@ -521,10 +532,15 @@ watch(confirmDepartOpen, (open) => {
                                         {
                                             search: props.filters?.search || undefined,
                                             status: value === 'all' ? undefined : value,
-                                            date:   props.filters?.date  || undefined,
+                                            date: props.filters?.date || undefined,
                                         },
-                                        { preserveState: true, preserveScroll: true, replace: true, only: ['dispatches', 'filters'] },
-                                    );
+                                        {
+                                            preserveState: true,
+                                            preserveScroll: true,
+                                            replace: true,
+                                            only: ['dispatches', 'filters'],
+                                        },
+                                    )
                                 }"
                             >
                                 <SelectTrigger class="w-full md:w-36">
@@ -537,7 +553,6 @@ watch(confirmDepartOpen, (open) => {
                                 </SelectContent>
                             </Select>
 
-                            <!-- Date picker -->
                             <Popover v-model:open="calendarOpen">
                                 <PopoverTrigger as-child>
                                     <Button
@@ -566,7 +581,6 @@ watch(confirmDepartOpen, (open) => {
                                         </p>
                                     </div>
 
-                                    <!-- Quick shortcuts -->
                                     <div class="flex gap-1.5 border-b px-3 py-2">
                                         <Button
                                             size="sm"
@@ -597,8 +611,6 @@ watch(confirmDepartOpen, (open) => {
                                         </Button>
                                     </div>
 
-                                    <!-- BUG FIX: use the stable localTz ref instead of
-                                         calling getLocalTimeZone() directly in the template. -->
                                     <Calendar
                                         :model-value="selectedDate"
                                         :max-value="today(localTz)"
@@ -610,7 +622,6 @@ watch(confirmDepartOpen, (open) => {
                         </div>
                     </div>
 
-                    <!-- Active date filter pill -->
                     <div v-if="selectedDate" class="flex items-center gap-2 pt-1">
                         <div class="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
                             <CalendarDays class="h-3 w-3" />
@@ -644,7 +655,6 @@ watch(confirmDepartOpen, (open) => {
                             </TableHeader>
 
                             <TableBody>
-                                <!-- Empty state -->
                                 <TableRow v-if="dispatches.data.length === 0">
                                     <TableCell colspan="10" class="py-20 text-center">
                                         <div class="flex flex-col items-center gap-2 text-muted-foreground">
@@ -677,7 +687,6 @@ watch(confirmDepartOpen, (open) => {
                                     class="group transition-colors"
                                     :class="dispatch.status === 'departed' ? 'opacity-60' : ''"
                                 >
-                                    <!-- Vehicle -->
                                     <TableCell class="pl-6">
                                         <div class="flex items-center gap-2.5">
                                             <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-muted">
@@ -692,7 +701,6 @@ watch(confirmDepartOpen, (open) => {
                                         </div>
                                     </TableCell>
 
-                                    <!-- Driver -->
                                     <TableCell>
                                         <div class="flex items-center gap-1.5">
                                             <UserRound class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -702,13 +710,11 @@ watch(confirmDepartOpen, (open) => {
                                         </div>
                                     </TableCell>
 
-                                    <!-- Gate / Bay -->
                                     <TableCell>
                                         <p class="text-sm font-medium">{{ dispatch.gate?.gate_name ?? '—' }}</p>
                                         <p class="text-xs text-muted-foreground">Bay {{ dispatch.bay_number }}</p>
                                     </TableCell>
 
-                                    <!-- Pax -->
                                     <TableCell>
                                         <div class="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
                                             <Users class="h-3 w-3" />
@@ -716,7 +722,6 @@ watch(confirmDepartOpen, (open) => {
                                         </div>
                                     </TableCell>
 
-                                    <!-- Status -->
                                     <TableCell>
                                         <div class="flex items-center gap-1.5">
                                             <span class="inline-block h-1.5 w-1.5 rounded-full" :class="statusDot(dispatch.status)" />
@@ -726,7 +731,6 @@ watch(confirmDepartOpen, (open) => {
                                         </div>
                                     </TableCell>
 
-                                    <!-- Arrived -->
                                     <TableCell>
                                         <div v-if="dispatch.arrived_at_formatted" class="flex items-center gap-1.5 text-xs">
                                             <Clock3 class="h-3 w-3 shrink-0 text-muted-foreground" />
@@ -735,7 +739,6 @@ watch(confirmDepartOpen, (open) => {
                                         <span v-else class="text-xs text-muted-foreground">—</span>
                                     </TableCell>
 
-                                    <!-- Departed -->
                                     <TableCell>
                                         <div v-if="dispatch.departed_at_formatted" class="flex items-center gap-1.5 text-xs">
                                             <CheckCircle2 class="h-3 w-3 shrink-0 text-muted-foreground" />
@@ -744,7 +747,6 @@ watch(confirmDepartOpen, (open) => {
                                         <span v-else class="text-xs text-muted-foreground">—</span>
                                     </TableCell>
 
-                                    <!-- Dispatcher -->
                                     <TableCell>
                                         <div class="flex items-center gap-1.5">
                                             <Fingerprint class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -752,7 +754,6 @@ watch(confirmDepartOpen, (open) => {
                                         </div>
                                     </TableCell>
 
-                                    <!-- Remarks -->
                                     <TableCell>
                                         <TooltipProvider v-if="dispatch.remarks">
                                             <Tooltip>
@@ -775,7 +776,6 @@ watch(confirmDepartOpen, (open) => {
                                         <span v-else class="text-xs text-muted-foreground">—</span>
                                     </TableCell>
 
-                                    <!-- Actions -->
                                     <TableCell class="pr-6 text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
@@ -813,7 +813,7 @@ watch(confirmDepartOpen, (open) => {
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
                                                         class="text-amber-600 focus:text-amber-600"
-                                                        @click="askDepart(dispatch.id)"
+                                                        @click="askDepart(dispatch)"
                                                     >
                                                         <LogOut class="mr-2 h-4 w-4" />
                                                         Mark Departed
@@ -827,7 +827,6 @@ watch(confirmDepartOpen, (open) => {
                         </Table>
                     </div>
 
-                    <!-- Pagination footer -->
                     <div class="border-t px-6 py-4">
                         <div class="flex flex-col items-center justify-between gap-2 md:flex-row">
                             <p class="text-xs text-muted-foreground">
@@ -845,7 +844,6 @@ watch(confirmDepartOpen, (open) => {
             </Card>
         </div>
 
-        <!-- ── Create / Edit Dialog ── -->
         <Dialog v-model:open="dialogOpen">
             <DialogContent class="sm:max-w-md">
                 <DialogHeader>
@@ -859,9 +857,15 @@ watch(confirmDepartOpen, (open) => {
                     <div class="space-y-2">
                         <Label for="vehicle_id">Vehicle</Label>
                         <Select v-model="form.vehicle_id">
-                            <SelectTrigger id="vehicle_id"><SelectValue placeholder="Select a vehicle" /></SelectTrigger>
+                            <SelectTrigger id="vehicle_id">
+                                <SelectValue placeholder="Select a vehicle" />
+                            </SelectTrigger>
                             <SelectContent>
-                                <SelectItem v-for="vehicle in vehicles" :key="vehicle.id" :value="String(vehicle.id)">
+                                <SelectItem
+                                    v-for="vehicle in vehicles"
+                                    :key="vehicle.id"
+                                    :value="String(vehicle.id)"
+                                >
                                     {{ vehicle.label }}
                                 </SelectItem>
                             </SelectContent>
@@ -872,10 +876,16 @@ watch(confirmDepartOpen, (open) => {
                     <div class="space-y-2">
                         <Label for="driver_user_id">Driver</Label>
                         <Select v-model="form.driver_user_id">
-                            <SelectTrigger id="driver_user_id"><SelectValue placeholder="Assign a driver" /></SelectTrigger>
+                            <SelectTrigger id="driver_user_id">
+                                <SelectValue placeholder="Assign a driver" />
+                            </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="unassigned">No driver assigned</SelectItem>
-                                <SelectItem v-for="driver in drivers" :key="driver.id" :value="String(driver.id)">
+                                <SelectItem
+                                    v-for="driver in drivers"
+                                    :key="driver.id"
+                                    :value="String(driver.id)"
+                                >
                                     {{ driver.label }}
                                 </SelectItem>
                             </SelectContent>
@@ -885,10 +895,19 @@ watch(confirmDepartOpen, (open) => {
 
                     <div class="space-y-2">
                         <Label for="gate_id">Gate</Label>
-                        <Select :model-value="form.gate_id" @update:model-value="onGateChange">
-                            <SelectTrigger id="gate_id"><SelectValue placeholder="Select a gate" /></SelectTrigger>
+                        <Select
+                            :model-value="form.gate_id"
+                            @update:model-value="onGateChange"
+                        >
+                            <SelectTrigger id="gate_id">
+                                <SelectValue placeholder="Select a gate" />
+                            </SelectTrigger>
                             <SelectContent>
-                                <SelectItem v-for="gate in gates" :key="gate.id" :value="String(gate.id)">
+                                <SelectItem
+                                    v-for="gate in gates"
+                                    :key="gate.id"
+                                    :value="String(gate.id)"
+                                >
                                     {{ gate.label }}
                                 </SelectItem>
                             </SelectContent>
@@ -899,9 +918,15 @@ watch(confirmDepartOpen, (open) => {
                     <div class="space-y-2">
                         <Label for="bay_number">Bay Number</Label>
                         <Select v-model="form.bay_number" :disabled="!selectedGate">
-                            <SelectTrigger id="bay_number"><SelectValue placeholder="Select a bay" /></SelectTrigger>
+                            <SelectTrigger id="bay_number">
+                                <SelectValue placeholder="Select a bay" />
+                            </SelectTrigger>
                             <SelectContent>
-                                <SelectItem v-for="bay in bayOptions" :key="bay.value" :value="String(bay.value)">
+                                <SelectItem
+                                    v-for="bay in bayOptions"
+                                    :key="bay.value"
+                                    :value="String(bay.value)"
+                                >
                                     {{ bay.label }}
                                 </SelectItem>
                             </SelectContent>
@@ -913,24 +938,27 @@ watch(confirmDepartOpen, (open) => {
                         v-if="selectedVehicle || selectedGate || selectedDriver"
                         class="flex flex-wrap gap-2 rounded-lg border bg-muted/30 p-3"
                     >
-                        <div v-if="selectedVehicle" class="inline-flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-1 text-xs font-medium shadow-sm">
+                        <div
+                            v-if="selectedVehicle"
+                            class="inline-flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-1 text-xs font-medium shadow-sm"
+                        >
                             <Bus class="h-3 w-3 text-muted-foreground" />
                             {{ selectedVehicle.plate_number }}
                         </div>
-                        <div v-if="selectedDriver" class="inline-flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-1 text-xs font-medium shadow-sm">
+                        <div
+                            v-if="selectedDriver"
+                            class="inline-flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-1 text-xs font-medium shadow-sm"
+                        >
                             <UserRound class="h-3 w-3 text-muted-foreground" />
                             {{ selectedDriver.name }}
                         </div>
-                        <div v-if="selectedGate" class="inline-flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-1 text-xs font-medium shadow-sm">
+                        <div
+                            v-if="selectedGate"
+                            class="inline-flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-1 text-xs font-medium shadow-sm"
+                        >
                             <span class="text-muted-foreground">Gate</span>
                             {{ selectedGate.gate_name }} · {{ selectedGate.bays }} bays
                         </div>
-                    </div>
-
-                    <div class="space-y-2">
-                        <Label for="pax_count">Passenger Count</Label>
-                        <Input id="pax_count" v-model="form.pax_count" type="number" min="0" placeholder="0" />
-                        <InputError :message="form.errors.pax_count" />
                     </div>
 
                     <div class="space-y-2">
@@ -938,22 +966,37 @@ watch(confirmDepartOpen, (open) => {
                             Remarks
                             <span class="ml-1 text-xs font-normal text-muted-foreground">(optional)</span>
                         </Label>
-                        <Input id="remarks" v-model="form.remarks" placeholder="Optional remarks or notes" />
+                        <Input
+                            id="remarks"
+                            v-model="form.remarks"
+                            placeholder="Optional remarks or notes"
+                        />
                         <InputError :message="form.errors.remarks" />
                     </div>
 
                     <DialogFooter class="pt-2">
-                        <Button type="button" variant="outline" @click="dialogOpen = false">Cancel</Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="dialogOpen = false"
+                        >
+                            Cancel
+                        </Button>
                         <Button type="submit" :disabled="form.processing">
                             <Send class="mr-2 h-4 w-4" />
-                            {{ form.processing ? 'Saving…' : isEditing ? 'Save Changes' : 'Create Dispatch' }}
+                            {{
+                                form.processing
+                                    ? 'Saving…'
+                                    : isEditing
+                                      ? 'Save Changes'
+                                      : 'Create Dispatch'
+                            }}
                         </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>
 
-        <!-- ── Remarks Dialog ── -->
         <Dialog v-model:open="remarksViewOpen">
             <DialogContent class="sm:max-w-sm">
                 <DialogHeader>
@@ -962,7 +1005,9 @@ watch(confirmDepartOpen, (open) => {
                         Dispatch Remarks
                     </DialogTitle>
                     <DialogDescription v-if="viewingDispatch">
-                        {{ viewingDispatch.plate_number }} · {{ viewingDispatch.gate?.gate_name ?? '—' }} · Bay {{ viewingDispatch.bay_number }}
+                        {{ viewingDispatch.plate_number }} ·
+                        {{ viewingDispatch.gate?.gate_name ?? '—' }} · Bay
+                        {{ viewingDispatch.bay_number }}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -978,7 +1023,10 @@ watch(confirmDepartOpen, (open) => {
                 <div v-if="viewingDispatch" class="grid grid-cols-2 gap-3 text-xs">
                     <div class="space-y-0.5">
                         <p class="font-medium text-muted-foreground">Driver</p>
-                        <p class="font-semibold" :class="!viewingDispatch.driver ? 'italic text-muted-foreground' : ''">
+                        <p
+                            class="font-semibold"
+                            :class="!viewingDispatch.driver ? 'italic text-muted-foreground' : ''"
+                        >
                             {{ viewingDispatch.driver?.name ?? 'Unassigned' }}
                         </p>
                     </div>
@@ -999,25 +1047,72 @@ watch(confirmDepartOpen, (open) => {
                 </div>
 
                 <DialogFooter>
-                    <Button variant="outline" class="w-full" @click="remarksViewOpen = false">Close</Button>
+                    <Button
+                        variant="outline"
+                        class="w-full"
+                        @click="remarksViewOpen = false"
+                    >
+                        Close
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
 
-        <!-- ── Confirm Depart ── -->
         <AlertDialog v-model:open="confirmDepartOpen">
             <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Mark dispatch as departed?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This will record the departure time as <strong>now</strong>.
-                        Departed dispatches can no longer be edited.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction @click="confirmDepart">Confirm Departure</AlertDialogAction>
-                </AlertDialogFooter>
+                <form class="space-y-4" @submit.prevent="confirmDepart">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Mark dispatch as departed?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            <span class="block">
+                                This will record the departure time as <strong>now</strong>.
+                            </span>
+                            <span class="mt-1 block">
+                                Departed dispatches can no longer be edited.
+                            </span>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    <div class="space-y-4">
+                        <div
+                            v-if="pendingDepartDispatch"
+                            class="rounded-lg border bg-muted/30 p-3 text-sm"
+                        >
+                            <div class="font-medium">
+                                {{ pendingDepartDispatch.plate_number }}
+                            </div>
+                            <div class="text-xs text-muted-foreground">
+                                {{ pendingDepartDispatch.gate?.gate_name ?? '—' }} · Bay
+                                {{ pendingDepartDispatch.bay_number }}
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="depart_pax_count">Passenger Count</Label>
+                            <Input
+                                id="depart_pax_count"
+                                v-model="departForm.pax_count"
+                                type="number"
+                                min="0"
+                                placeholder="Enter passenger count"
+                            />
+                            <InputError :message="departForm.errors.pax_count" />
+                        </div>
+                    </div>
+
+                    <AlertDialogFooter>
+                        <AlertDialogCancel
+                            type="button"
+                            :disabled="departForm.processing"
+                        >
+                            Cancel
+                        </AlertDialogCancel>
+
+                        <Button type="submit" :disabled="departForm.processing">
+                            {{ departForm.processing ? 'Saving…' : 'Confirm Departure' }}
+                        </Button>
+                    </AlertDialogFooter>
+                </form>
             </AlertDialogContent>
         </AlertDialog>
     </ExternalLayout>

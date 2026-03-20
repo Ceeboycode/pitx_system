@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Company;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -11,48 +12,53 @@ use Illuminate\Support\Str;
  */
 class UserFactory extends Factory
 {
-    /**
-     * The current password being used by the factory.
-     */
-    protected static ?string $password;
+    protected static ?string $password = null;
 
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
+        $name = fake()->name();
+
         return [
-            'name' => fake()->name(),
-            'username' => fake()->unique()->userName(),
+            'name' => $name,
+            'username' => Str::lower(Str::slug($name)) . fake()->unique()->numberBetween(100, 999),
             'email' => fake()->unique()->safeEmail(),
-            'phone_number' => fake()->numerify('09#########'),
+            'status' => 'active',
+            'phone_number' => '09' . fake()->numerify('#########'),
             'email_verified_at' => now(),
-            'password' => self::$password ??= 'password',
+            'password' => static::$password ??= Hash::make('admin123'),
+            'must_change_password' => false,
             'remember_token' => Str::random(10),
+            'company_id' => null,
         ];
     }
 
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
+    public function internal(): static
+    {
+        return $this->state(fn () => [
+            'company_id' => null,
+            'status' => 'active',
+        ]);
+    }
+
+    public function external(?int $companyId = null): static
+    {
+        return $this->state(fn () => [
+            'company_id' => $companyId ?? Company::query()->inRandomOrder()->value('id'),
+            'status' => 'active',
+        ]);
+    }
+
     public function unverified(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn () => [
             'email_verified_at' => null,
         ]);
     }
 
-    /**
-     * Indicate that the model has two-factor authentication configured.
-     */
-    public function withTwoFactor(): static
+    public function mustChangePassword(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'two_factor_secret' => encrypt('secret'),
-            'two_factor_recovery_codes' => encrypt(json_encode(['recovery-code-1'])),
-            'two_factor_confirmed_at' => now(),
+        return $this->state(fn () => [
+            'must_change_password' => true,
         ]);
     }
 }

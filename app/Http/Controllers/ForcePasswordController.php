@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,7 +18,7 @@ class ForcePasswordController extends Controller
         ]);
     }
 
-    public function update(Request $request)
+    public function update(Request $request): RedirectResponse
     {
         $user = $request->user();
 
@@ -27,7 +29,7 @@ class ForcePasswordController extends Controller
         ]);
 
         $user->update([
-            'password' => $validated['password'],
+            'password' => Hash::make($validated['password']),
             'must_change_password' => false,
         ]);
 

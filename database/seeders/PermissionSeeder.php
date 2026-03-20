@@ -12,20 +12,135 @@ class PermissionSeeder extends Seeder
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $permissions = [
-            'users.viewAny','users.view','users.create','users.edit','users.delete',
-            'roles.viewAny','roles.view','roles.create','roles.edit','roles.delete',
-            'company.viewAny','company.view','company.create','company.update', 'company.delete','company.restore', 'company.forceDelete',
-            'vehicle_type.viewAny','vehicle_type.view','vehicle_type.create',
-            'vehicle_type.update','vehicle_type.delete',
-            'vehicle_type.restore','vehicle_type.forceDelete',
-        ];
+        $modules = [
+        // ── Internal ─────────────────────────────────────────
+        'companies' => [
+            'viewAny',
+            'view',
+            'delete',
+            'restore',
+            'forceDelete',
+        ],
 
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate([
-                'name' => $permission,
-                'guard_name' => 'web',
-            ]);
+        'company_documents' => [
+            'viewAny',
+            'download',
+            'verify',
+            'update',
+            'reject',
+            'delete',
+        ],
+
+        'vehicles' => [
+            'viewAny',
+            'view',
+            'create',
+            'update',
+            'delete',
+            'restore',
+            'forceDelete',
+            'toggleStatus',
+        ],
+
+        'vehicle_documents' => [
+            'verify',
+            'invalidate',
+            'unverify',
+        ],
+
+        'gates' => [
+            'viewAny',
+            'view',
+            'create',
+            'update',
+            'delete',
+            'restore',
+            'forceDelete',
+            'viewTrash',
+        ],
+
+        'routes' => [
+            'viewAny',
+            'view',
+            'create',
+            'update',
+            'delete',
+            'restore',
+            'forceDelete',
+            'viewTrash',
+            'toggleStatus',
+        ],
+
+        'users' => [
+            'viewAny',
+            'view',
+            'create',
+            'update',
+            'delete',
+            'toggleStatus',
+            'resetPassword',
+        ],
+
+        'roles' => [
+            'viewAny',
+            'view',
+            'create',
+            'update',
+            'delete',
+        ],
+
+        'dispatches' => [
+            'viewAny',
+            'view',
+        ],
+
+        // ── External ──────────────────────────────────────────
+        // prefix ALL external modules with external_
+        // e.g. if companies can be managed by external users too:
+        'external_companies' => [
+            'view',
+            'update',
+        ],
+
+        'external_dispatches' => [
+            'viewAny',
+            'view',
+        ],
+
+        'external_vehicles' => [
+            'viewAny',
+            'view',
+            'create',
+            'update',
+            'toggleStatus',
+        ],
+
+        'external_vehicle_documents' => [
+            'download',
+            'upload',
+        ],
+
+        'external_users' => [
+            'viewAny',
+            'view',
+            'create',
+            'update',
+            'delete',
+            'toggleStatus',
+            'resetPassword',
+        ],
+
+    ];
+
+        foreach ($modules as $module => $actions) {
+            foreach ($actions as $action) {
+                Permission::query()->firstOrCreate([
+                    'name' => "{$module}.{$action}",
+                    'guard_name' => 'web',
+                ]);
+            }
         }
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

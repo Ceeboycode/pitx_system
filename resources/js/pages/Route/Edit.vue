@@ -2319,6 +2319,7 @@ onBeforeUnmount(() => {
                                 </Button>
 
                                 <Button
+                                    variant="default"
                                     class="w-full"
                                     :disabled="form.processing || !routeReady"
                                     @click="submit"

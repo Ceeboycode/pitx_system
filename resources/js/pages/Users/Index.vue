@@ -1,6 +1,11 @@
 <script setup lang="ts">
+/* ======================================================
+   Shared UI
+====================================================== */
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
+
+/* shadcn-vue */
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -34,6 +39,10 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+
+/* ======================================================
+   Layout, Routing & Inertia
+====================================================== */
 import AppLayout from '@/layouts/AppLayout.vue';
 import {
     create,
@@ -46,6 +55,10 @@ import {
 } from '@/routes/users';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
+
+/* ======================================================
+   Icons
+====================================================== */
 import {
     Download,
     Eye,
@@ -57,10 +70,26 @@ import {
     Trash2,
     Upload,
 } from 'lucide-vue-next';
+
+/* ======================================================
+   Vue Core
+====================================================== */
 import { computed } from 'vue';
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Users', href: index().url }];
+/* ======================================================
+   Permissions
+====================================================== */
+import { can } from '@/lib/can';
 
+const canCreate    = can('users.create');
+const canUpdate    = can('users.update');
+const canDelete    = can('users.delete');
+const canToggle    = can('users.toggleStatus');
+const canResetPass = can('users.resetPassword');
+
+/* ======================================================
+   Types
+====================================================== */
 interface Role {
     id: number;
     name: string;
@@ -86,6 +115,14 @@ interface User {
     status: 'active' | 'inactive' | string;
 }
 
+/* ======================================================
+   Breadcrumbs
+====================================================== */
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Users', href: index().url }];
+
+/* ======================================================
+   Props
+====================================================== */
 const props = defineProps<{
     users: {
         data: User[];
@@ -103,6 +140,9 @@ const props = defineProps<{
     canSeeSuperAdmin?: boolean;
 }>();
 
+/* ======================================================
+   Filters
+====================================================== */
 function applyFilters(type: string | null, status: string | null) {
     router.get(
         index().url,
@@ -118,8 +158,14 @@ function applyFilters(type: string | null, status: string | null) {
     );
 }
 
+/* ======================================================
+   Computed
+====================================================== */
 const showCompanyColumn = computed(() => props.filters.type !== 'internal');
 
+/* ======================================================
+   Badge helpers
+====================================================== */
 function roleBadgeClass(role: Role) {
     switch (role.type) {
         case 'internal':
@@ -143,22 +189,20 @@ function statusBadgeClass(status: string) {
 }
 
 function emailVerificationBadgeClass(emailVerifiedAt: string | null) {
-    if (emailVerifiedAt) {
-        return 'border-blue-200 bg-blue-100 text-blue-700';
-    }
-
-    return 'border-amber-200 bg-amber-100 text-amber-700';
+    return emailVerifiedAt
+        ? 'border-blue-200 bg-blue-100 text-blue-700'
+        : 'border-amber-200 bg-amber-100 text-amber-700';
 }
 
 function emailVerificationLabel(emailVerifiedAt: string | null) {
     return emailVerifiedAt ? 'Verified' : 'Not Verified';
 }
 
+/* ======================================================
+   Helpers
+====================================================== */
 function visibleRoles(user: User) {
-    if (props.canSeeSuperAdmin) {
-        return user.roles;
-    }
-
+    if (props.canSeeSuperAdmin) return user.roles;
     return user.roles.filter((role) => role.name !== 'super-admin');
 }
 
@@ -166,38 +210,26 @@ function isActive(user: User) {
     return user.status === 'active';
 }
 
+/* ======================================================
+   Actions
+====================================================== */
 function handleToggleStatus(user: User) {
     const actionLabel = isActive(user) ? 'set inactive' : 'set active';
-
     if (!confirm(`Are you sure you want to ${actionLabel} ${user.name}?`)) return;
 
-    router.put(
-        toggleStatus(user.id).url,
-        {},
-        {
-            preserveScroll: true,
-        },
-    );
+    router.put(toggleStatus(user.id).url, {}, { preserveScroll: true });
 }
 
 function handleResetPassword(user: User) {
     if (!confirm(`Reset password for ${user.name}?`)) return;
 
-    router.post(
-        resetPassword(user.id).url,
-        {},
-        {
-            preserveScroll: true,
-        },
-    );
+    router.post(resetPassword(user.id).url, {}, { preserveScroll: true });
 }
 
 function handleDelete(user: User) {
     if (!confirm(`Delete account for ${user.name}? This action cannot be undone.`)) return;
 
-    router.delete(destroy(user.id).url, {
-        preserveScroll: true,
-    });
+    router.delete(destroy(user.id).url, { preserveScroll: true });
 }
 </script>
 
@@ -229,7 +261,6 @@ function handleDelete(user: User) {
                                 <SelectTrigger class="w-32">
                                     <SelectValue placeholder="User Type" />
                                 </SelectTrigger>
-
                                 <SelectContent>
                                     <SelectItem value="all">All</SelectItem>
                                     <SelectItem value="internal">Internal</SelectItem>
@@ -249,7 +280,6 @@ function handleDelete(user: User) {
                                 <SelectTrigger class="w-32">
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
-
                                 <SelectContent>
                                     <SelectItem value="all">All Status</SelectItem>
                                     <SelectItem value="active">Active</SelectItem>
@@ -257,7 +287,7 @@ function handleDelete(user: User) {
                                 </SelectContent>
                             </Select>
 
-                            <Button size="sm" as-child>
+                            <Button v-if="canCreate" size="sm" as-child>
                                 <Link :href="create().url">
                                     <Plus class="mr-2 h-4 w-4" />
                                     Create User
@@ -284,7 +314,6 @@ function handleDelete(user: User) {
                                 <Upload class="mr-2 h-4 w-4" />
                                 Import
                             </Button>
-
                             <Button size="sm" variant="outline">
                                 <Download class="mr-2 h-4 w-4" />
                                 Export
@@ -328,7 +357,10 @@ function handleDelete(user: User) {
                                 </TableCell>
 
                                 <TableCell>
-                                    <Badge :class="statusBadgeClass(user.status)" class="border capitalize">
+                                    <Badge
+                                        :class="statusBadgeClass(user.status)"
+                                        class="border capitalize"
+                                    >
                                         {{ user.status }}
                                     </Badge>
                                 </TableCell>
@@ -364,11 +396,7 @@ function handleDelete(user: User) {
                                 <TableCell class="text-right">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger as-child>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                class="h-8 w-8"
-                                            >
+                                            <Button variant="ghost" size="icon" class="h-8 w-8">
                                                 <MoreHorizontal class="h-4 w-4" />
                                                 <span class="sr-only">Open actions</span>
                                             </Button>
@@ -378,6 +406,7 @@ function handleDelete(user: User) {
                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                             <DropdownMenuSeparator />
 
+                                            <!-- View — always visible -->
                                             <DropdownMenuItem as-child>
                                                 <Link
                                                     :href="show(user.id).url"
@@ -388,7 +417,8 @@ function handleDelete(user: User) {
                                                 </Link>
                                             </DropdownMenuItem>
 
-                                            <DropdownMenuItem as-child>
+                                            <!-- Edit -->
+                                            <DropdownMenuItem v-if="canUpdate" as-child>
                                                 <Link
                                                     :href="edit(user.id).url"
                                                     class="flex w-full cursor-pointer items-center"
@@ -398,7 +428,9 @@ function handleDelete(user: User) {
                                                 </Link>
                                             </DropdownMenuItem>
 
+                                            <!-- Toggle status -->
                                             <DropdownMenuItem
+                                                v-if="canToggle"
                                                 class="cursor-pointer"
                                                 @click="handleToggleStatus(user)"
                                             >
@@ -406,7 +438,9 @@ function handleDelete(user: User) {
                                                 <span>{{ isActive(user) ? 'Set Inactive' : 'Set Active' }}</span>
                                             </DropdownMenuItem>
 
+                                            <!-- Reset password -->
                                             <DropdownMenuItem
+                                                v-if="canResetPass"
                                                 class="cursor-pointer"
                                                 @click="handleResetPassword(user)"
                                             >
@@ -414,9 +448,11 @@ function handleDelete(user: User) {
                                                 <span>Reset Password</span>
                                             </DropdownMenuItem>
 
-                                            <DropdownMenuSeparator />
+                                            <DropdownMenuSeparator v-if="canDelete" />
 
+                                            <!-- Delete -->
                                             <DropdownMenuItem
+                                                v-if="canDelete"
                                                 class="cursor-pointer text-red-600 focus:text-red-600"
                                                 @click="handleDelete(user)"
                                             >

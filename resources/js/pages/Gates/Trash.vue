@@ -1,4 +1,7 @@
 <script setup lang="ts">
+/* ======================================================
+   Shared UI
+====================================================== */
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,7 +26,6 @@ import Label from '@/components/ui/label/Label.vue';
 import {
     Table,
     TableBody,
-    TableCaption,
     TableCell,
     TableHead,
     TableHeader,
@@ -35,6 +37,10 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ArchiveRestore, ArrowLeft, Trash2 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
+
+/* ======================================================
+   Toaster
+====================================================== */
 import { toast } from 'vue-sonner';
 
 interface Gate {
@@ -65,15 +71,18 @@ const deleteOpen = ref(false);
 const selectedGate = ref<Gate | null>(null);
 const confirmDelete = ref('');
 
-const canForceDelete = computed(() => confirmDelete.value.trim() === 'delete');
+const canConfirmForceDelete = computed(() => confirmText.value.trim() === 'delete');
 
+/* ======================================================
+   Dialog Helpers
+====================================================== */
 function openRestoreDialog(gate: Gate) {
     selectedGate.value = gate;
-    restoreOpen.value = true;
+    restoreOpen.value  = true;
 }
 
 function closeRestoreDialog() {
-    restoreOpen.value = false;
+    restoreOpen.value  = false;
     selectedGate.value = null;
 }
 
@@ -124,7 +133,7 @@ function forceDeleteGate() {
 </script>
 
 <template>
-    <Head title="Trash" />
+    <Head title="Trash — Gates" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
@@ -135,14 +144,22 @@ function forceDeleteGate() {
                     class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                     <div>
-                        <CardTitle>Trashed Gates</CardTitle>
-                        <CardDescription>
-                            List of gates that have been moved to trash.
+                        <CardTitle class="flex items-center gap-2">
+                            <Archive class="h-5 w-5 text-muted-foreground" />
+                            Trashed Gates
+                        </CardTitle>
+                        <CardDescription class="mt-1">
+                            Gates that have been moved to trash. Restore or permanently delete them.
                         </CardDescription>
                     </div>
 
                     <CardAction>
-                        <Button size="sm" variant="link" as-child>
+                        <Button
+                            as-child
+                            size="sm"
+                            variant="outline"
+                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
+                        >
                             <Link :href="index().url">
                                 <ArrowLeft class="mr-2 h-4 w-4" />
                                 Back to Gates
@@ -163,16 +180,36 @@ function forceDeleteGate() {
                             </TableRow>
                         </TableHeader>
 
-                        <TableBody>
-                            <TableRow
-                                v-for="gate in props.gates.data"
-                                :key="gate.id"
-                            >
-                                <TableCell>{{ gate.gate_name }}</TableCell>
+                            <TableBody>
+                                <!-- Empty state -->
+                                <TableRow v-if="props.gates.data.length === 0" class="hover:bg-transparent">
+                                    <TableCell colspan="3" class="py-20 text-center">
+                                        <div class="flex flex-col items-center gap-3">
+                                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+                                                <Archive class="h-6 w-6 text-muted-foreground/40" />
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-semibold text-foreground">No trashed gates</p>
+                                                <p class="mt-0.5 text-xs text-muted-foreground">Nothing has been moved to trash yet.</p>
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
 
-                                <TableCell>
-                                    {{ gate.deleted_at_human ?? 'N/A' }}
-                                </TableCell>
+                                <TableRow
+                                    v-for="gate in props.gates.data"
+                                    :key="gate.id"
+                                    class="transition-colors hover:bg-muted/30"
+                                >
+                                    <!-- Gate Name -->
+                                    <TableCell class="text-sm font-semibold capitalize">
+                                        {{ gate.gate_name }}
+                                    </TableCell>
+
+                                    <!-- Archived At -->
+                                    <TableCell class="text-sm text-muted-foreground">
+                                        {{ gate.deleted_at_human ?? '—' }}
+                                    </TableCell>
 
                                 <TableCell class="space-x-2">
                                     <Button

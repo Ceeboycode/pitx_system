@@ -5,6 +5,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 import InputError from '@/components/InputError.vue';
+import { can } from '@/lib/can';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -136,6 +137,29 @@ const docs = computed(() => props.company.documents ?? []);
 
 const isCompanyEmailVerified = computed(() => !!company.value.company_email_verified_at);
 
+// permissions
+const canViewCompany = computed(() => can('companies.view'));
+const canViewDocumentList = computed(() => can('company_documents.viewAny'));
+const canDownloadDocument = computed(() => can('company_documents.download'));
+const canVerifyDocument = computed(() => can('company_documents.verify'));
+const canUpdateDocument = computed(() => can('company_documents.update'));
+const canRejectDocument = computed(() => can('company_documents.reject'));
+const canDeleteDocument = computed(() => can('company_documents.delete'));
+
+const canDownloadVerifiedZip = computed(
+    () => canViewCompany.value && canViewDocumentList.value && canDownloadDocument.value,
+);
+
+function canManageDocActions() {
+    return (
+        canDownloadDocument.value ||
+        canRejectDocument.value ||
+        canDeleteDocument.value ||
+        canVerifyDocument.value ||
+        canUpdateDocument.value
+    );
+}
+
 // ── Logo helpers ──────────────────────────────────────────────────
 const logoError = ref(false);
 const showLogo = computed(() => !!company.value.logo_url && !logoError.value);
@@ -250,6 +274,7 @@ const bulkConfirmOpen = ref(false);
 const verifiedCount = computed(() => docs.value.filter((d) => d.status === 'verified').length);
 
 function openBulkConfirm() {
+    if (!canDownloadVerifiedZip.value) return;
     bulkConfirmOpen.value = true;
 }
 
@@ -306,6 +331,9 @@ const confirmAction = ref<ConfirmAction>('download');
 const confirmDoc = ref<CompanyDocument | null>(null);
 
 function openConfirm(action: ConfirmAction, doc: CompanyDocument) {
+    if (action === 'download' && !canDownloadDocument.value) return;
+    if (action === 'delete' && !canDeleteDocument.value) return;
+
     confirmAction.value = action;
     confirmDoc.value = doc;
     confirmOpen.value = true;
@@ -361,7 +389,7 @@ function runConfirmedAction() {
 // ── Verify / Unverify from preview ────────────────────────────────
 function verifyFromPreview() {
     const doc = previewDoc.value;
-    if (!doc || actionForm.processing || rejectForm.processing) return;
+    if (!doc || actionForm.processing || rejectForm.processing || !canVerifyDocument.value) return;
 
     actionForm.patch(
         verify({ company: company.value.id, document: doc.id }).url,
@@ -376,7 +404,7 @@ function verifyFromPreview() {
 
 function unverifyFromPreview() {
     const doc = previewDoc.value;
-    if (!doc || actionForm.processing || rejectForm.processing) return;
+    if (!doc || actionForm.processing || rejectForm.processing || !canUpdateDocument.value) return;
 
     actionForm.patch(
         unverify({ company: company.value.id, document: doc.id }).url,
@@ -422,6 +450,8 @@ const rejectDocId = ref<number | null>(null);
 const rejectForm = useForm<{ remarks: string }>({ remarks: '' });
 
 function openReject(docId: number) {
+    if (!canRejectDocument.value) return;
+
     rejectDocId.value = docId;
     selectedRemarkPreset.value = null;
     rejectForm.reset();
@@ -436,7 +466,7 @@ function applyPreset(value: string) {
 }
 
 function submitReject() {
-    if (!rejectDocId.value || rejectForm.processing) return;
+    if (!rejectDocId.value || rejectForm.processing || !canRejectDocument.value) return;
 
     rejectForm.patch(
         reject({ company: company.value.id, document: rejectDocId.value }).url,
@@ -454,7 +484,7 @@ function submitReject() {
 
 function openRejectFromPreview() {
     const doc = previewDoc.value;
-    if (!doc) return;
+    if (!doc || !canRejectDocument.value) return;
 
     closePreview();
     openReject(doc.id);
@@ -627,7 +657,7 @@ const repHasAny = computed(() => {
                     </Card>
                 </div>
 
-                <Card>
+                <Card v-if="canViewDocumentList">
                     <CardHeader class="border-b border-slate-100 pb-4">
                         <div class="flex items-start justify-between gap-4">
                             <div>
@@ -641,7 +671,7 @@ const repHasAny = computed(() => {
                             </div>
 
                             <Button
-                                v-if="docs.length > 0"
+                                v-if="docs.length > 0 && canDownloadVerifiedZip"
                                 variant="outline"
                                 size="sm"
                                 class="shrink-0 rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
@@ -749,7 +779,7 @@ const repHasAny = computed(() => {
                                 </div>
 
                                 <div class="flex items-start pt-0.5">
-                                    <DropdownMenu>
+                                    <DropdownMenu v-if="canManageDocActions()">
                                         <DropdownMenuTrigger as-child>
                                             <Button
                                                 variant="ghost"
@@ -778,6 +808,7 @@ const repHasAny = computed(() => {
                                             </DropdownMenuItem>
 
                                             <DropdownMenuItem
+                                                v-if="canRejectDocument"
                                                 class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600"
                                                 @click="openReject(doc.id)"
                                             >
@@ -785,9 +816,10 @@ const repHasAny = computed(() => {
                                                 Invalid (remarks)
                                             </DropdownMenuItem>
 
-                                            <DropdownMenuSeparator />
+                                            <DropdownMenuSeparator v-if="canDownloadDocument || canDeleteDocument" />
 
                                             <DropdownMenuItem
+                                                v-if="canDownloadDocument"
                                                 class="rounded-lg text-slate-700 focus:bg-slate-50"
                                                 @click="openConfirm('download', doc)"
                                             >
@@ -796,6 +828,7 @@ const repHasAny = computed(() => {
                                             </DropdownMenuItem>
 
                                             <DropdownMenuItem
+                                                v-if="canDeleteDocument"
                                                 class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600"
                                                 @click="openConfirm('delete', doc)"
                                             >
@@ -834,7 +867,7 @@ const repHasAny = computed(() => {
 
                         <div class="flex items-center gap-2">
                             <Button
-                                v-if="previewDoc"
+                                v-if="previewDoc && canDownloadDocument"
                                 variant="outline"
                                 size="sm"
                                 class="shrink-0 rounded-lg"
@@ -902,7 +935,7 @@ const repHasAny = computed(() => {
 
                     <div class="flex items-center gap-2">
                         <Button
-                            v-if="previewDoc && previewDoc.status !== 'verified'"
+                            v-if="previewDoc && previewDoc.status !== 'verified' && canRejectDocument"
                             variant="outline"
                             size="sm"
                             class="rounded-lg border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
@@ -914,7 +947,7 @@ const repHasAny = computed(() => {
                         </Button>
 
                         <Button
-                            v-if="previewDoc && previewDoc.status !== 'verified'"
+                            v-if="previewDoc && previewDoc.status !== 'verified' && canVerifyDocument"
                             size="sm"
                             class="rounded-lg border-0 bg-emerald-600 text-white hover:bg-emerald-700"
                             :disabled="actionForm.processing || rejectForm.processing"
@@ -925,7 +958,7 @@ const repHasAny = computed(() => {
                         </Button>
 
                         <Button
-                            v-if="previewDoc && previewDoc.status === 'verified'"
+                            v-if="previewDoc && previewDoc.status === 'verified' && canUpdateDocument"
                             size="sm"
                             variant="outline"
                             class="rounded-lg border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800"

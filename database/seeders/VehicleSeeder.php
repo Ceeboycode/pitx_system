@@ -2,6 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Company;
+use App\Models\Route;
+use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Database\Seeder;
 

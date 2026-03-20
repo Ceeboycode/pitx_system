@@ -14,14 +14,11 @@ use ZipArchive;
 
 class CompanyDocumentController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Download single file
-    |--------------------------------------------------------------------------
-    */
     public function download(Company $company, CompanyDocument $document): mixed
     {
+        // companies.view + company_documents.download
         Gate::authorize('view', $company);
+        Gate::authorize('download', $document);
         $this->assertBelongs($document, $company);
 
         $path = $this->normalizePath($document->file_path);
@@ -35,18 +32,12 @@ class CompanyDocumentController extends Controller
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Download VERIFIED docs only — streams a ZIP
-    |
-    | POST /companies/{company}/documents/download-bulk
-    |--------------------------------------------------------------------------
-    */
     public function downloadBulk(Request $request, Company $company): StreamedResponse
     {
+        // companies.view + company_documents.viewAny
         Gate::authorize('view', $company);
+        Gate::authorize('viewAny', CompanyDocument::class);
 
-        // Only verified docs for this company
         $documents = CompanyDocument::query()
             ->where('company_id', $company->id)
             ->where('status', 'verified')
@@ -66,6 +57,8 @@ class CompanyDocumentController extends Controller
         $usedNames = [];
 
         foreach ($documents as $doc) {
+            Gate::authorize('download', $doc);
+
             $path = $this->normalizePath($doc->file_path);
 
             if (! $path || ! Storage::disk('public')->exists($path)) {
@@ -89,32 +82,30 @@ class CompanyDocumentController extends Controller
 
         return response()->streamDownload(function () use ($tmpPath) {
             $handle = fopen($tmpPath, 'rb');
+
             while (! feof($handle)) {
                 echo fread($handle, 8192);
                 flush();
             }
+
             fclose($handle);
             @unlink($tmpPath);
         }, $zipName, [
-            'Content-Type'        => 'application/zip',
+            'Content-Type' => 'application/zip',
             'Content-Disposition' => "attachment; filename=\"{$zipName}\"",
         ]);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Verify
-    |--------------------------------------------------------------------------
-    */
     public function verify(Request $request, Company $company, CompanyDocument $document): RedirectResponse
     {
-        Gate::authorize('update', $company);
+        // company_documents.verify
+        Gate::authorize('verify', $document);
         $this->assertBelongs($document, $company);
         abort_if(! $request->user()?->id, 403);
 
         $document->update([
-            'status'      => 'verified',
-            'remarks'     => null,
+            'status' => 'verified',
+            'remarks' => null,
             'verified_by' => $request->user()->id,
             'verified_at' => now(),
         ]);
@@ -124,19 +115,15 @@ class CompanyDocumentController extends Controller
         return back()->with('success', 'Document verified successfully.');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Unverify — resets back to pending
-    |--------------------------------------------------------------------------
-    */
     public function unverify(Company $company, CompanyDocument $document): RedirectResponse
     {
-        Gate::authorize('update', $company);
+        // company_documents.update
+        Gate::authorize('update', $document);
         $this->assertBelongs($document, $company);
 
         $document->update([
-            'status'      => 'pending',
-            'remarks'     => null,
+            'status' => 'pending',
+            'remarks' => null,
             'verified_by' => null,
             'verified_at' => null,
         ]);
@@ -146,22 +133,18 @@ class CompanyDocumentController extends Controller
         return back()->with('success', 'Document set back to pending.');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Reject / Invalidate
-    |--------------------------------------------------------------------------
-    */
     public function reject(
         CompanyDocumentRejectRequest $request,
         Company $company,
         CompanyDocument $document,
     ): RedirectResponse {
-        Gate::authorize('update', $company);
+        // company_documents.reject
+        Gate::authorize('reject', $document);
         $this->assertBelongs($document, $company);
 
         $document->update([
-            'status'      => 'invalid',
-            'remarks'     => $request->validated()['remarks'],
+            'status' => 'invalid',
+            'remarks' => $request->validated()['remarks'],
             'verified_by' => null,
             'verified_at' => null,
         ]);
@@ -171,14 +154,10 @@ class CompanyDocumentController extends Controller
         return back()->with('success', 'Document marked as invalid.');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Delete
-    |--------------------------------------------------------------------------
-    */
     public function destroy(Company $company, CompanyDocument $document): RedirectResponse
     {
-        Gate::authorize('delete', $company);
+        // company_documents.delete
+        Gate::authorize('delete', $document);
         $this->assertBelongs($document, $company);
 
         $path = $this->normalizePath($document->file_path);
@@ -194,11 +173,6 @@ class CompanyDocumentController extends Controller
         return back()->with('success', 'Document deleted successfully.');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Sync company status based on document states
-    |--------------------------------------------------------------------------
-    */
     private function syncCompanyStatus(Company $company): void
     {
         $requiredTypes = $this->requiredDocTypes($company->business_type);
@@ -235,17 +209,12 @@ class CompanyDocumentController extends Controller
         $common = ['MAYORS_PERMIT', 'BIR_2303'];
 
         return match ($businessType) {
-            'corporate'           => [...$common, 'AUTHORIZATION_LETTER', 'SEC_CERT'],
+            'corporate' => [...$common, 'AUTHORIZATION_LETTER', 'SEC_CERT'],
             'sole_proprietorship' => [...$common, 'DTI_CERT'],
-            default               => $common,
+            default => $common,
         };
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Helpers
-    |--------------------------------------------------------------------------
-    */
     private function assertBelongs(CompanyDocument $document, Company $company): void
     {
         abort_if($document->company_id !== $company->id, 404);
@@ -266,8 +235,8 @@ class CompanyDocumentController extends Controller
             return $filename;
         }
 
-        $ext     = pathinfo($filename, PATHINFO_EXTENSION);
-        $base    = pathinfo($filename, PATHINFO_FILENAME);
+        $ext = pathinfo($filename, PATHINFO_EXTENSION);
+        $base = pathinfo($filename, PATHINFO_FILENAME);
         $counter = 1;
 
         do {

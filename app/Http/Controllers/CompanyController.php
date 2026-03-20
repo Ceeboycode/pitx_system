@@ -18,6 +18,7 @@ class CompanyController extends Controller
 
     public function index(Request $request)
     {
+        // companies.viewAny
         Gate::authorize('viewAny', Company::class);
 
         $companies = Company::query()
@@ -45,6 +46,7 @@ class CompanyController extends Controller
 
     public function show(Company $company)
     {
+        // companies.view
         Gate::authorize('view', $company);
 
         $company->load([
@@ -52,10 +54,20 @@ class CompanyController extends Controller
             'updater:id,name',
             'documents' => function ($q) {
                 $q->select(
-                    'id', 'company_id', 'doc_type', 'status', 'remarks',
-                    'original_name', 'file_path', 'mime_type',
-                    'issued_at', 'expires_at', 'uploaded_by',
-                    'verified_by', 'verified_at', 'created_at'
+                    'id',
+                    'company_id',
+                    'doc_type',
+                    'status',
+                    'remarks',
+                    'original_name',
+                    'file_path',
+                    'mime_type',
+                    'issued_at',
+                    'expires_at',
+                    'uploaded_by',
+                    'verified_by',
+                    'verified_at',
+                    'created_at'
                 )->latest();
             },
             'documents.uploader:id,name',
@@ -73,10 +85,20 @@ class CompanyController extends Controller
 
     public function trash(Request $request)
     {
+        // companies.viewAny
         Gate::authorize('viewAny', Company::class);
 
         $companies = Company::onlyTrashed()
-            ->select('id', 'company_name', 'company_code', 'company_email', 'company_phone', 'business_type', 'deleted_at', 'deleted_by')
+            ->select(
+                'id',
+                'company_name',
+                'company_code',
+                'company_email',
+                'company_phone',
+                'business_type',
+                'deleted_at',
+                'deleted_by'
+            )
             ->with(['deleter:id,name'])
             ->search($request->search)
             ->latest('deleted_at')
@@ -91,15 +113,11 @@ class CompanyController extends Controller
 
     public function create()
     {
-        Gate::authorize('create', Company::class);
-
         return Inertia::render('Company/Create');
     }
 
     public function store(CompanyStoreRequest $request)
     {
-        Gate::authorize('create', Company::class);
-
         $userId = $request->user()?->id;
         abort_if(! $userId, 403);
 
@@ -116,8 +134,6 @@ class CompanyController extends Controller
 
     public function update(CompanyUpdateRequest $request, Company $company)
     {
-        Gate::authorize('update', $company);
-
         $company->update([
             'company_name' => $request->string('company_name')->toString(),
             'status' => $request->string('status')->toString(),
@@ -128,6 +144,7 @@ class CompanyController extends Controller
 
     public function destroy(Request $request, Company $company)
     {
+        // companies.delete
         Gate::authorize('delete', $company);
 
         $userId = $request->user()?->id;
@@ -140,6 +157,7 @@ class CompanyController extends Controller
 
     public function restore(Company $company)
     {
+        // companies.restore
         Gate::authorize('restore', $company);
 
         $this->companyService->restoreCompany($company);
@@ -149,6 +167,7 @@ class CompanyController extends Controller
 
     public function forceDelete(Company $company)
     {
+        // companies.forceDelete
         Gate::authorize('forceDelete', $company);
 
         $this->companyService->forceDeleteCompany($company);
