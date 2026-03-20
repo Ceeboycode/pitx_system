@@ -1,15 +1,22 @@
 <script setup lang="ts">
+/* ======================================================
+   Layout, Routing & Inertia
+====================================================== */
 import AppLayout from '@/layouts/AppLayout.vue';
-import { create, index } from '@/routes/dispatches';
-import { type BreadcrumbItem } from '@/types';
+import type { BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
 
+/* ======================================================
+   Shared UI
+====================================================== */
 import InertiaPagination from '@/components/InertiaPagination.vue';
+import SearchInput from '@/components/SearchInput.vue';
+
+/* shadcn-vue */
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardHeader,
@@ -18,31 +25,39 @@ import {
 import {
     Table,
     TableBody,
-    TableCaption,
     TableCell,
     TableHead,
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
 
-type DispatchRow = {
+/* ======================================================
+   Icons
+====================================================== */
+import {
+    Building2,
+    ClipboardList,
+    Eye,
+    Mail,
+    Phone,
+} from 'lucide-vue-next';
+
+/* ======================================================
+   Routing (Wayfinder)
+====================================================== */
+import InternalDispatchController from '@/actions/App/Http/Controllers/InternalDispatchController';
+
+/* ======================================================
+   Types
+====================================================== */
+type CompanyItem = {
     id: number;
-    plate_number: string;
-    pax_count: number;
-    bay_number: string | null;
-    status: string;
-    arrived_at_formatted: string | null;
-    departed_at_formatted: string | null;
-    vehicle?: {
-        id: number;
-        plate_number: string;
-        route?: { route_name: string };
-        vehicle_type?: { type_name: string };
-    };
-    dispatcher?: {
-        id: number;
-        name: string;
-    };
+    company_name: string;
+    company_code: string | null;
+    company_email: string | null;
+    company_phone: string | null;
+    status: string | null;
+    dispatches_count: number;
 };
 
 type PaginationLink = {
@@ -51,29 +66,47 @@ type PaginationLink = {
     active: boolean;
 };
 
+type PaginatedCompanies = {
+    data: CompanyItem[];
+    links: PaginationLink[];
+};
+
+/* ======================================================
+   Props
+====================================================== */
 const props = defineProps<{
-    dispatches: {
-        data: DispatchRow[];
-        links: PaginationLink[];
+    filters: {
+        search: string;
     };
-    company: {
-        id: number;
-        name: string | null;
-        code: string | null;
-    };
+    companies: PaginatedCompanies;
 }>();
 
+/* ======================================================
+   Breadcrumbs
+====================================================== */
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dispatches', href: index().url },
+    { title: 'Dispatches', href: InternalDispatchController.index().url },
 ];
 
-function badgeVariant(status: string) {
-    if (status === 'pending') return 'secondary';
-    if (status === 'arrived') return 'default';
-    if (status === 'departed') return 'outline';
-    if (status === 'settled') return 'default';
-    if (status === 'cancelled') return 'destructive';
-    return 'secondary';
+/* ======================================================
+   Helpers
+====================================================== */
+function prettyStatus(value: string | null | undefined) {
+    return String(value ?? 'unknown')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function badgeVariant(status: string | null | undefined) {
+    switch (status) {
+        case 'verified':
+        case 'active':
+            return 'default';
+        case 'pending':
+            return 'secondary';
+        default:
+            return 'outline';
+    }
 }
 </script>
 
@@ -81,126 +114,117 @@ function badgeVariant(status: string) {
     <Head title="Dispatches" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
-        >
-            <Card>
-                <CardHeader>
+        <div class="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
+            <Card class="rounded-2xl">
+                <CardHeader class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <CardTitle
-                            >Dispatches -
-                            {{ props.company.code ?? '—' }}</CardTitle
-                        >
-                        <CardDescription>{{
-                            props.company.name ?? '—'
-                        }}</CardDescription>
+                        <CardTitle class="text-2xl">Dispatch Companies</CardTitle>
+                        <CardDescription>
+                            Quickly find a company and view its total dispatch records.
+                        </CardDescription>
                     </div>
 
-                    <CardAction v-if="props.company?.id">
-                        <Button size="sm" as-child>
-                            <Link
-                                :href="
-                                    create({ company: props.company.id }).url
-                                "
-                            >
-                                Add Dispatch
-                            </Link>
-                        </Button>
-                    </CardAction>
+                    <div class="w-full md:w-[320px]">
+                        <SearchInput
+                            :route="InternalDispatchController.index().url"
+                            input-name="search"
+                            placeholder="Search company..."
+                            :default-value="props.filters.search"
+                        />
+                    </div>
                 </CardHeader>
 
                 <CardContent>
-                    <Table>
-                        <TableCaption
-                            >Dispatch history and movement
-                            records.</TableCaption
-                        >
+                    <div class="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead class="min-w-[220px]">Company</TableHead>
+                                    <TableHead class="min-w-[160px]">Code</TableHead>
+                                    <TableHead class="min-w-[220px]">Contact</TableHead>
+                                    <TableHead class="min-w-[140px]">Status</TableHead>
+                                    <TableHead class="min-w-[160px] text-center">Total Dispatches</TableHead>
+                                    <TableHead class="min-w-[140px] text-right">Action</TableHead>
+                                </TableRow>
+                            </TableHeader>
 
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Plate</TableHead>
-                                <TableHead>Route</TableHead>
-                                <TableHead>Vehicle Type</TableHead>
-                                <TableHead>Dispatcher</TableHead>
-                                <TableHead class="text-right">Pax</TableHead>
-                                <TableHead>Bay</TableHead>
-                                <TableHead>Arrival (IN)</TableHead>
-                                <TableHead>Departure (OUT)</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Action</TableHead>
-                            </TableRow>
-                        </TableHeader>
-
-                        <TableBody>
-                            <TableRow v-if="props.dispatches.data.length === 0">
-                                <TableCell
-                                    colspan="9"
-                                    class="py-8 text-center text-muted-foreground"
+                            <TableBody>
+                                <TableRow
+                                    v-for="company in companies.data"
+                                    :key="company.id"
                                 >
-                                    No dispatches found.
-                                </TableCell>
-                            </TableRow>
+                                    <TableCell>
+                                        <div class="flex items-start gap-3">
+                                            <div class="rounded-lg bg-muted p-2">
+                                                <Building2 class="h-4 w-4 text-muted-foreground" />
+                                            </div>
 
-                            <TableRow
-                                v-for="dispatch in props.dispatches.data"
-                                :key="dispatch.id"
-                            >
-                                <TableCell class="font-medium">{{
-                                    dispatch.plate_number
-                                }}</TableCell>
+                                            <div class="space-y-1">
+                                                <div class="font-medium">
+                                                    {{ company.company_name }}
+                                                </div>
+                                                <div class="text-xs text-muted-foreground">
+                                                    Company ID: {{ company.id }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </TableCell>
 
-                                <TableCell>
-                                    {{
-                                        dispatch.vehicle?.route?.route_name ??
-                                        '—'
-                                    }}
-                                </TableCell>
+                                    <TableCell>
+                                        {{ company.company_code || '—' }}
+                                    </TableCell>
 
-                                <TableCell>
-                                    {{
-                                        dispatch.vehicle?.vehicle_type
-                                            ?.type_name ?? '—'
-                                    }}
-                                </TableCell>
+                                    <TableCell>
+                                        <div class="space-y-1 text-sm">
+                                            <div class="flex items-center gap-2 text-muted-foreground">
+                                                <Mail class="h-4 w-4" />
+                                                <span>{{ company.company_email || '—' }}</span>
+                                            </div>
+                                            <div class="flex items-center gap-2 text-muted-foreground">
+                                                <Phone class="h-4 w-4" />
+                                                <span>{{ company.company_phone || '—' }}</span>
+                                            </div>
+                                        </div>
+                                    </TableCell>
 
-                                <TableCell>
-                                    {{ dispatch.dispatcher?.name ?? '—' }}
-                                </TableCell>
+                                    <TableCell>
+                                        <Badge :variant="badgeVariant(company.status)">
+                                            {{ prettyStatus(company.status) }}
+                                        </Badge>
+                                    </TableCell>
 
-                                <TableCell class="text-right">
-                                    {{ dispatch.pax_count }}
-                                </TableCell>
+                                    <TableCell class="text-center">
+                                        <div class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium">
+                                            <ClipboardList class="h-4 w-4 text-muted-foreground" />
+                                            <span>{{ company.dispatches_count }}</span>
+                                        </div>
+                                    </TableCell>
 
-                                <TableCell>{{
-                                    dispatch.bay_number ?? '—'
-                                }}</TableCell>
-                                <TableCell>{{
-                                    dispatch.arrived_at_formatted ?? '—'
-                                }}</TableCell>
-                                <TableCell>{{
-                                    dispatch.departed_at_formatted ?? '—'
-                                }}</TableCell>
+                                    <TableCell class="text-right">
+                                        <Button as-child variant="outline" class="gap-2">
+                                            <Link :href="InternalDispatchController.show(company.id).url">
+                                                <Eye class="h-4 w-4" />
+                                                View
+                                            </Link>
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
 
-                                <TableCell class="capitalize">
-                                    <Badge
-                                        :variant="badgeVariant(dispatch.status)"
+                                <TableRow v-if="companies.data.length === 0">
+                                    <TableCell
+                                        colspan="6"
+                                        class="py-10 text-center text-muted-foreground"
                                     >
-                                        {{ dispatch.status }}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>
-                                    <Button variant="outline" size="sm">
-                                        Departure
-                                    </Button>
-                                    <Button size="sm">
-                                        Edit
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
+                                        No companies found.
+                                    </TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </div>
 
-                    <InertiaPagination :links="props.dispatches.links" />
+                    <div v-if="companies.links?.length" class="mt-6">
+                        <InertiaPagination :links="companies.links" />
+                    </div>
                 </CardContent>
             </Card>
         </div>

@@ -1,7 +1,11 @@
 <script setup lang="ts">
+/* ======================================================
+   Shared UI
+====================================================== */
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 
+/* shadcn-vue */
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -12,14 +16,15 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -36,6 +41,9 @@ import {
     TableRow,
 } from '@/components/ui/table';
 
+/* ======================================================
+   Layout, Routing & Inertia
+====================================================== */
 import AppLayout from '@/layouts/AppLayout.vue';
 import {
     create,
@@ -43,13 +51,15 @@ import {
     edit,
     index,
     show,
-    trash,
     toggleStatus,
+    trash,
 } from '@/actions/App/Http/Controllers/RouteController';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
 
+/* ======================================================
+   Icons
+====================================================== */
 import {
     Archive,
     ArchiveIcon,
@@ -63,8 +73,25 @@ import {
     Zap,
 } from 'lucide-vue-next';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+/* ======================================================
+   Vue Core
+====================================================== */
+import { ref } from 'vue';
 
+/* ======================================================
+   Permissions
+====================================================== */
+import { can } from '@/lib/can';
+
+const canCreate      = can('routes.create');
+const canUpdate      = can('routes.update');
+const canDelete      = can('routes.delete');
+const canViewTrash   = can('routes.viewTrash');
+const canToggle      = can('routes.toggleStatus');
+
+/* ======================================================
+   Types
+====================================================== */
 interface Gate {
     id: number;
     gate_name: string;
@@ -78,8 +105,9 @@ interface RouteRow {
     gate: Gate | null;
 }
 
-// ─── Props ────────────────────────────────────────────────────────────────────
-
+/* ======================================================
+   Props
+====================================================== */
 const props = withDefaults(
     defineProps<{
         routes: any;
@@ -88,16 +116,18 @@ const props = withDefaults(
     { filters: () => ({ search: null }) },
 );
 
-// ─── Breadcrumbs ──────────────────────────────────────────────────────────────
-
+/* ======================================================
+   Breadcrumbs
+====================================================== */
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Routes', href: index().url },
 ];
 
-// ─── Archive dialog ───────────────────────────────────────────────────────────
-
-const archivingId  = ref<number | null>(null);
-const archiveOpen  = ref(false);
+/* ======================================================
+   Archive dialog
+====================================================== */
+const archivingId = ref<number | null>(null);
+const archiveOpen = ref(false);
 
 function openArchiveDialog(id: number) {
     archivingId.value = id;
@@ -106,6 +136,7 @@ function openArchiveDialog(id: number) {
 
 function confirmArchive() {
     if (!archivingId.value) return;
+
     router.delete(destroy(archivingId.value).url, {
         preserveScroll: true,
         onFinish: () => {
@@ -115,8 +146,9 @@ function confirmArchive() {
     });
 }
 
-// ─── Toggle status ────────────────────────────────────────────────────────────
-
+/* ======================================================
+   Toggle status
+====================================================== */
 function handleToggleStatus(id: number) {
     router.patch(toggleStatus(id).url, {}, { preserveScroll: true });
 }
@@ -135,13 +167,14 @@ function handleToggleStatus(id: number) {
                     </CardDescription>
 
                     <CardAction>
-                        <Button as-child size="sm" variant="outline" class="mr-2">
+                        <Button v-if="canViewTrash" as-child size="sm" variant="outline" class="mr-2">
                             <Link :href="trash().url">
                                 <Archive class="mr-2 h-4 w-4" />
                                 View Archived
                             </Link>
                         </Button>
-                        <Button as-child size="sm">
+
+                        <Button v-if="canCreate" as-child size="sm">
                             <Link :href="create().url">
                                 <Plus class="mr-2 h-4 w-4" />
                                 Create Route
@@ -162,12 +195,15 @@ function handleToggleStatus(id: number) {
                                 :debounce="350"
                             />
                         </div>
+
                         <div class="flex gap-2 sm:justify-end">
                             <Button size="sm" variant="outline">
-                                <Upload class="mr-2 h-4 w-4" />Import
+                                <Upload class="mr-2 h-4 w-4" />
+                                Import
                             </Button>
                             <Button size="sm" variant="outline">
-                                <Download class="mr-2 h-4 w-4" />Export
+                                <Download class="mr-2 h-4 w-4" />
+                                Export
                             </Button>
                         </div>
                     </div>
@@ -189,17 +225,14 @@ function handleToggleStatus(id: number) {
                                 v-for="routeItem in (props.routes.data as RouteRow[])"
                                 :key="routeItem.id"
                             >
-                                <!-- Route name -->
                                 <TableCell class="font-medium capitalize">
                                     {{ routeItem.route_name }}
                                 </TableCell>
 
-                                <!-- Gate -->
                                 <TableCell class="text-muted-foreground">
                                     {{ routeItem.gate?.gate_name ?? '—' }}
                                 </TableCell>
 
-                                <!-- Status badge -->
                                 <TableCell>
                                     <span
                                         :class="[
@@ -209,12 +242,11 @@ function handleToggleStatus(id: number) {
                                                 : 'bg-zinc-100 text-zinc-600',
                                         ]"
                                     >
-                                        <!-- pulsing dot -->
                                         <span
                                             :class="[
                                                 'h-1.5 w-1.5 rounded-full',
                                                 routeItem.status === 'active'
-                                                    ? 'bg-green-500 animate-pulse'
+                                                    ? 'animate-pulse bg-green-500'
                                                     : 'bg-zinc-400',
                                             ]"
                                         />
@@ -222,12 +254,10 @@ function handleToggleStatus(id: number) {
                                     </span>
                                 </TableCell>
 
-                                <!-- Created at -->
-                                <TableCell class="text-muted-foreground text-sm">
+                                <TableCell class="text-sm text-muted-foreground">
                                     {{ routeItem.created_at_human ?? '—' }}
                                 </TableCell>
 
-                                <!-- 3-dot actions -->
                                 <TableCell class="text-right">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger as-child>
@@ -238,28 +268,39 @@ function handleToggleStatus(id: number) {
                                         </DropdownMenuTrigger>
 
                                         <DropdownMenuContent align="end" class="w-44">
-                                            <!-- View -->
+                                            <!-- View — always visible -->
                                             <DropdownMenuItem as-child>
-                                                <Link :href="show(routeItem.id).url" class="flex items-center gap-2 cursor-pointer">
+                                                <Link
+                                                    :href="show(routeItem.id).url"
+                                                    class="flex cursor-pointer items-center gap-2"
+                                                >
                                                     <Eye class="h-4 w-4" />
                                                     View
                                                 </Link>
                                             </DropdownMenuItem>
 
                                             <!-- Edit -->
-                                            <DropdownMenuItem as-child>
-                                                <Link :href="edit(routeItem.id).url" class="flex items-center gap-2 cursor-pointer">
+                                            <DropdownMenuItem v-if="canUpdate" as-child>
+                                                <Link
+                                                    :href="edit(routeItem.id).url"
+                                                    class="flex cursor-pointer items-center gap-2"
+                                                >
                                                     <EditIcon class="h-4 w-4" />
                                                     Edit
                                                 </Link>
                                             </DropdownMenuItem>
 
-                                            <DropdownMenuSeparator />
+                                            <DropdownMenuSeparator v-if="canToggle || canDelete" />
 
-                                            <!-- Toggle Active / Inactive -->
+                                            <!-- Toggle status -->
                                             <DropdownMenuItem
-                                                class="flex items-center gap-2 cursor-pointer"
-                                                :class="routeItem.status === 'active' ? 'text-amber-600 focus:text-amber-700' : 'text-green-600 focus:text-green-700'"
+                                                v-if="canToggle"
+                                                class="flex cursor-pointer items-center gap-2"
+                                                :class="
+                                                    routeItem.status === 'active'
+                                                        ? 'text-amber-600 focus:text-amber-700'
+                                                        : 'text-green-600 focus:text-green-700'
+                                                "
                                                 @click="handleToggleStatus(routeItem.id)"
                                             >
                                                 <Zap v-if="routeItem.status === 'inactive'" class="h-4 w-4" />
@@ -267,11 +308,12 @@ function handleToggleStatus(id: number) {
                                                 {{ routeItem.status === 'active' ? 'Set Inactive' : 'Set Active' }}
                                             </DropdownMenuItem>
 
-                                            <DropdownMenuSeparator />
+                                            <DropdownMenuSeparator v-if="canToggle && canDelete" />
 
                                             <!-- Archive -->
                                             <DropdownMenuItem
-                                                class="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
+                                                v-if="canDelete"
+                                                class="flex cursor-pointer items-center gap-2 text-destructive focus:text-destructive"
                                                 @click="openArchiveDialog(routeItem.id)"
                                             >
                                                 <ArchiveIcon class="h-4 w-4" />
@@ -282,9 +324,11 @@ function handleToggleStatus(id: number) {
                                 </TableCell>
                             </TableRow>
 
-                            <!-- Empty state -->
                             <TableRow v-if="props.routes.data.length === 0">
-                                <TableCell colspan="5" class="py-10 text-center text-muted-foreground">
+                                <TableCell
+                                    colspan="5"
+                                    class="py-10 text-center text-muted-foreground"
+                                >
                                     No routes found.
                                 </TableCell>
                             </TableRow>
@@ -302,33 +346,32 @@ function handleToggleStatus(id: number) {
                 </CardContent>
             </Card>
         </div>
-
-        <!-- Archive confirmation dialog (controlled, not nested in loop) -->
-        <Dialog :open="archiveOpen" @update:open="archiveOpen = $event">
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle class="flex items-center gap-2">
-                        <Archive :size="18" class="text-muted-foreground" />
-                        Archive Route
-                    </DialogTitle>
-                    <DialogDescription>
-                        Are you sure you want to archive this route?
-                        You can restore it later from the Archived Routes page.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <DialogFooter class="gap-2">
-                    <DialogClose as-child>
-                        <Button variant="outline" @click="archivingId = null">
-                            Cancel
-                        </Button>
-                    </DialogClose>
-                    <Button variant="destructive" @click="confirmArchive">
-                        <ArchiveIcon class="mr-2 h-4 w-4" />
-                        Archive
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
     </AppLayout>
+
+    <!-- Archive confirmation dialog -->
+    <AlertDialog v-model:open="archiveOpen">
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle class="flex items-center gap-2">
+                    <ArchiveIcon class="h-5 w-5 text-muted-foreground" />
+                    Archive Route
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                    Are you sure you want to archive this route?
+                    You can restore it later from the Archived Routes page.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <AlertDialogFooter>
+                <AlertDialogCancel @click="archivingId = null">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                    class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    @click="confirmArchive"
+                >
+                    <ArchiveIcon class="mr-2 h-4 w-4" />
+                    Archive
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
 </template>

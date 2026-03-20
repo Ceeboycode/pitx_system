@@ -13,6 +13,7 @@ use App\Http\Controllers\Crm\CrmThreadController;
 use App\Http\Controllers\DispatchController;
 use App\Http\Controllers\ForcePasswordController;
 use App\Http\Controllers\GateController;
+use App\Http\Controllers\InternalDispatchController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\RouteStopController;
@@ -69,6 +70,23 @@ Route::middleware('guest')->prefix('company-registration')->name('company-regist
 
 /*
 |--------------------------------------------------------------------------
+| Authenticated shared routes
+|--------------------------------------------------------------------------
+|
+| These routes must stay accessible even when must_change_password = true.
+|
+*/
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('force-password-reset', [ForcePasswordController::class, 'edit'])
+        ->name('force-password.edit');
+
+    Route::post('force-password-reset', [ForcePasswordController::class, 'update'])
+        ->name('force-password.update');
+});
+
+/*
+|--------------------------------------------------------------------------
 | External
 |--------------------------------------------------------------------------
 */
@@ -85,18 +103,6 @@ Route::middleware(['auth', 'role.type:external'])->group(function () {
 
     Route::post('registration/resubmit', [CompanyRegistration::class, 'storeResubmission'])
         ->name('registration.resubmit.store');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Force Password Reset
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get('force-password-reset', [ForcePasswordController::class, 'edit'])
-        ->name('force-password.edit');
-
-    Route::post('force-password-reset', [ForcePasswordController::class, 'update'])
-        ->name('force-password.update');
 
     /*
     |--------------------------------------------------------------------------
@@ -157,7 +163,6 @@ Route::middleware(['auth', 'role.type:external'])->group(function () {
 
         Route::patch('employee-users/{employeeUser}/reset-password', [CompanyUserController::class, 'resetPassword'])
             ->name('employee-users.reset-password');
-    });
 
         /*
         |--------------------------------------------------------------------------
@@ -179,7 +184,7 @@ Route::middleware(['auth', 'role.type:external'])->group(function () {
 
         Route::patch('company/dispatches/{dispatch}/depart', [DispatchController::class, 'depart'])
             ->name('company.dispatches.depart');
-
+    });
 });
 
 /*
@@ -188,7 +193,7 @@ Route::middleware(['auth', 'role.type:external'])->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role.type:internal'])->group(function () {
+Route::middleware(['auth', 'role.type:internal', 'password.change.required'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
@@ -370,8 +375,7 @@ Route::middleware(['auth', 'role.type:internal'])->group(function () {
     |--------------------------------------------------------------------------
     */
 
-
-
+    Route::resource('dispatches', InternalDispatchController::class);
 
     /*
     |--------------------------------------------------------------------------

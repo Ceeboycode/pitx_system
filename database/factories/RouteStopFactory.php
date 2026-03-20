@@ -2,22 +2,35 @@
 
 namespace Database\Factories;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Route;
 use App\Models\RouteStop;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\RouteStop>
+ */
 class RouteStopFactory extends Factory
 {
     protected $model = RouteStop::class;
 
     public function definition(): array
     {
+        $creatorId = User::role(['admin', 'it', 'terminal manager'])->value('id')
+            ?? User::query()->value('id');
+
         return [
-            'stop_name' => $this->faker->streetName(),
-            'route_id' => Route::inRandomOrder()->first()->id,
-            'stop_order' => 1, // will be overridden in seeder
-            'created_by' => 1,
-            'updated_by' => 1,
+            'stop_name' => fake()->streetName(),
+            'stop_type' => 'stop',
+            'address' => fake()->address(),
+            'latitude' => fake()->latitude(14.0, 14.9),
+            'longitude' => fake()->longitude(120.8, 121.2),
+            'mapbox_feature_id' => null,
+            'route_id' => Route::query()->inRandomOrder()->value('id'),
+            'stop_order' => 1,
+            'created_by' => $creatorId,
+            'updated_by' => $creatorId,
+            'deleted_at' => null,
         ];
     }
 }

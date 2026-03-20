@@ -53,6 +53,18 @@ import {
     Route as RouteIcon,
 } from 'lucide-vue-next';
 
+/* ======================================================
+   Permissions
+====================================================== */
+import { can } from '@/lib/can';
+
+const canCreate      = can('external_vehicles.create');
+const canUpdate      = can('external_vehicles.update');
+const canToggle      = can('external_vehicles.toggleStatus');
+
+/* ======================================================
+   Types
+====================================================== */
 type Company = {
     id: number;
     company_name: string;
@@ -113,6 +125,9 @@ type PaginatedVehicles = {
     links: PaginationLink[];
 };
 
+/* ======================================================
+   Props
+====================================================== */
 const props = defineProps<{
     company: Company;
     user: User;
@@ -120,6 +135,9 @@ const props = defineProps<{
     filters: { search?: string | null };
 }>();
 
+/* ======================================================
+   Helpers
+====================================================== */
 function humanize(value?: string | null) {
     if (!value) return '—';
     return value.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
@@ -134,32 +152,35 @@ function formatDate(value?: string | null) {
     });
 }
 
+/* ======================================================
+   Badge helpers
+====================================================== */
 function vehicleStatusClass(status?: string | null) {
-    if (status === 'active') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-    if (status === 'inactive') return 'bg-rose-100 text-rose-600 border-rose-200';
+    if (status === 'active')    return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+    if (status === 'inactive')  return 'bg-rose-100 text-rose-600 border-rose-200';
     if (status === 'suspended') return 'bg-orange-100 text-orange-700 border-orange-200';
-    if (status === 'pending') return 'bg-amber-100 text-amber-700 border-amber-200';
+    if (status === 'pending')   return 'bg-amber-100 text-amber-700 border-amber-200';
     return 'bg-slate-100 text-slate-500 border-0';
 }
 
 function vehicleStatusDot(status?: string | null) {
-    if (status === 'active') return 'bg-emerald-500';
-    if (status === 'inactive') return 'bg-rose-500';
+    if (status === 'active')    return 'bg-emerald-500';
+    if (status === 'inactive')  return 'bg-rose-500';
     if (status === 'suspended') return 'bg-orange-500';
-    if (status === 'pending') return 'bg-amber-500';
+    if (status === 'pending')   return 'bg-amber-500';
     return 'bg-slate-400';
 }
 
 function documentStatusClass(status?: string | null) {
     if (status === 'approved') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-    if (status === 'pending') return 'bg-amber-100 text-amber-700 border-amber-200';
+    if (status === 'pending')  return 'bg-amber-100 text-amber-700 border-amber-200';
     if (status === 'rejected') return 'bg-rose-100 text-rose-600 border-rose-200';
     return 'bg-slate-100 text-slate-500 border-0';
 }
 
 function documentStatusDot(status?: string | null) {
     if (status === 'approved') return 'bg-emerald-500';
-    if (status === 'pending') return 'bg-amber-500';
+    if (status === 'pending')  return 'bg-amber-500';
     if (status === 'rejected') return 'bg-rose-500';
     return 'bg-slate-400';
 }
@@ -168,21 +189,32 @@ function documentsCount(documents?: VehicleDocument[]) {
     return documents?.length ?? 0;
 }
 
+/* ======================================================
+   Business logic guards
+====================================================== */
 function isSuspended(status?: string | null) {
     return status === 'suspended';
 }
 
-function canEditVehicle(vehicle: VehicleItem) {
+function businessCanEdit(vehicle: VehicleItem) {
     return !isSuspended(vehicle.status);
 }
 
-function canToggleStatus(vehicle: VehicleItem) {
+function businessCanToggle(vehicle: VehicleItem) {
     if (isSuspended(vehicle.status)) return false;
-    if (!vehicle.documents?.length) return false;
-
+    if (!vehicle.documents?.length)  return false;
     return !vehicle.documents.some(
         (doc) => doc.status === 'pending' || doc.status === 'rejected',
     );
+}
+
+// Combined: permission AND business rule
+function canEditVehicle(vehicle: VehicleItem) {
+    return canUpdate && businessCanEdit(vehicle);
+}
+
+function canToggleVehicle(vehicle: VehicleItem) {
+    return canToggle && businessCanToggle(vehicle);
 }
 
 function toggleLabel(status?: string | null) {
@@ -199,41 +231,41 @@ function vehicleActionNote(vehicle: VehicleItem) {
     if (isSuspended(vehicle.status)) {
         return 'Suspended vehicles cannot be edited or updated.';
     }
-
     if (!vehicle.documents?.length) {
         return 'Upload required documents first.';
     }
-
     if (vehicle.documents.some((doc) => doc.status === 'pending' || doc.status === 'rejected')) {
         return 'Documents must be approved before changing status.';
     }
-
     return '';
 }
 
+/* ======================================================
+   Computed stats
+====================================================== */
 const totalVehicles = computed(() => props.vehicles.total ?? 0);
 
 const activeVehicles = computed(() =>
     props.vehicles.data.filter((v) => v.status === 'active').length,
 );
 
+/* ======================================================
+   Toggle status dialog
+====================================================== */
 const statusDialog = reactive({
-    open: false,
+    open:    false,
     vehicle: null as VehicleItem | null,
 });
 
 const statusConfirmOpen = computed({
-    get: () => statusDialog.open,
-    set: (value: boolean) => {
-        statusDialog.open = value;
-    },
+    get: ()      => statusDialog.open,
+    set: (value) => { statusDialog.open = value; },
 });
 
 function openStatusDialog(vehicle: VehicleItem) {
-    if (!canToggleStatus(vehicle)) return;
-
+    if (!canToggleVehicle(vehicle)) return;
     statusDialog.vehicle = vehicle;
-    statusDialog.open = true;
+    statusDialog.open    = true;
 }
 
 function confirmToggleStatus() {
@@ -245,7 +277,7 @@ function confirmToggleStatus() {
         {
             preserveScroll: true,
             onSuccess: () => {
-                statusDialog.open = false;
+                statusDialog.open    = false;
                 statusDialog.vehicle = null;
             },
         },
@@ -259,6 +291,8 @@ function confirmToggleStatus() {
     <ExternalLayout :company="company" :user="user">
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
+
+                <!-- ── Page header ───────────────────────────── -->
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
@@ -274,6 +308,7 @@ function confirmToggleStatus() {
                     </div>
 
                     <Button
+                        v-if="canCreate"
                         as-child
                         class="shrink-0 self-start gap-2 rounded-lg border-0 bg-blue-700 text-sm font-semibold text-white shadow-sm hover:bg-blue-800"
                     >
@@ -284,6 +319,7 @@ function confirmToggleStatus() {
                     </Button>
                 </div>
 
+                <!-- ── Stats ─────────────────────────────────── -->
                 <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
                     <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700">
@@ -334,6 +370,7 @@ function confirmToggleStatus() {
                     </div>
                 </div>
 
+                <!-- ── Table card ─────────────────────────────── -->
                 <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                     <div class="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
@@ -545,14 +582,13 @@ function confirmToggleStatus() {
                                                 align="end"
                                                 class="w-56 rounded-xl border-slate-200 shadow-lg"
                                             >
-                                                <DropdownMenuLabel
-                                                    class="text-xs font-semibold uppercase tracking-widest text-slate-400"
-                                                >
+                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-slate-400">
                                                     Actions
                                                 </DropdownMenuLabel>
 
                                                 <DropdownMenuSeparator class="bg-slate-100" />
 
+                                                <!-- View — always visible -->
                                                 <DropdownMenuItem
                                                     as-child
                                                     class="rounded-lg text-slate-700 focus:bg-blue-50 focus:text-blue-700"
@@ -563,6 +599,7 @@ function confirmToggleStatus() {
                                                     </Link>
                                                 </DropdownMenuItem>
 
+                                                <!-- Edit — permission + business rule -->
                                                 <DropdownMenuItem
                                                     v-if="canEditVehicle(vehicle)"
                                                     as-child
@@ -574,8 +611,9 @@ function confirmToggleStatus() {
                                                     </Link>
                                                 </DropdownMenuItem>
 
+                                                <!-- Edit disabled — has permission but business rule blocks -->
                                                 <DropdownMenuItem
-                                                    v-else
+                                                    v-else-if="canUpdate"
                                                     disabled
                                                     class="rounded-lg text-slate-300"
                                                 >
@@ -585,8 +623,9 @@ function confirmToggleStatus() {
 
                                                 <DropdownMenuSeparator class="bg-slate-100" />
 
+                                                <!-- Toggle — permission + business rule -->
                                                 <DropdownMenuItem
-                                                    v-if="canToggleStatus(vehicle)"
+                                                    v-if="canToggleVehicle(vehicle)"
                                                     :class="['rounded-lg', toggleStatusClass(vehicle.status)]"
                                                     @click="openStatusDialog(vehicle)"
                                                 >
@@ -594,8 +633,9 @@ function confirmToggleStatus() {
                                                     {{ toggleLabel(vehicle.status) }}
                                                 </DropdownMenuItem>
 
+                                                <!-- Toggle disabled — has permission but business rule blocks -->
                                                 <DropdownMenuItem
-                                                    v-else
+                                                    v-else-if="canToggle"
                                                     disabled
                                                     class="rounded-lg text-slate-300"
                                                 >
@@ -603,8 +643,9 @@ function confirmToggleStatus() {
                                                     {{ toggleLabel(vehicle.status) }}
                                                 </DropdownMenuItem>
 
+                                                <!-- Contextual note -->
                                                 <div
-                                                    v-if="!canEditVehicle(vehicle) || !canToggleStatus(vehicle)"
+                                                    v-if="(canUpdate && !canEditVehicle(vehicle)) || (canToggle && !canToggleVehicle(vehicle))"
                                                     class="px-2 pb-2 pt-1 text-left text-[11px] text-slate-400"
                                                 >
                                                     {{ vehicleActionNote(vehicle) }}
@@ -631,6 +672,7 @@ function confirmToggleStatus() {
             </div>
         </div>
 
+        <!-- Toggle status confirmation dialog -->
         <AlertDialog v-model:open="statusConfirmOpen">
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
@@ -648,7 +690,10 @@ function confirmToggleStatus() {
                 </AlertDialogHeader>
 
                 <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg" @click="statusDialog.vehicle = null">
+                    <AlertDialogCancel
+                        class="rounded-lg"
+                        @click="statusDialog.vehicle = null"
+                    >
                         Cancel
                     </AlertDialogCancel>
 

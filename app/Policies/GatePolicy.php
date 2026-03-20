@@ -4,68 +4,46 @@ namespace App\Policies;
 
 use App\Models\Gate;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class GatePolicy
 {
-    public function before(User $user, string $ability): bool
-    {
-        return $user->hasRole('admin');
-    }
-
-    /**
-     * Determine whether the user can view any models.
-     */
     public function viewAny(User $user): bool
     {
-        return $user->can('gate.viewAny');
+        return $user->can('gates.viewAny');
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, Gate $gate): bool
     {
-        return $user->can('gate.view');
+        return $user->can('gates.view');
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        return $user->can('gate.create');
+        return $user->can('gates.create');
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
     public function update(User $user, Gate $gate): bool
     {
-        return $user->can('gate.update');
+        return $user->can('gates.update');
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, Gate $gate): bool
     {
-        return $user->can('gate.delete');
+        return $user->can('gates.delete');
     }
 
-    /**
-     * Determine whether the user can restore the model.
-     */
     public function restore(User $user, Gate $gate): bool
     {
-        return $user->can('gate.restore');
+        return $user->can('gates.restore');
     }
 
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
     public function forceDelete(User $user, Gate $gate): bool
     {
-        return $user->can('gate.forceDelete');
+        return $user->can('gates.forceDelete');
+    }
+
+    public function viewTrash(User $user): bool
+    {
+        return $user->can('gates.viewTrash');
     }
 }
