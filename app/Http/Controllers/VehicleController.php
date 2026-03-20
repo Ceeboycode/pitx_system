@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\Vehicle\VehicleStoreRequest;
 use App\Http\Requests\Vehicle\VehicleUpdateRequest;
 use App\Models\Company;
@@ -28,7 +27,7 @@ class VehicleController extends Controller
     {
         Gate::authorize('viewAny', Vehicle::class);
 
-        $search = $request->input('search');
+        $search = trim((string) $request->input('search'));
 
         $vehicles = Vehicle::query()
             ->with([
@@ -63,15 +62,18 @@ class VehicleController extends Controller
     {
         Gate::authorize('create', Vehicle::class);
 
-        $companies = Company::select('id', 'company_name')
+        $companies = Company::query()
+            ->select('id', 'company_name')
             ->orderBy('company_name')
             ->get();
 
-        $routes = Route::select('id', 'route_name')
+        $routes = Route::query()
+            ->select('id', 'route_name')
             ->orderBy('route_name')
             ->get();
 
-        $vehicleTypes = VehicleType::select('id', 'type_name')
+        $vehicleTypes = VehicleType::query()
+            ->select('id', 'type_name')
             ->orderBy('type_name')
             ->get();
 
@@ -90,7 +92,7 @@ class VehicleController extends Controller
             'company:id,company_name,company_code,company_email,company_phone,company_address',
             'route:id,route_name,gate_id,origin_name,origin_lat,origin_lng,destination_name,destination_lat,destination_lng,distance_meters,duration_seconds,route_geometry,status,created_by,updated_by,created_at,updated_at',
             'route.gate:id,gate_name',
-            'route.stops:id,route_id,stop_name,stop_type,full_address,latitude,longitude,stop_order',
+            'route.stops:id,route_id,stop_name,stop_type,address,latitude,longitude,stop_order',
             'documents:id,vehicle_id,document_type,file_path,file_name,file_mime_type,file_size,status,issued_at,expires_at,remarks,created_at,updated_at',
             'creator:id,name',
             'updater:id,name',
@@ -148,7 +150,7 @@ class VehicleController extends Controller
                             'id' => $stop->id,
                             'stop_name' => $stop->stop_name,
                             'stop_type' => $stop->stop_type,
-                            'address' => $stop->full_address,
+                            'address' => $stop->address,
                             'latitude' => (float) $stop->latitude,
                             'longitude' => (float) $stop->longitude,
                             'stop_order' => $stop->stop_order,
@@ -199,15 +201,18 @@ class VehicleController extends Controller
     {
         Gate::authorize('update', $vehicle);
 
-        $companies = Company::select('id', 'company_name')
+        $companies = Company::query()
+            ->select('id', 'company_name')
             ->orderBy('company_name')
             ->get();
 
-        $routes = Route::select('id', 'route_name')
+        $routes = Route::query()
+            ->select('id', 'route_name')
             ->orderBy('route_name')
             ->get();
 
-        $vehicleTypes = VehicleType::select('id', 'type_name')
+        $vehicleTypes = VehicleType::query()
+            ->select('id', 'type_name')
             ->orderBy('type_name')
             ->get();
 
@@ -253,7 +258,7 @@ class VehicleController extends Controller
     {
         Gate::authorize('viewAny', Vehicle::class);
 
-        $search = $request->input('search');
+        $search = trim((string) $request->input('search'));
 
         $vehicles = Vehicle::onlyTrashed()
             ->with([
@@ -306,7 +311,7 @@ class VehicleController extends Controller
 
     public function verifyDocument(Request $request, Vehicle $vehicle, VehicleDocument $document): RedirectResponse
     {
-        Gate::authorize('update', $vehicle);
+        Gate::authorize('verifyDocument', $vehicle);
 
         abort_unless($document->vehicle_id === $vehicle->id, 404);
 
@@ -317,7 +322,7 @@ class VehicleController extends Controller
 
     public function invalidateDocument(Request $request, Vehicle $vehicle, VehicleDocument $document): RedirectResponse
     {
-        Gate::authorize('update', $vehicle);
+        Gate::authorize('invalidateDocument', $vehicle);
 
         abort_unless($document->vehicle_id === $vehicle->id, 404);
 
@@ -337,7 +342,7 @@ class VehicleController extends Controller
 
     public function unverifyDocument(Request $request, Vehicle $vehicle, VehicleDocument $document): RedirectResponse
     {
-        Gate::authorize('update', $vehicle);
+        Gate::authorize('unverifyDocument', $vehicle);
 
         abort_unless($document->vehicle_id === $vehicle->id, 404);
 
@@ -348,7 +353,7 @@ class VehicleController extends Controller
 
     public function toggleStatus(Request $request, Vehicle $vehicle): RedirectResponse
     {
-        Gate::authorize('update', $vehicle);
+        Gate::authorize('toggleStatus', $vehicle);
 
         $nextStatus = $vehicle->status === 'suspended' ? 'active' : 'suspended';
 

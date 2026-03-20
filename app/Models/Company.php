@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class Company extends Model
 {
@@ -45,6 +46,7 @@ class Company extends Model
         'is_docs_complete',
         'is_verified',
         'is_company_email_verified',
+        'logo_url',
     ];
 
     public function scopeSearch(Builder $query, ?string $search): Builder
@@ -58,6 +60,11 @@ class Company extends Model
                     ->orWhere('company_phone', 'like', '%' . $search . '%');
             })
         );
+    }
+
+    public function vehicles(): HasMany
+    {
+        return $this->hasMany(Vehicle::class);
     }
 
     public function creator(): BelongsTo
@@ -113,6 +120,19 @@ class Company extends Model
     public function getIsCompanyEmailVerifiedAttribute(): bool
     {
         return ! is_null($this->company_email_verified_at);
+    }
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        if (! $this->logo) {
+            return null;
+        }
+
+        if (str_starts_with($this->logo, 'http://') || str_starts_with($this->logo, 'https://')) {
+            return $this->logo;
+        }
+
+        return Storage::url($this->logo);
     }
 
     public function hasVerifiedCompanyEmail(): bool

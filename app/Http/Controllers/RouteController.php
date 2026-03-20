@@ -14,10 +14,8 @@ use Inertia\Response;
 class RouteController extends Controller
 {
     public function __construct(
-        private RouteService $routeService
+        private RouteService $routeService,
     ) {}
-
-    // ── Index ─────────────────────────────────────────────────────────────────
 
     public function index(): Response
     {
@@ -46,11 +44,9 @@ class RouteController extends Controller
         ]);
     }
 
-    // ── Show ──────────────────────────────────────────────────────────────────
-
     public function show(Route $route): Response
     {
-        Gate::authorize('view', Route::class);
+        Gate::authorize('view', $route); // instance
 
         $route->load([
             'gate:id,gate_name',
@@ -66,8 +62,6 @@ class RouteController extends Controller
             ],
         ]);
     }
-
-    // ── Create ────────────────────────────────────────────────────────────────
 
     public function create(): Response
     {
@@ -86,8 +80,6 @@ class RouteController extends Controller
         ]);
     }
 
-    // ── Store ─────────────────────────────────────────────────────────────────
-
     public function store(RouteStoreRequest $request)
     {
         Gate::authorize('create', Route::class);
@@ -97,11 +89,9 @@ class RouteController extends Controller
         return to_route('routes.index')->with('success', 'Route created successfully.');
     }
 
-    // ── Edit ──────────────────────────────────────────────────────────────────
-
     public function edit(Route $route): Response
     {
-        Gate::authorize('update', Route::class);
+        Gate::authorize('update', $route); // instance
 
         $route->load([
             'gate:id,gate_name',
@@ -124,22 +114,18 @@ class RouteController extends Controller
         ]);
     }
 
-    // ── Update ────────────────────────────────────────────────────────────────
-
     public function update(RouteUpdateRequest $request, Route $route)
     {
-        Gate::authorize('update', Route::class);
+        Gate::authorize('update', $route); // instance
 
         $this->routeService->updateRoute($route, $request->validated());
 
         return to_route('routes.index')->with('success', 'Route updated successfully.');
     }
 
-    // ── Toggle status ─────────────────────────────────────────────────────────
-
     public function toggleStatus(Route $route)
     {
-        Gate::authorize('update', Route::class);
+        Gate::authorize('toggleStatus', $route); // instance
 
         $route->toggleStatus();
 
@@ -147,8 +133,6 @@ class RouteController extends Controller
 
         return back()->with('success', "Route marked as {$label}.");
     }
-
-    // ── Trash ─────────────────────────────────────────────────────────────────
 
     public function trash(): Response
     {
@@ -168,7 +152,7 @@ class RouteController extends Controller
                       );
                 });
             })
-            ->latest()
+            ->latest('deleted_at')
             ->paginate(10)
             ->withQueryString();
 
@@ -178,33 +162,27 @@ class RouteController extends Controller
         ]);
     }
 
-    // ── Destroy (soft) ────────────────────────────────────────────────────────
-
     public function destroy(Route $route)
     {
-        Gate::authorize('delete', Route::class);
+        Gate::authorize('delete', $route); // instance
 
         $this->routeService->deleteRoute($route);
 
         return to_route('routes.index')->with('success', 'Route archived successfully.');
     }
 
-    // ── Restore ───────────────────────────────────────────────────────────────
-
     public function restore(Route $route)
     {
-        Gate::authorize('restore', Route::class);
+        Gate::authorize('restore', $route); // instance
 
         $this->routeService->restoreRoute($route);
 
         return to_route('routes.trash')->with('success', 'Route restored successfully.');
     }
 
-    // ── Force delete ──────────────────────────────────────────────────────────
-
     public function forceDelete(Route $route)
     {
-        Gate::authorize('forceDelete', Route::class);
+        Gate::authorize('forceDelete', $route); // instance
 
         $this->routeService->forceDeleteRoute($route);
 

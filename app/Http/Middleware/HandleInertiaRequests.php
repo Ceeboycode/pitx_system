@@ -52,6 +52,7 @@ class HandleInertiaRequests extends Middleware
                     'email' => $user->email,
                     'type' => $user->type,
                     'status' => $user->status,
+                    'must_change_password' => (bool) $user->must_change_password,
                 ] : null,
 
                 'company' => $company ? [

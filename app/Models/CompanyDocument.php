@@ -18,7 +18,6 @@ class CompanyDocument extends Model
         'original_name',
         'mime_type',
         'file_size',
-        'document_number',
         'issued_at',
         'expires_at',
         'status',

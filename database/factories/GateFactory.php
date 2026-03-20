@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Gate;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -9,17 +11,18 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class GateFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    protected $model = Gate::class;
+
     public function definition(): array
     {
         return [
-            'gate_name' => $this->faker->unique()->city . ' Gate',
-            'created_by' => 1,
-            'updated_by' => 1,
+            'gate_name' => 'Gate ' . fake()->unique()->numberBetween(1, 99),
+            'status' => 'active',
+            'bays' => fake()->numberBetween(6, 10),
+            'created_by' => User::query()->role(['admin', 'it', 'terminal manager'])->value('id')
+                ?? User::query()->value('id'),
+            'updated_by' => User::query()->role(['admin', 'it', 'terminal manager'])->value('id')
+                ?? User::query()->value('id'),
         ];
     }
 }

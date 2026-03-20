@@ -2,29 +2,65 @@
 
 namespace Database\Factories;
 
+use App\Models\Company;
+use App\Models\Route;
+use App\Models\User;
+use App\Models\Vehicle;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Model>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Vehicle>
  */
 class VehicleFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    protected $model = Vehicle::class;
+
     public function definition(): array
     {
+        $creatorId = User::role(['operator', 'admin', 'it', 'terminal manager'])->value('id')
+            ?? User::query()->value('id');
+
+        $companyId = Company::query()->inRandomOrder()->value('id');
+        $routeId = Route::query()->inRandomOrder()->value('id');
+
         return [
-            'plate_number' => strtoupper($this->faker->bothify('???-####')),
-            'body_number' => strtoupper($this->faker->bothify('BD-####')),
-            'vehicle_type_id' => \App\Models\VehicleType::inRandomOrder()->first()->id,
-            'company_id' => \App\Models\Company::inRandomOrder()->first()->id,
-            'route_id' => \App\Models\Route::inRandomOrder()->first()->id,
-            'capacity' => $this->faker->numberBetween(20, 60),
-            'created_by' => 1,
-            'updated_by' => 1,
+            'company_id' => $companyId,
+            'route_id' => $routeId,
+            'vehicle_type' => fake()->randomElement([
+                'Bus',
+                'Modern Jeepney',
+                'Mini Bus',
+                'Van',
+            ]),
+            'plate_number' => strtoupper(fake()->unique()->bothify('???####')),
+            'body_number' => strtoupper(fake()->unique()->bothify('B-####')),
+            'capacity' => fake()->numberBetween(18, 60),
+            'color' => fake()->randomElement([
+                'White',
+                'Blue',
+                'Red',
+                'Silver',
+                'Yellow',
+            ]),
+            'engine_number' => strtoupper(fake()->unique()->bothify('ENG-######')),
+            'chassis_number' => strtoupper(fake()->unique()->bothify('CHS-######')),
+            'make_model' => fake()->randomElement([
+                'Hyundai County',
+                'Isuzu NPR',
+                'Hino Dutro',
+                'Toyota Hiace',
+                'Fuso Rosa',
+            ]),
+            'status' => fake()->randomElement([
+                'active',
+                'inactive',
+                'maintenance',
+            ]),
+            'remarks' => fake()->optional()->sentence(),
+            'created_by' => $creatorId,
+            'updated_by' => $creatorId,
+            'deleted_by' => null,
+            'deleted_at' => null,
         ];
     }
 }

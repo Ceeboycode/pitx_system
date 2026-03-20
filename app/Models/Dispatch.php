@@ -80,7 +80,7 @@ class Dispatch extends Model
     public function driver()
     {
         return $this->belongsTo(User::class, 'driver_user_id');
-    }
+}
 
     public function creator()
     {

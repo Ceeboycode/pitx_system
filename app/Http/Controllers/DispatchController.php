@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Dispatch\DepartDispatchRequest;
 use App\Http\Requests\Dispatch\StoreDispatchRequest;
 use App\Http\Requests\Dispatch\UpdateDispatchRequest;
 use App\Models\Dispatch;
@@ -19,18 +20,17 @@ class DispatchController extends Controller
 {
     public function index(Request $request): Response
     {
-        $user    = $request->user();
+        $user = $request->user();
         $company = $user->company;
-        $search  = trim((string) $request->string('search'));
-        $status  = trim((string) $request->string('status', 'all'));
-        $date    = trim((string) $request->string('date')); // expects YYYY-MM-DD
+        $search = trim((string) $request->string('search'));
+        $status = trim((string) $request->string('status', 'all'));
+        $date = trim((string) $request->string('date'));
 
         abort_unless($company, 403, 'No company is associated with this user.');
 
-        // ── Only ACTIVE vehicles are shown in the dispatch form dropdown ────────
         $vehicles = Vehicle::query()
             ->where('company_id', $company->id)
-            ->where('status', 'active') // FIX: exclude inactive, pending, etc.
+            ->where('status', 'active')
             ->select([
                 'id',
                 'route_id',
@@ -46,18 +46,18 @@ class DispatchController extends Controller
             ->orderBy('plate_number')
             ->get()
             ->map(fn (Vehicle $vehicle) => [
-                'id'           => $vehicle->id,
+                'id' => $vehicle->id,
                 'plate_number' => $vehicle->plate_number,
-                'body_number'  => $vehicle->body_number,
+                'body_number' => $vehicle->body_number,
                 'vehicle_type' => $vehicle->vehicle_type,
-                'make_model'   => $vehicle->make_model,
-                'status'       => $vehicle->status,
-                'route'        => $vehicle->route ? [
-                    'id'               => $vehicle->route->id,
-                    'route_name'       => $vehicle->route->route_name,
-                    'origin_name'      => $vehicle->route->origin_name,
+                'make_model' => $vehicle->make_model,
+                'status' => $vehicle->status,
+                'route' => $vehicle->route ? [
+                    'id' => $vehicle->route->id,
+                    'route_name' => $vehicle->route->route_name,
+                    'origin_name' => $vehicle->route->origin_name,
                     'destination_name' => $vehicle->route->destination_name,
-                    'status'           => $vehicle->route->status,
+                    'status' => $vehicle->route->status,
                 ] : null,
                 'label' => trim(implode(' • ', array_filter([
                     $vehicle->plate_number,
@@ -75,11 +75,11 @@ class DispatchController extends Controller
             ->orderBy('name')
             ->get()
             ->map(fn (User $driver) => [
-                'id'       => $driver->id,
-                'name'     => $driver->name,
+                'id' => $driver->id,
+                'name' => $driver->name,
                 'username' => $driver->username,
-                'email'    => $driver->email,
-                'label'    => $driver->name . ($driver->username ? ' • ' . $driver->username : ''),
+                'email' => $driver->email,
+                'label' => $driver->name . ($driver->username ? ' • ' . $driver->username : ''),
             ])
             ->values();
 
@@ -97,12 +97,12 @@ class DispatchController extends Controller
                     ->values();
 
                 return [
-                    'id'          => $gate->id,
-                    'gate_name'   => $gate->gate_name,
-                    'bays'        => (int) $gate->bays,
-                    'status'      => $gate->status,
+                    'id' => $gate->id,
+                    'gate_name' => $gate->gate_name,
+                    'bays' => (int) $gate->bays,
+                    'status' => $gate->status,
                     'bay_options' => $bayOptions,
-                    'label'       => $gate->gate_name . ' (' . $gate->bays . ' bays)',
+                    'label' => $gate->gate_name . ' (' . $gate->bays . ' bays)',
                 ];
             })
             ->values();
@@ -116,22 +116,19 @@ class DispatchController extends Controller
                 'gate:id,gate_name',
             ])
             ->where('company_id', $company->id)
-            // ── keyword search ─────────────────────────────────────────────
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($sub) use ($search) {
                     $sub->where('plate_number', 'like', "%{$search}%")
-                        ->orWhere('status',      'like', "%{$search}%")
-                        ->orWhere('remarks',     'like', "%{$search}%");
+                        ->orWhere('status', 'like', "%{$search}%")
+                        ->orWhere('remarks', 'like', "%{$search}%");
                 });
             })
-            // ── status filter ──────────────────────────────────────────────
             ->when(in_array($status, [
                 Dispatch::STATUS_ARRIVED,
                 Dispatch::STATUS_DEPARTED,
             ], true), function ($query) use ($status) {
                 $query->where('status', $status);
             })
-            // ── date filter (Manila time, SQLite + MySQL compatible) ────────
             ->when($date !== '', function ($query) use ($date) {
                 $driver = DB::connection()->getDriverName();
 
@@ -151,71 +148,71 @@ class DispatchController extends Controller
             ->paginate(10)
             ->withQueryString()
             ->through(fn (Dispatch $dispatch) => [
-                'id'           => $dispatch->id,
+                'id' => $dispatch->id,
                 'plate_number' => $dispatch->plate_number,
-                'pax_count'    => $dispatch->pax_count,
-                'bay_number'   => $dispatch->bay_number,
-                'remarks'      => $dispatch->remarks,
-                'status'       => $dispatch->status,
-                'arrived_at_formatted'    => $dispatch->arrived_at_formatted,
-                'departed_at_formatted'   => $dispatch->departed_at_formatted,
+                'pax_count' => $dispatch->pax_count,
+                'bay_number' => $dispatch->bay_number,
+                'remarks' => $dispatch->remarks,
+                'status' => $dispatch->status,
+                'arrived_at_formatted' => $dispatch->arrived_at_formatted,
+                'departed_at_formatted' => $dispatch->departed_at_formatted,
                 'dispatched_at_formatted' => $dispatch->dispatched_at
                     ? $dispatch->dispatched_at->timezone('Asia/Manila')->format('M d, Y h:i A')
                     : null,
                 'vehicle' => $dispatch->vehicle ? [
-                    'id'           => $dispatch->vehicle->id,
-                    'route_id'     => $dispatch->vehicle->route_id,
+                    'id' => $dispatch->vehicle->id,
+                    'route_id' => $dispatch->vehicle->route_id,
                     'plate_number' => $dispatch->vehicle->plate_number,
-                    'body_number'  => $dispatch->vehicle->body_number,
+                    'body_number' => $dispatch->vehicle->body_number,
                     'vehicle_type' => $dispatch->vehicle->vehicle_type,
-                    'make_model'   => $dispatch->vehicle->make_model,
-                    'route'        => $dispatch->vehicle->route ? [
-                        'id'               => $dispatch->vehicle->route->id,
-                        'route_name'       => $dispatch->vehicle->route->route_name,
-                        'origin_name'      => $dispatch->vehicle->route->origin_name,
+                    'make_model' => $dispatch->vehicle->make_model,
+                    'route' => $dispatch->vehicle->route ? [
+                        'id' => $dispatch->vehicle->route->id,
+                        'route_name' => $dispatch->vehicle->route->route_name,
+                        'origin_name' => $dispatch->vehicle->route->origin_name,
                         'destination_name' => $dispatch->vehicle->route->destination_name,
-                        'status'           => $dispatch->vehicle->route->status,
+                        'status' => $dispatch->vehicle->route->status,
                     ] : null,
                 ] : null,
                 'dispatcher' => $dispatch->dispatcher ? [
-                    'id'       => $dispatch->dispatcher->id,
-                    'name'     => $dispatch->dispatcher->name,
+                    'id' => $dispatch->dispatcher->id,
+                    'name' => $dispatch->dispatcher->name,
                     'username' => $dispatch->dispatcher->username,
                 ] : null,
                 'driver' => $dispatch->driver ? [
-                    'id'       => $dispatch->driver->id,
-                    'name'     => $dispatch->driver->name,
+                    'id' => $dispatch->driver->id,
+                    'name' => $dispatch->driver->name,
                     'username' => $dispatch->driver->username,
                 ] : null,
                 'gate' => $dispatch->gate ? [
-                    'id'        => $dispatch->gate->id,
+                    'id' => $dispatch->gate->id,
                     'gate_name' => $dispatch->gate->gate_name,
                 ] : null,
             ]);
 
         return Inertia::render('External/Dispatches/Index', [
             'company' => [
-                'id'           => $company->id,
+                'id' => $company->id,
                 'company_name' => $company->company_name,
                 'company_code' => $company->company_code,
-                'status'       => $company->status,
-                'logo_url'     => $company->logo_url,
+                'status' => $company->status,
+                'logo_url' => $company->logo_url,
             ],
-            'vehicles'   => $vehicles,
-            'drivers'    => $drivers,
-            'gates'      => $gates,
+            'vehicles' => $vehicles,
+            'drivers' => $drivers,
+            'gates' => $gates,
             'dispatches' => $dispatches,
-            'filters'    => [
+            'filters' => [
                 'search' => $search,
                 'status' => $status,
-                'date'   => $date ?: null,
+                'date' => $date ?: null,
             ],
         ]);
     }
 
     public function show(Request $request, Dispatch $dispatch): Response
     {
-        $user    = $request->user();
+        $user = $request->user();
         $company = $user->company;
 
         abort_unless($company, 403, 'No company is associated with this user.');
@@ -248,28 +245,28 @@ class DispatchController extends Controller
             ->orderBy('route_name')
             ->get()
             ->map(fn (Route $route) => [
-                'id'               => $route->id,
-                'gate_id'          => $route->gate_id,
-                'route_name'       => $route->route_name,
-                'origin_name'      => $route->origin_name,
+                'id' => $route->id,
+                'gate_id' => $route->gate_id,
+                'route_name' => $route->route_name,
+                'origin_name' => $route->origin_name,
                 'destination_name' => $route->destination_name,
-                'route_geometry'   => $route->route_geometry,
-                'gate'             => $route->gate ? [
-                    'id'        => $route->gate->id,
+                'route_geometry' => $route->route_geometry,
+                'gate' => $route->gate ? [
+                    'id' => $route->gate->id,
                     'gate_name' => $route->gate->gate_name,
                 ] : null,
                 'stops' => $route->stops
                     ->sortBy('stop_order')
                     ->values()
                     ->map(fn ($stop) => [
-                        'id'         => $stop->id,
-                        'route_id'   => $stop->route_id,
-                        'stop_name'  => $stop->stop_name,
+                        'id' => $stop->id,
+                        'route_id' => $stop->route_id,
+                        'stop_name' => $stop->stop_name,
                         'stop_order' => $stop->stop_order,
-                        'stop_type'  => $stop->stop_type,
-                        'address'    => $stop->address,
-                        'latitude'   => $stop->latitude,
-                        'longitude'  => $stop->longitude,
+                        'stop_type' => $stop->stop_type,
+                        'address' => $stop->address,
+                        'latitude' => $stop->latitude,
+                        'longitude' => $stop->longitude,
                     ]),
             ])
             ->values();
@@ -280,77 +277,76 @@ class DispatchController extends Controller
             ->orderBy('gate_name')
             ->get()
             ->map(fn (Gate $gate) => [
-                'id'        => $gate->id,
+                'id' => $gate->id,
                 'gate_name' => $gate->gate_name,
-                'bays'      => $gate->bays,
+                'bays' => $gate->bays,
             ])
             ->values();
 
         return Inertia::render('External/Dispatches/Show', [
             'dispatch' => [
-                'id'           => $dispatch->id,
+                'id' => $dispatch->id,
                 'plate_number' => $dispatch->plate_number,
-                'pax_count'    => $dispatch->pax_count,
-                'bay_number'   => $dispatch->bay_number,
-                'remarks'      => $dispatch->remarks,
-                'status'       => $dispatch->status,
-                'arrived_at_formatted'    => $dispatch->arrived_at_formatted,
-                'departed_at_formatted'   => $dispatch->departed_at_formatted,
+                'pax_count' => $dispatch->pax_count,
+                'bay_number' => $dispatch->bay_number,
+                'remarks' => $dispatch->remarks,
+                'status' => $dispatch->status,
+                'arrived_at_formatted' => $dispatch->arrived_at_formatted,
+                'departed_at_formatted' => $dispatch->departed_at_formatted,
                 'dispatched_at_formatted' => $dispatch->dispatched_at
                     ? $dispatch->dispatched_at->timezone('Asia/Manila')->format('M d, Y h:i A')
                     : null,
                 'vehicle' => $dispatch->vehicle ? [
-                    'id'           => $dispatch->vehicle->id,
-                    'route_id'     => $dispatch->vehicle->route_id,
+                    'id' => $dispatch->vehicle->id,
+                    'route_id' => $dispatch->vehicle->route_id,
                     'plate_number' => $dispatch->vehicle->plate_number,
-                    'body_number'  => $dispatch->vehicle->body_number,
+                    'body_number' => $dispatch->vehicle->body_number,
                     'vehicle_type' => $dispatch->vehicle->vehicle_type,
-                    'make_model'   => $dispatch->vehicle->make_model,
-                    'status'       => $dispatch->vehicle->status,
-                    'route'        => $dispatch->vehicle->route ? [
-                        'id'               => $dispatch->vehicle->route->id,
-                        'route_name'       => $dispatch->vehicle->route->route_name,
-                        'origin_name'      => $dispatch->vehicle->route->origin_name,
+                    'make_model' => $dispatch->vehicle->make_model,
+                    'status' => $dispatch->vehicle->status,
+                    'route' => $dispatch->vehicle->route ? [
+                        'id' => $dispatch->vehicle->route->id,
+                        'route_name' => $dispatch->vehicle->route->route_name,
+                        'origin_name' => $dispatch->vehicle->route->origin_name,
                         'destination_name' => $dispatch->vehicle->route->destination_name,
-                        'status'           => $dispatch->vehicle->route->status,
+                        'status' => $dispatch->vehicle->route->status,
                     ] : null,
                 ] : null,
                 'dispatcher' => $dispatch->dispatcher ? [
-                    'id'       => $dispatch->dispatcher->id,
-                    'name'     => $dispatch->dispatcher->name,
+                    'id' => $dispatch->dispatcher->id,
+                    'name' => $dispatch->dispatcher->name,
                     'username' => $dispatch->dispatcher->username,
-                    'email'    => $dispatch->dispatcher->email,
+                    'email' => $dispatch->dispatcher->email,
                 ] : null,
                 'driver' => $dispatch->driver ? [
-                    'id'       => $dispatch->driver->id,
-                    'name'     => $dispatch->driver->name,
+                    'id' => $dispatch->driver->id,
+                    'name' => $dispatch->driver->name,
                     'username' => $dispatch->driver->username,
-                    'email'    => $dispatch->driver->email,
+                    'email' => $dispatch->driver->email,
                 ] : null,
                 'gate' => $dispatch->gate ? [
-                    'id'        => $dispatch->gate->id,
+                    'id' => $dispatch->gate->id,
                     'gate_name' => $dispatch->gate->gate_name,
-                    'bays'      => $dispatch->gate->bays,
+                    'bays' => $dispatch->gate->bays,
                 ] : null,
             ],
-            'routes'    => $routes,
-            'gates'     => $gates,
+            'routes' => $routes,
+            'gates' => $gates,
             'mapConfig' => [
-                'mapboxToken'   => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
+                'mapboxToken' => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
                 'defaultCenter' => ['lng' => 120.9915, 'lat' => 14.5096],
-                'defaultZoom'   => 11,
+                'defaultZoom' => 11,
             ],
         ]);
     }
 
     public function store(StoreDispatchRequest $request): RedirectResponse
     {
-        $user    = $request->user();
+        $user = $request->user();
         $company = $user->company;
 
         abort_unless($company, 403, 'No company is associated with this user.');
 
-        // FIX: only allow active vehicles to be dispatched
         $vehicle = Vehicle::query()
             ->where('company_id', $company->id)
             ->where('status', 'active')
@@ -373,23 +369,23 @@ class DispatchController extends Controller
         }
 
         Dispatch::create([
-            'company_id'         => $company->id,
-            'vehicle_id'         => $vehicle->id,
-            'gate_id'            => $gate->id,
-            'plate_number'       => $vehicle->plate_number,
-            'pax_count'          => $request->integer('pax_count'),
-            'bay_number'         => $request->integer('bay_number'),
-            'remarks'            => $request->filled('remarks')
+            'company_id' => $company->id,
+            'vehicle_id' => $vehicle->id,
+            'gate_id' => $gate->id,
+            'plate_number' => $vehicle->plate_number,
+            'pax_count' => 0,
+            'bay_number' => $request->integer('bay_number'),
+            'remarks' => $request->filled('remarks')
                 ? $request->string('remarks')->toString()
                 : null,
             'dispatcher_user_id' => $user->id,
-            'driver_user_id'     => $driverId,
-            'arrived_at'         => now(),
-            'departed_at'        => null,
-            'dispatched_at'      => now(),
-            'status'             => Dispatch::STATUS_ARRIVED,
-            'created_by'         => $user->id,
-            'updated_by'         => $user->id,
+            'driver_user_id' => $driverId,
+            'arrived_at' => now(),
+            'departed_at' => null,
+            'dispatched_at' => now(),
+            'status' => Dispatch::STATUS_ARRIVED,
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
         ]);
 
         return back()->with('success', 'Dispatch created successfully.');
@@ -397,7 +393,7 @@ class DispatchController extends Controller
 
     public function update(UpdateDispatchRequest $request, Dispatch $dispatch): RedirectResponse
     {
-        $user    = $request->user();
+        $user = $request->user();
         $company = $user->company;
 
         abort_unless($company, 403, 'No company is associated with this user.');
@@ -407,7 +403,6 @@ class DispatchController extends Controller
             return back()->with('error', 'Departed dispatches can no longer be edited.');
         }
 
-        // FIX: only allow active vehicles when editing a dispatch
         $vehicle = Vehicle::query()
             ->where('company_id', $company->id)
             ->where('status', 'active')
@@ -430,24 +425,23 @@ class DispatchController extends Controller
         }
 
         $dispatch->update([
-            'vehicle_id'     => $vehicle->id,
-            'gate_id'        => $gate->id,
-            'plate_number'   => $vehicle->plate_number,
+            'vehicle_id' => $vehicle->id,
+            'gate_id' => $gate->id,
+            'plate_number' => $vehicle->plate_number,
             'driver_user_id' => $driverId,
-            'pax_count'      => $request->integer('pax_count'),
-            'bay_number'     => $request->integer('bay_number'),
-            'remarks'        => $request->filled('remarks')
+            'bay_number' => $request->integer('bay_number'),
+            'remarks' => $request->filled('remarks')
                 ? $request->string('remarks')->toString()
                 : null,
-            'updated_by'     => $user->id,
+            'updated_by' => $user->id,
         ]);
 
         return back()->with('success', 'Dispatch updated successfully.');
     }
 
-    public function depart(Request $request, Dispatch $dispatch): RedirectResponse
+    public function depart(DepartDispatchRequest $request, Dispatch $dispatch): RedirectResponse
     {
-        $user    = $request->user();
+        $user = $request->user();
         $company = $user->company;
 
         abort_unless($company, 403, 'No company is associated with this user.');
@@ -458,9 +452,10 @@ class DispatchController extends Controller
         }
 
         $dispatch->update([
+            'pax_count' => $request->integer('pax_count'),
             'departed_at' => now(),
-            'status'      => Dispatch::STATUS_DEPARTED,
-            'updated_by'  => $user->id,
+            'status' => Dispatch::STATUS_DEPARTED,
+            'updated_by' => $user->id,
         ]);
 
         return back()->with('success', 'Dispatch marked as departed.');
