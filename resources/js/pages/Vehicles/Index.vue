@@ -181,7 +181,6 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                 <CardHeader>
                     <div>
                         <CardTitle class="flex items-center gap-2">
-                            <Bus class="h-5 w-5 text-blue-700" />
                             Vehicles
                         </CardTitle>
                         <CardDescription class="mt-1">
