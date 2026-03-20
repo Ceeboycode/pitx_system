@@ -12,21 +12,20 @@ class CompanyVerified
     {
         $user = $request->user();
 
-        // Safety: if someone forgot to add auth middleware upstream
         if (! $user) {
             return redirect()->route('login');
         }
 
         $company = $user->company;
 
-        // No company yet → go to registration wizard
         if (! $company) {
             return redirect()->route('company-registration.show');
         }
 
-        // Not verified → go to status page
         if ($company->status !== 'verified') {
-            return redirect()->route('registration.status');
+            return redirect()
+                ->route('registration.status')
+                ->with('error', 'Your company documents are still pending approval.');
         }
 
         return $next($request);

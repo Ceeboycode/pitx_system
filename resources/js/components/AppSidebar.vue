@@ -28,7 +28,7 @@ import { index as routeStopsIndex } from '@/routes/route-stops'
 import { index as routesIndex } from '@/routes/routes'
 import { index as gateIndex } from '@/routes/gates'
 import { index as vehiclesIndex } from '@/routes/vehicles'
-import { index as dispatchesIndex } from '@/routes/dispatches'
+// import { index as dispatchesIndex } from '@/routes/dispatches'
 import Layout from '@/layouts/settings/Layout.vue'
 
 export interface Item {
@@ -86,11 +86,11 @@ const mainNavItems: NavItem[] = [
         href: '#',
         icon: BusFront,
         items: [
-            {
-                id: 'vehicle_types',
-                title: 'Vehicles Types',
-                href: vehicleTypesIndex().url,
-            },
+            //{
+                //id: 'vehicle_types',
+                //title: 'Vehicles Types',
+                //href: vehicleTypesIndex().url,
+            //},
             {
                 id: 'companies',
                 title: 'Companies',
@@ -119,11 +119,11 @@ const mainNavItems: NavItem[] = [
                 title: 'Routes',
                 href: routesIndex().url,
             },
-            {
-                id: 'route_stops',
-                title: 'Route Stops',
-                href: routeStopsIndex().url,
-            },
+            //{
+                //id: 'route_stops',
+               //title: 'Route Stops',
+                //href: routeStopsIndex().url,
+            //},
         ],
     },
     {
@@ -146,19 +146,19 @@ const mainNavItems: NavItem[] = [
             },
         ],
     },
-    {
-        id: 'dispatches',
-        title: 'Dispatches',
-        href: '#',
-        icon: BusFront,
-        items: [
-            {
-                id: 'dispatches',
-                title: 'Dispatches',
-                href: dispatchesIndex().url,
-            },
-        ],
-    }
+    // {
+    //     id: 'dispatches',
+    //     title: 'Dispatches',
+    //     href: '#',
+    //     icon: BusFront,
+    //     items: [
+    //         {
+    //             id: 'dispatches',
+    //             title: 'Dispatches',
+    //             href: dispatchesIndex().url,
+    //         },
+    //     ],
+    // }
 ]
 
 const visibleMainNavItems = computed(() =>

@@ -23,7 +23,7 @@ import {
 
 // ✅ Wayfinder action (generated)
 import { storeResubmission } from '@/actions/App/Http/Controllers/CompanyRegistration';
-
+import CompanyDashboardController from '@/actions/App/Http/Controllers/CompanyDashboardController';
 // ─── Types ────────────────────────────────────────────────────────────────────
 type DocRow = {
     id: number;
@@ -113,7 +113,7 @@ function handleFile(docType: string, e: Event) {
 }
 
 function submitResubmission() {
-    resubmitForm.post(storeResubmission(), {
+    resubmitForm.post(storeResubmission().url, {
         forceFormData: true,
         preserveScroll: true,
     });
@@ -306,10 +306,10 @@ function submitResubmission() {
                             </Button>
 
                             <Button v-if="company.status === 'verified'" size="sm" as-child>
-                                <a href="/external/dashboard">
+                                <Link :href="CompanyDashboardController.index().url">
                                     <LayoutDashboard class="mr-2 h-3.5 w-3.5" />
-                                    Dashboard
-                                </a>
+                                    Go to Dashboard
+                                </Link>
                             </Button>
                         </div>
                     </div>

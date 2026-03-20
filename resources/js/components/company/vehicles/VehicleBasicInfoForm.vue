@@ -9,6 +9,15 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
+import {
+    BadgeCheck,
+    Bus,
+    Hash,
+    Palette,
+    Settings2,
+    Shield,
+    Users,
+} from 'lucide-vue-next'
 
 type VehicleFormShape = {
     vehicle_type: string
@@ -84,110 +93,270 @@ function updateColor(event: Event) {
 </script>
 
 <template>
-    <div class="grid gap-4 md:grid-cols-2">
-        <div class="space-y-2">
-            <Label for="vehicle_type">Vehicle Type</Label>
-            <Select v-model="form.vehicle_type" :disabled="readonly">
-                <SelectTrigger id="vehicle_type" class="w-full">
-                    <SelectValue placeholder="Select vehicle type" />
-                </SelectTrigger>
+    <div class="space-y-6">
+        <div class="rounded-2xl border bg-muted/20 p-4 md:p-5">
+            <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                <div class="space-y-1">
+                    <h3 class="text-base font-semibold tracking-tight text-foreground">
+                        Vehicle Information
+                    </h3>
+                    <p class="text-sm text-muted-foreground">
+                        Enter the registration and identification details of the vehicle.
+                    </p>
+                </div>
 
-                <SelectContent>
-                    <SelectItem
-                        v-for="type in vehicleTypes"
-                        :key="type"
-                        :value="type"
-                    >
-                        {{ type }}
-                    </SelectItem>
-                </SelectContent>
-            </Select>
-            <InputError :message="form.errors.vehicle_type" />
+                <div
+                    v-if="readonly"
+                    class="inline-flex w-fit items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground"
+                >
+                    <BadgeCheck class="h-3.5 w-3.5" />
+                    Read only
+                </div>
+            </div>
         </div>
 
-        <div class="space-y-2">
-            <Label for="plate_number">Plate Number</Label>
-            <Input
-                id="plate_number"
-                :model-value="form.plate_number"
-                :disabled="readonly"
-                placeholder="Enter plate number"
-                @input="updatePlateNumber"
-            />
-            <InputError :message="form.errors.plate_number" />
-        </div>
+        <div class="grid gap-6 lg:grid-cols-2">
+            <div class="rounded-2xl border bg-background p-4 shadow-sm md:p-5">
+                <div class="mb-4 flex items-center gap-2">
+                    <div class="rounded-xl bg-red-50 p-2 text-red-600 ring-1 ring-red-100">
+                        <Bus class="h-4 w-4" />
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-foreground">
+                            Basic Details
+                        </p>
+                        <p class="text-xs text-muted-foreground">
+                            Main vehicle registration information.
+                        </p>
+                    </div>
+                </div>
 
-        <div class="space-y-2">
-            <Label for="body_number">Body Number / Unit Number</Label>
-            <Input
-                id="body_number"
-                :model-value="form.body_number"
-                :disabled="readonly"
-                placeholder="Enter unit number"
-                @input="updateBodyNumber"
-            />
-            <InputError :message="form.errors.body_number" />
-        </div>
+                <div class="grid gap-4">
+                    <div class="space-y-2">
+                        <Label
+                            for="vehicle_type"
+                            class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                        >
+                            Vehicle Type
+                        </Label>
 
-        <div class="space-y-2">
-            <Label for="capacity">Capacity</Label>
-            <Input
-                id="capacity"
-                v-model="form.capacity"
-                :disabled="readonly"
-                type="number"
-                min="1"
-                placeholder="Enter seating capacity"
-            />
-            <InputError :message="form.errors.capacity" />
-        </div>
+                        <Select v-model="form.vehicle_type" :disabled="readonly">
+                            <SelectTrigger
+                                id="vehicle_type"
+                                class="h-11 w-full rounded-xl border-muted-foreground/20 bg-background"
+                            >
+                                <SelectValue placeholder="Select vehicle type" />
+                            </SelectTrigger>
 
-        <div class="space-y-2">
-            <Label for="color">Color</Label>
-            <Input
-                id="color"
-                :model-value="form.color"
-                :disabled="readonly"
-                placeholder="Enter color"
-                @input="updateColor"
-            />
-            <InputError :message="form.errors.color" />
-        </div>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="type in vehicleTypes"
+                                    :key="type"
+                                    :value="type"
+                                >
+                                    {{ type }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
 
-        <div class="space-y-2">
-            <Label for="make_model">Make / Model</Label>
-            <Input
-                id="make_model"
-                :model-value="form.make_model"
-                :disabled="readonly"
-                placeholder="Enter make / model"
-                @input="updateMakeModel"
-            />
-            <InputError :message="form.errors.make_model" />
-        </div>
+                        <InputError :message="form.errors.vehicle_type" />
+                    </div>
 
-        <div class="space-y-2">
-            <Label for="engine_number">Engine Number</Label>
-            <Input
-                id="engine_number"
-                :model-value="form.engine_number"
-                :disabled="readonly"
-                placeholder="Enter engine number"
-                @input="updateEngineNumber"
-            />
-            <InputError :message="form.errors.engine_number" />
-        </div>
+                    <div class="space-y-2">
+                        <Label
+                            for="plate_number"
+                            class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                        >
+                            Plate Number
+                        </Label>
 
-        <div class="space-y-2">
-            <Label for="chassis_number">Chassis Number</Label>
-            <Input
-                id="chassis_number"
-                :model-value="form.chassis_number"
-                :disabled="readonly"
-                placeholder="Enter chassis number"
-                @input="updateChassisNumber"
-            />
-            <InputError :message="form.errors.chassis_number" />
+                        <div class="relative">
+                            <Hash
+                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                            />
+                            <Input
+                                id="plate_number"
+                                :model-value="form.plate_number"
+                                :disabled="readonly"
+                                placeholder="Enter plate number"
+                                class="h-11 rounded-xl pl-9"
+                                @input="updatePlateNumber"
+                            />
+                        </div>
+
+                        <InputError :message="form.errors.plate_number" />
+                    </div>
+
+                    <div class="space-y-2">
+                        <Label
+                            for="body_number"
+                            class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                        >
+                            Body Number / Unit Number
+                        </Label>
+
+                        <div class="relative">
+                            <Hash
+                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                            />
+                            <Input
+                                id="body_number"
+                                :model-value="form.body_number"
+                                :disabled="readonly"
+                                placeholder="Enter unit number"
+                                class="h-11 rounded-xl pl-9"
+                                @input="updateBodyNumber"
+                            />
+                        </div>
+
+                        <InputError :message="form.errors.body_number" />
+                    </div>
+
+                    <div class="space-y-2">
+                        <Label
+                            for="capacity"
+                            class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                        >
+                            Capacity
+                        </Label>
+
+                        <div class="relative">
+                            <Users
+                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                            />
+                            <Input
+                                id="capacity"
+                                v-model="form.capacity"
+                                :disabled="readonly"
+                                type="number"
+                                min="1"
+                                placeholder="Enter seating capacity"
+                                class="h-11 rounded-xl pl-9"
+                            />
+                        </div>
+
+                        <InputError :message="form.errors.capacity" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border bg-background p-4 shadow-sm md:p-5">
+                <div class="mb-4 flex items-center gap-2">
+                    <div class="rounded-xl bg-blue-50 p-2 text-blue-700 ring-1 ring-blue-100">
+                        <Settings2 class="h-4 w-4" />
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-foreground">
+                            Technical Details
+                        </p>
+                        <p class="text-xs text-muted-foreground">
+                            Appearance, model, and identification numbers.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid gap-4">
+                    <div class="space-y-2">
+                        <Label
+                            for="color"
+                            class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                        >
+                            Color
+                        </Label>
+
+                        <div class="relative">
+                            <Palette
+                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                            />
+                            <Input
+                                id="color"
+                                :model-value="form.color"
+                                :disabled="readonly"
+                                placeholder="Enter color"
+                                class="h-11 rounded-xl pl-9"
+                                @input="updateColor"
+                            />
+                        </div>
+
+                        <InputError :message="form.errors.color" />
+                    </div>
+
+                    <div class="space-y-2">
+                        <Label
+                            for="make_model"
+                            class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                        >
+                            Make / Model
+                        </Label>
+
+                        <div class="relative">
+                            <Bus
+                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                            />
+                            <Input
+                                id="make_model"
+                                :model-value="form.make_model"
+                                :disabled="readonly"
+                                placeholder="Enter make / model"
+                                class="h-11 rounded-xl pl-9"
+                                @input="updateMakeModel"
+                            />
+                        </div>
+
+                        <InputError :message="form.errors.make_model" />
+                    </div>
+
+                    <div class="space-y-2">
+                        <Label
+                            for="engine_number"
+                            class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                        >
+                            Engine Number
+                        </Label>
+
+                        <div class="relative">
+                            <Shield
+                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                            />
+                            <Input
+                                id="engine_number"
+                                :model-value="form.engine_number"
+                                :disabled="readonly"
+                                placeholder="Enter engine number"
+                                class="h-11 rounded-xl pl-9"
+                                @input="updateEngineNumber"
+                            />
+                        </div>
+
+                        <InputError :message="form.errors.engine_number" />
+                    </div>
+
+                    <div class="space-y-2">
+                        <Label
+                            for="chassis_number"
+                            class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                        >
+                            Chassis Number
+                        </Label>
+
+                        <div class="relative">
+                            <Shield
+                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                            />
+                            <Input
+                                id="chassis_number"
+                                :model-value="form.chassis_number"
+                                :disabled="readonly"
+                                placeholder="Enter chassis number"
+                                class="h-11 rounded-xl pl-9"
+                                @input="updateChassisNumber"
+                            />
+                        </div>
+
+                        <InputError :message="form.errors.chassis_number" />
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </template>

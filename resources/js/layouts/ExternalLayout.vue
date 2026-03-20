@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import type { User } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -19,13 +19,14 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 import CompanyProfileController from '@/actions/App/Http/Controllers/CompanyProfileController';
-import CompanyVehicleController from '@/actions/App/Http/Controllers/CompanyVehicleController';
 import CompanyUserController from '@/actions/App/Http/Controllers/CompanyUserController';
+import CompanyVehicleController from '@/actions/App/Http/Controllers/CompanyVehicleController';
+import DispatchController from '@/actions/App/Http/Controllers/DispatchController';
 import { logout } from '@/routes';
 
-import { toast } from 'vue-sonner';
 import {
     Building2,
+    BusFront,
     ChevronRight,
     FileText,
     LayoutDashboard,
@@ -35,38 +36,64 @@ import {
     Truck,
     User2,
 } from 'lucide-vue-next';
+import { toast } from 'vue-sonner';
 
-// ── Props ──────────────────────────────────────────────────────────
-const props = defineProps<{
-    company: {
-        id: number;
-        company_name: string;
-        company_code?: string | null;
-        status: string;
-        logo_url?: string | null;
-    };
-    user: {
-        id: number;
-        name: string;
-        username: string;
-        email: string;
-    };
-}>();
+type SharedUser = User & {
+    username?: string | null;
+    type?: string | null;
+    status?: string | null;
+};
 
-// ── Page / Active route detection ──────────────────────────────────
-const page = usePage();
+type SharedCompany = {
+    id: number;
+    company_name: string;
+    company_code?: string | null;
+    status: string;
+    logo_url?: string | null;
+} | null;
+
+type FlashProps = {
+    success?: string | null;
+    error?: string | null;
+    info?: string | null;
+    warning?: string | null;
+};
+
+type PageProps = {
+    name: string;
+    quote: {
+        message: string;
+        author: string;
+    };
+    sidebarOpen: boolean;
+    auth: {
+        user: SharedUser;
+        company: SharedCompany;
+        permissions?: string[];
+    };
+    flash?: FlashProps;
+};
+
+const page = usePage<PageProps>();
+
 const currentUrl = computed(() => page.url);
+const user = computed(() => page.props.auth?.user);
+const company = computed(() => page.props.auth?.company);
 
 function isActive(href: string) {
     return currentUrl.value.startsWith(href);
 }
 
-// ── Nav items ──────────────────────────────────────────────────────
 const navItems = [
     {
         label: 'Dashboard',
         icon: LayoutDashboard,
         href: '/company/dashboard',
+    },
+    {
+        label: 'Dispatches',
+        icon: BusFront,
+        href: DispatchController.index().url,
     },
     {
         label: 'Registered Vehicles',
@@ -93,8 +120,7 @@ const navItems = [
 const mobileOpen = ref(false);
 const imgError = ref(false);
 
-// Reset image error when logo changes
-const logoSrc = computed(() => props.company.logo_url ?? null);
+const logoSrc = computed(() => company.value?.logo_url ?? null);
 
 watch(logoSrc, () => {
     imgError.value = false;
@@ -102,45 +128,35 @@ watch(logoSrc, () => {
 
 const showImage = computed(() => !!logoSrc.value && !imgError.value);
 
-// ── Initials helpers ───────────────────────────────────────────────
-const userInitials = computed(() =>
-    props.user.name
-        .split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((word) => word[0])
-        .join('')
-        .toUpperCase(),
-);
+const userInitials = computed(() => {
+    const name = user.value?.name ?? '';
+
+    return (
+        name
+            .split(' ')
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((word) => word[0])
+            .join('')
+            .toUpperCase() || 'U'
+    );
+});
 
 const companyInitials = computed(() => {
     const source =
-        props.company.company_code ?? props.company.company_name ?? '';
+        company.value?.company_code ?? company.value?.company_name ?? '';
 
     return (
         source
             .replace(/[^A-Za-z0-9]/g, '')
             .slice(0, 2)
-            .toUpperCase() || '??'
+            .toUpperCase() || 'CO'
     );
 });
 
-function humanize(text?: string | null) {
-    if (!text) return '—';
-
-    return text
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-const statusVariant = computed(() =>
-    props.company.status === 'verified' ? 'default' : 'secondary',
-);
-
-// ── Toast flash watcher ────────────────────────────────────────────
 watch(
     () => page.props.flash,
-    (flash: any) => {
+    (flash) => {
         if (!flash) return;
 
         if (flash.success) toast.success(flash.success);
@@ -167,7 +183,7 @@ watch(
                         <img
                             v-if="showImage"
                             :src="logoSrc!"
-                            :alt="company.company_name"
+                            :alt="company?.company_name ?? 'Company'"
                             class="h-full w-full object-cover"
                             @error="imgError = true"
                         />
@@ -181,7 +197,11 @@ watch(
 
                     <div class="min-w-0 flex-1">
                         <p class="truncate text-sm leading-none font-semibold">
-                            {{ company.company_code ?? company.company_name }}
+                            {{
+                                company?.company_code ??
+                                company?.company_name ??
+                                'Company Portal'
+                            }}
                         </p>
                         <p class="mt-0.5 text-[10px] text-muted-foreground">
                             Company Portal
@@ -229,21 +249,21 @@ watch(
                                 class="flex w-full items-center gap-3 rounded-md px-2 py-2 text-sm transition-colors hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
                             >
                                 <Avatar class="h-7 w-7 shrink-0">
-                                    <AvatarFallback class="text-[11px]">{{
-                                        userInitials
-                                    }}</AvatarFallback>
+                                    <AvatarFallback class="text-[11px]">
+                                        {{ userInitials }}
+                                    </AvatarFallback>
                                 </Avatar>
 
                                 <div class="min-w-0 flex-1 text-left">
                                     <p
                                         class="truncate text-xs leading-none font-medium"
                                     >
-                                        {{ user.name }}
+                                        {{ user?.name ?? 'User' }}
                                     </p>
                                     <p
                                         class="mt-0.5 truncate text-[10px] text-muted-foreground"
                                     >
-                                        {{ user.email }}
+                                        {{ user?.email ?? '—' }}
                                     </p>
                                 </div>
                             </button>
@@ -261,7 +281,7 @@ watch(
                                 <span
                                     class="block font-semibold text-foreground"
                                 >
-                                    {{ user.username }}
+                                    {{ user?.username ?? '—' }}
                                 </span>
                             </DropdownMenuLabel>
 
@@ -305,7 +325,7 @@ watch(
                             <img
                                 v-if="showImage"
                                 :src="logoSrc!"
-                                :alt="company.company_name"
+                                :alt="company?.company_name ?? 'Company'"
                                 class="h-full w-full object-cover"
                                 @error="imgError = true"
                             />
@@ -322,7 +342,9 @@ watch(
                                 class="truncate text-sm leading-none font-semibold"
                             >
                                 {{
-                                    company.company_code ?? company.company_name
+                                    company?.company_code ??
+                                    company?.company_name ??
+                                    'Company Portal'
                                 }}
                             </p>
                             <p class="mt-0.5 text-[10px] text-muted-foreground">
@@ -357,19 +379,19 @@ watch(
                     <div class="p-4">
                         <div class="mb-3 flex items-center gap-3">
                             <Avatar class="h-8 w-8">
-                                <AvatarFallback class="text-xs">{{
-                                    userInitials
-                                }}</AvatarFallback>
+                                <AvatarFallback class="text-xs">
+                                    {{ userInitials }}
+                                </AvatarFallback>
                             </Avatar>
 
                             <div class="min-w-0">
                                 <p class="truncate text-sm font-medium">
-                                    {{ user.name }}
+                                    {{ user?.name ?? 'User' }}
                                 </p>
                                 <p
                                     class="truncate text-[11px] text-muted-foreground"
                                 >
-                                    {{ user.email }}
+                                    {{ user?.email ?? '—' }}
                                 </p>
                             </div>
                         </div>
@@ -408,7 +430,7 @@ watch(
                             <img
                                 v-if="showImage"
                                 :src="logoSrc!"
-                                :alt="company.company_name"
+                                :alt="company?.company_name ?? 'Company'"
                                 class="h-full w-full object-cover"
                                 @error="imgError = true"
                             />
@@ -421,14 +443,18 @@ watch(
                         </div>
 
                         <span class="text-sm font-semibold">
-                            {{ company.company_code ?? company.company_name }}
+                            {{
+                                company?.company_code ??
+                                company?.company_name ??
+                                'Company Portal'
+                            }}
                         </span>
                     </div>
 
                     <Avatar class="h-7 w-7">
-                        <AvatarFallback class="text-[11px]">{{
-                            userInitials
-                        }}</AvatarFallback>
+                        <AvatarFallback class="text-[11px]">
+                            {{ userInitials }}
+                        </AvatarFallback>
                     </Avatar>
                 </header>
 

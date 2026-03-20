@@ -4,7 +4,7 @@ import { index, update } from '@/routes/users';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Save } from 'lucide-vue-next';
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -18,19 +18,18 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 
 type Role = {
     id: number;
     name: string;
     type: 'internal' | 'external';
+};
+
+type Company = {
+    id: number;
+    company_name: string;
+    company_code: string;
 };
 
 const props = defineProps<{
@@ -40,11 +39,12 @@ const props = defineProps<{
         name: string;
         email: string;
         phone_number: string | null;
+        type: 'internal' | 'external';
+        company_id: number | null;
     };
     roles: Role[];
+    companies: Company[];
     selectedRole: string | null;
-    roleTypes: string[]; // ['internal','external']
-    initialRoleType: 'internal' | 'external' | 'mixed' | null;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -52,63 +52,66 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Edit', href: '#' },
 ];
 
-// UI-only filter: prefer user's derived type, otherwise default internal
-const initialType =
-    props.initialRoleType === 'internal' || props.initialRoleType === 'external'
-        ? props.initialRoleType
-        : 'internal';
-
-const roleTypeForm = useForm({
-    role_type: initialType as 'internal' | 'external',
-});
-
-const filteredRoles = computed(() =>
-    props.roles.filter((r) => r.type === roleTypeForm.role_type),
-);
+const companySearch = ref('');
 
 const form = useForm({
-    username: props.user.username ?? '',
     name: props.user.name ?? '',
     email: props.user.email ?? '',
     phone_number: props.user.phone_number ?? '',
-    password: '',
-
-    // single role
     role: props.selectedRole ?? '',
-
-    // optional: send to backend to validate role matches type
-    role_type: roleTypeForm.role_type,
+    company_id: props.user.company_id ? String(props.user.company_id) : '',
 });
 
-// keep form.role_type synced with UI selector
-watch(
-    () => roleTypeForm.role_type,
-    (t) => {
-        form.role_type = t;
-
-        // if current selected role not in filtered list, clear it
-        const allowed = new Set(filteredRoles.value.map((r) => r.name));
-        if (form.role && !allowed.has(form.role)) {
-            form.role = '';
-        }
-    },
+const selectedRole = computed(() =>
+    props.roles.find((role) => role.name === form.role) ?? null,
 );
 
-// if user has a selected role but initialRoleType is mixed/null,
-// auto-detect the roleType from selectedRole
-if (
-    (!props.initialRoleType || props.initialRoleType === 'mixed') &&
-    props.selectedRole
-) {
-    const found = props.roles.find((r) => r.name === props.selectedRole);
-    if (found) {
-        roleTypeForm.role_type = found.type;
-        form.role_type = found.type;
-    }
-}
+const resolvedType = computed<'internal' | 'external'>(() =>
+    selectedRole.value?.type === 'external' ? 'external' : 'internal',
+);
+
+const filteredCompanies = computed(() => {
+    const query = companySearch.value.trim().toLowerCase();
+
+    return props.companies.filter((company) => {
+        if (!query) {
+            return true;
+        }
+
+        return (
+            company.company_name.toLowerCase().includes(query) ||
+            company.company_code.toLowerCase().includes(query)
+        );
+    });
+});
+
+const selectedCompany = computed(() =>
+    props.companies.find((company) => String(company.id) === form.company_id) ?? null,
+);
+
+watch(
+    () => resolvedType.value,
+    (newType) => {
+        if (newType !== 'external') {
+            form.company_id = '';
+            companySearch.value = '';
+        }
+    },
+    { immediate: true },
+);
 
 function submit() {
-    form.put(update({ user: props.user.id }).url, { preserveScroll: true });
+    form
+        .transform((data) => ({
+            ...data,
+            company_id:
+                resolvedType.value === 'external' && data.company_id !== ''
+                    ? Number(data.company_id)
+                    : null,
+        }))
+        .put(update({ user: props.user.id }).url, {
+            preserveScroll: true,
+        });
 }
 </script>
 
@@ -121,7 +124,7 @@ function submit() {
                 <CardHeader>
                     <CardTitle>Edit User</CardTitle>
                     <CardDescription>
-                        Update the user details and assign exactly one role.
+                        Update the user details. Username changes only when the selected role type or company changes.
                     </CardDescription>
                 </CardHeader>
 
@@ -129,13 +132,13 @@ function submit() {
 
                 <CardContent class="space-y-6 pt-6">
                     <div class="space-y-2">
-                        <Label for="username">Username</Label>
-                        <Input
-                            id="username"
-                            v-model="form.username"
-                            placeholder="e.g. johndoe"
-                        />
-                        <InputError :message="form.errors.username" />
+                        <Label>Current Username</Label>
+                        <div class="rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                            {{ props.user.username ?? 'Will be generated automatically' }}
+                        </div>
+                        <p class="text-xs text-muted-foreground">
+                            Internal roles use year-based usernames. External roles use company-code usernames.
+                        </p>
                     </div>
 
                     <div class="space-y-2">
@@ -152,8 +155,8 @@ function submit() {
                         <Label for="email">Email</Label>
                         <Input
                             id="email"
-                            type="email"
                             v-model="form.email"
+                            type="email"
                             placeholder="e.g. john@email.com"
                         />
                         <InputError :message="form.errors.email" />
@@ -170,55 +173,86 @@ function submit() {
                     </div>
 
                     <div class="space-y-2">
-                        <Label for="password">New Password (optional)</Label>
-                        <Input
-                            id="password"
-                            type="password"
-                            v-model="form.password"
-                            placeholder="Leave blank to keep current password"
-                        />
-                        <InputError :message="form.errors.password" />
-                    </div>
+                        <Label for="role">Role</Label>
+                        <select
+                            id="role"
+                            v-model="form.role"
+                            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        >
+                            <option value="">Select one role</option>
 
-                    <!-- Role type filter (UI-only) -->
-                    <div class="space-y-2">
-                        <Label>Role Type</Label>
-                        <Select v-model="roleTypeForm.role_type">
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select role type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem
-                                    v-for="t in props.roleTypes"
-                                    :key="t"
-                                    :value="t"
+                            <optgroup label="Internal Roles">
+                                <option
+                                    v-for="role in props.roles.filter((item) => item.type === 'internal')"
+                                    :key="role.id"
+                                    :value="role.name"
                                 >
-                                    {{ t }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <InputError :message="form.errors.role_type" />
-                    </div>
+                                    {{ role.name }}
+                                </option>
+                            </optgroup>
 
-                    <!-- Single role select -->
-                    <div class="space-y-2">
-                        <Label>Role</Label>
-                        <Select v-model="form.role">
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select one role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem
-                                    v-for="r in filteredRoles"
-                                    :key="r.id"
-                                    :value="r.name"
+                            <optgroup label="External Roles">
+                                <option
+                                    v-for="role in props.roles.filter((item) => item.type === 'external')"
+                                    :key="role.id"
+                                    :value="role.name"
                                 >
-                                    {{ r.name }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-
+                                    {{ role.name }}
+                                </option>
+                            </optgroup>
+                        </select>
                         <InputError :message="form.errors.role" />
+                    </div>
+
+                    <div class="space-y-2">
+                        <Label>User Type</Label>
+                        <div class="rounded-md border bg-muted/40 px-3 py-2 text-sm capitalize">
+                            {{ resolvedType }}
+                        </div>
+                        <p class="text-xs text-muted-foreground">
+                            User type is automatically based on the selected role.
+                        </p>
+                    </div>
+
+                    <div v-if="resolvedType === 'external'" class="space-y-2">
+                        <Label for="company_search">Search Company</Label>
+                        <Input
+                            id="company_search"
+                            v-model="companySearch"
+                            placeholder="Search by name or code..."
+                            autocomplete="off"
+                        />
+
+                        <div class="space-y-2">
+                            <Label for="company_id">Company</Label>
+                            <select
+                                id="company_id"
+                                v-model="form.company_id"
+                                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            >
+                                <option value="">Select a company</option>
+                                <option
+                                    v-for="company in filteredCompanies"
+                                    :key="company.id"
+                                    :value="String(company.id)"
+                                >
+                                    {{ company.company_name }} - {{ company.company_code }}
+                                </option>
+                            </select>
+
+                            <p
+                                v-if="filteredCompanies.length === 0"
+                                class="text-sm text-muted-foreground"
+                            >
+                                No companies found.
+                            </p>
+
+                            <p v-if="selectedCompany" class="text-xs text-muted-foreground">
+                                Selected company: {{ selectedCompany.company_name }} ({{ selectedCompany.company_code }})
+                            </p>
+
+                            <InputError :message="form.errors.company_id" />
+                        </div>
                     </div>
                 </CardContent>
 

@@ -28,7 +28,6 @@ import {
 import {
     Table,
     TableBody,
-    TableCaption,
     TableCell,
     TableHead,
     TableHeader,
@@ -48,18 +47,23 @@ import { Head, Link, router } from '@inertiajs/vue3';
 
 import {
     Archive,
+    Building2,
+    CheckCircle2,
     ChevronRight,
     Download,
     FileSearch,
     Loader2,
+    MailCheck,
+    MailX,
     MoreHorizontal,
     Pencil,
+    Plus,
     Upload,
 } from 'lucide-vue-next';
 
 import { ref } from 'vue';
 
-/* ── Types ─────────────────────────────────────────────────────────────── */
+/* ── Types ──────────────────────────────────────────────────────────── */
 
 type CompanyStatus =
     | 'draft'
@@ -75,37 +79,32 @@ type Company = {
     company_name: string;
     company_code: string;
     company_email?: string | null;
+    company_email_verified_at?: string | null;
     company_phone?: string | null;
     status?: CompanyStatus;
     created_at_human?: string | null;
 };
 
-/* ── Breadcrumbs ───────────────────────────────────────────────────────── */
+/* ── Breadcrumbs ─────────────────────────────────────────────────── */
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Companies', href: index().url },
 ];
 
-/* ── Props ─────────────────────────────────────────────────────────────── */
+/* ── Props ───────────────────────────────────────────────────────── */
 
 defineProps<{
     companies: {
         data: Company[];
-        links: Array<{
-            url: string | null;
-            label: string;
-            active: boolean;
-        }>;
+        links: Array<{ url: string | null; label: string; active: boolean }>;
         from: number | null;
         to: number | null;
         total: number;
     };
-    filters: {
-        search: string | null;
-    };
+    filters: { search: string | null };
 }>();
 
-/* ── Dialog state ──────────────────────────────────────────────────────── */
+/* ── Dialog state ────────────────────────────────────────────────── */
 
 const createOpen = ref(false);
 const editOpen = ref(false);
@@ -123,40 +122,35 @@ function openArchive(company: Company) {
     archiveOpen.value = true;
 }
 
-/* ── Export ────────────────────────────────────────────────────────────── */
+/* ── Export ──────────────────────────────────────────────────────── */
 
 const exporting = ref(false);
 
 function triggerExport() {
     exporting.value = true;
-
     const a = document.createElement('a');
     a.href = '/companies/export';
     a.style.display = 'none';
-
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-
     setTimeout(() => {
         exporting.value = false;
     }, 2000);
 }
 
-/* ── Import done ───────────────────────────────────────────────────────── */
-
 function onImportDone() {
     router.reload({ only: ['companies'] });
 }
 
-/* ── Status helpers ────────────────────────────────────────────────────── */
+/* ── Status helpers ──────────────────────────────────────────────── */
 
 function humanizeStatus(status?: CompanyStatus): string {
     if (!status) return '—';
 
     const map: Record<Exclude<CompanyStatus, null>, string> = {
         draft: 'Draft',
-        docs_completed: 'Documents Completed',
+        docs_completed: 'Docs Completed',
         for_verification: 'For Verification',
         verified: 'Verified',
         needs_revision: 'Needs Revision',
@@ -166,23 +160,43 @@ function humanizeStatus(status?: CompanyStatus): string {
     return map[status] ?? status.replace(/_/g, ' ');
 }
 
-function statusBadgeVariant(
-    status?: CompanyStatus,
-): 'default' | 'secondary' | 'destructive' | 'outline' {
+function statusClass(status?: CompanyStatus): string {
     switch (status) {
         case 'verified':
-            return 'default';
-
+            return 'bg-emerald-100 text-emerald-700 border-emerald-200';
         case 'docs_completed':
+            return 'bg-blue-100 text-blue-700 border-blue-200';
         case 'for_verification':
-            return 'secondary';
-
+            return 'bg-violet-100 text-violet-700 border-violet-200';
+        case 'needs_revision':
+            return 'bg-amber-100 text-amber-700 border-amber-200';
         case 'rejected':
-            return 'destructive';
-
+            return 'bg-rose-100 text-rose-600 border-rose-200';
+        case 'draft':
         default:
-            return 'outline';
+            return 'bg-slate-100 text-slate-500 border-0';
     }
+}
+
+function statusDot(status?: CompanyStatus): string {
+    switch (status) {
+        case 'verified':
+            return 'bg-emerald-500';
+        case 'docs_completed':
+            return 'bg-blue-500';
+        case 'for_verification':
+            return 'bg-violet-500';
+        case 'needs_revision':
+            return 'bg-amber-500';
+        case 'rejected':
+            return 'bg-rose-500';
+        default:
+            return 'bg-slate-400';
+    }
+}
+
+function hasVerifiedEmail(company: Company): boolean {
+    return !!company.company_email_verified_at;
 }
 </script>
 
@@ -190,42 +204,52 @@ function statusBadgeVariant(
     <Head title="Companies" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
-        >
+        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
             <Card class="mx-5">
                 <CardHeader>
-                    <CardTitle>Companies</CardTitle>
-                    <CardDescription>
-                        Manage company records, review submissions, and monitor
-                        verification status.
-                    </CardDescription>
+                    <div>
+                        <CardTitle class="flex items-center gap-2">
+                            <Building2 class="h-5 w-5 text-blue-700" />
+                            Companies
+                        </CardTitle>
+                        <CardDescription class="mt-1">
+                            Manage company records, review submissions, and monitor verification status.
+                        </CardDescription>
+                    </div>
 
-                    <CardAction>
+                    <CardAction class="flex items-center gap-2">
                         <Button
                             v-if="can('company.viewAny')"
                             as-child
                             size="sm"
                             variant="outline"
-                            class="mr-2"
+                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
                         >
                             <Link :href="trash().url">
                                 <Archive class="mr-2 h-4 w-4" />
                                 View Archived
                             </Link>
                         </Button>
+
+                        <Button
+                            v-if="can('company.create')"
+                            size="sm"
+                            class="rounded-lg border-0 bg-blue-700 text-white shadow-sm hover:bg-blue-800"
+                            @click="createOpen = true"
+                        >
+                            <Plus class="mr-2 h-4 w-4" />
+                            New Company
+                        </Button>
                     </CardAction>
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-                    <div
-                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                    >
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div class="w-full max-w-sm">
                             <SearchInput
                                 :route="index().url"
                                 :initial-value="filters.search"
-                                placeholder="Search companies..."
+                                placeholder="Search companies…"
                                 :only="['companies', 'filters', 'flash']"
                                 :debounce="350"
                             />
@@ -236,18 +260,16 @@ function statusBadgeVariant(
                                 <Tooltip>
                                     <TooltipTrigger as-child>
                                         <Button
-                                            class="cursor-pointer"
                                             size="sm"
                                             variant="outline"
+                                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
                                             @click="importOpen = true"
                                         >
                                             <Upload class="mr-2 h-4 w-4" />
                                             Import
                                         </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent>
-                                        Restore companies from a backup ZIP
-                                    </TooltipContent>
+                                    <TooltipContent>Restore companies from a backup ZIP</TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
 
@@ -255,180 +277,159 @@ function statusBadgeVariant(
                                 <Tooltip>
                                     <TooltipTrigger as-child>
                                         <Button
-                                            class="cursor-pointer"
                                             size="sm"
                                             variant="outline"
+                                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
                                             :disabled="exporting"
                                             @click="triggerExport"
                                         >
-                                            <Loader2
-                                                v-if="exporting"
-                                                class="mr-2 h-4 w-4 animate-spin"
-                                            />
-                                            <Download
-                                                v-else
-                                                class="mr-2 h-4 w-4"
-                                            />
-                                            {{
-                                                exporting
-                                                    ? 'Exporting…'
-                                                    : 'Export'
-                                            }}
+                                            <Loader2 v-if="exporting" class="mr-2 h-4 w-4 animate-spin" />
+                                            <Download v-else class="mr-2 h-4 w-4" />
+                                            {{ exporting ? 'Exporting…' : 'Export' }}
                                         </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent>
-                                        Download all companies as a backup ZIP
-                                    </TooltipContent>
+                                    <TooltipContent>Download all companies as a backup ZIP</TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
                         </div>
                     </div>
 
-                    <Table>
-                        <!-- <TableCaption>List of companies.</TableCaption> -->
+                    <div class="overflow-x-auto rounded-lg border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow class="bg-muted/40 hover:bg-muted/40">
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Company Name</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Code</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Email</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Phone</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Status</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Created</TableHead>
+                                    <TableHead class="text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
 
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Company Name</TableHead>
-                                <TableHead>Company Code</TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead>Phone</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Created At</TableHead>
-                                <TableHead class="text-right"
-                                    >Actions</TableHead
+                            <TableBody>
+                                <TableRow v-if="companies.data.length === 0" class="hover:bg-transparent">
+                                    <TableCell colspan="7" class="py-20 text-center">
+                                        <div class="flex flex-col items-center gap-3">
+                                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+                                                <Building2 class="h-6 w-6 text-muted-foreground/40" />
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-semibold text-foreground">No companies found</p>
+                                                <p class="mt-0.5 text-xs text-muted-foreground">Try adjusting your search.</p>
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+
+                                <TableRow
+                                    v-for="company in companies.data"
+                                    :key="company.id"
+                                    class="group transition-colors hover:bg-muted/30"
                                 >
-                            </TableRow>
-                        </TableHeader>
+                                    <TableCell>
+                                        <p class="text-sm font-semibold capitalize">{{ company.company_name }}</p>
+                                    </TableCell>
 
-                        <TableBody>
-                            <TableRow
-                                v-for="company in companies.data"
-                                :key="company.id"
-                                class="group"
-                            >
-                                <TableCell class="capitalize">
-                                    {{ company.company_name }}
-                                </TableCell>
+                                    <TableCell>
+                                        <span class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
+                                            {{ company.company_code }}
+                                        </span>
+                                    </TableCell>
 
-                                <TableCell>
-                                    {{ company.company_code }}
-                                </TableCell>
+                                    <TableCell>
+                                        <div class="space-y-1">
+                                            <p class="text-sm lowercase text-muted-foreground">
+                                                {{ company.company_email ?? '—' }}
+                                            </p>
 
-                                <TableCell class="lowercase">
-                                    {{ company.company_email ?? '-' }}
-                                </TableCell>
-
-                                <TableCell>
-                                    {{ company.company_phone ?? '-' }}
-                                </TableCell>
-
-                                <TableCell>
-                                    <Badge
-                                        :variant="
-                                            statusBadgeVariant(
-                                                company.status ?? null,
-                                            )
-                                        "
-                                    >
-                                        {{
-                                            humanizeStatus(
-                                                company.status ?? null,
-                                            )
-                                        }}
-                                    </Badge>
-                                </TableCell>
-
-                                <TableCell>
-                                    {{ company.created_at_human ?? '-' }}
-                                </TableCell>
-
-                                <TableCell class="text-right">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger as-child>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                class="h-8 w-8"
-                                            >
-                                                <MoreHorizontal
-                                                    class="h-4 w-4"
-                                                />
-                                                <span class="sr-only"
-                                                    >Open actions</span
+                                            <div v-if="company.company_email" class="flex items-center gap-1.5">
+                                                <Badge
+                                                    :variant="hasVerifiedEmail(company) ? 'default' : 'outline'"
+                                                    class="gap-1 text-[10px]"
                                                 >
-                                            </Button>
-                                        </DropdownMenuTrigger>
+                                                    <MailCheck v-if="hasVerifiedEmail(company)" class="h-3 w-3" />
+                                                    <MailX v-else class="h-3 w-3" />
+                                                    {{ hasVerifiedEmail(company) ? 'Verified' : 'Not Verified' }}
+                                                </Badge>
+                                            </div>
+                                        </div>
+                                    </TableCell>
 
-                                        <DropdownMenuContent
-                                            align="end"
-                                            class="w-52"
-                                        >
-                                            <DropdownMenuLabel
-                                                class="text-xs font-normal text-muted-foreground"
-                                            >
-                                                {{ company.company_name }}
-                                            </DropdownMenuLabel>
+                                    <TableCell class="text-sm text-muted-foreground">
+                                        {{ company.company_phone ?? '—' }}
+                                    </TableCell>
 
-                                            <DropdownMenuSeparator />
+                                    <TableCell>
+                                        <Badge :class="['gap-1.5', statusClass(company.status ?? null)]">
+                                            <span :class="['h-1.5 w-1.5 rounded-full', statusDot(company.status ?? null)]" />
+                                            {{ humanizeStatus(company.status ?? null) }}
+                                        </Badge>
+                                    </TableCell>
 
-                                            <DropdownMenuItem
-                                                v-if="can('company.view')"
-                                                as-child
-                                            >
-                                                <Link
-                                                    :href="
-                                                        show({
-                                                            company: company.id,
-                                                        }).url
-                                                    "
-                                                    class="flex items-center"
+                                    <TableCell class="text-sm text-muted-foreground">
+                                        {{ company.created_at_human ?? '—' }}
+                                    </TableCell>
+
+                                    <TableCell class="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger as-child>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                                                 >
-                                                    <FileSearch
-                                                        class="mr-2 h-4 w-4"
-                                                    />
-                                                    Review Company
-                                                    <ChevronRight
-                                                        class="ml-auto h-3.5 w-3.5 text-muted-foreground"
-                                                    />
-                                                </Link>
-                                            </DropdownMenuItem>
+                                                    <MoreHorizontal class="h-4 w-4" />
+                                                    <span class="sr-only">Open actions</span>
+                                                </Button>
+                                            </DropdownMenuTrigger>
 
-                                            <DropdownMenuItem
-                                                v-if="can('company.update')"
-                                                @click="openEdit(company)"
-                                            >
-                                                <Pencil class="mr-2 h-4 w-4" />
-                                                Edit Company
-                                            </DropdownMenuItem>
+                                            <DropdownMenuContent align="end" class="w-52 rounded-xl border-slate-200 shadow-lg">
+                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                                    {{ company.company_name }}
+                                                </DropdownMenuLabel>
 
-                                            <DropdownMenuSeparator
-                                                v-if="can('company.delete')"
-                                            />
+                                                <DropdownMenuSeparator />
 
-                                            <DropdownMenuItem
-                                                v-if="can('company.delete')"
-                                                class="text-destructive focus:text-destructive"
-                                                @click="openArchive(company)"
-                                            >
-                                                <Archive class="mr-2 h-4 w-4" />
-                                                Archive Company
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
-                            </TableRow>
+                                                <DropdownMenuItem
+                                                    v-if="can('company.view')"
+                                                    as-child
+                                                    class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700"
+                                                >
+                                                    <Link :href="show({ company: company.id }).url" class="flex items-center">
+                                                        <FileSearch class="mr-2 h-4 w-4" />
+                                                        Review Company
+                                                        <ChevronRight class="ml-auto h-3.5 w-3.5 text-blue-400" />
+                                                    </Link>
+                                                </DropdownMenuItem>
 
-                            <TableRow v-if="companies.data.length === 0">
-                                <TableCell
-                                    colspan="7"
-                                    class="py-10 text-center text-muted-foreground"
-                                >
-                                    No companies found.
-                                </TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
+                                                <DropdownMenuItem
+                                                    v-if="can('company.update')"
+                                                    class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700"
+                                                    @click="openEdit(company)"
+                                                >
+                                                    <Pencil class="mr-2 h-4 w-4" />
+                                                    Edit Company
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuSeparator v-if="can('company.delete')" />
+
+                                                <DropdownMenuItem
+                                                    v-if="can('company.delete')"
+                                                    class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600"
+                                                    @click="openArchive(company)"
+                                                >
+                                                    <Archive class="mr-2 h-4 w-4" />
+                                                    Archive Company
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </div>
 
                     <InertiaPagination
                         :links="companies.links"

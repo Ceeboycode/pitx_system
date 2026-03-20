@@ -7,25 +7,45 @@ use App\Http\Requests\UpdateUserRequest;
 use App\Models\Company;
 use App\Models\Role;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Hash;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class UserController extends Controller
 {
+    private const DEFAULT_PASSWORD = 'pitx@123';
 
-    public function index(Request $request)
+    public function index(Request $request): Response
     {
         $search = $request->input('search');
-        $type   = $request->input('type');
+        $type = $request->input('type');
+        $status = $request->input('status');
 
         $users = User::query()
-            ->select(['id', 'username', 'name', 'email', 'phone_number', 'company_id'])
-            ->with(['roles:id,name,type', 'company:id,company_name,company_code'])
+            ->select([
+                'id',
+                'username',
+                'name',
+                'email',
+                'email_verified_at',
+                'phone_number',
+                'company_id',
+                'type',
+                'status',
+                'created_at',
+            ])
+            ->with([
+                'roles:id,name,type',
+                'company:id,company_name,company_code',
+            ])
             ->when($type, function ($query) use ($type) {
                 $query->whereHas('roles', fn ($q) => $q->where('type', $type));
+            })
+            ->when($status, function ($query) use ($status) {
+                $query->where('status', $status);
             })
             ->search($search)
             ->orderBy('name')
@@ -36,87 +56,132 @@ class UserController extends Controller
             'users' => $users,
             'filters' => [
                 'search' => $search,
-                'type'   => $type,
+                'type' => $type,
+                'status' => $status,
+            ],
+            'statuses' => ['active', 'inactive'],
+        ]);
+    }
+
+    public function create(): Response
+    {
+        return Inertia::render('Users/Create', [
+            'companies' => Company::query()
+                ->orderBy('company_name')
+                ->get(['id', 'company_name', 'company_code']),
+            'roles' => Role::query()
+                ->select('id', 'name', 'type')
+                ->orderBy('type')
+                ->orderBy('name')
+                ->get(),
+        ]);
+    }
+
+    public function store(StoreUserRequest $request): RedirectResponse
+    {
+        $data = $request->validated();
+
+        $role = Role::query()
+            ->where('name', $data['role'])
+            ->firstOrFail(['id', 'name', 'type']);
+
+        $resolvedType = $role->type;
+        $resolvedCompanyId = $resolvedType === 'external'
+            ? (int) $data['company_id']
+            : null;
+
+        $user = DB::transaction(function () use ($data, $role, $resolvedType, $resolvedCompanyId) {
+            $username = $this->generateUsername(
+                type: $resolvedType,
+                companyId: $resolvedCompanyId,
+            );
+
+            $user = User::create([
+                'username' => $username,
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'phone_number' => $data['phone_number'] ?? null,
+                'type' => $resolvedType,
+                'company_id' => $resolvedCompanyId,
+                'status' => 'active',
+                'password' => Hash::make(self::DEFAULT_PASSWORD),
+                'must_change_password' => true,
+            ]);
+
+            $user->assignRole($role->name);
+
+            return $user;
+        });
+
+        return redirect()
+            ->route('users.index')
+            ->with(
+                'success',
+                "User created successfully. Username: {$user->username}. Default password: " . self::DEFAULT_PASSWORD
+            );
+    }
+
+    public function show(User $user): Response
+    {
+        $user->load([
+            'roles:id,name,type',
+            'company:id,company_name,company_code',
+        ]);
+
+        $primaryRole = $user->roles->first();
+        $resolvedType = $primaryRole?->type;
+
+        return Inertia::render('Users/Show', [
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'name' => $user->name,
+                'email' => $user->email,
+                'email_verified_at' => $user->email_verified_at,
+                'phone_number' => $user->phone_number,
+                'status' => $user->status,
+                'created_at' => $user->created_at,
+                'type' => $resolvedType,
+                'company' => $resolvedType === 'external' && $user->company
+                    ? [
+                        'id' => $user->company->id,
+                        'company_name' => $user->company->company_name,
+                        'company_code' => $user->company->company_code,
+                    ]
+                    : null,
+                'roles' => $user->roles->map(fn ($role) => [
+                    'id' => $role->id,
+                    'name' => $role->name,
+                    'type' => $role->type,
+                ])->values(),
+                'internal_roles' => $user->roles
+                    ->filter(fn ($role) => $role->type === 'internal')
+                    ->map(fn ($role) => [
+                        'id' => $role->id,
+                        'name' => $role->name,
+                        'type' => $role->type,
+                    ])
+                    ->values(),
+                'external_roles' => $user->roles
+                    ->filter(fn ($role) => $role->type === 'external')
+                    ->map(fn ($role) => [
+                        'id' => $role->id,
+                        'name' => $role->name,
+                        'type' => $role->type,
+                    ])
+                    ->values(),
             ],
         ]);
     }
 
-    public function create()
+    public function edit(User $user): Response
     {
-        return Inertia::render('Users/Create', [
-            'companies' => Company::orderBy('company_name')
-                ->get(['id', 'company_name', 'company_code']),
-
-            // IMPORTANT: include type
-            'roles' => Role::orderBy('name')
-                ->get(['id', 'name', 'type']),
-        ]);
-    }
-
-    public function store(StoreUserRequest $request)
-{
-    $data = $request->validated();
-
-    $user = DB::transaction(function () use ($data) {
-        $type = $data['type'];
-
-        // Determine prefix
-        if ($type === 'external') {
-            $company = Company::query()
-                ->whereKey($data['company_id'])
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            $prefix = $company->company_code . '-'; // e.g. SAS-
-        } else {
-            $prefix = now()->year . '-'; // e.g. 2026-
-        }
-
-        // Find latest username for this prefix (lock users rows to avoid duplicates)
-        $lastUsername = User::query()
-            ->where('username', 'like', $prefix . '%')
-            ->lockForUpdate()
-            ->orderByDesc('username') // works because 0001 padding keeps lexical order
-            ->value('username');
-
-        $nextNumber = 1;
-        if ($lastUsername) {
-            // username format: PREFIX + 4 digits (e.g. SAS-0007)
-            $lastDigits = substr($lastUsername, strlen($prefix)); // "0007"
-            $nextNumber = ((int) $lastDigits) + 1;
-        }
-
-        $username = $prefix . str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
-
-        // Create user
-        $user = User::create([
-            'username' => $username,
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'phone_number' => $data['phone_number'],
-            'type' => $type,
-            'company_id' => $type === 'external' ? $data['company_id'] : null,
-
-            // default password = phone number
-            'password' => Hash::make($data['phone_number']),
+        $user->load([
+            'roles:id,name,type',
+            'company:id,company_name,company_code',
         ]);
 
-        // Assign role (Spatie)
-        $user->assignRole($data['role']);
-
-        return $user;
-    });
-
-    return redirect()
-        ->route('users.index')
-        ->with('success', "User created successfully. Username: {$user->username}");
-}
-
-    public function edit(User $user)
-    {
-        $user->load('roles:id,name,type');
-
-        $selectedRole = $user->roles->first()?->name;
+        $selectedRole = $user->roles->first();
 
         return Inertia::render('Users/Edit', [
             'user' => [
@@ -125,48 +190,124 @@ class UserController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone_number' => $user->phone_number,
+                'type' => $selectedRole?->type ?? $user->type,
+                'company_id' => $user->company_id,
             ],
             'roles' => Role::query()
                 ->select('id', 'name', 'type')
                 ->orderBy('type')
                 ->orderBy('name')
                 ->get(),
-            'selectedRole' => $selectedRole, // ✅ single value
-            'roleTypes' => ['internal', 'external'], // UI-only
-            'initialRoleType' => $user->user_type, // internal|external|null|mixed
+            'selectedRole' => $selectedRole?->name,
+            'companies' => Company::query()
+                ->orderBy('company_name')
+                ->get(['id', 'company_name', 'company_code']),
         ]);
     }
 
-    public function update(UpdateUserRequest $request, User $user)
+    public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
         $validated = $request->validated();
 
-        // Optional (if Edit.vue submits role_type)
-        $this->assertRoleMatchesType(
-            $validated['role'],
-            $validated['role_type'] ?? null
-        );
+        $role = Role::query()
+            ->where('name', $validated['role'])
+            ->firstOrFail(['id', 'name', 'type']);
 
-        $user->update([
-            'username' => $validated['username'] ?? $user->username,
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'phone_number' => $validated['phone_number'] ?? null,
-            'password' => !empty($validated['password'])
-                ? Hash::make($validated['password'])
-                : $user->password,
-        ]);
+        $nextType = $role->type;
+        $nextCompanyId = $nextType === 'external'
+            ? (isset($validated['company_id']) ? (int) $validated['company_id'] : null)
+            : null;
 
-        // ✅ single role
-        $user->syncRoles([$validated['role']]);
+        $currentRoleType = $user->roles()->first()?->type ?? $user->type;
+        $currentCompanyId = $currentRoleType === 'external'
+            ? ($user->company_id ? (int) $user->company_id : null)
+            : null;
+
+        $typeChanged = $currentRoleType !== $nextType;
+        $companyChanged = $currentCompanyId !== $nextCompanyId;
+
+        DB::transaction(function () use ($user, $validated, $role, $nextType, $nextCompanyId, $typeChanged, $companyChanged) {
+            $nextUsername = $user->username;
+
+            if ($typeChanged || $companyChanged) {
+                $nextUsername = $this->generateUsername(
+                    type: $nextType,
+                    companyId: $nextCompanyId,
+                );
+            }
+
+            $user->update([
+                'username' => $nextUsername,
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'phone_number' => $validated['phone_number'] ?? null,
+                'type' => $nextType,
+                'company_id' => $nextCompanyId,
+            ]);
+
+            $user->syncRoles([$role->name]);
+        });
 
         return to_route('users.index')->with('success', 'User updated successfully.');
     }
 
-    public function destroy(User $user)
+    public function toggleStatus(User $user): RedirectResponse
+    {
+        $nextStatus = $user->status === 'active' ? 'inactive' : 'active';
+
+        $user->update([
+            'status' => $nextStatus,
+        ]);
+
+        return back()->with('success', "{$user->name} is now {$nextStatus}.");
+    }
+
+    public function resetPassword(User $user): RedirectResponse
+    {
+        $user->update([
+            'password' => Hash::make(self::DEFAULT_PASSWORD),
+            'must_change_password' => true,
+        ]);
+
+        return back()->with(
+            'success',
+            "{$user->name}'s password has been reset to the default password: " . self::DEFAULT_PASSWORD
+        );
+    }
+
+    public function destroy(User $user): RedirectResponse
     {
         $user->delete();
 
         return back()->with('success', 'User deleted successfully.');
+    }
+
+    private function generateUsername(string $type, ?int $companyId = null): string
+    {
+        if ($type === 'external') {
+            $company = Company::query()
+                ->whereKey($companyId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $prefix = $company->company_code . '-';
+        } else {
+            $prefix = now()->year . '-';
+        }
+
+        $lastUsername = User::query()
+            ->where('username', 'like', $prefix . '%')
+            ->lockForUpdate()
+            ->orderByDesc('username')
+            ->value('username');
+
+        $nextNumber = 1;
+
+        if ($lastUsername) {
+            $lastDigits = substr($lastUsername, strlen($prefix));
+            $nextNumber = ((int) $lastDigits) + 1;
+        }
+
+        return $prefix . str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
     }
 }
