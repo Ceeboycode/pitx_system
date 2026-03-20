@@ -21,7 +21,17 @@ class CompanyController extends Controller
         Gate::authorize('viewAny', Company::class);
 
         $companies = Company::query()
-            ->select('id', 'company_name', 'company_code', 'company_email', 'company_phone', 'business_type', 'status', 'created_at')
+            ->select(
+                'id',
+                'company_name',
+                'company_code',
+                'company_email',
+                'company_email_verified_at',
+                'company_phone',
+                'business_type',
+                'status',
+                'created_at'
+            )
             ->search($request->search)
             ->latest()
             ->paginate(10)
@@ -52,8 +62,6 @@ class CompanyController extends Controller
             'documents.verifier:id,name',
         ]);
 
-        // Append the resolved public URL for the logo
-        // $company->logo stores the relative path e.g. "company-logos/uuid.jpg"
         $company->logo_url = filled($company->logo)
             ? \Illuminate\Support\Facades\Storage::disk('public')->url($company->logo)
             : null;
@@ -106,19 +114,6 @@ class CompanyController extends Controller
             ->with('success', 'Company and documents submitted successfully.');
     }
 
-    // public function edit(Company $company)
-    // {
-    //     Gate::authorize('update', $company);
-
-    //     $company->load([
-    //         'documents:id,company_id,doc_type,original_name,file_path,status',
-    //     ]);
-
-    //     return Inertia::render('Company/Edit', [
-    //         'company' => $company,
-    //     ]);
-    // }
-
     public function update(CompanyUpdateRequest $request, Company $company)
     {
         Gate::authorize('update', $company);
@@ -130,7 +125,6 @@ class CompanyController extends Controller
 
         return back()->with('success', 'Company updated successfully.');
     }
-
 
     public function destroy(Request $request, Company $company)
     {

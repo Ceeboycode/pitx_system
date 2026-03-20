@@ -55,7 +55,6 @@ const roleSearch = ref('');
 const includesText = (value: string, query: string) =>
     value.toLowerCase().includes(query.trim().toLowerCase());
 
-// ✅ Username removed
 const form = useForm({
     name: '',
     email: '',
@@ -100,12 +99,13 @@ function submit() {
     form.post(store().url, {
         preserveScroll: true,
         onSuccess: () => {
-            form.reset()
-            companySearch.value = ''
-            roleSearch.value = ''
+            form.reset();
+            companySearch.value = '';
+            roleSearch.value = '';
         },
-    })
+    });
 }
+
 const requiredMark = '*';
 </script>
 
@@ -118,8 +118,9 @@ const requiredMark = '*';
                 <CardHeader>
                     <CardTitle>Create User</CardTitle>
                     <CardDescription>
-                        Add a new user account and assign access. Fields marked
-                        with
+                        Add a new user account and assign access. Default password is
+                        <span class="font-medium">pitx@123</span>. New users are created
+                        as <span class="font-medium">active</span>. Fields marked with
                         <span class="font-medium text-red-500">
                             {{ requiredMark }}
                         </span>
@@ -135,19 +136,15 @@ const requiredMark = '*';
 
                 <CardContent>
                     <form class="space-y-8" @submit.prevent="submit">
-                        <!-- SECTION: Account Info -->
                         <div class="space-y-4">
                             <div class="space-y-1">
-                                <p class="text-sm font-medium">
-                                    Account Information
-                                </p>
+                                <p class="text-sm font-medium">Account Information</p>
                                 <p class="text-xs text-muted-foreground">
                                     Basic details used for login and contact.
                                 </p>
                             </div>
 
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                <!-- Name -->
                                 <div class="space-y-2">
                                     <Label class="flex items-center gap-1">
                                         Full Name
@@ -163,7 +160,6 @@ const requiredMark = '*';
                                     <InputError :message="form.errors.name" />
                                 </div>
 
-                                <!-- Email -->
                                 <div class="space-y-2">
                                     <Label class="flex items-center gap-1">
                                         Email
@@ -178,13 +174,11 @@ const requiredMark = '*';
                                         autocomplete="email"
                                     />
                                     <p class="text-xs text-muted-foreground">
-                                        This will be used for login and
-                                        notifications.
+                                        This will be used for login and notifications.
                                     </p>
                                     <InputError :message="form.errors.email" />
                                 </div>
 
-                                <!-- Phone -->
                                 <div class="space-y-2">
                                     <Label>Phone Number</Label>
                                     <Input
@@ -192,27 +186,20 @@ const requiredMark = '*';
                                         placeholder="e.g. 09xxxxxxxxx"
                                         autocomplete="tel"
                                     />
-                                    <InputError
-                                        :message="form.errors.phone_number"
-                                    />
+                                    <InputError :message="form.errors.phone_number" />
                                 </div>
                             </div>
                         </div>
 
-                        <!-- SECTION: Access & Assignment -->
                         <div class="space-y-4 border-t pt-6">
                             <div class="space-y-1">
-                                <p class="text-sm font-medium">
-                                    Access & Assignment
-                                </p>
+                                <p class="text-sm font-medium">Access & Assignment</p>
                                 <p class="text-xs text-muted-foreground">
-                                    Choose the user type and assign the correct
-                                    role.
+                                    Choose the user type and assign the correct role.
                                 </p>
                             </div>
 
                             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                <!-- Type -->
                                 <div class="space-y-2">
                                     <Label class="flex items-center gap-1">
                                         User Type
@@ -223,15 +210,11 @@ const requiredMark = '*';
 
                                     <Select v-model="form.type">
                                         <SelectTrigger class="w-full">
-                                            <SelectValue
-                                                placeholder="Select internal/external"
-                                            />
+                                            <SelectValue placeholder="Select internal/external" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectGroup>
-                                                <SelectLabel>
-                                                    User Types
-                                                </SelectLabel>
+                                                <SelectLabel>User Types</SelectLabel>
                                                 <SelectItem value="internal">
                                                     Internal
                                                 </SelectItem>
@@ -245,7 +228,6 @@ const requiredMark = '*';
                                     <InputError :message="form.errors.type" />
                                 </div>
 
-                                <!-- Company -->
                                 <div
                                     v-if="form.type === 'external'"
                                     class="space-y-2"
@@ -259,9 +241,7 @@ const requiredMark = '*';
 
                                     <Select v-model="form.company_id">
                                         <SelectTrigger class="w-full">
-                                            <SelectValue
-                                                placeholder="Select a company"
-                                            />
+                                            <SelectValue placeholder="Select a company" />
                                         </SelectTrigger>
 
                                         <SelectContent>
@@ -275,9 +255,7 @@ const requiredMark = '*';
                                                     />
                                                 </div>
 
-                                                <SelectLabel>
-                                                    Companies
-                                                </SelectLabel>
+                                                <SelectLabel>Companies</SelectLabel>
 
                                                 <SelectItem
                                                     v-for="company in filteredCompanies"
@@ -289,10 +267,7 @@ const requiredMark = '*';
                                                 </SelectItem>
 
                                                 <p
-                                                    v-if="
-                                                        filteredCompanies.length ===
-                                                        0
-                                                    "
+                                                    v-if="filteredCompanies.length === 0"
                                                     class="px-2 py-1 text-sm text-muted-foreground"
                                                 >
                                                     No companies found.
@@ -301,12 +276,9 @@ const requiredMark = '*';
                                         </SelectContent>
                                     </Select>
 
-                                    <InputError
-                                        :message="form.errors.company_id"
-                                    />
+                                    <InputError :message="form.errors.company_id" />
                                 </div>
 
-                                <!-- Role -->
                                 <div v-if="form.type" class="space-y-2">
                                     <Label class="flex items-center gap-1">
                                         Role
@@ -317,9 +289,7 @@ const requiredMark = '*';
 
                                     <Select v-model="form.role">
                                         <SelectTrigger class="w-full">
-                                            <SelectValue
-                                                placeholder="Select a role"
-                                            />
+                                            <SelectValue placeholder="Select a role" />
                                         </SelectTrigger>
 
                                         <SelectContent>
@@ -344,10 +314,7 @@ const requiredMark = '*';
                                                 </SelectItem>
 
                                                 <p
-                                                    v-if="
-                                                        filteredRoles.length ===
-                                                        0
-                                                    "
+                                                    v-if="filteredRoles.length === 0"
                                                     class="px-2 py-1 text-sm text-muted-foreground"
                                                 >
                                                     No roles found.
@@ -361,20 +328,13 @@ const requiredMark = '*';
                             </div>
                         </div>
 
-                        <!-- ACTIONS -->
-                        <div
-                            class="flex items-center justify-end gap-2 border-t pt-4"
-                        >
+                        <div class="flex items-center justify-end gap-2 border-t pt-4">
                             <Button type="button" variant="outline" as-child>
                                 <Link :href="index().url">Cancel</Link>
                             </Button>
 
                             <Button type="submit" :disabled="form.processing">
-                                {{
-                                    form.processing
-                                        ? 'Creating...'
-                                        : 'Create User'
-                                }}
+                                {{ form.processing ? 'Creating...' : 'Create User' }}
                             </Button>
                         </div>
                     </form>

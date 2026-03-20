@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Role;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateUserRequest extends FormRequest
 {
@@ -16,17 +19,57 @@ class UpdateUserRequest extends FormRequest
         $userId = $this->route('user')?->id;
 
         return [
-            'username' => ['nullable', 'string', 'max:255'],
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', "unique:users,email,{$userId}"],
+
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($userId),
+            ],
+
             'phone_number' => ['nullable', 'string', 'max:20'],
-            'password' => ['nullable', 'string', 'min:8'],
 
-            // single role
-            'role' => ['required', 'string', 'exists:roles,name'],
+            'role' => [
+                'required',
+                'string',
+                Rule::exists('roles', 'name'),
+            ],
 
-            // optional (only if you decide to submit role_type from Vue)
-            'role_type' => ['nullable', 'in:internal,external'],
+            'company_id' => [
+                'nullable',
+                'integer',
+                'exists:companies,id',
+            ],
+        ];
+    }
+
+    public function after(): array
+    {
+        return [
+            function (Validator $validator) {
+                $roleName = $this->input('role');
+
+                if (! $roleName) {
+                    return;
+                }
+
+                $role = Role::query()
+                    ->select('id', 'name', 'type')
+                    ->where('name', $roleName)
+                    ->first();
+
+                if (! $role) {
+                    return;
+                }
+
+                if ($role->type === 'external' && ! $this->filled('company_id')) {
+                    $validator->errors()->add(
+                        'company_id',
+                        'The company field is required for external roles.'
+                    );
+                }
+            },
         ];
     }
 }
