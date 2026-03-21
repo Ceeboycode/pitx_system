@@ -135,26 +135,18 @@ function badgeVariant(status: string | null | undefined) {
                 </CardHeader>
 
                 <CardContent>
-                    <Table>
-                        <!-- <TableCaption
-                            >Dispatch history and movement
-                            records.</TableCaption
-                        > -->
-
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Plate</TableHead>
-                                <TableHead>Route</TableHead>
-                                <TableHead>Vehicle Type</TableHead>
-                                <TableHead>Dispatcher</TableHead>
-                                <TableHead class="text-right">Pax</TableHead>
-                                <TableHead>Bay</TableHead>
-                                <TableHead>Arrival (IN)</TableHead>
-                                <TableHead>Departure (OUT)</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Action</TableHead>
-                            </TableRow>
-                        </TableHeader>
+                    <div class="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead class="min-w-[220px]">Company</TableHead>
+                                    <TableHead class="min-w-[160px]">Code</TableHead>
+                                    <TableHead class="min-w-[220px]">Contact</TableHead>
+                                    <TableHead class="min-w-[140px]">Status</TableHead>
+                                    <TableHead class="min-w-[160px] text-center">Total Dispatches</TableHead>
+                                    <TableHead class="min-w-[140px] text-right">Action</TableHead>
+                                </TableRow>
+                            </TableHeader>
 
                             <TableBody>
                                 <TableRow
