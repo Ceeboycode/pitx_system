@@ -1,0 +1,1 @@
+import{d as t,o,c as a,e as s}from"./app-B2tqZgBC.js";const n={class:"p-6"},l=t({__name:"Show",setup(r){return(c,e)=>(o(),a("div",n,[...e[0]||(e[0]=[s("h1",{class:"text-xl font-semibold"},"Employee",-1),s("p",{class:"text-sm text-gray-500"}," This page is under construction. ",-1)])]))}});export{l as default};
