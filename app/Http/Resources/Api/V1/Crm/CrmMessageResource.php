@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api\V1\Crm;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class CrmMessageResource extends JsonResource
 {
@@ -23,6 +24,14 @@ class CrmMessageResource extends JsonResource
             'is_internal' => (bool) $this->is_internal,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
+            'attachments' => $this->whenLoaded('attachments', fn () => $this->attachments->map(fn ($attachment) => [
+                'id' => $attachment->id,
+                'original_name' => $attachment->original_name,
+                'mime_type' => $attachment->mime_type,
+                'size_bytes' => $attachment->size_bytes,
+                'preview_url' => Storage::disk($attachment->disk)->url($attachment->path),
+                'download_url' => route('crm.attachments.download', $attachment),
+            ])->values()),
         ];
     }
 }

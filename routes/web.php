@@ -207,6 +207,9 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required'])->g
         Route::get('threads', [CrmThreadController::class, 'index'])->name('threads.index');
         Route::get('threads/{thread}', [CrmThreadController::class, 'show'])->name('threads.show');
         Route::post('threads', [CrmThreadController::class, 'store'])->name('threads.store');
+        Route::patch('threads/{thread}', [CrmThreadController::class, 'update'])->name('threads.update');
+        Route::patch('threads/{thread}/close', [CrmThreadController::class, 'close'])->name('threads.close');
+        Route::patch('threads/{thread}/reopen', [CrmThreadController::class, 'reopen'])->name('threads.reopen');
 
         Route::post('threads/{thread}/messages', [CrmMessageController::class, 'store'])
             ->name('threads.messages.store');
