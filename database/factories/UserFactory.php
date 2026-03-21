@@ -25,7 +25,7 @@ class UserFactory extends Factory
             'status' => 'active',
             'phone_number' => '09' . fake()->numerify('#########'),
             'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('admin123'),
+            'password' => static::$password ??= Hash::make('password'),
             'must_change_password' => false,
             'remember_token' => Str::random(10),
             'company_id' => null,

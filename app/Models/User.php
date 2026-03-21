@@ -74,4 +74,29 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Dispatch::class, 'dispatcher_user_id');
     }
+
+    public function hasRoleType(string $type): bool
+    {
+        return $this->roles()->where('type', $type)->exists();
+    }
+
+    public function isInternalUser(): bool
+    {
+        return $this->hasRoleType('internal');
+    }
+
+    public function isExternalUser(): bool
+    {
+        return $this->hasRoleType('external');
+    }
+
+    public function isCommuterUser(): bool
+    {
+        return $this->hasRoleType('commuter');
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole('super-admin');
+    }
 }

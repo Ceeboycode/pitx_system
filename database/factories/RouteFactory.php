@@ -27,7 +27,9 @@ class RouteFactory extends Factory
 
         $destination = fake()->randomElement($destinations);
 
-        $creatorId = User::role(['admin', 'it', 'terminal manager'])->value('id')
+        $creatorId = User::query()
+            ->whereHas('roles', fn ($query) => $query->whereIn('name', ['admin', 'it', 'terminal manager']))
+            ->value('id')
             ?? User::query()->value('id');
 
         $gateId = Gate::query()->inRandomOrder()->value('id');

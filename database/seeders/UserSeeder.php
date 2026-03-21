@@ -98,5 +98,6 @@ class UserSeeder extends Seeder
         //     ->each(function (User $user) {
         //         $user->assignRole('dispatcher');
         //     });
+        }
     }
 }

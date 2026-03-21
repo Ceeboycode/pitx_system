@@ -16,7 +16,9 @@ class RouteStopFactory extends Factory
 
     public function definition(): array
     {
-        $creatorId = User::role(['admin', 'it', 'terminal manager'])->value('id')
+        $creatorId = User::query()
+            ->whereHas('roles', fn ($query) => $query->whereIn('name', ['admin', 'it', 'terminal manager']))
+            ->value('id')
             ?? User::query()->value('id');
 
         return [

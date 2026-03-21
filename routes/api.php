@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\Auth\AuthTokenController;
 use App\Http\Controllers\Api\V1\Crm\CommuterMessageController;
 use App\Http\Controllers\Api\V1\Crm\CommuterThreadController;
+use App\Http\Controllers\Api\V1\Route\CommuterRouteController;
 use Illuminate\Support\Facades\Route;
 
 // production test endpoint
@@ -12,6 +13,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
     Route::post('auth/register', [AuthTokenController::class, 'register'])->name('auth.register');
     Route::post('auth/login', [AuthTokenController::class, 'login'])->name('auth.login');
+    Route::get('locations', [CommuterRouteController::class, 'locations'])->name('locations.index');
+    Route::get('routes/search', [CommuterRouteController::class, 'search'])->name('routes.search');
 
     Route::middleware(['auth:api', 'role.type:commuter'])->group(function () {
         Route::get('auth/me', [AuthTokenController::class, 'me'])->name('auth.me');

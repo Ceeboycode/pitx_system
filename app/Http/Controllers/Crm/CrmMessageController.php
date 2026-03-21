@@ -3,13 +3,17 @@
 namespace App\Http\Controllers\Crm;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Crm\StoreCrmMessageRequest;
 use App\Models\CrmMessage;
+use App\Models\CrmMessageAttachment;
 use App\Models\CrmThread;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CrmMessageController extends Controller
 {
-    public function index(Request $request, CrmThread $thread)
+    public function index(Request $request, CrmThread $thread): JsonResponse
     {
         $this->authorizeThreadAccess($request, $thread);
 
@@ -22,36 +26,45 @@ class CrmMessageController extends Controller
         return response()->json(['data' => $messages]);
     }
 
-    public function store(Request $request, CrmThread $thread)
+    public function store(StoreCrmMessageRequest $request, CrmThread $thread): JsonResponse
     {
         $user = $request->user();
         $this->authorizeThreadAccess($request, $thread);
 
-        if ($thread->is_closed && !$this->isTerminalStaff($user)) {
+        if ($thread->is_closed && ! $this->isTerminalStaff($user)) {
             abort(422, 'Thread is closed.');
         }
 
-        $validated = $request->validate([
-            'body'        => 'required|string',
-            'is_internal' => 'sometimes|boolean',
-        ]);
+        $validated = $request->validated();
 
-        // Company users cannot create internal notes
         $isInternal = (bool) ($validated['is_internal'] ?? false);
-        if ($isInternal && !$this->isTerminalStaff($user)) {
+
+        if ($isInternal && ! $this->isTerminalStaff($user)) {
             abort(403, 'Only terminal staff can post internal notes.');
         }
 
         $message = $thread->messages()->create([
             'sender_user_id' => $user->id,
-            'body'           => $validated['body'],
-            'is_internal'    => $isInternal,
+            'body' => $validated['body'],
+            'is_internal' => $isInternal,
         ]);
 
         $thread->update(['last_message_at' => now()]);
 
         return response()->json([
-            'data' => $message->load(['sender:id,name', 'attachments']),
+            'message' => 'Message sent successfully.',
+            'data' => [
+                'id' => $message->id,
+                'body' => $message->body,
+                'is_internal' => (bool) $message->is_internal,
+                'created_at' => $message->created_at?->toISOString(),
+                'created_at_human' => $message->created_at?->diffForHumans(),
+                'sender' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                ],
+                'attachments' => [],
+            ],
         ], 201);
     }
 
@@ -59,17 +72,21 @@ class CrmMessageController extends Controller
     {
         $user = $request->user();
 
-        if ($this->isTerminalStaff($user)) {
+        if ($user->isSuperAdmin()) {
             return;
         }
 
-        if ((int) $user->company_id !== (int) $thread->company_id) {
-            abort(403);
+        if ($this->isTerminalStaff($user)) {
+            abort_unless((int) $thread->assigned_to_user_id === (int) $user->id, 403);
+
+            return;
         }
+
+        abort_unless((int) $user->company_id === (int) $thread->company_id, 403);
     }
 
-    private function isTerminalStaff($user): bool
+    private function isTerminalStaff(User $user): bool
     {
-        return (string) optional($user->role)->type === 'internal';
+        return $user->isInternalUser();
     }
 }

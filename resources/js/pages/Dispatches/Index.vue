@@ -228,7 +228,7 @@ function badgeVariant(status: string | null | undefined) {
                                 </TableRow>
                             </TableBody>
                         </Table>
-                    </div>
+                    <!-- </div> -->
 
                     <div v-if="companies.links?.length" class="mt-6">
                         <InertiaPagination :links="companies.links" />
