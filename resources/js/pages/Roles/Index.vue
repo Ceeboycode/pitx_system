@@ -208,7 +208,7 @@ function deleteRole() {
                     </div>
 
                     <Table>
-                        <TableCaption>List of roles in the system.</TableCaption>
+                        <!-- <TableCaption>List of roles in the system.</TableCaption> -->
 
                         <TableHeader>
                             <TableRow>

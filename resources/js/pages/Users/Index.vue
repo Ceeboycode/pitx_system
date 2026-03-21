@@ -322,7 +322,7 @@ function handleDelete(user: User) {
                     </div>
 
                     <Table>
-                        <TableCaption>List of Users</TableCaption>
+                        <!-- <TableCaption>List of Users</TableCaption> -->
 
                         <TableHeader>
                             <TableRow>

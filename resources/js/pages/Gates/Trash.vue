@@ -170,7 +170,7 @@ function forceDeleteGate() {
 
                 <CardContent class="space-y-4">
                     <Table>
-                        <TableCaption>List of trashed gates.</TableCaption>
+                        <!-- <TableCaption>List of trashed gates.</TableCaption> -->
 
                         <TableHeader>
                             <TableRow>

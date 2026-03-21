@@ -91,53 +91,12 @@ class UserSeeder extends Seeder
             );
             $operator->syncRoles(['operator']);
 
-            $dispatcher = User::query()->updateOrCreate(
-                ['username' => 'dispatcher1'],
-                [
-                    'name' => 'Dispatcher User',
-                    'email' => 'dispatcher@gmail.com',
-                    'phone_number' => '09123456784',
-                    'status' => 'active',
-                    'email_verified_at' => now(),
-                    'password' => Hash::make('admin123'),
-                    'must_change_password' => false,
-                    'company_id' => $company->id,
-                ]
-            );
-            $dispatcher->syncRoles(['dispatcher']);
-
-            $driver = User::query()->updateOrCreate(
-                ['username' => 'driver1'],
-                [
-                    'name' => 'Driver User',
-                    'email' => 'driver@gmail.com',
-                    'phone_number' => '09123456783',
-                    'status' => 'active',
-                    'email_verified_at' => now(),
-                    'password' => Hash::make('admin123'),
-                    'must_change_password' => false,
-                    'company_id' => $company->id,
-                ]
-            );
-            $driver->syncRoles(['driver']);
-
-            User::factory()
-                ->count(3)
-                ->external($company->id)
-                ->create()
-                ->each(fn (User $user) => $user->syncRoles(['operator']));
-
-            User::factory()
-                ->count(5)
-                ->external($company->id)
-                ->create()
-                ->each(fn (User $user) => $user->syncRoles(['dispatcher']));
-
-            User::factory()
-                ->count(8)
-                ->external($company->id)
-                ->create()
-                ->each(fn (User $user) => $user->syncRoles(['driver']));
-        }
+        // DISPATCHERS (avoid duplicates if seed is re-run)
+        // User::factory()
+        //     ->count(5)
+        //     ->create()
+        //     ->each(function (User $user) {
+        //         $user->assignRole('dispatcher');
+        //     });
     }
 }

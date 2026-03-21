@@ -20,17 +20,12 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
 
             UserSeeder::class,
-
-            CompanySeeder::class,
             GateSeeder::class,
+            // CompanySeeder::class,
+            // RouteSeeder::class,
+            // RouteStopSeeder::class,
             VehicleTypeSeeder::class,
-            RouteSeeder::class,
-            RouteStopSeeder::class,
-            VehicleSeeder::class,
-            CompanyDocumentSeeder::class,
-            VehicleDocumentSeeder::class,
-            DispatchSeeder::class,
-
+            // VehicleSeeder::class,
             // CrmThreadSeeder::class,
         ]);
 
