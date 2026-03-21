@@ -41,6 +41,7 @@ import type { BreadcrumbItem } from '@/types';
 
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import vehicleTypes from '@/routes/vehicle-types';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Types
@@ -612,6 +613,14 @@ onBeforeUnmount(() => {
                                             <TableCell class="text-right text-xs text-muted-foreground">
                                                 {{ Number(stop.latitude).toFixed(5) }},
                                                 {{ Number(stop.longitude).toFixed(5) }}
+                                            </TableCell>
+                                        </TableRow>
+                                        <TableRow v-if="sortedStops.length === 0">
+                                            <TableCell
+                                                colspan="5"
+                                                class="py-10 text-center text-muted-foreground"
+                                            >
+                                                No stops found.
                                             </TableCell>
                                         </TableRow>
                                     </TableBody>

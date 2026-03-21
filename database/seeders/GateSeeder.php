@@ -10,24 +10,46 @@ class GateSeeder extends Seeder
 {
     public function run(): void
     {
-        $creator = User::role(['admin', 'it', 'terminal manager'])->first()
-            ?? User::query()->first();
+        // Gate::factory(3)->create();
+        $gate1 = Gate::updateOrCreate(
+            [
+                'gate_name' => 'Gate 1',
+                'bays' => '22',
+                'status' => true,
+                'created_by' => 1,
+                'updated_by' => 1,
+            ]
+        );
 
-        if (! $creator) {
-            $this->command?->warn('No users found. Please seed users first before seeding gates.');
-            return;
-        }
+        $gate2 = Gate::updateOrCreate(
+            [
+                'gate_name' => 'Gate 2',
+                'bays' => '18',
+                'status' => true,
+                'created_by' => 1,
+                'updated_by' => 1,
+            ]
+        );
 
-        for ($i = 1; $i <= 6; $i++) {
-            Gate::query()->updateOrCreate(
-                ['gate_name' => "Gate {$i}"],
-                [
-                    'status' => 'active',
-                    'bays' => fake()->numberBetween(6, 10),
-                    'created_by' => $creator->id,
-                    'updated_by' => $creator->id,
-                ]
-            );
-        }
+        $gate3 = Gate::updateOrCreate(
+            [
+                'gate_name' => 'Gate 3',
+                'bays' => '15',
+                'status' => true,
+                'created_by' => 1,
+                'updated_by' => 1,
+            ]
+        );
+
+        $gate4 = Gate::updateOrCreate(
+            [
+                'gate_name' => 'Gate 4',
+                'bays' => '20',
+                'status' => true,
+                'created_by' => 1,
+                'updated_by' => 1,
+            ]
+        );
+
     }
 }
