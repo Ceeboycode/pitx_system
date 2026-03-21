@@ -17,7 +17,7 @@ class CommuterMessageController extends Controller
         $perPage = max(1, min((int) $request->integer('per_page', 50), 100));
 
         $messages = $thread->messages()
-            ->with('sender:id,name')
+            ->with(['sender:id,name', 'attachments'])
             ->orderBy('created_at')
             ->paginate($perPage)
             ->withQueryString();
@@ -41,7 +41,7 @@ class CommuterMessageController extends Controller
 
         return response()->json([
             'message' => 'Message sent successfully.',
-            'data' => new CrmMessageResource($message->load('sender:id,name')),
+            'data' => new CrmMessageResource($message->load(['sender:id,name', 'attachments'])),
         ], 201);
     }
 
