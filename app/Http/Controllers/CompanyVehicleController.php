@@ -8,6 +8,9 @@ use App\Models\Gate as GateModel;
 use App\Models\Route;
 use App\Models\Vehicle;
 use App\Models\VehicleDocument;
+use App\Notifications\Internal\NewVehicleSubmittedNotification;
+use App\Notifications\Internal\VehicleResubmittedNotification;
+use App\Services\NotificationService;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,6 +29,11 @@ class CompanyVehicleController extends Controller
         'cpc'               => 'Certificate of Public Convenience (CPC)',
         'or_cr'             => 'Official Receipt / Certificate of Registration (OR/CR)',
     ];
+
+    public function __construct(
+        private readonly NotificationService $notificationService,
+    ) {
+    }
 
     public function index(Request $request): Response
     {
@@ -139,7 +147,7 @@ class CompanyVehicleController extends Controller
         $company   = $user->company;
         $validated = $request->validated();
 
-        DB::transaction(function () use ($validated, $company, $user, $request) {
+        $vehicle = DB::transaction(function () use ($validated, $company, $user, $request) {
             $vehicle = Vehicle::create([
                 'company_id'     => $company->id,
                 'route_id'       => $validated['route_id'],
@@ -186,7 +194,14 @@ class CompanyVehicleController extends Controller
                     'created_by'     => $user->id,
                 ]);
             }
+
+            return $vehicle;
         });
+
+        $this->notificationService->notifyInternalUsers(
+            new NewVehicleSubmittedNotification($vehicle->fresh(), $user),
+            ['super-admin', 'admin', 'terminal manager']
+        );
 
         return to_route('company.vehicles.index')
             ->with('success', 'Vehicle registered successfully and documents submitted for review.');
@@ -462,6 +477,11 @@ class CompanyVehicleController extends Controller
                 }
             }
         });
+
+        $this->notificationService->notifyInternalUsers(
+            new VehicleResubmittedNotification($vehicle->fresh(), $user),
+            ['super-admin', 'admin', 'terminal manager']
+        );
 
         return to_route('company.vehicles.show', $vehicle)
             ->with('success', 'Vehicle updated successfully.');
