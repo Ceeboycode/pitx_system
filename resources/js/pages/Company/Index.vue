@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import ArchiveCompanyDialog from '@/components/company/ArchiveCompanyDialog.vue';
 import CreateCompanyDialog from '@/components/company/CreateCompanyDialog.vue';
 import EditCompanyDialog from '@/components/company/EditCompanyDialog.vue';
 import ImportCompanyDialog from '@/components/company/ImportCompanyDialog.vue';
@@ -60,7 +59,7 @@ import {
 
 import { computed, ref } from 'vue';
 
-/* ── Types ──────────────────────────────────────────────────────────── */
+/* ── Types ──────────────────────────────────────────────────────── */
 
 type CompanyStatus =
     | 'draft'
@@ -104,29 +103,18 @@ const props = defineProps<{
 /* ── Permissions ─────────────────────────────────────────────────── */
 
 const canViewArchived = computed(() => can('companies.viewAny'));
-const canViewCompany = computed(() => can('companies.view'));
-const canArchiveCompany = computed(() => can('companies.delete'));
-
-/* create/update are not active in controller yet */
-// const canCreateCompany = computed(() => can('companies.create'));
-// const canEditCompany = computed(() => can('companies.update'));
+const canViewCompany  = computed(() => can('companies.view'));
 
 /* ── Dialog state ────────────────────────────────────────────────── */
 
-const createOpen = ref(false);
-const editOpen = ref(false);
-const archiveOpen = ref(false);
-const importOpen = ref(false);
+const createOpen      = ref(false);
+const editOpen        = ref(false);
+const importOpen      = ref(false);
 const selectedCompany = ref<Company | null>(null);
 
 function openEdit(company: Company) {
     selectedCompany.value = company;
     editOpen.value = true;
-}
-
-function openArchive(company: Company) {
-    selectedCompany.value = company;
-    archiveOpen.value = true;
 }
 
 /* ── Export ──────────────────────────────────────────────────────── */
@@ -141,9 +129,7 @@ function triggerExport() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(() => {
-        exporting.value = false;
-    }, 2000);
+    setTimeout(() => { exporting.value = false; }, 2000);
 }
 
 function onImportDone() {
@@ -154,51 +140,36 @@ function onImportDone() {
 
 function humanizeStatus(status?: CompanyStatus): string {
     if (!status) return '—';
-
     const map: Record<Exclude<CompanyStatus, null>, string> = {
-        draft: 'Draft',
-        docs_completed: 'Docs Completed',
+        draft:            'Draft',
+        docs_completed:   'Docs Completed',
         for_verification: 'For Verification',
-        verified: 'Verified',
-        needs_revision: 'Needs Revision',
-        rejected: 'Rejected',
+        verified:         'Verified',
+        needs_revision:   'Needs Revision',
+        rejected:         'Rejected',
     };
-
     return map[status] ?? status.replace(/_/g, ' ');
 }
 
 function statusClass(status?: CompanyStatus): string {
     switch (status) {
-        case 'verified':
-            return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-        case 'docs_completed':
-            return 'bg-blue-100 text-blue-700 border-blue-200';
-        case 'for_verification':
-            return 'bg-violet-100 text-violet-700 border-violet-200';
-        case 'needs_revision':
-            return 'bg-amber-100 text-amber-700 border-amber-200';
-        case 'rejected':
-            return 'bg-rose-100 text-rose-600 border-rose-200';
-        case 'draft':
-        default:
-            return 'bg-slate-100 text-slate-500 border-0';
+        case 'verified':         return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        case 'docs_completed':   return 'bg-blue-100 text-blue-700 border-blue-200';
+        case 'for_verification': return 'bg-violet-100 text-violet-700 border-violet-200';
+        case 'needs_revision':   return 'bg-amber-100 text-amber-700 border-amber-200';
+        case 'rejected':         return 'bg-rose-100 text-rose-600 border-rose-200';
+        default:                 return 'bg-slate-100 text-slate-500 border-0';
     }
 }
 
 function statusDot(status?: CompanyStatus): string {
     switch (status) {
-        case 'verified':
-            return 'bg-emerald-500';
-        case 'docs_completed':
-            return 'bg-blue-500';
-        case 'for_verification':
-            return 'bg-violet-500';
-        case 'needs_revision':
-            return 'bg-amber-500';
-        case 'rejected':
-            return 'bg-rose-500';
-        default:
-            return 'bg-slate-400';
+        case 'verified':         return 'bg-emerald-500';
+        case 'docs_completed':   return 'bg-blue-500';
+        case 'for_verification': return 'bg-violet-500';
+        case 'needs_revision':   return 'bg-amber-500';
+        case 'rejected':         return 'bg-rose-500';
+        default:                 return 'bg-slate-400';
     }
 }
 
@@ -240,6 +211,7 @@ function hasVerifiedEmail(company: Company): boolean {
                 </CardHeader>
 
                 <CardContent class="space-y-4">
+                    <!-- Search + Import/Export -->
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div class="w-full max-w-sm">
                             <SearchInput
@@ -290,6 +262,7 @@ function hasVerifiedEmail(company: Company): boolean {
                         </div>
                     </div>
 
+                    <!-- Table -->
                     <div class="overflow-x-auto rounded-lg border">
                         <Table>
                             <TableHeader>
@@ -305,6 +278,7 @@ function hasVerifiedEmail(company: Company): boolean {
                             </TableHeader>
 
                             <TableBody>
+                                <!-- Empty state -->
                                 <TableRow v-if="props.companies.data.length === 0" class="hover:bg-transparent">
                                     <TableCell colspan="7" class="py-20 text-center">
                                         <div class="flex flex-col items-center gap-3">
@@ -324,26 +298,29 @@ function hasVerifiedEmail(company: Company): boolean {
                                     :key="company.id"
                                     class="group transition-colors hover:bg-muted/30"
                                 >
+                                    <!-- Company Name -->
                                     <TableCell>
                                         <p class="text-sm font-semibold capitalize">{{ company.company_name }}</p>
                                     </TableCell>
 
+                                    <!-- Code -->
                                     <TableCell>
                                         <span class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
                                             {{ company.company_code }}
                                         </span>
                                     </TableCell>
 
+                                    <!-- Email -->
                                     <TableCell>
                                         <div class="space-y-1">
                                             <p class="text-sm lowercase text-muted-foreground">
                                                 {{ company.company_email ?? '—' }}
                                             </p>
-
                                             <div v-if="company.company_email" class="flex items-center gap-1.5">
                                                 <Badge
-                                                    :variant="hasVerifiedEmail(company) ? 'default' : 'outline'"
-                                                    class="gap-1 text-[10px]"
+                                                    :class="hasVerifiedEmail(company)
+                                                        ? 'bg-emerald-100 text-emerald-700 border-emerald-200 gap-1 text-[10px]'
+                                                        : 'bg-slate-100 text-slate-500 border-0 gap-1 text-[10px]'"
                                                 >
                                                     <MailCheck v-if="hasVerifiedEmail(company)" class="h-3 w-3" />
                                                     <MailX v-else class="h-3 w-3" />
@@ -353,10 +330,12 @@ function hasVerifiedEmail(company: Company): boolean {
                                         </div>
                                     </TableCell>
 
+                                    <!-- Phone -->
                                     <TableCell class="text-sm text-muted-foreground">
                                         {{ company.company_phone ?? '—' }}
                                     </TableCell>
 
+                                    <!-- Status -->
                                     <TableCell>
                                         <Badge :class="['gap-1.5', statusClass(company.status ?? null)]">
                                             <span :class="['h-1.5 w-1.5 rounded-full', statusDot(company.status ?? null)]" />
@@ -364,12 +343,14 @@ function hasVerifiedEmail(company: Company): boolean {
                                         </Badge>
                                     </TableCell>
 
+                                    <!-- Created -->
                                     <TableCell class="text-sm text-muted-foreground">
                                         {{ company.created_at_human ?? '—' }}
                                     </TableCell>
 
+                                    <!-- Actions — only Review (archive moved to Show page) -->
                                     <TableCell class="text-right">
-                                        <DropdownMenu v-if="canViewCompany || canArchiveCompany">
+                                        <DropdownMenu v-if="canViewCompany">
                                             <DropdownMenuTrigger as-child>
                                                 <Button
                                                     variant="ghost"
@@ -385,11 +366,9 @@ function hasVerifiedEmail(company: Company): boolean {
                                                 <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                                     {{ company.company_name }}
                                                 </DropdownMenuLabel>
-
-                                                <DropdownMenuSeparator v-if="canViewCompany" />
+                                                <DropdownMenuSeparator />
 
                                                 <DropdownMenuItem
-                                                    v-if="canViewCompany"
                                                     as-child
                                                     class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700"
                                                 >
@@ -398,17 +377,6 @@ function hasVerifiedEmail(company: Company): boolean {
                                                         Review Company
                                                         <ChevronRight class="ml-auto h-3.5 w-3.5 text-blue-400" />
                                                     </Link>
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuSeparator v-if="canArchiveCompany" />
-
-                                                <DropdownMenuItem
-                                                    v-if="canArchiveCompany"
-                                                    class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600"
-                                                    @click="openArchive(company)"
-                                                >
-                                                    <Archive class="mr-2 h-4 w-4" />
-                                                    Archive Company
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -435,12 +403,6 @@ function hasVerifiedEmail(company: Company): boolean {
         <EditCompanyDialog
             v-if="selectedCompany"
             v-model:open="editOpen"
-            :company="selectedCompany"
-        />
-
-        <ArchiveCompanyDialog
-            v-if="selectedCompany"
-            v-model:open="archiveOpen"
             :company="selectedCompany"
         />
 
