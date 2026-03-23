@@ -6,6 +6,11 @@ use App\Mail\RegistrationOtpMail;
 use App\Models\Company;
 use App\Models\CompanyDocument;
 use App\Models\User;
+use App\Notifications\External\CompanyResubmittedReceivedNotification;
+use App\Notifications\External\CompanySubmissionReceivedNotification;
+use App\Notifications\Internal\CompanyResubmittedNotification;
+use App\Notifications\Internal\NewCompanySubmittedNotification;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,6 +25,11 @@ use Inertia\Response;
 
 class CompanyRegistration extends Controller
 {
+    public function __construct(
+        private readonly NotificationService $notificationService,
+    ) {
+    }
+
     public function show(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
@@ -309,7 +319,7 @@ class CompanyRegistration extends Controller
             'documents.DTI_CERT.expires_at' => [! $isCorporate ? 'required' : 'nullable', 'date', 'after:documents.DTI_CERT.issued_at'],
         ], $this->documentMessages());
 
-        $user = DB::transaction(function () use ($request, $step1, $step2) {
+        $result = DB::transaction(function () use ($request, $step1, $step2) {
             $companyCode = $this->generateUniqueCompanyCode3($step2['company_name']);
             $username = $this->nextUsernameForCompanyCode($companyCode);
 
@@ -399,8 +409,24 @@ class CompanyRegistration extends Controller
                 ]);
             }
 
-            return $user;
+            return [
+                'user' => $user,
+                'company' => $company,
+            ];
         });
+
+        $user = $result['user'];
+        $company = $result['company'];
+
+        $this->notificationService->notifyInternalUsers(
+            new NewCompanySubmittedNotification($company, $user),
+            ['super-admin', 'admin', 'terminal manager']
+        );
+
+        $submissionNotification = new CompanySubmissionReceivedNotification($company);
+
+        $this->notificationService->notifyCompanyUsers($company, $submissionNotification);
+        $this->notificationService->notifyCompanyEmail($company, $submissionNotification);
 
         $request->session()->forget('registration');
         Auth::login($user);
@@ -549,6 +575,18 @@ class CompanyRegistration extends Controller
 
             $company->update(['status' => 'for_verification']);
         });
+
+        $company->refresh();
+
+        $this->notificationService->notifyInternalUsers(
+            new CompanyResubmittedNotification($company, $user),
+            ['super-admin', 'admin', 'terminal manager']
+        );
+
+        $resubmittedNotification = new CompanyResubmittedReceivedNotification($company);
+
+        $this->notificationService->notifyCompanyUsers($company, $resubmittedNotification);
+        $this->notificationService->notifyCompanyEmail($company, $resubmittedNotification);
 
         return redirect()
             ->route('registration.status')

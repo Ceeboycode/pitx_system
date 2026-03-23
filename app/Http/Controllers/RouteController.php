@@ -6,6 +6,8 @@ use App\Http\Requests\Route\RouteStoreRequest;
 use App\Http\Requests\Route\RouteUpdateRequest;
 use App\Models\Gate as GateModel;
 use App\Models\Route;
+use App\Notifications\External\RouteStatusChangedNotification;
+use App\Services\NotificationService;
 use App\Services\Route\RouteService;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -15,6 +17,7 @@ class RouteController extends Controller
 {
     public function __construct(
         private RouteService $routeService,
+        private NotificationService $notificationService,
     ) {}
 
     public function index(): Response
@@ -46,7 +49,7 @@ class RouteController extends Controller
 
     public function show(Route $route): Response
     {
-        Gate::authorize('view', $route); // instance
+        Gate::authorize('view', $route);
 
         $route->load([
             'gate:id,gate_name',
@@ -91,7 +94,7 @@ class RouteController extends Controller
 
     public function edit(Route $route): Response
     {
-        Gate::authorize('update', $route); // instance
+        Gate::authorize('update', $route);
 
         $route->load([
             'gate:id,gate_name',
@@ -116,7 +119,7 @@ class RouteController extends Controller
 
     public function update(RouteUpdateRequest $request, Route $route)
     {
-        Gate::authorize('update', $route); // instance
+        Gate::authorize('update', $route);
 
         $this->routeService->updateRoute($route, $request->validated());
 
@@ -125,11 +128,16 @@ class RouteController extends Controller
 
     public function toggleStatus(Route $route)
     {
-        Gate::authorize('toggleStatus', $route); // instance
+        Gate::authorize('toggleStatus', $route);
 
         $route->toggleStatus();
+        $route->refresh();
 
-        $label = $route->fresh()->status->label();
+        $label = $route->status->label();
+
+        $notification = new RouteStatusChangedNotification($route, $label);
+
+        $this->notificationService->notifyAffectedCompaniesByRoute($route, $notification);
 
         return back()->with('success', "Route marked as {$label}.");
     }
@@ -164,7 +172,7 @@ class RouteController extends Controller
 
     public function destroy(Route $route)
     {
-        Gate::authorize('delete', $route); // instance
+        Gate::authorize('delete', $route);
 
         $this->routeService->deleteRoute($route);
 
@@ -173,7 +181,7 @@ class RouteController extends Controller
 
     public function restore(Route $route)
     {
-        Gate::authorize('restore', $route); // instance
+        Gate::authorize('restore', $route);
 
         $this->routeService->restoreRoute($route);
 
@@ -182,7 +190,7 @@ class RouteController extends Controller
 
     public function forceDelete(Route $route)
     {
-        Gate::authorize('forceDelete', $route); // instance
+        Gate::authorize('forceDelete', $route);
 
         $this->routeService->forceDeleteRoute($route);
 

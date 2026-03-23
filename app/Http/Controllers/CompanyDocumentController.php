@@ -5,6 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Company\CompanyDocumentRejectRequest;
 use App\Models\Company;
 use App\Models\CompanyDocument;
+use App\Notifications\External\CompanyNeedsRevisionNotification;
+use App\Notifications\External\CompanyVerifiedNotification;
+use App\Notifications\Internal\CompanyDocumentRejectedNotification;
+use App\Notifications\Internal\CompanyDocumentVerifiedNotification;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -14,9 +19,13 @@ use ZipArchive;
 
 class CompanyDocumentController extends Controller
 {
+    public function __construct(
+        private readonly NotificationService $notificationService,
+    ) {
+    }
+
     public function download(Company $company, CompanyDocument $document): mixed
     {
-        // companies.view + company_documents.download
         Gate::authorize('view', $company);
         Gate::authorize('download', $document);
         $this->assertBelongs($document, $company);
@@ -34,7 +43,6 @@ class CompanyDocumentController extends Controller
 
     public function downloadBulk(Request $request, Company $company): StreamedResponse
     {
-        // companies.view + company_documents.viewAny
         Gate::authorize('view', $company);
         Gate::authorize('viewAny', CompanyDocument::class);
 
@@ -98,7 +106,6 @@ class CompanyDocumentController extends Controller
 
     public function verify(Request $request, Company $company, CompanyDocument $document): RedirectResponse
     {
-        // company_documents.verify
         Gate::authorize('verify', $document);
         $this->assertBelongs($document, $company);
         abort_if(! $request->user()?->id, 403);
@@ -112,12 +119,30 @@ class CompanyDocumentController extends Controller
 
         $this->syncCompanyStatus($company);
 
+        $company = $company->fresh();
+        $document = $document->fresh();
+
+        $this->notificationService->notifyInternalUsers(
+            new CompanyDocumentVerifiedNotification(
+                $company,
+                $document,
+                $request->user()
+            ),
+            ['super-admin', 'admin', 'terminal manager']
+        );
+
+        if ($company->status === 'verified') {
+            $verifiedNotification = new CompanyVerifiedNotification($company);
+
+            $this->notificationService->notifyCompanyUsers($company, $verifiedNotification);
+            $this->notificationService->notifyCompanyEmail($company, $verifiedNotification);
+        }
+
         return back()->with('success', 'Document verified successfully.');
     }
 
     public function unverify(Company $company, CompanyDocument $document): RedirectResponse
     {
-        // company_documents.update
         Gate::authorize('update', $document);
         $this->assertBelongs($document, $company);
 
@@ -138,25 +163,47 @@ class CompanyDocumentController extends Controller
         Company $company,
         CompanyDocument $document,
     ): RedirectResponse {
-        // company_documents.reject
         Gate::authorize('reject', $document);
         $this->assertBelongs($document, $company);
 
+        $validated = $request->validated();
+
         $document->update([
             'status' => 'invalid',
-            'remarks' => $request->validated()['remarks'],
+            'remarks' => $validated['remarks'],
             'verified_by' => null,
             'verified_at' => null,
         ]);
 
         $this->syncCompanyStatus($company);
 
+        $company = $company->fresh();
+        $document = $document->fresh();
+
+        $this->notificationService->notifyInternalUsers(
+            new CompanyDocumentRejectedNotification(
+                $company,
+                $document,
+                $request->user(),
+                $validated['remarks']
+            ),
+            ['super-admin', 'admin', 'terminal manager']
+        );
+
+        $needsRevisionNotification = new CompanyNeedsRevisionNotification(
+            $company,
+            $document,
+            $validated['remarks']
+        );
+
+        $this->notificationService->notifyCompanyUsers($company, $needsRevisionNotification);
+        $this->notificationService->notifyCompanyEmail($company, $needsRevisionNotification);
+
         return back()->with('success', 'Document marked as invalid.');
     }
 
     public function destroy(Company $company, CompanyDocument $document): RedirectResponse
     {
-        // company_documents.delete
         Gate::authorize('delete', $document);
         $this->assertBelongs($document, $company);
 
