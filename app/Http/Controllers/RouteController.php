@@ -25,25 +25,50 @@ class RouteController extends Controller
         Gate::authorize('viewAny', Route::class);
 
         $search = request('search');
+        $status = request('status');
+        $sortBy = request('sort_by');
+        $sortDir = request('sort_dir', 'asc');
 
-        $routes = Route::select('id', 'route_name', 'gate_id', 'status', 'created_at')
+        $allowedSorts = ['route_name', 'gate_name', 'status', 'created_at'];
+        $sortDir = in_array($sortDir, ['asc', 'desc']) ? $sortDir : 'asc';
+
+        $routes = Route::query()
+            ->select('routes.id', 'routes.route_name', 'routes.gate_id', 'routes.status', 'routes.created_at')
             ->with('gate:id,gate_name')
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('route_name', 'like', "%{$search}%")
-                      ->orWhere('status', 'like', "%{$search}%")
-                      ->orWhereHas('gate', fn ($g) =>
-                          $g->where('gate_name', 'like', "%{$search}%")
-                      );
+                        ->orWhere('status', 'like', "%{$search}%")
+                        ->orWhereHas('gate', fn ($g) =>
+                            $g->where('gate_name', 'like', "%{$search}%")
+                        );
                 });
             })
-            ->latest()
+            ->when($status && $status !== 'all', function ($query) use ($status) {
+                $query->where('routes.status', $status);
+            })
+            ->when($sortBy && in_array($sortBy, $allowedSorts), function ($query) use ($sortBy, $sortDir) {
+                if ($sortBy === 'gate_name') {
+                    $query->leftJoin('gates', 'routes.gate_id', '=', 'gates.id')
+                        ->orderBy('gates.gate_name', $sortDir)
+                        ->select('routes.id', 'routes.route_name', 'routes.gate_id', 'routes.status', 'routes.created_at');
+                } else {
+                    $query->orderBy("routes.{$sortBy}", $sortDir);
+                }
+            }, function ($query) {
+                $query->latest('routes.created_at');
+            })
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Route/Index', [
-            'routes'  => $routes,
-            'filters' => ['search' => $search],
+            'routes' => $routes,
+            'filters' => [
+                'search' => $search,
+                'status' => $status,
+                'sort_by' => in_array($sortBy, $allowedSorts) ? $sortBy : null,
+                'sort_dir' => $sortDir,
+            ],
         ]);
     }
 
@@ -59,7 +84,7 @@ class RouteController extends Controller
         ]);
 
         return Inertia::render('Route/Show', [
-            'route'     => $route,
+            'route' => $route,
             'mapConfig' => [
                 'mapboxToken' => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
             ],
@@ -71,13 +96,13 @@ class RouteController extends Controller
         Gate::authorize('create', Route::class);
 
         return Inertia::render('Route/Create', [
-            'gates'     => GateModel::select('id', 'gate_name')->orderBy('gate_name')->get(),
+            'gates' => GateModel::select('id', 'gate_name')->orderBy('gate_name')->get(),
             'mapConfig' => [
                 'mapboxToken' => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
-                'pitx'        => [
+                'pitx' => [
                     'name' => 'PITX',
-                    'lat'  => 14.5096,
-                    'lng'  => 120.9915,
+                    'lat' => 14.5096,
+                    'lng' => 120.9915,
                 ],
             ],
         ]);
@@ -104,14 +129,14 @@ class RouteController extends Controller
         ]);
 
         return Inertia::render('Route/Edit', [
-            'route'     => $route,
-            'gates'     => GateModel::select('id', 'gate_name')->orderBy('gate_name')->get(),
+            'route' => $route,
+            'gates' => GateModel::select('id', 'gate_name')->orderBy('gate_name')->get(),
             'mapConfig' => [
                 'mapboxToken' => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
-                'pitx'        => [
+                'pitx' => [
                     'name' => 'PITX',
-                    'lat'  => 14.5096,
-                    'lng'  => 120.9915,
+                    'lat' => 14.5096,
+                    'lng' => 120.9915,
                 ],
             ],
         ]);
@@ -154,10 +179,10 @@ class RouteController extends Controller
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('route_name', 'like', "%{$search}%")
-                      ->orWhere('status', 'like', "%{$search}%")
-                      ->orWhereHas('gate', fn ($g) =>
-                          $g->where('gate_name', 'like', "%{$search}%")
-                      );
+                        ->orWhere('status', 'like', "%{$search}%")
+                        ->orWhereHas('gate', fn ($g) =>
+                            $g->where('gate_name', 'like', "%{$search}%")
+                        );
                 });
             })
             ->latest('deleted_at')
@@ -165,7 +190,7 @@ class RouteController extends Controller
             ->withQueryString();
 
         return Inertia::render('Route/Trash', [
-            'routes'  => $routes,
+            'routes' => $routes,
             'filters' => ['search' => $search],
         ]);
     }

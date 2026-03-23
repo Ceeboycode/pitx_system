@@ -16,6 +16,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 
 import {
+    Archive,
     ArrowLeft,
     CalendarDays,
     DoorOpen,
@@ -115,6 +116,18 @@ function formatDate(value?: string | null): string {
                         <Link :href="edit(gate.id).url">
                             <Pencil class="mr-2 h-4 w-4" />
                             Edit Gate
+                        </Link>
+                    </Button>
+
+                    <Button
+                        as-child
+                        size="sm"
+                        variant="destructive"
+                        class="rounded-lg border-slate-200 text-white-600 hover:bg-rose-500"
+                    >
+                        <Link :href="index().url">
+                            <Archive class="mr-2 h-4 w-4" />
+                            Archive Gate
                         </Link>
                     </Button>
                 </div>

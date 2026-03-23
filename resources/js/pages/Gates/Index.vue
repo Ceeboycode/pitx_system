@@ -521,13 +521,6 @@ const archiveGate = () => {
                                                     <Pencil class="mr-2 h-4 w-4" />
                                                     Edit
                                                 </DropdownMenuItem>
-
-                                                <DropdownMenuSeparator />
-
-                                                <DropdownMenuItem class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600" @click="openArchive(gate)">
-                                                    <Archive class="mr-2 h-4 w-4" />
-                                                    Archive
-                                                </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>

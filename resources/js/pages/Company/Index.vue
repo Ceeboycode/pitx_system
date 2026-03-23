@@ -25,6 +25,13 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
     Table,
     TableBody,
     TableCell,
@@ -46,15 +53,20 @@ import { Head, Link, router } from '@inertiajs/vue3';
 
 import {
     Archive,
+    ArrowDown,
+    ArrowUp,
+    ArrowUpDown,
     Building2,
     ChevronRight,
     Download,
     FileSearch,
+    Filter,
     Loader2,
     MailCheck,
     MailX,
     MoreHorizontal,
     Upload,
+    X,
 } from 'lucide-vue-next';
 
 import { computed, ref } from 'vue';
@@ -69,6 +81,9 @@ type CompanyStatus =
     | 'needs_revision'
     | 'rejected'
     | null;
+
+type SortField = 'company_name' | 'company_code' | 'status' | 'created_at' | null;
+type SortDir   = 'asc' | 'desc';
 
 type Company = {
     id: number;
@@ -97,7 +112,12 @@ const props = defineProps<{
         to: number | null;
         total: number;
     };
-    filters: { search: string | null };
+    filters: {
+        search: string | null;
+        status: string | null;
+        sort_by: SortField;
+        sort_dir: SortDir;
+    };
 }>();
 
 /* ── Permissions ─────────────────────────────────────────────────── */
@@ -134,6 +154,64 @@ function triggerExport() {
 
 function onImportDone() {
     router.reload({ only: ['companies'] });
+}
+
+/* ── Filter & Sort state ─────────────────────────────────────────── */
+
+const statusFilter = ref<string>(props.filters.status ?? 'all');
+const sortBy       = ref<SortField>(props.filters.sort_by ?? null);
+const sortDir      = ref<SortDir>(props.filters.sort_dir ?? 'asc');
+
+const hasActiveFilters = computed(() =>
+    (statusFilter.value && statusFilter.value !== 'all') ||
+    sortBy.value !== null
+);
+
+function applyFilters(overrides: Record<string, string | null> = {}) {
+    router.get(
+        index().url,
+        {
+            search:   props.filters.search ?? undefined,
+            status:   statusFilter.value !== 'all' ? statusFilter.value : undefined,
+            sort_by:  sortBy.value ?? undefined,
+            sort_dir: sortBy.value ? sortDir.value : undefined,
+            ...overrides,
+        },
+        { preserveState: true, replace: true, only: ['companies', 'filters', 'flash'] },
+    );
+}
+
+function onStatusChange(val: string) {
+    statusFilter.value = val;
+    applyFilters();
+}
+
+function toggleSort(field: SortField) {
+    if (sortBy.value === field) {
+        sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortBy.value  = field;
+        sortDir.value = 'asc';
+    }
+    applyFilters();
+}
+
+function clearFilters() {
+    statusFilter.value = 'all';
+    sortBy.value       = null;
+    sortDir.value      = 'asc';
+    applyFilters({ status: undefined, sort_by: undefined, sort_dir: undefined });
+}
+
+/* ── Sort icon helper ────────────────────────────────────────────── */
+
+function sortIcon(field: SortField) {
+    if (sortBy.value !== field) return ArrowUpDown;
+    return sortDir.value === 'asc' ? ArrowUp : ArrowDown;
+}
+
+function sortIconClass(field: SortField) {
+    return sortBy.value === field ? 'text-blue-600' : 'text-muted-foreground/40';
 }
 
 /* ── Status helpers ──────────────────────────────────────────────── */
@@ -211,7 +289,8 @@ function hasVerifiedEmail(company: Company): boolean {
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-                    <!-- Search + Import/Export -->
+
+                    <!-- Row 1: Search + Import/Export -->
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div class="w-full max-w-sm">
                             <SearchInput
@@ -262,17 +341,135 @@ function hasVerifiedEmail(company: Company): boolean {
                         </div>
                     </div>
 
+                    <!-- Row 2: Filters + Sort -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- Filter icon label -->
+                        <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            <Filter class="h-3.5 w-3.5" />
+                            Filter
+                        </div>
+
+                        <!-- Status filter -->
+                        <Select :model-value="statusFilter" @update:model-value="onStatusChange">
+                            <SelectTrigger class="h-8 w-44 rounded-lg border-slate-200 text-xs">
+                                <SelectValue placeholder="All Statuses" />
+                            </SelectTrigger>
+                            <SelectContent class="rounded-xl">
+                                <SelectItem value="all" class="text-xs">All Statuses</SelectItem>
+                                <SelectItem value="draft" class="text-xs">Draft</SelectItem>
+                                <SelectItem value="docs_completed" class="text-xs">Docs Completed</SelectItem>
+                                <SelectItem value="for_verification" class="text-xs">For Verification</SelectItem>
+                                <SelectItem value="verified" class="text-xs">Verified</SelectItem>
+                                <SelectItem value="needs_revision" class="text-xs">Needs Revision</SelectItem>
+                                <SelectItem value="rejected" class="text-xs">Rejected</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <!-- Sort by -->
+                        <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground ml-2">
+                            <ArrowUpDown class="h-3.5 w-3.5" />
+                            Sort
+                        </div>
+
+                        <Select
+                            :model-value="sortBy ?? 'none'"
+                            @update:model-value="(val) => { sortBy = val === 'none' ? null : val as SortField; applyFilters(); }"
+                        >
+                            <SelectTrigger class="h-8 w-40 rounded-lg border-slate-200 text-xs">
+                                <SelectValue placeholder="Sort by…" />
+                            </SelectTrigger>
+                            <SelectContent class="rounded-xl">
+                                <SelectItem value="none" class="text-xs">No Sort</SelectItem>
+                                <SelectItem value="company_name" class="text-xs">Company Name</SelectItem>
+                                <SelectItem value="company_code" class="text-xs">Company Code</SelectItem>
+                                <SelectItem value="status" class="text-xs">Status</SelectItem>
+                                <SelectItem value="created_at" class="text-xs">Created Date</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <!-- Sort direction toggle — only shown when a sort field is active -->
+                        <Button
+                            v-if="sortBy"
+                            size="sm"
+                            variant="outline"
+                            class="h-8 rounded-lg border-slate-200 px-3 text-xs text-slate-600 hover:bg-slate-100"
+                            @click="sortDir = sortDir === 'asc' ? 'desc' : 'asc'; applyFilters()"
+                        >
+                            <ArrowUp v-if="sortDir === 'asc'" class="mr-1.5 h-3.5 w-3.5 text-blue-600" />
+                            <ArrowDown v-else class="mr-1.5 h-3.5 w-3.5 text-blue-600" />
+                            {{ sortDir === 'asc' ? 'Ascending' : 'Descending' }}
+                        </Button>
+
+                        <!-- Active filter badge + clear -->
+                        <div v-if="hasActiveFilters" class="ml-auto flex items-center gap-2">
+                            <Badge class="gap-1 rounded-lg bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 border border-blue-200 hover:bg-blue-50">
+                                <Filter class="h-3 w-3" />
+                                Filters active
+                            </Badge>
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                class="h-7 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
+                                @click="clearFilters"
+                            >
+                                <X class="mr-1 h-3.5 w-3.5" />
+                                Clear
+                            </Button>
+                        </div>
+                    </div>
+
                     <!-- Table -->
                     <div class="overflow-x-auto rounded-lg border">
                         <Table>
                             <TableHeader>
                                 <TableRow class="bg-muted/40 hover:bg-muted/40">
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Company Name</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Code</TableHead>
+                                    <!-- Sortable: Company Name -->
+                                    <TableHead
+                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        @click="toggleSort('company_name')"
+                                    >
+                                        <div class="flex items-center gap-1.5">
+                                            Company Name
+                                            <component :is="sortIcon('company_name')" class="h-3.5 w-3.5" :class="sortIconClass('company_name')" />
+                                        </div>
+                                    </TableHead>
+
+                                    <!-- Sortable: Code -->
+                                    <TableHead
+                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        @click="toggleSort('company_code')"
+                                    >
+                                        <div class="flex items-center gap-1.5">
+                                            Code
+                                            <component :is="sortIcon('company_code')" class="h-3.5 w-3.5" :class="sortIconClass('company_code')" />
+                                        </div>
+                                    </TableHead>
+
                                     <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Email</TableHead>
                                     <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Phone</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Status</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Created</TableHead>
+
+                                    <!-- Sortable: Status -->
+                                    <TableHead
+                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        @click="toggleSort('status')"
+                                    >
+                                        <div class="flex items-center gap-1.5">
+                                            Status
+                                            <component :is="sortIcon('status')" class="h-3.5 w-3.5" :class="sortIconClass('status')" />
+                                        </div>
+                                    </TableHead>
+
+                                    <!-- Sortable: Created -->
+                                    <TableHead
+                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        @click="toggleSort('created_at')"
+                                    >
+                                        <div class="flex items-center gap-1.5">
+                                            Created
+                                            <component :is="sortIcon('created_at')" class="h-3.5 w-3.5" :class="sortIconClass('created_at')" />
+                                        </div>
+                                    </TableHead>
+
                                     <TableHead class="text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -287,8 +484,20 @@ function hasVerifiedEmail(company: Company): boolean {
                                             </div>
                                             <div>
                                                 <p class="text-sm font-semibold text-foreground">No companies found</p>
-                                                <p class="mt-0.5 text-xs text-muted-foreground">Try adjusting your search.</p>
+                                                <p class="mt-0.5 text-xs text-muted-foreground">
+                                                    {{ hasActiveFilters ? 'Try adjusting your filters or search.' : 'Try adjusting your search.' }}
+                                                </p>
                                             </div>
+                                            <Button
+                                                v-if="hasActiveFilters"
+                                                size="sm"
+                                                variant="outline"
+                                                class="mt-1 h-8 rounded-lg text-xs"
+                                                @click="clearFilters"
+                                            >
+                                                <X class="mr-1.5 h-3.5 w-3.5" />
+                                                Clear filters
+                                            </Button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -348,7 +557,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                         {{ company.created_at_human ?? '—' }}
                                     </TableCell>
 
-                                    <!-- Actions — only Review (archive moved to Show page) -->
+                                    <!-- Actions -->
                                     <TableCell class="text-right">
                                         <DropdownMenu v-if="canViewCompany">
                                             <DropdownMenuTrigger as-child>

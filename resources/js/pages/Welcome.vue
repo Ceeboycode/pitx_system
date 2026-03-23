@@ -17,12 +17,6 @@ import {
 
 withDefaults(defineProps<{ canRegister: boolean }>(), { canRegister: true });
 
-const routeActivities = [
-    { name: 'Alabang → PITX', pct: 80, color: '#1a3a6b' },
-    { name: 'Pasay → PITX', pct: 55, color: '#c0392b' },
-    { name: 'Molino → PITX', pct: 65, color: '#1a3a6b' },
-];
-
 const features = [
     {
         title: 'Role-Based Access',
@@ -96,9 +90,6 @@ const features = [
                         <Button variant="ghost" as-child class="text-sm font-medium text-gray-600 hover:text-[#c0392b]">
                             <Link :href="login()">Log in</Link>
                         </Button>
-                        <Button as-child class="rounded-lg bg-[#c0392b] px-5 text-sm font-semibold text-white hover:bg-[#a93226]">
-                            <Link :href="show()">Register Company</Link>
-                        </Button>
                     </template>
                 </nav>
             </div>
@@ -112,145 +103,75 @@ const features = [
                     alt="PITX Terminal"
                     class="h-full w-full object-cover object-center"
                 />
-                <div class="absolute inset-0 bg-gradient-to-r from-[#0d1b2a]/93 via-[#0d1b2a]/78 to-[#0d1b2a]/35"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-[#0d1b2a]/95 via-[#0d1b2a]/80 to-[#0d1b2a]/50"></div>
                 <div class="absolute inset-0 bg-gradient-to-t from-[#0d1b2a]/60 via-transparent to-transparent"></div>
                 <div class="absolute -top-20 -left-20 h-96 w-96 rounded-full bg-[#c0392b]/20 blur-3xl"></div>
                 <div class="absolute top-10 right-1/3 h-72 w-72 rounded-full bg-[#1a3a6b]/25 blur-3xl"></div>
             </div>
 
-            <div class="relative z-10 mx-auto max-w-7xl px-6 py-20 md:py-28">
-                <div class="grid items-center gap-12 lg:grid-cols-2">
-                    <!-- LEFT -->
-                    <div class="space-y-6">
-                        <div class="flex flex-wrap gap-2">
-                            <Badge class="border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm hover:bg-white/10">
-                                <MapPin class="mr-1.5 h-3 w-3 text-[#e74c3c]" />
-                                Parañaque, Philippines
-                            </Badge>
-                            <Badge class="border border-[#c0392b]/50 bg-[#c0392b]/20 px-3 py-1 text-xs font-semibold text-red-300 backdrop-blur-sm hover:bg-[#c0392b]/20">
-                                Centralized Platform
-                            </Badge>
-                        </div>
-
-                        <h1 class="text-4xl font-extrabold leading-[1.1] tracking-tight text-white md:text-6xl">
-                            Centralized<br />
-                            Terminal<br />
-                            <span class="text-[#e74c3c]">Operations.</span>
-                        </h1>
-
-                        <p class="max-w-md text-base leading-relaxed text-white/70 md:text-lg">
-                            A unified system for PITX administrators, dispatchers, and operators to manage
-                            gates, routes, and vehicle dispatch in real time — from one powerful platform.
-                        </p>
-
-                        <div class="flex flex-wrap gap-3 pt-2">
-                            <Button
-                                size="lg"
-                                as-child
-                                class="rounded-xl bg-[#c0392b] px-8 text-base font-semibold text-white shadow-lg shadow-red-900/30 hover:bg-[#a93226]"
-                            >
-                                <Link :href="login()">
-                                    Get Started
-                                    <ArrowRight class="ml-2 h-4 w-4" />
-                                </Link>
-                            </Button>
-
-                            <Button
-                                size="lg"
-                                variant="outline"
-                                as-child
-                                class="rounded-xl border-white/30 bg-white/10 px-8 text-base font-semibold text-white backdrop-blur-sm hover:bg-white/20"
-                            >
-                                <a href="#features">Learn More</a>
-                            </Button>
-                        </div>
-
-                        <div class="flex flex-wrap gap-x-6 gap-y-2 pt-2 text-sm text-white/55">
-                            <div class="flex items-center gap-2">
-                                <CheckCircle2 class="h-3.5 w-3.5 text-[#e74c3c]" />
-                                Multi-gate management
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <CheckCircle2 class="h-3.5 w-3.5 text-[#e74c3c]" />
-                                Live dispatch control
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <CheckCircle2 class="h-3.5 w-3.5 text-[#e74c3c]" />
-                                Role-secured access
-                            </div>
-                        </div>
+            <div class="relative z-10 mx-auto max-w-7xl px-6 py-24 md:py-36">
+                <div class="mx-auto max-w-3xl space-y-8">
+                    <!-- Badges -->
+                    <div class="flex flex-wrap gap-2">
+                        <Badge class="border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm hover:bg-white/10">
+                            <MapPin class="mr-1.5 h-3 w-3 text-[#e74c3c]" />
+                            Parañaque, Philippines
+                        </Badge>
+                        <Badge class="border border-[#c0392b]/50 bg-[#c0392b]/20 px-3 py-1 text-xs font-semibold text-red-300 backdrop-blur-sm hover:bg-[#c0392b]/20">
+                            Centralized Platform
+                        </Badge>
                     </div>
 
-                    <!-- RIGHT: Mini Dashboard Preview -->
-                    <div class="relative">
-                        <div class="absolute -left-3 top-6 bottom-6 w-1 rounded-full bg-gradient-to-b from-[#c0392b] to-[#1a3a6b]"></div>
+                    <!-- Headline -->
+                    <h1 class="text-5xl font-extrabold leading-[1.1] tracking-tight text-white md:text-7xl">
+                        Centralized<br />
+                        Terminal<br />
+                        <span class="text-[#e74c3c]">Operations.</span>
+                    </h1>
 
-                        <Card class="overflow-hidden rounded-2xl border border-white/10 bg-white/95 shadow-2xl backdrop-blur-xl">
-                            <CardHeader class="flex flex-row items-center justify-between bg-gradient-to-r from-[#1a3a6b] to-[#1a3a6b]/80 px-6 py-4">
-                                <div>
-                                    <CardTitle class="text-sm font-bold text-white">Gate 3 – Southbound</CardTitle>
-                                    <p class="mt-0.5 text-xs text-blue-200">Live terminal snapshot</p>
-                                </div>
-                                <Badge class="border border-green-400/30 bg-green-500/20 px-3 py-1 text-xs font-bold text-green-300 hover:bg-green-500/20">
-                                    <span class="mr-1.5 h-1.5 w-1.5 animate-pulse rounded-full bg-green-400"></span>
-                                    Active
-                                </Badge>
-                            </CardHeader>
+                    <!-- Description -->
+                    <p class="max-w-xl text-base leading-relaxed text-white/70 md:text-lg">
+                        A unified system for PITX administrators, dispatchers, and operators to manage
+                        gates, routes, and vehicle dispatch in real time — from one powerful platform.
+                    </p>
 
-                            <CardContent class="space-y-4 p-5">
-                                <div class="grid grid-cols-2 gap-3">
-                                    <Card class="border border-gray-100 bg-gray-50 shadow-none">
-                                        <CardContent class="p-3 text-center">
-                                            <p class="text-[10px] font-medium uppercase tracking-wide text-gray-400">Active Vehicles</p>
-                                            <p class="mt-1 text-2xl font-extrabold text-[#1a3a6b]">12</p>
-                                        </CardContent>
-                                    </Card>
+                    <!-- CTAs -->
+                    <div class="flex flex-wrap gap-3 pt-2">
+                        <Button
+                            size="lg"
+                            as-child
+                            class="rounded-xl bg-[#c0392b] px-8 text-base font-semibold text-white shadow-lg shadow-red-900/30 hover:bg-[#a93226]"
+                        >
+                            <Link :href="show()">
+                                Get Started
+                                <ArrowRight class="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
 
-                                    <Card class="border border-gray-100 bg-gray-50 shadow-none">
-                                        <CardContent class="p-3 text-center">
-                                            <p class="text-[10px] font-medium uppercase tracking-wide text-gray-400">Dispatchers</p>
-                                            <p class="mt-1 text-2xl font-extrabold text-[#c0392b]">5</p>
-                                        </CardContent>
-                                    </Card>
-                                </div>
+                        <Button
+                            size="lg"
+                            variant="outline"
+                            as-child
+                            class="rounded-xl border-white/30 bg-white/10 px-8 text-base font-semibold text-white backdrop-blur-sm hover:bg-white/20"
+                        >
+                            <a href="#features">Learn More</a>
+                        </Button>
+                    </div>
 
-                                <Card class="border border-gray-100 bg-gray-50 shadow-none">
-                                    <CardContent class="p-4">
-                                        <p class="mb-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                                            Route Activity Overview
-                                        </p>
-                                        <div class="space-y-2">
-                                            <div
-                                                v-for="(route, i) in routeActivities"
-                                                :key="i"
-                                                class="space-y-1"
-                                            >
-                                                <div class="flex justify-between text-[10px] text-gray-500">
-                                                    <span>{{ route.name }}</span>
-                                                    <span class="font-semibold">{{ route.pct }}%</span>
-                                                </div>
-                                                <div class="h-1.5 w-full rounded-full bg-gray-200">
-                                                    <div
-                                                        class="h-1.5 rounded-full"
-                                                        :style="{ width: route.pct + '%', backgroundColor: route.color }"
-                                                    ></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                <div class="flex items-center justify-between pt-1">
-                                    <p class="text-xs text-gray-400">Updated just now</p>
-                                    <Button as-child size="sm" class="rounded-lg bg-[#c0392b] text-xs text-white hover:bg-[#a93226]">
-                                        <Link :href="login()">
-                                            Open System
-                                            <ArrowRight class="ml-1 inline h-3 w-3" />
-                                        </Link>
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
+                    <!-- Feature pills -->
+                    <div class="flex flex-wrap gap-x-6 gap-y-2 pt-2 text-sm text-white/55">
+                        <div class="flex items-center gap-2">
+                            <CheckCircle2 class="h-3.5 w-3.5 text-[#e74c3c]" />
+                            Multi-gate management
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <CheckCircle2 class="h-3.5 w-3.5 text-[#e74c3c]" />
+                            Live dispatch control
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <CheckCircle2 class="h-3.5 w-3.5 text-[#e74c3c]" />
+                            Role-secured access
+                        </div>
                     </div>
                 </div>
             </div>
@@ -350,7 +271,7 @@ const features = [
 
                     <div class="mt-7 flex flex-wrap justify-center gap-3">
                         <Button as-child class="rounded-xl bg-[#c0392b] px-8 py-3 font-semibold text-white shadow-lg hover:bg-[#a93226]">
-                            <Link :href="login()">
+                            <Link :href="show()">
                                 Get Started
                                 <ArrowRight class="ml-2 h-4 w-4" />
                             </Link>
@@ -361,7 +282,7 @@ const features = [
                             as-child
                             class="rounded-xl border-white/30 bg-transparent px-8 py-3 font-semibold text-white hover:bg-white/10"
                         >
-                            <Link :href="show()">Register Company</Link>
+                            <Link :href="login()">Log In</Link>
                         </Button>
                     </div>
                 </CardContent>

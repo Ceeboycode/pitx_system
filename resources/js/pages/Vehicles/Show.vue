@@ -2,7 +2,8 @@
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import ArchiveCompanyDialog from '@/components/company/ArchiveCompanyDialog.vue';
 
 import InputError from '@/components/InputError.vue'
 import RouteMapDialog from '@/components/routes/RouteMapDialog.vue'
@@ -42,13 +43,8 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Separator } from '@/components/ui/separator'
 import {
     Table,
     TableBody,
@@ -74,6 +70,7 @@ import {
     Route as RouteIcon,
     Truck,
     XCircle,
+    Archive,
 } from 'lucide-vue-next'
 
 type UserMini = { id?: number; name: string }
@@ -160,6 +157,9 @@ const vehicle = computed(() => props.vehicle)
 const company = computed(() => props.vehicle.company ?? null)
 const route = computed(() => props.vehicle.route ?? null)
 const docs = computed(() => props.vehicle.documents ?? [])
+
+const canArchiveVehicle = computed(() => can('vehicles.delete'));
+const archiveOpen = ref(false);
 
 const VEHICLES_INDEX_URL = '/vehicles'
 
@@ -439,38 +439,79 @@ function submitConfirm() {
     })
 }
 
-/* invalidate dialog with preset + manual remarks */
+/* invalidate dialog with stackable checkbox remarks */
 const invalidPresets = [
-    { value: 'blurred', label: 'Blurred or unreadable file' },
-    { value: 'expired', label: 'Expired document' },
-    { value: 'wrong_document', label: 'Wrong document uploaded' },
-    { value: 'missing_pages', label: 'Missing pages or incomplete scan' },
-    { value: 'mismatch', label: 'Vehicle details do not match' },
-    { value: 'reupload_pdf', label: 'Please upload as PDF' },
-    { value: 'other', label: 'Other reason' },
+    {
+        value: 'blurred',
+        label: 'Blurred or unreadable file',
+        text: 'The uploaded document is blurred or unreadable. Please upload a clearer copy.',
+    },
+    {
+        value: 'expired',
+        label: 'Expired document',
+        text: 'The uploaded document is already expired. Please upload a valid updated copy.',
+    },
+    {
+        value: 'wrong_document',
+        label: 'Wrong document uploaded',
+        text: 'The uploaded file is the wrong document. Please upload the correct requirement.',
+    },
+    {
+        value: 'missing_pages',
+        label: 'Missing pages or incomplete scan',
+        text: 'The uploaded document is incomplete or has missing pages. Please upload the full copy.',
+    },
+    {
+        value: 'mismatch',
+        label: 'Vehicle details do not match',
+        text: 'The document details do not match the assigned vehicle information. Please review and re-upload.',
+    },
+    {
+        value: 'reupload_pdf',
+        label: 'Please upload as PDF',
+        text: 'Please re-upload this requirement as a PDF file.',
+    },
 ] as const
 
-const invalidPresetMessages: Record<string, string> = {
-    blurred: 'The uploaded document is blurred or unreadable. Please upload a clearer copy.',
-    expired: 'The uploaded document is already expired. Please upload a valid updated copy.',
-    wrong_document: 'The uploaded file is the wrong document. Please upload the correct requirement.',
-    missing_pages: 'The uploaded document is incomplete or has missing pages. Please upload the full copy.',
-    mismatch: 'The document details do not match the assigned vehicle information. Please review and re-upload.',
-    reupload_pdf: 'Please re-upload this requirement as a PDF file.',
-    other: '',
-}
+type InvalidPresetValue = (typeof invalidPresets)[number]['value']
 
-const invalidateForm = useForm({
-    preset: '',
+const selectedInvalidPresets = ref<InvalidPresetValue[]>([])
+
+const invalidateForm = useForm<{
+    remarks: string
+}>({
     remarks: '',
 })
 const invalidateOpen = ref(false)
 
+watch(
+    selectedInvalidPresets,
+    (values) => {
+        const lines = values
+            .map((value) => invalidPresets.find((preset) => preset.value === value)?.text ?? '')
+            .filter(Boolean)
+
+        invalidateForm.remarks = lines.join('\n')
+    },
+    { deep: true },
+)
+
+function toggleInvalidPreset(value: InvalidPresetValue) {
+    const exists = selectedInvalidPresets.value.includes(value)
+
+    if (exists) {
+        selectedInvalidPresets.value = selectedInvalidPresets.value.filter((item) => item !== value)
+        return
+    }
+
+    selectedInvalidPresets.value = [...selectedInvalidPresets.value, value]
+}
+
 function openInvalidate(doc: VehicleDocument) {
     actionDoc.value = doc
+    selectedInvalidPresets.value = []
     invalidateForm.reset()
     invalidateForm.clearErrors()
-    invalidateForm.preset = ''
     invalidateForm.remarks = doc.remarks ?? ''
     invalidateOpen.value = true
 }
@@ -481,15 +522,8 @@ function openInvalidateFromPreview() {
     closePreview()
 }
 
-function applyInvalidPreset(value: string) {
-    invalidateForm.preset = value
-    if (value !== 'other') {
-        invalidateForm.remarks = invalidPresetMessages[value] ?? ''
-    }
-}
-
 function submitInvalidate() {
-    if (!actionDoc.value) return
+    if (!actionDoc.value || invalidateForm.processing) return
 
     invalidateForm.patch(
         `/vehicles/${vehicle.value.id}/documents/${actionDoc.value.id}/invalidate`,
@@ -498,6 +532,7 @@ function submitInvalidate() {
             onSuccess: () => {
                 invalidateOpen.value = false
                 actionDoc.value = null
+                selectedInvalidPresets.value = []
                 invalidateForm.reset()
             },
         },
@@ -554,12 +589,23 @@ function submitInvalidate() {
                         </Link>
                     </Button>
 
-                    <Button v-if="canUpdateVehicle" size="sm" as-child>
+                    <Button v-if="canUpdateVehicle" size="sm" as-child variant="outline">
                         <Link :href="edit({ vehicle: vehicle.id }).url">
                             <Pencil class="mr-1.5 h-4 w-4" />
                             Edit
                         </Link>
                     </Button>
+
+                    <Button
+                            v-if="canArchiveVehicle"
+                            variant="outline"
+                            size="sm"
+                            class="rounded-lg border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                            @click="archiveOpen = true"
+                        >
+                            <Archive class="mr-2 h-4 w-4" />
+                            Archive
+                        </Button>
                 </div>
             </div>
         </div>
@@ -1400,76 +1446,111 @@ function submitInvalidate() {
         </AlertDialog>
 
         <Dialog v-model:open="invalidateOpen">
-            <DialogContent class="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Mark as Invalid</DialogTitle>
-                    <DialogDescription>
-                        Choose an optional reason or type your own remarks for
-                        <span class="font-medium text-foreground">
-                            {{ humanize(actionDoc?.document_type) }}
-                        </span>.
-                    </DialogDescription>
-                </DialogHeader>
+    <DialogContent class="rounded-2xl sm:max-w-lg">
+        <DialogHeader>
+            <DialogTitle>Mark as Invalid</DialogTitle>
+            <DialogDescription>
+                Select one or more reasons below. The remarks field will be built automatically —
+                you can still edit it before submitting for
+                <span class="font-medium text-foreground">
+                    {{ humanize(actionDoc?.document_type) }}
+                </span>.
+            </DialogDescription>
+        </DialogHeader>
 
-                <div class="space-y-4 py-2">
-                    <div class="space-y-2">
-                        <Label>Suggested Reason (Optional)</Label>
-                        <Select
-                            :model-value="invalidateForm.preset"
-                            @update:model-value="(value) => applyInvalidPreset(String(value))"
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a reason" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem
-                                    v-for="preset in invalidPresets"
-                                    :key="preset.value"
-                                    :value="preset.value"
-                                >
-                                    {{ preset.label }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+        <Separator />
 
-                    <div class="space-y-2">
-                        <Label for="inv-remarks">
-                            Remarks <span class="text-destructive">*</span>
-                        </Label>
+        <div class="space-y-4">
+            <div>
+                <p class="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    Reasons
+                </p>
 
-                        <Textarea
-                            id="inv-remarks"
-                            v-model="invalidateForm.remarks"
-                            placeholder="Type why this document is invalid..."
-                            :rows="4"
+                <div class="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                    <label
+                        v-for="preset in invalidPresets"
+                        :key="preset.value"
+                        :class="[
+                            'flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors',
+                            selectedInvalidPresets.includes(preset.value)
+                                ? 'border-rose-300 bg-rose-50 text-rose-700'
+                                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+                        ]"
+                        @click="toggleInvalidPreset(preset.value)"
+                    >
+                        <Checkbox
+                            :checked="selectedInvalidPresets.includes(preset.value)"
+                            :class="
+                                selectedInvalidPresets.includes(preset.value)
+                                    ? 'border-rose-400 data-[state=checked]:border-rose-600 data-[state=checked]:bg-rose-600'
+                                    : ''
+                            "
+                            @click.stop
+                            @update:checked="toggleInvalidPreset(preset.value)"
                         />
-
-                        <InputError :message="invalidateForm.errors.remarks" />
-                    </div>
+                        <span class="leading-snug">{{ preset.label }}</span>
+                    </label>
                 </div>
 
-                <DialogFooter class="gap-2">
-                    <Button
-                        variant="outline"
-                        :disabled="invalidateForm.processing"
-                        @click="invalidateOpen = false"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        variant="destructive"
-                        :disabled="invalidateForm.processing"
-                        @click="submitInvalidate"
-                    >
-                        {{
-                            invalidateForm.processing
-                                ? 'Submitting…'
-                                : 'Mark Invalid'
-                        }}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                <p
+                    v-if="selectedInvalidPresets.length > 0"
+                    class="mt-2 text-xs font-medium text-rose-600"
+                >
+                    {{ selectedInvalidPresets.length }}
+                    reason{{ selectedInvalidPresets.length > 1 ? 's' : '' }} selected
+                </p>
+            </div>
+
+            <div class="space-y-1.5">
+                <Label
+                    for="inv-remarks"
+                    class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground"
+                >
+                    Remarks <span class="text-destructive">*</span>
+                </Label>
+
+                <Textarea
+                    id="inv-remarks"
+                    v-model="invalidateForm.remarks"
+                    placeholder="Select reasons above or write your own…"
+                    class="min-h-[100px] rounded-lg text-sm"
+                />
+
+                <InputError
+                    class="mt-1"
+                    :message="invalidateForm.errors.remarks"
+                />
+
+                <p class="text-[11px] text-muted-foreground">
+                    You can edit the auto-generated text or write your own remarks.
+                </p>
+            </div>
+        </div>
+
+        <DialogFooter class="gap-2">
+            <Button
+                variant="outline"
+                class="rounded-lg"
+                :disabled="invalidateForm.processing"
+                @click="invalidateOpen = false"
+            >
+                Cancel
+            </Button>
+
+            <Button
+                variant="destructive"
+                class="rounded-lg border-0 bg-rose-600 text-white hover:bg-rose-700"
+                :disabled="invalidateForm.processing || !invalidateForm.remarks.trim()"
+                @click="submitInvalidate"
+            >
+                {{
+                    invalidateForm.processing
+                        ? 'Submitting…'
+                        : 'Mark Invalid'
+                }}
+            </Button>
+        </DialogFooter>
+    </DialogContent>
+</Dialog>
     </AppLayout>
 </template>
