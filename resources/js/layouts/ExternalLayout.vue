@@ -3,6 +3,7 @@ import type { User } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
+import NotificationDropdown from '@/components/NotificationDropdown.vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -59,6 +60,21 @@ type FlashProps = {
     warning?: string | null;
 };
 
+type NotificationItem = {
+    id: string;
+    type: string | null;
+    title: string;
+    message: string;
+    read_at: string | null;
+    created_at: string | null;
+    data: Record<string, unknown>;
+};
+
+type NotificationsPayload = {
+    unread_count: number;
+    items: NotificationItem[];
+};
+
 type PageProps = {
     name: string;
     quote: {
@@ -71,6 +87,7 @@ type PageProps = {
         company: SharedCompany;
         permissions?: string[];
     };
+    notifications?: NotificationsPayload;
     flash?: FlashProps;
 };
 
@@ -79,6 +96,7 @@ const page = usePage<PageProps>();
 const currentUrl = computed(() => page.url);
 const user = computed(() => page.props.auth?.user);
 const company = computed(() => page.props.auth?.company);
+const notifications = computed(() => page.props.notifications);
 
 function isActive(href: string) {
     return currentUrl.value.startsWith(href);
@@ -206,6 +224,22 @@ watch(
                         <p class="mt-0.5 text-[10px] text-muted-foreground">
                             Company Portal
                         </p>
+                    </div>
+                </div>
+
+                <!-- Notifications -->
+                <div class="border-b px-3 py-3">
+                    <div class="flex items-center justify-between rounded-xl border bg-background px-3 py-2">
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-semibold">
+                                Notifications
+                            </p>
+                            <p class="truncate text-xs text-muted-foreground">
+                                Company alerts and updates
+                            </p>
+                        </div>
+
+                        <NotificationDropdown />
                     </div>
                 </div>
 
@@ -353,6 +387,21 @@ watch(
                         </div>
                     </div>
 
+                    <div class="border-b px-4 py-3">
+                        <div class="flex items-center justify-between rounded-xl border bg-background px-3 py-2">
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-semibold">
+                                    Notifications
+                                </p>
+                                <p class="truncate text-xs text-muted-foreground">
+                                    Company alerts and updates
+                                </p>
+                            </div>
+
+                            <NotificationDropdown />
+                        </div>
+                    </div>
+
                     <nav class="space-y-0.5 px-2 py-3">
                         <Link
                             v-for="item in navItems"
@@ -451,11 +500,15 @@ watch(
                         </span>
                     </div>
 
-                    <Avatar class="h-7 w-7">
-                        <AvatarFallback class="text-[11px]">
-                            {{ userInitials }}
-                        </AvatarFallback>
-                    </Avatar>
+                    <div class="flex items-center gap-2">
+                        <NotificationDropdown />
+
+                        <Avatar class="h-7 w-7">
+                            <AvatarFallback class="text-[11px]">
+                                {{ userInitials }}
+                            </AvatarFallback>
+                        </Avatar>
+                    </div>
                 </header>
 
                 <!-- Page slot -->

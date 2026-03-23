@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Vehicle\VehicleStoreRequest;
-use App\Http\Requests\Vehicle\VehicleUpdateRequest;
 use App\Models\Company;
 use App\Models\Route;
 use App\Models\Vehicle;
 use App\Models\VehicleDocument;
 use App\Models\VehicleType;
+use App\Notifications\External\VehicleApprovedNotification;
+use App\Notifications\External\VehicleDocumentNeedsRevisionNotification;
+use App\Notifications\External\VehicleReactivatedNotification;
+use App\Notifications\External\VehicleSuspendedNotification;
+use App\Services\NotificationService;
 use App\Services\Vehicle\VehicleService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,8 +23,10 @@ use Inertia\Response;
 class VehicleController extends Controller
 {
     public function __construct(
-        private readonly VehicleService $vehicleService
-    ) {}
+        private readonly VehicleService $vehicleService,
+        private readonly NotificationService $notificationService,
+    ) {
+    }
 
     public function index(Request $request): Response
     {
@@ -55,32 +60,6 @@ class VehicleController extends Controller
             'filters' => [
                 'search' => $search,
             ],
-        ]);
-    }
-
-    public function create(Request $request): Response
-    {
-        Gate::authorize('create', Vehicle::class);
-
-        $companies = Company::query()
-            ->select('id', 'company_name')
-            ->orderBy('company_name')
-            ->get();
-
-        $routes = Route::query()
-            ->select('id', 'route_name')
-            ->orderBy('route_name')
-            ->get();
-
-        $vehicleTypes = VehicleType::query()
-            ->select('id', 'type_name')
-            ->orderBy('type_name')
-            ->get();
-
-        return Inertia::render('Vehicles/Create', [
-            'companies' => $companies,
-            'routes' => $routes,
-            'vehicleTypes' => $vehicleTypes,
         ]);
     }
 
@@ -197,54 +176,6 @@ class VehicleController extends Controller
         ]);
     }
 
-    public function edit(Request $request, Vehicle $vehicle): Response
-    {
-        Gate::authorize('update', $vehicle);
-
-        $companies = Company::query()
-            ->select('id', 'company_name')
-            ->orderBy('company_name')
-            ->get();
-
-        $routes = Route::query()
-            ->select('id', 'route_name')
-            ->orderBy('route_name')
-            ->get();
-
-        $vehicleTypes = VehicleType::query()
-            ->select('id', 'type_name')
-            ->orderBy('type_name')
-            ->get();
-
-        return Inertia::render('Vehicles/Edit', [
-            'vehicle' => $vehicle->load([
-                'company:id,company_name',
-                'route:id,route_name',
-            ]),
-            'companies' => $companies,
-            'routes' => $routes,
-            'vehicleTypes' => $vehicleTypes,
-        ]);
-    }
-
-    public function store(VehicleStoreRequest $request): RedirectResponse
-    {
-        Gate::authorize('create', Vehicle::class);
-
-        $this->vehicleService->createVehicle($request->validated(), $request->user()->id);
-
-        return back()->with('success', 'Vehicle created successfully.');
-    }
-
-    public function update(VehicleUpdateRequest $request, Vehicle $vehicle): RedirectResponse
-    {
-        Gate::authorize('update', $vehicle);
-
-        $this->vehicleService->updateVehicle($vehicle, $request->validated(), $request->user()->id);
-
-        return to_route('vehicles.index')->with('success', 'Vehicle updated successfully.');
-    }
-
     public function destroy(Vehicle $vehicle): RedirectResponse
     {
         Gate::authorize('delete', $vehicle);
@@ -317,6 +248,16 @@ class VehicleController extends Controller
 
         $this->vehicleService->verifyDocument($vehicle, $document, $request->user()->id);
 
+        $vehicle->refresh();
+        $vehicle->loadMissing('company');
+
+        if ($vehicle->status === 'active') {
+            $notification = new VehicleApprovedNotification($vehicle);
+
+            $this->notificationService->notifyCompanyUsers($vehicle->company, $notification);
+            $this->notificationService->notifyCompanyEmail($vehicle->company, $notification);
+        }
+
         return back()->with('success', 'Vehicle document verified successfully.');
     }
 
@@ -336,6 +277,19 @@ class VehicleController extends Controller
             $validated['remarks'],
             $request->user()->id,
         );
+
+        $vehicle->refresh();
+        $vehicle->loadMissing('company');
+        $document->refresh();
+
+        $notification = new VehicleDocumentNeedsRevisionNotification(
+            $vehicle,
+            $document,
+            $validated['remarks'],
+        );
+
+        $this->notificationService->notifyCompanyUsers($vehicle->company, $notification);
+        $this->notificationService->notifyCompanyEmail($vehicle->company, $notification);
 
         return back()->with('success', 'Vehicle document marked as invalid.');
     }
@@ -361,6 +315,23 @@ class VehicleController extends Controller
             'status' => $nextStatus,
             'updated_by' => $request->user()->id,
         ]);
+
+        $vehicle->refresh();
+        $vehicle->loadMissing('company');
+
+        if ($vehicle->status === 'suspended') {
+            $notification = new VehicleSuspendedNotification($vehicle);
+
+            $this->notificationService->notifyCompanyUsers($vehicle->company, $notification);
+            $this->notificationService->notifyCompanyEmail($vehicle->company, $notification);
+        }
+
+        if ($vehicle->status === 'active') {
+            $notification = new VehicleReactivatedNotification($vehicle);
+
+            $this->notificationService->notifyCompanyUsers($vehicle->company, $notification);
+            $this->notificationService->notifyCompanyEmail($vehicle->company, $notification);
+        }
 
         return back()->with('success', 'Vehicle status updated successfully.');
     }

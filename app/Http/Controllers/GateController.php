@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Gate\GateStoreRequest;
 use App\Http\Requests\Gate\GateUpdateRequest;
 use App\Models\Gate as GateModel;
+use App\Notifications\External\GateStatusChangedNotification;
 use App\Services\Gate\GateService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -14,6 +16,7 @@ class GateController extends Controller
 {
     public function __construct(
         private GateService $gateService,
+        private NotificationService $notificationService,
     ) {}
 
     public function index(Request $request)
@@ -36,7 +39,7 @@ class GateController extends Controller
 
     public function show(GateModel $gate)
     {
-        Gate::authorize('view', $gate);  // pass instance, not class
+        Gate::authorize('view', $gate);
 
         return Inertia::render('Gates/Show', [
             'gate' => $gate->load(['creator', 'updater']),
@@ -54,9 +57,19 @@ class GateController extends Controller
 
     public function update(GateUpdateRequest $request, GateModel $gate)
     {
-        Gate::authorize('update', $gate);  // pass instance
+        Gate::authorize('update', $gate);
+
+        $oldStatus = (string) $gate->status;
 
         $this->gateService->updateGate($gate, $request->validated());
+
+        $gate->refresh();
+
+        if ($oldStatus !== (string) $gate->status) {
+            $notification = new GateStatusChangedNotification($gate, (string) $gate->status);
+
+            $this->notificationService->notifyAffectedCompaniesByGate($gate, $notification);
+        }
 
         return redirect()->back()->with('success', 'Gate updated successfully.');
     }
@@ -80,7 +93,7 @@ class GateController extends Controller
 
     public function destroy(GateModel $gate)
     {
-        Gate::authorize('delete', $gate);  // pass instance
+        Gate::authorize('delete', $gate);
 
         $this->gateService->deleteGate($gate);
 
@@ -91,7 +104,7 @@ class GateController extends Controller
     {
         $gate = GateModel::onlyTrashed()->findOrFail($id);
 
-        Gate::authorize('restore', $gate);  // pass instance, correct order
+        Gate::authorize('restore', $gate);
 
         $this->gateService->restoreGate($gate);
 
@@ -102,7 +115,7 @@ class GateController extends Controller
     {
         $gate = GateModel::onlyTrashed()->findOrFail($id);
 
-        Gate::authorize('forceDelete', $gate);  // pass instance, correct order
+        Gate::authorize('forceDelete', $gate);
 
         $this->gateService->forceDeleteGate($gate);
 

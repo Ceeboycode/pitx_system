@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
-import { can } from '@/lib/can';
 
 import {
     AlertDialog,
@@ -49,14 +48,14 @@ import {
     Download,
     FileSearch,
     MoreHorizontal,
+    Pencil,
+    Power,
     Route as RouteIcon,
-    ShieldCheck,
-    ShieldOff,
     Upload,
 } from 'lucide-vue-next';
 import { ref } from 'vue';
 
-import { destroy, index, show, trash } from '@/routes/vehicles';
+import { destroy, edit, index, show, trash } from '@/routes/vehicles';
 import { type BreadcrumbItem } from '@/types';
 
 type VehicleItem = {
@@ -87,76 +86,58 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const archiveDialogOpen = ref(false);
-const selectedVehicle = ref<VehicleItem | null>(null);
-const statusDialogOpen = ref(false);
-const statusVehicle = ref<VehicleItem | null>(null);
+const selectedVehicle   = ref<VehicleItem | null>(null);
+const statusDialogOpen  = ref(false);
+const statusVehicle     = ref<VehicleItem | null>(null);
 
 const formatDate = (value?: string | null) => {
     if (!value) return '—';
-
     return new Date(value).toLocaleDateString('en-PH', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
+        year: 'numeric', month: 'short', day: 'numeric',
     });
 };
 
 function statusClass(status?: string | null): string {
     switch (status) {
         case 'active':
-        case 'verified':
-            return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-        case 'for_verification':
-            return 'bg-violet-100 text-violet-700 border-violet-200';
+        case 'verified':         return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        case 'for_verification': return 'bg-violet-100 text-violet-700 border-violet-200';
         case 'draft':
-        case 'pending':
-            return 'bg-amber-100 text-amber-700 border-amber-200';
-        case 'suspended':
-            return 'bg-orange-100 text-orange-700 border-orange-200';
+        case 'pending':          return 'bg-amber-100 text-amber-700 border-amber-200';
         case 'invalid':
         case 'inactive':
-        case 'needs_revision':
-            return 'bg-rose-100 text-rose-600 border-rose-200';
-        default:
-            return 'bg-slate-100 text-slate-500 border-0';
+        case 'needs_revision':   return 'bg-rose-100 text-rose-600 border-rose-200';
+        default:                 return 'bg-slate-100 text-slate-500 border-0';
     }
 }
 
 function statusDot(status?: string | null): string {
     switch (status) {
         case 'active':
-        case 'verified':
-            return 'bg-emerald-500';
-        case 'for_verification':
-            return 'bg-violet-500';
+        case 'verified':         return 'bg-emerald-500';
+        case 'for_verification': return 'bg-violet-500';
         case 'draft':
-        case 'pending':
-            return 'bg-amber-500';
-        case 'suspended':
-            return 'bg-orange-500';
+        case 'pending':          return 'bg-amber-500';
         case 'invalid':
         case 'inactive':
-        case 'needs_revision':
-            return 'bg-rose-500';
-        default:
-            return 'bg-slate-400';
+        case 'needs_revision':   return 'bg-rose-500';
+        default:                 return 'bg-slate-400';
     }
 }
 
 function toggleStatusClass(status?: string | null): string {
-    return status === 'suspended'
-        ? 'text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700'
-        : 'text-orange-600 focus:bg-orange-50 focus:text-orange-600';
+    return status === 'active'
+        ? 'text-rose-600 focus:bg-rose-50 focus:text-rose-600'
+        : 'text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700';
 }
 
 const humanize = (text?: string | null) => {
     if (!text) return '—';
-
     return text.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
 const toggleLabel = (status?: string | null) =>
-    status === 'suspended' ? 'Unsuspend' : 'Suspend';
+    status === 'active' ? 'Set Inactive' : 'Set Active';
 
 const openArchiveDialog = (vehicle: VehicleItem) => {
     selectedVehicle.value = vehicle;
@@ -170,16 +151,12 @@ const openStatusDialog = (vehicle: VehicleItem) => {
 
 const confirmToggleStatus = () => {
     if (!statusVehicle.value) return;
-
     router.patch(
         `/vehicles/${statusVehicle.value.id}/toggle-status`,
         {},
         {
             preserveScroll: true,
-            onSuccess: () => {
-                statusDialogOpen.value = false;
-                statusVehicle.value = null;
-            },
+            onSuccess: () => { statusDialogOpen.value = false; statusVehicle.value = null; },
         },
     );
 };
@@ -187,19 +164,9 @@ const confirmToggleStatus = () => {
 const archiveVehicle = (vehicle: VehicleItem) => {
     router.delete(destroy({ vehicle: vehicle.id }).url, {
         preserveScroll: true,
-        onSuccess: () => {
-            archiveDialogOpen.value = false;
-            selectedVehicle.value = null;
-        },
+        onSuccess: () => { archiveDialogOpen.value = false; selectedVehicle.value = null; },
     });
 };
-
-const canViewVehicle = can('vehicles.view');
-const canViewArchived = can('vehicles.viewAny');
-const canDeleteVehicle = can('vehicles.delete');
-const canToggleVehicleStatus = can('vehicles.toggleStatus');
-const canImportVehicle = can('vehicles.create');
-const canExportVehicle = can('vehicles.viewAny');
 </script>
 
 <template>
@@ -211,6 +178,7 @@ const canExportVehicle = can('vehicles.viewAny');
                 <CardHeader>
                     <div>
                         <CardTitle class="flex items-center gap-2">
+                            <Bus class="h-5 w-5 text-blue-700" />
                             Vehicles
                         </CardTitle>
                         <CardDescription class="mt-1">
@@ -218,7 +186,7 @@ const canExportVehicle = can('vehicles.viewAny');
                         </CardDescription>
                     </div>
 
-                    <CardAction v-if="canViewArchived" class="flex items-center gap-2">
+                    <CardAction class="flex items-center gap-2">
                         <Button
                             as-child
                             size="sm"
@@ -234,6 +202,8 @@ const canExportVehicle = can('vehicles.viewAny');
                 </CardHeader>
 
                 <CardContent class="space-y-4">
+
+                    <!-- Search + bulk actions -->
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div class="w-full max-w-sm">
                             <SearchInput
@@ -247,7 +217,6 @@ const canExportVehicle = can('vehicles.viewAny');
 
                         <div class="flex gap-2 sm:justify-end">
                             <Button
-                                v-if="canImportVehicle"
                                 size="sm"
                                 variant="outline"
                                 class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
@@ -257,7 +226,6 @@ const canExportVehicle = can('vehicles.viewAny');
                             </Button>
 
                             <Button
-                                v-if="canExportVehicle"
                                 size="sm"
                                 variant="outline"
                                 class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
@@ -268,6 +236,7 @@ const canExportVehicle = can('vehicles.viewAny');
                         </div>
                     </div>
 
+                    <!-- Table -->
                     <div class="overflow-x-auto rounded-lg border">
                         <Table>
                             <TableHeader>
@@ -284,6 +253,7 @@ const canExportVehicle = can('vehicles.viewAny');
                             </TableHeader>
 
                             <TableBody>
+                                <!-- Empty state -->
                                 <TableRow v-if="vehicles.data.length === 0" class="hover:bg-transparent">
                                     <TableCell colspan="8" class="py-20 text-center">
                                         <div class="flex flex-col items-center gap-3">
@@ -303,10 +273,12 @@ const canExportVehicle = can('vehicles.viewAny');
                                     :key="vehicle.id"
                                     class="transition-colors hover:bg-muted/30"
                                 >
+                                    <!-- Company -->
                                     <TableCell class="text-sm font-medium">
                                         {{ vehicle.company?.company_name || '—' }}
                                     </TableCell>
 
+                                    <!-- Route -->
                                     <TableCell>
                                         <div v-if="vehicle.route?.route_name" class="flex items-center gap-1.5">
                                             <RouteIcon class="h-3.5 w-3.5 shrink-0 text-sky-600" />
@@ -315,6 +287,7 @@ const canExportVehicle = can('vehicles.viewAny');
                                         <span v-else class="text-sm text-muted-foreground">—</span>
                                     </TableCell>
 
+                                    <!-- Vehicle Info -->
                                     <TableCell>
                                         <div class="flex items-center gap-2">
                                             <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-100">
@@ -327,16 +300,19 @@ const canExportVehicle = can('vehicles.viewAny');
                                         </div>
                                     </TableCell>
 
+                                    <!-- Plate Number -->
                                     <TableCell>
                                         <span class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
                                             {{ vehicle.plate_number || '—' }}
                                         </span>
                                     </TableCell>
 
+                                    <!-- Capacity -->
                                     <TableCell class="text-sm text-muted-foreground tabular-nums">
                                         {{ vehicle.capacity || '—' }}
                                     </TableCell>
 
+                                    <!-- Status -->
                                     <TableCell>
                                         <Badge :class="['gap-1.5', statusClass(vehicle.status)]">
                                             <span :class="['h-1.5 w-1.5 rounded-full', statusDot(vehicle.status)]" />
@@ -344,10 +320,12 @@ const canExportVehicle = can('vehicles.viewAny');
                                         </Badge>
                                     </TableCell>
 
+                                    <!-- Created -->
                                     <TableCell class="text-sm text-muted-foreground">
                                         {{ formatDate(vehicle.created_at) }}
                                     </TableCell>
 
+                                    <!-- Actions -->
                                     <TableCell class="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
@@ -365,11 +343,9 @@ const canExportVehicle = can('vehicles.viewAny');
                                                 <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                                     {{ vehicle.plate_number || 'Vehicle' }}
                                                 </DropdownMenuLabel>
-
                                                 <DropdownMenuSeparator />
 
                                                 <DropdownMenuItem
-                                                    v-if="canViewVehicle"
                                                     as-child
                                                     class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700"
                                                 >
@@ -381,19 +357,26 @@ const canExportVehicle = can('vehicles.viewAny');
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
-                                                    v-if="canToggleVehicleStatus"
+                                                    as-child
+                                                    class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700"
+                                                >
+                                                    <Link :href="edit({ vehicle: vehicle.id }).url">
+                                                        <Pencil class="mr-2 h-4 w-4" />
+                                                        Edit
+                                                    </Link>
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuItem
                                                     :class="['rounded-lg', toggleStatusClass(vehicle.status)]"
                                                     @click="openStatusDialog(vehicle)"
                                                 >
-                                                    <ShieldCheck v-if="vehicle.status === 'suspended'" class="mr-2 h-4 w-4" />
-                                                    <ShieldOff v-else class="mr-2 h-4 w-4" />
+                                                    <Power class="mr-2 h-4 w-4" />
                                                     {{ toggleLabel(vehicle.status) }}
                                                 </DropdownMenuItem>
 
-                                                <DropdownMenuSeparator v-if="canDeleteVehicle" />
+                                                <DropdownMenuSeparator />
 
                                                 <DropdownMenuItem
-                                                    v-if="canDeleteVehicle"
                                                     class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600"
                                                     @click="openArchiveDialog(vehicle)"
                                                 >
@@ -420,6 +403,7 @@ const canExportVehicle = can('vehicles.viewAny');
             </Card>
         </div>
 
+        <!-- Archive dialog -->
         <AlertDialog v-model:open="archiveDialogOpen">
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
@@ -442,6 +426,7 @@ const canExportVehicle = can('vehicles.viewAny');
             </AlertDialogContent>
         </AlertDialog>
 
+        <!-- Status dialog -->
         <AlertDialog v-model:open="statusDialogOpen">
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
@@ -449,29 +434,17 @@ const canExportVehicle = can('vehicles.viewAny');
                         {{ statusVehicle ? toggleLabel(statusVehicle.status) : 'Update Status' }}
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                        <template v-if="statusVehicle?.status === 'suspended'">
-                            Unsuspending
-                            <span class="font-semibold text-foreground">{{ statusVehicle?.plate_number || 'this vehicle' }}</span>
-                            will set its status back to <span class="font-semibold text-foreground">Active</span>.
-                        </template>
-                        <template v-else>
-                            Are you sure you want to suspend
-                            <span class="font-semibold text-foreground">{{ statusVehicle?.plate_number || 'this vehicle' }}</span>?
-                        </template>
+                        Update status for
+                        <span class="font-semibold text-foreground">{{ statusVehicle?.plate_number || 'this vehicle' }}</span>?
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel class="rounded-lg" @click="statusVehicle = null">Cancel</AlertDialogCancel>
                     <AlertDialogAction
-                        :class="[
-                            'rounded-lg border-0 text-white',
-                            statusVehicle?.status === 'suspended'
-                                ? 'bg-emerald-600 hover:bg-emerald-700'
-                                : 'bg-orange-500 hover:bg-orange-600',
-                        ]"
+                        class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0"
                         @click="confirmToggleStatus"
                     >
-                        {{ statusVehicle ? toggleLabel(statusVehicle.status) : 'Confirm' }}
+                        Confirm
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
