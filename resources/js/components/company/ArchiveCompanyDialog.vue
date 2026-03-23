@@ -73,6 +73,7 @@ function archive() {
                 <AlertDialogAction
                     :disabled="processing"
                     @click="archive"
+                    class="cursor-pointer bg-destructive text-destructive-foreground hover:bg-destructive/70"
                 >
                     <ArchiveX class="mr-2 h-4 w-4" />
                     {{ processing ? 'Archiving...' : 'Yes, Archive Company' }}

@@ -4,6 +4,8 @@ import { Head, Link } from '@inertiajs/vue3';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -23,6 +25,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 
 import {
+    Archive,
     ArrowLeft,
     Building2,
     CheckCircle2,
@@ -211,6 +214,22 @@ function stopTypeLabel(type: RouteStop['stop_type']) {
     }
 }
 
+
+const archiveOpen = ref(false);
+
+function openArchiveDialog() {
+    archiveOpen.value = true;
+}
+
+function archiveRoute() {
+    router.delete(`/routes/${props.route.id}`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            archiveOpen.value = false;
+        },
+    });
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
    Map
 ───────────────────────────────────────────────────────────────────────────── */
@@ -356,6 +375,19 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="p-4 sm:p-6">
+            <div class="mb-4">
+                <Button
+                    as-child
+                    type="button"
+                    variant="outline"
+                    class="rounded-lg"
+                >
+                    <Link :href="index().url">
+                        <ArrowLeft class="mr-2 h-4 w-4" />
+                        Back to Routes
+                    </Link>
+                </Button>
+            </div>
             <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div class="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
                     <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
@@ -793,23 +825,21 @@ onBeforeUnmount(() => {
                             <Separator />
 
                             <div class="grid gap-2 sm:grid-cols-2">
-                                <Button
-                                    as-child
-                                    type="button"
-                                    variant="outline"
-                                    class="w-full"
-                                >
-                                    <Link :href="index().url">
-                                        <ArrowLeft class="mr-2 h-4 w-4" />
-                                        Back to Routes
-                                    </Link>
-                                </Button>
-
-                                <Button as-child class="w-full">
+                                <Button as-child class="w-full" variant="outline">
                                     <Link :href="edit(route.id).url">
                                         <Pencil class="mr-2 h-4 w-4" />
                                         Edit Route
                                     </Link>
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    class="w-full border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 cursor-pointer"
+                                    @click="openArchiveDialog"
+                                >
+                                    <Archive class="mr-2 h-4 w-4" />
+                                    Archive
                                 </Button>
                             </div>
                         </div>

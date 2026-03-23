@@ -219,16 +219,6 @@ function openForceDelete(company: Company) {
                                                     <RotateCcw class="mr-2 h-4 w-4" />
                                                     Restore Company
                                                 </DropdownMenuItem>
-
-                                                <DropdownMenuSeparator />
-
-                                                <DropdownMenuItem
-                                                    class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600"
-                                                    @click="openForceDelete(company)"
-                                                >
-                                                    <Trash2 class="mr-2 h-4 w-4" />
-                                                    Delete Permanently
-                                                </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>

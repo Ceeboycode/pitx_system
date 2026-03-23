@@ -19,6 +19,10 @@ class CompanyController extends Controller
         // companies.viewAny
         Gate::authorize('viewAny', Company::class);
 
+        $allowedSorts = ['company_name', 'company_code', 'status', 'created_at'];
+        $sortBy       = in_array($request->sort_by, $allowedSorts) ? $request->sort_by : 'created_at';
+        $sortDir      = in_array($request->sort_dir, ['asc', 'desc']) ? $request->sort_dir : 'desc';
+
         $companies = Company::query()
             ->select(
                 'id',
@@ -28,17 +32,23 @@ class CompanyController extends Controller
                 'company_email_verified_at',
                 'company_phone',
                 'business_type',
-            'status',
+                'status',
                 'created_at'
             )
             ->search($request->search)
-            ->latest()
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
+            ->orderBy($sortBy, $sortDir)
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Company/Index', [
             'companies' => $companies,
-            'filters'   => ['search' => $request->search],
+            'filters'   => [
+                'search'   => $request->search,
+                'status'   => $request->status,
+                'sort_by'  => $request->sort_by,
+                'sort_dir' => $request->sort_dir,
+            ],
         ]);
     }
 

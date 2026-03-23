@@ -31,6 +31,13 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
     Table,
     TableBody,
     TableCell,
@@ -43,20 +50,30 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
     Archive,
+    ArrowDown,
+    ArrowUp,
+    ArrowUpDown,
     Bus,
     ChevronRight,
     Download,
     FileSearch,
+    Filter,
     MoreHorizontal,
     Pencil,
     Power,
     Route as RouteIcon,
     Upload,
+    X,
 } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import { destroy, edit, index, show, trash } from '@/routes/vehicles';
 import { type BreadcrumbItem } from '@/types';
+
+/* ── Types ──────────────────────────────────────────────────────── */
+
+type SortField = 'capacity' | 'created_at' | 'status' | null;
+type SortDir   = 'asc' | 'desc';
 
 type VehicleItem = {
     id: number;
@@ -67,8 +84,10 @@ type VehicleItem = {
     capacity?: string | number | null;
     created_at?: string | null;
     company?: { company_name?: string | null } | null;
-    route?: { route_name?: string | null } | null;
+    route?: { id?: number; route_name?: string | null } | null;
 };
+
+/* ── Props ───────────────────────────────────────────────────────── */
 
 const props = defineProps<{
     vehicles: {
@@ -78,23 +97,121 @@ const props = defineProps<{
         to: number | null;
         total: number;
     };
-    filters: { search: string | null };
+    filters: {
+        search: string | null;
+        status: string | null;
+        vehicle_type: string | null;
+        route_id: string | null;
+        sort_by: SortField;
+        sort_dir: SortDir;
+    };
+    routes: { id: number; route_name: string }[];
 }>();
+
+/* ── Breadcrumbs ─────────────────────────────────────────────────── */
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Vehicles', href: index().url },
 ];
+
+/* ── Dialog state ────────────────────────────────────────────────── */
 
 const archiveDialogOpen = ref(false);
 const selectedVehicle   = ref<VehicleItem | null>(null);
 const statusDialogOpen  = ref(false);
 const statusVehicle     = ref<VehicleItem | null>(null);
 
+/* ── Filter & Sort state ─────────────────────────────────────────── */
+
+const statusFilter      = ref<string>(props.filters.status       ?? 'all');
+const vehicleTypeFilter = ref<string>(props.filters.vehicle_type ?? 'all');
+const routeFilter       = ref<string>(props.filters.route_id     ?? 'all');
+const sortBy            = ref<SortField>(props.filters.sort_by   ?? null);
+const sortDir           = ref<SortDir>(props.filters.sort_dir    ?? 'asc');
+
+const hasActiveFilters = computed(() =>
+    (statusFilter.value && statusFilter.value !== 'all') ||
+    (vehicleTypeFilter.value && vehicleTypeFilter.value !== 'all') ||
+    (routeFilter.value && routeFilter.value !== 'all') ||
+    sortBy.value !== null,
+);
+
+function applyFilters(overrides: Record<string, string | null | undefined> = {}) {
+    router.get(
+        index().url,
+        {
+            search:       props.filters.search ?? undefined,
+            status:       statusFilter.value !== 'all'      ? statusFilter.value      : undefined,
+            vehicle_type: vehicleTypeFilter.value !== 'all' ? vehicleTypeFilter.value : undefined,
+            route_id:     routeFilter.value !== 'all'       ? routeFilter.value       : undefined,
+            sort_by:      sortBy.value ?? undefined,
+            sort_dir:     sortBy.value ? sortDir.value : undefined,
+            ...overrides,
+        },
+        { preserveState: true, replace: true, only: ['vehicles', 'filters', 'flash'] },
+    );
+}
+
+function onStatusChange(val: string) {
+    statusFilter.value = val;
+    applyFilters();
+}
+
+function onVehicleTypeChange(val: string) {
+    vehicleTypeFilter.value = val;
+    applyFilters();
+}
+
+function onRouteChange(val: string) {
+    routeFilter.value = val;
+    applyFilters();
+}
+
+function toggleSort(field: SortField) {
+    if (sortBy.value === field) {
+        sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortBy.value  = field;
+        sortDir.value = 'asc';
+    }
+    applyFilters();
+}
+
+function clearFilters() {
+    statusFilter.value      = 'all';
+    vehicleTypeFilter.value = 'all';
+    routeFilter.value       = 'all';
+    sortBy.value            = null;
+    sortDir.value           = 'asc';
+    applyFilters({
+        status: undefined, vehicle_type: undefined,
+        route_id: undefined, sort_by: undefined, sort_dir: undefined,
+    });
+}
+
+/* ── Sort icon helpers ───────────────────────────────────────────── */
+
+function sortIcon(field: SortField) {
+    if (sortBy.value !== field) return ArrowUpDown;
+    return sortDir.value === 'asc' ? ArrowUp : ArrowDown;
+}
+
+function sortIconClass(field: SortField) {
+    return sortBy.value === field ? 'text-blue-600' : 'text-muted-foreground/40';
+}
+
+/* ── Helpers ─────────────────────────────────────────────────────── */
+
 const formatDate = (value?: string | null) => {
     if (!value) return '—';
     return new Date(value).toLocaleDateString('en-PH', {
         year: 'numeric', month: 'short', day: 'numeric',
     });
+};
+
+const humanize = (text?: string | null) => {
+    if (!text) return '—';
+    return text.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
 function statusClass(status?: string | null): string {
@@ -131,13 +248,10 @@ function toggleStatusClass(status?: string | null): string {
         : 'text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700';
 }
 
-const humanize = (text?: string | null) => {
-    if (!text) return '—';
-    return text.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-};
-
 const toggleLabel = (status?: string | null) =>
     status === 'active' ? 'Set Inactive' : 'Set Active';
+
+/* ── Actions ─────────────────────────────────────────────────────── */
 
 const openArchiveDialog = (vehicle: VehicleItem) => {
     selectedVehicle.value = vehicle;
@@ -203,7 +317,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
 
                 <CardContent class="space-y-4">
 
-                    <!-- Search + bulk actions -->
+                    <!-- Row 1: Search + Import/Export -->
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div class="w-full max-w-sm">
                             <SearchInput
@@ -236,6 +350,115 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                         </div>
                     </div>
 
+                    <!-- Row 2: Filters + Sort -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- Filter label -->
+                        <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            <Filter class="h-3.5 w-3.5" />
+                            Filter
+                        </div>
+
+                        <!-- Status filter -->
+                        <Select :model-value="statusFilter" @update:model-value="onStatusChange">
+                            <SelectTrigger class="h-8 w-40 rounded-lg border-slate-200 text-xs">
+                                <SelectValue placeholder="All Statuses" />
+                            </SelectTrigger>
+                            <SelectContent class="rounded-xl">
+                                <SelectItem value="all" class="text-xs">All Statuses</SelectItem>
+                                <SelectItem value="active" class="text-xs">Active</SelectItem>
+                                <SelectItem value="suspended" class="text-xs">Suspended</SelectItem>
+                                <SelectItem value="for_verification" class="text-xs">For Verification</SelectItem>
+                                <SelectItem value="pending" class="text-xs">Pending</SelectItem>
+                                <SelectItem value="needs_revision" class="text-xs">Needs Revision</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <!-- Vehicle Type filter -->
+                        <Select :model-value="vehicleTypeFilter" @update:model-value="onVehicleTypeChange">
+                            <SelectTrigger class="h-8 w-40 rounded-lg border-slate-200 text-xs">
+                                <SelectValue placeholder="All Types" />
+                            </SelectTrigger>
+                            <SelectContent class="rounded-xl">
+                                <SelectItem value="all" class="text-xs">All Types</SelectItem>
+                                <SelectItem value="bus" class="text-xs">Bus</SelectItem>
+                                <SelectItem value="minibus" class="text-xs">Minibus</SelectItem>
+                                <SelectItem value="jeepney" class="text-xs">Jeepney</SelectItem>
+                                <SelectItem value="van" class="text-xs">Van</SelectItem>
+                                <SelectItem value="uv_express" class="text-xs">UV Express</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <!-- Route filter -->
+                        <Select :model-value="routeFilter" @update:model-value="onRouteChange">
+                            <SelectTrigger class="h-8 w-44 rounded-lg border-slate-200 text-xs">
+                                <SelectValue placeholder="All Routes" />
+                            </SelectTrigger>
+                            <SelectContent class="rounded-xl">
+                                <SelectItem value="all" class="text-xs">All Routes</SelectItem>
+                                <SelectItem
+                                    v-for="route in props.routes"
+                                    :key="route.id"
+                                    :value="String(route.id)"
+                                    class="text-xs"
+                                >
+                                    {{ route.route_name }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <!-- Sort label -->
+                        <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground ml-2">
+                            <ArrowUpDown class="h-3.5 w-3.5" />
+                            Sort
+                        </div>
+
+                        <!-- Sort by -->
+                        <Select
+                            :model-value="sortBy ?? 'none'"
+                            @update:model-value="(val) => { sortBy = val === 'none' ? null : val as SortField; applyFilters(); }"
+                        >
+                            <SelectTrigger class="h-8 w-40 rounded-lg border-slate-200 text-xs">
+                                <SelectValue placeholder="Sort by…" />
+                            </SelectTrigger>
+                            <SelectContent class="rounded-xl">
+                                <SelectItem value="none" class="text-xs">No Sort</SelectItem>
+                                <SelectItem value="status" class="text-xs">Status</SelectItem>
+                                <SelectItem value="capacity" class="text-xs">Capacity</SelectItem>
+                                <SelectItem value="created_at" class="text-xs">Created Date</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <!-- Sort direction toggle -->
+                        <Button
+                            v-if="sortBy"
+                            size="sm"
+                            variant="outline"
+                            class="h-8 rounded-lg border-slate-200 px-3 text-xs text-slate-600 hover:bg-slate-100"
+                            @click="sortDir = sortDir === 'asc' ? 'desc' : 'asc'; applyFilters()"
+                        >
+                            <ArrowUp v-if="sortDir === 'asc'" class="mr-1.5 h-3.5 w-3.5 text-blue-600" />
+                            <ArrowDown v-else class="mr-1.5 h-3.5 w-3.5 text-blue-600" />
+                            {{ sortDir === 'asc' ? 'Ascending' : 'Descending' }}
+                        </Button>
+
+                        <!-- Active filter badge + clear -->
+                        <div v-if="hasActiveFilters" class="ml-auto flex items-center gap-2">
+                            <Badge class="gap-1 rounded-lg bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 border border-blue-200 hover:bg-blue-50">
+                                <Filter class="h-3 w-3" />
+                                Filters active
+                            </Badge>
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                class="h-7 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
+                                @click="clearFilters"
+                            >
+                                <X class="mr-1 h-3.5 w-3.5" />
+                                Clear
+                            </Button>
+                        </div>
+                    </div>
+
                     <!-- Table -->
                     <div class="overflow-x-auto rounded-lg border">
                         <Table>
@@ -245,9 +468,40 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                     <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Route</TableHead>
                                     <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Vehicle Info</TableHead>
                                     <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Plate Number</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Cap.</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Status</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Created</TableHead>
+
+                                    <!-- Sortable: Capacity -->
+                                    <TableHead
+                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        @click="toggleSort('capacity')"
+                                    >
+                                        <div class="flex items-center gap-1.5">
+                                            Cap.
+                                            <component :is="sortIcon('capacity')" class="h-3.5 w-3.5" :class="sortIconClass('capacity')" />
+                                        </div>
+                                    </TableHead>
+
+                                    <!-- Sortable: Status -->
+                                    <TableHead
+                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        @click="toggleSort('status')"
+                                    >
+                                        <div class="flex items-center gap-1.5">
+                                            Status
+                                            <component :is="sortIcon('status')" class="h-3.5 w-3.5" :class="sortIconClass('status')" />
+                                        </div>
+                                    </TableHead>
+
+                                    <!-- Sortable: Created -->
+                                    <TableHead
+                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        @click="toggleSort('created_at')"
+                                    >
+                                        <div class="flex items-center gap-1.5">
+                                            Created
+                                            <component :is="sortIcon('created_at')" class="h-3.5 w-3.5" :class="sortIconClass('created_at')" />
+                                        </div>
+                                    </TableHead>
+
                                     <TableHead class="text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -262,8 +516,20 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                             </div>
                                             <div>
                                                 <p class="text-sm font-semibold text-foreground">No vehicles found</p>
-                                                <p class="mt-0.5 text-xs text-muted-foreground">Try adjusting your search.</p>
+                                                <p class="mt-0.5 text-xs text-muted-foreground">
+                                                    {{ hasActiveFilters ? 'Try adjusting your filters or search.' : 'Try adjusting your search.' }}
+                                                </p>
                                             </div>
+                                            <Button
+                                                v-if="hasActiveFilters"
+                                                size="sm"
+                                                variant="outline"
+                                                class="mt-1 h-8 rounded-lg text-xs"
+                                                @click="clearFilters"
+                                            >
+                                                <X class="mr-1.5 h-3.5 w-3.5" />
+                                                Clear filters
+                                            </Button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -372,16 +638,6 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                 >
                                                     <Power class="mr-2 h-4 w-4" />
                                                     {{ toggleLabel(vehicle.status) }}
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuSeparator />
-
-                                                <DropdownMenuItem
-                                                    class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600"
-                                                    @click="openArchiveDialog(vehicle)"
-                                                >
-                                                    <Archive class="mr-2 h-4 w-4" />
-                                                    Archive
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>

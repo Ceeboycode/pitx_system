@@ -4,13 +4,14 @@ import ArchiveCompanyDialog from '@/components/company/ArchiveCompanyDialog.vue'
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import { can } from '@/lib/can';
 
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Card,
     CardContent,
@@ -56,14 +57,6 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-
 import { index, show } from '@/routes/companies';
 import {
     destroy as destroyDoc,
@@ -86,7 +79,6 @@ import {
     MessageSquareText,
     MoreHorizontal,
     RotateCcw,
-    Trash2,
     UserRound,
     XCircle,
 } from 'lucide-vue-next';
@@ -352,48 +344,47 @@ function runConfirmedAction() {
 /* ── Reject dialog ───────────────────────────────────────────────── */
 
 const remarkPresets = [
-    { value: 'missing_signature', label: 'Missing signature' },
-    { value: 'blurred',           label: 'Blurred / unreadable file' },
-    { value: 'wrong_document',    label: 'Wrong document uploaded' },
-    { value: 'expired',           label: 'Expired document' },
-    { value: 'mismatch_name',     label: 'Company name mismatch' },
-    { value: 'mismatch_details',  label: 'Details mismatch / incomplete' },
-    { value: 'needs_stamp',       label: 'Missing stamp / seal' },
-    { value: 'missing_pages',     label: 'Missing pages / incomplete scan' },
-    { value: 'reupload_pdf',      label: 'Please re-upload as PDF' },
-    { value: 'other',             label: 'Other (write your own)' },
+    { value: 'missing_signature', label: 'Missing signature',           text: 'Missing signature. Please upload a signed copy.' },
+    { value: 'blurred',           label: 'Blurred / unreadable file',   text: 'The file is blurred or unreadable. Please upload a clearer scan or photo.' },
+    { value: 'wrong_document',    label: 'Wrong document uploaded',     text: 'Wrong document uploaded. Please upload the correct document.' },
+    { value: 'expired',           label: 'Expired document',            text: 'Document appears expired. Please upload a valid or updated document.' },
+    { value: 'mismatch_name',     label: 'Company name mismatch',       text: 'Company name does not match our records. Please upload the correct document.' },
+    { value: 'mismatch_details',  label: 'Details mismatch / incomplete', text: 'Some details are missing or do not match. Please review and re-upload.' },
+    { value: 'needs_stamp',       label: 'Missing stamp / seal',        text: 'Missing stamp or seal. Please upload a stamped or sealed copy.' },
+    { value: 'missing_pages',     label: 'Missing pages / incomplete scan', text: 'Incomplete document (missing pages). Please upload the complete file.' },
+    { value: 'reupload_pdf',      label: 'Please re-upload as PDF',     text: 'Please re-upload the document as a PDF for verification.' },
 ] as const;
 
-const presetTextMap: Record<string, string> = {
-    missing_signature: 'Missing signature. Please upload a signed copy.',
-    blurred:           'The file is blurred/unreadable. Please upload a clearer scan/photo.',
-    wrong_document:    'Wrong document uploaded. Please upload the correct document.',
-    expired:           'Document appears expired. Please upload a valid/updated document.',
-    mismatch_name:     'Company name does not match our records. Please upload the correct document.',
-    mismatch_details:  'Some details are missing or do not match. Please review and re-upload.',
-    needs_stamp:       'Missing stamp/seal. Please upload a stamped/sealed copy.',
-    missing_pages:     'Incomplete document (missing pages). Please upload the complete file.',
-    reupload_pdf:      'Please re-upload the document as a PDF for verification.',
-    other:             '',
-};
+type RemarkPresetValue = typeof remarkPresets[number]['value'];
 
-const selectedRemarkPreset = ref<string | null>(null);
-const rejectOpen  = ref(false);
-const rejectDocId = ref<number | null>(null);
-const rejectForm  = useForm<{ remarks: string }>({ remarks: '' });
+const selectedPresets = ref<RemarkPresetValue[]>([]);
+const rejectOpen      = ref(false);
+const rejectDocId     = ref<number | null>(null);
+const rejectForm      = useForm<{ remarks: string }>({ remarks: '' });
+
+/* Auto-build the remarks textarea from selected presets */
+watch(selectedPresets, (vals) => {
+    const lines = vals
+        .map((v) => remarkPresets.find((p) => p.value === v)?.text ?? '')
+        .filter(Boolean);
+    rejectForm.remarks = lines.join('\n');
+}, { deep: true });
+
+function togglePreset(value: RemarkPresetValue) {
+    const idx = selectedPresets.value.indexOf(value);
+    if (idx === -1) {
+        selectedPresets.value = [...selectedPresets.value, value];
+    } else {
+        selectedPresets.value = selectedPresets.value.filter((v) => v !== value);
+    }
+}
 
 function openReject(docId: number) {
-    rejectDocId.value = docId;
-    selectedRemarkPreset.value = null;
+    rejectDocId.value     = docId;
+    selectedPresets.value = [];
     rejectForm.reset();
     rejectForm.clearErrors();
     rejectOpen.value = true;
-}
-
-function applyPreset(value: string) {
-    selectedRemarkPreset.value = value;
-    const text = presetTextMap[value] ?? '';
-    if (value !== 'other') rejectForm.remarks = text;
 }
 
 function submitReject() {
@@ -403,9 +394,9 @@ function submitReject() {
         {
             preserveScroll: true,
             onSuccess: () => {
-                rejectOpen.value = false;
-                rejectDocId.value = null;
-                selectedRemarkPreset.value = null;
+                rejectOpen.value      = false;
+                rejectDocId.value     = null;
+                selectedPresets.value = [];
                 rejectForm.reset();
             },
         },
@@ -730,9 +721,6 @@ const repHasAny = computed(() => {
                                             <DropdownMenuItem class="rounded-lg text-slate-700 focus:bg-slate-50" @click="openConfirm('download', doc)">
                                                 <Download class="mr-2 h-4 w-4" />Download
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600" @click="openConfirm('delete', doc)">
-                                                <Trash2 class="mr-2 h-4 w-4" />Delete
-                                            </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </div>
@@ -812,29 +800,79 @@ const repHasAny = computed(() => {
         <Dialog v-model:open="rejectOpen">
             <DialogContent class="rounded-2xl sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Invalid Document</DialogTitle>
-                    <DialogDescription>Choose a preset remark (optional) then edit the message if needed.</DialogDescription>
+                    <DialogTitle>Mark as Invalid</DialogTitle>
+                    <DialogDescription>
+                        Select one or more reasons below. The remarks field will be built automatically — you can still edit it before submitting.
+                    </DialogDescription>
                 </DialogHeader>
+
                 <Separator />
+
                 <div class="space-y-4">
-                    <div class="space-y-1.5">
-                        <Label class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Remarks Preset</Label>
-                        <Select :model-value="selectedRemarkPreset ?? undefined" @update:model-value="(v) => applyPreset(String(v))">
-                            <SelectTrigger class="rounded-lg"><SelectValue placeholder="Select a preset…" /></SelectTrigger>
-                            <SelectContent class="rounded-xl">
-                                <SelectItem v-for="p in remarkPresets" :key="p.value" :value="p.value" class="rounded-lg">{{ p.label }}</SelectItem>
-                            </SelectContent>
-                        </Select>
+                    <!-- Stackable checkboxes -->
+                    <div>
+                        <p class="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                            Reasons
+                        </p>
+                        <div class="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                            <label
+                                v-for="preset in remarkPresets"
+                                :key="preset.value"
+                                :class="[
+                                    'flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors',
+                                    selectedPresets.includes(preset.value)
+                                        ? 'border-rose-300 bg-rose-50 text-rose-700'
+                                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+                                ]"
+                                @click="togglePreset(preset.value)"
+                            >
+                                <Checkbox
+                                    :checked="selectedPresets.includes(preset.value)"
+                                    :class="selectedPresets.includes(preset.value) ? 'border-rose-400 data-[state=checked]:bg-rose-600 data-[state=checked]:border-rose-600' : ''"
+                                    @click.stop
+                                    @update:checked="togglePreset(preset.value)"
+                                />
+                                <span class="leading-snug">{{ preset.label }}</span>
+                            </label>
+                        </div>
+
+                        <!-- Selected count pill -->
+                        <p v-if="selectedPresets.length > 0" class="mt-2 text-xs text-rose-600 font-medium">
+                            {{ selectedPresets.length }} reason{{ selectedPresets.length > 1 ? 's' : '' }} selected
+                        </p>
                     </div>
+
+                    <!-- Remarks textarea — auto-filled, still editable -->
                     <div class="space-y-1.5">
-                        <Label class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Remarks *</Label>
-                        <Textarea v-model="rejectForm.remarks" placeholder="Reason for invalid…" class="rounded-lg" />
+                        <Label class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                            Remarks <span class="text-rose-500">*</span>
+                        </Label>
+                        <Textarea
+                            v-model="rejectForm.remarks"
+                            placeholder="Select reasons above or write your own…"
+                            class="min-h-[100px] rounded-lg text-sm"
+                        />
                         <InputError class="mt-1" :message="rejectForm.errors.remarks" />
+                        <p class="text-[11px] text-muted-foreground">
+                            You can edit the auto-generated text or write your own.
+                        </p>
                     </div>
                 </div>
+
                 <DialogFooter class="gap-2">
-                    <Button variant="outline" class="rounded-lg" :disabled="rejectForm.processing" @click="rejectOpen = false">Cancel</Button>
-                    <Button class="rounded-lg bg-rose-600 text-white hover:bg-rose-700 border-0" :disabled="rejectForm.processing" @click="submitReject">
+                    <Button
+                        variant="outline"
+                        class="rounded-lg"
+                        :disabled="rejectForm.processing"
+                        @click="rejectOpen = false"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        class="rounded-lg bg-rose-600 text-white hover:bg-rose-700 border-0"
+                        :disabled="rejectForm.processing || !rejectForm.remarks.trim()"
+                        @click="submitReject"
+                    >
                         {{ rejectForm.processing ? 'Invalidating…' : 'Mark as Invalid' }}
                     </Button>
                 </DialogFooter>
