@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Company\CompanyStoreRequest;
-use App\Http\Requests\Company\CompanyUpdateRequest;
 use App\Models\Company;
 use App\Services\Company\CompanyService;
 use Illuminate\Http\Request;
@@ -30,7 +28,7 @@ class CompanyController extends Controller
                 'company_email_verified_at',
                 'company_phone',
                 'business_type',
-                'status',
+            'status',
                 'created_at'
             )
             ->search($request->search)
@@ -114,32 +112,6 @@ class CompanyController extends Controller
     public function create()
     {
         return Inertia::render('Company/Create');
-    }
-
-    public function store(CompanyStoreRequest $request)
-    {
-        $userId = $request->user()?->id;
-        abort_if(! $userId, 403);
-
-        $company = $this->companyService->createCompanyWithDocuments(
-            $request->validated(),
-            $request,
-            $userId
-        );
-
-        return redirect()
-            ->route('companies.show', ['company' => $company->id])
-            ->with('success', 'Company and documents submitted successfully.');
-    }
-
-    public function update(CompanyUpdateRequest $request, Company $company)
-    {
-        $company->update([
-            'company_name' => $request->string('company_name')->toString(),
-            'status' => $request->string('status')->toString(),
-        ]);
-
-        return back()->with('success', 'Company updated successfully.');
     }
 
     public function destroy(Request $request, Company $company)

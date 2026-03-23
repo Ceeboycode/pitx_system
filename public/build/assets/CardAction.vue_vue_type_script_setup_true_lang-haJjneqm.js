@@ -1,1 +1,0 @@
-import{d as e,o,c as r,x as n,b as c,B as l,I as p}from"./app-i_LrN5LJ.js";const f=e({__name:"CardAction",props:{class:{type:[Boolean,null,String,Object,Array]}},setup(s){const a=s;return(t,d)=>(o(),r("div",{"data-slot":"card-action",class:n(c(l)("col-start-2 row-span-2 row-start-1 self-start justify-self-end",a.class))},[p(t.$slots,"default")],2))}});export{f as _};
