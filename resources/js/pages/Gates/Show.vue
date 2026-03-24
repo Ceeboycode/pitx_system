@@ -2,7 +2,9 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { edit, index } from '@/routes/gates';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import { can } from '@/lib/can';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,6 +15,12 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import Dialog from '@/components/ui/dialog/Dialog.vue';
+import DialogContent from '@/components/ui/dialog/DialogContent.vue';
+import DialogDescription from '@/components/ui/dialog/DialogDescription.vue';
+import DialogFooter from '@/components/ui/dialog/DialogFooter.vue';
+import DialogHeader from '@/components/ui/dialog/DialogHeader.vue';
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue';
 import { Separator } from '@/components/ui/separator';
 
 import {
@@ -25,7 +33,6 @@ import {
     UserRound,
 } from 'lucide-vue-next';
 
-/* ── Types ──────────────────────────────────────────────────────── */
 type UserMini = { id: number; name: string };
 
 type Gate = {
@@ -39,16 +46,25 @@ type Gate = {
     updater?: UserMini | null;
 };
 
-/* ── Props ───────────────────────────────────────────────────────── */
 const props = defineProps<{ gate: Gate }>();
 
-/* ── Breadcrumbs ─────────────────────────────────────────────────── */
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Gates', href: index().url },
     { title: props.gate.gate_name, href: '#' },
 ];
 
-/* ── Helpers ─────────────────────────────────────────────────────── */
+const canArchiveGate = computed(() => can('gates.delete'));
+const archiveOpen = ref(false);
+
+function archiveGate() {
+    router.delete(route('gates.destroy', props.gate.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            archiveOpen.value = false;
+        },
+    });
+}
+
 function statusClass(status: Gate['status']): string {
     return status === 'active'
         ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
@@ -77,7 +93,6 @@ function formatDate(value?: string | null): string {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4 md:p-6">
 
-            <!-- ── Page header ─────────────────────────────────────── -->
             <div class="flex items-start justify-between gap-4">
                 <div class="space-y-1">
                     <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -111,7 +126,7 @@ function formatDate(value?: string | null): string {
                     <Button
                         as-child
                         size="sm"
-                        class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0 shadow-sm"
+                        class="rounded-lg border-0 bg-blue-700 text-white shadow-sm hover:bg-blue-800"
                     >
                         <Link :href="edit(gate.id).url">
                             <Pencil class="mr-2 h-4 w-4" />
@@ -120,32 +135,30 @@ function formatDate(value?: string | null): string {
                     </Button>
 
                     <Button
-                        as-child
+                        v-if="canArchiveGate"
                         size="sm"
-                        variant="destructive"
-                        class="rounded-lg border-slate-200 text-white-600 hover:bg-rose-500"
+                        variant="outline"
+                        class="rounded-lg border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                        @click="archiveOpen = true"
                     >
-                        <Link :href="index().url">
-                            <Archive class="mr-2 h-4 w-4" />
-                            Archive Gate
-                        </Link>
+                        <Archive class="mr-2 h-4 w-4" />
+                        Archive
                     </Button>
                 </div>
             </div>
 
-            <!-- ── Stat cards ──────────────────────────────────────── -->
             <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
-
                 <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                     <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700">
                         <DoorOpen class="h-4 w-4 text-white" />
                     </div>
                     <p class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Gate Name</p>
-                    <p class="mt-0.5 text-sm font-bold truncate">{{ gate.gate_name }}</p>
+                    <p class="mt-0.5 truncate text-sm font-bold">{{ gate.gate_name }}</p>
                 </div>
 
                 <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg"
+                    <div
+                        class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg"
                         :class="gate.status === 'active' ? 'bg-emerald-600' : 'bg-slate-400'"
                     >
                         <DoorOpen class="h-4 w-4 text-white" />
@@ -170,12 +183,10 @@ function formatDate(value?: string | null): string {
                         <UserRound class="h-4 w-4 text-white" />
                     </div>
                     <p class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Created By</p>
-                    <p class="mt-0.5 text-sm font-bold truncate">{{ gate.creator?.name ?? '—' }}</p>
+                    <p class="mt-0.5 truncate text-sm font-bold">{{ gate.creator?.name ?? '—' }}</p>
                 </div>
-
             </div>
 
-            <!-- ── Details card ────────────────────────────────────── -->
             <Card>
                 <CardHeader class="border-b border-slate-100 pb-4">
                     <CardTitle class="flex items-center gap-2 text-base">
@@ -186,7 +197,6 @@ function formatDate(value?: string | null): string {
                 </CardHeader>
 
                 <CardContent class="divide-y divide-slate-100 p-0">
-
                     <div class="flex items-center justify-between px-6 py-3">
                         <span class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Gate Name</span>
                         <span class="text-sm font-semibold">{{ gate.gate_name }}</span>
@@ -207,7 +217,6 @@ function formatDate(value?: string | null): string {
 
                     <Separator />
 
-                    <!-- Audit info -->
                     <div class="flex items-center justify-between px-6 py-3">
                         <div class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
                             <CalendarDays class="h-3.5 w-3.5" />
@@ -234,10 +243,34 @@ function formatDate(value?: string | null): string {
                             <p v-else class="text-xs text-muted-foreground">—</p>
                         </div>
                     </div>
-
                 </CardContent>
             </Card>
 
+            <Dialog :open="archiveOpen" @update:open="archiveOpen = $event">
+                <DialogContent class="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Archive Gate</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to archive
+                            <span class="font-semibold text-foreground">{{ gate.gate_name }}</span>?
+                            This action will remove it from active records.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <DialogFooter class="gap-2 sm:justify-end">
+                        <Button variant="outline" @click="archiveOpen = false">
+                            Cancel
+                        </Button>
+
+                        <Button
+                            class="bg-rose-600 text-white hover:bg-rose-700"
+                            @click="archiveGate"
+                        >
+                            Archive
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     </AppLayout>
 </template>

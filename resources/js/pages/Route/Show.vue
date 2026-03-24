@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -14,24 +13,13 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 
 import {
     Archive,
     ArrowLeft,
-    Building2,
     CheckCircle2,
-    CircleDot,
     Clock3,
-    Map as MapIcon,
     MapPinned,
     Milestone,
     Pencil,
@@ -44,7 +32,6 @@ import type { BreadcrumbItem } from '@/types';
 
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import vehicleTypes from '@/routes/vehicle-types';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Types
@@ -118,6 +105,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const mapEl = ref<HTMLElement | null>(null);
 const map = ref<mapboxgl.Map | null>(null);
+const archiveOpen = ref(false);
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Computed
@@ -128,10 +116,6 @@ const sortedStops = computed(() =>
 );
 
 const totalStops = computed(() => props.route.stops.length);
-
-const totalVisibleStops = computed(() => {
-    return sortedStops.value.length || 0;
-});
 
 const routeHealthText = computed(() => {
     if (!props.route.route_geometry) return 'No saved route geometry.';
@@ -213,9 +197,6 @@ function stopTypeLabel(type: RouteStop['stop_type']) {
             return 'Stop';
     }
 }
-
-
-const archiveOpen = ref(false);
 
 function openArchiveDialog() {
     archiveOpen.value = true;
@@ -388,6 +369,7 @@ onBeforeUnmount(() => {
                     </Link>
                 </Button>
             </div>
+
             <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div class="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
                     <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
@@ -439,7 +421,7 @@ onBeforeUnmount(() => {
                         <p class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                             Total Stops
                         </p>
-                        <p class="text-sm font-semibold">{{ totalVisibleStops }}</p>
+                        <p class="text-sm font-semibold">{{ totalStops }}</p>
                     </div>
                 </div>
             </div>
@@ -524,7 +506,7 @@ onBeforeUnmount(() => {
                                     </CardDescription>
                                 </div>
                                 <Badge variant="secondary" class="text-xs">
-                                    {{ totalVisibleStops }}
+                                    {{ totalStops }}
                                 </Badge>
                             </div>
                         </CardHeader>
@@ -586,84 +568,6 @@ onBeforeUnmount(() => {
                                 class="rounded-xl border border-dashed px-4 py-6 text-center text-xs text-muted-foreground"
                             >
                                 No stops available for this route.
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card class="rounded-2xl">
-                        <CardHeader>
-                            <CardTitle>Stops Table</CardTitle>
-                            <CardDescription>
-                                Structured stop data for this route.
-                            </CardDescription>
-                        </CardHeader>
-
-                        <CardContent>
-                            <div v-if="sortedStops.length" class="overflow-hidden rounded-xl border">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead class="w-20">Order</TableHead>
-                                            <TableHead>Stop Name</TableHead>
-                                            <TableHead>Type</TableHead>
-                                            <TableHead>Address</TableHead>
-                                            <TableHead class="text-right">Coordinates</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-
-                                    <TableBody>
-                                        <TableRow
-                                            v-for="stop in sortedStops"
-                                            :key="stop.id"
-                                            class="hover:bg-muted/40"
-                                        >
-                                            <TableCell>
-                                                <Badge variant="outline">
-                                                    {{ stop.stop_order }}
-                                                </Badge>
-                                            </TableCell>
-
-                                            <TableCell class="font-medium">
-                                                {{ stop.stop_name }}
-                                            </TableCell>
-
-                                            <TableCell>
-                                                <span
-                                                    :class="[
-                                                        'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium',
-                                                        stopTypeBadgeClass(stop.stop_type),
-                                                    ]"
-                                                >
-                                                    {{ stopTypeLabel(stop.stop_type) }}
-                                                </span>
-                                            </TableCell>
-
-                                            <TableCell class="text-sm text-muted-foreground">
-                                                {{ stop.address || '—' }}
-                                            </TableCell>
-
-                                            <TableCell class="text-right text-xs text-muted-foreground">
-                                                {{ Number(stop.latitude).toFixed(5) }},
-                                                {{ Number(stop.longitude).toFixed(5) }}
-                                            </TableCell>
-                                        </TableRow>
-                                        <TableRow v-if="sortedStops.length === 0">
-                                            <TableCell
-                                                colspan="5"
-                                                class="py-10 text-center text-muted-foreground"
-                                            >
-                                                No stops found.
-                                            </TableCell>
-                                        </TableRow>
-                                    </TableBody>
-                                </Table>
-                            </div>
-
-                            <div
-                                v-else
-                                class="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground"
-                            >
-                                No stops available for this route yet.
                             </div>
                         </CardContent>
                     </Card>
@@ -731,53 +635,6 @@ onBeforeUnmount(() => {
 
                     <Card class="rounded-2xl">
                         <CardHeader>
-                            <CardTitle>Route Info</CardTitle>
-                            <CardDescription>
-                                Basic route details and endpoints.
-                            </CardDescription>
-                        </CardHeader>
-
-                        <CardContent class="space-y-4 text-sm">
-                            <div class="rounded-xl border p-4">
-                                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                    Route Name
-                                </p>
-                                <p class="mt-1 font-semibold">{{ route.route_name }}</p>
-                            </div>
-
-                            <div class="rounded-xl border p-4">
-                                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                    Gate
-                                </p>
-                                <p class="mt-1 font-semibold">
-                                    {{ route.gate?.gate_name ?? 'No gate assigned' }}
-                                </p>
-                            </div>
-
-                            <div class="rounded-xl border p-4">
-                                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                    Origin Coordinates
-                                </p>
-                                <p class="mt-1 font-semibold">
-                                    {{ Number(route.origin_lat).toFixed(6) }},
-                                    {{ Number(route.origin_lng).toFixed(6) }}
-                                </p>
-                            </div>
-
-                            <div class="rounded-xl border p-4">
-                                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                    Destination Coordinates
-                                </p>
-                                <p class="mt-1 font-semibold">
-                                    {{ Number(route.destination_lat).toFixed(6) }},
-                                    {{ Number(route.destination_lng).toFixed(6) }}
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card class="rounded-2xl">
-                        <CardHeader>
                             <CardTitle>Activity</CardTitle>
                             <CardDescription>
                                 Creation and update history.
@@ -835,7 +692,7 @@ onBeforeUnmount(() => {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    class="w-full border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 cursor-pointer"
+                                    class="w-full cursor-pointer border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
                                     @click="openArchiveDialog"
                                 >
                                     <Archive class="mr-2 h-4 w-4" />
@@ -846,6 +703,32 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
             </div>
+
+            <Dialog :open="archiveOpen" @update:open="archiveOpen = $event">
+                <DialogContent class="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Archive Route</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to archive
+                            <span class="font-semibold text-foreground">{{ route.route_name }}</span>?
+                            This action will remove it from active records.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <DialogFooter class="gap-2 sm:justify-end">
+                        <Button variant="outline" @click="archiveOpen = false">
+                            Cancel
+                        </Button>
+
+                        <Button
+                            class="bg-rose-600 text-white hover:bg-rose-700"
+                            @click="archiveRoute"
+                        >
+                            Archive
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     </AppLayout>
 </template>

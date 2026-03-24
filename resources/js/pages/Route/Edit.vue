@@ -27,7 +27,6 @@ import { Separator } from '@/components/ui/separator';
 import {
     ArrowLeft,
     Bus,
-    CheckCircle2,
     Clock3,
     DoorOpen,
     GripVertical,
@@ -47,7 +46,6 @@ import {
 import {
     edit,
     index,
-    show,
     update,
 } from '@/actions/App/Http/Controllers/RouteController';
 import type { BreadcrumbItem } from '@/types';
@@ -248,8 +246,6 @@ const defaultRouteName = computed(() => {
     if (!form.destination_name) return form.origin_name;
     return `${form.origin_name} → ${form.destination_name}`;
 });
-
-const totalBusStops = computed(() => form.stops.length);
 
 const totalVisibleStops = computed(() => {
     if (!hasDestination.value) return 1;
@@ -1743,18 +1739,10 @@ onBeforeUnmount(() => {
                                             </button>
                                         </div>
 
-                                        <div
-                                            v-if="hasDestination"
-                                            class="mt-2 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2"
+                                        <p
+                                            v-if="!hasDestination"
+                                            class="mt-2 text-xs text-muted-foreground"
                                         >
-                                            <MapPinned class="h-3.5 w-3.5 shrink-0 text-red-600" />
-                                            <span class="min-w-0 truncate text-sm font-medium text-red-800">
-                                                {{ form.destination_name }}
-                                            </span>
-                                            <CheckCircle2 class="ml-auto h-3.5 w-3.5 shrink-0 text-red-500" />
-                                        </div>
-
-                                        <p v-else class="mt-2 text-xs text-muted-foreground">
                                             Click anywhere on the map to set destination.
                                         </p>
 
@@ -2014,67 +2002,6 @@ onBeforeUnmount(() => {
                 </div>
 
                 <div class="space-y-5">
-                    <Card class="rounded-2xl">
-                        <CardHeader class="pb-2">
-                            <CardTitle class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                                Route Summary
-                            </CardTitle>
-                        </CardHeader>
-
-                        <CardContent class="space-y-0 pt-0">
-                            <div class="flex items-center gap-3 border-b py-3">
-                                <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-600 text-[10px] font-bold text-white">
-                                    A
-                                </span>
-                                <div class="min-w-0">
-                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Origin</p>
-                                    <p class="truncate text-sm font-medium">{{ form.origin_name }}</p>
-                                </div>
-                            </div>
-
-                            <div class="flex items-center gap-3 border-b py-3">
-                                <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
-                                    B
-                                </span>
-                                <div class="min-w-0">
-                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Destination</p>
-                                    <p class="truncate text-sm font-medium">
-                                        {{ form.destination_name || '—' }}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-x-3 gap-y-0">
-                                <div class="border-b border-r py-3 pr-3">
-                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Distance</p>
-                                    <p class="text-sm font-semibold">
-                                        {{ form.distance_meters ? fmtDistance(form.distance_meters) : '—' }}
-                                    </p>
-                                </div>
-                                <div class="border-b py-3 pl-3">
-                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Duration</p>
-                                    <p class="text-sm font-semibold">
-                                        {{ form.duration_seconds ? fmtDuration(form.duration_seconds) : '—' }}
-                                    </p>
-                                </div>
-                                <div class="border-b border-r py-3 pr-3">
-                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Stops</p>
-                                    <p class="text-sm font-semibold">{{ totalBusStops }}</p>
-                                </div>
-                                <div class="border-b py-3 pl-3">
-                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Detours</p>
-                                    <p class="text-sm font-semibold">{{ waypoints.length }}</p>
-                                </div>
-                                <div v-if="allRouteOptions.length" class="col-span-2 py-3">
-                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Selected Route</p>
-                                    <p class="text-sm font-semibold">
-                                        {{ selectedRouteIndex + 1 }} / {{ allRouteOptions.length }}
-                                    </p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
                     <Card v-if="waypoints.length" class="rounded-2xl">
                         <CardHeader class="pb-2">
                             <div class="flex items-center justify-between gap-2">
@@ -2319,7 +2246,7 @@ onBeforeUnmount(() => {
                                 </Button>
 
                                 <Button
-                                    variant="default"
+                                    variant="blue"
                                     class="w-full"
                                     :disabled="form.processing || !routeReady"
                                     @click="submit"

@@ -521,7 +521,7 @@ function submit() {
                         <Link :href="index().url">Cancel</Link>
                     </Button>
 
-                    <Button :disabled="form.processing" @click="submit">
+                    <Button :disabled="form.processing" @click="submit" variant="blue">
                         <Save class="mr-2 h-4 w-4" />
                         {{ form.processing ? 'Saving...' : 'Save Changes' }}
                     </Button>
