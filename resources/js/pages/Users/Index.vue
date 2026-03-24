@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
+    CardAction,
     CardContent,
     CardDescription,
     CardHeader,
@@ -30,10 +31,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import {
     Table,
     TableBody,
-    TableCaption,
     TableCell,
     TableHead,
     TableHeader,
@@ -60,8 +61,13 @@ import { Head, Link, router } from '@inertiajs/vue3';
    Icons
 ====================================================== */
 import {
+    ArrowDown,
+    ArrowUp,
+    ArrowUpDown,
+    ChevronRight,
     Download,
     Eye,
+    Filter,
     KeyRound,
     MoreHorizontal,
     Pencil,
@@ -69,22 +75,24 @@ import {
     Power,
     Trash2,
     Upload,
+    Users,
+    X,
 } from 'lucide-vue-next';
 
 /* ======================================================
    Vue Core
 ====================================================== */
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 /* ======================================================
    Permissions
 ====================================================== */
 import { can } from '@/lib/can';
 
-const canCreate    = can('users.create');
-const canUpdate    = can('users.update');
-const canDelete    = can('users.delete');
-const canToggle    = can('users.toggleStatus');
+const canCreate = can('users.create');
+const canUpdate = can('users.update');
+const canDelete = can('users.delete');
+const canToggle = can('users.toggleStatus');
 const canResetPass = can('users.resetPassword');
 
 /* ======================================================
@@ -115,6 +123,9 @@ interface User {
     status: 'active' | 'inactive' | string;
 }
 
+type SortField = 'username' | 'name' | 'email' | 'status' | null;
+type SortDir = 'asc' | 'desc';
+
 /* ======================================================
    Breadcrumbs
 ====================================================== */
@@ -135,33 +146,85 @@ const props = defineProps<{
         search?: string | null;
         type?: string | null;
         status?: string | null;
+        sort_by?: SortField;
+        sort_dir?: SortDir;
     };
     statuses?: string[];
     canSeeSuperAdmin?: boolean;
 }>();
 
 /* ======================================================
-   Filters
+   Filter & Sort state
 ====================================================== */
-function applyFilters(type: string | null, status: string | null) {
+const typeFilter = ref<string>(props.filters.type ?? 'all');
+const statusFilter = ref<string>(props.filters.status ?? 'all');
+const sortBy = ref<SortField>(props.filters.sort_by ?? null);
+const sortDir = ref<SortDir>(props.filters.sort_dir ?? 'asc');
+
+const hasActiveFilters = computed(() =>
+    (typeFilter.value && typeFilter.value !== 'all') ||
+    (statusFilter.value && statusFilter.value !== 'all') ||
+    sortBy.value !== null,
+);
+
+function applyFilters(overrides: Record<string, string | null | undefined> = {}) {
     router.get(
         index().url,
         {
-            search: props.filters.search ?? '',
-            type,
-            status,
+            search: props.filters.search ?? undefined,
+            type: typeFilter.value !== 'all' ? typeFilter.value : undefined,
+            status: statusFilter.value !== 'all' ? statusFilter.value : undefined,
+            sort_by: sortBy.value ?? undefined,
+            sort_dir: sortBy.value ? sortDir.value : undefined,
+            ...overrides,
         },
         {
             preserveScroll: true,
+            preserveState: true,
+            replace: true,
             only: ['users', 'filters', 'statuses', 'flash'],
         },
     );
 }
 
+function onTypeChange(val: string) {
+    typeFilter.value = val;
+    applyFilters();
+}
+
+function onStatusChange(val: string) {
+    statusFilter.value = val;
+    applyFilters();
+}
+
+function toggleSort(field: SortField) {
+    if (sortBy.value === field) {
+        sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortBy.value = field;
+        sortDir.value = 'asc';
+    }
+    applyFilters();
+}
+
+function clearFilters() {
+    typeFilter.value = 'all';
+    statusFilter.value = 'all';
+    sortBy.value = null;
+    sortDir.value = 'asc';
+
+    applyFilters({
+        type: undefined,
+        status: undefined,
+        sort_by: undefined,
+        sort_dir: undefined,
+    });
+}
+
 /* ======================================================
    Computed
 ====================================================== */
-const showCompanyColumn = computed(() => props.filters.type !== 'internal');
+const showCompanyColumn = computed(() => typeFilter.value !== 'internal');
 
 /* ======================================================
    Badge helpers
@@ -196,6 +259,18 @@ function emailVerificationBadgeClass(emailVerifiedAt: string | null) {
 
 function emailVerificationLabel(emailVerifiedAt: string | null) {
     return emailVerifiedAt ? 'Verified' : 'Not Verified';
+}
+
+/* ======================================================
+   Sort icon helpers
+====================================================== */
+function sortIcon(field: SortField) {
+    if (sortBy.value !== field) return ArrowUpDown;
+    return sortDir.value === 'asc' ? ArrowUp : ArrowDown;
+}
+
+function sortIconClass(field: SortField) {
+    return sortBy.value === field ? 'text-blue-600' : 'text-muted-foreground/40';
 }
 
 /* ======================================================
@@ -237,71 +312,42 @@ function handleDelete(user: User) {
     <Head title="Users" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-            <Card class="mx-5">
-                <CardHeader>
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex h-full flex-1 flex-col gap-4 p-4">
+            <Card>
+                <CardHeader class="flex flex-col gap-4 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-2">
                         <div>
-                            <CardTitle>Users</CardTitle>
-                            <CardDescription>
-                                Manage users, assign roles, and control access.
-                            </CardDescription>
-                        </div>
-
-                        <div class="flex items-center gap-2">
-                            <Select
-                                :model-value="props.filters.type ?? 'all'"
-                                @update:model-value="
-                                    (value) => {
-                                        const v = String(value);
-                                        applyFilters(v === 'all' ? null : v, props.filters.status ?? null);
-                                    }
-                                "
-                            >
-                                <SelectTrigger class="w-32">
-                                    <SelectValue placeholder="User Type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All</SelectItem>
-                                    <SelectItem value="internal">Internal</SelectItem>
-                                    <SelectItem value="external">External</SelectItem>
-                                </SelectContent>
-                            </Select>
-
-                            <Select
-                                :model-value="props.filters.status ?? 'all'"
-                                @update:model-value="
-                                    (value) => {
-                                        const v = String(value);
-                                        applyFilters(props.filters.type ?? null, v === 'all' ? null : v);
-                                    }
-                                "
-                            >
-                                <SelectTrigger class="w-32">
-                                    <SelectValue placeholder="Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
-                                </SelectContent>
-                            </Select>
-
-                            <Button v-if="canCreate" size="sm" as-child>
-                                <Link :href="create().url">
-                                    <Plus class="mr-2 h-4 w-4" />
-                                    Create User
-                                </Link>
-                            </Button>
+                            <CardTitle class="flex items-center gap-2">
+                                <Users class="h-5 w-5 text-blue-700" />
+                                User List
+                            </CardTitle>
+                            <CardDescription>Manage users, assign roles, and control access.</CardDescription>
                         </div>
                     </div>
+
+                    <CardAction class="flex gap-2">
+                        <Button
+                            v-if="canCreate"
+                            size="sm"
+                            variant="blue"
+                            as-child
+                        >
+                            <Link :href="create().url" class="flex items-center gap-1.5">
+                                <Plus class="h-4 w-4" />
+                                New User
+                            </Link>
+                        </Button>
+                    </CardAction>
                 </CardHeader>
 
-                <CardContent class="space-y-4">
+                <Separator />
+
+                <CardContent class="space-y-4 pt-4">
+                    <!-- Row 1: Search + Import/Export -->
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div class="w-full max-w-sm">
                             <SearchInput
-                                :route="`${index().url}?type=${props.filters.type ?? ''}&status=${props.filters.status ?? ''}`"
+                                :route="`${index().url}?type=${typeFilter !== 'all' ? typeFilter : ''}&status=${statusFilter !== 'all' ? statusFilter : ''}&sort_by=${sortBy ?? ''}&sort_dir=${sortBy ? sortDir : ''}`"
                                 :initial-value="props.filters.search"
                                 placeholder="Search users..."
                                 :only="['users', 'filters', 'statuses', 'flash']"
@@ -311,169 +357,318 @@ function handleDelete(user: User) {
 
                         <div class="flex gap-2 sm:justify-end">
                             <Button size="sm" variant="outline">
-                                <Upload class="mr-2 h-4 w-4" />
+                                <Upload class="mr-1.5 h-4 w-4" />
                                 Import
                             </Button>
                             <Button size="sm" variant="outline">
-                                <Download class="mr-2 h-4 w-4" />
+                                <Download class="mr-1.5 h-4 w-4" />
                                 Export
                             </Button>
                         </div>
                     </div>
 
-                    <Table>
-                        <!-- <TableCaption>List of Users</TableCaption> -->
+                    <!-- Row 2: Filters + Sort -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            <Filter class="h-3.5 w-3.5" />
+                            Filter
+                        </div>
 
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Username</TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead>Email Verification</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead v-if="showCompanyColumn">Company</TableHead>
-                                <TableHead>Roles</TableHead>
-                                <TableHead class="w-[80px] text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
+                        <Select :model-value="typeFilter" @update:model-value="onTypeChange">
+                            <SelectTrigger class="h-8 w-36 rounded-lg border-slate-200 text-xs">
+                                <SelectValue placeholder="All Types" />
+                            </SelectTrigger>
+                            <SelectContent class="rounded-xl">
+                                <SelectItem value="all" class="text-xs">All Types</SelectItem>
+                                <SelectItem value="internal" class="text-xs">Internal</SelectItem>
+                                <SelectItem value="external" class="text-xs">External</SelectItem>
+                            </SelectContent>
+                        </Select>
 
-                        <TableBody>
-                            <TableRow v-for="user in props.users.data" :key="user.id">
-                                <TableCell class="font-medium">
-                                    {{ user.username }}
-                                </TableCell>
+                        <Select :model-value="statusFilter" @update:model-value="onStatusChange">
+                            <SelectTrigger class="h-8 w-36 rounded-lg border-slate-200 text-xs">
+                                <SelectValue placeholder="All Statuses" />
+                            </SelectTrigger>
+                            <SelectContent class="rounded-xl">
+                                <SelectItem value="all" class="text-xs">All Statuses</SelectItem>
+                                <SelectItem value="active" class="text-xs">Active</SelectItem>
+                                <SelectItem value="inactive" class="text-xs">Inactive</SelectItem>
+                            </SelectContent>
+                        </Select>
 
-                                <TableCell>{{ user.name }}</TableCell>
+                        <div class="ml-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            <ArrowUpDown class="h-3.5 w-3.5" />
+                            Sort
+                        </div>
 
-                                <TableCell>{{ user.email }}</TableCell>
+                        <Select
+                            :model-value="sortBy ?? 'none'"
+                            @update:model-value="(val) => { sortBy = val === 'none' ? null : val as SortField; applyFilters(); }"
+                        >
+                            <SelectTrigger class="h-8 w-36 rounded-lg border-slate-200 text-xs">
+                                <SelectValue placeholder="Sort by…" />
+                            </SelectTrigger>
+                            <SelectContent class="rounded-xl">
+                                <SelectItem value="none" class="text-xs">No Sort</SelectItem>
+                                <SelectItem value="username" class="text-xs">Username</SelectItem>
+                                <SelectItem value="name" class="text-xs">Name</SelectItem>
+                                <SelectItem value="email" class="text-xs">Email</SelectItem>
+                                <SelectItem value="status" class="text-xs">Status</SelectItem>
+                            </SelectContent>
+                        </Select>
 
-                                <TableCell>
-                                    <Badge
-                                        :class="emailVerificationBadgeClass(user.email_verified_at)"
-                                        class="border"
+                        <Button
+                            v-if="sortBy"
+                            size="sm"
+                            variant="outline"
+                            class="h-8 rounded-lg border-slate-200 px-3 text-xs text-slate-600 hover:bg-slate-100"
+                            @click="sortDir = sortDir === 'asc' ? 'desc' : 'asc'; applyFilters()"
+                        >
+                            <ArrowUp v-if="sortDir === 'asc'" class="mr-1.5 h-3.5 w-3.5 text-blue-600" />
+                            <ArrowDown v-else class="mr-1.5 h-3.5 w-3.5 text-blue-600" />
+                            {{ sortDir === 'asc' ? 'Ascending' : 'Descending' }}
+                        </Button>
+
+                        <div v-if="hasActiveFilters" class="ml-auto flex items-center gap-2">
+                            <Badge class="gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-50">
+                                <Filter class="h-3 w-3" />
+                                Filters active
+                            </Badge>
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                class="h-7 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
+                                @click="clearFilters"
+                            >
+                                <X class="mr-1 h-3.5 w-3.5" />
+                                Clear
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-lg border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow class="bg-muted/40 hover:bg-muted/40">
+                                    <TableHead
+                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        @click="toggleSort('username')"
                                     >
-                                        {{ emailVerificationLabel(user.email_verified_at) }}
-                                    </Badge>
-                                </TableCell>
+                                        <div class="flex items-center gap-1.5">
+                                            Username
+                                            <component :is="sortIcon('username')" class="h-3.5 w-3.5" :class="sortIconClass('username')" />
+                                        </div>
+                                    </TableHead>
 
-                                <TableCell>
-                                    <Badge
-                                        :class="statusBadgeClass(user.status)"
-                                        class="border capitalize"
+                                    <TableHead
+                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        @click="toggleSort('name')"
                                     >
-                                        {{ user.status }}
-                                    </Badge>
-                                </TableCell>
+                                        <div class="flex items-center gap-1.5">
+                                            Name
+                                            <component :is="sortIcon('name')" class="h-3.5 w-3.5" :class="sortIconClass('name')" />
+                                        </div>
+                                    </TableHead>
 
-                                <TableCell v-if="showCompanyColumn">
-                                    {{
-                                        visibleRoles(user).some((r) => r.type === 'external')
-                                            ? (user.company?.company_name ?? '-')
-                                            : '-'
-                                    }}
-                                </TableCell>
+                                    <TableHead
+                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        @click="toggleSort('email')"
+                                    >
+                                        <div class="flex items-center gap-1.5">
+                                            Email
+                                            <component :is="sortIcon('email')" class="h-3.5 w-3.5" :class="sortIconClass('email')" />
+                                        </div>
+                                    </TableHead>
 
-                                <TableCell>
-                                    <div class="flex flex-wrap gap-1 capitalize">
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                                        Verification
+                                    </TableHead>
+
+                                    <TableHead
+                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        @click="toggleSort('status')"
+                                    >
+                                        <div class="flex items-center gap-1.5">
+                                            Status
+                                            <component :is="sortIcon('status')" class="h-3.5 w-3.5" :class="sortIconClass('status')" />
+                                        </div>
+                                    </TableHead>
+
+                                    <TableHead
+                                        v-if="showCompanyColumn"
+                                        class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
+                                    >
+                                        Company
+                                    </TableHead>
+
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                                        Roles
+                                    </TableHead>
+
+                                    <TableHead class="text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                                        Actions
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+
+                            <TableBody>
+                                <TableRow v-if="props.users.data.length === 0" class="hover:bg-transparent">
+                                    <TableCell :colspan="showCompanyColumn ? 8 : 7" class="py-20 text-center">
+                                        <div class="flex flex-col items-center gap-3">
+                                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+                                                <Users class="h-6 w-6 text-muted-foreground/40" />
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-semibold text-foreground">No users found</p>
+                                                <p class="mt-0.5 text-xs text-muted-foreground">
+                                                    {{ hasActiveFilters ? 'Try adjusting your filters or search.' : 'Try adjusting your search.' }}
+                                                </p>
+                                            </div>
+                                            <Button
+                                                v-if="hasActiveFilters"
+                                                size="sm"
+                                                variant="outline"
+                                                class="mt-1 h-8 rounded-lg text-xs"
+                                                @click="clearFilters"
+                                            >
+                                                <X class="mr-1.5 h-3.5 w-3.5" />
+                                                Clear filters
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+
+                                <TableRow
+                                    v-for="user in props.users.data"
+                                    :key="user.id"
+                                    class="group transition-colors hover:bg-muted/30"
+                                >
+                                    <TableCell class="font-medium">
+                                        {{ user.username }}
+                                    </TableCell>
+
+                                    <TableCell>
+                                        {{ user.name }}
+                                    </TableCell>
+
+                                    <TableCell class="text-sm text-muted-foreground">
+                                        {{ user.email }}
+                                    </TableCell>
+
+                                    <TableCell>
                                         <Badge
-                                            v-for="role in visibleRoles(user)"
-                                            :key="role.id"
-                                            :class="roleBadgeClass(role)"
+                                            :class="emailVerificationBadgeClass(user.email_verified_at)"
                                             class="border"
                                         >
-                                            {{ role.name }}
+                                            {{ emailVerificationLabel(user.email_verified_at) }}
                                         </Badge>
+                                    </TableCell>
 
-                                        <span
-                                            v-if="visibleRoles(user).length === 0"
-                                            class="text-sm text-muted-foreground"
+                                    <TableCell>
+                                        <Badge
+                                            :class="statusBadgeClass(user.status)"
+                                            class="border capitalize"
                                         >
-                                            -
-                                        </span>
-                                    </div>
-                                </TableCell>
+                                            {{ user.status }}
+                                        </Badge>
+                                    </TableCell>
 
-                                <TableCell class="text-right">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger as-child>
-                                            <Button variant="ghost" size="icon" class="h-8 w-8">
-                                                <MoreHorizontal class="h-4 w-4" />
-                                                <span class="sr-only">Open actions</span>
-                                            </Button>
-                                        </DropdownMenuTrigger>
+                                    <TableCell
+                                        v-if="showCompanyColumn"
+                                        class="text-sm text-muted-foreground"
+                                    >
+                                        {{
+                                            visibleRoles(user).some((r) => r.type === 'external')
+                                                ? (user.company?.company_name ?? '-')
+                                                : '-'
+                                        }}
+                                    </TableCell>
 
-                                        <DropdownMenuContent align="end" class="w-56">
-                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                            <DropdownMenuSeparator />
+                                    <TableCell>
+                                        <div class="flex flex-wrap gap-1 capitalize">
+                                            <Badge
+                                                v-for="role in visibleRoles(user)"
+                                                :key="role.id"
+                                                :class="roleBadgeClass(role)"
+                                                class="border"
+                                            >
+                                                {{ role.name }}
+                                            </Badge>
+                                            <span
+                                                v-if="visibleRoles(user).length === 0"
+                                                class="text-sm text-muted-foreground"
+                                            >
+                                                -
+                                            </span>
+                                        </div>
+                                    </TableCell>
 
-                                            <!-- View — always visible -->
-                                            <DropdownMenuItem as-child>
-                                                <Link
-                                                    :href="show(user.id).url"
-                                                    class="flex w-full cursor-pointer items-center"
+                                    <TableCell class="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger as-child>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                                                 >
-                                                    <Eye class="mr-2 h-4 w-4" />
-                                                    <span>View Profile</span>
-                                                </Link>
-                                            </DropdownMenuItem>
+                                                    <MoreHorizontal class="h-4 w-4" />
+                                                    <span class="sr-only">Open actions</span>
+                                                </Button>
+                                            </DropdownMenuTrigger>
 
-                                            <!-- Edit -->
-                                            <DropdownMenuItem v-if="canUpdate" as-child>
-                                                <Link
-                                                    :href="edit(user.id).url"
-                                                    class="flex w-full cursor-pointer items-center"
+                                            <DropdownMenuContent align="end" class="w-52 rounded-xl border-slate-200 shadow-lg">
+                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                                    {{ user.username }}
+                                                </DropdownMenuLabel>
+
+                                                <DropdownMenuSeparator />
+
+                                                <DropdownMenuItem
+                                                    as-child
+                                                    class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700"
                                                 >
-                                                    <Pencil class="mr-2 h-4 w-4" />
-                                                    <span>Edit Details</span>
-                                                </Link>
-                                            </DropdownMenuItem>
+                                                    <Link :href="show(user.id).url" class="flex items-center">
+                                                        <Eye class="mr-2 h-4 w-4" />
+                                                        View Profile
+                                                        <ChevronRight class="ml-auto h-3.5 w-3.5 text-blue-400" />
+                                                    </Link>
+                                                </DropdownMenuItem>
 
-                                            <!-- Toggle status -->
-                                            <DropdownMenuItem
-                                                v-if="canToggle"
-                                                class="cursor-pointer"
-                                                @click="handleToggleStatus(user)"
-                                            >
-                                                <Power class="mr-2 h-4 w-4" />
-                                                <span>{{ isActive(user) ? 'Set Inactive' : 'Set Active' }}</span>
-                                            </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    v-if="canUpdate"
+                                                    as-child
+                                                >
+                                                    <Link :href="edit(user.id).url" class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700">
+                                                        <Pencil class="mr-2 h-4 w-4" />
+                                                        Edit Details
+                                                        <ChevronRight class="ml-auto h-3.5 w-3.5 text-amber-400" />
+                                                    </Link>
+                                                </DropdownMenuItem>
 
-                                            <!-- Reset password -->
-                                            <DropdownMenuItem
-                                                v-if="canResetPass"
-                                                class="cursor-pointer"
-                                                @click="handleResetPassword(user)"
-                                            >
-                                                <KeyRound class="mr-2 h-4 w-4" />
-                                                <span>Reset Password</span>
-                                            </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    v-if="canToggle"
+                                                    class="rounded-lg text-rose-700 focus:bg-rose-50 focus:text-rose-700"
+                                                    @click="handleToggleStatus(user)"
+                                                >
+                                                    <Power class="mr-2 h-4 w-4" />
+                                                    {{ isActive(user) ? 'Set Inactive' : 'Set Active' }}
+                                                </DropdownMenuItem>
 
-                                            <DropdownMenuSeparator v-if="canDelete" />
-
-                                            <!-- Delete -->
-                                            <DropdownMenuItem
-                                                v-if="canDelete"
-                                                class="cursor-pointer text-red-600 focus:text-red-600"
-                                                @click="handleDelete(user)"
-                                            >
-                                                <Trash2 class="mr-2 h-4 w-4" />
-                                                <span>Delete Account</span>
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
-                            </TableRow>
-
-                            <TableRow v-if="props.users.data.length === 0">
-                                <TableCell
-                                    :colspan="showCompanyColumn ? 8 : 7"
-                                    class="py-8 text-center text-sm text-muted-foreground"
-                                >
-                                    No users found.
-                                </TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
+                                                <DropdownMenuItem
+                                                    v-if="canResetPass"
+                                                    class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700"
+                                                    @click="handleResetPassword(user)"
+                                                >
+                                                    <KeyRound class="mr-2 h-4 w-4" />
+                                                    Reset Password
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </div>
 
                     <InertiaPagination
                         :links="props.users.links"

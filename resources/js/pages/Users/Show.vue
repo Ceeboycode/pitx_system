@@ -152,7 +152,7 @@ function verificationBadgeClass(date?: string | null) {
                             </Link>
                         </Button>
 
-                        <Button as-child>
+                        <Button as-child variant="blue">
                             <Link :href="edit(user.id).url">
                                 <Pencil class="mr-2 h-4 w-4" />
                                 Edit User

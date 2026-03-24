@@ -1,4 +1,3 @@
-<!-- resources/js/Pages/Company/Show.vue -->
 <script setup lang="ts">
 import ArchiveCompanyDialog from '@/components/company/ArchiveCompanyDialog.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
