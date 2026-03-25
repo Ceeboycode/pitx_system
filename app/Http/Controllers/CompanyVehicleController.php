@@ -25,9 +25,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class CompanyVehicleController extends Controller
 {
     private const DOC_TYPES = [
-        'ltfrb_certificate' => 'LTFRB Certificate',
-        'cpc'               => 'Certificate of Public Convenience (CPC)',
-        'or_cr'             => 'Official Receipt / Certificate of Registration (OR/CR)',
+        'insurance_certificate'       => 'Insurance Certificate',
+        'cpc'                         => 'Certificate of Public Convenience (CPC)',
+        'official_receipt'            => 'Official Receipt (OR)',
+        'certificate_of_registration' => 'Certificate of Registration (CR)',
+        'puv_identification_markings' => 'PUV Identification Markings',
     ];
 
     public function __construct(
@@ -189,8 +191,8 @@ class CompanyVehicleController extends Controller
                     'file_mime_type' => $file->getMimeType(),
                     'file_size'      => $file->getSize(),
                     'status'         => 'pending',
-                    'issued_at'      => $docMeta['issued_at'],
-                    'expires_at'     => $docMeta['expires_at'],
+                    'issued_at'      => $this->usesDocumentDates($docMeta['document_type']) ? $docMeta['issued_at'] : null,
+                    'expires_at'     => $this->usesDocumentDates($docMeta['document_type']) ? $docMeta['expires_at'] : null,
                     'created_by'     => $user->id,
                 ]);
             }
@@ -467,8 +469,8 @@ class CompanyVehicleController extends Controller
                     'file_mime_type' => $file->getMimeType(),
                     'file_size'      => $file->getSize(),
                     'status'         => 'pending',
-                    'issued_at'      => $docMeta['issued_at'],
-                    'expires_at'     => $docMeta['expires_at'],
+                    'issued_at'      => $this->usesDocumentDates((string) $documentType) ? $docMeta['issued_at'] : null,
+                    'expires_at'     => $this->usesDocumentDates((string) $documentType) ? $docMeta['expires_at'] : null,
                     'updated_by'     => $user->id,
                 ]);
 
@@ -549,6 +551,11 @@ class CompanyVehicleController extends Controller
         $value = preg_replace('/_+/', '_', $value);
 
         return trim($value ?? '', '_') ?: 'FILE';
+    }
+
+    private function usesDocumentDates(string $documentType): bool
+    {
+        return $documentType !== 'puv_identification_markings';
     }
 
     private function publicDisk(): FilesystemAdapter

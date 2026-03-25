@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { FileText } from 'lucide-vue-next';
+import { FileText, Image as ImageIcon } from 'lucide-vue-next';
 
 type VehicleDocumentItem = {
     document_type: string;
@@ -37,6 +37,30 @@ function canReupload(status?: string | null) {
 
     return status === 'pending' || status === 'rejected';
 }
+
+function isPhotoDocument(documentType: string) {
+    return documentType === 'puv_identification_markings';
+}
+
+function fileHint(documentType: string) {
+    if (documentType === 'puv_identification_markings') {
+        return 'Upload a clear photo of the bus showing the PUV identification markings.';
+    }
+
+    return 'PDF or image file';
+}
+
+function fileLabel(documentType: string) {
+    return isPhotoDocument(documentType) ? 'Upload Photo' : 'File';
+}
+
+function showIssuedAt(documentType: string) {
+    return !isPhotoDocument(documentType);
+}
+
+function showExpiresAt(documentType: string) {
+    return !isPhotoDocument(documentType);
+}
 </script>
 
 <template>
@@ -49,7 +73,11 @@ function canReupload(status?: string | null) {
             <div class="flex items-center justify-between gap-3 p-4">
                 <div class="flex items-center gap-3">
                     <div class="rounded-md border p-2 text-muted-foreground">
-                        <FileText class="h-4 w-4" />
+                        <ImageIcon
+                            v-if="isPhotoDocument(document.document_type)"
+                            class="h-4 w-4"
+                        />
+                        <FileText v-else class="h-4 w-4" />
                     </div>
 
                     <div>
@@ -57,7 +85,7 @@ function canReupload(status?: string | null) {
                             {{ docTypes[document.document_type] }}
                         </p>
                         <p class="text-xs text-muted-foreground">
-                            PDF or image file
+                            {{ fileHint(document.document_type) }}
                         </p>
                     </div>
                 </div>
@@ -79,9 +107,18 @@ function canReupload(status?: string | null) {
 
             <Separator />
 
-            <div class="grid gap-4 p-4 md:grid-cols-3">
+            <div
+                class="grid gap-4 p-4"
+                :class="
+                    showIssuedAt(document.document_type) || showExpiresAt(document.document_type)
+                        ? 'md:grid-cols-3'
+                        : 'md:grid-cols-2'
+                "
+            >
                 <div class="space-y-2 md:col-span-3">
-                    <Label :for="`file-${index}`">File</Label>
+                    <Label :for="`file-${index}`">
+                        {{ fileLabel(document.document_type) }}
+                    </Label>
                     <Input
                         :id="`file-${index}`"
                         :disabled="readonly || !canReupload(document.status)"
@@ -102,7 +139,10 @@ function canReupload(status?: string | null) {
                     <InputError :message="errors[`documents.${index}.file`]" />
                 </div>
 
-                <div class="space-y-2">
+                <div
+                    v-if="showIssuedAt(document.document_type)"
+                    class="space-y-2"
+                >
                     <Label :for="`issued_at-${index}`">Issued At</Label>
                     <Input
                         :id="`issued_at-${index}`"
@@ -115,7 +155,10 @@ function canReupload(status?: string | null) {
                     />
                 </div>
 
-                <div class="space-y-2">
+                <div
+                    v-if="showExpiresAt(document.document_type)"
+                    class="space-y-2"
+                >
                     <Label :for="`expires_at-${index}`">Expires At</Label>
                     <Input
                         :id="`expires_at-${index}`"
