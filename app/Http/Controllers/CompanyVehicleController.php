@@ -43,6 +43,7 @@ class CompanyVehicleController extends Controller
 
         $user    = $request->user();
         $company = $user->company;
+        $status  = $request->string('status')->toString();
 
         $vehicles = Vehicle::query()
             ->where('company_id', $company->id)
@@ -64,6 +65,10 @@ class CompanyVehicleController extends Controller
                 'documents:id,vehicle_id,document_type,status',
             ])
             ->search($request->search)
+            ->when(
+                in_array($status, ['active', 'inactive', 'pending', 'suspended'], true),
+                fn ($query) => $query->where('status', $status)
+            )
             ->latest()
             ->paginate(10)
             ->withQueryString();
@@ -87,6 +92,7 @@ class CompanyVehicleController extends Controller
             'vehicles' => $vehicles,
             'filters'  => [
                 'search' => $request->search,
+                'status' => $status ?: null,
             ],
         ]);
     }

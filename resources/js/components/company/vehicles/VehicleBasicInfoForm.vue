@@ -37,6 +37,8 @@ const props = defineProps<{
     readonly?: boolean
 }>()
 
+const presetCapacities = ['12', '30', '40', '60']
+
 function toUppercase(value: string | number | null | undefined) {
     return String(value ?? '').toUpperCase()
 }
@@ -89,6 +91,16 @@ function updateColor(event: Event) {
     props.form.color = toNormalCase(
         (event.target as HTMLInputElement).value,
     )
+}
+
+function capacitySelectValue() {
+    return presetCapacities.includes(String(props.form.capacity))
+        ? String(props.form.capacity)
+        : 'custom'
+}
+
+function updateCapacity(value: string) {
+    props.form.capacity = value === 'custom' ? '' : value
 }
 </script>
 
@@ -214,18 +226,42 @@ function updateColor(event: Event) {
 
                     <div class="space-y-2">
                         <Label
-                            for="capacity"
+                            for="capacity_select"
                             class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
                         >
                             Capacity
                         </Label>
 
-                        <div class="relative">
+                        <Select
+                            :model-value="capacitySelectValue()"
+                            :disabled="readonly"
+                            @update:model-value="updateCapacity"
+                        >
+                            <SelectTrigger
+                                id="capacity_select"
+                                class="h-11 w-full rounded-xl border-muted-foreground/20 bg-background"
+                            >
+                                <SelectValue placeholder="Select capacity" />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                                <SelectItem value="12">12</SelectItem>
+                                <SelectItem value="30">30</SelectItem>
+                                <SelectItem value="40">40</SelectItem>
+                                <SelectItem value="60">60</SelectItem>
+                                <SelectItem value="custom">Custom</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <div
+                            v-if="capacitySelectValue() === 'custom'"
+                            class="relative"
+                        >
                             <Users
                                 class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                             />
                             <Input
-                                id="capacity"
+                                id="custom_capacity"
                                 v-model="form.capacity"
                                 :disabled="readonly"
                                 type="number"
