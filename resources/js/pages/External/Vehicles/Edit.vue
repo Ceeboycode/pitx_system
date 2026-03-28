@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
@@ -218,7 +218,7 @@ function statusClass(status?: string | null) {
     <ExternalLayout :company="company" :user="user">
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
-                <!-- ── Page header ─────────────────────────────────────── -->
+                <!-- -- Page header --------------------------------------- -->
                 <div class="rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 p-6 shadow-sm">
                     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div class="space-y-3">
@@ -272,7 +272,7 @@ function statusClass(status?: string | null) {
                     </div>
                 </div>
 
-                <!-- ── Stat cards ──────────────────────────────────────── -->
+                <!-- -- Stat cards ---------------------------------------- -->
                 <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
                     <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700">
@@ -324,13 +324,13 @@ function statusClass(status?: string | null) {
                     </div>
                 </div>
 
-                <!-- ── Form ────────────────────────────────────────────── -->
+                <!-- -- Form ---------------------------------------------- -->
                 <form class="space-y-6" @submit.prevent="submit">
                     <div class="grid gap-6 xl:grid-cols-[1fr_320px]">
                         <!-- Left column -->
                         <div class="space-y-6">
                             <!-- Company Information -->
-                            <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+                            <div class="rounded-xl border border-slate-200 bg-white shadow-sm pointer-events-none opacity-60">
                                 <div class="border-b border-slate-100 px-6 py-4">
                                     <h2 class="text-base font-semibold text-slate-800">Company Information</h2>
                                     <p class="mt-0.5 text-xs text-slate-400">
@@ -374,7 +374,7 @@ function statusClass(status?: string | null) {
                             </div>
 
                             <!-- Route Assignment -->
-                            <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+                            <div class="rounded-xl border border-slate-200 bg-white shadow-sm pointer-events-none opacity-60">
                                 <div class="border-b border-slate-100 px-6 py-4">
                                     <h2 class="text-base font-semibold text-slate-800">Route Assignment</h2>
                                     <p class="mt-0.5 text-xs text-slate-400">
@@ -393,7 +393,7 @@ function statusClass(status?: string | null) {
                             </div>
 
                             <!-- Vehicle Information -->
-                            <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+                            <div class="rounded-xl border border-slate-200 bg-white shadow-sm pointer-events-none opacity-60">
                                 <div class="border-b border-slate-100 px-6 py-4">
                                     <h2 class="text-base font-semibold text-slate-800">Vehicle Information</h2>
                                     <p class="mt-0.5 text-xs text-slate-400">
@@ -417,7 +417,7 @@ function statusClass(status?: string | null) {
                                                 Required Documents
                                             </h2>
                                             <p class="mt-0.5 text-xs text-slate-400">
-                                                Reupload is allowed only when a document is pending or rejected.
+                                                Only expired documents (including their issue/expiry dates) can be updated; all other details are locked.
                                             </p>
                                         </div>
 
@@ -549,3 +549,4 @@ function statusClass(status?: string | null) {
         </div>
     </ExternalLayout>
 </template>
+

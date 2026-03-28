@@ -45,6 +45,11 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
@@ -64,6 +69,7 @@ import {
     Route as RouteIcon,
     Upload,
     X,
+    FileText,
 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
@@ -83,6 +89,7 @@ type VehicleItem = {
     body_number?: string | null;
     capacity?: string | number | null;
     created_at?: string | null;
+    remarks?: string | null;
     company?: { company_name?: string | null } | null;
     route?: { id?: number; route_name?: string | null } | null;
 };
@@ -118,8 +125,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const archiveDialogOpen = ref(false);
 const selectedVehicle   = ref<VehicleItem | null>(null);
-const statusDialogOpen  = ref(false);
+const suspendDialogOpen = ref(false);
+const activateDialogOpen = ref(false);
 const statusVehicle     = ref<VehicleItem | null>(null);
+const suspendRemarks    = ref('');
 
 /* ── Filter & Sort state ─────────────────────────────────────────── */
 
@@ -135,6 +144,14 @@ const hasActiveFilters = computed(() =>
     (routeFilter.value && routeFilter.value !== 'all') ||
     sortBy.value !== null,
 );
+
+const resultsLabel = computed(() => {
+    const from = props.vehicles.from ?? 0;
+    const to   = props.vehicles.to ?? props.vehicles.data.length;
+    const total = props.vehicles.total ?? props.vehicles.data.length;
+    if (!total) return 'No results';
+    return `${from}-${to} of ${total} vehicles`;
+});
 
 function applyFilters(overrides: Record<string, string | null | undefined> = {}) {
     router.get(
@@ -249,7 +266,10 @@ function toggleStatusClass(status?: string | null): string {
 }
 
 const toggleLabel = (status?: string | null) =>
-    status === 'active' ? 'Set Inactive' : 'Set Active';
+    status === 'active' ? 'Suspend' : status === 'suspended' ? 'Unsuspend' : 'Suspend';
+
+const canToggle = (vehicle: VehicleItem) =>
+    !['pending', 'for_verification', 'inactive'].includes(vehicle.status ?? '');
 
 /* ── Actions ─────────────────────────────────────────────────────── */
 
@@ -258,19 +278,37 @@ const openArchiveDialog = (vehicle: VehicleItem) => {
     archiveDialogOpen.value = true;
 };
 
-const openStatusDialog = (vehicle: VehicleItem) => {
+const openSuspendDialog = (vehicle: VehicleItem) => {
     statusVehicle.value = vehicle;
-    statusDialogOpen.value = true;
+    suspendRemarks.value = '';
+    suspendDialogOpen.value = true;
 };
 
-const confirmToggleStatus = () => {
+const openActivateDialog = (vehicle: VehicleItem) => {
+    statusVehicle.value = vehicle;
+    activateDialogOpen.value = true;
+};
+
+const confirmSuspend = () => {
+    if (!statusVehicle.value) return;
+    router.patch(
+        `/vehicles/${statusVehicle.value.id}/toggle-status`,
+        { remarks: suspendRemarks.value },
+        {
+            preserveScroll: true,
+            onSuccess: () => { suspendDialogOpen.value = false; statusVehicle.value = null; suspendRemarks.value = ''; },
+        },
+    );
+};
+
+const confirmActivate = () => {
     if (!statusVehicle.value) return;
     router.patch(
         `/vehicles/${statusVehicle.value.id}/toggle-status`,
         {},
         {
             preserveScroll: true,
-            onSuccess: () => { statusDialogOpen.value = false; statusVehicle.value = null; },
+            onSuccess: () => { activateDialogOpen.value = false; statusVehicle.value = null; },
         },
     );
 };
@@ -301,6 +339,9 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                     </div>
 
                     <CardAction class="flex items-center gap-2">
+                        <Badge variant="outline" class="rounded-lg border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
+                            {{ resultsLabel }}
+                        </Badge>
                         <Button
                             as-child
                             size="sm"
@@ -502,6 +543,8 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                         </div>
                                     </TableHead>
 
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Remarks</TableHead>
+
                                     <TableHead class="text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -591,6 +634,31 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                         {{ formatDate(vehicle.created_at) }}
                                     </TableCell>
 
+                                    <!-- Remarks -->
+                                    <TableCell>
+                                        <div class="flex items-center gap-2">
+                                            <Popover v-if="vehicle.remarks">
+                                                <PopoverTrigger as-child>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        class="h-7 rounded-lg border-slate-200 text-xs text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                                    >
+                                                        <FileText class="mr-1.5 h-3.5 w-3.5" />
+                                                        View
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent class="w-64 rounded-xl border-slate-200 p-3 text-sm text-slate-700 shadow-lg">
+                                                    {{ vehicle.remarks }}
+                                                </PopoverContent>
+                                            </Popover>
+                                            <Badge v-if="vehicle.remarks" variant="secondary" class="rounded-full bg-slate-100 text-[11px] font-semibold text-slate-700">
+                                                Has remarks
+                                            </Badge>
+                                            <span v-else class="text-xs text-muted-foreground">&mdash;</span>
+                                        </div>
+                                    </TableCell>
+
                                     <!-- Actions -->
                                     <TableCell class="text-right">
                                         <DropdownMenu>
@@ -633,8 +701,30 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
-                                                    :class="['rounded-lg', toggleStatusClass(vehicle.status)]"
-                                                    @click="openStatusDialog(vehicle)"
+                                                    v-if="vehicle.status === 'active'"
+                                                    :disabled="!canToggle(vehicle)"
+                                                    :class="['rounded-lg', canToggle(vehicle) ? toggleStatusClass(vehicle.status) : 'text-slate-300']"
+                                                    @click="canToggle(vehicle) && openSuspendDialog(vehicle)"
+                                                >
+                                                    <Power class="mr-2 h-4 w-4" />
+                                                    Suspend
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuItem
+                                                    v-else-if="vehicle.status === 'suspended'"
+                                                    :disabled="!canToggle(vehicle)"
+                                                    :class="['rounded-lg', canToggle(vehicle) ? toggleStatusClass(vehicle.status) : 'text-slate-300']"
+                                                    @click="canToggle(vehicle) && openActivateDialog(vehicle)"
+                                                >
+                                                    <Power class="mr-2 h-4 w-4" />
+                                                    Unsuspend
+                                                </DropdownMenuItem>
+
+                                                <!-- Disabled toggle placeholder for other statuses -->
+                                                <DropdownMenuItem
+                                                    v-else
+                                                    disabled
+                                                    class="rounded-lg text-slate-300"
                                                 >
                                                     <Power class="mr-2 h-4 w-4" />
                                                     {{ toggleLabel(vehicle.status) }}
@@ -682,15 +772,45 @@ const archiveVehicle = (vehicle: VehicleItem) => {
             </AlertDialogContent>
         </AlertDialog>
 
-        <!-- Status dialog -->
-        <AlertDialog v-model:open="statusDialogOpen">
+        <!-- Suspend dialog (requires remarks) -->
+        <AlertDialog v-model:open="suspendDialogOpen">
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
-                    <AlertDialogTitle>
-                        {{ statusVehicle ? toggleLabel(statusVehicle.status) : 'Update Status' }}
-                    </AlertDialogTitle>
+                    <AlertDialogTitle>Set Vehicle to Suspended</AlertDialogTitle>
                     <AlertDialogDescription>
-                        Update status for
+                        Provide a reason before suspending
+                        <span class="font-semibold text-foreground">{{ statusVehicle?.plate_number || 'this vehicle' }}</span>.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold text-slate-600">Reason</label>
+                    <textarea
+                        v-model="suspendRemarks"
+                        rows="3"
+                        class="w-full rounded-lg border border-slate-200 bg-white p-2 text-sm focus:border-blue-500 focus:outline-none"
+                        placeholder="Brief reason (required)"
+                    />
+                </div>
+                <AlertDialogFooter>
+                    <AlertDialogCancel class="rounded-lg" @click="statusVehicle = null">Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                        class="rounded-lg bg-rose-600 text-white hover:bg-rose-700 border-0"
+                        :disabled="!suspendRemarks.trim()"
+                        @click="confirmSuspend"
+                    >
+                        Suspend
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <!-- Activate dialog -->
+        <AlertDialog v-model:open="activateDialogOpen">
+            <AlertDialogContent class="rounded-2xl">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Activate Vehicle</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Activate
                         <span class="font-semibold text-foreground">{{ statusVehicle?.plate_number || 'this vehicle' }}</span>?
                     </AlertDialogDescription>
                 </AlertDialogHeader>
@@ -698,7 +818,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                     <AlertDialogCancel class="rounded-lg" @click="statusVehicle = null">Cancel</AlertDialogCancel>
                     <AlertDialogAction
                         class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0"
-                        @click="confirmToggleStatus"
+                        @click="confirmActivate"
                     >
                         Confirm
                     </AlertDialogAction>

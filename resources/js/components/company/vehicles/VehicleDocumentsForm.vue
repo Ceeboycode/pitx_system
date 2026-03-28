@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -33,9 +33,8 @@ function fileName(document: VehicleDocumentItem) {
 }
 
 function canReupload(status?: string | null) {
-    if (!status) return true;
-
-    return status === 'pending' || status === 'rejected';
+    if (!status) return false;
+    return status === 'expired';
 }
 
 function isPhotoDocument(documentType: string) {
@@ -60,6 +59,10 @@ function showIssuedAt(documentType: string) {
 
 function showExpiresAt(documentType: string) {
     return !isPhotoDocument(documentType);
+}
+
+function isEditableDate(status?: string | null) {
+    return status === 'expired';
 }
 </script>
 
@@ -133,8 +136,7 @@ function showExpiresAt(documentType: string) {
                         v-if="document.status && !canReupload(document.status)"
                         class="text-xs text-muted-foreground"
                     >
-                        Reupload is only allowed for pending or rejected
-                        documents.
+                        Reupload (and date edits) are only allowed for expired documents.
                     </p>
                     <InputError :message="errors[`documents.${index}.file`]" />
                 </div>
@@ -147,7 +149,7 @@ function showExpiresAt(documentType: string) {
                     <Input
                         :id="`issued_at-${index}`"
                         v-model="document.issued_at"
-                        :disabled="readonly"
+                        :disabled="readonly || !isEditableDate(document.status)"
                         type="date"
                     />
                     <InputError
@@ -163,7 +165,7 @@ function showExpiresAt(documentType: string) {
                     <Input
                         :id="`expires_at-${index}`"
                         v-model="document.expires_at"
-                        :disabled="readonly"
+                        :disabled="readonly || !isEditableDate(document.status)"
                         type="date"
                     />
                     <InputError
@@ -182,3 +184,4 @@ function showExpiresAt(documentType: string) {
         </div>
     </div>
 </template>
+
