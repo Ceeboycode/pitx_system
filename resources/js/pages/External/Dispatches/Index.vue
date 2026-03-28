@@ -461,7 +461,7 @@ watch(confirmDepartOpen, (open) => {
                     </p>
                 </div>
 
-                <Button size="sm" class="w-full md:w-auto" @click="openCreateDialog">
+                <Button size="sm" class="w-full md:w-auto" variant="blue" @click="openCreateDialog">
                     <Plus class="mr-2 h-4 w-4" />
                     Add Dispatch
                 </Button>

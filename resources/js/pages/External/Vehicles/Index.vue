@@ -39,6 +39,13 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
     Table,
     TableBody,
     TableCell,
@@ -56,7 +63,6 @@ import {
     Filter,
     FileText,
     MoreHorizontal,
-    Pencil,
     Plus,
     Power,
     Route as RouteIcon,
@@ -71,9 +77,9 @@ import {
 ====================================================== */
 import { can } from '@/lib/can';
 
-const canCreate      = can('external_vehicles.create');
-const canUpdate      = can('external_vehicles.update');
-const canToggle      = can('external_vehicles.toggleStatus');
+const canCreate = can('external_vehicles.create');
+const canUpdate = can('external_vehicles.update');
+const canToggle = can('external_vehicles.toggleStatus');
 
 /* ======================================================
    Types
@@ -147,15 +153,7 @@ const props = defineProps<{
     company: Company;
     user: User;
     vehicles: PaginatedVehicles;
-    filters: {
-        search?: string | null;
-        status?: string | null;
-        vehicle_type?: string | null;
-        route_id?: string | null;
-        sort_by?: 'capacity' | 'created_at' | 'status' | null;
-        sort_dir?: 'asc' | 'desc' | null;
-    };
-    routes: { id: number; route_name: string }[];
+    filters: { search?: string | null };
 }>();
 
 /* ======================================================
@@ -175,28 +173,44 @@ function formatDate(value?: string | null) {
     });
 }
 
+function updateStatusSort(value: string) {
+    router.get(
+        CompanyVehicleController.index().url,
+        {
+            search: props.filters.search ?? '',
+            status: value === 'all' ? '' : value,
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+            only: ['vehicles', 'filters'],
+        },
+    );
+}
+
 /* ======================================================
    Badge helpers
 ====================================================== */
 function vehicleStatusClass(status?: string | null) {
-    if (status === 'active')    return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-    if (status === 'inactive')  return 'bg-rose-100 text-rose-600 border-rose-200';
+    if (status === 'active') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+    if (status === 'inactive') return 'bg-rose-100 text-rose-600 border-rose-200';
     if (status === 'suspended') return 'bg-orange-100 text-orange-700 border-orange-200';
-    if (status === 'pending')   return 'bg-amber-100 text-amber-700 border-amber-200';
+    if (status === 'pending') return 'bg-amber-100 text-amber-700 border-amber-200';
     return 'bg-slate-100 text-slate-500 border-0';
 }
 
 function vehicleStatusDot(status?: string | null) {
-    if (status === 'active')    return 'bg-emerald-500';
-    if (status === 'inactive')  return 'bg-rose-500';
+    if (status === 'active') return 'bg-emerald-500';
+    if (status === 'inactive') return 'bg-rose-500';
     if (status === 'suspended') return 'bg-orange-500';
-    if (status === 'pending')   return 'bg-amber-500';
+    if (status === 'pending') return 'bg-amber-500';
     return 'bg-slate-400';
 }
 
 function documentStatusClass(status?: string | null) {
     if (status === 'approved') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-    if (status === 'pending')  return 'bg-amber-100 text-amber-700 border-amber-200';
+    if (status === 'pending') return 'bg-amber-100 text-amber-700 border-amber-200';
     if (status === 'rejected') return 'bg-rose-100 text-rose-600 border-rose-200';
     if (status === 'expired')  return 'bg-rose-100 text-rose-600 border-rose-200';
     return 'bg-slate-100 text-slate-500 border-0';
@@ -204,7 +218,7 @@ function documentStatusClass(status?: string | null) {
 
 function documentStatusDot(status?: string | null) {
     if (status === 'approved') return 'bg-emerald-500';
-    if (status === 'pending')  return 'bg-amber-500';
+    if (status === 'pending') return 'bg-amber-500';
     if (status === 'rejected') return 'bg-rose-500';
     if (status === 'expired')  return 'bg-rose-500';
     return 'bg-slate-400';
@@ -239,19 +253,12 @@ function businessCanEdit(vehicle: VehicleItem) {
 
 function businessCanActivate(vehicle: VehicleItem) {
     if (isSuspended(vehicle.status)) return false;
-    if (!hasDocuments(vehicle)) return false;
-    if (hasPendingOrRejected(vehicle)) return false;
-    if (hasExpiredDocs(vehicle)) return false;
-    return true;
+    if (!vehicle.documents?.length)  return false;
+    return !vehicle.documents.some(
+        (doc) => doc.status === 'pending' || doc.status === 'rejected',
+    );
 }
 
-function businessCanToggle(vehicle: VehicleItem) {
-    if (vehicle.status === 'active') return !isSuspended(vehicle.status);
-    if (vehicle.status === 'inactive') return businessCanActivate(vehicle);
-    return false;
-}
-
-// Combined: permission AND business rule
 function canEditVehicle(vehicle: VehicleItem) {
     return canUpdate && businessCanEdit(vehicle);
 }
@@ -302,94 +309,21 @@ const resultsLabel = computed(() => {
 /* ======================================================
    Filters & sorting
 ====================================================== */
-type SortField = 'capacity' | 'created_at' | 'status' | null;
-type SortDir   = 'asc' | 'desc';
-
-const statusFilter      = ref<string>(props.filters.status ?? 'all');
-const vehicleTypeFilter = ref<string>(props.filters.vehicle_type ?? 'all');
-const routeFilter       = ref<string>(props.filters.route_id ?? 'all');
-const sortBy            = ref<SortField>(props.filters.sort_by ?? null);
-const sortDir           = ref<SortDir>(props.filters.sort_dir ?? 'asc');
-
-const hasActiveFilters = computed(() =>
-    (statusFilter.value && statusFilter.value !== 'all') ||
-    (vehicleTypeFilter.value && vehicleTypeFilter.value !== 'all') ||
-    (routeFilter.value && routeFilter.value !== 'all') ||
-    sortBy.value !== null,
-);
-
-function applyFilters(overrides: Record<string, string | null | undefined> = {}) {
-    router.get(
-        CompanyVehicleController.index().url,
-        {
-            search:       props.filters.search ?? undefined,
-            status:       statusFilter.value !== 'all'      ? statusFilter.value      : undefined,
-            vehicle_type: vehicleTypeFilter.value !== 'all' ? vehicleTypeFilter.value : undefined,
-            route_id:     routeFilter.value !== 'all'       ? routeFilter.value       : undefined,
-            sort_by:      sortBy.value ?? undefined,
-            sort_dir:     sortBy.value ? sortDir.value : undefined,
-            ...overrides,
-        },
-        { preserveState: true, replace: true, only: ['vehicles', 'filters', 'flash'] },
-    );
-}
-
-function onStatusChange(val: string) {
-    statusFilter.value = val;
-    applyFilters();
-}
-
-function onVehicleTypeChange(val: string) {
-    vehicleTypeFilter.value = val;
-    applyFilters();
-}
-
-function onRouteChange(val: string) {
-    routeFilter.value = val;
-    applyFilters();
-}
-
-function clearFilters() {
-    statusFilter.value      = 'all';
-    vehicleTypeFilter.value = 'all';
-    routeFilter.value       = 'all';
-    sortBy.value            = null;
-    sortDir.value           = 'asc';
-    applyFilters({
-        status: undefined, vehicle_type: undefined,
-        route_id: undefined, sort_by: undefined, sort_dir: undefined,
-    });
-}
-
-/* ======================================================
-   Toggle status dialogs
-====================================================== */
-const inactiveDialog = reactive({
-    open: false,
+const statusDialog = reactive({
+    open:    false,
     vehicle: null as VehicleItem | null,
     remarks: '',
 });
 
-const activateDialog = reactive({
-    open: false,
-    vehicle: null as VehicleItem | null,
+const statusConfirmOpen = computed({
+    get: ()      => statusDialog.open,
+    set: (value) => { statusDialog.open = value; },
 });
 
-const inactiveDialogOpen = computed({
-    get: () => inactiveDialog.open,
-    set: (val) => { inactiveDialog.open = val; },
-});
-
-const activateDialogOpen = computed({
-    get: () => activateDialog.open,
-    set: (val) => { activateDialog.open = val; },
-});
-
-function openDeactivate(vehicle: VehicleItem) {
-    if (!canToggleVehicle(vehicle) || vehicle.status !== 'active') return;
-    inactiveDialog.vehicle = vehicle;
-    inactiveDialog.remarks = '';
-    inactiveDialog.open    = true;
+function openStatusDialog(vehicle: VehicleItem) {
+    if (!canToggleVehicle(vehicle)) return;
+    statusDialog.vehicle = vehicle;
+    statusDialog.open    = true;
 }
 
 function submitDeactivate() {
@@ -422,8 +356,8 @@ function confirmActivate() {
         {
             preserveScroll: true,
             onSuccess: () => {
-                activateDialog.open    = false;
-                activateDialog.vehicle = null;
+                statusDialog.open    = false;
+                statusDialog.vehicle = null;
             },
         },
     );
@@ -437,7 +371,7 @@ function confirmActivate() {
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
 
-                <!-- -- Page header ----------------------------- -->
+                <!-- ── Page header ───────────────────────────── -->
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
@@ -470,7 +404,7 @@ function confirmActivate() {
                     </div>
                 </div>
 
-                <!-- -- Stats ----------------------------------- -->
+                <!-- ── Stats ─────────────────────────────────── -->
                 <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
                     <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700">
@@ -521,7 +455,7 @@ function confirmActivate() {
                     </div>
                 </div>
 
-                <!-- -- Table card ------------------------------- -->
+                <!-- ── Table card ─────────────────────────────── -->
                 <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                     <div class="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
@@ -536,7 +470,7 @@ function confirmActivate() {
                                 :route="CompanyVehicleController.index().url"
                                 :initial-value="filters.search"
                                 placeholder="Search vehicles…"
-                                :only="['vehicles', 'filters', 'flash']"
+                                :only="['vehicles', 'filters']"
                             />
                         </div>
                     </div>
@@ -685,7 +619,7 @@ function confirmActivate() {
                                                     No vehicles found
                                                 </p>
                                                 <p class="mt-0.5 text-xs text-slate-400">
-                                                    Try adjusting your search.
+                                                    Try adjusting your search or status filter.
                                                 </p>
                                             </div>
                                         </div>
@@ -875,7 +809,6 @@ function confirmActivate() {
 
                                                 <DropdownMenuSeparator class="bg-slate-100" />
 
-                                                <!-- View — always visible -->
                                                 <DropdownMenuItem
                                                     as-child
                                                     class="rounded-lg text-slate-700 focus:bg-blue-50 focus:text-blue-700"
@@ -894,7 +827,7 @@ function confirmActivate() {
                                                 >
                                                     <Link :href="CompanyVehicleController.edit(vehicle.id).url">
                                                         <Pencil class="mr-2 h-4 w-4" />
-                                                        Update Expired Docs
+                                                        Edit Vehicle
                                                     </Link>
                                                 </DropdownMenuItem>
 
@@ -905,12 +838,12 @@ function confirmActivate() {
                                                     class="rounded-lg text-slate-300"
                                                 >
                                                     <Pencil class="mr-2 h-4 w-4" />
-                                                    Update Expired Docs
+                                                    Edit Vehicle
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuSeparator class="bg-slate-100" />
 
-                                                <!-- Toggle — split flows -->
+                                                <!-- Toggle — permission + business rule -->
                                                 <DropdownMenuItem
                                                     v-if="vehicle.status === 'active'"
                                                     :disabled="!canToggleVehicle(vehicle)"
@@ -931,7 +864,6 @@ function confirmActivate() {
                                                     Set Active
                                                 </DropdownMenuItem>
 
-                                                <!-- Contextual note -->
                                                 <div
                                                     v-if="(canUpdate && !canEditVehicle(vehicle)) || (canToggle && !canToggleVehicle(vehicle))"
                                                     class="px-2 pb-2 pt-1 text-left text-[11px] text-slate-400"
@@ -960,8 +892,8 @@ function confirmActivate() {
             </div>
         </div>
 
-        <!-- Deactivate dialog (requires reason) -->
-        <AlertDialog v-model:open="inactiveDialogOpen">
+        <!-- Toggle status confirmation dialog -->
+        <AlertDialog v-model:open="statusConfirmOpen">
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
                     <AlertDialogTitle>Set Vehicle Inactive</AlertDialogTitle>
@@ -1027,4 +959,3 @@ function confirmActivate() {
         </AlertDialog>
     </ExternalLayout>
 </template>
-

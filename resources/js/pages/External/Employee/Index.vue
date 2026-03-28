@@ -437,16 +437,6 @@ function confirmResetPassword() {
                                                     <KeyRound class="mr-2 h-4 w-4" />
                                                     Reset Password
                                                 </DropdownMenuItem>
-
-                                                <DropdownMenuSeparator class="bg-slate-100" />
-
-                                                <DropdownMenuItem
-                                                    class="rounded-lg text-rose-600 focus:text-rose-600 focus:bg-rose-50"
-                                                    @click="openDeleteDialog(employee)"
-                                                >
-                                                    <Trash2 class="mr-2 h-4 w-4" />
-                                                    Delete Account
-                                                </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>

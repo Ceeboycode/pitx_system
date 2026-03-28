@@ -41,17 +41,8 @@ class CompanyVehicleController extends Controller
     {
         Gate::authorize('external_vehicles.viewAny');
 
-        $user        = $request->user();
-        $company     = $user->company;
-        $search      = trim((string) $request->input('search'));
-        $status      = $request->input('status');
-        $vehicleType = $request->input('vehicle_type');
-        $routeId     = $request->input('route_id');
-        $sortBy      = $request->input('sort_by');
-        $sortDir     = strtolower((string) $request->input('sort_dir', 'asc'));
-
-        $allowedSorts = ['capacity', 'created_at', 'status'];
-        $sortDir      = in_array($sortDir, ['asc', 'desc'], true) ? $sortDir : 'asc';
+        $user    = $request->user();
+        $company = $user->company;
 
         $vehicles = Vehicle::query()
             ->where('company_id', $company->id)
@@ -73,15 +64,8 @@ class CompanyVehicleController extends Controller
                 'route:id,route_name',
                 'documents:id,vehicle_id,document_type,status,expires_at',
             ])
-            ->search($search)
-            ->when($status && $status !== 'all', fn ($query) => $query->where('status', $status))
-            ->when($vehicleType && $vehicleType !== 'all', fn ($query) => $query->where('vehicle_type', $vehicleType))
-            ->when($routeId && $routeId !== 'all', fn ($query) => $query->where('route_id', $routeId))
-            ->when(in_array($sortBy, $allowedSorts, true), function ($query) use ($sortBy, $sortDir) {
-                $query->orderBy($sortBy, $sortDir);
-            }, function ($query) {
-                $query->latest();
-            })
+            ->search($request->search)
+            ->latest()
             ->paginate(10)
             ->withQueryString();
 
@@ -108,12 +92,7 @@ class CompanyVehicleController extends Controller
             ],
             'vehicles' => $vehicles,
             'filters'  => [
-                'search'       => $search ?: null,
-                'status'       => $status ?: null,
-                'vehicle_type' => $vehicleType ?: null,
-                'route_id'     => $routeId ? (string) $routeId : null,
-                'sort_by'      => in_array($sortBy, $allowedSorts, true) ? $sortBy : null,
-                'sort_dir'     => $sortDir,
+                'search' => $request->search,
             ],
             'routes' => $routes,
         ]);
