@@ -77,11 +77,28 @@ class VehicleService
             ->get()
             ->keyBy('document_type');
 
+        // Auto-mark expired documents
+        $documents->each(function ($doc) {
+            if ($doc->expires_at && $doc->expires_at->isPast() && $doc->status !== 'expired') {
+                $doc->update(['status' => 'expired']);
+            }
+        });
+
         $nextStatus = 'draft';
         $vehicleRemarks = null;
 
+        $expiredDocs = $documents
+            ->filter(fn ($doc) => $doc->expires_at && $doc->expires_at->isPast())
+            ->keys()
+            ->values();
+
         if ($documents->isEmpty()) {
             $nextStatus = 'draft';
+        } elseif ($expiredDocs->isNotEmpty()) {
+            $nextStatus = 'pending';
+            $vehicleRemarks = 'Expired documents: ' . $expiredDocs
+                ->map(fn ($type) => strtoupper((string) $type))
+                ->implode(', ');
         } else {
             $missingRequiredDocument = collect($requiredTypes)
                 ->contains(fn ($type) => ! $documents->has($type));

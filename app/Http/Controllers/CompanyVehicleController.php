@@ -41,8 +41,17 @@ class CompanyVehicleController extends Controller
     {
         Gate::authorize('external_vehicles.viewAny');
 
-        $user    = $request->user();
-        $company = $user->company;
+        $user        = $request->user();
+        $company     = $user->company;
+        $search      = trim((string) $request->input('search'));
+        $status      = $request->input('status');
+        $vehicleType = $request->input('vehicle_type');
+        $routeId     = $request->input('route_id');
+        $sortBy      = $request->input('sort_by');
+        $sortDir     = strtolower((string) $request->input('sort_dir', 'asc'));
+
+        $allowedSorts = ['capacity', 'created_at', 'status'];
+        $sortDir      = in_array($sortDir, ['asc', 'desc'], true) ? $sortDir : 'asc';
 
         $vehicles = Vehicle::query()
             ->where('company_id', $company->id)
@@ -57,16 +66,29 @@ class CompanyVehicleController extends Controller
                 'color',
                 'make_model',
                 'status',
+                'remarks',
                 'created_at',
             ])
             ->with([
                 'route:id,route_name',
-                'documents:id,vehicle_id,document_type,status',
+                'documents:id,vehicle_id,document_type,status,expires_at',
             ])
-            ->search($request->search)
-            ->latest()
+            ->search($search)
+            ->when($status && $status !== 'all', fn ($query) => $query->where('status', $status))
+            ->when($vehicleType && $vehicleType !== 'all', fn ($query) => $query->where('vehicle_type', $vehicleType))
+            ->when($routeId && $routeId !== 'all', fn ($query) => $query->where('route_id', $routeId))
+            ->when(in_array($sortBy, $allowedSorts, true), function ($query) use ($sortBy, $sortDir) {
+                $query->orderBy($sortBy, $sortDir);
+            }, function ($query) {
+                $query->latest();
+            })
             ->paginate(10)
             ->withQueryString();
+
+        $routes = Route::query()
+            ->select('id', 'route_name')
+            ->orderBy('route_name')
+            ->get();
 
         return Inertia::render('External/Vehicles/Index', [
             'company' => [
@@ -86,8 +108,14 @@ class CompanyVehicleController extends Controller
             ],
             'vehicles' => $vehicles,
             'filters'  => [
-                'search' => $request->search,
+                'search'       => $search ?: null,
+                'status'       => $status ?: null,
+                'vehicle_type' => $vehicleType ?: null,
+                'route_id'     => $routeId ? (string) $routeId : null,
+                'sort_by'      => in_array($sortBy, $allowedSorts, true) ? $sortBy : null,
+                'sort_dir'     => $sortDir,
             ],
+            'routes' => $routes,
         ]);
     }
 
@@ -106,6 +134,11 @@ class CompanyVehicleController extends Controller
 
         $routes = Route::query()
             ->where('status', 'active')
+            ->where(function ($query) {
+                $query
+                    ->whereNull('gate_id')
+                    ->orWhereHas('gate', fn ($gateQuery) => $gateQuery->where('status', 'active'));
+            })
             ->select(['id', 'gate_id', 'route_name', 'origin_name', 'destination_name', 'route_geometry'])
             ->with([
                 'gate:id,gate_name',
@@ -233,6 +266,11 @@ class CompanyVehicleController extends Controller
 
         $routes = Route::query()
             ->where('status', 'active')
+            ->where(function ($query) {
+                $query
+                    ->whereNull('gate_id')
+                    ->orWhereHas('gate', fn ($gateQuery) => $gateQuery->where('status', 'active'));
+            })
             ->select(['id', 'gate_id', 'route_name', 'origin_name', 'destination_name', 'route_geometry'])
             ->with([
                 'gate:id,gate_name',
@@ -346,6 +384,11 @@ class CompanyVehicleController extends Controller
 
         $routes = Route::query()
             ->where('status', 'active')
+            ->where(function ($query) {
+                $query
+                    ->whereNull('gate_id')
+                    ->orWhereHas('gate', fn ($gateQuery) => $gateQuery->where('status', 'active'));
+            })
             ->select(['id', 'gate_id', 'route_name', 'origin_name', 'destination_name', 'route_geometry'])
             ->with([
                 'gate:id,gate_name',
@@ -502,26 +545,59 @@ class CompanyVehicleController extends Controller
                 ->with('error', 'Suspended vehicles cannot change status.');
         }
 
-        if (! $vehicle->documents()->exists()) {
-            return to_route('company.vehicles.index')
-                ->with('error', 'No documents uploaded for this vehicle.');
-        }
-
-        $hasInvalidDocuments = $vehicle->documents()
-            ->whereIn('status', ['pending', 'rejected'])
+        $hasDocuments = $vehicle->documents()->exists();
+        $hasPendingOrRejected = $vehicle->documents()
+            ->whereIn('status', ['pending', 'rejected', 'invalid'])
             ->exists();
 
-        if ($hasInvalidDocuments) {
+        $hasExpired = $vehicle->documents()
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<', now()->toDateString())
+            ->exists();
+
+        if ($vehicle->status === 'active') {
+            $validated = $request->validate([
+                'remarks' => ['required', 'string', 'max:1000'],
+            ]);
+
+            $vehicle->update([
+                'status'  => 'inactive',
+                'remarks' => $validated['remarks'],
+                'updated_by' => $request->user()->id,
+            ]);
+
             return to_route('company.vehicles.index')
-                ->with('error', 'You cannot change the vehicle status while documents are pending or rejected.');
+                ->with('success', 'Vehicle set to inactive.');
         }
 
-        $vehicle->update([
-            'status' => $vehicle->status === 'active' ? 'inactive' : 'active',
-        ]);
+        if ($vehicle->status === 'inactive') {
+            if (! $hasDocuments) {
+                return to_route('company.vehicles.index')
+                    ->with('error', 'Upload the required documents before activating this vehicle.');
+            }
+
+            if ($hasPendingOrRejected) {
+                return to_route('company.vehicles.index')
+                    ->with('error', 'All documents must be approved before activation.');
+            }
+
+            if ($hasExpired) {
+                return to_route('company.vehicles.index')
+                    ->with('error', 'Renew expired documents before activation.');
+            }
+
+            $vehicle->update([
+                'status'  => 'active',
+                'remarks' => null,
+                'updated_by' => $request->user()->id,
+            ]);
+
+            return to_route('company.vehicles.index')
+                ->with('success', 'Vehicle activated successfully.');
+        }
 
         return to_route('company.vehicles.index')
-            ->with('success', 'Vehicle status updated successfully.');
+            ->with('error', 'Status change not allowed for this vehicle.');
     }
 
     public function downloadDocument(Request $request, Vehicle $vehicle, VehicleDocument $document): StreamedResponse
