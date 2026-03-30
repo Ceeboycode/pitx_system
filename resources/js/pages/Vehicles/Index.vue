@@ -39,6 +39,11 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
@@ -53,6 +58,8 @@ import {
     ShieldCheck,
     ShieldOff,
     Upload,
+    X,
+    FileText,
 } from 'lucide-vue-next';
 import { ref } from 'vue';
 
@@ -67,6 +74,7 @@ type VehicleItem = {
     body_number?: string | null;
     capacity?: string | number | null;
     created_at?: string | null;
+    remarks?: string | null;
     company?: { company_name?: string | null } | null;
     route?: { route_name?: string | null } | null;
 };
@@ -87,9 +95,90 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const archiveDialogOpen = ref(false);
-const selectedVehicle = ref<VehicleItem | null>(null);
-const statusDialogOpen = ref(false);
-const statusVehicle = ref<VehicleItem | null>(null);
+const selectedVehicle   = ref<VehicleItem | null>(null);
+const statusDialogOpen  = ref(false);
+const statusVehicle     = ref<VehicleItem | null>(null);
+
+/* ── Filter & Sort state ─────────────────────────────────────────── */
+
+const statusFilter      = ref<string>(props.filters.status       ?? 'all');
+const vehicleTypeFilter = ref<string>(props.filters.vehicle_type ?? 'all');
+const routeFilter       = ref<string>(props.filters.route_id     ?? 'all');
+const sortBy            = ref<SortField>(props.filters.sort_by   ?? null);
+const sortDir           = ref<SortDir>(props.filters.sort_dir    ?? 'asc');
+
+const hasActiveFilters = computed(() =>
+    (statusFilter.value && statusFilter.value !== 'all') ||
+    (vehicleTypeFilter.value && vehicleTypeFilter.value !== 'all') ||
+    (routeFilter.value && routeFilter.value !== 'all') ||
+    sortBy.value !== null,
+);
+
+function applyFilters(overrides: Record<string, string | null | undefined> = {}) {
+    router.get(
+        index().url,
+        {
+            search:       props.filters.search ?? undefined,
+            status:       statusFilter.value !== 'all'      ? statusFilter.value      : undefined,
+            vehicle_type: vehicleTypeFilter.value !== 'all' ? vehicleTypeFilter.value : undefined,
+            route_id:     routeFilter.value !== 'all'       ? routeFilter.value       : undefined,
+            sort_by:      sortBy.value ?? undefined,
+            sort_dir:     sortBy.value ? sortDir.value : undefined,
+            ...overrides,
+        },
+        { preserveState: true, replace: true, only: ['vehicles', 'filters', 'flash'] },
+    );
+}
+
+function onStatusChange(val: string) {
+    statusFilter.value = val;
+    applyFilters();
+}
+
+function onVehicleTypeChange(val: string) {
+    vehicleTypeFilter.value = val;
+    applyFilters();
+}
+
+function onRouteChange(val: string) {
+    routeFilter.value = val;
+    applyFilters();
+}
+
+function toggleSort(field: SortField) {
+    if (sortBy.value === field) {
+        sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortBy.value  = field;
+        sortDir.value = 'asc';
+    }
+    applyFilters();
+}
+
+function clearFilters() {
+    statusFilter.value      = 'all';
+    vehicleTypeFilter.value = 'all';
+    routeFilter.value       = 'all';
+    sortBy.value            = null;
+    sortDir.value           = 'asc';
+    applyFilters({
+        status: undefined, vehicle_type: undefined,
+        route_id: undefined, sort_by: undefined, sort_dir: undefined,
+    });
+}
+
+/* ── Sort icon helpers ───────────────────────────────────────────── */
+
+function sortIcon(field: SortField) {
+    if (sortBy.value !== field) return ArrowUpDown;
+    return sortDir.value === 'asc' ? ArrowUp : ArrowDown;
+}
+
+function sortIconClass(field: SortField) {
+    return sortBy.value === field ? 'text-blue-600' : 'text-muted-foreground/40';
+}
+
+/* ── Helpers ─────────────────────────────────────────────────────── */
 
 const formatDate = (value?: string | null) => {
     if (!value) return '—';
@@ -156,19 +245,39 @@ const humanize = (text?: string | null) => {
 };
 
 const toggleLabel = (status?: string | null) =>
-    status === 'suspended' ? 'Unsuspend' : 'Suspend';
+    status === 'active' ? 'Set Inactive' : 'Set Active';
+
+/* ── Actions ─────────────────────────────────────────────────────── */
 
 const openArchiveDialog = (vehicle: VehicleItem) => {
     selectedVehicle.value = vehicle;
     archiveDialogOpen.value = true;
 };
 
-const openStatusDialog = (vehicle: VehicleItem) => {
+const openSuspendDialog = (vehicle: VehicleItem) => {
     statusVehicle.value = vehicle;
-    statusDialogOpen.value = true;
+    suspendRemarks.value = '';
+    suspendDialogOpen.value = true;
 };
 
-const confirmToggleStatus = () => {
+const openActivateDialog = (vehicle: VehicleItem) => {
+    statusVehicle.value = vehicle;
+    activateDialogOpen.value = true;
+};
+
+const confirmSuspend = () => {
+    if (!statusVehicle.value) return;
+    router.patch(
+        `/vehicles/${statusVehicle.value.id}/toggle-status`,
+        { remarks: suspendRemarks.value },
+        {
+            preserveScroll: true,
+            onSuccess: () => { suspendDialogOpen.value = false; statusVehicle.value = null; suspendRemarks.value = ''; },
+        },
+    );
+};
+
+const confirmActivate = () => {
     if (!statusVehicle.value) return;
 
     router.patch(
@@ -176,10 +285,7 @@ const confirmToggleStatus = () => {
         {},
         {
             preserveScroll: true,
-            onSuccess: () => {
-                statusDialogOpen.value = false;
-                statusVehicle.value = null;
-            },
+            onSuccess: () => { statusDialogOpen.value = false; statusVehicle.value = null; },
         },
     );
 };
@@ -218,7 +324,7 @@ const canExportVehicle = can('vehicles.viewAny');
                         </CardDescription>
                     </div>
 
-                    <CardAction v-if="canViewArchived" class="flex items-center gap-2">
+                    <CardAction class="flex items-center gap-2">
                         <Button
                             as-child
                             size="sm"
@@ -276,9 +382,40 @@ const canExportVehicle = can('vehicles.viewAny');
                                     <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Route</TableHead>
                                     <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Vehicle Info</TableHead>
                                     <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Plate Number</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Cap.</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Status</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Created</TableHead>
+
+                                    <!-- Sortable: Capacity -->
+                                    <TableHead
+                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        @click="toggleSort('capacity')"
+                                    >
+                                        <div class="flex items-center gap-1.5">
+                                            Cap.
+                                            <component :is="sortIcon('capacity')" class="h-3.5 w-3.5" :class="sortIconClass('capacity')" />
+                                        </div>
+                                    </TableHead>
+
+                                    <!-- Sortable: Status -->
+                                    <TableHead
+                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        @click="toggleSort('status')"
+                                    >
+                                        <div class="flex items-center gap-1.5">
+                                            Status
+                                            <component :is="sortIcon('status')" class="h-3.5 w-3.5" :class="sortIconClass('status')" />
+                                        </div>
+                                    </TableHead>
+
+                                    <!-- Sortable: Created -->
+                                    <TableHead
+                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        @click="toggleSort('created_at')"
+                                    >
+                                        <div class="flex items-center gap-1.5">
+                                            Created
+                                            <component :is="sortIcon('created_at')" class="h-3.5 w-3.5" :class="sortIconClass('created_at')" />
+                                        </div>
+                                    </TableHead>
+
                                     <TableHead class="text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -348,6 +485,31 @@ const canExportVehicle = can('vehicles.viewAny');
                                         {{ formatDate(vehicle.created_at) }}
                                     </TableCell>
 
+                                    <!-- Remarks -->
+                                    <TableCell>
+                                        <div class="flex items-center gap-2">
+                                            <Popover v-if="vehicle.remarks">
+                                                <PopoverTrigger as-child>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        class="h-7 rounded-lg border-slate-200 text-xs text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                                    >
+                                                        <FileText class="mr-1.5 h-3.5 w-3.5" />
+                                                        View
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent class="w-64 rounded-xl border-slate-200 p-3 text-sm text-slate-700 shadow-lg">
+                                                    {{ vehicle.remarks }}
+                                                </PopoverContent>
+                                            </Popover>
+                                            <Badge v-if="vehicle.remarks" variant="secondary" class="rounded-full bg-slate-100 text-[11px] font-semibold text-slate-700">
+                                                Has remarks
+                                            </Badge>
+                                            <span v-else class="text-xs text-muted-foreground">&mdash;</span>
+                                        </div>
+                                    </TableCell>
+
                                     <TableCell class="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
@@ -381,7 +543,16 @@ const canExportVehicle = can('vehicles.viewAny');
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
-                                                    v-if="canToggleVehicleStatus"
+                                                    as-child
+                                                    class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700"
+                                                >
+                                                    <Link :href="edit({ vehicle: vehicle.id }).url">
+                                                        <Pencil class="mr-2 h-4 w-4" />
+                                                        Edit
+                                                    </Link>
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuItem
                                                     :class="['rounded-lg', toggleStatusClass(vehicle.status)]"
                                                     @click="openStatusDialog(vehicle)"
                                                 >
@@ -442,33 +613,20 @@ const canExportVehicle = can('vehicles.viewAny');
             </AlertDialogContent>
         </AlertDialog>
 
+        <!-- Status dialog -->
         <AlertDialog v-model:open="statusDialogOpen">
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
-                    <AlertDialogTitle>
-                        {{ statusVehicle ? toggleLabel(statusVehicle.status) : 'Update Status' }}
-                    </AlertDialogTitle>
+                    <AlertDialogTitle>Activate Vehicle</AlertDialogTitle>
                     <AlertDialogDescription>
-                        <template v-if="statusVehicle?.status === 'suspended'">
-                            Unsuspending
-                            <span class="font-semibold text-foreground">{{ statusVehicle?.plate_number || 'this vehicle' }}</span>
-                            will set its status back to <span class="font-semibold text-foreground">Active</span>.
-                        </template>
-                        <template v-else>
-                            Are you sure you want to suspend
-                            <span class="font-semibold text-foreground">{{ statusVehicle?.plate_number || 'this vehicle' }}</span>?
-                        </template>
+                        Update status for
+                        <span class="font-semibold text-foreground">{{ statusVehicle?.plate_number || 'this vehicle' }}</span>?
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel class="rounded-lg" @click="statusVehicle = null">Cancel</AlertDialogCancel>
                     <AlertDialogAction
-                        :class="[
-                            'rounded-lg border-0 text-white',
-                            statusVehicle?.status === 'suspended'
-                                ? 'bg-emerald-600 hover:bg-emerald-700'
-                                : 'bg-orange-500 hover:bg-orange-600',
-                        ]"
+                        class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0"
                         @click="confirmToggleStatus"
                     >
                         {{ statusVehicle ? toggleLabel(statusVehicle.status) : 'Confirm' }}

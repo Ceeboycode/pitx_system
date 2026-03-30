@@ -206,6 +206,37 @@ const docsCompletionRate = computed(() => {
     return Math.round((verifiedCount.value / docs.value.length) * 100)
 })
 
+const docHealthSummary = computed(() => {
+    const parts = []
+    parts.push(`${verifiedCount.value} verified`)
+    if (pendingCount.value) parts.push(`${pendingCount.value} pending`)
+    if (invalidCount.value) parts.push(`${invalidCount.value} invalid`)
+    if (expiredCount.value) parts.push(`${expiredCount.value} expired`)
+    return parts.join(' · ')
+})
+
+const vehicleMeta = computed(() => [
+    { label: 'Vehicle Type', value: humanize(vehicle.value.vehicle_type) },
+    { label: 'Plate Number', value: vehicle.value.plate_number || '—' },
+    { label: 'Body Number', value: vehicle.value.body_number || '—' },
+    { label: 'Capacity', value: vehicle.value.capacity || '—' },
+    { label: 'Color', value: vehicle.value.color || '—' },
+    { label: 'Make / Model', value: vehicle.value.make_model || '—' },
+    {
+        label: 'Route',
+        value: route.value?.route_name || 'No route assigned',
+        helper:
+            route.value?.gate?.gate_name
+                ? `Gate: ${route.value.gate.gate_name}`
+                : null,
+    },
+    {
+        label: 'Status',
+        value: humanize(vehicle.value.status),
+        helper: vehicle.value.remarks || null,
+    },
+])
+
 function humanize(text?: string | null) {
     if (!text) return '—'
     return text.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
@@ -608,10 +639,75 @@ function submitInvalidate() {
                         Created {{ formatDate(vehicle.created_at) }}
                     </p>
                 </div>
-            </div>
+              </div>
 
-            <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-                <div class="space-y-5">
+              <div class="grid gap-4 xl:grid-cols-[2fr_1fr]">
+                  <Card>
+                      <CardHeader>
+                          <CardTitle class="text-base">Vehicle Snapshot</CardTitle>
+                      </CardHeader>
+                      <CardContent class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                          <div
+                              v-for="item in vehicleMeta"
+                              :key="item.label"
+                              class="rounded-lg border bg-muted/20 p-3"
+                          >
+                              <p class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                                  {{ item.label }}
+                              </p>
+                              <p class="mt-1 text-sm font-medium text-foreground">
+                                  {{ item.value }}
+                              </p>
+                              <p v-if="item.helper" class="mt-0.5 text-xs text-muted-foreground">
+                                  {{ item.helper }}
+                              </p>
+                          </div>
+                      </CardContent>
+                  </Card>
+
+                  <Card>
+                      <CardHeader class="pb-2">
+                          <CardTitle class="text-base">Operational State</CardTitle>
+                      </CardHeader>
+                      <CardContent class="space-y-3">
+                          <div class="flex items-center gap-2">
+                              <Badge :variant="statusVariant(vehicle.status)">
+                                  {{ humanize(vehicle.status) }}
+                              </Badge>
+                              <span class="text-xs text-muted-foreground">
+                                  {{ formatDateTime(vehicle.updated_at) }}
+                              </span>
+                          </div>
+                          <div class="rounded-lg border p-3">
+                              <p class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                                  Documents
+                              </p>
+                              <div class="mt-2 flex flex-wrap gap-2 text-sm">
+                                  <Badge variant="outline">{{ verifiedCount }} verified</Badge>
+                                  <Badge v-if="pendingCount" variant="secondary">{{ pendingCount }} pending</Badge>
+                                  <Badge v-if="invalidCount" variant="destructive">{{ invalidCount }} invalid</Badge>
+                                  <Badge v-if="expiredCount" variant="destructive">{{ expiredCount }} expired</Badge>
+                              </div>
+                              <p class="mt-1 text-xs text-muted-foreground">
+                                  {{ docHealthSummary || 'No documents uploaded yet.' }}
+                              </p>
+                          </div>
+
+                          <div class="rounded-lg border p-3">
+                              <p class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                                  Remarks
+                              </p>
+                              <p class="mt-1 text-sm text-foreground" v-if="vehicle.remarks">
+                                  {{ vehicle.remarks }}
+                              </p>
+                              <p v-else class="text-sm text-muted-foreground">—</p>
+                          </div>
+                      </CardContent>
+                  </Card>
+              </div>
+
+              <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+                  <div class="space-y-5">
                     <div class="grid gap-4 lg:grid-cols-2">
                         <Card>
                             <CardHeader>

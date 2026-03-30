@@ -1,6 +1,6 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, reactive } from 'vue';
+import { computed, reactive, ref } from 'vue';
 
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
@@ -16,7 +16,15 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -45,12 +53,17 @@ import {
     Bus,
     CheckCircle2,
     Eye,
+    Filter,
     FileText,
     MoreHorizontal,
     Pencil,
     Plus,
     Power,
     Route as RouteIcon,
+    ArrowUpDown,
+    ArrowUp,
+    ArrowDown,
+    X,
 } from 'lucide-vue-next';
 
 /* ======================================================
@@ -90,6 +103,7 @@ type VehicleDocument = {
     vehicle_id: number;
     document_type: string;
     status: string;
+    expires_at?: string | null;
 };
 
 type VehicleItem = {
@@ -103,6 +117,7 @@ type VehicleItem = {
     color?: string | null;
     make_model?: string | null;
     status: string;
+    remarks?: string | null;
     created_at?: string | null;
     route?: VehicleRoute | null;
     documents?: VehicleDocument[];
@@ -132,7 +147,15 @@ const props = defineProps<{
     company: Company;
     user: User;
     vehicles: PaginatedVehicles;
-    filters: { search?: string | null };
+    filters: {
+        search?: string | null;
+        status?: string | null;
+        vehicle_type?: string | null;
+        route_id?: string | null;
+        sort_by?: 'capacity' | 'created_at' | 'status' | null;
+        sort_dir?: 'asc' | 'desc' | null;
+    };
+    routes: { id: number; route_name: string }[];
 }>();
 
 /* ======================================================
@@ -175,6 +198,7 @@ function documentStatusClass(status?: string | null) {
     if (status === 'approved') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
     if (status === 'pending')  return 'bg-amber-100 text-amber-700 border-amber-200';
     if (status === 'rejected') return 'bg-rose-100 text-rose-600 border-rose-200';
+    if (status === 'expired')  return 'bg-rose-100 text-rose-600 border-rose-200';
     return 'bg-slate-100 text-slate-500 border-0';
 }
 
@@ -182,11 +206,17 @@ function documentStatusDot(status?: string | null) {
     if (status === 'approved') return 'bg-emerald-500';
     if (status === 'pending')  return 'bg-amber-500';
     if (status === 'rejected') return 'bg-rose-500';
+    if (status === 'expired')  return 'bg-rose-500';
     return 'bg-slate-400';
 }
 
 function documentsCount(documents?: VehicleDocument[]) {
     return documents?.length ?? 0;
+}
+
+function isDocExpired(doc?: VehicleDocument) {
+    if (!doc?.expires_at) return false;
+    return new Date(doc.expires_at) < new Date();
 }
 
 /* ======================================================
@@ -196,16 +226,29 @@ function isSuspended(status?: string | null) {
     return status === 'suspended';
 }
 
+const hasDocuments = (vehicle: VehicleItem) => !!vehicle.documents?.length;
+const hasPendingOrRejected = (vehicle: VehicleItem) =>
+    vehicle.documents?.some((doc) => ['pending', 'rejected', 'invalid'].includes(doc.status)) ?? false;
+const hasExpiredDocs = (vehicle: VehicleItem) =>
+    vehicle.documents?.some((doc) => isDocExpired(doc)) ?? false;
+
 function businessCanEdit(vehicle: VehicleItem) {
-    return !isSuspended(vehicle.status);
+    // Editing allowed only when there is at least one expired document
+    return !isSuspended(vehicle.status) && hasExpiredDocs(vehicle);
+}
+
+function businessCanActivate(vehicle: VehicleItem) {
+    if (isSuspended(vehicle.status)) return false;
+    if (!hasDocuments(vehicle)) return false;
+    if (hasPendingOrRejected(vehicle)) return false;
+    if (hasExpiredDocs(vehicle)) return false;
+    return true;
 }
 
 function businessCanToggle(vehicle: VehicleItem) {
-    if (isSuspended(vehicle.status)) return false;
-    if (!vehicle.documents?.length)  return false;
-    return !vehicle.documents.some(
-        (doc) => doc.status === 'pending' || doc.status === 'rejected',
-    );
+    if (vehicle.status === 'active') return !isSuspended(vehicle.status);
+    if (vehicle.status === 'inactive') return businessCanActivate(vehicle);
+    return false;
 }
 
 // Combined: permission AND business rule
@@ -227,17 +270,16 @@ function toggleStatusClass(status?: string | null) {
         : 'text-emerald-700 focus:text-emerald-700 focus:bg-emerald-50';
 }
 
-function vehicleActionNote(vehicle: VehicleItem) {
-    if (isSuspended(vehicle.status)) {
-        return 'Suspended vehicles cannot be edited or updated.';
-    }
-    if (!vehicle.documents?.length) {
-        return 'Upload required documents first.';
-    }
-    if (vehicle.documents.some((doc) => doc.status === 'pending' || doc.status === 'rejected')) {
-        return 'Documents must be approved before changing status.';
-    }
+function firstBlockingReason(vehicle: VehicleItem) {
+    if (isSuspended(vehicle.status)) return 'Suspended vehicles cannot change status.';
+    if (!hasDocuments(vehicle)) return 'Upload required documents first.';
+    if (hasPendingOrRejected(vehicle)) return 'Documents must be approved before activation.';
+    if (hasExpiredDocs(vehicle)) return 'Renew expired documents before activation.';
     return '';
+}
+
+function vehicleActionNote(vehicle: VehicleItem) {
+    return firstBlockingReason(vehicle);
 }
 
 /* ======================================================
@@ -249,36 +291,139 @@ const activeVehicles = computed(() =>
     props.vehicles.data.filter((v) => v.status === 'active').length,
 );
 
+const resultsLabel = computed(() => {
+    const from = props.vehicles.from ?? 0;
+    const to   = props.vehicles.to ?? props.vehicles.data.length;
+    const total = props.vehicles.total ?? props.vehicles.data.length;
+    if (!total) return 'No results';
+    return `${from}-${to} of ${total} vehicles`;
+});
+
 /* ======================================================
-   Toggle status dialog
+   Filters & sorting
 ====================================================== */
-const statusDialog = reactive({
-    open:    false,
+type SortField = 'capacity' | 'created_at' | 'status' | null;
+type SortDir   = 'asc' | 'desc';
+
+const statusFilter      = ref<string>(props.filters.status ?? 'all');
+const vehicleTypeFilter = ref<string>(props.filters.vehicle_type ?? 'all');
+const routeFilter       = ref<string>(props.filters.route_id ?? 'all');
+const sortBy            = ref<SortField>(props.filters.sort_by ?? null);
+const sortDir           = ref<SortDir>(props.filters.sort_dir ?? 'asc');
+
+const hasActiveFilters = computed(() =>
+    (statusFilter.value && statusFilter.value !== 'all') ||
+    (vehicleTypeFilter.value && vehicleTypeFilter.value !== 'all') ||
+    (routeFilter.value && routeFilter.value !== 'all') ||
+    sortBy.value !== null,
+);
+
+function applyFilters(overrides: Record<string, string | null | undefined> = {}) {
+    router.get(
+        CompanyVehicleController.index().url,
+        {
+            search:       props.filters.search ?? undefined,
+            status:       statusFilter.value !== 'all'      ? statusFilter.value      : undefined,
+            vehicle_type: vehicleTypeFilter.value !== 'all' ? vehicleTypeFilter.value : undefined,
+            route_id:     routeFilter.value !== 'all'       ? routeFilter.value       : undefined,
+            sort_by:      sortBy.value ?? undefined,
+            sort_dir:     sortBy.value ? sortDir.value : undefined,
+            ...overrides,
+        },
+        { preserveState: true, replace: true, only: ['vehicles', 'filters', 'flash'] },
+    );
+}
+
+function onStatusChange(val: string) {
+    statusFilter.value = val;
+    applyFilters();
+}
+
+function onVehicleTypeChange(val: string) {
+    vehicleTypeFilter.value = val;
+    applyFilters();
+}
+
+function onRouteChange(val: string) {
+    routeFilter.value = val;
+    applyFilters();
+}
+
+function clearFilters() {
+    statusFilter.value      = 'all';
+    vehicleTypeFilter.value = 'all';
+    routeFilter.value       = 'all';
+    sortBy.value            = null;
+    sortDir.value           = 'asc';
+    applyFilters({
+        status: undefined, vehicle_type: undefined,
+        route_id: undefined, sort_by: undefined, sort_dir: undefined,
+    });
+}
+
+/* ======================================================
+   Toggle status dialogs
+====================================================== */
+const inactiveDialog = reactive({
+    open: false,
+    vehicle: null as VehicleItem | null,
+    remarks: '',
+});
+
+const activateDialog = reactive({
+    open: false,
     vehicle: null as VehicleItem | null,
 });
 
-const statusConfirmOpen = computed({
-    get: ()      => statusDialog.open,
-    set: (value) => { statusDialog.open = value; },
+const inactiveDialogOpen = computed({
+    get: () => inactiveDialog.open,
+    set: (val) => { inactiveDialog.open = val; },
 });
 
-function openStatusDialog(vehicle: VehicleItem) {
-    if (!canToggleVehicle(vehicle)) return;
-    statusDialog.vehicle = vehicle;
-    statusDialog.open    = true;
+const activateDialogOpen = computed({
+    get: () => activateDialog.open,
+    set: (val) => { activateDialog.open = val; },
+});
+
+function openDeactivate(vehicle: VehicleItem) {
+    if (!canToggleVehicle(vehicle) || vehicle.status !== 'active') return;
+    inactiveDialog.vehicle = vehicle;
+    inactiveDialog.remarks = '';
+    inactiveDialog.open    = true;
 }
 
-function confirmToggleStatus() {
-    if (!statusDialog.vehicle) return;
-
+function submitDeactivate() {
+    if (!inactiveDialog.vehicle) return;
     router.patch(
-        CompanyVehicleController.toggleStatus(statusDialog.vehicle.id).url,
+        CompanyVehicleController.toggleStatus(inactiveDialog.vehicle.id).url,
+        { remarks: inactiveDialog.remarks },
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                inactiveDialog.open    = false;
+                inactiveDialog.vehicle = null;
+                inactiveDialog.remarks = '';
+            },
+        },
+    );
+}
+
+function openActivate(vehicle: VehicleItem) {
+    if (!canToggleVehicle(vehicle) || vehicle.status !== 'inactive') return;
+    activateDialog.vehicle = vehicle;
+    activateDialog.open    = true;
+}
+
+function confirmActivate() {
+    if (!activateDialog.vehicle) return;
+    router.patch(
+        CompanyVehicleController.toggleStatus(activateDialog.vehicle.id).url,
         {},
         {
             preserveScroll: true,
             onSuccess: () => {
-                statusDialog.open    = false;
-                statusDialog.vehicle = null;
+                activateDialog.open    = false;
+                activateDialog.vehicle = null;
             },
         },
     );
@@ -292,34 +437,40 @@ function confirmToggleStatus() {
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
 
-                <!-- ── Page header ───────────────────────────── -->
+                <!-- -- Page header ----------------------------- -->
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
                             <Building2 class="h-3.5 w-3.5" />
                             {{ company.company_code ?? company.company_name }}
+                            </div>
+                            <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+                                Registered Vehicles
+                            </h1>
+                            <p class="text-sm text-slate-500">
+                                View and manage your registered vehicles.
+                            </p>
                         </div>
-                        <h1 class="text-2xl font-bold tracking-tight text-slate-900">
-                            Registered Vehicles
-                        </h1>
-                        <p class="text-sm text-slate-500">
-                            View and manage your registered vehicles.
-                        </p>
-                    </div>
 
-                    <Button
-                        v-if="canCreate"
-                        as-child
-                        class="shrink-0 self-start gap-2 rounded-lg border-0 bg-blue-700 text-sm font-semibold text-white shadow-sm hover:bg-blue-800"
-                    >
-                        <Link :href="CompanyVehicleController.create().url">
-                            <Plus class="h-4 w-4" />
-                            Register Vehicle
-                        </Link>
-                    </Button>
+                    <div class="flex items-center gap-2">
+                        <Badge variant="outline" class="hidden sm:inline-flex rounded-lg border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-600">
+                            {{ resultsLabel }}
+                        </Badge>
+
+                        <Button
+                            v-if="canCreate"
+                            as-child
+                            class="shrink-0 self-start gap-2 rounded-lg border-0 bg-blue-700 text-sm font-semibold text-white shadow-sm hover:bg-blue-800"
+                        >
+                            <Link :href="CompanyVehicleController.create().url">
+                                <Plus class="h-4 w-4" />
+                                Register Vehicle
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
 
-                <!-- ── Stats ─────────────────────────────────── -->
+                <!-- -- Stats ----------------------------------- -->
                 <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
                     <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700">
@@ -370,7 +521,7 @@ function confirmToggleStatus() {
                     </div>
                 </div>
 
-                <!-- ── Table card ─────────────────────────────── -->
+                <!-- -- Table card ------------------------------- -->
                 <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                     <div class="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
@@ -385,8 +536,109 @@ function confirmToggleStatus() {
                                 :route="CompanyVehicleController.index().url"
                                 :initial-value="filters.search"
                                 placeholder="Search vehicles…"
-                                :only="['vehicles', 'filters']"
+                                :only="['vehicles', 'filters', 'flash']"
                             />
+                        </div>
+                    </div>
+
+                    <!-- Filters & Sort -->
+                    <div class="flex flex-wrap items-center gap-2 px-5 pb-4">
+                        <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            <Filter class="h-3.5 w-3.5" />
+                            Filter
+                        </div>
+
+                        <Select :model-value="statusFilter" @update:model-value="onStatusChange">
+                            <SelectTrigger class="h-8 w-40 rounded-lg border-slate-200 text-xs">
+                                <SelectValue placeholder="All Statuses" />
+                            </SelectTrigger>
+                            <SelectContent class="rounded-xl">
+                                <SelectItem value="all" class="text-xs">All Statuses</SelectItem>
+                                <SelectItem value="active" class="text-xs">Active</SelectItem>
+                                <SelectItem value="inactive" class="text-xs">Inactive</SelectItem>
+                                <SelectItem value="suspended" class="text-xs">Suspended</SelectItem>
+                                <SelectItem value="pending" class="text-xs">Pending</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <Select :model-value="vehicleTypeFilter" @update:model-value="onVehicleTypeChange">
+                            <SelectTrigger class="h-8 w-44 rounded-lg border-slate-200 text-xs">
+                                <SelectValue placeholder="All Types" />
+                            </SelectTrigger>
+                            <SelectContent class="rounded-xl">
+                                <SelectItem value="all" class="text-xs">All Types</SelectItem>
+                                <SelectItem value="Bus" class="text-xs">Bus</SelectItem>
+                                <SelectItem value="Modern Jeepney" class="text-xs">Modern Jeepney</SelectItem>
+                                <SelectItem value="Jeepney" class="text-xs">Jeepney</SelectItem>
+                                <SelectItem value="Mini Bus" class="text-xs">Mini Bus</SelectItem>
+                                <SelectItem value="UV Express" class="text-xs">UV Express</SelectItem>
+                                <SelectItem value="Van" class="text-xs">Van</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <Select :model-value="routeFilter" @update:model-value="onRouteChange">
+                            <SelectTrigger class="h-8 w-44 rounded-lg border-slate-200 text-xs">
+                                <SelectValue placeholder="All Routes" />
+                            </SelectTrigger>
+                            <SelectContent class="rounded-xl">
+                                <SelectItem value="all" class="text-xs">All Routes</SelectItem>
+                                <SelectItem
+                                    v-for="route in routes"
+                                    :key="route.id"
+                                    :value="String(route.id)"
+                                    class="text-xs"
+                                >
+                                    {{ route.route_name }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground ml-2">
+                            <ArrowUpDown class="h-3.5 w-3.5" />
+                            Sort
+                        </div>
+
+                        <Select
+                            :model-value="sortBy ?? 'none'"
+                            @update:model-value="(val) => { sortBy = val === 'none' ? null : (val as SortField); applyFilters(); }"
+                        >
+                            <SelectTrigger class="h-8 w-40 rounded-lg border-slate-200 text-xs">
+                                <SelectValue placeholder="Sort by…" />
+                            </SelectTrigger>
+                            <SelectContent class="rounded-xl">
+                                <SelectItem value="none" class="text-xs">No Sort</SelectItem>
+                                <SelectItem value="status" class="text-xs">Status</SelectItem>
+                                <SelectItem value="capacity" class="text-xs">Capacity</SelectItem>
+                                <SelectItem value="created_at" class="text-xs">Created Date</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <Button
+                            v-if="sortBy"
+                            size="sm"
+                            variant="outline"
+                            class="h-8 rounded-lg border-slate-200 px-3 text-xs text-slate-600 hover:bg-slate-100"
+                            @click="sortDir = sortDir === 'asc' ? 'desc' : 'asc'; applyFilters()"
+                        >
+                            <ArrowUp v-if="sortDir === 'asc'" class="mr-1.5 h-3.5 w-3.5 text-blue-600" />
+                            <ArrowDown v-else class="mr-1.5 h-3.5 w-3.5 text-blue-600" />
+                            {{ sortDir === 'asc' ? 'Ascending' : 'Descending' }}
+                        </Button>
+
+                        <div v-if="hasActiveFilters" class="ml-auto flex items-center gap-2">
+                            <Badge class="gap-1 rounded-lg bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 border border-blue-200 hover:bg-blue-50">
+                                <Filter class="h-3 w-3" />
+                                Filters active
+                            </Badge>
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                class="h-7 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
+                                @click="clearFilters"
+                            >
+                                <X class="mr-1 h-3.5 w-3.5" />
+                                Clear
+                            </Button>
                         </div>
                     </div>
 
@@ -408,6 +660,9 @@ function confirmToggleStatus() {
                                     </TableHead>
                                     <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
                                         Status
+                                    </TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        Remarks
                                     </TableHead>
                                     <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
                                         Created
@@ -516,9 +771,17 @@ function confirmToggleStatus() {
                                                         :key="doc.id"
                                                         class="flex items-center justify-between gap-3 rounded-lg px-2 py-2"
                                                     >
-                                                        <p class="truncate text-xs font-medium text-slate-700">
-                                                            {{ humanize(doc.document_type) }}
-                                                        </p>
+                                                        <div class="min-w-0">
+                                                            <p class="truncate text-xs font-medium text-slate-700">
+                                                                {{ humanize(doc.document_type) }}
+                                                            </p>
+                                                            <p
+                                                                v-if="isDocExpired(doc)"
+                                                                class="text-[11px] font-semibold text-rose-600"
+                                                            >
+                                                                Expired
+                                                            </p>
+                                                        </div>
 
                                                         <span
                                                             :class="[
@@ -560,6 +823,30 @@ function confirmToggleStatus() {
                                             />
                                             {{ humanize(vehicle.status) }}
                                         </span>
+                                    </TableCell>
+
+                                    <TableCell>
+                                        <div class="flex items-center gap-2">
+                                            <Popover v-if="vehicle.remarks">
+                                                <PopoverTrigger as-child>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        class="h-7 rounded-lg border-slate-200 text-xs text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                                    >
+                                                        <FileText class="mr-1.5 h-3.5 w-3.5" />
+                                                        View
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent class="w-64 rounded-xl border-slate-200 p-3 text-sm text-slate-700 shadow-lg">
+                                                    {{ vehicle.remarks }}
+                                                </PopoverContent>
+                                            </Popover>
+                                            <Badge v-if="vehicle.remarks" variant="secondary" class="rounded-full bg-slate-100 text-[11px] font-semibold text-slate-700">
+                                                Has remarks
+                                            </Badge>
+                                            <span v-else class="text-xs text-muted-foreground">&mdash;</span>
+                                        </div>
                                     </TableCell>
 
                                     <TableCell class="text-sm text-slate-400">
@@ -607,7 +894,7 @@ function confirmToggleStatus() {
                                                 >
                                                     <Link :href="CompanyVehicleController.edit(vehicle.id).url">
                                                         <Pencil class="mr-2 h-4 w-4" />
-                                                        Edit Vehicle
+                                                        Update Expired Docs
                                                     </Link>
                                                 </DropdownMenuItem>
 
@@ -618,29 +905,30 @@ function confirmToggleStatus() {
                                                     class="rounded-lg text-slate-300"
                                                 >
                                                     <Pencil class="mr-2 h-4 w-4" />
-                                                    Edit Vehicle
+                                                    Update Expired Docs
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuSeparator class="bg-slate-100" />
 
-                                                <!-- Toggle — permission + business rule -->
+                                                <!-- Toggle — split flows -->
                                                 <DropdownMenuItem
-                                                    v-if="canToggleVehicle(vehicle)"
-                                                    :class="['rounded-lg', toggleStatusClass(vehicle.status)]"
-                                                    @click="openStatusDialog(vehicle)"
+                                                    v-if="vehicle.status === 'active'"
+                                                    :disabled="!canToggleVehicle(vehicle)"
+                                                    :class="['rounded-lg', canToggleVehicle(vehicle) ? toggleStatusClass(vehicle.status) : 'text-slate-300']"
+                                                    @click="openDeactivate(vehicle)"
                                                 >
                                                     <Power class="mr-2 h-4 w-4" />
-                                                    {{ toggleLabel(vehicle.status) }}
+                                                    Set Inactive
                                                 </DropdownMenuItem>
 
-                                                <!-- Toggle disabled — has permission but business rule blocks -->
                                                 <DropdownMenuItem
-                                                    v-else-if="canToggle"
-                                                    disabled
-                                                    class="rounded-lg text-slate-300"
+                                                    v-else
+                                                    :disabled="!canToggleVehicle(vehicle)"
+                                                    :class="['rounded-lg', canToggleVehicle(vehicle) ? toggleStatusClass(vehicle.status) : 'text-slate-300']"
+                                                    @click="openActivate(vehicle)"
                                                 >
                                                     <Power class="mr-2 h-4 w-4" />
-                                                    {{ toggleLabel(vehicle.status) }}
+                                                    Set Active
                                                 </DropdownMenuItem>
 
                                                 <!-- Contextual note -->
@@ -672,34 +960,65 @@ function confirmToggleStatus() {
             </div>
         </div>
 
-        <!-- Toggle status confirmation dialog -->
-        <AlertDialog v-model:open="statusConfirmOpen">
+        <!-- Deactivate dialog (requires reason) -->
+        <AlertDialog v-model:open="inactiveDialogOpen">
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
-                    <AlertDialogTitle>
-                        {{ statusDialog.vehicle ? toggleLabel(statusDialog.vehicle.status) : 'Update Status' }}
-                    </AlertDialogTitle>
-
+                    <AlertDialogTitle>Set Vehicle Inactive</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will update the status of
+                        Provide a reason to set
                         <span class="font-semibold text-slate-800">
-                            {{ statusDialog.vehicle?.plate_number || 'the selected vehicle' }}
+                            {{ inactiveDialog.vehicle?.plate_number || 'this vehicle' }}
+                        </span>
+                        to inactive.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold text-slate-600">Reason</label>
+                    <textarea
+                        v-model="inactiveDialog.remarks"
+                        class="w-full rounded-lg border border-slate-200 bg-white p-2 text-sm focus:border-blue-500 focus:outline-none"
+                        rows="3"
+                        placeholder="Brief reason (required)"
+                    />
+                </div>
+
+                <AlertDialogFooter>
+                    <AlertDialogCancel class="rounded-lg" @click="inactiveDialog.vehicle = null">
+                        Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                        class="rounded-lg border-0 bg-rose-600 text-white hover:bg-rose-700"
+                        :disabled="!inactiveDialog.remarks.trim()"
+                        @click="submitDeactivate"
+                    >
+                        Set Inactive
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <!-- Activate dialog -->
+        <AlertDialog v-model:open="activateDialogOpen">
+            <AlertDialogContent class="rounded-2xl">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Activate Vehicle</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This will activate
+                        <span class="font-semibold text-slate-800">
+                            {{ activateDialog.vehicle?.plate_number || 'this vehicle' }}
                         </span>.
-                        Are you sure you want to continue?
                     </AlertDialogDescription>
                 </AlertDialogHeader>
 
                 <AlertDialogFooter>
-                    <AlertDialogCancel
-                        class="rounded-lg"
-                        @click="statusDialog.vehicle = null"
-                    >
+                    <AlertDialogCancel class="rounded-lg" @click="activateDialog.vehicle = null">
                         Cancel
                     </AlertDialogCancel>
-
                     <AlertDialogAction
                         class="rounded-lg border-0 bg-blue-700 text-white hover:bg-blue-800"
-                        @click="confirmToggleStatus"
+                        @click="confirmActivate"
                     >
                         Confirm
                     </AlertDialogAction>
@@ -708,3 +1027,4 @@ function confirmToggleStatus() {
         </AlertDialog>
     </ExternalLayout>
 </template>
+

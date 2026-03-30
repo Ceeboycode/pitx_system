@@ -96,4 +96,14 @@ class Dispatch extends Model
     {
         return $this->belongsTo(User::class, 'deleted_by');
     }
+
+    public function changeRequests()
+    {
+        return $this->hasMany(DispatchChangeRequest::class);
+    }
+
+    public function latestChangeRequest()
+    {
+        return $this->hasOne(DispatchChangeRequest::class)->latestOfMany();
+    }
 }

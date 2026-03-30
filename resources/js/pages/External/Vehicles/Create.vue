@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { computed } from 'vue'
 
@@ -152,8 +152,6 @@ function submit() {
     <ExternalLayout :company="company" :user="user">
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
-
-                <!-- ── Page header ─────────────────────────────────────── -->
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
@@ -187,14 +185,9 @@ function submit() {
                     </Button>
                 </div>
 
-                <!-- ── Form ────────────────────────────────────────────── -->
                 <form class="space-y-6" @submit.prevent="submit">
                     <div class="grid gap-6 xl:grid-cols-[1fr_320px]">
-
-                        <!-- Left column -->
                         <div class="space-y-6">
-
-                            <!-- Company Information -->
                             <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                                 <div class="border-b border-slate-100 px-6 py-4">
                                     <h2 class="text-base font-semibold text-slate-800">Company Information</h2>
@@ -228,7 +221,6 @@ function submit() {
                                 </div>
                             </div>
 
-                            <!-- Route Assignment -->
                             <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                                 <div class="border-b border-slate-100 px-6 py-4">
                                     <div class="flex items-center gap-2">
@@ -250,7 +242,6 @@ function submit() {
                                 </div>
                             </div>
 
-                            <!-- Vehicle Information -->
                             <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                                 <div class="border-b border-slate-100 px-6 py-4">
                                     <div class="flex items-center gap-2">
@@ -269,7 +260,6 @@ function submit() {
                                 </div>
                             </div>
 
-                            <!-- Required Documents -->
                             <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                                 <div class="border-b border-slate-100 px-6 py-4">
                                     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -281,7 +271,7 @@ function submit() {
                                                 <h2 class="text-base font-semibold text-slate-800">Required Documents</h2>
                                             </div>
                                             <p class="mt-1 text-xs text-slate-400">
-                                                Upload all required supporting files for this vehicle.
+                                                Upload all required supporting files for this vehicle, including a clear bus photo for PUV identification markings.
                                             </p>
                                         </div>
 
@@ -324,13 +314,9 @@ function submit() {
                                     </div>
                                 </div>
                             </div>
-
                         </div>
 
-                        <!-- Right sidebar -->
                         <div class="space-y-4">
-
-                            <!-- Submission Summary -->
                             <div
                                 id="submission-summary"
                                 class="rounded-xl border border-slate-200 bg-white shadow-sm"
@@ -350,14 +336,12 @@ function submit() {
                                 </div>
                             </div>
 
-                            <!-- Registration Notes -->
                             <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                                 <div class="border-b border-slate-100 px-5 py-4">
                                     <h3 class="text-sm font-semibold text-slate-800">Registration Notes</h3>
                                     <p class="mt-0.5 text-xs text-slate-400">Keep these in mind before submitting.</p>
                                 </div>
                                 <div class="divide-y divide-slate-100">
-
                                     <div class="flex gap-3 px-5 py-4">
                                         <div class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-sky-100">
                                             <MapPin class="h-3.5 w-3.5 text-sky-600" />
@@ -377,7 +361,7 @@ function submit() {
                                         <div>
                                             <p class="text-xs font-semibold uppercase tracking-widest text-violet-700">Required Documents</p>
                                             <p class="mt-0.5 text-xs text-slate-500">
-                                                All documents must be uploaded before the vehicle can be activated.
+                                                Upload Insurance Certificate, CPC, OR, CR, and a PUV identification markings photo before submission.
                                             </p>
                                         </div>
                                     </div>
@@ -393,15 +377,13 @@ function submit() {
                                             </p>
                                         </div>
                                     </div>
-
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </form>
-
             </div>
         </div>
     </ExternalLayout>
 </template>
+

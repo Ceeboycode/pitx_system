@@ -12,10 +12,13 @@ class Vehicle extends Model
 {
     use HasFactory, SoftDeletes;
 
+    // Required document types must align with external submission doc set
     public const REQUIRED_DOCUMENT_TYPES = [
-        'ltfrb_certificate',
+        'insurance_certificate',
         'cpc',
-        'or_cr',
+        'official_receipt',
+        'certificate_of_registration',
+        'puv_identification_markings',
     ];
 
     protected $fillable = [

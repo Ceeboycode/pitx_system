@@ -18,7 +18,6 @@ class CompanyController extends Controller
 
     public function index(Request $request)
     {
-        // companies.viewAny
         Gate::authorize('viewAny', Company::class);
 
         $status = $request->input('status', 'verified');

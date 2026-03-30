@@ -43,6 +43,7 @@ class VehicleController extends Controller
                 'company_id',
                 'route_id',
                 'status',
+                'remarks',
                 'created_at',
             ])
             ->search($search)
@@ -87,6 +88,9 @@ class VehicleController extends Controller
     public function show(Request $request, Vehicle $vehicle): Response
     {
         Gate::authorize('view', $vehicle);
+
+        // Ensure vehicle status reflects current document states (e.g., auto-activate when all verified)
+        $this->vehicleService->syncVehicleStatus($vehicle, $request->user()->id);
 
         $vehicle->load([
             'company:id,company_name,company_code,company_email,company_phone,company_address',
@@ -355,12 +359,27 @@ class VehicleController extends Controller
     {
         Gate::authorize('toggleStatus', $vehicle);
 
-        $nextStatus = $vehicle->status === 'suspended' ? 'active' : 'suspended';
+        if ($vehicle->status === 'pending') {
+            return back()->with('error', 'Pending vehicles must be reviewed before changing status.');
+        }
 
-        $vehicle->update([
-            'status' => $nextStatus,
-            'updated_by' => $request->user()->id,
-        ]);
+        if ($vehicle->status === 'suspended') {
+            $vehicle->update([
+                'status' => 'active',
+                'remarks' => null,
+                'updated_by' => $request->user()->id,
+            ]);
+        } else {
+            $validated = $request->validate([
+                'remarks' => ['required', 'string', 'max:1000'],
+            ]);
+
+            $vehicle->update([
+                'status' => 'suspended',
+                'remarks' => $validated['remarks'],
+                'updated_by' => $request->user()->id,
+            ]);
+        }
 
         return back()->with('success', 'Vehicle status updated successfully.');
     }

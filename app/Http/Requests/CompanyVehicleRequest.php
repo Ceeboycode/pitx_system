@@ -10,9 +10,11 @@ use Illuminate\Validation\Validator;
 class CompanyVehicleRequest extends FormRequest
 {
     private const DOC_TYPES = [
-        'ltfrb_certificate' => 'LTFRB Certificate',
+        'insurance_certificate' => 'Insurance Certificate',
         'cpc' => 'Certificate of Public Convenience (CPC)',
-        'or_cr' => 'Official Receipt / Certificate of Registration (OR/CR)',
+        'official_receipt' => 'Official Receipt (OR)',
+        'certificate_of_registration' => 'Certificate of Registration (CR)',
+        'puv_identification_markings' => 'PUV Identification Markings',
     ];
 
     public function authorize(): bool
@@ -40,6 +42,14 @@ class CompanyVehicleRequest extends FormRequest
                         ? trim((string) $document['document_type'])
                         : null;
 
+                    $document['issued_at'] = isset($document['issued_at']) && $document['issued_at'] !== ''
+                        ? trim((string) $document['issued_at'])
+                        : null;
+
+                    $document['expires_at'] = isset($document['expires_at']) && $document['expires_at'] !== ''
+                        ? trim((string) $document['expires_at'])
+                        : null;
+
                     return $document;
                 })
                 ->values()
@@ -63,15 +73,15 @@ class CompanyVehicleRequest extends FormRequest
                 Rule::exists('routes', 'id')->where(fn ($query) => $query->where('status', 'active')),
             ],
 
-            'documents' => ['required', 'array', 'size:3'],
+            'documents' => ['required', 'array', 'size:5'],
             'documents.*.document_type' => [
                 'required',
                 'string',
                 Rule::in(array_keys(self::DOC_TYPES)),
             ],
             'documents.*.file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
-            'documents.*.issued_at' => ['required', 'date'],
-            'documents.*.expires_at' => ['required', 'date'],
+            'documents.*.issued_at' => ['nullable', 'date'],
+            'documents.*.expires_at' => ['nullable', 'date'],
         ];
     }
 
@@ -110,7 +120,7 @@ class CompanyVehicleRequest extends FormRequest
 
             'documents.required' => 'All required documents must be uploaded.',
             'documents.array' => 'The documents data is invalid.',
-            'documents.size' => 'Exactly 3 required documents must be submitted.',
+            'documents.size' => 'Exactly 5 required documents must be submitted.',
 
             'documents.*.document_type.required' => 'Please select a document type.',
             'documents.*.document_type.in' => 'The selected document type is invalid.',
@@ -120,10 +130,7 @@ class CompanyVehicleRequest extends FormRequest
             'documents.*.file.mimes' => 'The document must be a PDF, JPG, JPEG, PNG, or WEBP file.',
             'documents.*.file.max' => 'The document file must not exceed 5 MB.',
 
-            'documents.*.issued_at.required' => 'Please enter the issue date.',
             'documents.*.issued_at.date' => 'The issue date must be a valid date.',
-
-            'documents.*.expires_at.required' => 'Please enter the expiry date.',
             'documents.*.expires_at.date' => 'The expiry date must be a valid date.',
         ];
     }
@@ -138,11 +145,35 @@ class CompanyVehicleRequest extends FormRequest
                 $validator->errors()->add('documents', 'Duplicate document types are not allowed.');
             }
 
+            $requiredTypes = collect(array_keys(self::DOC_TYPES));
+            $submittedTypes = $documentTypes->values();
+
+            if ($submittedTypes->count() !== $requiredTypes->count() || $requiredTypes->diff($submittedTypes)->isNotEmpty()) {
+                $validator->errors()->add('documents', 'All required document types must be submitted.');
+            }
+
             foreach ($documents as $index => $document) {
+                $documentType = $document['document_type'] ?? null;
                 $issuedAt = $document['issued_at'] ?? null;
                 $expiresAt = $document['expires_at'] ?? null;
 
-                if (! $issuedAt || ! $expiresAt) {
+                if ($this->usesDocumentDates($documentType)) {
+                    if (! $issuedAt) {
+                        $validator->errors()->add(
+                            "documents.$index.issued_at",
+                            'Please enter the issue date.'
+                        );
+                    }
+
+                    if (! $expiresAt) {
+                        $validator->errors()->add(
+                            "documents.$index.expires_at",
+                            'Please enter the expiry date.'
+                        );
+                    }
+                }
+
+                if (! $issuedAt || ! $expiresAt || ! $this->usesDocumentDates($documentType)) {
                     continue;
                 }
 
@@ -154,10 +185,15 @@ class CompanyVehicleRequest extends FormRequest
                         );
                     }
                 } catch (\Throwable $e) {
-                    // Let base date validation handle invalid values
+                    // Let base date validation handle invalid values.
                 }
             }
         });
+    }
+
+    private function usesDocumentDates(?string $documentType): bool
+    {
+        return $documentType !== 'puv_identification_markings';
     }
 
     private function clean(mixed $value): mixed

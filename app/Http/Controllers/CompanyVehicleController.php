@@ -22,9 +22,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class CompanyVehicleController extends Controller
 {
     private const DOC_TYPES = [
-        'ltfrb_certificate' => 'LTFRB Certificate',
-        'cpc'               => 'Certificate of Public Convenience (CPC)',
-        'or_cr'             => 'Official Receipt / Certificate of Registration (OR/CR)',
+        'insurance_certificate'       => 'Insurance Certificate',
+        'cpc'                         => 'Certificate of Public Convenience (CPC)',
+        'official_receipt'            => 'Official Receipt (OR)',
+        'certificate_of_registration' => 'Certificate of Registration (CR)',
+        'puv_identification_markings' => 'PUV Identification Markings',
     ];
 
     public function index(Request $request): Response
@@ -47,16 +49,22 @@ class CompanyVehicleController extends Controller
                 'color',
                 'make_model',
                 'status',
+                'remarks',
                 'created_at',
             ])
             ->with([
                 'route:id,route_name',
-                'documents:id,vehicle_id,document_type,status',
+                'documents:id,vehicle_id,document_type,status,expires_at',
             ])
             ->search($request->search)
             ->latest()
             ->paginate(10)
             ->withQueryString();
+
+        $routes = Route::query()
+            ->select('id', 'route_name')
+            ->orderBy('route_name')
+            ->get();
 
         return Inertia::render('External/Vehicles/Index', [
             'company' => [
@@ -78,6 +86,7 @@ class CompanyVehicleController extends Controller
             'filters'  => [
                 'search' => $request->search,
             ],
+            'routes' => $routes,
         ]);
     }
 
@@ -96,6 +105,11 @@ class CompanyVehicleController extends Controller
 
         $routes = Route::query()
             ->where('status', 'active')
+            ->where(function ($query) {
+                $query
+                    ->whereNull('gate_id')
+                    ->orWhereHas('gate', fn ($gateQuery) => $gateQuery->where('status', 'active'));
+            })
             ->select(['id', 'gate_id', 'route_name', 'origin_name', 'destination_name', 'route_geometry'])
             ->with([
                 'gate:id,gate_name',
@@ -181,8 +195,8 @@ class CompanyVehicleController extends Controller
                     'file_mime_type' => $file->getMimeType(),
                     'file_size'      => $file->getSize(),
                     'status'         => 'pending',
-                    'issued_at'      => $docMeta['issued_at'],
-                    'expires_at'     => $docMeta['expires_at'],
+                    'issued_at'      => $this->usesDocumentDates($docMeta['document_type']) ? $docMeta['issued_at'] : null,
+                    'expires_at'     => $this->usesDocumentDates($docMeta['document_type']) ? $docMeta['expires_at'] : null,
                     'created_by'     => $user->id,
                 ]);
             }
@@ -216,6 +230,11 @@ class CompanyVehicleController extends Controller
 
         $routes = Route::query()
             ->where('status', 'active')
+            ->where(function ($query) {
+                $query
+                    ->whereNull('gate_id')
+                    ->orWhereHas('gate', fn ($gateQuery) => $gateQuery->where('status', 'active'));
+            })
             ->select(['id', 'gate_id', 'route_name', 'origin_name', 'destination_name', 'route_geometry'])
             ->with([
                 'gate:id,gate_name',
@@ -329,6 +348,11 @@ class CompanyVehicleController extends Controller
 
         $routes = Route::query()
             ->where('status', 'active')
+            ->where(function ($query) {
+                $query
+                    ->whereNull('gate_id')
+                    ->orWhereHas('gate', fn ($gateQuery) => $gateQuery->where('status', 'active'));
+            })
             ->select(['id', 'gate_id', 'route_name', 'origin_name', 'destination_name', 'route_geometry'])
             ->with([
                 'gate:id,gate_name',
@@ -452,8 +476,8 @@ class CompanyVehicleController extends Controller
                     'file_mime_type' => $file->getMimeType(),
                     'file_size'      => $file->getSize(),
                     'status'         => 'pending',
-                    'issued_at'      => $docMeta['issued_at'],
-                    'expires_at'     => $docMeta['expires_at'],
+                    'issued_at'      => $this->usesDocumentDates((string) $documentType) ? $docMeta['issued_at'] : null,
+                    'expires_at'     => $this->usesDocumentDates((string) $documentType) ? $docMeta['expires_at'] : null,
                     'updated_by'     => $user->id,
                 ]);
 
@@ -480,26 +504,59 @@ class CompanyVehicleController extends Controller
                 ->with('error', 'Suspended vehicles cannot change status.');
         }
 
-        if (! $vehicle->documents()->exists()) {
-            return to_route('company.vehicles.index')
-                ->with('error', 'No documents uploaded for this vehicle.');
-        }
-
-        $hasInvalidDocuments = $vehicle->documents()
-            ->whereIn('status', ['pending', 'rejected'])
+        $hasDocuments = $vehicle->documents()->exists();
+        $hasPendingOrRejected = $vehicle->documents()
+            ->whereIn('status', ['pending', 'rejected', 'invalid'])
             ->exists();
 
-        if ($hasInvalidDocuments) {
+        $hasExpired = $vehicle->documents()
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<', now()->toDateString())
+            ->exists();
+
+        if ($vehicle->status === 'active') {
+            $validated = $request->validate([
+                'remarks' => ['required', 'string', 'max:1000'],
+            ]);
+
+            $vehicle->update([
+                'status'  => 'inactive',
+                'remarks' => $validated['remarks'],
+                'updated_by' => $request->user()->id,
+            ]);
+
             return to_route('company.vehicles.index')
-                ->with('error', 'You cannot change the vehicle status while documents are pending or rejected.');
+                ->with('success', 'Vehicle set to inactive.');
         }
 
-        $vehicle->update([
-            'status' => $vehicle->status === 'active' ? 'inactive' : 'active',
-        ]);
+        if ($vehicle->status === 'inactive') {
+            if (! $hasDocuments) {
+                return to_route('company.vehicles.index')
+                    ->with('error', 'Upload the required documents before activating this vehicle.');
+            }
+
+            if ($hasPendingOrRejected) {
+                return to_route('company.vehicles.index')
+                    ->with('error', 'All documents must be approved before activation.');
+            }
+
+            if ($hasExpired) {
+                return to_route('company.vehicles.index')
+                    ->with('error', 'Renew expired documents before activation.');
+            }
+
+            $vehicle->update([
+                'status'  => 'active',
+                'remarks' => null,
+                'updated_by' => $request->user()->id,
+            ]);
+
+            return to_route('company.vehicles.index')
+                ->with('success', 'Vehicle activated successfully.');
+        }
 
         return to_route('company.vehicles.index')
-            ->with('success', 'Vehicle status updated successfully.');
+            ->with('error', 'Status change not allowed for this vehicle.');
     }
 
     public function downloadDocument(Request $request, Vehicle $vehicle, VehicleDocument $document): StreamedResponse
@@ -529,6 +586,11 @@ class CompanyVehicleController extends Controller
         $value = preg_replace('/_+/', '_', $value);
 
         return trim($value ?? '', '_') ?: 'FILE';
+    }
+
+    private function usesDocumentDates(string $documentType): bool
+    {
+        return $documentType !== 'puv_identification_markings';
     }
 
     private function publicDisk(): FilesystemAdapter
