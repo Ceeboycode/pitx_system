@@ -9,16 +9,16 @@ import VehicleDocumentsForm from '@/components/company/vehicles/VehicleDocuments
 import VehicleRouteAssignment from '@/components/company/vehicles/VehicleRouteAssignment.vue';
 import VehicleSummaryCard from '@/components/company/vehicles/VehicleSummaryCard.vue';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+    AlertCircle,
     ArrowLeft,
     ArrowUp,
+    Building2,
     Eye,
     FileText,
     Hash,
     MapPin,
-    AlertCircle,
 } from 'lucide-vue-next';
 
 import CompanyVehicleController from '@/actions/App/Http/Controllers/CompanyVehicleController';
@@ -180,12 +180,8 @@ function setDocumentFile(index: number, event: Event) {
 
 function scrollToSummary() {
     const summarySection = document.getElementById('update-summary');
-
     if (summarySection) {
-        summarySection.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
-        });
+        summarySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 }
 
@@ -210,6 +206,23 @@ function statusClass(status?: string | null) {
             return 'bg-slate-100 text-slate-600 border-0';
     }
 }
+
+function statusDot(status?: string | null) {
+    switch (status) {
+        case 'active':
+        case 'approved':
+        case 'verified':
+            return 'bg-emerald-500';
+        case 'pending':
+        case 'for_verification':
+            return 'bg-amber-500';
+        case 'rejected':
+        case 'inactive':
+            return 'bg-rose-500';
+        default:
+            return 'bg-slate-400';
+    }
+}
 </script>
 
 <template>
@@ -218,7 +231,7 @@ function statusClass(status?: string | null) {
     <ExternalLayout :company="company" :user="user">
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
-                <!-- -- Page header --------------------------------------- -->
+                <!-- ── Page header ─────────────────────────────────────── -->
                 <div class="rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 p-6 shadow-sm">
                     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div class="space-y-3">
@@ -239,40 +252,54 @@ function statusClass(status?: string | null) {
                                 </Badge>
                             </div>
                             <div>
-                                <h1 class="text-2xl font-bold tracking-tight text-white md:text-3xl">
+                                <h1 class="text-2xl font-bold tracking-tight text-slate-900">
                                     Edit Vehicle
                                 </h1>
-                                <p class="mt-1 text-sm text-blue-200">
+                                <p class="mt-0.5 text-sm text-slate-500">
                                     Update vehicle details, route assignment, and required documents.
                                 </p>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="flex flex-wrap gap-2 md:shrink-0">
-                            <Button
-                                as-child
-                                class="rounded-lg border-0 bg-white font-semibold text-blue-900 shadow-sm hover:bg-blue-50"
-                            >
-                                <Link :href="CompanyVehicleController.show(vehicle.id).url">
-                                    <Eye class="mr-2 h-4 w-4" />
-                                    View Vehicle
-                                </Link>
-                            </Button>
-                            <Button
-                                as-child
-                                variant="outline"
-                                class="rounded-lg border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
-                            >
-                                <Link :href="CompanyVehicleController.index().url">
-                                    <ArrowLeft class="mr-2 h-4 w-4" />
-                                    Back to Vehicles
-                                </Link>
-                            </Button>
-                        </div>
+                    <div class="flex shrink-0 flex-wrap items-center gap-2 self-start">
+                        <!-- Vehicle status pill -->
+                        <span
+                            :class="[
+                                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                                statusClass(vehicle.status),
+                            ]"
+                        >
+                            <span
+                                :class="['h-1.5 w-1.5 rounded-full', statusDot(vehicle.status)]"
+                            />
+                            {{ humanize(vehicle.status) }}
+                        </span>
+
+                        <Button
+                            as-child
+                            variant="outline"
+                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+                        >
+                            <Link :href="CompanyVehicleController.index().url">
+                                <ArrowLeft class="mr-2 h-4 w-4" />
+                                Back
+                            </Link>
+                        </Button>
+
+                        <Button
+                            as-child
+                            class="rounded-lg border-0 bg-blue-700 text-sm font-semibold text-white shadow-sm hover:bg-blue-800"
+                        >
+                            <Link :href="CompanyVehicleController.show(vehicle.id).url">
+                                <Eye class="mr-2 h-4 w-4" />
+                                View Vehicle
+                            </Link>
+                        </Button>
                     </div>
                 </div>
 
-                <!-- -- Stat cards ---------------------------------------- -->
+                <!-- ── Stat cards ──────────────────────────────────────── -->
                 <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
                     <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700">
@@ -324,11 +351,13 @@ function statusClass(status?: string | null) {
                     </div>
                 </div>
 
-                <!-- -- Form ---------------------------------------------- -->
+                <!-- ── Form ────────────────────────────────────────────── -->
                 <form class="space-y-6" @submit.prevent="submit">
                     <div class="grid gap-6 xl:grid-cols-[1fr_320px]">
+
                         <!-- Left column -->
                         <div class="space-y-6">
+
                             <!-- Company Information -->
                             <div class="rounded-xl border border-slate-200 bg-white shadow-sm pointer-events-none opacity-60">
                                 <div class="border-b border-slate-100 px-6 py-4">
@@ -420,12 +449,10 @@ function statusClass(status?: string | null) {
                                                 Only expired documents (including their issue/expiry dates) can be updated; all other details are locked.
                                             </p>
                                         </div>
-
                                         <div class="flex items-center gap-2">
                                             <span class="text-xs font-semibold tabular-nums text-slate-400">
                                                 {{ uploadedDocumentsCount }} / {{ requiredDocumentsCount }} ready
                                             </span>
-
                                             <Button
                                                 type="button"
                                                 variant="outline"
@@ -438,7 +465,6 @@ function statusClass(status?: string | null) {
                                         </div>
                                     </div>
                                 </div>
-
                                 <div class="p-6">
                                     <VehicleDocumentsForm
                                         :documents="form.documents"
@@ -446,7 +472,6 @@ function statusClass(status?: string | null) {
                                         :errors="form.errors"
                                         @set-file="setDocumentFile"
                                     />
-
                                     <div class="mt-6 flex justify-end">
                                         <Button
                                             type="button"
@@ -464,6 +489,7 @@ function statusClass(status?: string | null) {
 
                         <!-- Right sidebar -->
                         <div class="space-y-4">
+
                             <!-- Update Summary -->
                             <div
                                 id="update-summary"
@@ -527,9 +553,17 @@ function statusClass(status?: string | null) {
                                         <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">
                                             Vehicle Status
                                         </p>
-                                        <Badge :class="['border font-medium', statusClass(vehicle.status)]">
+                                        <span
+                                            :class="[
+                                                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                                                statusClass(vehicle.status),
+                                            ]"
+                                        >
+                                            <span
+                                                :class="['h-1.5 w-1.5 rounded-full', statusDot(vehicle.status)]"
+                                            />
                                             {{ humanize(vehicle.status) }}
-                                        </Badge>
+                                        </span>
                                     </div>
 
                                     <div class="flex items-center justify-between px-5 py-4">
@@ -545,8 +579,8 @@ function statusClass(status?: string | null) {
                         </div>
                     </div>
                 </form>
+
             </div>
         </div>
     </ExternalLayout>
 </template>
-

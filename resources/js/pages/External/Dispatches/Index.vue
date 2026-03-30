@@ -18,16 +18,8 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card'
 import {
     Dialog,
     DialogContent,
@@ -40,6 +32,7 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -75,8 +68,8 @@ import {
 
 import {
     ArrowUpRight,
+    Building2,
     Bus,
-    CalendarClock,
     CalendarDays,
     CheckCircle2,
     Clock3,
@@ -100,6 +93,9 @@ import {
     today,
 } from '@internationalized/date'
 
+/* ======================================================
+   Types
+====================================================== */
 type Company = {
     id: number
     company_name: string
@@ -166,6 +162,9 @@ type Paginated<T> = {
     to: number | null
 }
 
+/* ======================================================
+   Props
+====================================================== */
 const props = defineProps<{
     company: Company
     vehicles: Vehicle[]
@@ -179,6 +178,9 @@ const props = defineProps<{
     }
 }>()
 
+/* ======================================================
+   Date filter
+====================================================== */
 const df = new DateFormatter('en-US', { dateStyle: 'medium' })
 const localTz = getLocalTimeZone()
 
@@ -240,6 +242,9 @@ function setYesterday() {
     applyDateFilter(today(localTz).subtract({ days: 1 }))
 }
 
+/* ======================================================
+   Dialog state
+====================================================== */
 const dialogOpen = ref(false)
 const editingDispatchId = ref<number | null>(null)
 
@@ -250,6 +255,9 @@ const pendingDepartDispatch = ref<DispatchItem | null>(null)
 const remarksViewOpen = ref(false)
 const viewingDispatch = ref<DispatchItem | null>(null)
 
+/* ======================================================
+   Forms
+====================================================== */
 const form = useForm({
     vehicle_id: '',
     driver_user_id: 'unassigned',
@@ -262,6 +270,9 @@ const departForm = useForm({
     pax_count: '',
 })
 
+/* ======================================================
+   Computed selections
+====================================================== */
 const selectedVehicle = computed(() =>
     props.vehicles.find((v) => String(v.id) === String(form.vehicle_id)) ?? null,
 )
@@ -272,17 +283,15 @@ const selectedGate = computed(() =>
 
 const selectedDriver = computed(() => {
     if (form.driver_user_id === 'unassigned') return null
-
-    return (
-        props.drivers.find(
-            (d) => String(d.id) === String(form.driver_user_id),
-        ) ?? null
-    )
+    return props.drivers.find((d) => String(d.id) === String(form.driver_user_id)) ?? null
 })
 
 const bayOptions = computed(() => selectedGate.value?.bay_options ?? [])
 const isEditing = computed(() => editingDispatchId.value !== null)
 
+/* ======================================================
+   Handlers
+====================================================== */
 function onGateChange(value: string) {
     form.gate_id = value
     form.bay_number = ''
@@ -308,14 +317,11 @@ function openCreateDialog() {
 
 function openEditDialog(dispatch: DispatchItem) {
     if (dispatch.status === 'departed') return
-
     editingDispatchId.value = dispatch.id
     form.transform((d) => d)
     form.clearErrors()
     form.vehicle_id = dispatch.vehicle?.id ? String(dispatch.vehicle.id) : ''
-    form.driver_user_id = dispatch.driver?.id
-        ? String(dispatch.driver.id)
-        : 'unassigned'
+    form.driver_user_id = dispatch.driver?.id ? String(dispatch.driver.id) : 'unassigned'
     form.gate_id = dispatch.gate?.id ? String(dispatch.gate.id) : ''
     form.bay_number = String(dispatch.bay_number ?? '')
     form.remarks = dispatch.remarks ?? ''
@@ -371,7 +377,6 @@ function askDepart(dispatch: DispatchItem) {
 
 function confirmDepart() {
     if (!pendingDepartId.value) return
-
     departForm.patch(DispatchController.depart(pendingDepartId.value).url, {
         preserveScroll: true,
         onSuccess: () => {
@@ -383,36 +388,31 @@ function confirmDepart() {
     })
 }
 
-function statusVariant(
-    status?: string | null,
-): 'default' | 'secondary' | 'outline' | 'destructive' {
-    switch (status) {
-        case 'departed':
-            return 'outline'
-        case 'arrived':
-            return 'default'
-        case 'pending':
-            return 'secondary'
-        default:
-            return 'secondary'
-    }
+/* ======================================================
+   Badge / status helpers
+====================================================== */
+function dispatchStatusClass(status?: string | null) {
+    if (status === 'arrived')  return 'bg-emerald-100 text-emerald-700 border-emerald-200'
+    if (status === 'departed') return 'bg-slate-100 text-slate-500 border-slate-200'
+    if (status === 'pending')  return 'bg-amber-100 text-amber-700 border-amber-200'
+    return 'bg-slate-100 text-slate-500 border-0'
 }
 
-function statusLabel(status?: string | null) {
-    if (!status) return 'Unknown'
-
-    return status
-        .replaceAll('_', ' ')
-        .replace(/\b\w/g, (c) => c.toUpperCase())
-}
-
-function statusDot(status: string) {
-    if (status === 'arrived') return 'bg-emerald-500'
+function dispatchStatusDot(status?: string | null) {
+    if (status === 'arrived')  return 'bg-emerald-500'
     if (status === 'departed') return 'bg-slate-400'
-    if (status === 'pending') return 'bg-amber-400'
+    if (status === 'pending')  return 'bg-amber-400'
     return 'bg-slate-400'
 }
 
+function humanize(value?: string | null) {
+    if (!value) return '—'
+    return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+/* ======================================================
+   Computed stats
+====================================================== */
 const arrivedCount = computed(
     () => props.dispatches.data.filter((d) => d.status === 'arrived').length,
 )
@@ -425,6 +425,9 @@ const totalPax = computed(() =>
     props.dispatches.data.reduce((s, d) => s + (d.pax_count ?? 0), 0),
 )
 
+/* ======================================================
+   Watchers
+====================================================== */
 watch(dialogOpen, (open) => {
     if (!open) {
         editingDispatchId.value = null
@@ -443,236 +446,300 @@ watch(confirmDepartOpen, (open) => {
 </script>
 
 <template>
-    <ExternalLayout>
-        <Head title="Dispatches" />
+    <Head title="Dispatches" />
 
-        <div class="space-y-5 p-4 md:p-6">
-            <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                <div class="space-y-1">
-                    <div class="flex items-center gap-2">
-                        <h1 class="text-2xl font-semibold tracking-tight">Dispatching Module</h1>
-                        <Badge variant="outline" class="hidden font-mono text-xs md:inline-flex">
-                            {{ company.company_code || 'No Code' }}
-                        </Badge>
+    <ExternalLayout :company="company">
+        <div class="min-h-screen bg-slate-50/60">
+            <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
+
+                <!-- ── Page header ───────────────────────────── -->
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                            <Building2 class="h-3.5 w-3.5" />
+                            {{ company.company_code ?? company.company_name }}
+                        </div>
+                        <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+                            Dispatching Module
+                        </h1>
+                        <p class="text-sm text-slate-500">
+                            Manage and monitor vehicle dispatches for {{ company.company_name }}.
+                        </p>
                     </div>
-                    <p class="text-sm text-muted-foreground">
-                        Manage and monitor vehicle dispatches for
-                        <span class="font-medium text-foreground">{{ company.company_name }}</span>
-                    </p>
-                </div>
 
-                <Button size="sm" class="w-full md:w-auto" variant="blue" @click="openCreateDialog">
+                <Button size="sm" class="w-full md:w-auto" @click="openCreateDialog">
                     <Plus class="mr-2 h-4 w-4" />
                     Add Dispatch
                 </Button>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
-                <div class="rounded-xl border bg-card p-4 shadow-sm">
-                    <div class="flex items-center justify-between">
-                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total</p>
-                        <CalendarClock class="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <p class="mt-2 text-2xl font-bold">{{ dispatches.total }}</p>
-                    <p class="text-xs text-muted-foreground">dispatches</p>
-                </div>
-
-                <div class="rounded-xl border bg-card p-4 shadow-sm">
-                    <div class="flex items-center justify-between">
-                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">On-site</p>
-                        <Clock3 class="h-4 w-4 text-emerald-500" />
-                    </div>
-                    <p class="mt-2 text-2xl font-bold text-emerald-600">{{ arrivedCount }}</p>
-                    <p class="text-xs text-muted-foreground">arrived</p>
-                </div>
-
-                <div class="rounded-xl border bg-card p-4 shadow-sm">
-                    <div class="flex items-center justify-between">
-                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Departed</p>
-                        <LogOut class="h-4 w-4 text-slate-400" />
-                    </div>
-                    <p class="mt-2 text-2xl font-bold text-slate-500">{{ departedCount }}</p>
-                    <p class="text-xs text-muted-foreground">this page</p>
-                </div>
-
-                <div class="rounded-xl border bg-card p-4 shadow-sm">
-                    <div class="flex items-center justify-between">
-                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Passengers</p>
-                        <TrendingUp class="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <p class="mt-2 text-2xl font-bold">{{ totalPax }}</p>
-                    <p class="text-xs text-muted-foreground">this page</p>
-                </div>
-            </div>
-
-            <Card class="shadow-sm">
-                <CardHeader class="pb-4">
-                    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <CardTitle class="text-base">Dispatch Records</CardTitle>
-                            <CardDescription class="mt-0.5 text-xs">
-                                Arrival time is automatically recorded on dispatch creation.
-                            </CardDescription>
+                <!-- ── Stats ─────────────────────────────────── -->
+                <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700">
+                            <Bus class="h-4 w-4 text-white" />
                         </div>
+                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            Total Dispatches
+                        </p>
+                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">
+                            {{ dispatches.total }}
+                        </p>
+                    </div>
 
-                        <div class="flex flex-col gap-2 md:flex-row md:items-center">
-                            <SearchInput
-                                :route="DispatchController.index().url"
-                                :initial-value="props.filters?.search ?? ''"
-                                placeholder="Search plate, remarks…"
-                                :only="['dispatches', 'filters']"
-                                class="w-full md:w-56"
-                            />
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600">
+                            <Clock3 class="h-4 w-4 text-white" />
+                        </div>
+                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            On-site
+                        </p>
+                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">
+                            {{ arrivedCount }}
+                        </p>
+                    </div>
 
-                            <Select
-                                :model-value="props.filters?.status ?? 'all'"
-                                @update:model-value="(value) => {
-                                    router.get(
-                                        DispatchController.index().url,
-                                        {
-                                            search: props.filters?.search || undefined,
-                                            status: value === 'all' ? undefined : value,
-                                            date: props.filters?.date || undefined,
-                                        },
-                                        {
-                                            preserveState: true,
-                                            preserveScroll: true,
-                                            replace: true,
-                                            only: ['dispatches', 'filters'],
-                                        },
-                                    )
-                                }"
-                            >
-                                <SelectTrigger class="w-full md:w-36">
-                                    <SelectValue placeholder="All statuses" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Statuses</SelectItem>
-                                    <SelectItem value="arrived">Arrived</SelectItem>
-                                    <SelectItem value="departed">Departed</SelectItem>
-                                </SelectContent>
-                            </Select>
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-slate-500">
+                            <LogOut class="h-4 w-4 text-white" />
+                        </div>
+                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            Departed
+                        </p>
+                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">
+                            {{ departedCount }}
+                        </p>
+                    </div>
 
-                            <Popover v-model:open="calendarOpen">
-                                <PopoverTrigger as-child>
-                                    <Button
-                                        variant="outline"
-                                        class="w-full justify-start gap-2 md:w-44"
-                                        :class="selectedDate ? 'border-primary/50 bg-primary/5 text-foreground' : 'text-muted-foreground'"
-                                    >
-                                        <CalendarDays class="h-4 w-4 shrink-0" :class="selectedDate ? 'text-primary' : ''" />
-                                        <span class="truncate text-sm">
-                                            {{ selectedDateLabel ?? 'Pick a date' }}
-                                        </span>
-                                        <span
-                                            v-if="selectedDate"
-                                            class="ml-auto flex h-4 w-4 shrink-0 items-center justify-center rounded-full hover:bg-muted"
-                                            @click.stop="clearDateFilter"
-                                        >
-                                            <X class="h-3 w-3" />
-                                        </span>
-                                    </Button>
-                                </PopoverTrigger>
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600">
+                            <TrendingUp class="h-4 w-4 text-white" />
+                        </div>
+                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            Passengers
+                        </p>
+                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">
+                            {{ totalPax }}
+                        </p>
+                    </div>
+                </div>
 
-                                <PopoverContent class="w-auto p-0" align="end">
-                                    <div class="border-b px-3 py-2.5">
-                                        <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                            Filter by Date
-                                        </p>
-                                    </div>
+                <!-- ── Table card ─────────────────────────────── -->
+                <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
 
-                                    <div class="flex gap-1.5 border-b px-3 py-2">
+                    <!-- Card header with filters -->
+                    <div class="flex flex-col gap-4 border-b border-slate-100 px-5 py-4">
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <h2 class="text-base font-semibold text-slate-800">Dispatch Records</h2>
+                                <p class="mt-0.5 text-xs text-slate-400">
+                                    Arrival time is automatically recorded on dispatch creation.
+                                </p>
+                            </div>
+
+                            <!-- Filters row -->
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                <!-- Search -->
+                                <SearchInput
+                                    :route="DispatchController.index().url"
+                                    :initial-value="props.filters?.search ?? ''"
+                                    placeholder="Search plate, remarks…"
+                                    :only="['dispatches', 'filters']"
+                                    class="w-full sm:w-56"
+                                />
+
+                                <!-- Status filter -->
+                                <Select
+                                    :model-value="props.filters?.status ?? 'all'"
+                                    @update:model-value="(value) => {
+                                        router.get(
+                                            DispatchController.index().url,
+                                            {
+                                                search: props.filters?.search || undefined,
+                                                status: value === 'all' ? undefined : value,
+                                                date: props.filters?.date || undefined,
+                                            },
+                                            {
+                                                preserveState: true,
+                                                preserveScroll: true,
+                                                replace: true,
+                                                only: ['dispatches', 'filters'],
+                                            },
+                                        )
+                                    }"
+                                >
+                                    <SelectTrigger class="w-full sm:w-36">
+                                        <SelectValue placeholder="All statuses" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Statuses</SelectItem>
+                                        <SelectItem value="arrived">Arrived</SelectItem>
+                                        <SelectItem value="departed">Departed</SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                <!-- Date filter -->
+                                <Popover v-model:open="calendarOpen">
+                                    <PopoverTrigger as-child>
                                         <Button
-                                            size="sm"
                                             variant="outline"
-                                            class="h-7 flex-1 text-xs"
-                                            :class="selectedDateLabel === 'Today' ? 'border-primary bg-primary/10 text-primary' : ''"
-                                            @click="setToday"
+                                            :class="[
+                                                'w-full justify-start gap-2 sm:w-44',
+                                                selectedDate
+                                                    ? 'border-blue-200 bg-blue-50 text-blue-700'
+                                                    : 'text-slate-500 hover:text-slate-700',
+                                            ]"
                                         >
-                                            Today
+                                            <CalendarDays
+                                                class="h-4 w-4 shrink-0"
+                                                :class="selectedDate ? 'text-blue-600' : ''"
+                                            />
+                                            <span class="truncate text-sm">
+                                                {{ selectedDateLabel ?? 'Pick a date' }}
+                                            </span>
+                                            <span
+                                                v-if="selectedDate"
+                                                class="ml-auto flex h-4 w-4 shrink-0 items-center justify-center rounded-full hover:bg-blue-100"
+                                                @click.stop="clearDateFilter"
+                                            >
+                                                <X class="h-3 w-3" />
+                                            </span>
                                         </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            class="h-7 flex-1 text-xs"
-                                            :class="selectedDateLabel === 'Yesterday' ? 'border-primary bg-primary/10 text-primary' : ''"
-                                            @click="setYesterday"
-                                        >
-                                            Yesterday
-                                        </Button>
-                                        <Button
-                                            v-if="selectedDate"
-                                            size="sm"
-                                            variant="ghost"
-                                            class="h-7 flex-1 text-xs text-muted-foreground"
-                                            @click="clearDateFilter"
-                                        >
-                                            Clear
-                                        </Button>
-                                    </div>
+                                    </PopoverTrigger>
 
-                                    <Calendar
-                                        :model-value="selectedDate"
-                                        :max-value="today(localTz)"
-                                        initial-focus
-                                        @update:model-value="(d) => applyDateFilter(d as CalendarDate | undefined)"
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                                    <PopoverContent class="w-auto rounded-xl border-slate-200 p-0 shadow-lg" align="end">
+                                        <div class="border-b border-slate-100 px-4 py-3">
+                                            <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                                                Filter by Date
+                                            </p>
+                                        </div>
+
+                                        <div class="flex gap-1.5 border-b border-slate-100 px-3 py-2">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                class="h-7 flex-1 text-xs"
+                                                :class="selectedDateLabel === 'Today' ? 'border-blue-300 bg-blue-50 text-blue-700' : ''"
+                                                @click="setToday"
+                                            >
+                                                Today
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                class="h-7 flex-1 text-xs"
+                                                :class="selectedDateLabel === 'Yesterday' ? 'border-blue-300 bg-blue-50 text-blue-700' : ''"
+                                                @click="setYesterday"
+                                            >
+                                                Yesterday
+                                            </Button>
+                                            <Button
+                                                v-if="selectedDate"
+                                                size="sm"
+                                                variant="ghost"
+                                                class="h-7 flex-1 text-xs text-slate-400"
+                                                @click="clearDateFilter"
+                                            >
+                                                Clear
+                                            </Button>
+                                        </div>
+
+                                        <Calendar
+                                            :model-value="selectedDate"
+                                            :max-value="today(localTz)"
+                                            initial-focus
+                                            @update:model-value="(d) => applyDateFilter(d as CalendarDate | undefined)"
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        </div>
+
+                        <!-- Active date pill -->
+                        <div v-if="selectedDate" class="flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                                <CalendarDays class="h-3 w-3" />
+                                Showing dispatches for {{ selectedDateLabel }}
+                                <button
+                                    class="ml-1 rounded-full p-0.5 hover:bg-blue-100"
+                                    @click="clearDateFilter"
+                                >
+                                    <X class="h-2.5 w-2.5" />
+                                </button>
+                            </span>
                         </div>
                     </div>
 
-                    <div v-if="selectedDate" class="flex items-center gap-2 pt-1">
-                        <div class="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
-                            <CalendarDays class="h-3 w-3" />
-                            Showing dispatches for {{ selectedDateLabel }}
-                            <button
-                                class="ml-1 rounded-full p-0.5 hover:bg-primary/10"
-                                @click="clearDateFilter"
-                            >
-                                <X class="h-2.5 w-2.5" />
-                            </button>
-                        </div>
-                    </div>
-                </CardHeader>
-
-                <CardContent class="p-0">
+                    <!-- Table -->
                     <div class="overflow-x-auto">
                         <Table>
                             <TableHeader>
-                                <TableRow class="bg-muted/40 hover:bg-muted/40">
-                                    <TableHead class="pl-6 font-semibold">Vehicle</TableHead>
-                                    <TableHead class="font-semibold">Driver</TableHead>
-                                    <TableHead class="font-semibold">Gate / Bay</TableHead>
-                                    <TableHead class="font-semibold">Pax</TableHead>
-                                    <TableHead class="font-semibold">Status</TableHead>
-                                    <TableHead class="font-semibold">Arrived</TableHead>
-                                    <TableHead class="font-semibold">Departed</TableHead>
-                                    <TableHead class="font-semibold">Dispatcher</TableHead>
-                                    <TableHead class="font-semibold">Remarks</TableHead>
-                                    <TableHead class="pr-6 text-right font-semibold">Action</TableHead>
+                                <TableRow class="border-slate-100 bg-slate-50/70 hover:bg-slate-50/70">
+                                    <TableHead class="pl-5 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        Vehicle
+                                    </TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        Driver
+                                    </TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        Gate / Bay
+                                    </TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        Pax
+                                    </TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        Status
+                                    </TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        Arrived
+                                    </TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        Departed
+                                    </TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        Dispatcher
+                                    </TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        Remarks
+                                    </TableHead>
+                                    <TableHead class="pr-5 text-right text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        Actions
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
 
                             <TableBody>
-                                <TableRow v-if="dispatches.data.length === 0">
+                                <!-- Empty state -->
+                                <TableRow v-if="dispatches.data.length === 0" class="hover:bg-transparent">
                                     <TableCell colspan="10" class="py-20 text-center">
-                                        <div class="flex flex-col items-center gap-2 text-muted-foreground">
-                                            <div class="flex h-12 w-12 items-center justify-center rounded-full border bg-muted">
-                                                <CalendarDays class="h-5 w-5 opacity-50" />
+                                        <div class="flex flex-col items-center gap-3">
+                                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
+                                                <Bus class="h-6 w-6 text-slate-400" />
                                             </div>
-                                            <p class="text-sm font-medium">
-                                                {{ selectedDate ? `No dispatches on ${selectedDateLabel}` : 'No dispatch records found' }}
-                                            </p>
-                                            <p class="text-xs">
-                                                {{ selectedDate ? 'Try a different date or clear the filter.' : 'Try adjusting your search or filter, or add a new dispatch.' }}
-                                            </p>
-                                            <div class="mt-2 flex gap-2">
-                                                <Button v-if="selectedDate" size="sm" variant="outline" @click="clearDateFilter">
+                                            <div>
+                                                <p class="text-sm font-semibold text-slate-600">
+                                                    {{ selectedDate ? `No dispatches on ${selectedDateLabel}` : 'No dispatch records found' }}
+                                                </p>
+                                                <p class="mt-0.5 text-xs text-slate-400">
+                                                    {{ selectedDate ? 'Try a different date or clear the filter.' : 'Try adjusting your search or add a new dispatch.' }}
+                                                </p>
+                                            </div>
+                                            <div class="flex gap-2">
+                                                <Button
+                                                    v-if="selectedDate"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    class="h-8 rounded-lg text-xs"
+                                                    @click="clearDateFilter"
+                                                >
                                                     <X class="mr-1.5 h-3.5 w-3.5" />
-                                                    Clear Date Filter
+                                                    Clear Date
                                                 </Button>
-                                                <Button size="sm" variant="outline" @click="openCreateDialog">
+                                                <Button
+                                                    size="sm"
+                                                    class="h-8 rounded-lg border-0 bg-blue-700 text-xs text-white hover:bg-blue-800"
+                                                    @click="openCreateDialog"
+                                                >
                                                     <Plus class="mr-1.5 h-3.5 w-3.5" />
                                                     Add Dispatch
                                                 </Button>
@@ -681,90 +748,115 @@ watch(confirmDepartOpen, (open) => {
                                     </TableCell>
                                 </TableRow>
 
+                                <!-- Data rows -->
                                 <TableRow
                                     v-for="dispatch in dispatches.data"
                                     :key="dispatch.id"
-                                    class="group transition-colors"
+                                    class="border-slate-100 transition-colors hover:bg-slate-50/80"
                                     :class="dispatch.status === 'departed' ? 'opacity-60' : ''"
                                 >
-                                    <TableCell class="pl-6">
-                                        <div class="flex items-center gap-2.5">
-                                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-muted">
-                                                <Bus class="h-3.5 w-3.5 text-muted-foreground" />
+                                    <!-- Vehicle -->
+                                    <TableCell class="pl-5">
+                                        <div class="flex items-start gap-2.5">
+                                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100">
+                                                <Bus class="h-3.5 w-3.5 text-blue-700" />
                                             </div>
                                             <div>
-                                                <p class="text-sm font-semibold leading-tight">{{ dispatch.plate_number }}</p>
-                                                <p v-if="dispatch.vehicle?.vehicle_type" class="text-xs text-muted-foreground">
+                                                <p class="text-sm font-semibold text-slate-800">
+                                                    {{ dispatch.plate_number }}
+                                                </p>
+                                                <p v-if="dispatch.vehicle?.vehicle_type" class="text-xs text-slate-400">
                                                     {{ dispatch.vehicle.vehicle_type }}
                                                 </p>
                                             </div>
                                         </div>
                                     </TableCell>
 
+                                    <!-- Driver -->
                                     <TableCell>
                                         <div class="flex items-center gap-1.5">
-                                            <UserRound class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                                            <span class="text-sm" :class="!dispatch.driver ? 'italic text-muted-foreground' : ''">
+                                            <UserRound class="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                            <span
+                                                class="text-sm"
+                                                :class="!dispatch.driver ? 'italic text-slate-400' : 'text-slate-700'"
+                                            >
                                                 {{ dispatch.driver?.name ?? 'Unassigned' }}
                                             </span>
                                         </div>
                                     </TableCell>
 
+                                    <!-- Gate / Bay -->
                                     <TableCell>
-                                        <p class="text-sm font-medium">{{ dispatch.gate?.gate_name ?? '—' }}</p>
-                                        <p class="text-xs text-muted-foreground">Bay {{ dispatch.bay_number }}</p>
+                                        <p class="text-sm font-medium text-slate-700">
+                                            {{ dispatch.gate?.gate_name ?? '—' }}
+                                        </p>
+                                        <p class="text-xs text-slate-400">Bay {{ dispatch.bay_number }}</p>
                                     </TableCell>
 
+                                    <!-- Pax -->
                                     <TableCell>
-                                        <div class="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
+                                        <div class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
                                             <Users class="h-3 w-3" />
                                             {{ dispatch.pax_count }}
                                         </div>
                                     </TableCell>
 
+                                    <!-- Status -->
+                                    <TableCell>
+                                        <span
+                                            :class="[
+                                                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                                                dispatchStatusClass(dispatch.status),
+                                            ]"
+                                        >
+                                            <span
+                                                :class="[
+                                                    'h-1.5 w-1.5 rounded-full',
+                                                    dispatchStatusDot(dispatch.status),
+                                                ]"
+                                            />
+                                            {{ humanize(dispatch.status) }}
+                                        </span>
+                                    </TableCell>
+
+                                    <!-- Arrived -->
+                                    <TableCell>
+                                        <div v-if="dispatch.arrived_at_formatted" class="flex items-center gap-1.5">
+                                            <Clock3 class="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                            <span class="text-sm text-slate-600">{{ dispatch.arrived_at_formatted }}</span>
+                                        </div>
+                                        <span v-else class="text-sm text-slate-400">—</span>
+                                    </TableCell>
+
+                                    <!-- Departed -->
+                                    <TableCell>
+                                        <div v-if="dispatch.departed_at_formatted" class="flex items-center gap-1.5">
+                                            <CheckCircle2 class="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                            <span class="text-sm text-slate-600">{{ dispatch.departed_at_formatted }}</span>
+                                        </div>
+                                        <span v-else class="text-sm text-slate-400">—</span>
+                                    </TableCell>
+
+                                    <!-- Dispatcher -->
                                     <TableCell>
                                         <div class="flex items-center gap-1.5">
-                                            <span class="inline-block h-1.5 w-1.5 rounded-full" :class="statusDot(dispatch.status)" />
-                                            <Badge :variant="statusVariant(dispatch.status)" class="text-xs">
-                                                {{ statusLabel(dispatch.status) }}
-                                            </Badge>
+                                            <Fingerprint class="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                            <span class="text-sm text-slate-700">{{ dispatch.dispatcher?.name || '—' }}</span>
                                         </div>
                                     </TableCell>
 
-                                    <TableCell>
-                                        <div v-if="dispatch.arrived_at_formatted" class="flex items-center gap-1.5 text-xs">
-                                            <Clock3 class="h-3 w-3 shrink-0 text-muted-foreground" />
-                                            {{ dispatch.arrived_at_formatted }}
-                                        </div>
-                                        <span v-else class="text-xs text-muted-foreground">—</span>
-                                    </TableCell>
-
-                                    <TableCell>
-                                        <div v-if="dispatch.departed_at_formatted" class="flex items-center gap-1.5 text-xs">
-                                            <CheckCircle2 class="h-3 w-3 shrink-0 text-muted-foreground" />
-                                            {{ dispatch.departed_at_formatted }}
-                                        </div>
-                                        <span v-else class="text-xs text-muted-foreground">—</span>
-                                    </TableCell>
-
-                                    <TableCell>
-                                        <div class="flex items-center gap-1.5">
-                                            <Fingerprint class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                                            <span class="text-sm">{{ dispatch.dispatcher?.name || '—' }}</span>
-                                        </div>
-                                    </TableCell>
-
+                                    <!-- Remarks -->
                                     <TableCell>
                                         <TooltipProvider v-if="dispatch.remarks">
                                             <Tooltip>
                                                 <TooltipTrigger as-child>
                                                     <Button
-                                                        variant="ghost"
+                                                        variant="outline"
                                                         size="sm"
-                                                        class="h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                                        class="h-7 gap-1.5 rounded-lg border-slate-200 text-xs text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
                                                         @click="openRemarksDialog(dispatch)"
                                                     >
-                                                        <FileText class="h-3.5 w-3.5" />
+                                                        <FileText class="h-3 w-3" />
                                                         View
                                                     </Button>
                                                 </TooltipTrigger>
@@ -773,46 +865,70 @@ watch(confirmDepartOpen, (open) => {
                                                 </TooltipContent>
                                             </Tooltip>
                                         </TooltipProvider>
-                                        <span v-else class="text-xs text-muted-foreground">—</span>
+                                        <div v-else class="flex items-center gap-1.5">
+                                            <FileText class="h-3.5 w-3.5 text-slate-300" />
+                                            <span class="text-xs text-slate-400">No remarks</span>
+                                        </div>
                                     </TableCell>
 
-                                    <TableCell class="pr-6 text-right">
+                                    <!-- Actions -->
+                                    <TableCell class="pr-5 text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    class="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100"
+                                                    class="h-8 w-8 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                                                 >
                                                     <MoreHorizontal class="h-4 w-4" />
-                                                    <span class="sr-only">Actions</span>
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent align="end" class="w-44">
-                                                <DropdownMenuItem as-child>
-                                                    <Link :href="DispatchController.show(dispatch.id).url" class="flex items-center">
+                                            <DropdownMenuContent
+                                                align="end"
+                                                class="w-56 rounded-xl border-slate-200 shadow-lg"
+                                            >
+                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                                                    Actions
+                                                </DropdownMenuLabel>
+
+                                                <DropdownMenuSeparator class="bg-slate-100" />
+
+                                                <!-- View details -->
+                                                <DropdownMenuItem
+                                                    as-child
+                                                    class="rounded-lg text-slate-700 focus:bg-blue-50 focus:text-blue-700"
+                                                >
+                                                    <Link :href="DispatchController.show(dispatch.id).url">
                                                         <ArrowUpRight class="mr-2 h-4 w-4" />
                                                         View Details
                                                     </Link>
                                                 </DropdownMenuItem>
 
+                                                <!-- View remarks -->
                                                 <DropdownMenuItem
                                                     v-if="dispatch.remarks"
+                                                    class="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-800"
                                                     @click="openRemarksDialog(dispatch)"
                                                 >
                                                     <FileText class="mr-2 h-4 w-4" />
                                                     View Remarks
                                                 </DropdownMenuItem>
 
+                                                <!-- Arrived-only actions -->
                                                 <template v-if="dispatch.status === 'arrived'">
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem @click="openEditDialog(dispatch)">
-                                                        <Pencil class="mr-2 h-4 w-4" />
-                                                        Edit
-                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator class="bg-slate-100" />
+
                                                     <DropdownMenuItem
-                                                        class="text-amber-600 focus:text-amber-600"
+                                                        class="rounded-lg text-slate-700 focus:bg-amber-50 focus:text-amber-700"
+                                                        @click="openEditDialog(dispatch)"
+                                                    >
+                                                        <Pencil class="mr-2 h-4 w-4" />
+                                                        Edit Dispatch
+                                                    </DropdownMenuItem>
+
+                                                    <DropdownMenuItem
+                                                        class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700"
                                                         @click="askDepart(dispatch)"
                                                     >
                                                         <LogOut class="mr-2 h-4 w-4" />
@@ -827,25 +943,35 @@ watch(confirmDepartOpen, (open) => {
                         </Table>
                     </div>
 
-                    <div class="border-t px-6 py-4">
-                        <div class="flex flex-col items-center justify-between gap-2 md:flex-row">
-                            <p class="text-xs text-muted-foreground">
+                    <!-- Pagination -->
+                    <div v-if="dispatches.last_page > 1 || dispatches.total > 0" class="border-t border-slate-100 px-5 py-3">
+                        <div class="flex flex-col items-center justify-between gap-2 sm:flex-row">
+                            <p class="text-xs text-slate-400">
                                 Showing
-                                <span class="font-medium">{{ dispatches.from ?? 0 }}</span>–<span class="font-medium">{{ dispatches.to ?? 0 }}</span>
-                                of <span class="font-medium">{{ dispatches.total }}</span> records
+                                <span class="font-medium text-slate-600">{{ dispatches.from ?? 0 }}</span>–<span class="font-medium text-slate-600">{{ dispatches.to ?? 0 }}</span>
+                                of <span class="font-medium text-slate-600">{{ dispatches.total }}</span> records
                                 <template v-if="selectedDate">
-                                    for <span class="font-medium text-primary">{{ selectedDateLabel }}</span>
+                                    for <span class="font-medium text-blue-700">{{ selectedDateLabel }}</span>
                                 </template>
                             </p>
-                            <InertiaPagination :links="dispatches.links" />
+                            <InertiaPagination
+                                v-if="dispatches.last_page > 1"
+                                :links="dispatches.links"
+                                :meta="{
+                                    from: dispatches.from,
+                                    to: dispatches.to,
+                                    total: dispatches.total,
+                                }"
+                            />
                         </div>
                     </div>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
         </div>
 
+        <!-- ── Create / Edit Dialog ──────────────────── -->
         <Dialog v-model:open="dialogOpen">
-            <DialogContent class="sm:max-w-md">
+            <DialogContent class="rounded-2xl sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>{{ isEditing ? 'Edit Dispatch' : 'Create Dispatch' }}</DialogTitle>
                     <DialogDescription>
@@ -934,29 +1060,30 @@ watch(confirmDepartOpen, (open) => {
                         <InputError :message="form.errors.bay_number" />
                     </div>
 
+                    <!-- Selection summary chips -->
                     <div
                         v-if="selectedVehicle || selectedGate || selectedDriver"
-                        class="flex flex-wrap gap-2 rounded-lg border bg-muted/30 p-3"
+                        class="flex flex-wrap gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3"
                     >
                         <div
                             v-if="selectedVehicle"
-                            class="inline-flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-1 text-xs font-medium shadow-sm"
+                            class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm"
                         >
-                            <Bus class="h-3 w-3 text-muted-foreground" />
+                            <Bus class="h-3 w-3 text-slate-400" />
                             {{ selectedVehicle.plate_number }}
                         </div>
                         <div
                             v-if="selectedDriver"
-                            class="inline-flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-1 text-xs font-medium shadow-sm"
+                            class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm"
                         >
-                            <UserRound class="h-3 w-3 text-muted-foreground" />
+                            <UserRound class="h-3 w-3 text-slate-400" />
                             {{ selectedDriver.name }}
                         </div>
                         <div
                             v-if="selectedGate"
-                            class="inline-flex items-center gap-1.5 rounded-full border bg-background px-2.5 py-1 text-xs font-medium shadow-sm"
+                            class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm"
                         >
-                            <span class="text-muted-foreground">Gate</span>
+                            <span class="text-slate-400">Gate</span>
                             {{ selectedGate.gate_name }} · {{ selectedGate.bays }} bays
                         </div>
                     </div>
@@ -964,7 +1091,7 @@ watch(confirmDepartOpen, (open) => {
                     <div class="space-y-2">
                         <Label for="remarks">
                             Remarks
-                            <span class="ml-1 text-xs font-normal text-muted-foreground">(optional)</span>
+                            <span class="ml-1 text-xs font-normal text-slate-400">(optional)</span>
                         </Label>
                         <Input
                             id="remarks"
@@ -978,27 +1105,27 @@ watch(confirmDepartOpen, (open) => {
                         <Button
                             type="button"
                             variant="outline"
+                            class="rounded-lg"
                             @click="dialogOpen = false"
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" :disabled="form.processing">
+                        <Button
+                            type="submit"
+                            :disabled="form.processing"
+                            class="rounded-lg border-0 bg-blue-700 text-white hover:bg-blue-800"
+                        >
                             <Send class="mr-2 h-4 w-4" />
-                            {{
-                                form.processing
-                                    ? 'Saving…'
-                                    : isEditing
-                                      ? 'Save Changes'
-                                      : 'Create Dispatch'
-                            }}
+                            {{ form.processing ? 'Saving…' : isEditing ? 'Save Changes' : 'Create Dispatch' }}
                         </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>
 
+        <!-- ── Remarks View Dialog ───────────────────── -->
         <Dialog v-model:open="remarksViewOpen">
-            <DialogContent class="sm:max-w-sm">
+            <DialogContent class="rounded-2xl sm:max-w-sm">
                 <DialogHeader>
                     <DialogTitle class="flex items-center gap-2">
                         <FileText class="h-4 w-4" />
@@ -1011,45 +1138,51 @@ watch(confirmDepartOpen, (open) => {
                     </DialogDescription>
                 </DialogHeader>
 
-                <Separator />
+                <Separator class="bg-slate-100" />
 
                 <div
-                    class="min-h-[80px] rounded-lg border bg-muted/30 p-4 text-sm leading-relaxed"
-                    :class="!viewingDispatch?.remarks ? 'italic text-muted-foreground' : ''"
+                    class="min-h-[80px] rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-700"
+                    :class="!viewingDispatch?.remarks ? 'italic text-slate-400' : ''"
                 >
                     {{ viewingDispatch?.remarks || 'No remarks recorded.' }}
                 </div>
 
                 <div v-if="viewingDispatch" class="grid grid-cols-2 gap-3 text-xs">
                     <div class="space-y-0.5">
-                        <p class="font-medium text-muted-foreground">Driver</p>
+                        <p class="font-semibold uppercase tracking-widest text-slate-400">Driver</p>
                         <p
-                            class="font-semibold"
-                            :class="!viewingDispatch.driver ? 'italic text-muted-foreground' : ''"
+                            class="font-semibold text-slate-800"
+                            :class="!viewingDispatch.driver ? 'italic text-slate-400' : ''"
                         >
                             {{ viewingDispatch.driver?.name ?? 'Unassigned' }}
                         </p>
                     </div>
                     <div class="space-y-0.5">
-                        <p class="font-medium text-muted-foreground">Dispatcher</p>
-                        <p class="font-semibold">{{ viewingDispatch.dispatcher?.name ?? '—' }}</p>
+                        <p class="font-semibold uppercase tracking-widest text-slate-400">Dispatcher</p>
+                        <p class="font-semibold text-slate-800">{{ viewingDispatch.dispatcher?.name ?? '—' }}</p>
                     </div>
                     <div class="space-y-0.5">
-                        <p class="font-medium text-muted-foreground">Status</p>
-                        <Badge :variant="statusVariant(viewingDispatch.status)" class="text-xs">
-                            {{ statusLabel(viewingDispatch.status) }}
-                        </Badge>
+                        <p class="font-semibold uppercase tracking-widest text-slate-400">Status</p>
+                        <span
+                            :class="[
+                                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                                dispatchStatusClass(viewingDispatch.status),
+                            ]"
+                        >
+                            <span :class="['h-1.5 w-1.5 rounded-full', dispatchStatusDot(viewingDispatch.status)]" />
+                            {{ humanize(viewingDispatch.status) }}
+                        </span>
                     </div>
                     <div class="space-y-0.5">
-                        <p class="font-medium text-muted-foreground">Arrived</p>
-                        <p class="font-semibold">{{ viewingDispatch.arrived_at_formatted ?? '—' }}</p>
+                        <p class="font-semibold uppercase tracking-widest text-slate-400">Arrived</p>
+                        <p class="font-semibold text-slate-800">{{ viewingDispatch.arrived_at_formatted ?? '—' }}</p>
                     </div>
                 </div>
 
                 <DialogFooter>
                     <Button
                         variant="outline"
-                        class="w-full"
+                        class="w-full rounded-lg"
                         @click="remarksViewOpen = false"
                     >
                         Close
@@ -1058,11 +1191,12 @@ watch(confirmDepartOpen, (open) => {
             </DialogContent>
         </Dialog>
 
+        <!-- ── Mark Departed Confirmation ───────────── -->
         <AlertDialog v-model:open="confirmDepartOpen">
-            <AlertDialogContent>
+            <AlertDialogContent class="rounded-2xl">
                 <form class="space-y-4" @submit.prevent="confirmDepart">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Mark dispatch as departed?</AlertDialogTitle>
+                        <AlertDialogTitle>Mark as Departed?</AlertDialogTitle>
                         <AlertDialogDescription>
                             <span class="block">
                                 This will record the departure time as <strong>now</strong>.
@@ -1074,17 +1208,18 @@ watch(confirmDepartOpen, (open) => {
                     </AlertDialogHeader>
 
                     <div class="space-y-4">
+                        <!-- Dispatch summary -->
                         <div
                             v-if="pendingDepartDispatch"
-                            class="rounded-lg border bg-muted/30 p-3 text-sm"
+                            class="rounded-lg border border-slate-200 bg-slate-50 p-3"
                         >
-                            <div class="font-medium">
+                            <p class="text-sm font-semibold text-slate-800">
                                 {{ pendingDepartDispatch.plate_number }}
-                            </div>
-                            <div class="text-xs text-muted-foreground">
+                            </p>
+                            <p class="text-xs text-slate-400">
                                 {{ pendingDepartDispatch.gate?.gate_name ?? '—' }} · Bay
                                 {{ pendingDepartDispatch.bay_number }}
-                            </div>
+                            </p>
                         </div>
 
                         <div class="space-y-2">
@@ -1103,12 +1238,16 @@ watch(confirmDepartOpen, (open) => {
                     <AlertDialogFooter>
                         <AlertDialogCancel
                             type="button"
+                            class="rounded-lg"
                             :disabled="departForm.processing"
                         >
                             Cancel
                         </AlertDialogCancel>
-
-                        <Button type="submit" :disabled="departForm.processing">
+                        <Button
+                            type="submit"
+                            :disabled="departForm.processing"
+                            class="rounded-lg border-0 bg-blue-700 text-white hover:bg-blue-800"
+                        >
                             {{ departForm.processing ? 'Saving…' : 'Confirm Departure' }}
                         </Button>
                     </AlertDialogFooter>

@@ -7,25 +7,6 @@ import SearchInput from '@/components/SearchInput.vue'
 import ExternalLayout from '@/layouts/ExternalLayout.vue'
 
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card'
-import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -33,6 +14,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Button } from '@/components/ui/button'
 import {
     Table,
     TableBody,
@@ -43,20 +25,20 @@ import {
 } from '@/components/ui/table'
 
 import {
+    Building2,
     Eye,
-    KeyRound,
     MoreHorizontal,
-    Pencil,
     Plus,
     Power,
-    Trash2,
-    UserSquare2,
-    Users,
-    TruckIcon,
     Radio,
-    Building2,
+    TruckIcon,
+    UserCog,
+    Users,
 } from 'lucide-vue-next'
 
+/* ======================================================
+   Types
+====================================================== */
 type Company = {
     id: number
     company_name: string
@@ -105,6 +87,9 @@ type PaginatedUsers = {
     links: PaginationLink[]
 }
 
+/* ======================================================
+   Props
+====================================================== */
 const props = defineProps<{
     company: Company
     user: AuthUser
@@ -118,11 +103,12 @@ const props = defineProps<{
     statuses: string[]
 }>()
 
+/* ======================================================
+   Helpers
+====================================================== */
 function humanize(value?: string | null) {
     if (!value) return '—'
-    return value
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, (char) => char.toUpperCase())
+    return value.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
 function formatDate(value?: string | null) {
@@ -140,15 +126,29 @@ function roleName(employee: EmployeeUser) {
 
 function roleClass(employee: EmployeeUser) {
     const role = roleName(employee).toLowerCase()
-    if (role === 'driver')     return 'bg-sky-100 text-sky-700 border-sky-200 font-medium'
-    if (role === 'dispatcher') return 'bg-violet-100 text-violet-700 border-violet-200 font-medium'
+    if (role === 'driver')     return 'bg-sky-100 text-sky-700 border-sky-200'
+    if (role === 'dispatcher') return 'bg-violet-100 text-violet-700 border-violet-200'
     return 'bg-slate-100 text-slate-500 border-0'
 }
 
+function roleIconBg(employee: EmployeeUser) {
+    const role = roleName(employee).toLowerCase()
+    if (role === 'driver')     return 'bg-sky-100'
+    if (role === 'dispatcher') return 'bg-violet-100'
+    return 'bg-blue-100'
+}
+
+function roleIconColor(employee: EmployeeUser) {
+    const role = roleName(employee).toLowerCase()
+    if (role === 'driver')     return 'text-sky-700'
+    if (role === 'dispatcher') return 'text-violet-700'
+    return 'text-blue-700'
+}
+
 function statusClass(status?: string | null) {
-    if (status === 'active')    return 'bg-emerald-100 text-emerald-700 border-emerald-200 font-medium'
-    if (status === 'pending')   return 'bg-amber-100 text-amber-700 border-amber-200 font-medium'
-    if (status === 'suspended') return 'bg-rose-100 text-rose-600 border-rose-200 font-medium'
+    if (status === 'active')    return 'bg-emerald-100 text-emerald-700 border-emerald-200'
+    if (status === 'pending')   return 'bg-amber-100 text-amber-700 border-amber-200'
+    if (status === 'suspended') return 'bg-rose-100 text-rose-600 border-rose-200'
     if (status === 'inactive')  return 'bg-slate-100 text-slate-500 border-0'
     return 'bg-slate-100 text-slate-500 border-0'
 }
@@ -160,19 +160,9 @@ function statusDot(status?: string | null) {
     return 'bg-slate-400'
 }
 
-function toggleStatusLabel(status?: string | null) {
-    if (status === 'active')    return 'Set Inactive'
-    if (status === 'inactive')  return 'Set Active'
-    if (status === 'pending')   return 'Activate Account'
-    if (status === 'suspended') return 'Set Active'
-    return 'Update Status'
-}
-
-function toggleStatusClass(status?: string | null) {
-    if (status === 'active') return 'text-rose-600 focus:text-rose-600 focus:bg-rose-50'
-    return 'text-emerald-700 focus:text-emerald-700 focus:bg-emerald-50'
-}
-
+/* ======================================================
+   Computed stats
+====================================================== */
 const totalEmployees = computed(() => props.users.total ?? 0)
 
 const totalDrivers = computed(() =>
@@ -186,38 +176,6 @@ const totalDispatchers = computed(() =>
 const activeCount = computed(() =>
     props.users.data.filter((e) => e.status === 'active').length,
 )
-
-const deleteDialog = reactive({ open: false, employee: null as EmployeeUser | null })
-const statusDialog = reactive({ open: false, employee: null as EmployeeUser | null })
-const resetPasswordDialog = reactive({ open: false, employee: null as EmployeeUser | null })
-
-function openDeleteDialog(employee: EmployeeUser) { deleteDialog.employee = employee; deleteDialog.open = true }
-function openStatusDialog(employee: EmployeeUser) { statusDialog.employee = employee; statusDialog.open = true }
-function openResetPasswordDialog(employee: EmployeeUser) { resetPasswordDialog.employee = employee; resetPasswordDialog.open = true }
-
-function confirmDelete() {
-    if (!deleteDialog.employee) return
-    router.delete(`/employee-users/${deleteDialog.employee.id}`, {
-        preserveScroll: true,
-        onSuccess: () => { deleteDialog.open = false; deleteDialog.employee = null },
-    })
-}
-
-function confirmToggleStatus() {
-    if (!statusDialog.employee) return
-    router.patch(`/employee-users/${statusDialog.employee.id}/toggle-status`, {}, {
-        preserveScroll: true,
-        onSuccess: () => { statusDialog.open = false; statusDialog.employee = null },
-    })
-}
-
-function confirmResetPassword() {
-    if (!resetPasswordDialog.employee) return
-    router.patch(`/employee-users/${resetPasswordDialog.employee.id}/reset-password`, {}, {
-        preserveScroll: true,
-        onSuccess: () => { resetPasswordDialog.open = false; resetPasswordDialog.employee = null },
-    })
-}
 </script>
 
 <template>
@@ -227,19 +185,24 @@ function confirmResetPassword() {
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
 
-                <!-- ── Page header ─────────────────────────────────────── -->
+                <!-- ── Page header ───────────────────────────── -->
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
                             <Building2 class="h-3.5 w-3.5" />
                             {{ company.company_code ?? company.company_name }}
                         </div>
-                        <h1 class="text-2xl font-bold tracking-tight text-slate-900">Employee Accounts</h1>
-                        <p class="text-sm text-slate-500">Manage drivers and dispatchers for your company.</p>
+                        <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+                            Employee Accounts
+                        </h1>
+                        <p class="text-sm text-slate-500">
+                            Manage drivers and dispatchers for your company.
+                        </p>
                     </div>
+
                     <Button
                         as-child
-                        class="shrink-0 bg-blue-700 text-white hover:bg-blue-800 border-0 shadow-sm gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all"
+                        class="shrink-0 self-start gap-2 rounded-lg border-0 bg-blue-700 text-sm font-semibold text-white shadow-sm hover:bg-blue-800"
                     >
                         <Link href="/employee-users/create">
                             <Plus class="h-4 w-4" />
@@ -248,55 +211,65 @@ function confirmResetPassword() {
                     </Button>
                 </div>
 
-                <!-- ── Stat cards ────────────────────────────────────────── -->
-                <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
-
-                    <!-- Total -->
+                <!-- ── Stats ─────────────────────────────────── -->
+                <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
                     <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700">
                             <Users class="h-4 w-4 text-white" />
                         </div>
-                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Total</p>
-                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">{{ totalEmployees }}</p>
+                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            Total
+                        </p>
+                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">
+                            {{ totalEmployees }}
+                        </p>
                     </div>
 
-                    <!-- Drivers -->
                     <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600">
                             <TruckIcon class="h-4 w-4 text-white" />
                         </div>
-                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Drivers</p>
-                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">{{ totalDrivers }}</p>
+                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            Drivers
+                        </p>
+                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">
+                            {{ totalDrivers }}
+                        </p>
                     </div>
 
-                    <!-- Dispatchers -->
                     <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-violet-600">
                             <Radio class="h-4 w-4 text-white" />
                         </div>
-                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Dispatchers</p>
-                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">{{ totalDispatchers }}</p>
+                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            Dispatchers
+                        </p>
+                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">
+                            {{ totalDispatchers }}
+                        </p>
                     </div>
 
-                    <!-- Active -->
                     <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600">
                             <Power class="h-4 w-4 text-white" />
                         </div>
-                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Active</p>
-                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">{{ activeCount }}</p>
+                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            Active
+                        </p>
+                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">
+                            {{ activeCount }}
+                        </p>
                     </div>
-
                 </div>
 
-                <!-- ── Employee table ────────────────────────────────────── -->
+                <!-- ── Table card ─────────────────────────────── -->
                 <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
-
-                    <!-- Table header / search -->
                     <div class="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 class="text-base font-semibold text-slate-800">Employee List</h2>
-                            <p class="text-xs text-slate-400 mt-0.5">Search by name, username, email, or phone.</p>
+                            <p class="mt-0.5 text-xs text-slate-400">
+                                Search by name, username, email, or phone.
+                            </p>
                         </div>
                         <div class="sm:w-72">
                             <SearchInput
@@ -308,18 +281,31 @@ function confirmResetPassword() {
                         </div>
                     </div>
 
-                    <!-- Table -->
                     <div class="overflow-x-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow class="border-slate-100 bg-slate-50/70 hover:bg-slate-50/70">
-                                    <TableHead class="pl-5 text-[11px] font-bold uppercase tracking-widest text-slate-400">Username</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Employee</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Role</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Status</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Phone</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Created</TableHead>
-                                    <TableHead class="pr-5 text-right text-[11px] font-bold uppercase tracking-widest text-slate-400">Actions</TableHead>
+                                    <TableHead class="pl-5 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        Username
+                                    </TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        Employee
+                                    </TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        Role
+                                    </TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        Status
+                                    </TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        Phone
+                                    </TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        Created
+                                    </TableHead>
+                                    <TableHead class="pr-5 text-right text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                                        Actions
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
 
@@ -332,8 +318,12 @@ function confirmResetPassword() {
                                                 <Users class="h-6 w-6 text-slate-400" />
                                             </div>
                                             <div>
-                                                <p class="text-sm font-semibold text-slate-600">No employees found</p>
-                                                <p class="text-xs text-slate-400 mt-0.5">Try adjusting your search.</p>
+                                                <p class="text-sm font-semibold text-slate-600">
+                                                    No employees found
+                                                </p>
+                                                <p class="mt-0.5 text-xs text-slate-400">
+                                                    Try adjusting your search.
+                                                </p>
                                             </div>
                                         </div>
                                     </TableCell>
@@ -346,7 +336,7 @@ function confirmResetPassword() {
                                 >
                                     <!-- Username -->
                                     <TableCell class="pl-5">
-                                        <span class="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-700">
+                                        <span class="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold tracking-wide text-slate-700">
                                             {{ employee.username }}
                                         </span>
                                     </TableCell>
@@ -354,33 +344,58 @@ function confirmResetPassword() {
                                     <!-- Employee info -->
                                     <TableCell>
                                         <div class="flex items-center gap-2.5">
-                                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-xs font-bold uppercase">
+                                            <div
+                                                :class="[
+                                                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold uppercase',
+                                                    roleIconBg(employee),
+                                                    roleIconColor(employee),
+                                                ]"
+                                            >
                                                 {{ employee.name.charAt(0) }}
                                             </div>
                                             <div>
-                                                <p class="text-sm font-semibold text-slate-800">{{ employee.name }}</p>
-                                                <p class="text-xs text-slate-400">{{ employee.email || '—' }}</p>
+                                                <p class="text-sm font-semibold text-slate-800">
+                                                    {{ employee.name }}
+                                                </p>
+                                                <p class="text-xs text-slate-400">
+                                                    {{ employee.email || '—' }}
+                                                </p>
                                             </div>
                                         </div>
                                     </TableCell>
 
                                     <!-- Role -->
                                     <TableCell>
-                                        <Badge :class="['rounded-full border px-2.5 py-0.5 text-xs', roleClass(employee)]">
+                                        <span
+                                            :class="[
+                                                'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                                                roleClass(employee),
+                                            ]"
+                                        >
                                             {{ humanize(roleName(employee)) }}
-                                        </Badge>
+                                        </span>
                                     </TableCell>
 
                                     <!-- Status -->
                                     <TableCell>
-                                        <span :class="['inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs', statusClass(employee.status)]">
-                                            <span :class="['h-1.5 w-1.5 rounded-full', statusDot(employee.status)]" />
+                                        <span
+                                            :class="[
+                                                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                                                statusClass(employee.status),
+                                            ]"
+                                        >
+                                            <span
+                                                :class="[
+                                                    'h-1.5 w-1.5 rounded-full',
+                                                    statusDot(employee.status),
+                                                ]"
+                                            />
                                             {{ humanize(employee.status) }}
                                         </span>
                                     </TableCell>
 
                                     <!-- Phone -->
-                                    <TableCell class="text-sm text-slate-500 tabular-nums">
+                                    <TableCell class="text-sm tabular-nums text-slate-500">
                                         {{ employee.phone_number || '—' }}
                                     </TableCell>
 
@@ -402,13 +417,20 @@ function confirmResetPassword() {
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent align="end" class="w-52 rounded-xl shadow-lg border-slate-200">
+                                            <DropdownMenuContent
+                                                align="end"
+                                                class="w-56 rounded-xl border-slate-200 shadow-lg"
+                                            >
                                                 <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-slate-400">
                                                     Actions
                                                 </DropdownMenuLabel>
+
                                                 <DropdownMenuSeparator class="bg-slate-100" />
 
-                                                <DropdownMenuItem as-child class="rounded-lg text-slate-700 focus:text-blue-700 focus:bg-blue-50">
+                                                <DropdownMenuItem
+                                                    as-child
+                                                    class="rounded-lg text-slate-700 focus:bg-blue-50 focus:text-blue-700"
+                                                >
                                                     <Link :href="`/employee-users/${employee.id}`">
                                                         <Eye class="mr-2 h-4 w-4" />
                                                         View Profile
@@ -437,6 +459,16 @@ function confirmResetPassword() {
                                                     <KeyRound class="mr-2 h-4 w-4" />
                                                     Reset Password
                                                 </DropdownMenuItem>
+
+                                                <DropdownMenuSeparator class="bg-slate-100" />
+
+                                                <DropdownMenuItem
+                                                    class="rounded-lg text-rose-600 focus:text-rose-600 focus:bg-rose-50"
+                                                    @click="openDeleteDialog(employee)"
+                                                >
+                                                    <Trash2 class="mr-2 h-4 w-4" />
+                                                    Delete Account
+                                                </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>
@@ -460,76 +492,5 @@ function confirmResetPassword() {
 
             </div>
         </div>
-
-        <!-- ── Status dialog ─────────────────────────────────────────── -->
-        <AlertDialog v-model:open="statusDialog.open">
-            <AlertDialogContent class="rounded-2xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>{{ toggleStatusLabel(statusDialog.employee?.status) }}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This will update the account status of
-                        <span class="font-semibold text-slate-800">{{ statusDialog.employee?.name || 'this employee' }}</span>.
-                        Are you sure you want to continue?
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg" @click="statusDialog.employee = null">Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                        class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0"
-                        @click="confirmToggleStatus"
-                    >
-                        Confirm
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-
-        <!-- ── Reset password dialog ─────────────────────────────────── -->
-        <AlertDialog v-model:open="resetPasswordDialog.open">
-            <AlertDialogContent class="rounded-2xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Reset employee password?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        The password for
-                        <span class="font-semibold text-slate-800">{{ resetPasswordDialog.employee?.name || 'this employee' }}</span>
-                        will be reset to
-                        <code class="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-mono font-semibold text-slate-700">pitx@123</code>.
-                        They should change it on next login.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg" @click="resetPasswordDialog.employee = null">Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                        class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0"
-                        @click="confirmResetPassword"
-                    >
-                        Reset Password
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-
-        <!-- ── Delete dialog ─────────────────────────────────────────── -->
-        <AlertDialog v-model:open="deleteDialog.open">
-            <AlertDialogContent class="rounded-2xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Delete employee account?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        <span class="font-semibold text-slate-800">{{ deleteDialog.employee?.name || 'This employee' }}</span>
-                        will be permanently removed from your employee list. This action cannot be undone.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg" @click="deleteDialog.employee = null">Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                        class="rounded-lg bg-rose-600 text-white hover:bg-rose-700 border-0"
-                        @click="confirmDelete"
-                    >
-                        Delete Account
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-
     </ExternalLayout>
 </template>
