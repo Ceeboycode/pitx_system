@@ -11,6 +11,7 @@ use App\Http\Controllers\Crm\CrmMessageAttachmentController;
 use App\Http\Controllers\Crm\CrmMessageController;
 use App\Http\Controllers\Crm\CrmThreadController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DispatchChangeRequestController;
 use App\Http\Controllers\DispatchController;
 use App\Http\Controllers\ForcePasswordController;
 use App\Http\Controllers\GateController;
@@ -191,6 +192,15 @@ Route::middleware(['auth', 'role.type:external'])->group(function () {
 
         Route::patch('company/dispatches/{dispatch}/depart', [DispatchController::class, 'depart'])
             ->name('company.dispatches.depart');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Dispatch Change Requests
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post('company/dispatches/{dispatch}/change-requests', [DispatchChangeRequestController::class, 'store'])
+            ->name('company.dispatches.change-requests.store');
     });
 });
 
@@ -336,6 +346,15 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required'])->g
     Route::delete('vehicles/{vehicle}/force-delete', [VehicleController::class, 'forceDelete'])->withTrashed()->name('vehicles.forceDelete');
 
     Route::resource('dispatches', InternalDispatchController::class);
+
+    Route::get('dispatch-change-requests', [DispatchChangeRequestController::class, 'index'])
+        ->name('dispatch-change-requests.index');
+
+    Route::post('dispatch-change-requests/{changeRequest}/approve', [DispatchChangeRequestController::class, 'approve'])
+        ->name('dispatch-change-requests.approve');
+
+    Route::post('dispatch-change-requests/{changeRequest}/reject', [DispatchChangeRequestController::class, 'reject'])
+        ->name('dispatch-change-requests.reject');
 
     Route::get('faq', fn () => Inertia::render('FAQ'))->name('faq');
 });
