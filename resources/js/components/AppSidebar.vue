@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { Link } from '@inertiajs/vue3'
+import { Link } from '@inertiajs/vue3';
 import {
     BookOpen,
     Building2,
-    User,
     BusFront,
-    House,
-    MessageCircleQuestion,
-    LayoutList,
     Headset,
-} from 'lucide-vue-next'
+    House,
+    LayoutList,
+    MessageCircleQuestion,
+    User,
+} from 'lucide-vue-next';
+import { computed } from 'vue';
 
-import NavFooter from '@/components/NavFooter.vue'
-import NavMain from '@/components/NavMain.vue'
-import NavUser from '@/components/NavUser.vue'
-import NotificationDropdown from '@/components/NotificationDropdown.vue'
+import NavFooter from '@/components/NavFooter.vue';
+import NavMain from '@/components/NavMain.vue';
+import NavUser from '@/components/NavUser.vue';
+import NotificationDropdown from '@/components/NotificationDropdown.vue';
 import {
     Sidebar,
     SidebarContent,
@@ -24,42 +24,42 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-} from '@/components/ui/sidebar'
-import AppLogo from './AppLogo.vue'
-import { can } from '@/lib/can'
+} from '@/components/ui/sidebar';
+import { can } from '@/lib/can';
+import AppLogo from './AppLogo.vue';
 
 // Wayfinder routes
-import { dashboard } from '@/routes'
-import { index as crmIndex } from '@/routes/crm/threads'
-import { index as usersIndex } from '@/routes/users'
-import { index as rolesIndex } from '@/routes/roles'
-import { index as companiesIndex } from '@/routes/companies'
-import { index as routesIndex } from '@/routes/routes'
-import { index as gateIndex } from '@/routes/gates'
-import { index as vehiclesIndex } from '@/routes/vehicles'
-import NotificationController from '@/actions/App/Http/Controllers/NotificationController'
-import InternalDispatchController from '@/actions/App/Http/Controllers/InternalDispatchController'
+import { index as changeRequestsIndex } from '@/actions/App/Http/Controllers/DispatchChangeRequestController';
+import { index as dispatchesIndex } from '@/actions/App/Http/Controllers/InternalDispatchController';
+import { dashboard } from '@/routes';
+import { index as companiesIndex } from '@/routes/companies';
+import { index as crmIndex } from '@/routes/crm/threads';
+import { index as gateIndex } from '@/routes/gates';
+import { index as rolesIndex } from '@/routes/roles';
+import { index as routesIndex } from '@/routes/routes';
+import { index as usersIndex } from '@/routes/users';
+import { index as vehiclesIndex } from '@/routes/vehicles';
 
 export interface Item {
-    id: string
-    title: string
-    href: string
-    permission?: string
+    id: string;
+    title: string;
+    href: string;
+    permission?: string;
 }
 
 export interface NavItem {
-    id: string
-    title: string
-    href: string
-    icon: any
-    permission?: string
-    items: Item[]
+    id: string;
+    title: string;
+    href: string;
+    icon: any;
+    permission?: string;
+    items: Item[];
 }
 
 export interface NavFooterItem {
-    title: string
-    href: string
-    icon: any
+    title: string;
+    href: string;
+    icon: any;
 }
 
 const mainNavItems: NavItem[] = [
@@ -152,21 +152,28 @@ const mainNavItems: NavItem[] = [
             {
                 id: 'dispatches',
                 title: 'Dispatches',
-                href: InternalDispatchController.index().url,
+                href: dispatchesIndex().url,
+            },
+            {
+                id: 'change-requests',
+                title: 'Change Requests',
+                href: changeRequestsIndex().url,
             },
         ],
     },
-]
+];
 
 const visibleMainNavItems = computed(() =>
     mainNavItems
         .filter((item) => !item.permission || can(item.permission))
         .map((item) => ({
             ...item,
-            items: item.items.filter((sub) => !sub.permission || can(sub.permission)),
+            items: item.items.filter(
+                (sub) => !sub.permission || can(sub.permission),
+            ),
         }))
         .filter((item) => item.items.length > 0),
-)
+);
 
 const footerNavItems: NavFooterItem[] = [
     {
@@ -184,7 +191,7 @@ const footerNavItems: NavFooterItem[] = [
         href: '#',
         icon: BookOpen,
     },
-]
+];
 </script>
 
 <template>
@@ -205,9 +212,13 @@ const footerNavItems: NavFooterItem[] = [
             </SidebarMenu>
 
             <div class="px-2 pb-3">
-                <div class="flex items-center justify-between rounded-xl border bg-background px-3 py-2">
+                <div
+                    class="flex items-center justify-between rounded-xl border bg-background px-3 py-2"
+                >
                     <div class="min-w-0 group-data-[collapsible=icon]:hidden">
-                        <p class="truncate text-sm font-semibold">Notifications</p>
+                        <p class="truncate text-sm font-semibold">
+                            Notifications
+                        </p>
                         <p class="truncate text-xs text-muted-foreground">
                             Internal alerts and updates
                         </p>

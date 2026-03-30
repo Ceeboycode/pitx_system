@@ -6,10 +6,12 @@ use App\Http\Requests\Dispatch\DepartDispatchRequest;
 use App\Http\Requests\Dispatch\StoreDispatchRequest;
 use App\Http\Requests\Dispatch\UpdateDispatchRequest;
 use App\Models\Dispatch;
+use App\Models\DispatchChangeRequest;
 use App\Models\Gate;
 use App\Models\Route;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Services\DriverAssignmentValidator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -207,6 +209,34 @@ class DispatchController extends Controller
                 'status' => $status,
                 'date' => $date ?: null,
             ],
+            'changeRequests' => DispatchChangeRequest::whereHas('dispatch', function ($q) use ($company) {
+                $q->where('company_id', $company->id);
+            })
+                ->with(['dispatch:id,plate_number,status', 'requestedBy:id,name,email'])
+                ->latest()
+                ->get()
+                ->map(fn ($req) => [
+                    'id' => $req->id,
+                    'dispatch_id' => $req->dispatch_id,
+                    'dispatch' => [
+                        'id' => $req->dispatch->id,
+                        'plate_number' => $req->dispatch->plate_number,
+                        'status' => $req->dispatch->status,
+                    ],
+                    'requested_by' => [
+                        'id' => $req->requestedBy->id,
+                        'name' => $req->requestedBy->name,
+                        'email' => $req->requestedBy->email,
+                    ],
+                    'requested_field' => $req->requested_field,
+                    'old_value' => $req->old_value,
+                    'requested_value' => $req->requested_value,
+                    'reason' => $req->reason,
+                    'status' => $req->status,
+                    'rejection_reason' => $req->rejection_reason,
+                    'field_label' => $req->field_label,
+                    'created_at' => $req->created_at?->toIso8601String(),
+                ]),
         ]);
     }
 
@@ -361,11 +391,17 @@ class DispatchController extends Controller
             : null;
 
         if ($driverId) {
-            User::query()
+            $driver = User::query()
                 ->where('company_id', $company->id)
                 ->where('status', 'active')
                 ->whereHas('roles', fn ($query) => $query->where('name', 'driver'))
                 ->findOrFail($driverId);
+
+            // Validate driver availability
+            $validator = new DriverAssignmentValidator();
+            if (!$validator->canAssignToday($driver, now())) {
+                return back()->with('error', $validator->getValidationMessage($driver, now()));
+            }
         }
 
         Dispatch::create([
@@ -417,11 +453,17 @@ class DispatchController extends Controller
             : null;
 
         if ($driverId) {
-            User::query()
+            $driver = User::query()
                 ->where('company_id', $company->id)
                 ->where('status', 'active')
                 ->whereHas('roles', fn ($query) => $query->where('name', 'driver'))
                 ->findOrFail($driverId);
+
+            // Validate driver availability (exclude current dispatch)
+            $validator = new DriverAssignmentValidator();
+            if (!$validator->canAssignToday($driver, now(), $dispatch)) {
+                return back()->with('error', $validator->getValidationMessage($driver, now()));
+            }
         }
 
         $dispatch->update([
