@@ -291,6 +291,9 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required'])->g
         Route::get('/', [CompanyController::class, 'index'])->name('index');
         Route::get('create', [CompanyController::class, 'create'])->name('create');
         Route::post('/', [CompanyController::class, 'store'])->name('store');
+        Route::get('archived/{company}', [CompanyController::class, 'archivedShow'])
+            ->withTrashed()
+            ->name('archived.show');
         Route::get('{company}', [CompanyController::class, 'show'])->name('show');
         Route::get('{company}/edit', [CompanyController::class, 'edit'])->name('edit');
         Route::put('{company}', [CompanyController::class, 'update'])->name('update');

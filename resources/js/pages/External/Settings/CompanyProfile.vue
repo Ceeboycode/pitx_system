@@ -2,6 +2,7 @@
 import { Head, useForm } from '@inertiajs/vue3'
 import { computed, ref, watch } from 'vue'
 
+import CompanyLogo from '@/components/company/CompanyLogo.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -57,15 +58,12 @@ const removeForm  = useForm({})
 const logoInputRef = ref<HTMLInputElement | null>(null)
 
 const preview    = ref<string | null>(props.company.logo_url ?? null)
-const imgError   = ref(false)
 const isDragging = ref(false)
 
 watch(() => props.company.logo_url, (val) => {
     preview.value = val ?? null
-    imgError.value = false
 })
 
-const showCurrentImage = computed(() => !!preview.value && !imgError.value)
 const hasPendingUpload = computed(() => !!logoForm.logo)
 
 const companyInitials = computed(() =>
@@ -78,7 +76,6 @@ const companyInitials = computed(() =>
 function pickFile(file: File) {
     if (!file.type.match(/image\/(jpeg|png|webp)/)) return
     logoForm.logo = file
-    imgError.value = false
     const reader = new FileReader()
     reader.onload = (e) => { preview.value = e.target?.result as string }
     reader.readAsDataURL(file)
@@ -98,7 +95,6 @@ function handleDrop(e: DragEvent) {
 function clearSelection() {
     logoForm.logo = null
     preview.value = props.company.logo_url ?? null
-    imgError.value = false
     if (logoInputRef.value) logoInputRef.value.value = ''
 }
 
@@ -180,26 +176,17 @@ function statusDot(status?: string | null) {
 
                             <!-- Logo preview -->
                             <div class="flex flex-col items-center gap-2">
-                                <div
-                                    class="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border-2 bg-muted shadow-sm transition-colors"
-                                    :class="hasPendingUpload ? 'border-primary/60' : 'border-border'"
-                                >
-                                    <img
-                                        v-if="showCurrentImage"
-                                        :src="preview!"
+                                <div class="relative">
+                                    <CompanyLogo
+                                        :src="preview"
                                         :alt="company.company_name"
-                                        class="h-full w-full object-cover"
-                                        @error="imgError = true"
+                                        :initials="companyInitials"
+                                        :class="[
+                                            'h-24 w-24 shrink-0 rounded-2xl border-2 shadow-sm transition-colors',
+                                            hasPendingUpload ? '!border-primary/60 ring-2 ring-primary/10' : '',
+                                        ]"
+                                        text-class="select-none text-2xl font-bold"
                                     />
-                                    <div
-                                        v-else
-                                        class="flex h-full w-full items-center justify-center bg-primary/10"
-                                    >
-                                        <span class="select-none text-2xl font-bold text-primary">
-                                            {{ companyInitials }}
-                                        </span>
-                                    </div>
-
                                     <div
                                         v-if="hasPendingUpload"
                                         class="absolute bottom-1 right-1 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-semibold leading-none text-primary-foreground"

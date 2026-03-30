@@ -1,9 +1,8 @@
 <script setup lang="ts">
-/* ======================================================
-   Shared UI
-====================================================== */
 import InertiaPagination from '@/components/InertiaPagination.vue';
-import SearchInput from '@/components/SearchInput.vue';
+import ListFilters from '@/components/ListFilters.vue';
+import SortDirectionControl from '@/components/filters/SortDirectionControl.vue';
+import { useSortableIndex } from '@/composables/useSortableIndex';
 
 /* shadcn-vue */
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
+    CardAction,
     CardDescription,
     CardHeader,
     CardTitle,
@@ -24,29 +24,17 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import {
     Table,
     TableBody,
-    TableCaption,
     TableCell,
     TableHead,
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
 
-/* ======================================================
-   Layout, Routing & Inertia
-====================================================== */
 import AppLayout from '@/layouts/AppLayout.vue';
 import {
     create,
-    destroy,
     edit,
     index,
     resetPassword,
@@ -56,9 +44,6 @@ import {
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 
-/* ======================================================
-   Icons
-====================================================== */
 import {
     Download,
     Eye,
@@ -67,29 +52,19 @@ import {
     Pencil,
     Plus,
     Power,
-    Trash2,
     Upload,
+    UserSearch,
 } from 'lucide-vue-next';
 
-/* ======================================================
-   Vue Core
-====================================================== */
 import { computed } from 'vue';
 
-/* ======================================================
-   Permissions
-====================================================== */
 import { can } from '@/lib/can';
 
 const canCreate    = can('users.create');
 const canUpdate    = can('users.update');
-const canDelete    = can('users.delete');
 const canToggle    = can('users.toggleStatus');
 const canResetPass = can('users.resetPassword');
 
-/* ======================================================
-   Types
-====================================================== */
 interface Role {
     id: number;
     name: string;
@@ -115,14 +90,8 @@ interface User {
     status: 'active' | 'inactive' | string;
 }
 
-/* ======================================================
-   Breadcrumbs
-====================================================== */
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Users', href: index().url }];
 
-/* ======================================================
-   Props
-====================================================== */
 const props = defineProps<{
     users: {
         data: User[];
@@ -133,47 +102,106 @@ const props = defineProps<{
     };
     filters: {
         search?: string | null;
-        type?: string | null;
-        status?: string | null;
+        type?: string | 'internal';
+        status?: string | 'active';
+        sort?: string | null;
+        direction?: string | null;
     };
     statuses?: string[];
     canSeeSuperAdmin?: boolean;
 }>();
 
-/* ======================================================
-   Filters
-====================================================== */
-function applyFilters(type: string | null, status: string | null) {
-    router.get(
-        index().url,
-        {
-            search: props.filters.search ?? '',
-            type,
-            status,
-        },
-        {
-            preserveScroll: true,
-            only: ['users', 'filters', 'statuses', 'flash'],
-        },
-    );
+function formatFilterLabel(value: string) {
+    return value
+        .split('_')
+        .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+        .join(' ');
 }
 
-/* ======================================================
-   Computed
-====================================================== */
-const showCompanyColumn = computed(() => props.filters.type !== 'internal');
+const sortOptions = [
+    { label: 'Name', value: 'name' },
+    { label: 'Username', value: 'username' },
+    { label: 'Email', value: 'email' },
+] as const;
 
-/* ======================================================
-   Badge helpers
-====================================================== */
+const userFilters = computed(() => [
+    {
+        key: 'type',
+        value: props.filters.type ?? 'internal',
+        placeholder: 'User Type',
+        allLabel: 'All Types',
+        allValue: 'all',
+        desktopWidthClass: 'w-36',
+        desktopMaxWidth: '9rem',
+        options: [
+            { label: 'Internal', value: 'internal' },
+            { label: 'External', value: 'external' },
+        ],
+    },
+    {
+        key: 'status',
+        value: props.filters.status ?? 'active',
+        placeholder: 'Status',
+        allLabel: 'All Status',
+        allValue: 'all',
+        desktopWidthClass: 'w-36',
+        desktopMaxWidth: '9rem',
+        options: (props.statuses ?? ['active', 'inactive']).map((status) => ({
+            label: formatFilterLabel(status),
+            value: status,
+        })),
+    },
+]);
+
+const showCompanyColumn = computed(() => props.filters.type !== 'internal');
+const baseQuery = computed(() => ({
+    search: props.filters.search ?? '',
+    type: props.filters.type ?? 'internal',
+    status: props.filters.status ?? 'active',
+}));
+const {
+    currentSort,
+    currentDirection,
+    applySort,
+    toggleDirection,
+} = useSortableIndex({
+    route: index().url,
+    baseQuery,
+    sort: computed(() => props.filters.sort ?? 'name'),
+    direction: computed(() => props.filters.direction ?? 'asc'),
+    only: ['users', 'filters', 'statuses', 'flash'],
+});
+
+function roleBadgeVariant(role: Role) {
+    switch (role.type) {
+        case 'internal':
+            return 'info';
+        case 'external':
+            return 'success';
+        default:
+            return 'secondary';
+    }
+}
+
 function roleBadgeClass(role: Role) {
     switch (role.type) {
         case 'internal':
-            return 'border-blue-200 bg-blue-100 text-blue-700';
+            return 'border-sky-200 bg-sky-100 text-sky-700';
         case 'external':
             return 'border-emerald-200 bg-emerald-100 text-emerald-700';
         default:
-            return 'bg-muted text-muted-foreground';
+            return '';
+    }
+}
+
+function statusBadgeVariant(status: string) {
+    switch (status) {
+        case 'active':
+            return 'success';
+        case 'inactive':
+            return 'destructive';
+        default:
+            return 'secondary';
     }
 }
 
@@ -182,15 +210,19 @@ function statusBadgeClass(status: string) {
         case 'active':
             return 'border-emerald-200 bg-emerald-100 text-emerald-700';
         case 'inactive':
-            return 'border-red-200 bg-red-100 text-red-700';
+            return 'border-rose-200 bg-rose-100 text-rose-700';
         default:
-            return 'bg-muted text-muted-foreground';
+            return '';
     }
+}
+
+function emailVerificationBadgeVariant(emailVerifiedAt: string | null) {
+    return emailVerifiedAt ? 'info' : 'warning';
 }
 
 function emailVerificationBadgeClass(emailVerifiedAt: string | null) {
     return emailVerifiedAt
-        ? 'border-blue-200 bg-blue-100 text-blue-700'
+        ? 'border-sky-200 bg-sky-100 text-sky-700'
         : 'border-amber-200 bg-amber-100 text-amber-700';
 }
 
@@ -198,9 +230,6 @@ function emailVerificationLabel(emailVerifiedAt: string | null) {
     return emailVerifiedAt ? 'Verified' : 'Not Verified';
 }
 
-/* ======================================================
-   Helpers
-====================================================== */
 function visibleRoles(user: User) {
     if (props.canSeeSuperAdmin) return user.roles;
     return user.roles.filter((role) => role.name !== 'super-admin');
@@ -210,9 +239,6 @@ function isActive(user: User) {
     return user.status === 'active';
 }
 
-/* ======================================================
-   Actions
-====================================================== */
 function handleToggleStatus(user: User) {
     const actionLabel = isActive(user) ? 'set inactive' : 'set active';
     if (!confirm(`Are you sure you want to ${actionLabel} ${user.name}?`)) return;
@@ -226,11 +252,6 @@ function handleResetPassword(user: User) {
     router.post(resetPassword(user.id).url, {}, { preserveScroll: true });
 }
 
-function handleDelete(user: User) {
-    if (!confirm(`Delete account for ${user.name}? This action cannot be undone.`)) return;
-
-    router.delete(destroy(user.id).url, { preserveScroll: true });
-}
 </script>
 
 <template>
@@ -238,102 +259,88 @@ function handleDelete(user: User) {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-            <Card class="mx-5">
+            <Card class="mx-10 mt-3">
                 <CardHeader>
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                            <CardTitle>Users</CardTitle>
-                            <CardDescription>
-                                Manage users, assign roles, and control access.
-                            </CardDescription>
-                        </div>
+                    <CardTitle>Users</CardTitle>
+                    <CardDescription>Manage users, assign roles, and control access.</CardDescription>
 
-                        <div class="flex items-center gap-2">
-                            <Select
-                                :model-value="props.filters.type ?? 'all'"
-                                @update:model-value="
-                                    (value) => {
-                                        const v = String(value);
-                                        applyFilters(v === 'all' ? null : v, props.filters.status ?? null);
-                                    }
-                                "
-                            >
-                                <SelectTrigger class="w-32">
-                                    <SelectValue placeholder="User Type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All</SelectItem>
-                                    <SelectItem value="internal">Internal</SelectItem>
-                                    <SelectItem value="external">External</SelectItem>
-                                </SelectContent>
-                            </Select>
-
-                            <Select
-                                :model-value="props.filters.status ?? 'all'"
-                                @update:model-value="
-                                    (value) => {
-                                        const v = String(value);
-                                        applyFilters(props.filters.type ?? null, v === 'all' ? null : v);
-                                    }
-                                "
-                            >
-                                <SelectTrigger class="w-32">
-                                    <SelectValue placeholder="Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
-                                </SelectContent>
-                            </Select>
-
-                            <Button v-if="canCreate" size="sm" as-child>
-                                <Link :href="create().url">
-                                    <Plus class="mr-2 h-4 w-4" />
-                                    Create User
-                                </Link>
-                            </Button>
-                        </div>
-                    </div>
+                    <CardAction>
+                        <Button v-if="canCreate" variant="default" size="sm" as-child>
+                            <Link :href="create().url">
+                                <Plus class="mr-1 h-4 w-4" />
+                                Create User
+                            </Link>
+                        </Button>
+                    </CardAction>
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="w-full max-w-sm">
-                            <SearchInput
-                                :route="`${index().url}?type=${props.filters.type ?? ''}&status=${props.filters.status ?? ''}`"
-                                :initial-value="props.filters.search"
-                                placeholder="Search users..."
-                                :only="['users', 'filters', 'statuses', 'flash']"
-                                :debounce="350"
+                    <ListFilters
+                        :route="index().url"
+                        :search="props.filters.search ?? ''"
+                        search-placeholder="Search users..."
+                        :only="['users', 'filters', 'statuses', 'flash']"
+                        :filters="userFilters"
+                        :query="{
+                            sort: currentSort,
+                            direction: currentDirection,
+                        }"
+                        mobile-inline-actions
+                    >
+                        <template #panel-actions>
+                            <SortDirectionControl
+                                :options="sortOptions"
+                                :value="currentSort"
+                                :direction="currentDirection"
+                                label="Sort users"
+                                @select="applySort"
+                                @toggle-direction="toggleDirection"
                             />
-                        </div>
+                        </template>
 
-                        <div class="flex gap-2 sm:justify-end">
-                            <Button size="sm" variant="outline">
-                                <Upload class="mr-2 h-4 w-4" />
-                                Import
-                            </Button>
-                            <Button size="sm" variant="outline">
-                                <Download class="mr-2 h-4 w-4" />
-                                Export
-                            </Button>
-                        </div>
-                    </div>
+                        <template #inline-actions>
+                            <div class="inline-flex overflow-hidden rounded-md border bg-background shadow-xs">
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    class="group gap-0 rounded-none border-0 shadow-none"
+                                >
+                                    <Upload class="h-4 w-4 shrink-0" />
+                                    <span
+                                        class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-500 group-hover:ml-2 group-hover:max-w-20 group-hover:opacity-100"
+                                    >
+                                        Import
+                                    </span>
+                                    <span class="sr-only">Import</span>
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    class="group gap-0 rounded-none border-0 border-l shadow-none"
+                                >
+                                    <Download class="h-4 w-4 shrink-0" />
+                                    <span
+                                        class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-500 group-hover:ml-2 group-hover:max-w-20 group-hover:opacity-100"
+                                    >
+                                        Export
+                                    </span>
+                                    <span class="sr-only">Export</span>
+                                </Button>
+                            </div>
+                        </template>
+                    </ListFilters>
 
                     <Table>
-                        <!-- <TableCaption>List of Users</TableCaption> -->
-
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Username</TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead>Email Verification</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead v-if="showCompanyColumn">Company</TableHead>
-                                <TableHead>Roles</TableHead>
-                                <TableHead class="w-[80px] text-right">Actions</TableHead>
+                                <TableHead class="data-table-head">Username</TableHead>
+                                <TableHead class="data-table-head">Name</TableHead>
+                                <TableHead class="data-table-head">Email</TableHead>
+                                <TableHead class="data-table-head">Email Verification</TableHead>
+                                <TableHead class="data-table-head">Status</TableHead>
+                                <TableHead v-if="showCompanyColumn" class="data-table-head">Company</TableHead>
+                                <TableHead class="data-table-head">Roles</TableHead>
+                                <TableHead class="data-table-head w-[80px] text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
 
@@ -349,8 +356,8 @@ function handleDelete(user: User) {
 
                                 <TableCell>
                                     <Badge
+                                        :variant="emailVerificationBadgeVariant(user.email_verified_at)"
                                         :class="emailVerificationBadgeClass(user.email_verified_at)"
-                                        class="border"
                                     >
                                         {{ emailVerificationLabel(user.email_verified_at) }}
                                     </Badge>
@@ -358,8 +365,8 @@ function handleDelete(user: User) {
 
                                 <TableCell>
                                     <Badge
-                                        :class="statusBadgeClass(user.status)"
-                                        class="border capitalize"
+                                        :variant="statusBadgeVariant(user.status)"
+                                        :class="['capitalize', statusBadgeClass(user.status)]"
                                     >
                                         {{ user.status }}
                                     </Badge>
@@ -378,8 +385,8 @@ function handleDelete(user: User) {
                                         <Badge
                                             v-for="role in visibleRoles(user)"
                                             :key="role.id"
+                                            :variant="roleBadgeVariant(role)"
                                             :class="roleBadgeClass(role)"
-                                            class="border"
                                         >
                                             {{ role.name }}
                                         </Badge>
@@ -393,7 +400,7 @@ function handleDelete(user: User) {
                                     </div>
                                 </TableCell>
 
-                                <TableCell class="text-right">
+                                <TableCell class="text-center">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger as-child>
                                             <Button variant="ghost" size="icon" class="h-8 w-8">
@@ -406,7 +413,6 @@ function handleDelete(user: User) {
                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                             <DropdownMenuSeparator />
 
-                                            <!-- View — always visible -->
                                             <DropdownMenuItem as-child>
                                                 <Link
                                                     :href="show(user.id).url"
@@ -417,7 +423,6 @@ function handleDelete(user: User) {
                                                 </Link>
                                             </DropdownMenuItem>
 
-                                            <!-- Edit -->
                                             <DropdownMenuItem v-if="canUpdate" as-child>
                                                 <Link
                                                     :href="edit(user.id).url"
@@ -428,7 +433,6 @@ function handleDelete(user: User) {
                                                 </Link>
                                             </DropdownMenuItem>
 
-                                            <!-- Toggle status -->
                                             <DropdownMenuItem
                                                 v-if="canToggle"
                                                 class="cursor-pointer"
@@ -438,7 +442,6 @@ function handleDelete(user: User) {
                                                 <span>{{ isActive(user) ? 'Set Inactive' : 'Set Active' }}</span>
                                             </DropdownMenuItem>
 
-                                            <!-- Reset password -->
                                             <DropdownMenuItem
                                                 v-if="canResetPass"
                                                 class="cursor-pointer"
@@ -446,18 +449,6 @@ function handleDelete(user: User) {
                                             >
                                                 <KeyRound class="mr-2 h-4 w-4" />
                                                 <span>Reset Password</span>
-                                            </DropdownMenuItem>
-
-                                            <DropdownMenuSeparator v-if="canDelete" />
-
-                                            <!-- Delete -->
-                                            <DropdownMenuItem
-                                                v-if="canDelete"
-                                                class="cursor-pointer text-red-600 focus:text-red-600"
-                                                @click="handleDelete(user)"
-                                            >
-                                                <Trash2 class="mr-2 h-4 w-4" />
-                                                <span>Delete Account</span>
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -467,9 +458,19 @@ function handleDelete(user: User) {
                             <TableRow v-if="props.users.data.length === 0">
                                 <TableCell
                                     :colspan="showCompanyColumn ? 8 : 7"
-                                    class="py-8 text-center text-sm text-muted-foreground"
+                                    class="py-20 text-center"
                                 >
-                                    No users found.
+                                    <div class="flex flex-col items-center gap-3">
+                                        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+                                            <UserSearch class="h-6 w-6 text-muted-foreground/40" />
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-semibold text-foreground">No users found</p>
+                                            <p class="mt-0.5 text-xs text-muted-foreground">
+                                                Try adjusting your search or filters.
+                                            </p>
+                                        </div>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         </TableBody>

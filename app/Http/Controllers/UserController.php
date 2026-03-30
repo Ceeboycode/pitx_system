@@ -24,8 +24,30 @@ class UserController extends Controller
         Gate::authorize('viewAny', User::class);
 
         $search = $request->input('search');
-        $type   = $request->input('type');
-        $status = $request->input('status');
+        $selectedType = $request->input('type', 'internal');
+        $selectedStatus = $request->input('status', 'active');
+        $sort   = $request->input('sort', 'name');
+        $direction = $request->input('direction', 'asc');
+
+        if (! in_array($selectedType, ['all', 'internal', 'external'], true)) {
+            $selectedType = 'internal';
+        }
+
+        if (! in_array($selectedStatus, ['all', 'active', 'inactive'], true)) {
+            $selectedStatus = 'active';
+        }
+
+        $type = $selectedType === 'all' ? null : $selectedType;
+        $status = $selectedStatus === 'all' ? null : $selectedStatus;
+
+        $allowedSorts = ['name', 'username', 'email', 'status', 'created_at'];
+        if (! in_array($sort, $allowedSorts, true)) {
+            $sort = 'name';
+        }
+
+        if (! in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'asc';
+        }
 
         $users = User::query()
             ->select([
@@ -50,7 +72,7 @@ class UserController extends Controller
                 $query->where('status', $status);
             })
             ->search($search)
-            ->orderBy('name')
+            ->orderBy($sort, $direction)
             ->paginate(10)
             ->withQueryString()
             ->through(function (User $user) {
@@ -86,8 +108,10 @@ class UserController extends Controller
             'users'   => $users,
             'filters' => [
                 'search' => $search,
-                'type'   => $type,
-                'status' => $status,
+                'type'   => $selectedType,
+                'status' => $selectedStatus,
+                'sort'   => $sort,
+                'direction' => $direction,
             ],
             'statuses' => ['active', 'inactive'],
             'types'    => ['internal', 'external'],

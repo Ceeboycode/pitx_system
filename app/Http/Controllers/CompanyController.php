@@ -21,6 +21,24 @@ class CompanyController extends Controller
         // companies.viewAny
         Gate::authorize('viewAny', Company::class);
 
+        $status = $request->input('status', 'verified');
+        $sort = $request->input('sort', 'created_at');
+        $direction = $request->input('direction', 'desc');
+
+        $allowedStatuses = ['all', 'draft', 'docs_completed', 'for_verification', 'verified', 'needs_revision', 'rejected'];
+        if (filled($status) && ! in_array($status, $allowedStatuses, true)) {
+            $status = 'verified';
+        }
+
+        $allowedSorts = ['company_name', 'company_code', 'status', 'created_at'];
+        if (! in_array($sort, $allowedSorts, true)) {
+            $sort = 'created_at';
+        }
+
+        if (! in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'desc';
+        }
+
         $companies = Company::query()
             ->select(
                 'id',
@@ -34,17 +52,40 @@ class CompanyController extends Controller
                 'created_at'
             )
             ->search($request->search)
-            ->latest()
+            ->when($status && $status !== 'all', fn ($query) => $query->where('status', $status))
+            ->orderBy($sort, $direction)
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Company/Index', [
             'companies' => $companies,
-            'filters'   => ['search' => $request->search],
+            'filters'   => [
+                'search' => $request->search,
+                'status' => $status,
+                'sort' => $sort,
+                'direction' => $direction,
+            ],
         ]);
     }
 
     public function show(Company $company)
+    {
+        // companies.view
+        Gate::authorize('view', $company);
+
+        return $this->renderShow($company);
+    }
+
+    public function archivedShow(Company $company)
+    {
+        // companies.view
+        Gate::authorize('view', $company);
+        abort_unless($company->trashed(), 404);
+
+        return $this->renderShow($company, true);
+    }
+
+    private function renderShow(Company $company, bool $archivedView = false)
     {
         // companies.view
         Gate::authorize('view', $company);
@@ -80,6 +121,7 @@ class CompanyController extends Controller
 
         return Inertia::render('Company/Show', [
             'company' => $company,
+            'archivedView' => $archivedView,
         ]);
     }
 
@@ -152,15 +194,22 @@ class CompanyController extends Controller
 
         $this->companyService->deleteCompany($company, $userId);
 
-        return back()->with('success', 'Company archived successfully.');
+        return to_route('companies.index')->with('success', 'Company archived successfully.');
     }
 
-    public function restore(Company $company)
+    public function restore(Request $request, Company $company)
     {
         // companies.restore
         Gate::authorize('restore', $company);
 
         $this->companyService->restoreCompany($company);
+
+        $referer = (string) $request->headers->get('referer', '');
+
+        if (str_contains($referer, '/companies/archived/')) {
+            return to_route('companies.show', ['company' => $company->id])
+                ->with('success', 'Company restored successfully.');
+        }
 
         return back()->with('success', 'Company restored successfully.');
     }

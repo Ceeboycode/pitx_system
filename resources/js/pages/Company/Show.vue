@@ -4,10 +4,14 @@ import type { BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
+import ArchiveCompanyDialog from '@/components/company/ArchiveCompanyDialog.vue';
+import CompanyLogo from '@/components/company/CompanyLogo.vue';
 import InputError from '@/components/InputError.vue';
+import RestoreCompanyDialog from '@/components/company/RestoreCompanyDialog.vue';
 import { can } from '@/lib/can';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Card,
     CardContent,
@@ -40,6 +44,7 @@ import {
 
 import {
     DropdownMenu,
+    DropdownMenuCheckboxItem,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
@@ -53,15 +58,7 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-
-import { index, show } from '@/routes/companies';
+import { index, show, trash } from '@/routes/companies';
 import {
     destroy as destroyDoc,
     downloadBulk,
@@ -72,12 +69,11 @@ import {
 } from '@/routes/companies/documents';
 
 import {
+    Archive,
     ArrowLeft,
-    Building2,
     CheckCircle2,
     Download,
     Eye,
-    FileArchive,
     FileText,
     MailCheck,
     MailX,
@@ -130,21 +126,25 @@ const props = defineProps<{
         logo?: string | null;
         logo_url?: string | null;
     };
+    archivedView?: boolean;
 }>();
 
 const company = computed(() => props.company);
 const docs = computed(() => props.company.documents ?? []);
+const isArchivedView = computed(() => props.archivedView === true);
 
 const isCompanyEmailVerified = computed(() => !!company.value.company_email_verified_at);
 
 // permissions
 const canViewCompany = computed(() => can('companies.view'));
+const canArchiveCompany = computed(() => can('companies.delete'));
+const canRestoreCompany = computed(() => can('companies.restore'));
 const canViewDocumentList = computed(() => can('company_documents.viewAny'));
 const canDownloadDocument = computed(() => can('company_documents.download'));
 const canVerifyDocument = computed(() => can('company_documents.verify'));
 const canUpdateDocument = computed(() => can('company_documents.update'));
 const canRejectDocument = computed(() => can('company_documents.reject'));
-const canDeleteDocument = computed(() => can('company_documents.delete'));
+// const canDeleteDocument = computed(() => can('company_documents.delete'));
 
 const canDownloadVerifiedZip = computed(
     () => canViewCompany.value && canViewDocumentList.value && canDownloadDocument.value,
@@ -154,15 +154,11 @@ function canManageDocActions() {
     return (
         canDownloadDocument.value ||
         canRejectDocument.value ||
-        canDeleteDocument.value ||
+        // canDeleteDocument.value ||
         canVerifyDocument.value ||
         canUpdateDocument.value
     );
 }
-
-// ── Logo helpers ──────────────────────────────────────────────────
-const logoError = ref(false);
-const showLogo = computed(() => !!company.value.logo_url && !logoError.value);
 
 const companyInitials = computed(() =>
     (company.value.company_code ?? company.value.company_name ?? '')
@@ -172,11 +168,18 @@ const companyInitials = computed(() =>
 );
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Companies', href: index().url },
-    { title: 'Company Details', href: show({ company: company.value.id }).url },
+    {
+        title: isArchivedView.value ? 'Archived Companies' : 'Companies',
+        href: isArchivedView.value ? trash().url : index().url,
+    },
+    {
+        title: isArchivedView.value ? 'Archived Company Details' : 'Company Details',
+        href: isArchivedView.value
+            ? `/companies/archived/${company.value.id}`
+            : show({ company: company.value.id }).url,
+    },
 ];
 
-// ── Helpers ───────────────────────────────────────────────────────
 function formatDate(date?: string | null) {
     if (!date) return '—';
     const d = new Date(date);
@@ -246,8 +249,7 @@ function statusDot(status?: string | null): string {
     }
 }
 
-// ── Download verified ZIP ─────────────────────────────────────────
-function downloadVerifiedZip() {
+function downloadVerifiedZip(documentIds: number[] = []) {
     const { url } = downloadBulk({ company: company.value.id });
     const form = document.createElement('form');
     form.method = 'POST';
@@ -260,6 +262,15 @@ function downloadVerifiedZip() {
     csrf.value = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
 
     form.appendChild(csrf);
+
+    documentIds.forEach((id) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'document_ids[]';
+        input.value = String(id);
+        form.appendChild(input);
+    });
+
     document.body.appendChild(form);
     form.submit();
 
@@ -271,19 +282,65 @@ function downloadVerifiedZip() {
 }
 
 const bulkConfirmOpen = ref(false);
+const bulkDownloadMode = ref<'verified' | 'selected'>('verified');
 const verifiedCount = computed(() => docs.value.filter((d) => d.status === 'verified').length);
+const selectionMode = ref(false);
+const selectedDocumentIds = ref<number[]>([]);
+const selectableDocuments = computed(() => docs.value.filter((doc) => !!doc.file_path));
+const selectableDocumentIds = computed(() => selectableDocuments.value.map((doc) => doc.id));
+const selectedDocumentCount = computed(() => selectedDocumentIds.value.length);
+const allSelectableSelected = computed(
+    () =>
+        selectableDocumentIds.value.length > 0 &&
+        selectableDocumentIds.value.every((id) => selectedDocumentIds.value.includes(id)),
+);
 
-function openBulkConfirm() {
-    if (!canDownloadVerifiedZip.value) return;
+function toggleDocumentSelection(documentId: number, checked: boolean) {
+    if (checked) {
+        if (!selectedDocumentIds.value.includes(documentId)) {
+            selectedDocumentIds.value = [...selectedDocumentIds.value, documentId];
+        }
+        return;
+    }
+
+    selectedDocumentIds.value = selectedDocumentIds.value.filter((id) => id !== documentId);
+}
+
+function toggleAllDocuments(checked: boolean) {
+    selectedDocumentIds.value = checked ? [...selectableDocumentIds.value] : [];
+}
+
+function toggleSelectionMode() {
+    selectionMode.value = !selectionMode.value;
+
+    if (!selectionMode.value) {
+        selectedDocumentIds.value = [];
+    }
+}
+
+function openBulkConfirm(mode: 'verified' | 'selected' = 'verified') {
+    if (mode === 'selected') {
+        if (!canDownloadDocument.value || selectedDocumentCount.value === 0) return;
+    } else if (!canDownloadVerifiedZip.value) {
+        return;
+    }
+
+    bulkDownloadMode.value = mode;
     bulkConfirmOpen.value = true;
 }
 
 function runBulkDownload() {
     bulkConfirmOpen.value = false;
-    downloadVerifiedZip();
+    downloadVerifiedZip(
+        bulkDownloadMode.value === 'selected' ? selectedDocumentIds.value : [],
+    );
+
+    if (bulkDownloadMode.value === 'selected') {
+        selectedDocumentIds.value = [];
+        selectionMode.value = false;
+    }
 }
 
-// ── File preview helpers ──────────────────────────────────────────
 function fileUrl(doc: CompanyDocument): string {
     if (!doc.file_path) return '';
     return `/storage/${doc.file_path}`;
@@ -305,7 +362,6 @@ function canPreview(doc: CompanyDocument): boolean {
     return isImage(doc) || isPdf(doc);
 }
 
-// ── Preview dialog ────────────────────────────────────────────────
 const previewOpen = ref(false);
 const previewDoc = ref<CompanyDocument | null>(null);
 const pdfLoadError = ref(false);
@@ -321,10 +377,8 @@ function closePreview() {
     previewDoc.value = null;
 }
 
-// ── Action form ───────────────────────────────────────────────────
 const actionForm = useForm({});
 
-// ── Confirm dialog ────────────────────────────────────────────────
 type ConfirmAction = 'delete' | 'download';
 const confirmOpen = ref(false);
 const confirmAction = ref<ConfirmAction>('download');
@@ -332,7 +386,7 @@ const confirmDoc = ref<CompanyDocument | null>(null);
 
 function openConfirm(action: ConfirmAction, doc: CompanyDocument) {
     if (action === 'download' && !canDownloadDocument.value) return;
-    if (action === 'delete' && !canDeleteDocument.value) return;
+    // if (action === 'delete' && !canDeleteDocument.value) return;
 
     confirmAction.value = action;
     confirmDoc.value = doc;
@@ -386,7 +440,6 @@ function runConfirmedAction() {
     });
 }
 
-// ── Verify / Unverify from preview ────────────────────────────────
 function verifyFromPreview() {
     const doc = previewDoc.value;
     if (!doc || actionForm.processing || rejectForm.processing || !canVerifyDocument.value) return;
@@ -416,8 +469,6 @@ function unverifyFromPreview() {
         },
     );
 }
-
-// ── Reject dialog ─────────────────────────────────────────────────
 const remarkPresets = [
     { value: 'missing_signature', label: 'Missing signature' },
     { value: 'blurred', label: 'Blurred / unreadable file' },
@@ -444,25 +495,48 @@ const presetTextMap: Record<string, string> = {
     other: '',
 };
 
-const selectedRemarkPreset = ref<string | null>(null);
+const selectedRemarkPresets = ref<string[]>([]);
 const rejectOpen = ref(false);
 const rejectDocId = ref<number | null>(null);
 const rejectForm = useForm<{ remarks: string }>({ remarks: '' });
+const archiveOpen = ref(false);
+const restoreOpen = ref(false);
+
+const selectedRemarkPresetLabel = computed(() => {
+    if (!selectedRemarkPresets.value.length) return 'Select presets…';
+
+    const labels = remarkPresets
+        .filter((preset) => selectedRemarkPresets.value.includes(preset.value))
+        .map((preset) => preset.label);
+
+    return labels.length <= 2 ? labels.join(', ') : `${labels.length} presets selected`;
+});
+
+function syncPresetRemarks() {
+    rejectForm.remarks = selectedRemarkPresets.value
+        .map((value) => presetTextMap[value] ?? '')
+        .filter(Boolean)
+        .join('\n\n');
+}
 
 function openReject(docId: number) {
     if (!canRejectDocument.value) return;
 
     rejectDocId.value = docId;
-    selectedRemarkPreset.value = null;
+    selectedRemarkPresets.value = [];
     rejectForm.reset();
     rejectForm.clearErrors();
     rejectOpen.value = true;
 }
 
-function applyPreset(value: string) {
-    selectedRemarkPreset.value = value;
-    const text = presetTextMap[value] ?? '';
-    if (value !== 'other') rejectForm.remarks = text;
+function togglePreset(value: string, checked: boolean) {
+    const next = new Set(selectedRemarkPresets.value);
+
+    if (checked) next.add(value);
+    else next.delete(value);
+
+    selectedRemarkPresets.value = Array.from(next);
+    syncPresetRemarks();
 }
 
 function submitReject() {
@@ -475,7 +549,7 @@ function submitReject() {
             onSuccess: () => {
                 rejectOpen.value = false;
                 rejectDocId.value = null;
-                selectedRemarkPreset.value = null;
+                selectedRemarkPresets.value = [];
                 rejectForm.reset();
             },
         },
@@ -508,18 +582,13 @@ const repHasAny = computed(() => {
             <div class="mx-auto w-full max-w-6xl space-y-6">
                 <div class="flex items-start justify-between gap-4">
                     <div class="flex items-center gap-4">
-                        <div class="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border-2 bg-muted shadow-sm">
-                            <img
-                                v-if="showLogo"
-                                :src="company.logo_url!"
-                                :alt="company.company_name"
-                                class="h-full w-full object-cover"
-                                @error="logoError = true"
-                            />
-                            <div v-else class="flex h-full w-full items-center justify-center bg-primary/10">
-                                <span class="select-none text-lg font-bold text-primary">{{ companyInitials }}</span>
-                            </div>
-                        </div>
+                        <CompanyLogo
+                            :src="company.logo_url"
+                            :alt="company.company_name"
+                            :initials="companyInitials"
+                            class="h-14 w-14 shrink-0 rounded-xl border-2 shadow-sm"
+                            text-class="select-none text-lg font-bold"
+                        />
 
                         <div class="space-y-1">
                             <h1 class="text-2xl font-bold leading-tight tracking-tight">
@@ -531,17 +600,43 @@ const repHasAny = computed(() => {
                         </div>
                     </div>
 
-                    <Button
-                        as-child
-                        variant="outline"
-                        size="sm"
-                        class="shrink-0 rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
-                    >
-                        <Link :href="index().url">
-                            <ArrowLeft class="mr-2 h-4 w-4" />
-                            Back
-                        </Link>
-                    </Button>
+                    <div class="flex shrink-0 items-center gap-2">
+                        <Button
+                            v-if="isArchivedView && canRestoreCompany"
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            class="rounded-lg border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+                            @click="restoreOpen = true"
+                        >
+                            <RotateCcw class="mr-2 h-4 w-4" />
+                            Restore Company
+                        </Button>
+
+                        <Button
+                            v-if="!isArchivedView && canArchiveCompany"
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            class="rounded-lg border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                            @click="archiveOpen = true"
+                        >
+                            <Archive class="mr-2 h-4 w-4" />
+                            Archive Company
+                        </Button>
+
+                        <Button
+                            as-child
+                            variant="outline"
+                            size="sm"
+                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
+                        >
+                            <Link :href="isArchivedView ? trash().url : index().url">
+                                <ArrowLeft class="mr-2 h-4 w-4" />
+                                {{ isArchivedView ? 'Back to Archived' : 'Back' }}
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2">
@@ -561,18 +656,11 @@ const repHasAny = computed(() => {
                     <Card class="lg:col-span-2">
                         <CardHeader class="border-b border-slate-100 pb-4">
                             <div class="flex items-center gap-3">
-                                <div class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border bg-muted shadow-sm">
-                                    <img
-                                        v-if="showLogo"
-                                        :src="company.logo_url!"
-                                        :alt="company.company_name"
-                                        class="h-full w-full object-cover"
-                                        @error="logoError = true"
-                                    />
-                                    <div v-else class="flex h-full w-full items-center justify-center bg-primary/10">
-                                        <Building2 class="h-4 w-4 text-primary/60" />
-                                    </div>
-                                </div>
+                                <CompanyLogo
+                                    :src="company.logo_url"
+                                    :alt="company.company_name"
+                                    class="h-10 w-10 shrink-0 rounded-lg shadow-sm"
+                                />
                                 <div>
                                     <CardTitle class="text-base">Company Details</CardTitle>
                                     <CardDescription>Basic information and contact details.</CardDescription>
@@ -663,23 +751,56 @@ const repHasAny = computed(() => {
                             <div>
                                 <CardTitle class="flex items-center gap-2 text-base">
                                     <FileText class="h-4 w-4 text-blue-700" />
-                                    Document Details
+                                    Documents
                                 </CardTitle>
                                 <CardDescription class="mt-0.5">
                                     Review documents first before verifying them.
                                 </CardDescription>
                             </div>
 
-                            <Button
-                                v-if="docs.length > 0 && canDownloadVerifiedZip"
-                                variant="outline"
-                                size="sm"
-                                class="shrink-0 rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
-                                @click="openBulkConfirm"
-                            >
-                                <FileArchive class="mr-2 h-4 w-4" />
-                                Download All (Verified Only)
-                            </Button>
+                            <div class="flex flex-wrap items-center justify-end gap-2">
+                                <Button
+                                    v-if="canDownloadDocument && selectableDocumentIds.length > 0"
+                                    variant="outline"
+                                    size="sm"
+                                    class="shrink-0 rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
+                                    @click="toggleSelectionMode"
+                                >
+                                    {{ selectionMode ? 'Cancel Selection' : 'Select' }}
+                                </Button>
+
+                                <Button
+                                    v-if="selectionMode && canDownloadDocument && selectableDocumentIds.length > 0"
+                                    variant="outline"
+                                    size="sm"
+                                    class="shrink-0 rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
+                                    @click="toggleAllDocuments(!allSelectableSelected)"
+                                >
+                                    {{ allSelectableSelected ? 'Clear Selection' : 'Select All' }}
+                                </Button>
+
+                                <Button
+                                    v-if="selectionMode && canDownloadDocument && selectedDocumentCount > 0"
+                                    variant="outline"
+                                    size="sm"
+                                    class="shrink-0 rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
+                                    @click="openBulkConfirm('selected')"
+                                >
+                                    <Download class="mr-2 h-4 w-4" />
+                                    Download Selected ({{ selectedDocumentCount }})
+                                </Button>
+
+                                <Button
+                                    v-if="docs.length > 0 && canDownloadVerifiedZip"
+                                    variant="outline"
+                                    size="sm"
+                                    class="shrink-0 rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
+                                    @click="openBulkConfirm('verified')"
+                                >
+                                    <Download class="mr-2 h-4 w-4" />
+                                    Download All (Verified Only)
+                                </Button>
+                            </div>
                         </div>
                     </CardHeader>
 
@@ -698,8 +819,31 @@ const repHasAny = computed(() => {
                             <div
                                 v-for="doc in docs"
                                 :key="doc.id"
-                                class="grid grid-cols-[1fr_auto] gap-4 px-6 py-4 transition-colors hover:bg-muted/30"
+                                :class="[
+                                    'grid px-6 py-4 transition-[grid-template-columns,column-gap,background-color] duration-500 hover:bg-muted/30',
+                                    canDownloadDocument
+                                        ? selectionMode
+                                            ? 'grid-cols-[auto_1fr_auto] gap-x-4 gap-y-4'
+                                            : 'grid-cols-[0_1fr_auto] gap-x-0 gap-y-4'
+                                        : 'grid-cols-[1fr_auto] gap-4',
+                                ]"
                             >
+                                <div
+                                    v-if="canDownloadDocument"
+                                    :class="[
+                                        'overflow-hidden pt-0.5 transition-[width,opacity] duration-500 ease-in-out',
+                                        selectionMode
+                                            ? 'w-4 opacity-100'
+                                            : 'w-0 opacity-0 pointer-events-none',
+                                    ]"
+                                >
+                                    <Checkbox
+                                        :model-value="selectedDocumentIds.includes(doc.id)"
+                                        :disabled="!doc.file_path"
+                                        @update:model-value="(checked) => toggleDocumentSelection(doc.id, checked === true)"
+                                    />
+                                </div>
+
                                 <div class="min-w-0 space-y-2">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <p class="text-sm font-semibold text-foreground">{{ humanize(doc.doc_type) }}</p>
@@ -816,7 +960,8 @@ const repHasAny = computed(() => {
                                                 Invalid (remarks)
                                             </DropdownMenuItem>
 
-                                            <DropdownMenuSeparator v-if="canDownloadDocument || canDeleteDocument" />
+                                            <DropdownMenuSeparator v-if="canDownloadDocument" />
+                                            <!-- <DropdownMenuSeparator v-if="canDownloadDocument || canDeleteDocument" /> -->
 
                                             <DropdownMenuItem
                                                 v-if="canDownloadDocument"
@@ -827,14 +972,14 @@ const repHasAny = computed(() => {
                                                 Download
                                             </DropdownMenuItem>
 
-                                            <DropdownMenuItem
+                                            <!-- <DropdownMenuItem
                                                 v-if="canDeleteDocument"
                                                 class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600"
                                                 @click="openConfirm('delete', doc)"
                                             >
                                                 <Trash2 class="mr-2 h-4 w-4" />
                                                 Delete
-                                            </DropdownMenuItem>
+                                            </DropdownMenuItem> -->
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </div>
@@ -991,24 +1136,36 @@ const repHasAny = computed(() => {
                 <div class="space-y-4">
                     <div class="space-y-1.5">
                         <Label class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Remarks Preset</Label>
-                        <Select
-                            :model-value="selectedRemarkPreset ?? undefined"
-                            @update:model-value="(v) => applyPreset(String(v))"
-                        >
-                            <SelectTrigger class="rounded-lg">
-                                <SelectValue placeholder="Select a preset…" />
-                            </SelectTrigger>
-                            <SelectContent class="rounded-xl">
-                                <SelectItem
+                        <DropdownMenu>
+                            <DropdownMenuTrigger as-child>
+                                <Button
+                                    variant="outline"
+                                    class="w-full justify-between rounded-lg font-normal"
+                                >
+                                    <span class="truncate">{{ selectedRemarkPresetLabel }}</span>
+                                    <!-- <span class="text-xs text-muted-foreground">
+                                        {{ selectedRemarkPresets.length || 'None' }}
+                                    </span> -->
+                                </Button>
+                            </DropdownMenuTrigger>
+
+                            <DropdownMenuContent align="start" class="w-[var(--reka-dropdown-menu-trigger-width)] rounded-xl">
+                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                    Select one or more presets
+                                </DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuCheckboxItem
                                     v-for="p in remarkPresets"
                                     :key="p.value"
-                                    :value="p.value"
+                                    :model-value="selectedRemarkPresets.includes(p.value)"
                                     class="rounded-lg"
+                                    @update:model-value="(checked) => togglePreset(p.value, checked === true)"
+                                    @select.prevent
                                 >
                                     {{ p.label }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
+                                </DropdownMenuCheckboxItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
 
                     <div class="space-y-1.5">
@@ -1063,11 +1220,26 @@ const repHasAny = computed(() => {
         <AlertDialog v-model:open="bulkConfirmOpen">
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Download verified documents?</AlertDialogTitle>
+                    <AlertDialogTitle>
+                        {{
+                            bulkDownloadMode === 'selected'
+                                ? 'Download selected documents?'
+                                : 'Download verified documents?'
+                        }}
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will download a ZIP containing only verified documents for this company.
-                        <span v-if="verifiedCount > 0">({{ verifiedCount }} verified)</span>
-                        <span v-else> No verified documents found.</span>
+                        <template v-if="bulkDownloadMode === 'selected'">
+                            This will download a ZIP containing the
+                            {{ selectedDocumentCount }} selected document{{
+                                selectedDocumentCount !== 1 ? 's' : ''
+                            }}
+                            for this company.
+                        </template>
+                        <template v-else>
+                            This will download a ZIP containing only verified documents for this company.
+                            <span v-if="verifiedCount > 0">({{ verifiedCount }} verified)</span>
+                            <span v-else> No verified documents found.</span>
+                        </template>
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -1082,5 +1254,17 @@ const repHasAny = computed(() => {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+
+        <ArchiveCompanyDialog
+            v-if="!isArchivedView && canArchiveCompany"
+            v-model:open="archiveOpen"
+            :company="company"
+        />
+
+        <RestoreCompanyDialog
+            v-if="isArchivedView && canRestoreCompany"
+            v-model:open="restoreOpen"
+            :company="company"
+        />
     </AppLayout>
 </template>

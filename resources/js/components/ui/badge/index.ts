@@ -17,7 +17,11 @@ export const badgeVariants = cva(
         outline:
           "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         success: 
-          "bg-green-100 text-green-700 hover:bg-green-100/80",
+          "border-transparent bg-success/12 text-success [a&]:hover:bg-success/18",
+        warning:
+          "border-transparent bg-warning/14 text-warning [a&]:hover:bg-warning/20",
+        info:
+          "border-transparent bg-info/12 text-info [a&]:hover:bg-info/18",
 
       },
     },

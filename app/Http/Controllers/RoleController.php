@@ -18,13 +18,24 @@ class RoleController extends Controller
 
         $search = $request->input('search');
         $type   = $request->input('type');
+        $sort   = $request->input('sort', 'created_at');
+        $direction = $request->input('direction', 'desc');
+
+        $allowedSorts = ['name', 'type', 'created_at'];
+        if (! in_array($sort, $allowedSorts, true)) {
+            $sort = 'created_at';
+        }
+
+        if (! in_array($direction, ['asc', 'desc'], true)) {
+            $direction = 'desc';
+        }
 
         $roles = Role::query()
             ->select('id', 'name', 'type')
             ->with(['permissions:id,name'])
             ->when($search, fn ($q) => $q->where('name', 'like', "%{$search}%"))
             ->when($type, fn ($q) => $q->where('type', $type))
-            ->latest()
+            ->orderBy($sort, $direction)
             ->paginate(20)
             ->withQueryString();
 
@@ -33,6 +44,8 @@ class RoleController extends Controller
             'filters' => [
                 'search' => $search,
                 'type'   => $type,
+                'sort'   => $sort,
+                'direction' => $direction,
             ],
         ]);
     }

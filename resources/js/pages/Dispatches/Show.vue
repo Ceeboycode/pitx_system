@@ -7,6 +7,7 @@ import { computed, ref } from 'vue'
 import type { DateValue } from '@internationalized/date'
 import { DateFormatter, getLocalTimeZone, parseDate, today } from '@internationalized/date'
 
+import CompanyLogo from '@/components/company/CompanyLogo.vue'
 import RouteMapDialog from '@/components/routes/RouteMapDialog.vue'
 import InertiaPagination from '@/components/InertiaPagination.vue'
 import SearchInput from '@/components/SearchInput.vue'
@@ -28,7 +29,6 @@ import { VisDonut, VisSingleContainer } from '@unovis/vue'
 
 import {
     ArrowLeft,
-    Building2,
     Bus,
     CalendarDays,
     ChevronRight,
@@ -343,10 +343,12 @@ function prettyStatus(s: string | null | undefined) {
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-center gap-3">
                         <div class="relative shrink-0">
-                            <div class="flex size-12 items-center justify-center overflow-hidden rounded-xl border bg-muted">
-                                <img v-if="company.company_logo" :src="company.company_logo" :alt="company.company_name" class="size-full object-cover" />
-                                <Building2 v-else class="size-5 text-muted-foreground" />
-                            </div>
+                            <CompanyLogo
+                                :src="company.company_logo"
+                                :alt="company.company_name"
+                                class="size-12 rounded-xl"
+                                icon-class="size-5 text-violet-700/80"
+                            />
                             <span
                                 class="absolute -right-0.5 -top-0.5 size-3 rounded-full border-2 border-background"
                                 :class="company.status === 'active' ? 'bg-emerald-500' : 'bg-muted-foreground'"

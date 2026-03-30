@@ -3,8 +3,10 @@ import ArchiveCompanyDialog from '@/components/company/ArchiveCompanyDialog.vue'
 import CreateCompanyDialog from '@/components/company/CreateCompanyDialog.vue';
 import EditCompanyDialog from '@/components/company/EditCompanyDialog.vue';
 import ImportCompanyDialog from '@/components/company/ImportCompanyDialog.vue';
+import SortDirectionControl from '@/components/filters/SortDirectionControl.vue';
 import InertiaPagination from '@/components/InertiaPagination.vue';
-import SearchInput from '@/components/SearchInput.vue';
+import ListFilters from '@/components/ListFilters.vue';
+import { useSortableIndex } from '@/composables/useSortableIndex';
 import { can } from '@/lib/can';
 
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +38,6 @@ import {
 import {
     Tooltip,
     TooltipContent,
-    TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 
@@ -60,8 +61,6 @@ import {
 
 import { computed, ref } from 'vue';
 
-/* ── Types ──────────────────────────────────────────────────────────── */
-
 type CompanyStatus =
     | 'draft'
     | 'docs_completed'
@@ -82,13 +81,9 @@ type Company = {
     created_at_human?: string | null;
 };
 
-/* ── Breadcrumbs ─────────────────────────────────────────────────── */
-
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Companies', href: index().url },
 ];
-
-/* ── Props ───────────────────────────────────────────────────────── */
 
 const props = defineProps<{
     companies: {
@@ -98,20 +93,64 @@ const props = defineProps<{
         to: number | null;
         total: number;
     };
-    filters: { search: string | null };
+    filters: {
+        search: string | null;
+        status?: string | null;
+        sort?: string | null;
+        direction?: string | null;
+    };
 }>();
 
-/* ── Permissions ─────────────────────────────────────────────────── */
+const companyFilters = computed(() => [
+    {
+        key: 'status',
+        value: props.filters.status ?? 'verified',
+        placeholder: 'Status',
+        allLabel: 'All Status',
+        allValue: 'all',
+        desktopWidthClass: 'w-44',
+        desktopMaxWidth: '11rem',
+        options: [
+            { label: 'Draft', value: 'draft' },
+            { label: 'Docs Completed', value: 'docs_completed' },
+            { label: 'For Verification', value: 'for_verification' },
+            { label: 'Verified', value: 'verified' },
+            { label: 'Needs Revision', value: 'needs_revision' },
+            { label: 'Rejected', value: 'rejected' },
+        ],
+    },
+]);
+
+const sortOptions = [
+    { label: 'Newest', value: 'created_at' },
+    { label: 'Company Name', value: 'company_name' },
+    { label: 'Company Code', value: 'company_code' },
+    { label: 'Status', value: 'status' },
+] as const;
 
 const canViewArchived = computed(() => can('companies.viewAny'));
 const canViewCompany = computed(() => can('companies.view'));
-const canArchiveCompany = computed(() => can('companies.delete'));
+// const canArchiveCompany = computed(() => can('companies.delete'));
+const baseQuery = computed(() => ({
+    search: props.filters.search ?? '',
+    status: props.filters.status ?? 'verified',
+}));
+const {
+    currentSort,
+    currentDirection,
+    applySort,
+    toggleDirection,
+} = useSortableIndex({
+    route: index().url,
+    baseQuery,
+    sort: computed(() => props.filters.sort ?? 'created_at'),
+    direction: computed(() => props.filters.direction ?? 'desc'),
+    only: ['companies', 'filters', 'flash'],
+});
 
 /* create/update are not active in controller yet */
 // const canCreateCompany = computed(() => can('companies.create'));
 // const canEditCompany = computed(() => can('companies.update'));
-
-/* ── Dialog state ────────────────────────────────────────────────── */
 
 const createOpen = ref(false);
 const editOpen = ref(false);
@@ -128,8 +167,6 @@ function openArchive(company: Company) {
     selectedCompany.value = company;
     archiveOpen.value = true;
 }
-
-/* ── Export ──────────────────────────────────────────────────────── */
 
 const exporting = ref(false);
 
@@ -150,10 +187,8 @@ function onImportDone() {
     router.reload({ only: ['companies'] });
 }
 
-/* ── Status helpers ──────────────────────────────────────────────── */
-
 function humanizeStatus(status?: CompanyStatus): string {
-    if (!status) return '—';
+    if (!status) return '-';
 
     const map: Record<Exclude<CompanyStatus, null>, string> = {
         draft: 'Draft',
@@ -220,7 +255,7 @@ function hasVerifiedEmail(company: Company): boolean {
                             Companies
                         </CardTitle>
                         <CardDescription class="mt-1">
-                            Manage company records, review submissions, and monitor verification status.
+                            Manage company records, review submissions, and monitor verification status. Verified companies are treated as active by default.
                         </CardDescription>
                     </div>
 
@@ -240,55 +275,78 @@ function hasVerifiedEmail(company: Company): boolean {
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="w-full max-w-sm">
-                            <SearchInput
-                                :route="index().url"
-                                :initial-value="props.filters.search"
-                                placeholder="Search companies…"
-                                :only="['companies', 'filters', 'flash']"
-                                :debounce="350"
+                    <ListFilters
+                        :route="index().url"
+                        :search="props.filters.search ?? ''"
+                        search-placeholder="Search companies..."
+                        :only="['companies', 'filters', 'flash']"
+                        :filters="companyFilters"
+                        :query="{
+                            sort: currentSort,
+                            direction: currentDirection,
+                        }"
+                        mobile-inline-actions
+                    >
+                        <template #panel-actions>
+                            <SortDirectionControl
+                                :options="sortOptions"
+                                :value="currentSort"
+                                :direction="currentDirection"
+                                label="Sort companies"
+                                @select="applySort"
+                                @toggle-direction="toggleDirection"
                             />
-                        </div>
+                        </template>
 
-                        <div class="flex gap-2 sm:justify-end">
-                            <TooltipProvider>
+                        <template #inline-actions>
+                            <div class="inline-flex overflow-hidden rounded-md border bg-background shadow-xs">
                                 <Tooltip>
                                     <TooltipTrigger as-child>
                                         <Button
                                             size="sm"
-                                            variant="outline"
-                                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
+                                            variant="ghost"
+                                            class="group gap-0 rounded-none border-0 shadow-none"
                                             @click="importOpen = true"
                                         >
-                                            <Upload class="mr-2 h-4 w-4" />
-                                            Import
+                                            <Upload class="h-4 w-4 shrink-0" />
+                                            <span
+                                                class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-500 group-hover:ml-2 group-hover:max-w-20 group-hover:opacity-100"
+                                            >
+                                                Import
+                                            </span>
+                                            <span class="sr-only">Import companies</span>
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>Restore companies from a backup ZIP</TooltipContent>
                                 </Tooltip>
-                            </TooltipProvider>
 
-                            <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger as-child>
                                         <Button
                                             size="sm"
-                                            variant="outline"
-                                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
+                                            variant="ghost"
+                                            class="group gap-0 rounded-none border-0 border-l shadow-none"
                                             :disabled="exporting"
                                             @click="triggerExport"
                                         >
-                                            <Loader2 v-if="exporting" class="mr-2 h-4 w-4 animate-spin" />
-                                            <Download v-else class="mr-2 h-4 w-4" />
-                                            {{ exporting ? 'Exporting…' : 'Export' }}
+                                            <Loader2
+                                                v-if="exporting"
+                                                class="h-4 w-4 shrink-0 animate-spin"
+                                            />
+                                            <Download v-else class="h-4 w-4 shrink-0" />
+                                            <span
+                                                class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-500 group-hover:ml-2 group-hover:max-w-24 group-hover:opacity-100"
+                                            >
+                                                {{ exporting ? 'Exporting' : 'Export' }}
+                                            </span>
+                                            <span class="sr-only">Export companies</span>
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>Download all companies as a backup ZIP</TooltipContent>
                                 </Tooltip>
-                            </TooltipProvider>
-                        </div>
-                    </div>
+                            </div>
+                        </template>
+                    </ListFilters>
 
                     <div class="overflow-x-auto rounded-lg border">
                         <Table>
@@ -337,7 +395,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                     <TableCell>
                                         <div class="space-y-1">
                                             <p class="text-sm lowercase text-muted-foreground">
-                                                {{ company.company_email ?? '—' }}
+                                                {{ company.company_email ?? '-' }}
                                             </p>
 
                                             <div v-if="company.company_email" class="flex items-center gap-1.5">
@@ -354,7 +412,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                     </TableCell>
 
                                     <TableCell class="text-sm text-muted-foreground">
-                                        {{ company.company_phone ?? '—' }}
+                                        {{ company.company_phone ?? '-' }}
                                     </TableCell>
 
                                     <TableCell>
@@ -365,7 +423,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                     </TableCell>
 
                                     <TableCell class="text-sm text-muted-foreground">
-                                        {{ company.created_at_human ?? '—' }}
+                                        {{ company.created_at_human ?? '-' }}
                                     </TableCell>
 
                                     <TableCell class="text-right">
@@ -400,7 +458,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                                     </Link>
                                                 </DropdownMenuItem>
 
-                                                <DropdownMenuSeparator v-if="canArchiveCompany" />
+                                                <!-- <DropdownMenuSeparator v-if="canArchiveCompany" />
 
                                                 <DropdownMenuItem
                                                     v-if="canArchiveCompany"
@@ -409,7 +467,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                                 >
                                                     <Archive class="mr-2 h-4 w-4" />
                                                     Archive Company
-                                                </DropdownMenuItem>
+                                                </DropdownMenuItem> -->
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>

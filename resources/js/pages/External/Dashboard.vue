@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3'
 import { computed } from 'vue'
 
+import CompanyLogo from '@/components/company/CompanyLogo.vue'
 import ExternalLayout from '@/layouts/ExternalLayout.vue'
 
 import { Badge } from '@/components/ui/badge'
@@ -277,20 +278,13 @@ const documentChartData = computed(() => {
                 <CardContent class="p-6">
                     <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                         <div class="flex items-start gap-4">
-                            <div class="h-16 w-16 overflow-hidden rounded-2xl border bg-muted">
-                                <img
-                                    v-if="company.logo_url"
-                                    :src="company.logo_url"
-                                    :alt="company.company_name"
-                                    class="h-full w-full object-cover"
-                                />
-                                <div
-                                    v-else
-                                    class="flex h-full w-full items-center justify-center text-lg font-semibold"
-                                >
-                                    {{ companyInitials }}
-                                </div>
-                            </div>
+                            <CompanyLogo
+                                :src="company.logo_url"
+                                :alt="company.company_name"
+                                :initials="companyInitials"
+                                class="h-16 w-16 rounded-2xl"
+                                text-class="select-none text-lg font-semibold"
+                            />
 
                             <div class="space-y-3">
                                 <div>

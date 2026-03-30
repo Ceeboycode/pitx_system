@@ -2,9 +2,9 @@
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 
-import ForceDeleteCompanyDialog from '@/components/company/ForceDeleteCompanyDialog.vue';
 import RestoreCompanyDialog from '@/components/company/RestoreCompanyDialog.vue';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -40,14 +40,12 @@ import {
     Archive,
     ArrowLeft,
     Building2,
+    FileSearch,
     MoreHorizontal,
     RotateCcw,
-    Trash2,
 } from 'lucide-vue-next';
 
 import { ref } from 'vue';
-
-/* ── Types ──────────────────────────────────────────────────────────── */
 
 type Company = {
     id: number;
@@ -57,34 +55,22 @@ type Company = {
     deleter?: { id: number; name: string } | null;
 };
 
-/* ── Breadcrumbs ─────────────────────────────────────────────────── */
-
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Companies', href: index().url },
     { title: 'Archived', href: trash().url },
 ];
-
-/* ── Props ───────────────────────────────────────────────────────── */
 
 const props = defineProps<{
     companies: any;
     filters: { search: string | null };
 }>();
 
-/* ── Dialog state ────────────────────────────────────────────────── */
-
 const restoreOpen     = ref(false);
-const forceDeleteOpen = ref(false);
 const selectedCompany = ref<Company | null>(null);
 
 function openRestore(company: Company) {
     selectedCompany.value = company;
     restoreOpen.value = true;
-}
-
-function openForceDelete(company: Company) {
-    selectedCompany.value = company;
-    forceDeleteOpen.value = true;
 }
 </script>
 
@@ -101,7 +87,7 @@ function openForceDelete(company: Company) {
                             Archived Companies
                         </CardTitle>
                         <CardDescription class="mt-1">
-                            Archived companies can be restored or permanently deleted.
+                            Archived companies can be reviewed and restored safely when needed.
                         </CardDescription>
                     </div>
 
@@ -121,8 +107,6 @@ function openForceDelete(company: Company) {
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-
-                    <!-- Search -->
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <div class="w-full max-w-sm">
                             <SearchInput
@@ -135,13 +119,13 @@ function openForceDelete(company: Company) {
                         </div>
                     </div>
 
-                    <!-- Table -->
                     <div class="overflow-x-auto rounded-lg border">
                         <Table>
                             <TableHeader>
                                 <TableRow class="bg-muted/40 hover:bg-muted/40">
                                     <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Company Name</TableHead>
                                     <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Code</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Status</TableHead>
                                     <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Archived At</TableHead>
                                     <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Archived By</TableHead>
                                     <TableHead class="text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Actions</TableHead>
@@ -149,9 +133,8 @@ function openForceDelete(company: Company) {
                             </TableHeader>
 
                             <TableBody>
-                                <!-- Empty state -->
                                 <TableRow v-if="companies.data.length === 0" class="hover:bg-transparent">
-                                    <TableCell colspan="5" class="py-20 text-center">
+                                    <TableCell colspan="6" class="py-20 text-center">
                                         <div class="flex flex-col items-center gap-3">
                                             <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
                                                 <Building2 class="h-6 w-6 text-muted-foreground/40" />
@@ -169,29 +152,30 @@ function openForceDelete(company: Company) {
                                     :key="company.id"
                                     class="transition-colors hover:bg-muted/30"
                                 >
-                                    <!-- Company Name -->
                                     <TableCell>
                                         <p class="text-sm font-semibold capitalize">{{ company.company_name }}</p>
                                     </TableCell>
 
-                                    <!-- Code -->
                                     <TableCell>
                                         <span class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
                                             {{ company.company_code }}
                                         </span>
                                     </TableCell>
 
-                                    <!-- Archived At -->
+                                    <TableCell>
+                                        <Badge variant="secondary" class="border-0 bg-slate-100 text-slate-600">
+                                            Inactive
+                                        </Badge>
+                                    </TableCell>
+
                                     <TableCell class="text-sm text-muted-foreground">
                                         {{ company.deleted_at_human ?? '—' }}
                                     </TableCell>
 
-                                    <!-- Archived By -->
                                     <TableCell class="text-sm capitalize text-muted-foreground">
                                         {{ company.deleter?.name ?? '—' }}
                                     </TableCell>
 
-                                    <!-- Actions -->
                                     <TableCell class="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
@@ -213,21 +197,23 @@ function openForceDelete(company: Company) {
                                                 <DropdownMenuSeparator />
 
                                                 <DropdownMenuItem
-                                                    class="rounded-lg text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700"
-                                                    @click="openRestore(company)"
+                                                    as-child
+                                                    class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700"
                                                 >
-                                                    <RotateCcw class="mr-2 h-4 w-4" />
-                                                    Restore Company
+                                                    <Link :href="`/companies/archived/${company.id}`" class="flex items-center">
+                                                        <FileSearch class="mr-2 h-4 w-4" />
+                                                        View Archived Details
+                                                    </Link>
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuSeparator />
 
                                                 <DropdownMenuItem
-                                                    class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600"
-                                                    @click="openForceDelete(company)"
+                                                    class="rounded-lg text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700"
+                                                    @click="openRestore(company)"
                                                 >
-                                                    <Trash2 class="mr-2 h-4 w-4" />
-                                                    Delete Permanently
+                                                    <RotateCcw class="mr-2 h-4 w-4" />
+                                                    Restore Company
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -251,12 +237,6 @@ function openForceDelete(company: Company) {
             <RestoreCompanyDialog
                 v-if="selectedCompany"
                 v-model:open="restoreOpen"
-                :company="selectedCompany"
-            />
-
-            <ForceDeleteCompanyDialog
-                v-if="selectedCompany"
-                v-model:open="forceDeleteOpen"
                 :company="selectedCompany"
             />
         </div>

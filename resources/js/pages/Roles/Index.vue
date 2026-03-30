@@ -1,35 +1,17 @@
 <script setup lang="ts">
-/* ======================================================
-   Layout, Routing & Inertia
-====================================================== */
+import ListFilters from '@/components/ListFilters.vue';
+import SortDirectionControl from '@/components/filters/SortDirectionControl.vue';
+import { useSortableIndex } from '@/composables/useSortableIndex';
+
 import AppLayout from '@/layouts/AppLayout.vue';
 import { create, destroy, edit, index } from '@/routes/roles';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 
-/* ======================================================
-   Icons
-====================================================== */
-import { Pencil, Trash2 } from 'lucide-vue-next';
+import { Pencil, Plus } from 'lucide-vue-next';
 
-/* ======================================================
-   Vue Core
-====================================================== */
 import { computed, ref, watch } from 'vue';
 
-/* ======================================================
-   shadcn-vue
-====================================================== */
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -39,41 +21,26 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import {
     Table,
     TableBody,
-    TableCaption,
     TableCell,
     TableHead,
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
 
-/* ======================================================
-   Permissions
-====================================================== */
 import { can } from '@/lib/can';
 
 const canCreate = can('roles.create');
 const canUpdate = can('roles.update');
 const canDelete = can('roles.delete');
 
-/* ======================================================
-   Types
-====================================================== */
 type Permission = {
     id: number;
     name: string;
@@ -86,9 +53,6 @@ type Role = {
     permissions: Permission[];
 };
 
-/* ======================================================
-   Props
-====================================================== */
 const props = defineProps<{
     roles: {
         data: Role[];
@@ -97,46 +61,51 @@ const props = defineProps<{
     filters: {
         search?: string | null;
         type?: string | null;
+        sort?: string | null;
+        direction?: string | null;
     };
 }>();
 
-/* ======================================================
-   Breadcrumbs
-====================================================== */
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Roles', href: index().url }];
 
-/* ======================================================
-   Filters
-====================================================== */
-const search   = ref(props.filters.search ?? '');
-const roleType = ref(props.filters.type ?? 'all');
+const roleFilters = computed(() => [
+    {
+        key: 'type',
+        value: props.filters.type ?? null,
+        placeholder: 'Filter by type',
+        allLabel: 'All types',
+        desktopWidthClass: 'w-44',
+        desktopMaxWidth: '11rem',
+        options: [
+            { label: 'Internal', value: 'internal' },
+            { label: 'External', value: 'external' },
+        ],
+    },
+]);
 
-let filterTimer: number | null = null;
+const sortOptions = [
+    { label: 'Newest', value: 'created_at' },
+    { label: 'Name', value: 'name' },
+    { label: 'Type', value: 'type' },
+] as const;
 
-function applyFilters() {
-    router.get(
-        index().url,
-        {
-            search: search.value || undefined,
-            type: roleType.value === 'all' ? undefined : roleType.value,
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            replace: true,
-            only: ['roles', 'filters', 'flash'],
-        },
-    );
-}
-
-watch([search, roleType], () => {
-    if (filterTimer) window.clearTimeout(filterTimer);
-    filterTimer = window.setTimeout(() => applyFilters(), 350);
+const baseQuery = computed(() => ({
+    search: props.filters.search ?? '',
+    type: props.filters.type ?? null,
+}));
+const {
+    currentSort,
+    currentDirection,
+    applySort,
+    toggleDirection,
+} = useSortableIndex({
+    route: index().url,
+    baseQuery,
+    sort: computed(() => props.filters.sort ?? 'created_at'),
+    direction: computed(() => props.filters.direction ?? 'desc'),
+    only: ['roles', 'filters', 'flash'],
 });
 
-/* ======================================================
-   Delete dialog
-====================================================== */
 const open         = ref(false);
 const selectedRole = ref<Role | null>(null);
 const confirmation = ref('');
@@ -180,36 +149,45 @@ function deleteRole() {
                     <CardDescription>Manage the roles of your application.</CardDescription>
 
                     <CardAction>
-                        <Button v-if="canCreate" variant="default" size="sm" as-child>
+                        <!-- <Button v-if="canCreate" variant="default" size="sm" as-child>
                             <Link :href="create().url">Create Role</Link>
+                        </Button> -->
+                        <Button v-if="canCreate" variant="default" size="sm" as-child>
+                            <Link :href="create().url">
+                                <Plus class="mr-1 h-4 w-4" />
+                                Create Role
+                            </Link>
                         </Button>
                     </CardAction>
                 </CardHeader>
 
                 <CardContent class="space-y-4">
                     <!-- Filters -->
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="w-full sm:max-w-sm">
-                            <Input v-model="search" placeholder="Search roles..." />
-                        </div>
-
-                        <div class="w-full sm:w-56">
-                            <Select v-model="roleType">
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Filter by type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All types</SelectItem>
-                                    <SelectItem value="internal">Internal</SelectItem>
-                                    <SelectItem value="external">External</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
+                    <ListFilters
+                        :route="index().url"
+                        :search="props.filters.search ?? ''"
+                        search-placeholder="Search roles..."
+                        :only="['roles', 'filters', 'flash']"
+                        :filters="roleFilters"
+                        :query="{
+                            sort: currentSort,
+                            direction: currentDirection,
+                        }"
+                        mobile-inline-actions
+                    >
+                        <template #panel-actions>
+                            <SortDirectionControl
+                                :options="sortOptions"
+                                :value="currentSort"
+                                :direction="currentDirection"
+                                label="Sort roles"
+                                @select="applySort"
+                                @toggle-direction="toggleDirection"
+                            />
+                        </template>
+                    </ListFilters>
 
                     <Table>
-                        <!-- <TableCaption>List of roles in the system.</TableCaption> -->
-
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Name</TableHead>
@@ -271,17 +249,6 @@ function deleteRole() {
                                                 Edit
                                             </Link>
                                         </Button>
-
-                                        <Button
-                                            v-if="canDelete"
-                                            variant="destructive"
-                                            size="sm"
-                                            class="cursor-pointer"
-                                            @click="openDelete(role)"
-                                        >
-                                            <Trash2 class="mr-2 h-4 w-4" />
-                                            Delete
-                                        </Button>
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -299,49 +266,5 @@ function deleteRole() {
                 </CardContent>
             </Card>
         </div>
-
-        <!-- Delete confirmation dialog -->
-        <AlertDialog v-if="canDelete" v-model:open="open">
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Role Permanently</AlertDialogTitle>
-
-                    <AlertDialogDescription class="space-y-3">
-                        <p>
-                            This action cannot be undone. It will permanently delete
-                            <span class="font-medium">{{ selectedRole?.name }}</span>
-                            and remove it from the system.
-                        </p>
-
-                        <p class="text-sm text-muted-foreground">
-                            To confirm, please type
-                            <span class="mx-1 font-mono font-semibold text-destructive/80">
-                                DELETE
-                            </span>
-                            below.
-                        </p>
-
-                        <Input
-                            v-model="confirmation"
-                            placeholder="Type DELETE to confirm"
-                            class="mt-2"
-                        />
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-
-                    <AlertDialogAction
-                        :disabled="!canConfirmDelete || processing"
-                        class="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:pointer-events-none disabled:opacity-50"
-                        @click="deleteRole"
-                    >
-                        <Trash2 class="mr-2 h-4 w-4" />
-                        {{ processing ? 'Deleting...' : 'Delete Permanently' }}
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
     </AppLayout>
 </template>

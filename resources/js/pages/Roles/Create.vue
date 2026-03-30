@@ -37,42 +37,27 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-/* ======================================================
-   Types
-====================================================== */
 type Permission = {
     id: number;
     name: string;
 };
 
-/* ======================================================
-   Props
-====================================================== */
 const props = defineProps<{
     permissions: Permission[];
     roleTypes: string[];
 }>();
 
-/* ======================================================
-   Breadcrumbs
-====================================================== */
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Roles', href: index().url },
     { title: 'Create', href: create().url },
 ];
 
-/* ======================================================
-   Form
-====================================================== */
 const form = useForm({
     name: '',
     type: 'internal' as 'internal' | 'external',
     permissions: [] as number[],
 });
 
-/* ======================================================
-   Collapsed modules state
-====================================================== */
 const collapsedModules = ref<Record<string, boolean>>({});
 
 function toggleCollapse(moduleKey: string) {
@@ -83,9 +68,6 @@ function isCollapsed(moduleKey: string) {
     return collapsedModules.value[moduleKey] ?? false;
 }
 
-/* ======================================================
-   Label helpers
-====================================================== */
 function moduleLabel(moduleKey: string) {
     return moduleKey
         .replace(/^external_/, '')
@@ -100,9 +82,6 @@ function actionLabel(permissionName: string) {
         .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-/* ======================================================
-   Permission split — external_ prefix = external tab
-====================================================== */
 const internalPermissions = computed(() =>
     props.permissions.filter((p) => !p.name.startsWith('external_')),
 );
@@ -111,9 +90,6 @@ const externalPermissions = computed(() =>
     props.permissions.filter((p) => p.name.startsWith('external_')),
 );
 
-/* ======================================================
-   Grouping
-====================================================== */
 function groupPermissions(list: Permission[]) {
     const map: Record<string, Permission[]> = {};
 
@@ -134,9 +110,6 @@ function groupPermissions(list: Permission[]) {
 const groupedInternal = computed(() => groupPermissions(internalPermissions.value));
 const groupedExternal = computed(() => groupPermissions(externalPermissions.value));
 
-/* ======================================================
-   Select all
-====================================================== */
 const allIds = computed(() => props.permissions.map((p) => p.id));
 
 const allChecked = computed(
@@ -153,9 +126,6 @@ function toggleAll(checked: boolean) {
     form.permissions = checked ? [...allIds.value] : [];
 }
 
-/* ======================================================
-   Per-permission toggle
-====================================================== */
 function togglePermission(permissionId: number, checked: boolean) {
     if (checked) {
         if (!form.permissions.includes(permissionId))
@@ -165,9 +135,6 @@ function togglePermission(permissionId: number, checked: boolean) {
     form.permissions = form.permissions.filter((id) => id !== permissionId);
 }
 
-/* ======================================================
-   Per-module toggle
-====================================================== */
 function moduleIds(moduleKey: string) {
     const all = groupPermissions(props.permissions);
     const list = all.find(([key]) => key === moduleKey)?.[1] ?? [];
@@ -205,16 +172,10 @@ function toggleModule(moduleKey: string, checked: boolean) {
     form.permissions = form.permissions.filter((id) => !ids.includes(id));
 }
 
-/* ======================================================
-   Tab selected counts
-====================================================== */
 function tabSelectedCount(list: Permission[]) {
     return list.filter((p) => form.permissions.includes(p.id)).length;
 }
 
-/* ======================================================
-   Submit
-====================================================== */
 function submit() {
     form.post(store().url, { preserveScroll: true });
 }
@@ -239,7 +200,6 @@ function submit() {
                 <Separator />
 
                 <CardContent class="space-y-8 pt-6">
-                    <!-- ── Role details ───────────────────────────── -->
                     <div class="grid gap-6 sm:grid-cols-2">
                         <div class="space-y-2">
                             <Label for="name" class="flex items-center gap-1.5">
@@ -277,7 +237,6 @@ function submit() {
                         </div>
                     </div>
 
-                    <!-- ── Permissions ────────────────────────────── -->
                     <div class="space-y-4">
                         <!-- Header row -->
                         <div class="flex items-center justify-between">
@@ -336,7 +295,6 @@ function submit() {
                                 </TabsTrigger>
                             </TabsList>
 
-                            <!-- ── Internal tab ───────────────────── -->
                             <TabsContent value="internal" class="mt-0 space-y-3">
                                 <p
                                     v-if="groupedInternal.length === 0"
@@ -386,7 +344,6 @@ function submit() {
                                         />
                                     </button>
 
-                                    <!-- Permission grid -->
                                     <div
                                         v-if="!isCollapsed(moduleKey)"
                                         class="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3"
@@ -420,7 +377,6 @@ function submit() {
                                 </div>
                             </TabsContent>
 
-                            <!-- ── External tab ───────────────────── -->
                             <TabsContent value="external" class="mt-0 space-y-3">
                                 <p
                                     v-if="groupedExternal.length === 0"

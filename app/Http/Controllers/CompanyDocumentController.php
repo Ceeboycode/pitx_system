@@ -38,12 +38,27 @@ class CompanyDocumentController extends Controller
         Gate::authorize('view', $company);
         Gate::authorize('viewAny', CompanyDocument::class);
 
+        $documentIds = collect($request->input('document_ids', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->values();
+
         $documents = CompanyDocument::query()
             ->where('company_id', $company->id)
-            ->where('status', 'verified')
+            ->when(
+                $documentIds->isNotEmpty(),
+                fn ($query) => $query->whereIn('id', $documentIds->all()),
+                fn ($query) => $query->where('status', 'verified')
+            )
             ->get();
 
-        abort_if($documents->isEmpty(), 404, 'No verified documents found.');
+        abort_if(
+            $documents->isEmpty(),
+            404,
+            $documentIds->isNotEmpty()
+                ? 'No selected documents found.'
+                : 'No verified documents found.'
+        );
 
         $tmpPath = tempnam(sys_get_temp_dir(), 'docs_') . '.zip';
 
@@ -74,11 +89,21 @@ class CompanyDocumentController extends Controller
 
         $zip->close();
 
-        abort_if(filesize($tmpPath) === 0, 404, 'No readable verified files found.');
+        abort_if(
+            filesize($tmpPath) === 0,
+            404,
+            $documentIds->isNotEmpty()
+                ? 'No readable selected files found.'
+                : 'No readable verified files found.'
+        );
+
+        $zipSuffix = $documentIds->isNotEmpty()
+            ? 'selected-documents'
+            : 'verified-documents';
 
         $zipName = $company->company_code
-            ? "{$company->company_code}-verified-documents.zip"
-            : "company-{$company->id}-verified-documents.zip";
+            ? "{$company->company_code}-{$zipSuffix}.zip"
+            : "company-{$company->id}-{$zipSuffix}.zip";
 
         return response()->streamDownload(function () use ($tmpPath) {
             $handle = fopen($tmpPath, 'rb');

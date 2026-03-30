@@ -13,10 +13,28 @@ const props = defineProps<{
 }>();
 
 const search = ref(props.initialValue ?? '');
+let syncingFromProps = false;
 
 let timeout: number | undefined;
 
+watch(
+    () => props.initialValue,
+    (value) => {
+        const nextValue = value ?? '';
+        if (search.value === nextValue) return;
+
+        window.clearTimeout(timeout);
+        syncingFromProps = true;
+        search.value = nextValue;
+    },
+);
+
 watch(search, (value) => {
+    if (syncingFromProps) {
+        syncingFromProps = false;
+        return;
+    }
+
     window.clearTimeout(timeout);
 
     timeout = window.setTimeout(() => {
@@ -39,7 +57,7 @@ const clear = () => {
 </script>
 
 <template>
-    <div class="relative w-full">
+    <div class="relative flex h-8 w-full items-center overflow-hidden rounded-md border bg-background shadow-xs">
         <Search
             class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
             :size="16"
@@ -48,7 +66,7 @@ const clear = () => {
         <Input
             v-model="search"
             :placeholder="placeholder ?? 'Search...'"
-            class="pl-9 pr-10"
+            class="h-full border-0 bg-transparent pl-9 pr-10 shadow-none focus-visible:ring-0"
         />
 
         <button

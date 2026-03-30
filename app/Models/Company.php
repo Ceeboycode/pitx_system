@@ -44,6 +44,8 @@ class Company extends Model
         'updated_at_human',
         'deleted_at_human',
         'is_docs_complete',
+        'is_active',
+        'is_archived',
         'is_verified',
         'is_company_email_verified',
         'logo_url',
@@ -60,6 +62,16 @@ class Company extends Model
                     ->orWhere('company_phone', 'like', '%' . $search . '%');
             })
         );
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('status', 'verified');
+    }
+
+    public function scopeArchivedByStatus(Builder $query): Builder
+    {
+        return $query->where('status', '!=', 'verified');
     }
 
     public function vehicles(): HasMany
@@ -115,6 +127,16 @@ class Company extends Model
     public function getIsVerifiedAttribute(): bool
     {
         return $this->status === 'verified';
+    }
+
+    public function getIsActiveAttribute(): bool
+    {
+        return $this->status === 'verified';
+    }
+
+    public function getIsArchivedAttribute(): bool
+    {
+        return $this->status !== 'verified';
     }
 
     public function getIsCompanyEmailVerifiedAttribute(): bool

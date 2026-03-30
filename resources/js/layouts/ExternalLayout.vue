@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { User } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 
+import CompanyLogo from '@/components/company/CompanyLogo.vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -118,15 +119,6 @@ const navItems = [
 ];
 
 const mobileOpen = ref(false);
-const imgError = ref(false);
-
-const logoSrc = computed(() => company.value?.logo_url ?? null);
-
-watch(logoSrc, () => {
-    imgError.value = false;
-});
-
-const showImage = computed(() => !!logoSrc.value && !imgError.value);
 
 const userInitials = computed(() => {
     const name = user.value?.name ?? '';
@@ -177,23 +169,13 @@ watch(
             >
                 <!-- Brand / Logo -->
                 <div class="flex h-16 items-center gap-3 border-b px-4">
-                    <div
-                        class="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl border bg-muted shadow-sm"
-                    >
-                        <img
-                            v-if="showImage"
-                            :src="logoSrc!"
-                            :alt="company?.company_name ?? 'Company'"
-                            class="h-full w-full object-cover"
-                            @error="imgError = true"
-                        />
-                        <div
-                            v-else
-                            class="flex h-full w-full items-center justify-center bg-primary text-[11px] font-bold tracking-wide text-primary-foreground select-none"
-                        >
-                            {{ companyInitials }}
-                        </div>
-                    </div>
+                    <CompanyLogo
+                        :src="company?.logo_url ?? null"
+                        :alt="company?.company_name ?? 'Company'"
+                        :initials="companyInitials"
+                        class="h-9 w-9 shrink-0 rounded-xl shadow-sm"
+                        text-class="select-none text-[11px] font-bold tracking-wide"
+                    />
 
                     <div class="min-w-0 flex-1">
                         <p class="truncate text-sm leading-none font-semibold">
@@ -319,23 +301,13 @@ watch(
             <Sheet v-model:open="mobileOpen">
                 <SheetContent side="left" class="w-64 p-0">
                     <div class="flex h-16 items-center gap-3 border-b px-4">
-                        <div
-                            class="relative h-8 w-8 shrink-0 overflow-hidden rounded-lg border bg-muted"
-                        >
-                            <img
-                                v-if="showImage"
-                                :src="logoSrc!"
-                                :alt="company?.company_name ?? 'Company'"
-                                class="h-full w-full object-cover"
-                                @error="imgError = true"
-                            />
-                            <div
-                                v-else
-                                class="flex h-full w-full items-center justify-center bg-primary text-[10px] font-bold text-primary-foreground select-none"
-                            >
-                                {{ companyInitials }}
-                            </div>
-                        </div>
+                        <CompanyLogo
+                            :src="company?.logo_url ?? null"
+                            :alt="company?.company_name ?? 'Company'"
+                            :initials="companyInitials"
+                            class="h-8 w-8 shrink-0 rounded-lg"
+                            text-class="select-none text-[10px] font-bold"
+                        />
 
                         <div class="min-w-0">
                             <p
@@ -424,23 +396,13 @@ watch(
                     </Button>
 
                     <div class="flex items-center gap-2">
-                        <div
-                            class="relative h-6 w-6 shrink-0 overflow-hidden rounded-md border bg-muted"
-                        >
-                            <img
-                                v-if="showImage"
-                                :src="logoSrc!"
-                                :alt="company?.company_name ?? 'Company'"
-                                class="h-full w-full object-cover"
-                                @error="imgError = true"
-                            />
-                            <div
-                                v-else
-                                class="flex h-full w-full items-center justify-center bg-primary text-[9px] font-bold text-primary-foreground select-none"
-                            >
-                                {{ companyInitials }}
-                            </div>
-                        </div>
+                        <CompanyLogo
+                            :src="company?.logo_url ?? null"
+                            :alt="company?.company_name ?? 'Company'"
+                            :initials="companyInitials"
+                            class="h-6 w-6 shrink-0 rounded-md"
+                            text-class="select-none text-[9px] font-bold"
+                        />
 
                         <span class="text-sm font-semibold">
                             {{
