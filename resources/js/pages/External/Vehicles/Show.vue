@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, reactive, ref } from 'vue';
 
 import ExternalLayout from '@/layouts/ExternalLayout.vue';
@@ -8,9 +8,17 @@ import VehicleBasicInfoForm from '@/components/company/vehicles/VehicleBasicInfo
 import VehicleRouteAssignment from '@/components/company/vehicles/VehicleRouteAssignment.vue';
 import VehicleSummaryCard from '@/components/company/vehicles/VehicleSummaryCard.vue';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
     Dialog,
     DialogContent,
@@ -18,6 +26,14 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 import {
     ArrowLeft,
@@ -30,15 +46,27 @@ import {
     Eye,
     FileImage,
     FileText,
-    Hash,
     MapPinned,
+    MoreHorizontal,
     Pencil,
+    Power,
     ShieldCheck,
     UserCircle2,
 } from 'lucide-vue-next';
 
 import CompanyVehicleController from '@/actions/App/Http/Controllers/CompanyVehicleController';
 
+/* ======================================================
+   Permissions
+====================================================== */
+import { can } from '@/lib/can';
+
+const canUpdate = can('external_vehicles.update');
+const canToggle = can('external_vehicles.toggleStatus');
+
+/* ======================================================
+   Types
+====================================================== */
 type Company = {
     id: number;
     company_name: string;
@@ -115,6 +143,9 @@ type Vehicle = {
 
 type DocTypes = Record<string, string>;
 
+/* ======================================================
+   Props
+====================================================== */
 const props = defineProps<{
     company: Company;
     user: User;
@@ -129,6 +160,9 @@ const props = defineProps<{
     };
 }>();
 
+/* ======================================================
+   Read-only form state (for child components)
+====================================================== */
 const vehicleTypes = ['Bus', 'Modern Jeepney', 'Jeepney', 'Mini Bus', 'UV Express', 'Van'];
 
 const form = reactive({
@@ -151,6 +185,9 @@ const form = reactive({
     })),
 });
 
+/* ======================================================
+   Computed
+====================================================== */
 const selectedRoute = computed(() =>
     props.routes.find((route) => String(route.id) === String(form.route_id)) ??
     props.vehicle.route ??
@@ -160,8 +197,13 @@ const selectedRoute = computed(() =>
 const requiredDocumentsCount = computed(() => Object.keys(props.docTypes).length);
 const uploadedDocumentsCount = computed(() => props.vehicle.documents.length);
 
-const previewOpen = ref(false);
-const previewDoc = ref<VehicleDocument | null>(null);
+const approvedDocumentsCount = computed(() =>
+    props.vehicle.documents.filter((doc) => doc.status === 'approved').length,
+);
+
+const pendingDocumentsCount = computed(() =>
+    props.vehicle.documents.filter((doc) => doc.status === 'pending').length,
+);
 
 const orderedDocuments = computed(() =>
     Object.keys(props.docTypes).map((docKey) => ({
@@ -171,13 +213,63 @@ const orderedDocuments = computed(() =>
     })),
 );
 
-const approvedDocumentsCount = computed(() =>
-    props.vehicle.documents.filter((doc) => doc.status === 'approved').length,
-);
+/* ======================================================
+   Business logic guards (toggle)
+====================================================== */
+function isSuspended(status?: string | null) {
+    return status === 'suspended';
+}
 
-const pendingDocumentsCount = computed(() =>
-    props.vehicle.documents.filter((doc) => doc.status === 'pending').length,
-);
+function businessCanToggle(vehicle: Vehicle) {
+    if (isSuspended(vehicle.status)) return false;
+    if (!vehicle.documents?.length)  return false;
+    return !vehicle.documents.some(
+        (doc) => doc.status === 'pending' || doc.status === 'rejected',
+    );
+}
+
+const canToggleVehicle = computed(() => canToggle && businessCanToggle(props.vehicle));
+
+function toggleLabel(status?: string | null) {
+    return status === 'active' ? 'Set Inactive' : 'Set Active';
+}
+
+function toggleStatusClass(status?: string | null) {
+    return status === 'active'
+        ? 'text-rose-600 focus:text-rose-600 focus:bg-rose-50'
+        : 'text-emerald-700 focus:text-emerald-700 focus:bg-emerald-50';
+}
+
+function vehicleActionNote(vehicle: Vehicle) {
+    if (isSuspended(vehicle.status)) return 'Suspended vehicles cannot be edited or updated.';
+    if (!vehicle.documents?.length)  return 'Upload required documents first.';
+    if (vehicle.documents.some((doc) => doc.status === 'pending' || doc.status === 'rejected')) {
+        return 'Documents must be approved before changing status.';
+    }
+    return '';
+}
+
+/* ======================================================
+   Toggle status dialog
+====================================================== */
+const statusDialog = reactive({ open: false });
+
+function confirmToggleStatus() {
+    router.patch(
+        CompanyVehicleController.toggleStatus(props.vehicle.id).url,
+        {},
+        {
+            preserveScroll: true,
+            onSuccess: () => { statusDialog.open = false; },
+        },
+    );
+}
+
+/* ======================================================
+   Document preview dialog
+====================================================== */
+const previewOpen = ref(false);
+const previewDoc  = ref<VehicleDocument | null>(null);
 
 function openPreview(doc: VehicleDocument) {
     if (!doc.file_url) return;
@@ -185,6 +277,9 @@ function openPreview(doc: VehicleDocument) {
     previewOpen.value = true;
 }
 
+/* ======================================================
+   Helpers
+====================================================== */
 function humanize(value?: string | null) {
     if (!value) return '—';
     return value.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
@@ -206,9 +301,9 @@ function statusClass(status?: string | null) {
 function statusDot(status?: string | null) {
     switch (status) {
         case 'active': case 'approved': case 'verified': return 'bg-emerald-500';
-        case 'pending': case 'for_verification': return 'bg-amber-500';
-        case 'rejected': case 'inactive': return 'bg-rose-500';
-        default: return 'bg-slate-400';
+        case 'pending': case 'for_verification':         return 'bg-amber-500';
+        case 'rejected': case 'inactive':                return 'bg-rose-500';
+        default:                                          return 'bg-slate-400';
     }
 }
 
@@ -239,14 +334,14 @@ function formatBytes(bytes?: number | null) {
 }
 
 function isPdf(doc?: VehicleDocument | null) {
-    const mime = String(doc?.file_mime_type ?? '').toLowerCase();
-    const fileName = String(doc?.file_name ?? '').toLowerCase();
+    const mime     = String(doc?.file_mime_type ?? '').toLowerCase();
+    const fileName = String(doc?.file_name      ?? '').toLowerCase();
     return mime.includes('pdf') || fileName.endsWith('.pdf');
 }
 
 function isImage(doc?: VehicleDocument | null) {
-    const mime = String(doc?.file_mime_type ?? '').toLowerCase();
-    const fileName = String(doc?.file_name ?? '').toLowerCase();
+    const mime     = String(doc?.file_mime_type ?? '').toLowerCase();
+    const fileName = String(doc?.file_name      ?? '').toLowerCase();
     return mime.startsWith('image/') || ['.jpg', '.jpeg', '.png', '.webp'].some((ext) => fileName.endsWith(ext));
 }
 
@@ -262,63 +357,133 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
 
-                <!-- ── Page header ─────────────────────────────────────── -->
-                <div class="rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 p-6 shadow-sm">
-                    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div class="space-y-3">
-                            <div class="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-widest text-blue-300">
-                                <span>{{ company.company_code ?? company.company_name }}</span>
-                                <span class="text-blue-500">·</span>
-                                <span>Vehicles</span>
-                                <span class="text-blue-500">·</span>
-                                <span>Details</span>
-                                <Badge :class="['ml-1 border font-medium', statusClass(vehicle.status)]">
-                                    {{ humanize(vehicle.status) }}
-                                </Badge>
-                            </div>
-                            <div>
-                                <h1 class="text-2xl font-bold tracking-tight text-white md:text-3xl">
-                                    {{ vehicle.plate_number }}
-                                </h1>
-                                <p class="mt-1 text-sm text-blue-200">
-                                    Registered vehicle profile, assigned route, and submitted documents.
-                                </p>
-                            </div>
+                <!-- ── Page header ───────────────────────────── -->
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="space-y-1">
+                        <div class="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                            <span>{{ company.company_code ?? company.company_name }}</span>
+                            <span class="text-slate-300">·</span>
+                            <span>Vehicles</span>
+                            <span class="text-slate-300">·</span>
+                            <span>Details</span>
                         </div>
-
-                        <div class="flex flex-wrap gap-2 lg:shrink-0">
-                            <Button
-                                as-child
-                                class="rounded-lg border-0 bg-white text-blue-900 hover:bg-blue-50 font-semibold shadow-sm"
+                        <div class="flex flex-wrap items-center gap-3">
+                            <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+                                {{ vehicle.plate_number }}
+                            </h1>
+                            <span
+                                :class="[
+                                    'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                                    statusClass(vehicle.status),
+                                ]"
                             >
-                                <Link :href="CompanyVehicleController.edit(vehicle.id).url">
+                                <span :class="['h-1.5 w-1.5 rounded-full', statusDot(vehicle.status)]" />
+                                {{ humanize(vehicle.status) }}
+                            </span>
+                        </div>
+                        <p class="text-sm text-slate-500">
+                            Registered vehicle profile, assigned route, and submitted documents.
+                        </p>
+                    </div>
+
+                    <!-- Action buttons -->
+                    <div class="flex shrink-0 items-center gap-2 self-start">
+                        <Button
+                            as-child
+                            variant="outline"
+                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+                        >
+                            <Link :href="CompanyVehicleController.index().url">
+                                <ArrowLeft class="mr-2 h-4 w-4" />
+                                Back
+                            </Link>
+                        </Button>
+
+                        <!-- Actions dropdown — only shown when user has at least one permission -->
+                        <DropdownMenu v-if="canUpdate || canToggle">
+                            <DropdownMenuTrigger as-child>
+                                <Button
+                                    class="gap-2 rounded-lg border-0 bg-blue-700 text-sm font-semibold text-white shadow-sm hover:bg-blue-800"
+                                >
+                                    <MoreHorizontal class="h-4 w-4" />
+                                    Actions
+                                </Button>
+                            </DropdownMenuTrigger>
+
+                            <DropdownMenuContent
+                                align="end"
+                                class="w-56 rounded-xl border-slate-200 shadow-lg"
+                            >
+                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                                    Manage Vehicle
+                                </DropdownMenuLabel>
+
+                                <DropdownMenuSeparator class="bg-slate-100" />
+
+                                <!-- Edit -->
+                                <DropdownMenuItem
+                                    v-if="canUpdate && !isSuspended(vehicle.status)"
+                                    as-child
+                                    class="rounded-lg text-slate-700 focus:bg-amber-50 focus:text-amber-700"
+                                >
+                                    <Link :href="CompanyVehicleController.edit(vehicle.id).url">
+                                        <Pencil class="mr-2 h-4 w-4" />
+                                        Edit Vehicle
+                                    </Link>
+                                </DropdownMenuItem>
+
+                                <!-- Edit disabled — suspended -->
+                                <DropdownMenuItem
+                                    v-else-if="canUpdate"
+                                    disabled
+                                    class="rounded-lg text-slate-300"
+                                >
                                     <Pencil class="mr-2 h-4 w-4" />
                                     Edit Vehicle
-                                </Link>
-                            </Button>
-                            <Button
-                                as-child
-                                variant="outline"
-                                class="rounded-lg border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
-                            >
-                                <Link :href="CompanyVehicleController.index().url">
-                                    <ArrowLeft class="mr-2 h-4 w-4" />
-                                    Back to Vehicles
-                                </Link>
-                            </Button>
-                        </div>
+                                </DropdownMenuItem>
+
+                                <DropdownMenuSeparator v-if="canUpdate && canToggle" class="bg-slate-100" />
+
+                                <!-- Toggle status -->
+                                <DropdownMenuItem
+                                    v-if="canToggle && canToggleVehicle"
+                                    :class="['rounded-lg', toggleStatusClass(vehicle.status)]"
+                                    @click="statusDialog.open = true"
+                                >
+                                    <Power class="mr-2 h-4 w-4" />
+                                    {{ toggleLabel(vehicle.status) }}
+                                </DropdownMenuItem>
+
+                                <!-- Toggle disabled — business rule blocks -->
+                                <DropdownMenuItem
+                                    v-else-if="canToggle"
+                                    disabled
+                                    class="rounded-lg text-slate-300"
+                                >
+                                    <Power class="mr-2 h-4 w-4" />
+                                    {{ toggleLabel(vehicle.status) }}
+                                </DropdownMenuItem>
+
+                                <!-- Contextual note -->
+                                <div
+                                    v-if="canToggle && !canToggleVehicle"
+                                    class="px-2 pb-2 pt-1 text-left text-[11px] text-slate-400"
+                                >
+                                    {{ vehicleActionNote(vehicle) }}
+                                </div>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
 
-                <!-- ── Stat cards ──────────────────────────────────────── -->
+                <!-- ── Stat cards ─────────────────────────────── -->
                 <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
-
                     <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700">
                             <CarFront class="h-4 w-4 text-white" />
                         </div>
                         <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Vehicle Type</p>
-                        <p class="mt-0.5 text-sm font-bold text-slate-900 truncate">
+                        <p class="mt-0.5 truncate text-sm font-bold text-slate-900">
                             {{ vehicle.vehicle_type || '—' }}
                         </p>
                     </div>
@@ -328,7 +493,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                             <MapPinned class="h-4 w-4 text-white" />
                         </div>
                         <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Assigned Route</p>
-                        <p class="mt-0.5 text-sm font-bold text-slate-900 truncate">
+                        <p class="mt-0.5 truncate text-sm font-bold text-slate-900">
                             {{ selectedRoute?.route_name || 'No route assigned' }}
                         </p>
                     </div>
@@ -353,10 +518,9 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                             {{ formatDate(vehicle.created_at) }}
                         </p>
                     </div>
-
                 </div>
 
-                <!-- ── Main grid ───────────────────────────────────────── -->
+                <!-- ── Main grid ──────────────────────────────── -->
                 <div class="grid gap-6 xl:grid-cols-[1fr_330px]">
 
                     <!-- Left column -->
@@ -366,7 +530,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div class="border-b border-slate-100 px-6 py-4">
                                 <h2 class="text-base font-semibold text-slate-800">Company Information</h2>
-                                <p class="text-xs text-slate-400 mt-0.5">Registration ownership details for this vehicle.</p>
+                                <p class="mt-0.5 text-xs text-slate-400">Registration ownership details for this vehicle.</p>
                             </div>
                             <div class="grid gap-4 p-6 md:grid-cols-2">
                                 <div class="space-y-1.5">
@@ -400,7 +564,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div class="border-b border-slate-100 px-6 py-4">
                                 <h2 class="text-base font-semibold text-slate-800">Route Assignment</h2>
-                                <p class="text-xs text-slate-400 mt-0.5">Operating route and stop details for this vehicle.</p>
+                                <p class="mt-0.5 text-xs text-slate-400">Operating route and stop details for this vehicle.</p>
                             </div>
                             <div class="p-6">
                                 <VehicleRouteAssignment
@@ -417,7 +581,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div class="border-b border-slate-100 px-6 py-4">
                                 <h2 class="text-base font-semibold text-slate-800">Vehicle Information</h2>
-                                <p class="text-xs text-slate-400 mt-0.5">Main registration and identification details.</p>
+                                <p class="mt-0.5 text-xs text-slate-400">Main registration and identification details.</p>
                             </div>
                             <div class="p-6">
                                 <VehicleBasicInfoForm :form="form" :vehicle-types="vehicleTypes" readonly />
@@ -428,18 +592,19 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div class="border-b border-slate-100 px-6 py-4">
                                 <h2 class="text-base font-semibold text-slate-800">Required Documents</h2>
-                                <p class="text-xs text-slate-400 mt-0.5">Open each file in a preview dialog without leaving this page.</p>
+                                <p class="mt-0.5 text-xs text-slate-400">Open each file in a preview dialog without leaving this page.</p>
                             </div>
-                            <div class="divide-y divide-slate-100 p-4 space-y-0">
+                            <div class="space-y-0 divide-y divide-slate-100 p-4">
                                 <div
                                     v-for="document in orderedDocuments"
                                     :key="document.document_type"
-                                    class="overflow-hidden rounded-xl border border-slate-200 bg-white transition-colors hover:border-blue-200 mb-3 last:mb-0"
+                                    class="mb-3 overflow-hidden rounded-xl border border-slate-200 bg-white transition-colors hover:border-blue-200 last:mb-0"
                                 >
                                     <!-- Doc header row -->
                                     <div class="flex flex-col gap-4 p-4 md:flex-row md:items-start md:justify-between">
                                         <div class="flex min-w-0 items-start gap-3">
-                                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                                            <div
+                                                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
                                                 :class="document.item ? 'bg-blue-700' : 'bg-slate-200'"
                                             >
                                                 <component
@@ -457,7 +622,12 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                         </div>
 
                                         <div class="flex flex-wrap items-center gap-2">
-                                            <span :class="['inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium', statusClass(document.item?.status ?? 'pending')]">
+                                            <span
+                                                :class="[
+                                                    'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                                                    statusClass(document.item?.status ?? 'pending'),
+                                                ]"
+                                            >
                                                 <span :class="['h-1.5 w-1.5 rounded-full', statusDot(document.item?.status ?? 'pending')]" />
                                                 {{ humanize(document.item?.status ?? 'pending') }}
                                             </span>
@@ -467,7 +637,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                                 type="button"
                                                 variant="outline"
                                                 size="sm"
-                                                class="rounded-lg border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-800 hover:border-blue-200"
+                                                class="rounded-lg border-slate-200 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-800"
                                                 @click="openPreview(document.item)"
                                             >
                                                 <Eye class="mr-1.5 h-3.5 w-3.5" />
@@ -521,7 +691,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div class="border-b border-slate-100 px-5 py-4">
                                 <h3 class="text-sm font-semibold text-slate-800">Vehicle Summary</h3>
-                                <p class="text-xs text-slate-400 mt-0.5">Quick overview of the selected vehicle record.</p>
+                                <p class="mt-0.5 text-xs text-slate-400">Quick overview of the selected vehicle record.</p>
                             </div>
                             <div class="p-5">
                                 <VehicleSummaryCard
@@ -538,10 +708,9 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div class="border-b border-slate-100 px-5 py-4">
                                 <h3 class="text-sm font-semibold text-slate-800">Document Status</h3>
-                                <p class="text-xs text-slate-400 mt-0.5">Snapshot of the current document review progress.</p>
+                                <p class="mt-0.5 text-xs text-slate-400">Snapshot of the current document review progress.</p>
                             </div>
                             <div class="divide-y divide-slate-100">
-
                                 <div class="flex items-center justify-between px-5 py-3">
                                     <div class="flex items-center gap-2">
                                         <div class="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-100">
@@ -581,7 +750,12 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                         </div>
                                         <p class="text-sm font-medium text-slate-700">Vehicle Status</p>
                                     </div>
-                                    <span :class="['inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium', statusClass(vehicle.status)]">
+                                    <span
+                                        :class="[
+                                            'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                                            statusClass(vehicle.status),
+                                        ]"
+                                    >
                                         <span :class="['h-1.5 w-1.5 rounded-full', statusDot(vehicle.status)]" />
                                         {{ humanize(vehicle.status) }}
                                     </span>
@@ -596,7 +770,6 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                     </div>
                                     <p class="text-sm font-semibold text-slate-700">{{ user.name }}</p>
                                 </div>
-
                             </div>
                         </div>
 
@@ -606,7 +779,32 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
             </div>
         </div>
 
-        <!-- ── Preview dialog ──────────────────────────────────────────── -->
+        <!-- ── Toggle status dialog ──────────────────── -->
+        <AlertDialog v-model:open="statusDialog.open">
+            <AlertDialogContent class="rounded-2xl">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>
+                        {{ toggleLabel(vehicle.status) }}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This will update the status of
+                        <span class="font-semibold text-slate-800">{{ vehicle.plate_number }}</span>.
+                        Are you sure you want to continue?
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel class="rounded-lg">Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                        class="rounded-lg border-0 bg-blue-700 text-white hover:bg-blue-800"
+                        @click="confirmToggleStatus"
+                    >
+                        Confirm
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <!-- ── Document preview dialog ───────────────── -->
         <Dialog v-model:open="previewOpen">
             <DialogContent class="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl p-0">
                 <DialogHeader class="border-b border-slate-100 bg-slate-50 px-6 py-4">
@@ -614,14 +812,21 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         {{ previewDoc?.file_name ?? humanize(previewDoc?.document_type) }}
                     </DialogTitle>
                     <DialogDescription class="flex flex-wrap items-center gap-2">
-                        <span :class="['inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium', statusClass(previewDoc?.status)]">
+                        <span
+                            :class="[
+                                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                                statusClass(previewDoc?.status),
+                            ]"
+                        >
                             <span :class="['h-1.5 w-1.5 rounded-full', statusDot(previewDoc?.status)]" />
                             {{ humanize(previewDoc?.status) }}
                         </span>
                         <span class="text-slate-400">·</span>
                         <span class="text-xs text-slate-500">{{ humanize(previewDoc?.document_type) }}</span>
-                        <span v-if="previewDoc?.file_size" class="text-slate-400">·</span>
-                        <span v-if="previewDoc?.file_size" class="text-xs text-slate-500">{{ formatBytes(previewDoc.file_size) }}</span>
+                        <template v-if="previewDoc?.file_size">
+                            <span class="text-slate-400">·</span>
+                            <span class="text-xs text-slate-500">{{ formatBytes(previewDoc.file_size) }}</span>
+                        </template>
                     </DialogDescription>
                 </DialogHeader>
 
@@ -644,7 +849,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         </div>
                         <div>
                             <p class="text-sm font-semibold text-slate-700">Preview not available</p>
-                            <p class="text-xs text-slate-400 mt-0.5">This file type cannot be previewed directly in the dialog.</p>
+                            <p class="mt-0.5 text-xs text-slate-400">This file type cannot be previewed directly in the dialog.</p>
                         </div>
                         <Button v-if="previewDoc?.file_url" as-child variant="outline" class="rounded-lg">
                             <a :href="documentDownloadUrl(previewDoc)" download>
@@ -663,8 +868,8 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         </a>
                     </Button>
                     <Button
-                        class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0 font-semibold"
                         type="button"
+                        class="rounded-lg border-0 bg-blue-700 font-semibold text-white hover:bg-blue-800"
                         @click="previewOpen = false"
                     >
                         Close

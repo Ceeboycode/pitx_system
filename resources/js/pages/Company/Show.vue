@@ -699,26 +699,20 @@ const repHasAny = computed(() => {
                                             </DropdownMenuLabel>
                                             <DropdownMenuSeparator />
 
-                                            <DropdownMenuItem v-if="canPreview(doc)" class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700" @click="openPreview(doc)">
+                                            <DropdownMenuItem
+                                                v-if="canPreview(doc)"
+                                                class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700"
+                                                @click="openPreview(doc)"
+                                            >
                                                 <Eye class="mr-2 h-4 w-4" />Preview
                                             </DropdownMenuItem>
-                                            <DropdownMenuSeparator v-if="canPreview(doc)" />
 
-                                            <DropdownMenuItem v-if="doc.status === 'verified'" class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700" @click="openConfirm('unverify', doc)">
-                                                <RotateCcw class="mr-2 h-4 w-4" />Unverify
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem v-else class="rounded-lg text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700" @click="openConfirm('verify', doc)">
-                                                <CheckCircle2 class="mr-2 h-4 w-4" />Verify
-                                            </DropdownMenuItem>
-
-                                            <DropdownMenuItem class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600" @click="openReject(doc.id)">
-                                                <XCircle class="mr-2 h-4 w-4" />Invalid (remarks)
-                                            </DropdownMenuItem>
-
-                                            <DropdownMenuSeparator />
-
-                                            <DropdownMenuItem class="rounded-lg text-slate-700 focus:bg-slate-50" @click="openConfirm('download', doc)">
-                                                <Download class="mr-2 h-4 w-4" />Download
+                                            <DropdownMenuItem
+                                                v-else
+                                                class="rounded-lg text-slate-500 focus:bg-slate-50 focus:text-slate-500 cursor-not-allowed opacity-50"
+                                                disabled
+                                            >
+                                                <Eye class="mr-2 h-4 w-4" />No preview available
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -742,29 +736,78 @@ const repHasAny = computed(() => {
         <Dialog v-model:open="previewOpen">
             <DialogContent class="flex max-h-[90vh] w-full max-w-4xl flex-col gap-0 overflow-hidden rounded-2xl p-0">
                 <DialogHeader class="shrink-0 border-b border-slate-100 bg-slate-50 px-6 py-4">
-                    <div class="flex items-center justify-between gap-4">
-                        <div class="min-w-0 space-y-1">
-                            <DialogTitle class="truncate text-base">
-                                {{ previewDoc?.original_name ?? humanize(previewDoc?.doc_type) }}
-                            </DialogTitle>
-                            <DialogDescription class="flex flex-wrap items-center gap-2">
-                                <Badge :class="['gap-1.5', statusClass(previewDoc?.status)]">
-                                    <span :class="['h-1.5 w-1.5 rounded-full', statusDot(previewDoc?.status)]" />
-                                    {{ humanize(previewDoc?.status) }}
-                                </Badge>
-                                <span class="text-xs text-muted-foreground">{{ humanize(previewDoc?.doc_type) }}</span>
-                                <span v-if="previewDoc?.expires_at" class="text-xs text-muted-foreground">
-                                    · Expires: {{ formatDate(previewDoc?.expires_at) }}
-                                </span>
-                            </DialogDescription>
-                        </div>
-                        <Button v-if="previewDoc" variant="outline" size="sm" class="shrink-0 rounded-lg" as-child>
-                            <a :href="downloadCompanyDocument({ company: company.id, document: previewDoc.id }).url" target="_blank" rel="noopener noreferrer">
-                                <Download class="mr-2 h-4 w-4" />Download
-                            </a>
-                        </Button>
-                    </div>
-                </DialogHeader>
+    <div class="flex items-center justify-between gap-4">
+        <div class="min-w-0 space-y-1">
+            <DialogTitle class="truncate text-base">
+                {{ previewDoc?.original_name ?? humanize(previewDoc?.doc_type) }}
+            </DialogTitle>
+            <DialogDescription class="flex flex-wrap items-center gap-2">
+                <Badge :class="['gap-1.5', statusClass(previewDoc?.status)]">
+                    <span :class="['h-1.5 w-1.5 rounded-full', statusDot(previewDoc?.status)]" />
+                    {{ humanize(previewDoc?.status) }}
+                </Badge>
+                <span class="text-xs text-muted-foreground">{{ humanize(previewDoc?.doc_type) }}</span>
+                <span v-if="previewDoc?.expires_at" class="text-xs text-muted-foreground">
+                    · Expires: {{ formatDate(previewDoc?.expires_at) }}
+                </span>
+            </DialogDescription>
+        </div>
+
+        <!-- Action buttons moved into preview dialog -->
+        <div v-if="previewDoc" class="flex shrink-0 items-center gap-2">
+
+            <!-- Verify -->
+            <Button
+                v-if="previewDoc.status !== 'verified'"
+                variant="outline"
+                size="sm"
+                class="rounded-lg border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800"
+                :disabled="actionForm.processing || rejectForm.processing"
+                @click="openConfirm('verify', previewDoc); closePreview()"
+            >
+                <CheckCircle2 class="mr-2 h-4 w-4" />
+                Verify
+            </Button>
+
+            <!-- Unverify -->
+            <Button
+                v-if="previewDoc.status === 'verified'"
+                variant="outline"
+                size="sm"
+                class="rounded-lg border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800"
+                :disabled="actionForm.processing || rejectForm.processing"
+                @click="openConfirm('unverify', previewDoc); closePreview()"
+            >
+                <RotateCcw class="mr-2 h-4 w-4" />
+                Unverify
+            </Button>
+
+            <!-- Invalid -->
+            <Button
+                variant="outline"
+                size="sm"
+                class="rounded-lg border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700"
+                :disabled="actionForm.processing || rejectForm.processing"
+                @click="openReject(previewDoc.id); closePreview()"
+            >
+                <XCircle class="mr-2 h-4 w-4" />
+                Invalid
+            </Button>
+
+            <!-- Download -->
+            <Button variant="outline" size="sm" class="rounded-lg border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100" as-child>
+                
+                <a 
+                    :href="downloadCompanyDocument({ company: company.id, document: previewDoc.id }).url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >
+                    <Download class="mr-2 h-4 w-4" />Download
+                </a>
+            </Button>
+        </div>
+    </div>
+</DialogHeader>
 
                 <div class="relative flex-1 overflow-auto bg-muted/30">
                     <div v-if="previewDoc && isImage(previewDoc)" class="flex min-h-[50vh] items-center justify-center p-6">

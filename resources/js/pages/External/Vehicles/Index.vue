@@ -886,7 +886,7 @@ function confirmActivate() {
                                                     </Link>
                                                 </DropdownMenuItem>
 
-                                                <!-- Edit — permission + business rule -->
+                                                <!-- Edit — permission + business rule 
                                                 <DropdownMenuItem
                                                     v-if="canEditVehicle(vehicle)"
                                                     as-child
@@ -898,19 +898,19 @@ function confirmActivate() {
                                                     </Link>
                                                 </DropdownMenuItem>
 
-                                                <!-- Edit disabled — has permission but business rule blocks -->
+                                                <!-- Edit disabled — has permission but business rule blocks 
                                                 <DropdownMenuItem
                                                     v-else-if="canUpdate"
                                                     disabled
                                                     class="rounded-lg text-slate-300"
                                                 >
                                                     <Pencil class="mr-2 h-4 w-4" />
-                                                    Update Expired Docs
+                                                    Edit Vehicle
                                                 </DropdownMenuItem>
 
-                                                <DropdownMenuSeparator class="bg-slate-100" />
+                                               <!-- <DropdownMenuSeparator class="bg-slate-100" /> 
 
-                                                <!-- Toggle — split flows -->
+                                                <!-- Toggle — permission + business rule -->
                                                 <DropdownMenuItem
                                                     v-if="vehicle.status === 'active'"
                                                     :disabled="!canToggleVehicle(vehicle)"
@@ -921,6 +921,7 @@ function confirmActivate() {
                                                     Set Inactive
                                                 </DropdownMenuItem>
 
+                                                <!-- Toggle disabled — has permission but business rule blocks -->
                                                 <DropdownMenuItem
                                                     v-else
                                                     :disabled="!canToggleVehicle(vehicle)"
@@ -928,7 +929,7 @@ function confirmActivate() {
                                                     @click="openActivate(vehicle)"
                                                 >
                                                     <Power class="mr-2 h-4 w-4" />
-                                                    Set Active
+                                                    {{ toggleLabel(vehicle.status) }}
                                                 </DropdownMenuItem>
 
                                                 <!-- Contextual note -->

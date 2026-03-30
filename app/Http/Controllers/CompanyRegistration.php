@@ -464,7 +464,7 @@ class CompanyRegistration extends Controller
             ],
             'for_verification' => [
                 'title' => 'Under Review',
-                'description' => 'Your documents have been submitted and are currently under review by our team. Please allow 2–3 business days for verification.',
+                'description' => 'Your documents have been submitted and are currently being reviewed by our team. We\'ll notify you once verified.',
                 'icon' => 'clock',
                 'color' => 'warning',
             ],
