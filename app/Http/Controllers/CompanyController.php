@@ -16,7 +16,6 @@ class CompanyController extends Controller
 
     public function index(Request $request)
     {
-        // companies.viewAny
         Gate::authorize('viewAny', Company::class);
 
         $allowedSorts = ['company_name', 'company_code', 'status', 'created_at'];
