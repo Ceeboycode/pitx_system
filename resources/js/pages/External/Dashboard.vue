@@ -268,61 +268,65 @@ const documentChartData = computed(() => {
                                 </div>
                             </div>
 
-                        <div>
-                            <p class="text-sm text-muted-foreground">
-                                {{ greeting }}, {{ user.name.split(' ')[0] }}
-                            </p>
-                            <h1 class="text-xl font-semibold tracking-tight text-foreground">
-                                {{ company.company_name }}
-                            </h1>
-                            <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
-                                <span
-                                    class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium"
-                                    :class="company.status === 'active'
-                                        ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-                                        : 'bg-slate-100 text-slate-600 ring-1 ring-slate-200'"
-                                >
-                                    {{ humanize(company.status) }}
-                                </span>
-                                <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600 ring-1 ring-slate-200">
-                                    {{ company.company_code ?? 'No code' }}
-                                </span>
-                                <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600 ring-1 ring-slate-200">
-                                    {{ humanize(company.business_type) }}
-                                </span>
+                            <div class="space-y-3">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">
+                                        {{ greeting }}, {{ user.name.split(' ')[0] }}
+                                    </p>
+                                    <h1 class="text-2xl font-semibold tracking-tight">
+                                        {{ company.company_name }}
+                                    </h1>
+                                    <p class="text-sm text-muted-foreground">
+                                        Operator dashboard for dispatch, fleet, and route monitoring
+                                    </p>
+                                </div>
+
+                                <div class="flex flex-wrap gap-2">
+                                    <Badge :class="statusBadgeClass(company.status)">
+                                        {{ humanize(company.status) }}
+                                    </Badge>
+                                    <Badge variant="outline">
+                                        {{ company.company_code ?? 'No company code' }}
+                                    </Badge>
+                                    <Badge variant="outline">
+                                        {{ humanize(company.business_type) }}
+                                    </Badge>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Quick nav -->
-                    <div class="flex flex-wrap gap-2">
-                        <Button as-child size="sm" variant="outline">
-                            <Link href="/company/dispatches">
-                                <Truck class="mr-1.5 h-3.5 w-3.5" />
-                                Dispatches
-                            </Link>
-                        </Button>
-                        <Button as-child size="sm" variant="outline">
-                            <Link href="/company/vehicles">
-                                <Bus class="mr-1.5 h-3.5 w-3.5" />
-                                Vehicles
-                            </Link>
-                        </Button>
-                        <Button as-child size="sm" variant="outline">
-                            <Link href="/company/routes">
-                                <RouteIcon class="mr-1.5 h-3.5 w-3.5" />
-                                Routes
-                            </Link>
-                        </Button>
-                        <Button as-child size="sm" class="bg-blue-600 text-white hover:bg-blue-700 font-medium">
-                            <Link href="/company/documents">
-                                <FileText class="mr-1.5 h-3.5 w-3.5" />
-                                Documents
-                            </Link>
-                        </Button>
+                        <div class="grid gap-2 sm:grid-cols-4">
+                            <Button as-child variant="outline">
+                                <Link href="/company/dispatches">
+                                    <Truck class="mr-2 h-4 w-4" />
+                                    Dispatches
+                                </Link>
+                            </Button>
+
+                            <Button as-child variant="outline">
+                                <Link href="/company/vehicles">
+                                    <Bus class="mr-2 h-4 w-4" />
+                                    Vehicles
+                                </Link>
+                            </Button>
+
+                            <Button as-child variant="outline">
+                                <Link href="/company/routes">
+                                    <RouteIcon class="mr-2 h-4 w-4" />
+                                    Routes
+                                </Link>
+                            </Button>
+
+                            <Button as-child>
+                                <Link href="/company/documents">
+                                    <FileText class="mr-2 h-4 w-4" />
+                                    Documents
+                                </Link>
+                            </Button>
+                        </div>
                     </div>
-                </div>
-            </div>
+                </CardContent>
+            </Card>
 
             <!-- ── KPI Cards ── -->
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

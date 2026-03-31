@@ -1,30 +1,12 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3'
-import { computed, reactive } from 'vue'
+import { Head, Link, router } from '@inertiajs/vue3';
+import { computed, reactive } from 'vue';
 
-import InertiaPagination from '@/components/InertiaPagination.vue'
-import SearchInput from '@/components/SearchInput.vue'
-import ExternalLayout from '@/layouts/ExternalLayout.vue'
+import InertiaPagination from '@/components/InertiaPagination.vue';
+import SearchInput from '@/components/SearchInput.vue';
+import ExternalLayout from '@/layouts/ExternalLayout.vue';
 
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card'
+import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -32,7 +14,7 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@/components/ui/dropdown-menu';
 import {
     Table,
     TableBody,
@@ -40,183 +22,243 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from '@/components/ui/table'
+} from '@/components/ui/table';
 
 import {
+    Building2,
     Eye,
-    KeyRound,
     MoreHorizontal,
-    Pencil,
     Plus,
     Power,
-    Trash2,
-    UserSquare2,
-    Users,
-    TruckIcon,
     Radio,
-    Building2,
-} from 'lucide-vue-next'
+    TruckIcon,
+    Users,
+} from 'lucide-vue-next';
 
+/* ======================================================
+   Types
+====================================================== */
 type Company = {
-    id: number
-    company_name: string
-    company_code?: string | null
-    status: string
-    logo_url?: string | null
-}
+    id: number;
+    company_name: string;
+    company_code?: string | null;
+    status: string;
+    logo_url?: string | null;
+};
 
 type AuthUser = {
-    id: number
-    name: string
-    username: string
-    email: string
-}
+    id: number;
+    name: string;
+    username: string;
+    email: string;
+};
 
 type Role = {
-    id: number
-    name: string
-}
+    id: number;
+    name: string;
+};
 
 type EmployeeUser = {
-    id: number
-    username: string
-    name: string
-    email?: string | null
-    phone_number?: string | null
-    status: string
-    created_at?: string | null
-    roles?: Role[]
-}
+    id: number;
+    username: string;
+    name: string;
+    email?: string | null;
+    phone_number?: string | null;
+    status: string;
+    created_at?: string | null;
+    roles?: Role[];
+};
 
 type PaginationLink = {
-    url: string | null
-    label: string
-    active: boolean
-}
+    url: string | null;
+    label: string;
+    active: boolean;
+};
 
 type PaginatedUsers = {
-    data: EmployeeUser[]
-    current_page: number
-    last_page: number
-    per_page: number
-    total: number
-    from: number | null
-    to: number | null
-    links: PaginationLink[]
-}
+    data: EmployeeUser[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+    links: PaginationLink[];
+};
 
+/* ======================================================
+   Props
+====================================================== */
 const props = defineProps<{
-    company: Company
-    user: AuthUser
-    users: PaginatedUsers
+    company: Company;
+    user: AuthUser;
+    users: PaginatedUsers;
     filters: {
-        search?: string | null
-        role?: string | null
-        status?: string | null
-    }
-    roles: string[]
-    statuses: string[]
-}>()
+        search?: string | null;
+        role?: string | null;
+        status?: string | null;
+    };
+    roles: string[];
+    statuses: string[];
+}>();
 
+/* ======================================================
+   Helpers
+====================================================== */
 function humanize(value?: string | null) {
-    if (!value) return '—'
+    if (!value) return '—';
     return value
         .replace(/_/g, ' ')
-        .replace(/\b\w/g, (char) => char.toUpperCase())
+        .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function formatDate(value?: string | null) {
-    if (!value) return '—'
+    if (!value) return '—';
     return new Date(value).toLocaleDateString('en-PH', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
-    })
+    });
 }
 
 function roleName(employee: EmployeeUser) {
-    return employee.roles?.[0]?.name ?? '—'
+    return employee.roles?.[0]?.name ?? '—';
 }
 
 function roleClass(employee: EmployeeUser) {
-    const role = roleName(employee).toLowerCase()
-    if (role === 'driver')     return 'bg-sky-100 text-sky-700 border-sky-200 font-medium'
-    if (role === 'dispatcher') return 'bg-violet-100 text-violet-700 border-violet-200 font-medium'
-    return 'bg-slate-100 text-slate-500 border-0'
+    const role = roleName(employee).toLowerCase();
+    if (role === 'driver') return 'bg-sky-100 text-sky-700 border-sky-200';
+    if (role === 'dispatcher')
+        return 'bg-violet-100 text-violet-700 border-violet-200';
+    return 'bg-slate-100 text-slate-500 border-0';
+}
+
+function roleIconBg(employee: EmployeeUser) {
+    const role = roleName(employee).toLowerCase();
+    if (role === 'driver') return 'bg-sky-100';
+    if (role === 'dispatcher') return 'bg-violet-100';
+    return 'bg-blue-100';
+}
+
+function roleIconColor(employee: EmployeeUser) {
+    const role = roleName(employee).toLowerCase();
+    if (role === 'driver') return 'text-sky-700';
+    if (role === 'dispatcher') return 'text-violet-700';
+    return 'text-blue-700';
 }
 
 function statusClass(status?: string | null) {
-    if (status === 'active')    return 'bg-emerald-100 text-emerald-700 border-emerald-200 font-medium'
-    if (status === 'pending')   return 'bg-amber-100 text-amber-700 border-amber-200 font-medium'
-    if (status === 'suspended') return 'bg-rose-100 text-rose-600 border-rose-200 font-medium'
-    if (status === 'inactive')  return 'bg-slate-100 text-slate-500 border-0'
-    return 'bg-slate-100 text-slate-500 border-0'
+    if (status === 'active')
+        return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+    if (status === 'pending')
+        return 'bg-amber-100 text-amber-700 border-amber-200';
+    if (status === 'suspended')
+        return 'bg-rose-100 text-rose-600 border-rose-200';
+    if (status === 'inactive') return 'bg-slate-100 text-slate-500 border-0';
+    return 'bg-slate-100 text-slate-500 border-0';
 }
 
 function statusDot(status?: string | null) {
-    if (status === 'active')    return 'bg-emerald-500'
-    if (status === 'pending')   return 'bg-amber-500'
-    if (status === 'suspended') return 'bg-rose-500'
-    return 'bg-slate-400'
+    if (status === 'active') return 'bg-emerald-500';
+    if (status === 'pending') return 'bg-amber-500';
+    if (status === 'suspended') return 'bg-rose-500';
+    return 'bg-slate-400';
+}
+
+/* ======================================================
+   Computed stats
+====================================================== */
+const totalEmployees = computed(() => props.users.total ?? 0);
+
+const totalDrivers = computed(
+    () =>
+        props.users.data.filter((e) => roleName(e).toLowerCase() === 'driver')
+            .length,
+);
+
+const totalDispatchers = computed(
+    () =>
+        props.users.data.filter(
+            (e) => roleName(e).toLowerCase() === 'dispatcher',
+        ).length,
+);
+
+const activeCount = computed(
+    () => props.users.data.filter((e) => e.status === 'active').length,
+);
+
+/* ======================================================
+   State
+====================================================== */
+const dialogState = reactive({
+    statusDialog: null as EmployeeUser | null,
+    resetPasswordDialog: null as EmployeeUser | null,
+    deleteDialog: null as EmployeeUser | null,
+});
+
+/* ======================================================
+   Methods
+====================================================== */
+function toggleStatusClass(status?: string | null) {
+    if (status === 'active') {
+        return 'text-amber-700 focus:bg-amber-50 focus:text-amber-700';
+    }
+    return 'text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700';
 }
 
 function toggleStatusLabel(status?: string | null) {
-    if (status === 'active')    return 'Set Inactive'
-    if (status === 'inactive')  return 'Set Active'
-    if (status === 'pending')   return 'Activate Account'
-    if (status === 'suspended') return 'Set Active'
-    return 'Update Status'
+    return status === 'active' ? 'Deactivate' : 'Activate';
 }
 
-function toggleStatusClass(status?: string | null) {
-    if (status === 'active') return 'text-rose-600 focus:text-rose-600 focus:bg-rose-50'
-    return 'text-emerald-700 focus:text-emerald-700 focus:bg-emerald-50'
+function openStatusDialog(employee: EmployeeUser) {
+    const newStatus = employee.status === 'active' ? 'deactivate' : 'activate';
+    const confirmAction = window.confirm(
+        `Are you sure you want to ${newStatus} ${employee.name}?`,
+    );
+    if (confirmAction) {
+        router.patch(
+            `/employee-users/${employee.id}/toggle-status`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    dialogState.statusDialog = null;
+                },
+            },
+        );
+    }
 }
 
-const totalEmployees = computed(() => props.users.total ?? 0)
-
-const totalDrivers = computed(() =>
-    props.users.data.filter((e) => roleName(e).toLowerCase() === 'driver').length,
-)
-
-const totalDispatchers = computed(() =>
-    props.users.data.filter((e) => roleName(e).toLowerCase() === 'dispatcher').length,
-)
-
-const activeCount = computed(() =>
-    props.users.data.filter((e) => e.status === 'active').length,
-)
-
-const deleteDialog = reactive({ open: false, employee: null as EmployeeUser | null })
-const statusDialog = reactive({ open: false, employee: null as EmployeeUser | null })
-const resetPasswordDialog = reactive({ open: false, employee: null as EmployeeUser | null })
-
-function openDeleteDialog(employee: EmployeeUser) { deleteDialog.employee = employee; deleteDialog.open = true }
-function openStatusDialog(employee: EmployeeUser) { statusDialog.employee = employee; statusDialog.open = true }
-function openResetPasswordDialog(employee: EmployeeUser) { resetPasswordDialog.employee = employee; resetPasswordDialog.open = true }
-
-function confirmDelete() {
-    if (!deleteDialog.employee) return
-    router.delete(`/employee-users/${deleteDialog.employee.id}`, {
-        preserveScroll: true,
-        onSuccess: () => { deleteDialog.open = false; deleteDialog.employee = null },
-    })
+function openResetPasswordDialog(employee: EmployeeUser) {
+    const confirmAction = window.confirm(
+        `Are you sure you want to reset the password for ${employee.name}? A new temporary password will be generated.`,
+    );
+    if (confirmAction) {
+        router.patch(
+            `/employee-users/${employee.id}/reset-password`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    dialogState.resetPasswordDialog = null;
+                },
+            },
+        );
+    }
 }
 
-function confirmToggleStatus() {
-    if (!statusDialog.employee) return
-    router.patch(`/employee-users/${statusDialog.employee.id}/toggle-status`, {}, {
-        preserveScroll: true,
-        onSuccess: () => { statusDialog.open = false; statusDialog.employee = null },
-    })
-}
-
-function confirmResetPassword() {
-    if (!resetPasswordDialog.employee) return
-    router.patch(`/employee-users/${resetPasswordDialog.employee.id}/reset-password`, {}, {
-        preserveScroll: true,
-        onSuccess: () => { resetPasswordDialog.open = false; resetPasswordDialog.employee = null },
-    })
+function openDeleteDialog(employee: EmployeeUser) {
+    const confirmAction = window.confirm(
+        `Are you sure you want to delete the account for ${employee.name}? This action cannot be undone.`,
+    );
+    if (confirmAction) {
+        router.delete(`/employee-users/${employee.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                dialogState.deleteDialog = null;
+            },
+        });
+    }
 }
 </script>
 
@@ -226,20 +268,30 @@ function confirmResetPassword() {
     <ExternalLayout :company="company" :user="user">
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
-
-                <!-- ── Page header ─────────────────────────────────────── -->
-                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <!-- ── Page header ───────────────────────────── -->
+                <div
+                    class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+                >
                     <div class="space-y-1">
-                        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                        <div
+                            class="flex items-center gap-2 text-xs font-semibold tracking-widest text-slate-400 uppercase"
+                        >
                             <Building2 class="h-3.5 w-3.5" />
                             {{ company.company_code ?? company.company_name }}
                         </div>
-                        <h1 class="text-2xl font-bold tracking-tight text-slate-900">Employee Accounts</h1>
-                        <p class="text-sm text-slate-500">Manage drivers and dispatchers for your company.</p>
+                        <h1
+                            class="text-2xl font-bold tracking-tight text-slate-900"
+                        >
+                            Employee Accounts
+                        </h1>
+                        <p class="text-sm text-slate-500">
+                            Manage drivers and dispatchers for your company.
+                        </p>
                     </div>
+
                     <Button
                         as-child
-                        class="shrink-0 bg-blue-700 text-white hover:bg-blue-800 border-0 shadow-sm gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all"
+                        class="shrink-0 gap-2 self-start rounded-lg border-0 bg-blue-700 text-sm font-semibold text-white shadow-sm hover:bg-blue-800"
                     >
                         <Link href="/employee-users/create">
                             <Plus class="h-4 w-4" />
@@ -248,55 +300,103 @@ function confirmResetPassword() {
                     </Button>
                 </div>
 
-                <!-- ── Stat cards ────────────────────────────────────────── -->
-                <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
-
-                    <!-- Total -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700">
+                <!-- ── Stats ─────────────────────────────────── -->
+                <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+                    <div
+                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                    >
+                        <div
+                            class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700"
+                        >
                             <Users class="h-4 w-4 text-white" />
                         </div>
-                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Total</p>
-                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">{{ totalEmployees }}</p>
+                        <p
+                            class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
+                        >
+                            Total
+                        </p>
+                        <p
+                            class="mt-0.5 text-3xl font-bold text-slate-900 tabular-nums"
+                        >
+                            {{ totalEmployees }}
+                        </p>
                     </div>
 
-                    <!-- Drivers -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600">
+                    <div
+                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                    >
+                        <div
+                            class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600"
+                        >
                             <TruckIcon class="h-4 w-4 text-white" />
                         </div>
-                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Drivers</p>
-                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">{{ totalDrivers }}</p>
+                        <p
+                            class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
+                        >
+                            Drivers
+                        </p>
+                        <p
+                            class="mt-0.5 text-3xl font-bold text-slate-900 tabular-nums"
+                        >
+                            {{ totalDrivers }}
+                        </p>
                     </div>
 
-                    <!-- Dispatchers -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-violet-600">
+                    <div
+                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                    >
+                        <div
+                            class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-violet-600"
+                        >
                             <Radio class="h-4 w-4 text-white" />
                         </div>
-                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Dispatchers</p>
-                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">{{ totalDispatchers }}</p>
+                        <p
+                            class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
+                        >
+                            Dispatchers
+                        </p>
+                        <p
+                            class="mt-0.5 text-3xl font-bold text-slate-900 tabular-nums"
+                        >
+                            {{ totalDispatchers }}
+                        </p>
                     </div>
 
-                    <!-- Active -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600">
+                    <div
+                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                    >
+                        <div
+                            class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600"
+                        >
                             <Power class="h-4 w-4 text-white" />
                         </div>
-                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Active</p>
-                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">{{ activeCount }}</p>
+                        <p
+                            class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
+                        >
+                            Active
+                        </p>
+                        <p
+                            class="mt-0.5 text-3xl font-bold text-slate-900 tabular-nums"
+                        >
+                            {{ activeCount }}
+                        </p>
                     </div>
-
                 </div>
 
-                <!-- ── Employee table ────────────────────────────────────── -->
-                <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
-
-                    <!-- Table header / search -->
-                    <div class="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <!-- ── Table card ─────────────────────────────── -->
+                <div
+                    class="rounded-xl border border-slate-200 bg-white shadow-sm"
+                >
+                    <div
+                        class="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
                         <div>
-                            <h2 class="text-base font-semibold text-slate-800">Employee List</h2>
-                            <p class="text-xs text-slate-400 mt-0.5">Search by name, username, email, or phone.</p>
+                            <h2 class="text-base font-semibold text-slate-800">
+                                Employee List
+                            </h2>
+                            <p class="mt-0.5 text-xs text-slate-400">
+                                Search by name, username, email, or phone.
+                            </p>
                         </div>
                         <div class="sm:w-72">
                             <SearchInput
@@ -308,32 +408,81 @@ function confirmResetPassword() {
                         </div>
                     </div>
 
-                    <!-- Table -->
                     <div class="overflow-x-auto">
                         <Table>
                             <TableHeader>
-                                <TableRow class="border-slate-100 bg-slate-50/70 hover:bg-slate-50/70">
-                                    <TableHead class="pl-5 text-[11px] font-bold uppercase tracking-widest text-slate-400">Username</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Employee</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Role</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Status</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Phone</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Created</TableHead>
-                                    <TableHead class="pr-5 text-right text-[11px] font-bold uppercase tracking-widest text-slate-400">Actions</TableHead>
+                                <TableRow
+                                    class="border-slate-100 bg-slate-50/70 hover:bg-slate-50/70"
+                                >
+                                    <TableHead
+                                        class="pl-5 text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                    >
+                                        Username
+                                    </TableHead>
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                    >
+                                        Employee
+                                    </TableHead>
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                    >
+                                        Role
+                                    </TableHead>
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                    >
+                                        Status
+                                    </TableHead>
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                    >
+                                        Phone
+                                    </TableHead>
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                    >
+                                        Created
+                                    </TableHead>
+                                    <TableHead
+                                        class="pr-5 text-right text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                    >
+                                        Actions
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
 
                             <TableBody>
                                 <!-- Empty state -->
-                                <TableRow v-if="users.data.length === 0" class="hover:bg-transparent">
-                                    <TableCell colspan="7" class="py-20 text-center">
-                                        <div class="flex flex-col items-center gap-3">
-                                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
-                                                <Users class="h-6 w-6 text-slate-400" />
+                                <TableRow
+                                    v-if="users.data.length === 0"
+                                    class="hover:bg-transparent"
+                                >
+                                    <TableCell
+                                        colspan="7"
+                                        class="py-20 text-center"
+                                    >
+                                        <div
+                                            class="flex flex-col items-center gap-3"
+                                        >
+                                            <div
+                                                class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100"
+                                            >
+                                                <Users
+                                                    class="h-6 w-6 text-slate-400"
+                                                />
                                             </div>
                                             <div>
-                                                <p class="text-sm font-semibold text-slate-600">No employees found</p>
-                                                <p class="text-xs text-slate-400 mt-0.5">Try adjusting your search.</p>
+                                                <p
+                                                    class="text-sm font-semibold text-slate-600"
+                                                >
+                                                    No employees found
+                                                </p>
+                                                <p
+                                                    class="mt-0.5 text-xs text-slate-400"
+                                                >
+                                                    Try adjusting your search.
+                                                </p>
                                             </div>
                                         </div>
                                     </TableCell>
@@ -346,7 +495,9 @@ function confirmResetPassword() {
                                 >
                                     <!-- Username -->
                                     <TableCell class="pl-5">
-                                        <span class="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-700">
+                                        <span
+                                            class="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold tracking-wide text-slate-700"
+                                        >
                                             {{ employee.username }}
                                         </span>
                                     </TableCell>
@@ -354,33 +505,64 @@ function confirmResetPassword() {
                                     <!-- Employee info -->
                                     <TableCell>
                                         <div class="flex items-center gap-2.5">
-                                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-xs font-bold uppercase">
+                                            <div
+                                                :class="[
+                                                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold uppercase',
+                                                    roleIconBg(employee),
+                                                    roleIconColor(employee),
+                                                ]"
+                                            >
                                                 {{ employee.name.charAt(0) }}
                                             </div>
                                             <div>
-                                                <p class="text-sm font-semibold text-slate-800">{{ employee.name }}</p>
-                                                <p class="text-xs text-slate-400">{{ employee.email || '—' }}</p>
+                                                <p
+                                                    class="text-sm font-semibold text-slate-800"
+                                                >
+                                                    {{ employee.name }}
+                                                </p>
+                                                <p
+                                                    class="text-xs text-slate-400"
+                                                >
+                                                    {{ employee.email || '—' }}
+                                                </p>
                                             </div>
                                         </div>
                                     </TableCell>
 
                                     <!-- Role -->
                                     <TableCell>
-                                        <Badge :class="['rounded-full border px-2.5 py-0.5 text-xs', roleClass(employee)]">
+                                        <span
+                                            :class="[
+                                                'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                                                roleClass(employee),
+                                            ]"
+                                        >
                                             {{ humanize(roleName(employee)) }}
-                                        </Badge>
+                                        </span>
                                     </TableCell>
 
                                     <!-- Status -->
                                     <TableCell>
-                                        <span :class="['inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs', statusClass(employee.status)]">
-                                            <span :class="['h-1.5 w-1.5 rounded-full', statusDot(employee.status)]" />
+                                        <span
+                                            :class="[
+                                                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                                                statusClass(employee.status),
+                                            ]"
+                                        >
+                                            <span
+                                                :class="[
+                                                    'h-1.5 w-1.5 rounded-full',
+                                                    statusDot(employee.status),
+                                                ]"
+                                            />
                                             {{ humanize(employee.status) }}
                                         </span>
                                     </TableCell>
 
                                     <!-- Phone -->
-                                    <TableCell class="text-sm text-slate-500 tabular-nums">
+                                    <TableCell
+                                        class="text-sm text-slate-500 tabular-nums"
+                                    >
                                         {{ employee.phone_number || '—' }}
                                     </TableCell>
 
@@ -398,44 +580,107 @@ function confirmResetPassword() {
                                                     size="icon"
                                                     class="h-8 w-8 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                                                 >
-                                                    <MoreHorizontal class="h-4 w-4" />
+                                                    <MoreHorizontal
+                                                        class="h-4 w-4"
+                                                    />
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent align="end" class="w-52 rounded-xl shadow-lg border-slate-200">
-                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                                            <DropdownMenuContent
+                                                align="end"
+                                                class="w-56 rounded-xl border-slate-200 shadow-lg"
+                                            >
+                                                <DropdownMenuLabel
+                                                    class="text-xs font-semibold tracking-widest text-slate-400 uppercase"
+                                                >
                                                     Actions
                                                 </DropdownMenuLabel>
-                                                <DropdownMenuSeparator class="bg-slate-100" />
 
-                                                <DropdownMenuItem as-child class="rounded-lg text-slate-700 focus:text-blue-700 focus:bg-blue-50">
-                                                    <Link :href="`/employee-users/${employee.id}`">
-                                                        <Eye class="mr-2 h-4 w-4" />
+                                                <DropdownMenuSeparator
+                                                    class="bg-slate-100"
+                                                />
+
+                                                <DropdownMenuItem
+                                                    as-child
+                                                    class="rounded-lg text-slate-700 focus:bg-blue-50 focus:text-blue-700"
+                                                >
+                                                    <Link
+                                                        :href="`/employee-users/${employee.id}`"
+                                                    >
+                                                        <Eye
+                                                            class="mr-2 h-4 w-4"
+                                                        />
                                                         View Profile
                                                     </Link>
                                                 </DropdownMenuItem>
 
-                                                <DropdownMenuItem as-child class="rounded-lg text-slate-700 focus:text-amber-700 focus:bg-amber-50">
-                                                    <Link :href="`/employee-users/${employee.id}/edit`">
-                                                        <Pencil class="mr-2 h-4 w-4" />
+                                                <DropdownMenuItem
+                                                    as-child
+                                                    class="rounded-lg text-slate-700 focus:bg-amber-50 focus:text-amber-700"
+                                                >
+                                                    <Link
+                                                        :href="`/employee-users/${employee.id}/edit`"
+                                                    >
+                                                        <Pencil
+                                                            class="mr-2 h-4 w-4"
+                                                        />
                                                         Edit Details
                                                     </Link>
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
-                                                    :class="['rounded-lg', toggleStatusClass(employee.status)]"
-                                                    @click="openStatusDialog(employee)"
+                                                    :class="[
+                                                        'rounded-lg',
+                                                        toggleStatusClass(
+                                                            employee.status,
+                                                        ),
+                                                    ]"
+                                                    @click="
+                                                        openStatusDialog(
+                                                            employee,
+                                                        )
+                                                    "
                                                 >
-                                                    <Power class="mr-2 h-4 w-4" />
-                                                    {{ toggleStatusLabel(employee.status) }}
+                                                    <Power
+                                                        class="mr-2 h-4 w-4"
+                                                    />
+                                                    {{
+                                                        toggleStatusLabel(
+                                                            employee.status,
+                                                        )
+                                                    }}
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
-                                                    class="rounded-lg text-slate-700 focus:text-blue-700 focus:bg-blue-50"
-                                                    @click="openResetPasswordDialog(employee)"
+                                                    class="rounded-lg text-slate-700 focus:bg-blue-50 focus:text-blue-700"
+                                                    @click="
+                                                        openResetPasswordDialog(
+                                                            employee,
+                                                        )
+                                                    "
                                                 >
-                                                    <KeyRound class="mr-2 h-4 w-4" />
+                                                    <KeyRound
+                                                        class="mr-2 h-4 w-4"
+                                                    />
                                                     Reset Password
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuSeparator
+                                                    class="bg-slate-100"
+                                                />
+
+                                                <DropdownMenuItem
+                                                    class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600"
+                                                    @click="
+                                                        openDeleteDialog(
+                                                            employee,
+                                                        )
+                                                    "
+                                                >
+                                                    <Trash2
+                                                        class="mr-2 h-4 w-4"
+                                                    />
+                                                    Delete Account
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -446,7 +691,10 @@ function confirmResetPassword() {
                     </div>
 
                     <!-- Pagination -->
-                    <div v-if="users.last_page > 1" class="border-t border-slate-100 px-5 py-3">
+                    <div
+                        v-if="users.last_page > 1"
+                        class="border-t border-slate-100 px-5 py-3"
+                    >
                         <InertiaPagination
                             :links="users.links"
                             :meta="{
@@ -457,79 +705,7 @@ function confirmResetPassword() {
                         />
                     </div>
                 </div>
-
             </div>
         </div>
-
-        <!-- ── Status dialog ─────────────────────────────────────────── -->
-        <AlertDialog v-model:open="statusDialog.open">
-            <AlertDialogContent class="rounded-2xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>{{ toggleStatusLabel(statusDialog.employee?.status) }}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This will update the account status of
-                        <span class="font-semibold text-slate-800">{{ statusDialog.employee?.name || 'this employee' }}</span>.
-                        Are you sure you want to continue?
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg" @click="statusDialog.employee = null">Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                        class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0"
-                        @click="confirmToggleStatus"
-                    >
-                        Confirm
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-
-        <!-- ── Reset password dialog ─────────────────────────────────── -->
-        <AlertDialog v-model:open="resetPasswordDialog.open">
-            <AlertDialogContent class="rounded-2xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Reset employee password?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        The password for
-                        <span class="font-semibold text-slate-800">{{ resetPasswordDialog.employee?.name || 'this employee' }}</span>
-                        will be reset to
-                        <code class="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-mono font-semibold text-slate-700">pitx@123</code>.
-                        They should change it on next login.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg" @click="resetPasswordDialog.employee = null">Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                        class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0"
-                        @click="confirmResetPassword"
-                    >
-                        Reset Password
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-
-        <!-- ── Delete dialog ─────────────────────────────────────────── -->
-        <AlertDialog v-model:open="deleteDialog.open">
-            <AlertDialogContent class="rounded-2xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Delete employee account?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        <span class="font-semibold text-slate-800">{{ deleteDialog.employee?.name || 'This employee' }}</span>
-                        will be permanently removed from your employee list. This action cannot be undone.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg" @click="deleteDialog.employee = null">Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                        class="rounded-lg bg-rose-600 text-white hover:bg-rose-700 border-0"
-                        @click="confirmDelete"
-                    >
-                        Delete Account
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-
     </ExternalLayout>
 </template>

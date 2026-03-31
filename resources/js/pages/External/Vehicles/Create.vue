@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 import ExternalLayout from '@/layouts/ExternalLayout.vue'
 
@@ -95,6 +95,16 @@ const vehicleTypes = [
     'Van',
 ]
 
+/* ✅ AUTO CAPACITY MAP */
+const capacityMap: Record<string, number> = {
+    'Jeepney': 16,
+    'UV Express': 18,
+    'Van': 18,
+    'Modern Jeepney': 25,
+    'Mini Bus': 35,
+    'Bus': 60,
+}
+
 const form = useForm({
     vehicle_type: '',
     plate_number: '',
@@ -112,6 +122,18 @@ const form = useForm({
         expires_at: '',
     })),
 })
+
+/* ✅ WATCH VEHICLE TYPE → AUTO SET CAPACITY */
+watch(
+    () => form.vehicle_type,
+    (newType) => {
+        if (capacityMap[newType]) {
+            form.capacity = String(capacityMap[newType])
+        } else {
+            form.capacity = ''
+        }
+    }
+)
 
 const selectedRoute = computed(() =>
     props.routes.find((route) => String(route.id) === String(form.route_id)) ?? null,
