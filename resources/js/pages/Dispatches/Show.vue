@@ -12,7 +12,6 @@ import {
     today,
 } from '@internationalized/date';
 
-import CompanyLogo from '@/components/company/CompanyLogo.vue'
 import RouteMapDialog from '@/components/routes/RouteMapDialog.vue';
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
@@ -282,6 +281,8 @@ const donutChartConfig = computed((): ChartConfig => {
 const donutColorFn = computed(
     () => (_d: { value: number }, i: number) => `var(--chart-${(i % 5) + 1})`,
 );
+
+const donutValueFn = (d: { value: number }) => d.value;
 
 const routeSummary = computed(() => props.summary.route_summary);
 const gateSummary = computed(() => props.summary.gate_summary);
@@ -813,11 +814,7 @@ function prettyStatus(s: string | null | undefined) {
                                             <VisSingleContainer>
                                                 <VisDonut
                                                     :data="donutData"
-                                                    :value="
-                                                        (d: {
-                                                            value: number;
-                                                        }) => d.value
-                                                    "
+                                                    :value="donutValueFn"
                                                     :color="donutColorFn"
                                                     :arc-width="14"
                                                     :pad-angle="0.02"

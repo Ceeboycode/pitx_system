@@ -130,7 +130,7 @@ const sortOptions = [
 
 const canViewArchived = computed(() => can('companies.viewAny'));
 const canViewCompany = computed(() => can('companies.view'));
-// const canArchiveCompany = computed(() => can('companies.delete'));
+const canArchiveCompany = computed(() => can('companies.delete'));
 const baseQuery = computed(() => ({
     search: props.filters.search ?? '',
     status: props.filters.status ?? 'verified',

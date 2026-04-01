@@ -71,7 +71,7 @@ const deleteOpen = ref(false);
 const selectedGate = ref<Gate | null>(null);
 const confirmDelete = ref('');
 
-const canConfirmForceDelete = computed(() => confirmText.value.trim() === 'delete');
+const canForceDelete = computed(() => confirmDelete.value.trim() === 'delete');
 
 /* ======================================================
    Dialog Helpers

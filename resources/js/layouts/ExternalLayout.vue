@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { User } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import CompanyLogo from '@/components/company/CompanyLogo.vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
