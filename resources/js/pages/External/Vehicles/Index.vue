@@ -472,54 +472,70 @@ function confirmActivate() {
 
                 <!-- -- Stats ----------------------------------- -->
                 <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
-                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700">
-                            <Bus class="h-4 w-4 text-white" />
-                        </div>
-                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-                            Total Vehicles
-                        </p>
-                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">
-                            {{ totalVehicles }}
-                        </p>
-                    </div>
+    <!-- Total Vehicles -->
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+        <div class="flex items-start justify-between">
+            <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                Total Vehicles
+            </p>
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-700">
+                <Bus class="h-4 w-4 text-white" />
+            </div>
+        </div>
 
-                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600">
-                            <CheckCircle2 class="h-4 w-4 text-white" />
-                        </div>
-                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-                            Active
-                        </p>
-                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">
-                            {{ activeVehicles }}
-                        </p>
-                    </div>
+        <p class="mt-3 text-3xl font-bold tabular-nums text-slate-900">
+            {{ totalVehicles }}
+        </p>
+    </div>
 
-                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600">
-                            <RouteIcon class="h-4 w-4 text-white" />
-                        </div>
-                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-                            With Route
-                        </p>
-                        <p class="mt-0.5 text-3xl font-bold tabular-nums text-slate-900">
-                            {{ vehicles.data.filter((v) => v.route).length }}
-                        </p>
-                    </div>
+    <!-- Active -->
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+        <div class="flex items-start justify-between">
+            <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                Active
+            </p>
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
+                <CheckCircle2 class="h-4 w-4 text-white" />
+            </div>
+        </div>
 
-                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-slate-600">
-                            <Building2 class="h-4 w-4 text-white" />
-                        </div>
-                        <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-                            Company
-                        </p>
-                        <p class="mt-0.5 truncate text-sm font-bold text-slate-900">
-                            {{ company.company_code ?? company.company_name }}
-                        </p>
-                    </div>
-                </div>
+        <p class="mt-3 text-3xl font-bold tabular-nums text-slate-900">
+            {{ activeVehicles }}
+        </p>
+    </div>
+
+    <!-- With Route -->
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+        <div class="flex items-start justify-between">
+            <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                With Route
+            </p>
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600">
+                <RouteIcon class="h-4 w-4 text-white" />
+            </div>
+        </div>
+
+        <p class="mt-3 text-3xl font-bold tabular-nums text-slate-900">
+            {{ vehicles.data.filter((v) => v.route).length }}
+        </p>
+    </div>
+
+    <!-- Company -->
+    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+        <div class="flex items-start justify-between">
+            <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                Company
+            </p>
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-600">
+                <Building2 class="h-4 w-4 text-white" />
+            </div>
+        </div>
+
+        <p class="mt-3 truncate text-sm font-bold text-slate-900">
+            {{ company.company_code ?? company.company_name }}
+        </p>
+    </div>
+</div>
 
                 <!-- -- Table card ------------------------------- -->
                 <div class="rounded-xl border border-slate-200 bg-white shadow-sm">

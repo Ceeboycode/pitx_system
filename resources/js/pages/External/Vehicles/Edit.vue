@@ -8,7 +8,8 @@ import VehicleBasicInfoForm from '@/components/company/vehicles/VehicleBasicInfo
 import VehicleDocumentsForm from '@/components/company/vehicles/VehicleDocumentsForm.vue';
 import VehicleRouteAssignment from '@/components/company/vehicles/VehicleRouteAssignment.vue';
 import VehicleSummaryCard from '@/components/company/vehicles/VehicleSummaryCard.vue';
-
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     AlertCircle,
@@ -232,72 +233,73 @@ function statusDot(status?: string | null) {
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
                 <!-- ── Page header ─────────────────────────────────────── -->
-                <div class="rounded-xl bg-gradient-to-r from-blue-900 to-blue-800 p-6 shadow-sm">
-                    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                        <div class="space-y-3">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <span class="text-xs font-semibold uppercase tracking-widest text-blue-300">
-                                    {{ company.company_code ?? company.company_name }}
-                                </span>
-                                <span class="text-blue-500">·</span>
-                                <span class="text-xs font-semibold uppercase tracking-widest text-blue-300">
-                                    Vehicles
-                                </span>
-                                <span class="text-blue-500">·</span>
-                                <span class="text-xs font-semibold uppercase tracking-widest text-blue-300">
-                                    Edit
-                                </span>
-                                <Badge :class="['ml-1 border font-medium', statusClass(vehicle.status)]">
-                                    {{ humanize(vehicle.status) }}
-                                </Badge>
-                            </div>
-                            <div>
-                                <h1 class="text-2xl font-bold tracking-tight text-slate-900">
-                                    Edit Vehicle
-                                </h1>
-                                <p class="mt-0.5 text-sm text-slate-500">
-                                    Update vehicle details, route assignment, and required documents.
-                                </p>
-                            </div>
-                        </div>
+<Card>
+    <CardContent class="p-6">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex items-start gap-4">
+                <div class="h-16 w-16 overflow-hidden rounded-2xl border bg-muted">
+                    <img
+                        v-if="company.logo_url"
+                        :src="company.logo_url"
+                        :alt="company.company_name"
+                        class="h-full w-full object-cover"
+                    />
+                    <div
+                        v-else
+                        class="flex h-full w-full items-center justify-center text-lg font-semibold"
+                    >
+                        {{ (company.company_code ?? company.company_name).slice(0, 2).toUpperCase() }}
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <p class="text-sm text-muted-foreground">
+                            {{ company.company_code ?? company.company_name }} · Vehicles · Edit
+                        </p>
+                        <h1 class="text-2xl font-semibold tracking-tight">
+                            Edit Vehicle
+                        </h1>
+                        <p class="text-sm text-muted-foreground">
+                            Update vehicle details, route assignment, and required documents.
+                        </p>
                     </div>
 
-                    <div class="flex shrink-0 flex-wrap items-center gap-2 self-start">
-                        <!-- Vehicle status pill -->
-                        <span
+                    <div class="flex flex-wrap gap-2">
+                        <Badge
                             :class="[
-                                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                                'border font-medium',
                                 statusClass(vehicle.status),
                             ]"
                         >
-                            <span
-                                :class="['h-1.5 w-1.5 rounded-full', statusDot(vehicle.status)]"
-                            />
+                            <span :class="['mr-1.5 h-1.5 w-1.5 rounded-full', statusDot(vehicle.status)]" />
                             {{ humanize(vehicle.status) }}
-                        </span>
-
-                        <Button
-                            as-child
-                            variant="outline"
-                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
-                        >
-                            <Link :href="CompanyVehicleController.index().url">
-                                <ArrowLeft class="mr-2 h-4 w-4" />
-                                Back
-                            </Link>
-                        </Button>
-
-                        <Button
-                            as-child
-                            class="rounded-lg border-0 bg-blue-700 text-sm font-semibold text-white shadow-sm hover:bg-blue-800"
-                        >
-                            <Link :href="CompanyVehicleController.show(vehicle.id).url">
-                                <Eye class="mr-2 h-4 w-4" />
-                                View Vehicle
-                            </Link>
-                        </Button>
+                        </Badge>
+                        <Badge variant="outline" class="font-mono">
+                            {{ vehicle.plate_number }}
+                        </Badge>
                     </div>
                 </div>
+            </div>
+
+            <div class="flex shrink-0 flex-wrap items-center gap-2">
+                <Button as-child variant="outline">
+                    <Link :href="CompanyVehicleController.index().url">
+                        <ArrowLeft class="mr-2 h-4 w-4" />
+                        Back
+                    </Link>
+                </Button>
+
+                <Button as-child variant="blue">
+                    <Link :href="CompanyVehicleController.show(vehicle.id).url">
+                        <Eye class="mr-2 h-4 w-4" />
+                        View Vehicle
+                    </Link>
+                </Button>
+            </div>
+        </div>
+    </CardContent>
+</Card>
 
                 <!-- ── Stat cards ──────────────────────────────────────── -->
                 <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
