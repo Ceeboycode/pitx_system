@@ -186,7 +186,9 @@ const props = defineProps<{
         requested_by: { id: number; name: string; email: string | null };
         requested_field: string;
         old_value: unknown | null;
+        old_value_display?: string | null;
         requested_value: unknown;
+        requested_value_display?: string | null;
         reason: string;
         status: string;
         rejection_reason: string | null;
@@ -1589,12 +1591,14 @@ watch(confirmDepartOpen, (open) => {
                                                         class="font-mono text-xs"
                                                     >
                                                         {{
+                                                            request.old_value_display ??
                                                             formatValue(
                                                                 request.old_value,
                                                             )
                                                         }}
                                                         →
                                                         {{
+                                                            request.requested_value_display ??
                                                             formatValue(
                                                                 request.requested_value,
                                                             )
@@ -2046,9 +2050,7 @@ watch(confirmDepartOpen, (open) => {
                             {{ changeRequestDispatch?.plate_number }}
                         </div>
                         <div class="text-xs text-muted-foreground">
-                            {{
-                                changeRequestDispatch?.gate?.gate_name ?? '—'
-                            }}
+                            {{ changeRequestDispatch?.gate?.gate_name ?? '—' }}
                             · Bay
                             {{ changeRequestDispatch?.bay_number }}
                         </div>
@@ -2200,9 +2202,7 @@ watch(confirmDepartOpen, (open) => {
                                 />
                                 <p class="mt-1 text-xs text-muted-foreground">
                                     Current:
-                                    {{
-                                        changeRequestDispatch?.pax_count ?? 0
-                                    }}
+                                    {{ changeRequestDispatch?.pax_count ?? 0 }}
                                     passengers
                                 </p>
                             </div>
@@ -2474,6 +2474,7 @@ watch(confirmDepartOpen, (open) => {
                             </p>
                             <p class="mt-1 font-mono text-sm">
                                 {{
+                                    selectedChangeRequest.old_value_display ??
                                     formatValue(selectedChangeRequest.old_value)
                                 }}
                             </p>
@@ -2487,6 +2488,7 @@ watch(confirmDepartOpen, (open) => {
                             </p>
                             <p class="mt-1 font-mono text-sm">
                                 {{
+                                    selectedChangeRequest.requested_value_display ??
                                     formatValue(
                                         selectedChangeRequest.requested_value,
                                     )
@@ -2557,5 +2559,3 @@ watch(confirmDepartOpen, (open) => {
         </Dialog>
     </ExternalLayout>
 </template>
-
-

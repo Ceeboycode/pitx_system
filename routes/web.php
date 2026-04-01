@@ -3,6 +3,7 @@
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CompanyDashboardController;
 use App\Http\Controllers\CompanyDocumentController;
+use App\Http\Controllers\CompanyProfileChangeRequestController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CompanyRegistration;
 use App\Http\Controllers\CompanyUserController;
@@ -130,7 +131,8 @@ Route::middleware(['auth', 'role.type:external'])->group(function () {
 
         Route::prefix('profile')->group(function () {
             Route::get('/', [CompanyProfileController::class, 'show'])->name('profile');
-            Route::post('logo', [CompanyProfileController::class, 'updateLogo'])->name('profile.logo.update');
+            Route::put('/', [CompanyProfileController::class, 'submitUpdate'])->name('profile.update.submit');
+            Route::post('logo', [CompanyProfileController::class, 'submitUpdate'])->name('profile.logo.update');
             Route::delete('logo/remove', [CompanyProfileController::class, 'removeLogo'])->name('profile.logo.remove');
         });
 
@@ -252,6 +254,12 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required'])->g
         ->name('users.reset-password');
 
     Route::resource('roles', RoleController::class);
+
+    Route::prefix('company-profile-change-requests')->name('company-profile-change-requests.')->group(function () {
+        Route::get('/', [CompanyProfileChangeRequestController::class, 'index'])->name('index');
+        Route::post('{changeRequest}/approve', [CompanyProfileChangeRequestController::class, 'approve'])->name('approve');
+        Route::post('{changeRequest}/reject', [CompanyProfileChangeRequestController::class, 'reject'])->name('reject');
+    });
 
     /*
     |--------------------------------------------------------------------------

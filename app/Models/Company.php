@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\CompanyProfileChangeRequest;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +15,12 @@ use Illuminate\Support\Facades\Storage;
 class Company extends Model
 {
     use HasFactory, SoftDeletes;
+
+    public const STATUS_DRAFT = 'draft';
+    public const STATUS_DOCS_COMPLETED = 'docs_completed';
+    public const STATUS_FOR_VERIFICATION = 'for_verification';
+    public const STATUS_VERIFIED = 'verified';
+    public const STATUS_NEEDS_REVISION = 'needs_revision';
 
     protected $fillable = [
         'company_name',
@@ -97,6 +104,11 @@ class Company extends Model
         return $this->hasMany(User::class);
     }
 
+    public function profileChangeRequests(): HasMany
+    {
+        return $this->hasMany(CompanyProfileChangeRequest::class);
+    }
+
     public function getCreatedAtHumanAttribute(): ?string
     {
         return $this->created_at?->diffForHumans();
@@ -114,7 +126,7 @@ class Company extends Model
 
     public function getIsVerifiedAttribute(): bool
     {
-        return $this->status === 'verified';
+        return $this->status === self::STATUS_VERIFIED;
     }
 
     public function getIsCompanyEmailVerifiedAttribute(): bool

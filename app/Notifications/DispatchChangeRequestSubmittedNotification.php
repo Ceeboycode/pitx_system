@@ -35,7 +35,9 @@ class DispatchChangeRequestSubmittedNotification extends Notification implements
             'requested_field' => $this->changeRequest->requested_field,
             'field_label' => $this->changeRequest->field_label,
             'old_value' => $this->changeRequest->old_value,
+            'old_value_display' => $this->changeRequest->old_value_display,
             'requested_value' => $this->changeRequest->requested_value,
+            'requested_value_display' => $this->changeRequest->requested_value_display,
             'reason' => $this->changeRequest->reason,
             'status' => $this->changeRequest->status,
             'created_at' => $this->changeRequest->created_at,
@@ -51,28 +53,11 @@ class DispatchChangeRequestSubmittedNotification extends Notification implements
             ->line('**Dispatch Details:**')
             ->line("- Plate Number: {$this->changeRequest->dispatch->plate_number}")
             ->line("- Field: {$this->changeRequest->field_label}")
-            ->line("- Current Value: {$this->formatValue($this->changeRequest->old_value)}")
-            ->line("- Requested Value: {$this->formatValue($this->changeRequest->requested_value)}")
+            ->line("- Current Value: {$this->changeRequest->old_value_display}")
+            ->line("- Requested Value: {$this->changeRequest->requested_value_display}")
             ->line('')
             ->line("**Reason:** {$this->changeRequest->reason}")
             ->action('Review Request', route('dispatch-change-requests.index'))
             ->line('Please review and approve or reject this change request.');
-    }
-
-    private function formatValue(mixed $value): string
-    {
-        if ($value === null) {
-            return '—';
-        }
-
-        if (is_bool($value)) {
-            return $value ? 'Yes' : 'No';
-        }
-
-        if (is_array($value) || is_object($value)) {
-            return json_encode($value);
-        }
-
-        return (string) $value;
     }
 }

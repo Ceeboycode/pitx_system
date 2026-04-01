@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\CompanyProfileChangeRequest;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -73,5 +74,15 @@ class User extends Authenticatable implements MustVerifyEmail
     public function dispatchesAsDispatcher(): HasMany
     {
         return $this->hasMany(Dispatch::class, 'dispatcher_user_id');
+    }
+
+    public function requestedCompanyProfileChanges(): HasMany
+    {
+        return $this->hasMany(CompanyProfileChangeRequest::class, 'requested_by');
+    }
+
+    public function approvedCompanyProfileChanges(): HasMany
+    {
+        return $this->hasMany(CompanyProfileChangeRequest::class, 'approved_by');
     }
 }

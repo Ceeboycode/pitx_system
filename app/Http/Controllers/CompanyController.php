@@ -82,7 +82,7 @@ class CompanyController extends Controller
         ]);
 
         $company->logo_url = filled($company->logo)
-            ? \Illuminate\Support\Facades\Storage::disk('public')->url($company->logo)
+            ? \Illuminate\Support\Facades\Storage::url($company->logo)
             : null;
 
         return Inertia::render('Company/Show', [
@@ -133,7 +133,9 @@ class CompanyController extends Controller
 
         $this->companyService->deleteCompany($company, $userId);
 
-        return back()->with('success', 'Company archived successfully.');
+        return redirect()
+            ->route('companies.index')
+            ->with('success', 'Company archived successfully.');
     }
 
     public function restore(Company $company)

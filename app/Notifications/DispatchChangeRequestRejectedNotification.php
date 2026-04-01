@@ -32,6 +32,10 @@ class DispatchChangeRequestRejectedNotification extends Notification implements 
             'plate_number' => $this->changeRequest->dispatch->plate_number,
             'requested_field' => $this->changeRequest->requested_field,
             'field_label' => $this->changeRequest->field_label,
+            'old_value' => $this->changeRequest->old_value,
+            'old_value_display' => $this->changeRequest->old_value_display,
+            'requested_value' => $this->changeRequest->requested_value,
+            'requested_value_display' => $this->changeRequest->requested_value_display,
             'rejection_reason' => $this->changeRequest->rejection_reason,
             'rejected_by_name' => $this->changeRequest->approvedBy->name ?? 'System',
             'rejected_by_id' => $this->changeRequest->approved_by,
@@ -45,6 +49,8 @@ class DispatchChangeRequestRejectedNotification extends Notification implements 
             ->subject('Dispatch Change Request Rejected')
             ->greeting('Hello ' . $notifiable->name . ',')
             ->line("Your request to change {$this->changeRequest->field_label} for dispatch {$this->changeRequest->dispatch->plate_number} has been **rejected**.")
+            ->line("- Current Value: {$this->changeRequest->old_value_display}")
+            ->line("- Requested Value: {$this->changeRequest->requested_value_display}")
             ->line("**Reason for Rejection:**")
             ->line($this->changeRequest->rejection_reason)
             ->action('View Request', route('dispatches.show', $this->changeRequest->dispatch->id))

@@ -9,6 +9,7 @@ use App\Notifications\External\CompanyNeedsRevisionNotification;
 use App\Notifications\External\CompanyVerifiedNotification;
 use App\Notifications\Internal\CompanyDocumentRejectedNotification;
 use App\Notifications\Internal\CompanyDocumentVerifiedNotification;
+use App\Services\Company\CompanyStatusService;
 use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,6 +22,7 @@ class CompanyDocumentController extends Controller
 {
     public function __construct(
         private readonly NotificationService $notificationService,
+        private readonly CompanyStatusService $companyStatusService,
     ) {
     }
 
@@ -222,44 +224,7 @@ class CompanyDocumentController extends Controller
 
     private function syncCompanyStatus(Company $company): void
     {
-        $requiredTypes = $this->requiredDocTypes($company->business_type);
-
-        $docs = CompanyDocument::where('company_id', $company->id)
-            ->whereIn('doc_type', $requiredTypes)
-            ->get()
-            ->keyBy('doc_type');
-
-        $allUploaded = count(array_diff($requiredTypes, $docs->keys()->all())) === 0;
-
-        if (! $allUploaded) {
-            $company->updateQuietly(['status' => 'draft']);
-            return;
-        }
-
-        $statuses = $docs->pluck('status');
-
-        if ($statuses->contains('invalid')) {
-            $company->updateQuietly(['status' => 'needs_revision']);
-            return;
-        }
-
-        if ($statuses->every(fn ($s) => $s === 'verified')) {
-            $company->updateQuietly(['status' => 'verified']);
-            return;
-        }
-
-        $company->updateQuietly(['status' => 'for_verification']);
-    }
-
-    private function requiredDocTypes(?string $businessType): array
-    {
-        $common = ['MAYORS_PERMIT', 'BIR_2303'];
-
-        return match ($businessType) {
-            'corporate' => [...$common, 'AUTHORIZATION_LETTER', 'SEC_CERT'],
-            'sole_proprietorship' => [...$common, 'DTI_CERT'],
-            default => $common,
-        };
+        $this->companyStatusService->syncCompanyStatus($company);
     }
 
     private function assertBelongs(CompanyDocument $document, Company $company): void

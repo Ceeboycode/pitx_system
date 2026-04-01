@@ -1,401 +1,1085 @@
-<script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3'
-import { computed, ref, watch } from 'vue'
+﻿<script setup lang="ts">
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import {
+    Building2,
+    CalendarClock,
+    Eye,
+    FileCheck2,
+    FileWarning,
+    ImageIcon,
+    ShieldCheck,
+} from 'lucide-vue-next';
+import { computed, ref } from 'vue';
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle,
-} from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-
+} from '@/components/ui/card';
 import {
-    Building2,
-    CheckCircle2,
-    ImagePlus,
-    Loader2,
-    Trash2,
-    Upload,
-    X,
-} from 'lucide-vue-next'
-
-import ExternalLayout from '@/layouts/ExternalLayout.vue'
-
-const updateLogoUrl = '/company/profile/logo'
-const removeLogoUrl = '/company/profile/logo/remove'
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import ExternalLayout from '@/layouts/ExternalLayout.vue';
 
 const props = defineProps<{
     company: {
-        id: number
-        company_name: string
-        company_code?: string | null
-        company_email?: string | null
-        company_phone?: string | null
-        company_address?: string | null
-        status: string
-        business_type?: string | null
-        registration_number?: string | null
-        authorized_representative_name?: string | null
-        authorized_representative_position?: string | null
-        authorized_representative_contact?: string | null
-        logo_url?: string | null
-    }
+        id: number;
+        company_name: string;
+        company_code?: string | null;
+        company_email?: string | null;
+        company_phone?: string | null;
+        company_address?: string | null;
+        status: string;
+        business_type?: string | null;
+        registration_number?: string | null;
+        authorized_representative_name?: string | null;
+        authorized_representative_position?: string | null;
+        authorized_representative_contact?: string | null;
+        logo_url?: string | null;
+        documents: Array<{
+            id: number;
+            doc_type: string;
+            status: string;
+            remarks?: string | null;
+            expires_at?: string | null;
+            updated_at?: string | null;
+        }>;
+    };
+    latest_change_request: {
+        id: number;
+        status: 'pending' | 'approved' | 'rejected';
+        rejection_reason?: string | null;
+        created_at?: string | null;
+        approved_at?: string | null;
+        requested_values: Record<string, unknown>;
+    } | null;
+    profile_change_requests?: Array<{
+        id: number;
+        status: 'pending' | 'approved' | 'rejected';
+        rejection_reason?: string | null;
+        created_at?: string | null;
+        approved_at?: string | null;
+        requested_values: Record<string, unknown>;
+    }>;
     user: {
-        id: number
-        name: string
-        username: string
-        email: string
+        id: number;
+        name: string;
+        username: string;
+        email: string;
+    };
+}>();
+
+const form = useForm({
+    company_name: props.company.company_name ?? '',
+    company_email: props.company.company_email ?? '',
+    company_phone: props.company.company_phone ?? '',
+    company_address: props.company.company_address ?? '',
+    business_type: props.company.business_type ?? '',
+    registration_number: props.company.registration_number ?? '',
+    authorized_representative_name:
+        props.company.authorized_representative_name ?? '',
+    authorized_representative_position:
+        props.company.authorized_representative_position ?? '',
+    authorized_representative_contact:
+        props.company.authorized_representative_contact ?? '',
+    logo: null as File | null,
+    remove_logo: false,
+    compliance_document_file: null as File | null,
+    compliance_document_issued_at: '',
+    compliance_document_expires_at: '',
+});
+
+const canSubmitChanges = computed(
+    () => props.latest_change_request?.status !== 'pending',
+);
+const canResubmitDocuments = computed(
+    () => props.company.status === 'needs_revision',
+);
+const hasExpiredDocument = computed(() =>
+    props.company.documents.some((doc) => doc.status === 'expired'),
+);
+const hasBusinessTypeChange = computed(
+    () =>
+        (form.business_type || null) !== (props.company.business_type || null),
+);
+const hasRegistrationNumberChange = computed(
+    () =>
+        (form.registration_number || '').trim() !==
+        (props.company.registration_number || '').trim(),
+);
+const requiresComplianceDocument = computed(
+    () => hasBusinessTypeChange.value || hasRegistrationNumberChange.value,
+);
+const requiredComplianceDocType = computed(() =>
+    form.business_type === 'corporate' ? 'SEC_CERT' : 'DTI_CERT',
+);
+const verifiedDocsCount = computed(
+    () =>
+        props.company.documents.filter((doc) => doc.status === 'verified')
+            .length,
+);
+const pendingDocsCount = computed(
+    () =>
+        props.company.documents.filter((doc) => doc.status === 'pending')
+            .length,
+);
+const actionRequiredDocs = computed(() =>
+    props.company.documents.filter((doc) =>
+        ['invalid', 'expired'].includes(doc.status),
+    ),
+);
+const flaggedDocsCount = computed(() => actionRequiredDocs.value.length);
+const canResubmitNow = computed(
+    () => canResubmitDocuments.value && actionRequiredDocs.value.length > 0,
+);
+const requestDialogOpen = ref(false);
+const requestDetailsDialogOpen = ref(false);
+const selectedRequestId = ref<number | null>(
+    props.latest_change_request?.id ?? null,
+);
+const profileRequestHistory = computed(
+    () => props.profile_change_requests ?? [],
+);
+const selectedRequest = computed(() => {
+    const current = profileRequestHistory.value.find(
+        (item) => item.id === selectedRequestId.value,
+    );
+    return current ?? profileRequestHistory.value[0] ?? null;
+});
+
+function onLogoSelected(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0] ?? null;
+    form.logo = file;
+    if (file) {
+        form.remove_logo = false;
     }
-}>()
-
-const logoForm    = useForm({ logo: null as File | null })
-const removeForm  = useForm({})
-const logoInputRef = ref<HTMLInputElement | null>(null)
-
-const preview    = ref<string | null>(props.company.logo_url ?? null)
-const imgError   = ref(false)
-const isDragging = ref(false)
-
-watch(() => props.company.logo_url, (val) => {
-    preview.value = val ?? null
-    imgError.value = false
-})
-
-const showCurrentImage = computed(() => !!preview.value && !imgError.value)
-const hasPendingUpload = computed(() => !!logoForm.logo)
-
-const companyInitials = computed(() =>
-    (props.company.company_code ?? props.company.company_name ?? '')
-        .replace(/[^A-Za-z0-9]/g, '')
-        .slice(0, 2)
-        .toUpperCase() || '??'
-)
-
-function pickFile(file: File) {
-    if (!file.type.match(/image\/(jpeg|png|webp)/)) return
-    logoForm.logo = file
-    imgError.value = false
-    const reader = new FileReader()
-    reader.onload = (e) => { preview.value = e.target?.result as string }
-    reader.readAsDataURL(file)
 }
 
-function handleFileInput(e: Event) {
-    const file = (e.target as HTMLInputElement).files?.[0]
-    if (file) pickFile(file)
-}
-
-function handleDrop(e: DragEvent) {
-    isDragging.value = false
-    const file = e.dataTransfer?.files?.[0]
-    if (file) pickFile(file)
-}
-
-function clearSelection() {
-    logoForm.logo = null
-    preview.value = props.company.logo_url ?? null
-    imgError.value = false
-    if (logoInputRef.value) logoInputRef.value.value = ''
-}
-
-function submitLogo() {
-    logoForm.post(updateLogoUrl, {
+function submitProfile() {
+    form.post('/profile/logo', {
         forceFormData: true,
         preserveScroll: true,
-        onSuccess: () => {
-            logoForm.reset()
-            if (logoInputRef.value) logoInputRef.value.value = ''
-        },
-    })
+    });
 }
 
-function submitRemove() {
-    if (!confirm('Remove your company logo? The initials will be shown instead.')) return
-    removeForm.delete(removeLogoUrl, {
-        preserveScroll: true,
-        onSuccess: () => {
-            preview.value = null
-            logoForm.logo = null
-        },
-    })
+function onComplianceDocumentSelected(event: Event) {
+    form.compliance_document_file =
+        (event.target as HTMLInputElement).files?.[0] ?? null;
 }
 
-function humanize(text?: string | null) {
-    if (!text) return '—'
-    return text.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+function requestLogoRemoval() {
+    form.logo = null;
+    form.remove_logo = true;
+    submitProfile();
 }
 
-function statusClass(status?: string | null) {
-    if (status === 'active' || status === 'verified') return 'bg-emerald-100 text-emerald-700 border-emerald-200'
-    if (status === 'pending')   return 'bg-amber-100 text-amber-700 border-amber-200'
-    if (status === 'suspended') return 'bg-rose-100 text-rose-600 border-rose-200'
-    if (status === 'inactive')  return 'bg-slate-100 text-slate-500 border-0'
-    return 'bg-slate-100 text-slate-500 border-0'
+function statusClass(status: string): string {
+    if (status === 'verified')
+        return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+    if (status === 'for_verification')
+        return 'bg-amber-100 text-amber-700 border-amber-200';
+    if (status === 'needs_revision')
+        return 'bg-rose-100 text-rose-700 border-rose-200';
+    if (status === 'draft')
+        return 'bg-slate-100 text-slate-700 border-slate-200';
+    return 'bg-slate-100 text-slate-700 border-slate-200';
 }
 
-function statusDot(status?: string | null) {
-    if (status === 'active' || status === 'verified') return 'bg-emerald-500'
-    if (status === 'pending')   return 'bg-amber-500'
-    if (status === 'suspended') return 'bg-rose-500'
-    return 'bg-slate-400'
+function humanize(value: string | null | undefined): string {
+    if (!value) return '—';
+    return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function requestStatusClass(status: string): string {
+    if (status === 'approved')
+        return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+    if (status === 'pending')
+        return 'bg-amber-100 text-amber-700 border-amber-200';
+    if (status === 'rejected')
+        return 'bg-rose-100 text-rose-700 border-rose-200';
+    return 'bg-slate-100 text-slate-700 border-slate-200';
+}
+
+function formatDateTime(value: string | null | undefined): string {
+    if (!value) return 'Not available';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString('en-PH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+function formatDate(value: string | null | undefined): string {
+    if (!value) return 'Not set';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString('en-PH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    });
+}
+
+function businessTypeLabel(value: string | null | undefined): string {
+    if (!value) return 'No value';
+
+    const map: Record<string, string> = {
+        corporate: 'Corporate',
+        sole_proprietorship: 'Sole Proprietorship',
+    };
+
+    return map[value] ?? humanize(value);
+}
+
+function documentTypeLabel(value: string | null | undefined): string {
+    if (!value) return 'Document';
+
+    const map: Record<string, string> = {
+        SEC_CERT: 'SEC Certificate',
+        DTI_CERT: 'DTI Certificate',
+        MAYORS_PERMIT: "Mayor's Permit",
+        BIR_2303: 'BIR Form 2303',
+        AUTHORIZATION_LETTER: 'Authorization Letter',
+    };
+
+    return map[value] ?? humanize(value);
+}
+
+function prettifyPrimitive(value: string): string {
+    if (/^[a-z0-9_]+$/.test(value) && value.includes('_')) {
+        return humanize(value);
+    }
+
+    return value;
+}
+
+function formatRequestedValue(key: string, value: unknown): string {
+    if (value === null || value === undefined || value === '')
+        return 'No value';
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+
+    if (key === 'business_type' && typeof value === 'string') {
+        return businessTypeLabel(value);
+    }
+
+    if (Array.isArray(value))
+        return value.length
+            ? value.map((v) => prettifyPrimitive(String(v))).join(', ')
+            : 'No value';
+    if (typeof value === 'object') return 'Updated details available';
+    return prettifyPrimitive(String(value));
+}
+
+const readableRequestedValues = computed(() => {
+    const values = selectedRequest.value?.requested_values ?? {};
+    const entries: Array<{ label: string; value: string }> = [];
+
+    for (const [key, value] of Object.entries(values)) {
+        if (['logo_path', 'logo_url'].includes(key)) {
+            continue;
+        }
+
+        if (
+            key === '_supporting_documents' &&
+            value &&
+            typeof value === 'object' &&
+            !Array.isArray(value)
+        ) {
+            const docs = Object.values(value as Record<string, any>);
+            for (const doc of docs) {
+                const docType = documentTypeLabel(doc?.doc_type);
+                const issuedAt = formatDate(doc?.issued_at);
+                const expiresAt = formatDate(doc?.expires_at);
+                entries.push({
+                    label: `${docType} (Supporting Document)`,
+                    value: `Issued ${issuedAt} • Expires ${expiresAt}`,
+                });
+            }
+            continue;
+        }
+
+        if (key === 'logo' && value === null) {
+            entries.push({ label: 'Logo', value: 'Request to remove logo' });
+            continue;
+        }
+
+        entries.push({
+            label: humanize(key),
+            value: formatRequestedValue(key, value),
+        });
+    }
+
+    return entries;
+});
+
+function requestedFieldCount(request: {
+    requested_values: Record<string, unknown>;
+}): number {
+    const values = request.requested_values ?? {};
+    return Object.keys(values).filter((key) => key !== '_supporting_documents')
+        .length;
+}
+
+function selectRequest(requestId: number | string): void {
+    const id = Number(requestId);
+    selectedRequestId.value = Number.isNaN(id) ? null : id;
+}
+
+function openRequestDetails(requestId: number | string): void {
+    selectRequest(requestId);
+    requestDetailsDialogOpen.value = true;
 }
 </script>
 
 <template>
-    <Head :title="`Profile — ${company.company_name}`" />
+    <Head :title="`Profile - ${company.company_name}`" />
 
     <ExternalLayout :company="company" :user="user">
-        <div class="min-h-screen bg-slate-50/60">
-            <div class="mx-auto max-w-3xl space-y-6 p-4 md:p-8">
+        <div class="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
+            <Card class="overflow-hidden border-slate-200 shadow-sm">
+                <CardContent class="relative px-6 py-7">
+                    <div
+                        class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.16),transparent_55%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.12),transparent_55%)]"
+                    />
+                    <div
+                        class="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between"
+                    >
+                        <div class="space-y-3">
+                            <Badge
+                                class="border-slate-300 bg-white/80 text-slate-700"
+                            >
+                                Company Code:
+                                {{ company.company_code || 'Not Assigned' }}
+                            </Badge>
+                            <div>
+                                <h1
+                                    class="text-2xl font-semibold tracking-tight md:text-3xl"
+                                >
+                                    Company Profile
+                                </h1>
+                                <p
+                                    class="mt-1 text-sm text-muted-foreground md:text-base"
+                                >
+                                    Keep your profile accurate. All updates are
+                                    staged and reviewed by admins before they
+                                    are applied.
+                                </p>
+                            </div>
+                        </div>
 
-                <!-- ── Page header ─────────────────────────────────── -->
-                <div class="space-y-1">
-                    <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                        <Building2 class="h-3.5 w-3.5" />
-                        {{ company.company_code ?? company.company_name }}
-                        <span class="text-slate-300">·</span>
-                        <span>Profile</span>
+                        <div class="flex items-center gap-2">
+                            <ShieldCheck class="h-4 w-4 text-slate-500" />
+                            <Badge :class="statusClass(company.status)">
+                                {{ humanize(company.status) }}
+                            </Badge>
+                        </div>
                     </div>
-                    <h1 class="text-2xl font-bold tracking-tight">Company Profile</h1>
-                    <p class="text-sm text-muted-foreground">
-                        Manage your company information and branding.
-                    </p>
-                </div>
+                </CardContent>
+            </Card>
 
-                <!-- ── Logo card ───────────────────────────────────── -->
+            <div class="grid gap-3 md:grid-cols-3">
+                <Card class="border-emerald-200/70 bg-emerald-50/50">
+                    <CardContent class="flex items-center justify-between p-4">
+                        <div>
+                            <p
+                                class="text-xs font-medium tracking-widest text-emerald-700 uppercase"
+                            >
+                                Verified
+                            </p>
+                            <p
+                                class="mt-1 text-2xl font-semibold text-emerald-800"
+                            >
+                                {{ verifiedDocsCount }}
+                            </p>
+                        </div>
+                        <FileCheck2 class="h-5 w-5 text-emerald-700" />
+                    </CardContent>
+                </Card>
+
+                <Card class="border-amber-200/70 bg-amber-50/60">
+                    <CardContent class="flex items-center justify-between p-4">
+                        <div>
+                            <p
+                                class="text-xs font-medium tracking-widest text-amber-700 uppercase"
+                            >
+                                Under Review
+                            </p>
+                            <p
+                                class="mt-1 text-2xl font-semibold text-amber-800"
+                            >
+                                {{ pendingDocsCount }}
+                            </p>
+                        </div>
+                        <Building2 class="h-5 w-5 text-amber-700" />
+                    </CardContent>
+                </Card>
+
+                <Card class="border-rose-200/70 bg-rose-50/60">
+                    <CardContent class="flex items-center justify-between p-4">
+                        <div>
+                            <p
+                                class="text-xs font-medium tracking-widest text-rose-700 uppercase"
+                            >
+                                Needs Action
+                            </p>
+                            <p
+                                class="mt-1 text-2xl font-semibold text-rose-800"
+                            >
+                                {{ flaggedDocsCount }}
+                            </p>
+                        </div>
+                        <FileWarning class="h-5 w-5 text-rose-700" />
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div class="grid gap-6 lg:grid-cols-[1.5fr,1fr]">
                 <Card>
-                    <CardHeader class="border-b border-slate-100 pb-4">
-                        <CardTitle class="text-base">Company Logo</CardTitle>
+                    <CardHeader>
+                        <CardTitle>Edit Company Details</CardTitle>
                         <CardDescription>
-                            Shown in your sidebar and documents. JPG, PNG or WebP · max 2 MB · square recommended.
+                            Minor changes keep your current status. Changing
+                            business type or registration number requires
+                            re-uploading {{ requiredComplianceDocType }}.
                         </CardDescription>
                     </CardHeader>
-
-                    <CardContent class="pt-5">
-                        <div class="flex flex-col gap-5 sm:flex-row sm:items-start">
-
-                            <!-- Logo preview -->
-                            <div class="flex flex-col items-center gap-2">
-                                <div
-                                    class="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border-2 bg-muted shadow-sm transition-colors"
-                                    :class="hasPendingUpload ? 'border-primary/60' : 'border-border'"
+                    <CardContent>
+                        <form
+                            class="grid gap-4 md:grid-cols-2"
+                            @submit.prevent="submitProfile"
+                        >
+                            <div class="space-y-2">
+                                <Label for="company_name">Company Name</Label>
+                                <Input
+                                    id="company_name"
+                                    v-model="form.company_name"
+                                />
+                                <p
+                                    v-if="form.errors.company_name"
+                                    class="text-xs text-destructive"
                                 >
-                                    <img
-                                        v-if="showCurrentImage"
-                                        :src="preview!"
-                                        :alt="company.company_name"
-                                        class="h-full w-full object-cover"
-                                        @error="imgError = true"
-                                    />
-                                    <div
-                                        v-else
-                                        class="flex h-full w-full items-center justify-center bg-primary/10"
-                                    >
-                                        <span class="select-none text-2xl font-bold text-primary">
-                                            {{ companyInitials }}
-                                        </span>
-                                    </div>
-
-                                    <div
-                                        v-if="hasPendingUpload"
-                                        class="absolute bottom-1 right-1 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-semibold leading-none text-primary-foreground"
-                                    >
-                                        NEW
-                                    </div>
-                                </div>
-
-                                <Button
-                                    v-if="company.logo_url && !hasPendingUpload"
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    class="h-auto gap-1 px-2 py-1 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                    :disabled="removeForm.processing"
-                                    @click="submitRemove"
-                                >
-                                    <Trash2 class="h-3 w-3" />
-                                    Remove logo
-                                </Button>
-
-                                <Button
-                                    v-if="hasPendingUpload"
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    class="h-auto gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
-                                    @click="clearSelection"
-                                >
-                                    <X class="h-3 w-3" />
-                                    Cancel
-                                </Button>
+                                    {{ form.errors.company_name }}
+                                </p>
                             </div>
 
-                            <!-- Upload area -->
-                            <div class="flex-1 space-y-3">
-                                <label
-                                    for="logo-input"
-                                    class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors"
-                                    :class="isDragging
-                                        ? 'border-primary bg-primary/5'
-                                        : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/40'"
-                                    @dragover.prevent="isDragging = true"
-                                    @dragleave.prevent="isDragging = false"
-                                    @drop.prevent="handleDrop"
+                            <div class="space-y-2">
+                                <Label for="company_email">Company Email</Label>
+                                <Input
+                                    id="company_email"
+                                    type="email"
+                                    v-model="form.company_email"
+                                />
+                                <p
+                                    v-if="form.errors.company_email"
+                                    class="text-xs text-destructive"
                                 >
-                                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                                        <ImagePlus class="h-5 w-5 text-muted-foreground" />
-                                    </div>
-                                    <div>
-                                        <p class="text-sm font-medium">
-                                            <span class="text-primary">Click to upload</span> or drag and drop
-                                        </p>
-                                        <p class="mt-0.5 text-xs text-muted-foreground">
-                                            JPG, PNG, WebP · max 2 MB
-                                        </p>
-                                    </div>
-                                    <input
-                                        id="logo-input"
-                                        ref="logoInputRef"
-                                        type="file"
-                                        accept="image/jpeg,image/png,image/webp"
-                                        class="sr-only"
-                                        @change="handleFileInput"
-                                    />
-                                </label>
+                                    {{ form.errors.company_email }}
+                                </p>
+                            </div>
 
-                                <p v-if="logoForm.errors.logo" class="text-xs text-destructive">
-                                    {{ logoForm.errors.logo }}
+                            <div class="space-y-2">
+                                <Label for="company_phone">Phone</Label>
+                                <Input
+                                    id="company_phone"
+                                    v-model="form.company_phone"
+                                />
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label for="registration_number"
+                                    >Registration Number</Label
+                                >
+                                <Input
+                                    id="registration_number"
+                                    v-model="form.registration_number"
+                                />
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label for="business_type">Business Type</Label>
+                                <select
+                                    id="business_type"
+                                    v-model="form.business_type"
+                                    class="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                                >
+                                    <option value="">
+                                        Select business type
+                                    </option>
+                                    <option value="corporate">Corporate</option>
+                                    <option value="sole_proprietorship">
+                                        Sole Proprietorship
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label for="authorized_representative_name"
+                                    >Authorized Representative</Label
+                                >
+                                <Input
+                                    id="authorized_representative_name"
+                                    v-model="
+                                        form.authorized_representative_name
+                                    "
+                                />
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label for="authorized_representative_position"
+                                    >Representative Position</Label
+                                >
+                                <Input
+                                    id="authorized_representative_position"
+                                    v-model="
+                                        form.authorized_representative_position
+                                    "
+                                />
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label for="authorized_representative_contact"
+                                    >Representative Contact</Label
+                                >
+                                <Input
+                                    id="authorized_representative_contact"
+                                    v-model="
+                                        form.authorized_representative_contact
+                                    "
+                                />
+                            </div>
+
+                            <div class="space-y-2 md:col-span-2">
+                                <Label for="company_address"
+                                    >Company Address</Label
+                                >
+                                <Textarea
+                                    id="company_address"
+                                    v-model="form.company_address"
+                                    rows="3"
+                                />
+                            </div>
+
+                            <div class="space-y-2 md:col-span-2">
+                                <Label for="logo">Company Logo</Label>
+                                <input
+                                    id="logo"
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    @change="onLogoSelected"
+                                />
+                                <p
+                                    v-if="company.logo_url"
+                                    class="text-xs text-muted-foreground"
+                                >
+                                    Current logo is set.
+                                </p>
+                                <p
+                                    v-if="form.errors.logo"
+                                    class="text-xs text-destructive"
+                                >
+                                    {{ form.errors.logo }}
+                                </p>
+                            </div>
+
+                            <div
+                                v-if="requiresComplianceDocument"
+                                class="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3 md:col-span-2"
+                            >
+                                <p
+                                    class="text-xs font-semibold tracking-widest text-amber-700 uppercase"
+                                >
+                                    Major change detected
+                                </p>
+                                <p class="text-xs text-amber-700">
+                                    Re-upload {{ requiredComplianceDocType }} to
+                                    continue with this request.
                                 </p>
 
-                                <div
-                                    v-if="hasPendingUpload"
-                                    class="flex items-center justify-between rounded-lg border bg-muted/40 px-3 py-2.5"
-                                >
-                                    <div class="min-w-0">
-                                        <p class="truncate text-xs font-medium">{{ logoForm.logo?.name }}</p>
-                                        <p class="text-[11px] text-muted-foreground">
-                                            {{ logoForm.logo ? (logoForm.logo.size / 1024).toFixed(0) + ' KB' : '' }}
+                                <div class="space-y-2">
+                                    <Label for="compliance_document_file"
+                                        >{{
+                                            requiredComplianceDocType
+                                        }}
+                                        File</Label
+                                    >
+                                    <input
+                                        id="compliance_document_file"
+                                        type="file"
+                                        accept="application/pdf,image/jpeg,image/png"
+                                        @change="onComplianceDocumentSelected"
+                                    />
+                                    <p
+                                        v-if="
+                                            form.errors.compliance_document_file
+                                        "
+                                        class="text-xs text-destructive"
+                                    >
+                                        {{
+                                            form.errors.compliance_document_file
+                                        }}
+                                    </p>
+                                </div>
+
+                                <div class="grid gap-3 md:grid-cols-2">
+                                    <div class="space-y-2">
+                                        <Label
+                                            for="compliance_document_issued_at"
+                                            >Issue Date</Label
+                                        >
+                                        <Input
+                                            id="compliance_document_issued_at"
+                                            type="date"
+                                            v-model="
+                                                form.compliance_document_issued_at
+                                            "
+                                        />
+                                        <p
+                                            v-if="
+                                                form.errors
+                                                    .compliance_document_issued_at
+                                            "
+                                            class="text-xs text-destructive"
+                                        >
+                                            {{
+                                                form.errors
+                                                    .compliance_document_issued_at
+                                            }}
                                         </p>
                                     </div>
-                                    <Button
-                                        size="sm"
-                                        class="ml-3 shrink-0 rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0"
-                                        :disabled="logoForm.processing"
-                                        @click="submitLogo"
-                                    >
-                                        <Loader2 v-if="logoForm.processing" class="mr-2 h-3.5 w-3.5 animate-spin" />
-                                        <Upload v-else class="mr-2 h-3.5 w-3.5" />
-                                        {{ logoForm.processing ? 'Saving…' : 'Save Logo' }}
-                                    </Button>
+
+                                    <div class="space-y-2">
+                                        <Label
+                                            for="compliance_document_expires_at"
+                                            >Expiry Date</Label
+                                        >
+                                        <Input
+                                            id="compliance_document_expires_at"
+                                            type="date"
+                                            v-model="
+                                                form.compliance_document_expires_at
+                                            "
+                                        />
+                                        <p
+                                            v-if="
+                                                form.errors
+                                                    .compliance_document_expires_at
+                                            "
+                                            class="text-xs text-destructive"
+                                        >
+                                            {{
+                                                form.errors
+                                                    .compliance_document_expires_at
+                                            }}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+
+                            <div class="flex flex-wrap gap-2 md:col-span-2">
+                                <Button
+                                    type="submit"
+                                    :disabled="
+                                        form.processing || !canSubmitChanges
+                                    "
+                                >
+                                    {{
+                                        form.processing
+                                            ? 'Submitting...'
+                                            : 'Submit For Admin Verification'
+                                    }}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    :disabled="
+                                        form.processing ||
+                                        !canSubmitChanges ||
+                                        !company.logo_url
+                                    "
+                                    @click="requestLogoRemoval"
+                                >
+                                    Request Logo Removal
+                                </Button>
+                            </div>
+
+                            <p
+                                v-if="!canSubmitChanges"
+                                class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 md:col-span-2"
+                            >
+                                You already have a pending profile request. Wait
+                                for admin action before submitting again.
+                            </p>
+                            <p
+                                v-if="form.errors.profile"
+                                class="text-xs text-destructive md:col-span-2"
+                            >
+                                {{ form.errors.profile }}
+                            </p>
+                        </form>
                     </CardContent>
                 </Card>
 
-                <!-- ── Company details card ────────────────────────── -->
-                <Card>
-                    <CardHeader class="border-b border-slate-100 pb-4">
-                        <CardTitle class="flex items-center gap-2 text-base">
-                            <Building2 class="h-4 w-4 text-blue-700" />
-                            Company Details
-                        </CardTitle>
-                        <CardDescription>Your registered business information.</CardDescription>
-                    </CardHeader>
-
-                    <CardContent class="pt-0">
-
-                        <!-- Basic info -->
-                        <div class="divide-y divide-slate-100">
-
-                            <div class="grid gap-4 px-0 py-4 sm:grid-cols-2">
-                                <div class="space-y-0.5">
-                                    <dt class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Company Name</dt>
-                                    <dd class="text-sm font-semibold">{{ company.company_name }}</dd>
-                                </div>
-                                <div class="space-y-0.5">
-                                    <dt class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Company Code</dt>
-                                    <dd class="font-mono text-sm font-semibold">{{ company.company_code ?? '—' }}</dd>
-                                </div>
-                            </div>
-
-                            <div class="grid gap-4 py-4 sm:grid-cols-2">
-                                <div class="space-y-0.5">
-                                    <dt class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Email</dt>
-                                    <dd class="text-sm">{{ company.company_email ?? '—' }}</dd>
-                                </div>
-                                <div class="space-y-0.5">
-                                    <dt class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Phone</dt>
-                                    <dd class="text-sm">{{ company.company_phone ?? '—' }}</dd>
+                <div class="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <ImageIcon class="h-4 w-4" />
+                                Brand Preview
+                            </CardTitle>
+                            <CardDescription
+                                >Current company identity
+                                snapshot.</CardDescription
+                            >
+                        </CardHeader>
+                        <CardContent>
+                            <div
+                                class="overflow-hidden rounded-lg border bg-slate-50"
+                            >
+                                <img
+                                    v-if="company.logo_url"
+                                    :src="company.logo_url"
+                                    alt="Company Logo"
+                                    class="h-40 w-full object-contain p-4"
+                                />
+                                <div
+                                    v-else
+                                    class="flex h-40 items-center justify-center text-sm text-muted-foreground"
+                                >
+                                    No logo uploaded
                                 </div>
                             </div>
+                        </CardContent>
+                    </Card>
 
-                            <div class="py-4">
-                                <div class="space-y-0.5">
-                                    <dt class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Address</dt>
-                                    <dd class="text-sm">{{ company.company_address ?? '—' }}</dd>
-                                </div>
-                            </div>
-
-                            <div class="grid gap-4 py-4 sm:grid-cols-2">
-                                <div class="space-y-0.5">
-                                    <dt class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Business Type</dt>
-                                    <dd class="text-sm">{{ humanize(company.business_type) }}</dd>
-                                </div>
-                                <div class="space-y-0.5">
-                                    <dt class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Registration No.</dt>
-                                    <dd class="font-mono text-sm">{{ company.registration_number ?? '—' }}</dd>
-                                </div>
-                            </div>
-
-                            <div class="flex items-center justify-between py-4">
-                                <dt class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Status</dt>
-                                <Badge :class="['gap-1.5', statusClass(company.status)]">
-                                    <CheckCircle2 v-if="company.status === 'verified'" class="h-3 w-3" />
-                                    <span v-else :class="['h-1.5 w-1.5 rounded-full', statusDot(company.status)]" />
-                                    {{ humanize(company.status) }}
+                    <Card v-if="latest_change_request">
+                        <CardHeader>
+                            <CardTitle>Latest Profile Change Request</CardTitle>
+                            <CardDescription>
+                                Track the latest request before submitting
+                                another profile update.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent class="space-y-3 text-sm">
+                            <div
+                                class="flex items-center justify-between gap-2"
+                            >
+                                <Badge
+                                    :class="
+                                        requestStatusClass(
+                                            latest_change_request.status,
+                                        )
+                                    "
+                                >
+                                    {{ humanize(latest_change_request.status) }}
                                 </Badge>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    @click="requestDialogOpen = true"
+                                >
+                                    <Eye class="mr-2 h-3.5 w-3.5" />
+                                    View Details
+                                </Button>
                             </div>
 
-                        </div>
-
-                        <Separator />
-
-                        <!-- Representative -->
-                        <div class="divide-y divide-slate-100">
-
-                            <div class="pb-2 pt-4">
-                                <p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Authorized Representative</p>
+                            <div
+                                class="space-y-1 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700"
+                            >
+                                <p>
+                                    <span class="font-semibold"
+                                        >Change request:</span
+                                    >
+                                    #{{ latest_change_request.id }}
+                                </p>
+                                <p>
+                                    <span class="font-semibold"
+                                        >Submitted:</span
+                                    >
+                                    {{
+                                        formatDateTime(
+                                            latest_change_request.created_at,
+                                        )
+                                    }}
+                                </p>
                             </div>
 
-                            <div class="grid gap-4 py-4 sm:grid-cols-2">
-                                <div class="space-y-0.5">
-                                    <dt class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Name</dt>
-                                    <dd class="text-sm font-medium">{{ company.authorized_representative_name ?? '—' }}</dd>
-                                </div>
-                                <div class="space-y-0.5">
-                                    <dt class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Position</dt>
-                                    <dd class="text-sm">{{ humanize(company.authorized_representative_position) }}</dd>
-                                </div>
-                            </div>
-
-                            <div class="py-4">
-                                <div class="space-y-0.5">
-                                    <dt class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Contact</dt>
-                                    <dd class="text-sm">{{ company.authorized_representative_contact ?? '—' }}</dd>
-                                </div>
-                            </div>
-
-                        </div>
-
-                    </CardContent>
-                </Card>
-
+                            <p
+                                v-if="
+                                    latest_change_request.status === 'pending'
+                                "
+                                class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-amber-800"
+                            >
+                                Your request is currently under review. You can
+                                submit again once admins finish processing this
+                                request.
+                            </p>
+                            <p
+                                v-if="
+                                    latest_change_request.status === 'approved'
+                                "
+                                class="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-emerald-800"
+                            >
+                                Great news. Your latest profile change request
+                                was approved.
+                            </p>
+                            <p
+                                v-if="
+                                    latest_change_request.status === 'rejected'
+                                "
+                                class="rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-rose-800"
+                            >
+                                Rejected:
+                                {{
+                                    latest_change_request.rejection_reason ||
+                                    'No reason provided.'
+                                }}
+                            </p>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Document Status</CardTitle>
+                    <CardDescription>
+                        Required documents can be re-uploaded only when your
+                        company needs revision.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent class="space-y-3">
+                    <div
+                        v-for="doc in company.documents"
+                        :key="doc.id"
+                        class="flex items-start justify-between rounded-lg border border-slate-200 p-3"
+                    >
+                        <div>
+                            <p class="text-sm font-medium">
+                                {{ humanize(doc.doc_type) }}
+                            </p>
+                            <p class="text-xs text-muted-foreground">
+                                <span class="font-medium">Status:</span>
+                                {{ humanize(doc.status) }}
+                                <span v-if="doc.expires_at">
+                                    • <span class="font-medium">Expires:</span>
+                                    {{ formatDate(doc.expires_at) }}</span
+                                >
+                            </p>
+                            <p
+                                v-if="doc.remarks"
+                                class="mt-1 text-xs text-rose-700"
+                            >
+                                Remarks: {{ doc.remarks }}
+                            </p>
+                        </div>
+                        <Badge :class="statusClass(doc.status)">
+                            {{ humanize(doc.status) }}
+                        </Badge>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2 pt-2">
+                        <Button v-if="canResubmitNow" as-child>
+                            <Link href="/registration/status"
+                                >Resubmit Documents</Link
+                            >
+                        </Button>
+                        <Button v-else type="button" disabled>
+                            Resubmit Documents
+                        </Button>
+                        <p class="text-xs text-muted-foreground">
+                            Enabled only when status is Needs Revision and there
+                            are expired or invalid documents.
+                        </p>
+                    </div>
+
+                    <p
+                        v-if="hasExpiredDocument"
+                        class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+                    >
+                        One or more documents are expired. Reupload the expired
+                        documents in the registration status page.
+                    </p>
+                </CardContent>
+            </Card>
         </div>
+
+        <Dialog v-model:open="requestDialogOpen">
+            <DialogContent class="max-h-[85vh] overflow-hidden sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle class="flex items-center gap-2">
+                        <CalendarClock class="h-4 w-4" />
+                        Profile Change Request History
+                    </DialogTitle>
+                    <DialogDescription>
+                        Click View Changes to open a detailed request dialog.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div
+                    class="max-h-[60vh] space-y-2 overflow-y-auto rounded-md border border-slate-200 p-2"
+                >
+                    <div
+                        v-for="requestItem in profileRequestHistory"
+                        :key="requestItem.id"
+                        class="w-full cursor-pointer rounded-md border p-2 text-left transition"
+                        :class="
+                            selectedRequestId === requestItem.id
+                                ? 'border-slate-900 bg-slate-50'
+                                : 'border-slate-200 hover:bg-slate-50'
+                        "
+                        @click="selectRequest(requestItem.id)"
+                    >
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="text-xs font-semibold text-slate-800">
+                                Change request #{{ requestItem.id }}
+                            </p>
+                            <Badge
+                                :class="requestStatusClass(requestItem.status)"
+                                >{{ humanize(requestItem.status) }}</Badge
+                            >
+                        </div>
+                        <p class="mt-1 text-xs text-muted-foreground">
+                            {{ formatDateTime(requestItem.created_at) }}
+                        </p>
+                        <p class="mt-1 text-xs text-slate-700">
+                            {{ requestedFieldCount(requestItem) }} field(s)
+                            updated
+                        </p>
+                        <p
+                            v-if="requestItem.status === 'rejected'"
+                            class="mt-1 line-clamp-2 text-xs text-rose-700"
+                        >
+                            {{
+                                requestItem.rejection_reason ||
+                                'No reason provided.'
+                            }}
+                        </p>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            class="mt-2 h-7 px-2 text-xs"
+                            @click.stop="openRequestDetails(requestItem.id)"
+                        >
+                            View Changes
+                        </Button>
+                    </div>
+                </div>
+
+                <DialogFooter>
+                    <Button variant="outline" @click="requestDialogOpen = false"
+                        >Close</Button
+                    >
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog v-model:open="requestDetailsDialogOpen">
+            <DialogContent class="max-h-[85vh] overflow-hidden sm:max-w-3xl">
+                <DialogHeader>
+                    <DialogTitle class="flex items-center gap-2">
+                        <CalendarClock class="h-4 w-4" />
+                        Request #{{ selectedRequest?.id }} Details
+                    </DialogTitle>
+                    <DialogDescription>
+                        Complete summary of requested changes and important
+                        details.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div
+                    v-if="selectedRequest"
+                    class="max-h-[60vh] space-y-4 overflow-y-auto pr-1 text-sm"
+                >
+                    <div
+                        class="grid grid-cols-1 gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700"
+                    >
+                        <p>
+                            <span class="font-semibold">Change request:</span>
+                            #{{ selectedRequest.id }}
+                        </p>
+                        <p>
+                            <span class="font-semibold">Status:</span>
+                            {{ humanize(selectedRequest.status) }}
+                        </p>
+                        <p>
+                            <span class="font-semibold">Submitted:</span>
+                            {{ formatDateTime(selectedRequest.created_at) }}
+                        </p>
+                        <p v-if="selectedRequest.approved_at">
+                            <span class="font-semibold">Reviewed:</span>
+                            {{ formatDateTime(selectedRequest.approved_at) }}
+                        </p>
+                        <p
+                            v-if="selectedRequest.status === 'rejected'"
+                            class="rounded-md border border-rose-300 bg-rose-50 px-2 py-1 text-rose-800"
+                        >
+                            <span class="font-semibold">Rejection reason:</span>
+                            {{
+                                selectedRequest.rejection_reason ||
+                                'No reason provided.'
+                            }}
+                        </p>
+                    </div>
+
+                    <div>
+                        <p
+                            class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+                        >
+                            Requested updates
+                        </p>
+                        <div
+                            v-if="readableRequestedValues.length"
+                            class="space-y-2"
+                        >
+                            <div
+                                v-for="item in readableRequestedValues"
+                                :key="`${selectedRequest.id}-${item.label}`"
+                                class="rounded-md border border-slate-200 p-2"
+                            >
+                                <p class="text-xs font-medium text-slate-600">
+                                    {{ item.label }}
+                                </p>
+                                <p
+                                    class="text-sm wrap-break-word text-slate-900"
+                                >
+                                    {{ item.value }}
+                                </p>
+                            </div>
+                        </div>
+                        <p
+                            v-else
+                            class="rounded-md border border-slate-200 p-3 text-xs text-muted-foreground"
+                        >
+                            No field-level details available for this request.
+                        </p>
+                    </div>
+                </div>
+
+                <DialogFooter>
+                    <Button
+                        variant="outline"
+                        @click="requestDetailsDialogOpen = false"
+                        >Close</Button
+                    >
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </ExternalLayout>
 </template>
