@@ -181,7 +181,9 @@ const props = defineProps<{
         requested_by: { id: number; name: string; email: string | null };
         requested_field: string;
         old_value: unknown | null;
+        old_value_display?: string | null;
         requested_value: unknown;
+        requested_value_display?: string | null;
         reason: string;
         status: string;
         rejection_reason: string | null;
@@ -1103,20 +1105,47 @@ watch(confirmDepartOpen, (open) => {
                                         </span>
                                     </div>
 
-                                    <div class="grid grid-cols-2 gap-2 text-sm">
-                                        <div>
-                                            <p class="text-xs text-slate-400">Field</p>
-                                            <p class="font-medium text-slate-700">
-                                                {{ request.field_label || formatFieldLabel(request.requested_field) }}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs text-slate-400">Change</p>
-                                            <p class="font-mono text-xs text-slate-700">
-                                                {{ formatValue(request.old_value) }} → {{ formatValue(request.requested_value) }}
-                                            </p>
-                                        </div>
-                                    </div>
+                                            <div
+                                                class="grid grid-cols-2 gap-3 text-sm"
+                                            >
+                                                <div>
+                                                    <p
+                                                        class="text-xs font-medium text-muted-foreground"
+                                                    >
+                                                        Field
+                                                    </p>
+                                                    <p class="font-medium">
+                                                        {{
+                                                            request.field_label ||
+                                                            formatFieldLabel(
+                                                                request.requested_field,
+                                                            )
+                                                        }}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <p
+                                                        class="text-xs font-medium text-muted-foreground"
+                                                    >
+                                                        Change
+                                                    </p>
+                                                    <p
+                                                        class="font-mono text-xs"
+                                                    >
+                                                        {{
+                                                            formatValue(
+                                                                request.old_value,
+                                                            )
+                                                        }}
+                                                        →
+                                                        {{
+                                                            formatValue(
+                                                                request.requested_value,
+                                                            )
+                                                        }}
+                                                    </p>
+                                                </div>
+                                            </div>
 
                                     <p class="line-clamp-2 text-xs text-slate-500">{{ request.reason }}</p>
 
@@ -1371,11 +1400,16 @@ watch(confirmDepartOpen, (open) => {
                         </p>
                     </div>
 
-                    <!-- Dispatch summary -->
-                    <div class="rounded-lg border border-slate-200 bg-white p-3 text-sm">
-                        <div class="font-semibold text-slate-800">{{ changeRequestDispatch?.plate_number }}</div>
-                        <div class="text-xs text-slate-400">
-                            {{ changeRequestDispatch?.gate?.gate_name ?? '—' }} · Bay {{ changeRequestDispatch?.bay_number }}
+                    <div class="rounded-lg border bg-muted/30 p-3 text-sm">
+                        <div class="font-medium">
+                            {{ changeRequestDispatch?.plate_number }}
+                        </div>
+                        <div class="text-xs text-muted-foreground">
+                            {{
+                                changeRequestDispatch?.gate?.gate_name ?? '—'
+                            }}
+                            · Bay
+                            {{ changeRequestDispatch?.bay_number }}
                         </div>
                     </div>
 
@@ -1438,8 +1472,18 @@ watch(confirmDepartOpen, (open) => {
                                     placeholder="Enter new passenger count"
                                     @input="changeRequestForm.requested_value = String(($event.target as HTMLInputElement).value)"
                                 />
-                                <InputError :message="changeRequestForm.errors.requested_value" />
-                                <p class="mt-1 text-xs text-slate-400">Current: {{ changeRequestDispatch?.pax_count ?? 0 }} passengers</p>
+                                <InputError
+                                    :message="
+                                        changeRequestForm.errors.requested_value
+                                    "
+                                />
+                                <p class="mt-1 text-xs text-muted-foreground">
+                                    Current:
+                                    {{
+                                        changeRequestDispatch?.pax_count ?? 0
+                                    }}
+                                    passengers
+                                </p>
                             </div>
                         </template>
 
@@ -1587,12 +1631,30 @@ watch(confirmDepartOpen, (open) => {
                             </p>
                         </div>
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">Current Value</p>
-                            <p class="mt-1 font-mono text-sm text-slate-700">{{ formatValue(selectedChangeRequest.old_value) }}</p>
+                            <p
+                                class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+                            >
+                                Current Value
+                            </p>
+                            <p class="mt-1 font-mono text-sm">
+                                {{
+                                    formatValue(selectedChangeRequest.old_value)
+                                }}
+                            </p>
                         </div>
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">Requested Value</p>
-                            <p class="mt-1 font-mono text-sm text-slate-700">{{ formatValue(selectedChangeRequest.requested_value) }}</p>
+                            <p
+                                class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+                            >
+                                Requested Value
+                            </p>
+                            <p class="mt-1 font-mono text-sm">
+                                {{
+                                    formatValue(
+                                        selectedChangeRequest.requested_value,
+                                    )
+                                }}
+                            </p>
                         </div>
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">Reason</p>
@@ -1626,3 +1688,5 @@ watch(confirmDepartOpen, (open) => {
 
     </ExternalLayout>
 </template>
+
+

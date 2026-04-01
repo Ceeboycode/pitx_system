@@ -22,7 +22,6 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import CompanyProfileController from '@/actions/App/Http/Controllers/CompanyProfileController';
 import CompanyUserController from '@/actions/App/Http/Controllers/CompanyUserController';
 import CompanyVehicleController from '@/actions/App/Http/Controllers/CompanyVehicleController';
-import DispatchController from '@/actions/App/Http/Controllers/DispatchController';
 import { logout } from '@/routes';
 
 import {
@@ -111,7 +110,7 @@ const navItems = [
     {
         label: 'Dispatches',
         icon: BusFront,
-        href: DispatchController.index().url,
+        href: '/company/dispatches',
     },
     {
         label: 'Registered Vehicles',
@@ -229,7 +228,9 @@ watch(
 
                 <!-- Notifications -->
                 <div class="border-b px-3 py-3">
-                    <div class="flex items-center justify-between rounded-xl border bg-background px-3 py-2">
+                    <div
+                        class="flex items-center justify-between rounded-xl border bg-background px-3 py-2"
+                    >
                         <div class="min-w-0">
                             <p class="truncate text-sm font-semibold">
                                 Notifications
@@ -388,12 +389,16 @@ watch(
                     </div>
 
                     <div class="border-b px-4 py-3">
-                        <div class="flex items-center justify-between rounded-xl border bg-background px-3 py-2">
+                        <div
+                            class="flex items-center justify-between rounded-xl border bg-background px-3 py-2"
+                        >
                             <div class="min-w-0">
                                 <p class="truncate text-sm font-semibold">
                                     Notifications
                                 </p>
-                                <p class="truncate text-xs text-muted-foreground">
+                                <p
+                                    class="truncate text-xs text-muted-foreground"
+                                >
                                     Company alerts and updates
                                 </p>
                             </div>

@@ -65,7 +65,9 @@ type DispatchChangeRequest = {
     company_code: string;
     requested_field: string;
     old_value: unknown | null;
+    old_value_display?: string | null;
     requested_value: unknown;
+    requested_value_display?: string | null;
     reason: string;
     status: string;
     rejected_by?: { id: number; name: string } | null;
@@ -490,12 +492,14 @@ function statusIcon(status: string) {
                                                             class="text-xs text-muted-foreground"
                                                         >
                                                             {{
+                                                                request.old_value_display ??
                                                                 formatValue(
                                                                     request.old_value,
                                                                 )
                                                             }}
                                                             →
                                                             {{
+                                                                request.requested_value_display ??
                                                                 formatValue(
                                                                     request.requested_value,
                                                                 )

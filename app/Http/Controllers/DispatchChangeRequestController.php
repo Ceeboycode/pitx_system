@@ -60,7 +60,9 @@ class DispatchChangeRequestController extends Controller
                 'company_code' => $req->requestedBy->company?->company_code ?? '—',
                 'requested_field' => $req->requested_field,
                 'old_value' => $req->old_value,
+                'old_value_display' => $req->old_value_display,
                 'requested_value' => $req->requested_value,
+                'requested_value_display' => $req->requested_value_display,
                 'reason' => $req->reason,
                 'status' => $req->status,
                 'approved_by' => $req->approvedBy ? [

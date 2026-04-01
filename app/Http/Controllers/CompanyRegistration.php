@@ -10,6 +10,7 @@ use App\Notifications\External\CompanyResubmittedReceivedNotification;
 use App\Notifications\External\CompanySubmissionReceivedNotification;
 use App\Notifications\Internal\CompanyResubmittedNotification;
 use App\Notifications\Internal\NewCompanySubmittedNotification;
+use App\Services\Company\CompanyStatusService;
 use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,6 +28,7 @@ class CompanyRegistration extends Controller
 {
     public function __construct(
         private readonly NotificationService $notificationService,
+        private readonly CompanyStatusService $companyStatusService,
     ) {
     }
 
@@ -306,9 +308,9 @@ class CompanyRegistration extends Controller
             'documents.BIR_2303.issued_at' => ['required', 'date', 'before_or_equal:today'],
             'documents.BIR_2303.expires_at' => ['required', 'date', 'after:documents.BIR_2303.issued_at'],
 
-            'documents.AUTHORIZATION_LETTER.file' => [$isCorporate ? 'required' : 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'documents.AUTHORIZATION_LETTER.issued_at' => [$isCorporate ? 'required' : 'nullable', 'date', 'before_or_equal:today'],
-            'documents.AUTHORIZATION_LETTER.expires_at' => [$isCorporate ? 'required' : 'nullable', 'date', 'after:documents.AUTHORIZATION_LETTER.issued_at'],
+            'documents.AUTHORIZATION_LETTER.file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'documents.AUTHORIZATION_LETTER.issued_at' => ['nullable', 'date', 'before_or_equal:today'],
+            'documents.AUTHORIZATION_LETTER.expires_at' => ['nullable', 'date', 'after:documents.AUTHORIZATION_LETTER.issued_at'],
 
             'documents.SEC_CERT.file' => [$isCorporate ? 'required' : 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'documents.SEC_CERT.issued_at' => [$isCorporate ? 'required' : 'nullable', 'date', 'before_or_equal:today'],
@@ -451,6 +453,10 @@ class CompanyRegistration extends Controller
             return redirect()->route('company-registration.show');
         }
 
+        $this->companyStatusService->markExpiredDocumentsAndSync(collect([$company]));
+        $this->companyStatusService->syncCompanyStatus($company);
+        $company = $company->fresh();
+
         if ($company->status === 'verified') {
             return redirect()->route('company.dashboard');
         }
@@ -470,7 +476,7 @@ class CompanyRegistration extends Controller
             ],
             'needs_revision' => [
                 'title' => 'Action Required',
-                'description' => 'One or more documents were flagged. Please review the remarks below and resubmit the corrected files.',
+                'description' => 'One or more documents are invalid or expired. Please review the details below and resubmit the required files.',
                 'icon' => 'warning',
                 'color' => 'destructive',
             ],
@@ -492,7 +498,7 @@ class CompanyRegistration extends Controller
                 'is_company_email_verified' => $company->hasVerifiedCompanyEmail(),
                 'status' => $company->status,
                 'documents' => $company->documents()
-                    ->select(['id', 'doc_type', 'status', 'remarks', 'original_name'])
+                    ->select(['id', 'doc_type', 'status', 'remarks', 'original_name', 'expires_at'])
                     ->get(),
             ],
             'meta' => $meta[$company->status] ?? $meta['for_verification'],
@@ -512,14 +518,16 @@ class CompanyRegistration extends Controller
             return redirect()->route('registration.status');
         }
 
-        $invalidDocs = $company->documents()->where('status', 'invalid')->get();
+        $actionRequiredDocs = $company->documents()
+            ->whereIn('status', ['invalid', 'expired'])
+            ->get();
 
-        if ($invalidDocs->isEmpty()) {
+        if ($actionRequiredDocs->isEmpty()) {
             return redirect()->route('registration.status');
         }
 
         $rules = [];
-        foreach ($invalidDocs as $doc) {
+        foreach ($actionRequiredDocs as $doc) {
             $t = $doc->doc_type;
 
             $rules["documents.$t.file"] = ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'];
@@ -529,11 +537,11 @@ class CompanyRegistration extends Controller
 
         $request->validate($rules, $this->documentMessages());
 
-        DB::transaction(function () use ($request, $user, $company, $invalidDocs) {
+        DB::transaction(function () use ($request, $user, $company, $actionRequiredDocs) {
             $disk = Storage::disk('public');
             $companySlug = $this->companySlugUpper($company->company_name);
 
-            foreach ($invalidDocs as $doc) {
+            foreach ($actionRequiredDocs as $doc) {
                 $type = $doc->doc_type;
                 $fileKey = "documents.$type.file";
 
@@ -549,6 +557,20 @@ class CompanyRegistration extends Controller
                     Str::uuid() . '.' . $ext,
                     'public'
                 );
+
+                $duplicateDocs = CompanyDocument::query()
+                    ->where('company_id', $company->id)
+                    ->where('doc_type', $type)
+                    ->where('id', '!=', $doc->id)
+                    ->get();
+
+                foreach ($duplicateDocs as $duplicateDoc) {
+                    if ($duplicateDoc->file_path && $disk->exists($duplicateDoc->file_path)) {
+                        $disk->delete($duplicateDoc->file_path);
+                    }
+
+                    $duplicateDoc->delete();
+                }
 
                 if ($doc->file_path && $disk->exists($doc->file_path)) {
                     $disk->delete($doc->file_path);
@@ -569,6 +591,8 @@ class CompanyRegistration extends Controller
                     'expires_at' => data_get($request->input('documents'), "$type.expires_at"),
                     'status' => 'pending',
                     'remarks' => null,
+                    'verified_by' => null,
+                    'verified_at' => null,
                     'uploaded_by' => $user->id,
                 ]);
             }
@@ -590,7 +614,7 @@ class CompanyRegistration extends Controller
 
         return redirect()
             ->route('registration.status')
-            ->with('status', 'Your corrected documents were submitted for review.');
+            ->with('status', 'Your resubmitted documents were sent for review.');
     }
 
     private function normalizePhMobile(?string $raw): ?string
