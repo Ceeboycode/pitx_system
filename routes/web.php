@@ -8,6 +8,7 @@ use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CompanyRegistration;
 use App\Http\Controllers\CompanyUserController;
 use App\Http\Controllers\CompanyVehicleController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Crm\CrmMessageAttachmentController;
 use App\Http\Controllers\Crm\CrmMessageController;
 use App\Http\Controllers\Crm\CrmThreadController;
@@ -81,7 +82,7 @@ Route::middleware('guest')->prefix('company-registration')->name('company-regist
 |
 */
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'audit.request'])->group(function () {
     Route::get('force-password-reset', [ForcePasswordController::class, 'edit'])
         ->name('force-password.edit');
 
@@ -101,7 +102,7 @@ Route::middleware(['auth'])->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role.type:external'])->group(function () {
+Route::middleware(['auth', 'role.type:external', 'audit.request'])->group(function () {
     /*
     |--------------------------------------------------------------------------
     | Registration / Onboarding Status
@@ -212,8 +213,9 @@ Route::middleware(['auth', 'role.type:external'])->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role.type:internal', 'password.change.required'])->group(function () {
+Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'audit.request'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
 
     /*
     |--------------------------------------------------------------------------

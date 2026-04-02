@@ -7,6 +7,7 @@ use App\Http\Requests\Dispatch\RejectChangeRequestRequest;
 use App\Http\Requests\Dispatch\StoreDispatchChangeRequestRequest;
 use App\Models\Dispatch;
 use App\Models\DispatchChangeRequest;
+use App\Services\AuditLogger;
 use App\Notifications\DispatchChangeRequestApprovedNotification;
 use App\Notifications\DispatchChangeRequestRejectedNotification;
 use App\Notifications\DispatchChangeRequestSubmittedNotification;
@@ -18,6 +19,10 @@ use Inertia\Response;
 
 class DispatchChangeRequestController extends Controller
 {
+    public function __construct(private readonly AuditLogger $auditLogger)
+    {
+    }
+
     /**
      * Display a listing of dispatch change requests
      */
@@ -112,6 +117,23 @@ class DispatchChangeRequestController extends Controller
         // Load relationships for notification
         $changeRequest->load(['dispatch', 'requestedBy.company']);
 
+        $this->auditLogger->log(
+            action: 'dispatch.change_request.submitted',
+            actor: auth()->user(),
+            auditable: $changeRequest,
+            changedFields: [
+                'requested_field' => [
+                    'old' => $changeRequest->old_value,
+                    'new' => $changeRequest->requested_value,
+                ],
+            ],
+            metadata: [
+                'reason' => $changeRequest->reason,
+                'dispatch_id' => $changeRequest->dispatch_id,
+                'requested_field' => $changeRequest->requested_field,
+            ],
+        );
+
         // Notify internal users about the new request
         $internalUsers = \App\Models\User::whereNull('company_id')->get();
         foreach ($internalUsers as $user) {
@@ -145,6 +167,22 @@ class DispatchChangeRequestController extends Controller
         // Approve the request and apply the change
         $changeRequest->approve(auth()->user());
 
+        $this->auditLogger->log(
+            action: 'dispatch.change_request.approved',
+            actor: auth()->user(),
+            auditable: $changeRequest,
+            changedFields: [
+                'status' => [
+                    'old' => DispatchChangeRequest::STATUS_PENDING,
+                    'new' => DispatchChangeRequest::STATUS_APPROVED,
+                ],
+            ],
+            metadata: [
+                'dispatch_id' => $changeRequest->dispatch_id,
+                'requested_field' => $changeRequest->requested_field,
+            ],
+        );
+
         // Notify the requester
         $changeRequest->requestedBy->notify(new DispatchChangeRequestApprovedNotification($changeRequest));
 
@@ -174,6 +212,23 @@ class DispatchChangeRequestController extends Controller
 
         // Reject the request (don't apply the change)
         $changeRequest->reject(auth()->user(), $request->rejection_reason);
+
+        $this->auditLogger->log(
+            action: 'dispatch.change_request.rejected',
+            actor: auth()->user(),
+            auditable: $changeRequest,
+            changedFields: [
+                'status' => [
+                    'old' => DispatchChangeRequest::STATUS_PENDING,
+                    'new' => DispatchChangeRequest::STATUS_REJECTED,
+                ],
+            ],
+            metadata: [
+                'dispatch_id' => $changeRequest->dispatch_id,
+                'requested_field' => $changeRequest->requested_field,
+                'rejection_reason' => $request->rejection_reason,
+            ],
+        );
 
         // Notify the requester with rejection reason
         $changeRequest->requestedBy->notify(new DispatchChangeRequestRejectedNotification($changeRequest));

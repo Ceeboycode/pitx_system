@@ -94,6 +94,10 @@ class PermissionSeeder extends Seeder
             'view',
         ],
 
+        'audit_logs' => [
+            'viewAny',
+        ],
+
         // ── External ──────────────────────────────────────────
         // prefix ALL external modules with external_
         // e.g. if companies can be managed by external users too:

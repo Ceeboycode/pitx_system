@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // 'company.verified' => \App\Http\Middleware\EnsureCompanyVerified::class,
             'role.type' => \App\Http\Middleware\EnsureRoleType::class,
             'password.change.required' => \App\Http\Middleware\EnsurePasswordIsChanged::class,
+            'audit.request' => \App\Http\Middleware\LogAuditRequest::class,
         ]);
 
         $middleware->web(append: [

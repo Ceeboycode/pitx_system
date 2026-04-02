@@ -8,6 +8,7 @@ import {
     House,
     LayoutList,
     MessageCircleQuestion,
+    Shield,
     User,
 } from 'lucide-vue-next';
 import { computed } from 'vue';
@@ -29,6 +30,7 @@ import { can } from '@/lib/can';
 import AppLogo from './AppLogo.vue';
 
 // Wayfinder routes
+import { index as auditLogsIndex } from '@/actions/App/Http/Controllers/AuditLogController';
 import { index as changeRequestsIndex } from '@/actions/App/Http/Controllers/DispatchChangeRequestController';
 import { index as dispatchesIndex } from '@/actions/App/Http/Controllers/InternalDispatchController';
 import { dashboard } from '@/routes';
@@ -158,6 +160,19 @@ const mainNavItems: NavItem[] = [
                 id: 'change-requests',
                 title: 'Change Requests',
                 href: changeRequestsIndex().url,
+            },
+        ],
+    },
+    {
+        id: 'system',
+        title: 'System',
+        href: '#',
+        icon: Shield,
+        items: [
+            {
+                id: 'audit-logs',
+                title: 'Audit Logs',
+                href: auditLogsIndex().url,
             },
         ],
     },
