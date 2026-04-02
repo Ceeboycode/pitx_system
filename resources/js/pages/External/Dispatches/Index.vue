@@ -19,7 +19,6 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -64,6 +63,7 @@ import {
 
 import {
     ArrowUpRight,
+    Building2,
     Bus,
     CalendarClock,
     CalendarDays,
@@ -81,7 +81,6 @@ import {
     Users,
     X,
     XCircle,
-    Building2,
 } from 'lucide-vue-next';
 
 import {
@@ -240,13 +239,24 @@ function applyDateFilter(date: CalendarDate | undefined) {
                 ? `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`
                 : undefined,
         },
-        { preserveState: true, preserveScroll: true, replace: true, only: ['dispatches', 'filters'] },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ['dispatches', 'filters'],
+        },
     );
 }
 
-function clearDateFilter() { applyDateFilter(undefined); }
-function setToday() { applyDateFilter(today(localTz)); }
-function setYesterday() { applyDateFilter(today(localTz).subtract({ days: 1 })); }
+function clearDateFilter() {
+    applyDateFilter(undefined);
+}
+function setToday() {
+    applyDateFilter(today(localTz));
+}
+function setYesterday() {
+    applyDateFilter(today(localTz).subtract({ days: 1 }));
+}
 
 /* ======================================================
    Dialog / form state
@@ -282,26 +292,39 @@ const changeRequestForm = useForm({
 });
 const changeRequestBay = ref<string>('');
 
-type ChangeRequestField = 'driver_user_id' | 'pax_count' | 'vehicle_id' | 'gate_id' | 'bay_number';
-const changeRequestFields: Array<{ value: ChangeRequestField; label: string }> = [
-    { value: 'driver_user_id', label: 'Change Driver Assignment' },
-    { value: 'pax_count', label: 'Update Passenger Count' },
-    { value: 'vehicle_id', label: 'Change Vehicle' },
-    { value: 'gate_id', label: 'Change Gate & Bay' },
-];
+type ChangeRequestField =
+    | 'driver_user_id'
+    | 'pax_count'
+    | 'vehicle_id'
+    | 'gate_id'
+    | 'bay_number';
+const changeRequestFields: Array<{ value: ChangeRequestField; label: string }> =
+    [
+        { value: 'driver_user_id', label: 'Change Driver Assignment' },
+        { value: 'pax_count', label: 'Update Passenger Count' },
+        { value: 'vehicle_id', label: 'Change Vehicle' },
+        { value: 'gate_id', label: 'Change Gate & Bay' },
+    ];
 
 /* ======================================================
    Computed
 ====================================================== */
 const selectedVehicle = computed(
-    () => props.vehicles.find((v) => String(v.id) === String(form.vehicle_id)) ?? null,
+    () =>
+        props.vehicles.find((v) => String(v.id) === String(form.vehicle_id)) ??
+        null,
 );
 const selectedGate = computed(
-    () => props.gates.find((g) => String(g.id) === String(form.gate_id)) ?? null,
+    () =>
+        props.gates.find((g) => String(g.id) === String(form.gate_id)) ?? null,
 );
 const selectedDriver = computed(() => {
     if (form.driver_user_id === 'unassigned') return null;
-    return props.drivers.find((d) => String(d.id) === String(form.driver_user_id)) ?? null;
+    return (
+        props.drivers.find(
+            (d) => String(d.id) === String(form.driver_user_id),
+        ) ?? null
+    );
 });
 const bayOptions = computed(() => selectedGate.value?.bay_options ?? []);
 const isEditing = computed(() => editingDispatchId.value !== null);
@@ -357,7 +380,9 @@ function openEditDialog(dispatch: DispatchItem) {
     form.transform((d) => d);
     form.clearErrors();
     form.vehicle_id = dispatch.vehicle?.id ? String(dispatch.vehicle.id) : '';
-    form.driver_user_id = dispatch.driver?.id ? String(dispatch.driver.id) : 'unassigned';
+    form.driver_user_id = dispatch.driver?.id
+        ? String(dispatch.driver.id)
+        : 'unassigned';
     form.gate_id = dispatch.gate?.id ? String(dispatch.gate.id) : '';
     form.bay_number = String(dispatch.bay_number ?? '');
     form.remarks = dispatch.remarks ?? '';
@@ -377,16 +402,25 @@ function submit() {
                 ? form.driver_user_id
                 : null,
     };
-    const afterRequest = () => { form.transform((d) => d); };
+    const afterRequest = () => {
+        form.transform((d) => d);
+    };
     const options = {
         preserveScroll: true,
-        onSuccess: () => { dialogOpen.value = false; editingDispatchId.value = null; resetForm(); },
+        onSuccess: () => {
+            dialogOpen.value = false;
+            editingDispatchId.value = null;
+            resetForm();
+        },
         onError: afterRequest,
         onFinish: afterRequest,
     };
     form.transform(() => payload);
     if (isEditing.value && editingDispatchId.value) {
-        form.put(DispatchController.update(editingDispatchId.value).url, options);
+        form.put(
+            DispatchController.update(editingDispatchId.value).url,
+            options,
+        );
         return;
     }
     form.post(DispatchController.store().url, options);
@@ -462,45 +496,82 @@ function submitChangeRequest() {
         const currentPax = changeRequestDispatch.value.pax_count;
         const newPax = parseInt(changeRequestForm.requested_value, 10);
         if (currentPax === newPax) {
-            window.$toast?.error('New passenger count must be different from current value');
+            window.$toast?.error(
+                'New passenger count must be different from current value',
+            );
             return;
         }
     }
     if (driverValidationWarning.value && !driverConfirmed.value) {
-        window.$toast?.warning('Please confirm the driver change before submitting');
+        window.$toast?.warning(
+            'Please confirm the driver change before submitting',
+        );
         return;
     }
     if (changeRequestForm.requested_field === 'gate_id') {
-        const gateChanged = changeRequestDispatch.value.gate?.id !== parseInt(changeRequestForm.requested_value, 10);
-        const bayChanged = changeRequestDispatch.value.bay_number !== parseInt(changeRequestBay.value, 10);
+        const gateChanged =
+            changeRequestDispatch.value.gate?.id !==
+            parseInt(changeRequestForm.requested_value, 10);
+        const bayChanged =
+            changeRequestDispatch.value.bay_number !==
+            parseInt(changeRequestBay.value, 10);
         if (!gateChanged && !bayChanged) {
-            window.$toast?.error('Gate or Bay must be different from current value');
+            window.$toast?.error(
+                'Gate or Bay must be different from current value',
+            );
             return;
         }
         if (!gateChanged && bayChanged) {
-            const bayForm = useForm({ requested_field: 'bay_number', requested_value: changeRequestBay.value, reason: changeRequestForm.reason });
+            const bayForm = useForm({
+                requested_field: 'bay_number',
+                requested_value: changeRequestBay.value,
+                reason: changeRequestForm.reason,
+            });
             bayForm.post(storeChangeRequest(changeRequestDispatch.value.id), {
                 preserveScroll: true,
-                onSuccess: () => { closeChangeRequestModal(); window.$toast?.success('Change request submitted successfully'); },
+                onSuccess: () => {
+                    closeChangeRequestModal();
+                    window.$toast?.success(
+                        'Change request submitted successfully',
+                    );
+                },
             });
         } else {
-            changeRequestForm.post(storeChangeRequest(changeRequestDispatch.value.id), {
-                preserveScroll: true,
-                onSuccess: () => { closeChangeRequestModal(); window.$toast?.success('Change request submitted successfully'); },
-            });
+            changeRequestForm.post(
+                storeChangeRequest(changeRequestDispatch.value.id),
+                {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        closeChangeRequestModal();
+                        window.$toast?.success(
+                            'Change request submitted successfully',
+                        );
+                    },
+                },
+            );
         }
     } else {
-        changeRequestForm.post(storeChangeRequest(changeRequestDispatch.value.id), {
-            preserveScroll: true,
-            onSuccess: () => { closeChangeRequestModal(); window.$toast?.success('Change request submitted successfully'); },
-        });
+        changeRequestForm.post(
+            storeChangeRequest(changeRequestDispatch.value.id),
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    closeChangeRequestModal();
+                    window.$toast?.success(
+                        'Change request submitted successfully',
+                    );
+                },
+            },
+        );
     }
 }
 
 function statusClass(status?: string | null) {
-    if (status === 'arrived') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+    if (status === 'arrived')
+        return 'bg-emerald-100 text-emerald-700 border-emerald-200';
     if (status === 'departed') return 'bg-slate-100 text-slate-500 border-0';
-    if (status === 'pending') return 'bg-amber-100 text-amber-700 border-amber-200';
+    if (status === 'pending')
+        return 'bg-amber-100 text-amber-700 border-amber-200';
     return 'bg-slate-100 text-slate-500 border-0';
 }
 
@@ -516,12 +587,18 @@ function statusLabel(status?: string | null) {
     return status.replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function statusVariant(status?: string | null): 'default' | 'secondary' | 'outline' | 'destructive' {
+function statusVariant(
+    status?: string | null,
+): 'default' | 'secondary' | 'outline' | 'destructive' {
     switch (status) {
-        case 'departed': return 'outline';
-        case 'arrived': return 'default';
-        case 'pending': return 'secondary';
-        default: return 'secondary';
+        case 'departed':
+            return 'outline';
+        case 'arrived':
+            return 'default';
+        case 'pending':
+            return 'secondary';
+        default:
+            return 'secondary';
     }
 }
 
@@ -547,7 +624,11 @@ function formatChangeValue(
             ? request.old_value_display
             : request.requested_value_display;
 
-    if (displayValue !== null && displayValue !== undefined && displayValue !== '') {
+    if (
+        displayValue !== null &&
+        displayValue !== undefined &&
+        displayValue !== ''
+    ) {
         return String(displayValue);
     }
 
@@ -582,7 +663,9 @@ function formatChangeValue(
 }
 
 const changeRequestDetailOpen = ref(false);
-const selectedChangeRequest = ref<(typeof props.changeRequests)[0] | null>(null);
+const selectedChangeRequest = ref<(typeof props.changeRequests)[0] | null>(
+    null,
+);
 
 function openChangeRequestDetail(request: (typeof props.changeRequests)[0]) {
     selectedChangeRequest.value = request;
@@ -590,11 +673,19 @@ function openChangeRequestDetail(request: (typeof props.changeRequests)[0]) {
 }
 
 watch(dialogOpen, (open) => {
-    if (!open) { editingDispatchId.value = null; form.transform((d) => d); form.clearErrors(); }
+    if (!open) {
+        editingDispatchId.value = null;
+        form.transform((d) => d);
+        form.clearErrors();
+    }
 });
 
 watch(confirmDepartOpen, (open) => {
-    if (!open) { pendingDepartId.value = null; pendingDepartDispatch.value = null; resetDepartForm(); }
+    if (!open) {
+        pendingDepartId.value = null;
+        pendingDepartDispatch.value = null;
+        resetDepartForm();
+    }
 });
 </script>
 
@@ -604,27 +695,32 @@ watch(confirmDepartOpen, (open) => {
     <ExternalLayout :company="company">
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
-
                 <!-- ── Page header ───────────────────────────── -->
-                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div
+                    class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+                >
                     <div class="space-y-1">
-                        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-slate-400 uppercase">
+                        <div
+                            class="flex items-center gap-2 text-xs font-semibold tracking-widest text-slate-400 uppercase"
+                        >
                             <Building2 class="h-3.5 w-3.5" />
                             {{ company.company_code ?? company.company_name }}
                         </div>
-                        <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+                        <h1
+                            class="text-2xl font-bold tracking-tight text-slate-900"
+                        >
                             Dispatching Module
                         </h1>
                         <p class="text-sm text-slate-500">
                             Manage and monitor vehicle dispatches for
-                            <span class="font-medium text-slate-700">{{ company.company_name }}</span>.
+                            <span class="font-medium text-slate-700">{{
+                                company.company_name
+                            }}</span
+                            >.
                         </p>
                     </div>
 
-                    <Button
-                        @click="openCreateDialog"
-                        variant="blue"
-                    >
+                    <Button @click="openCreateDialog" variant="blue">
                         <Plus class="h-4 w-4" />
                         Add Dispatch
                     </Button>
@@ -633,82 +729,123 @@ watch(confirmDepartOpen, (open) => {
                 <!-- ── Stats ─────────────────────────────────── -->
                 <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
                     <!-- Total -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+                    <div
+                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+                    >
                         <div class="flex items-start justify-between">
-                            <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            <p
+                                class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
+                            >
                                 Total Dispatches
                             </p>
-                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-700">
+                            <div
+                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-700"
+                            >
                                 <CalendarClock class="h-4 w-4 text-white" />
                             </div>
                         </div>
-                        <p class="mt-3 text-3xl font-bold tabular-nums text-slate-900">
+                        <p
+                            class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
+                        >
                             {{ dispatches.total }}
                         </p>
                     </div>
 
                     <!-- On-site -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+                    <div
+                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+                    >
                         <div class="flex items-start justify-between">
-                            <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            <p
+                                class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
+                            >
                                 On-site
                             </p>
-                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
+                            <div
+                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600"
+                            >
                                 <Clock3 class="h-4 w-4 text-white" />
                             </div>
                         </div>
-                        <p class="mt-3 text-3xl font-bold tabular-nums text-slate-900">
+                        <p
+                            class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
+                        >
                             {{ arrivedCount }}
                         </p>
                     </div>
 
                     <!-- Departed -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+                    <div
+                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+                    >
                         <div class="flex items-start justify-between">
-                            <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            <p
+                                class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
+                            >
                                 Departed
                             </p>
-                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-700">
+                            <div
+                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-700"
+                            >
                                 <LogOut class="h-4 w-4 text-white" />
                             </div>
                         </div>
-                        <p class="mt-3 text-3xl font-bold tabular-nums text-slate-900">
+                        <p
+                            class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
+                        >
                             {{ departedCount }}
                         </p>
                     </div>
 
                     <!-- Passengers -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+                    <div
+                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+                    >
                         <div class="flex items-start justify-between">
-                            <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            <p
+                                class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
+                            >
                                 Passengers
                             </p>
-                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600">
+                            <div
+                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600"
+                            >
                                 <TrendingUp class="h-4 w-4 text-white" />
                             </div>
                         </div>
-                        <p class="mt-3 text-3xl font-bold tabular-nums text-slate-900">
+                        <p
+                            class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
+                        >
                             {{ totalPax }}
                         </p>
                     </div>
                 </div>
 
                 <!-- ── Table card ─────────────────────────────── -->
-                <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
-
+                <div
+                    class="rounded-xl border border-slate-200 bg-white shadow-sm"
+                >
                     <!-- Card toolbar -->
-                    <div class="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div
+                        class="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-start sm:justify-between"
+                    >
                         <div>
-                            <h2 class="text-base font-semibold text-slate-800">Dispatch Records</h2>
+                            <h2 class="text-base font-semibold text-slate-800">
+                                Dispatch Records
+                            </h2>
                             <p class="mt-0.5 text-xs text-slate-400">
-                                Arrival time is automatically recorded on dispatch creation.
+                                Arrival time is automatically recorded on
+                                dispatch creation.
                             </p>
                         </div>
 
                         <div class="flex flex-wrap items-center gap-2">
                             <!-- Change Requests badge button -->
                             <Button
-                                v-if="props.changeRequests && props.changeRequests.length > 0"
+                                v-if="
+                                    props.changeRequests &&
+                                    props.changeRequests.length > 0
+                                "
                                 variant="outline"
                                 size="sm"
                                 class="relative gap-1.5 rounded-lg border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50"
@@ -716,7 +853,9 @@ watch(confirmDepartOpen, (open) => {
                             >
                                 <FileText class="h-3.5 w-3.5" />
                                 Change Requests
-                                <span class="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+                                <span
+                                    class="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white"
+                                >
                                     {{ props.changeRequests.length }}
                                 </span>
                             </Button>
@@ -734,25 +873,45 @@ watch(confirmDepartOpen, (open) => {
                             <!-- Status filter -->
                             <Select
                                 :model-value="props.filters?.status ?? 'all'"
-                                @update:model-value="(value) => {
-                                    router.get(
-                                        DispatchController.index().url,
-                                        {
-                                            search: props.filters?.search || undefined,
-                                            status: value === 'all' ? undefined : value,
-                                            date: props.filters?.date || undefined,
-                                        },
-                                        { preserveState: true, preserveScroll: true, replace: true, only: ['dispatches', 'filters'] },
-                                    );
-                                }"
+                                @update:model-value="
+                                    (value) => {
+                                        router.get(
+                                            DispatchController.index().url,
+                                            {
+                                                search:
+                                                    props.filters?.search ||
+                                                    undefined,
+                                                status:
+                                                    value === 'all'
+                                                        ? undefined
+                                                        : value,
+                                                date:
+                                                    props.filters?.date ||
+                                                    undefined,
+                                            },
+                                            {
+                                                preserveState: true,
+                                                preserveScroll: true,
+                                                replace: true,
+                                                only: ['dispatches', 'filters'],
+                                            },
+                                        );
+                                    }
+                                "
                             >
                                 <SelectTrigger class="w-full sm:w-36">
                                     <SelectValue placeholder="All statuses" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">All Statuses</SelectItem>
-                                    <SelectItem value="arrived">Arrived</SelectItem>
-                                    <SelectItem value="departed">Departed</SelectItem>
+                                    <SelectItem value="all"
+                                        >All Statuses</SelectItem
+                                    >
+                                    <SelectItem value="arrived"
+                                        >Arrived</SelectItem
+                                    >
+                                    <SelectItem value="departed"
+                                        >Departed</SelectItem
+                                    >
                                 </SelectContent>
                             </Select>
 
@@ -762,11 +921,20 @@ watch(confirmDepartOpen, (open) => {
                                     <Button
                                         variant="outline"
                                         class="w-full justify-start gap-2 rounded-lg border-slate-200 sm:w-44"
-                                        :class="selectedDate ? 'border-slate-400 bg-slate-50 text-slate-800' : 'text-slate-400'"
+                                        :class="
+                                            selectedDate
+                                                ? 'border-slate-400 bg-slate-50 text-slate-800'
+                                                : 'text-slate-400'
+                                        "
                                     >
-                                        <CalendarDays class="h-4 w-4 shrink-0" />
+                                        <CalendarDays
+                                            class="h-4 w-4 shrink-0"
+                                        />
                                         <span class="truncate text-sm">
-                                            {{ selectedDateLabel ?? 'Pick a date' }}
+                                            {{
+                                                selectedDateLabel ??
+                                                'Pick a date'
+                                            }}
                                         </span>
                                         <span
                                             v-if="selectedDate"
@@ -780,38 +948,61 @@ watch(confirmDepartOpen, (open) => {
 
                                 <PopoverContent class="w-auto p-0" align="end">
                                     <div class="border-b px-3 py-2.5">
-                                        <p class="text-xs font-semibold tracking-widest text-slate-400 uppercase">
+                                        <p
+                                            class="text-xs font-semibold tracking-widest text-slate-400 uppercase"
+                                        >
                                             Filter by Date
                                         </p>
                                     </div>
-                                    <div class="flex gap-1.5 border-b px-3 py-2">
+                                    <div
+                                        class="flex gap-1.5 border-b px-3 py-2"
+                                    >
                                         <Button
                                             size="sm"
                                             variant="outline"
                                             class="h-7 flex-1 text-xs"
-                                            :class="selectedDateLabel === 'Today' ? 'border-slate-700 bg-slate-100 text-slate-800' : ''"
+                                            :class="
+                                                selectedDateLabel === 'Today'
+                                                    ? 'border-slate-700 bg-slate-100 text-slate-800'
+                                                    : ''
+                                            "
                                             @click="setToday"
-                                        >Today</Button>
+                                            >Today</Button
+                                        >
                                         <Button
                                             size="sm"
                                             variant="outline"
                                             class="h-7 flex-1 text-xs"
-                                            :class="selectedDateLabel === 'Yesterday' ? 'border-slate-700 bg-slate-100 text-slate-800' : ''"
+                                            :class="
+                                                selectedDateLabel ===
+                                                'Yesterday'
+                                                    ? 'border-slate-700 bg-slate-100 text-slate-800'
+                                                    : ''
+                                            "
                                             @click="setYesterday"
-                                        >Yesterday</Button>
+                                            >Yesterday</Button
+                                        >
                                         <Button
                                             v-if="selectedDate"
                                             size="sm"
                                             variant="ghost"
                                             class="h-7 flex-1 text-xs text-slate-400"
                                             @click="clearDateFilter"
-                                        >Clear</Button>
+                                            >Clear</Button
+                                        >
                                     </div>
                                     <Calendar
                                         :model-value="selectedDate"
                                         :max-value="today(localTz)"
                                         initial-focus
-                                        @update:model-value="(d) => applyDateFilter(d as CalendarDate | undefined)"
+                                        @update:model-value="
+                                            (d) =>
+                                                applyDateFilter(
+                                                    d as
+                                                        | CalendarDate
+                                                        | undefined,
+                                                )
+                                        "
                                     />
                                 </PopoverContent>
                             </Popover>
@@ -819,8 +1010,13 @@ watch(confirmDepartOpen, (open) => {
                     </div>
 
                     <!-- Active date chip -->
-                    <div v-if="selectedDate" class="border-b border-slate-100 px-5 py-2.5">
-                        <div class="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                    <div
+                        v-if="selectedDate"
+                        class="border-b border-slate-100 px-5 py-2.5"
+                    >
+                        <div
+                            class="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600"
+                        >
                             <CalendarDays class="h-3 w-3" />
                             Showing dispatches for {{ selectedDateLabel }}
                             <button
@@ -836,34 +1032,90 @@ watch(confirmDepartOpen, (open) => {
                     <div class="overflow-x-auto">
                         <Table>
                             <TableHeader>
-                                <TableRow class="border-slate-100 bg-slate-50/70 hover:bg-slate-50/70">
-                                    <TableHead class="pl-5 text-[11px] font-bold uppercase tracking-widest text-slate-400">Vehicle</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Driver</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Gate / Bay</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Pax</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Status</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Arrived</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Departed</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Dispatcher</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Remarks</TableHead>
-                                    <TableHead class="pr-5 text-right text-[11px] font-bold uppercase tracking-widest text-slate-400">Actions</TableHead>
+                                <TableRow
+                                    class="border-slate-100 bg-slate-50/70 hover:bg-slate-50/70"
+                                >
+                                    <TableHead
+                                        class="pl-5 text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        >Vehicle</TableHead
+                                    >
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        >Driver</TableHead
+                                    >
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        >Gate / Bay</TableHead
+                                    >
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        >Pax</TableHead
+                                    >
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        >Status</TableHead
+                                    >
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        >Arrived</TableHead
+                                    >
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        >Departed</TableHead
+                                    >
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        >Dispatcher</TableHead
+                                    >
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        >Remarks</TableHead
+                                    >
+                                    <TableHead
+                                        class="pr-5 text-right text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        >Actions</TableHead
+                                    >
                                 </TableRow>
                             </TableHeader>
 
                             <TableBody>
                                 <!-- Empty state -->
-                                <TableRow v-if="dispatches.data.length === 0" class="hover:bg-transparent">
-                                    <TableCell colspan="10" class="py-20 text-center">
-                                        <div class="flex flex-col items-center gap-3">
-                                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
-                                                <CalendarDays class="h-6 w-6 text-slate-400" />
+                                <TableRow
+                                    v-if="dispatches.data.length === 0"
+                                    class="hover:bg-transparent"
+                                >
+                                    <TableCell
+                                        colspan="10"
+                                        class="py-20 text-center"
+                                    >
+                                        <div
+                                            class="flex flex-col items-center gap-3"
+                                        >
+                                            <div
+                                                class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100"
+                                            >
+                                                <CalendarDays
+                                                    class="h-6 w-6 text-slate-400"
+                                                />
                                             </div>
                                             <div>
-                                                <p class="text-sm font-semibold text-slate-600">
-                                                    {{ selectedDate ? `No dispatches on ${selectedDateLabel}` : 'No dispatch records found' }}
+                                                <p
+                                                    class="text-sm font-semibold text-slate-600"
+                                                >
+                                                    {{
+                                                        selectedDate
+                                                            ? `No dispatches on ${selectedDateLabel}`
+                                                            : 'No dispatch records found'
+                                                    }}
                                                 </p>
-                                                <p class="mt-0.5 text-xs text-slate-400">
-                                                    {{ selectedDate ? 'Try a different date or clear the filter.' : 'Try adjusting your search or filter.' }}
+                                                <p
+                                                    class="mt-0.5 text-xs text-slate-400"
+                                                >
+                                                    {{
+                                                        selectedDate
+                                                            ? 'Try a different date or clear the filter.'
+                                                            : 'Try adjusting your search or filter.'
+                                                    }}
                                                 </p>
                                             </div>
                                         </div>
@@ -874,20 +1126,36 @@ watch(confirmDepartOpen, (open) => {
                                     v-for="dispatch in dispatches.data"
                                     :key="dispatch.id"
                                     class="group border-slate-100 transition-colors hover:bg-slate-50/80"
-                                    :class="dispatch.status === 'departed' ? 'opacity-60' : ''"
+                                    :class="
+                                        dispatch.status === 'departed'
+                                            ? 'opacity-60'
+                                            : ''
+                                    "
                                 >
                                     <!-- Vehicle -->
                                     <TableCell class="pl-5">
                                         <div class="flex items-center gap-2.5">
-                                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
-                                                <Bus class="h-3.5 w-3.5 text-slate-600" />
+                                            <div
+                                                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100"
+                                            >
+                                                <Bus
+                                                    class="h-3.5 w-3.5 text-slate-600"
+                                                />
                                             </div>
                                             <div>
-                                                <p class="text-sm font-semibold text-slate-800">
+                                                <p
+                                                    class="text-sm font-semibold text-slate-800"
+                                                >
                                                     {{ dispatch.plate_number }}
                                                 </p>
-                                                <p class="text-xs text-slate-400">
-                                                    {{ dispatch.vehicle?.vehicle_type ?? '—' }}
+                                                <p
+                                                    class="text-xs text-slate-400"
+                                                >
+                                                    {{
+                                                        dispatch.vehicle
+                                                            ?.vehicle_type ??
+                                                        '—'
+                                                    }}
                                                 </p>
                                             </div>
                                         </div>
@@ -896,27 +1164,44 @@ watch(confirmDepartOpen, (open) => {
                                     <!-- Driver -->
                                     <TableCell>
                                         <div class="flex items-center gap-1.5">
-                                            <UserRound class="h-3.5 w-3.5 text-slate-400" />
+                                            <UserRound
+                                                class="h-3.5 w-3.5 text-slate-400"
+                                            />
                                             <span
                                                 class="text-sm"
-                                                :class="!dispatch.driver ? 'italic text-slate-400' : 'text-slate-700'"
+                                                :class="
+                                                    !dispatch.driver
+                                                        ? 'text-slate-400 italic'
+                                                        : 'text-slate-700'
+                                                "
                                             >
-                                                {{ dispatch.driver?.name ?? 'Unassigned' }}
+                                                {{
+                                                    dispatch.driver?.name ??
+                                                    'Unassigned'
+                                                }}
                                             </span>
                                         </div>
                                     </TableCell>
 
                                     <!-- Gate / Bay -->
                                     <TableCell>
-                                        <p class="text-sm font-medium text-slate-700">
-                                            {{ dispatch.gate?.gate_name ?? '—' }}
+                                        <p
+                                            class="text-sm font-medium text-slate-700"
+                                        >
+                                            {{
+                                                dispatch.gate?.gate_name ?? '—'
+                                            }}
                                         </p>
-                                        <p class="text-xs text-slate-400">Bay {{ dispatch.bay_number }}</p>
+                                        <p class="text-xs text-slate-400">
+                                            Bay {{ dispatch.bay_number }}
+                                        </p>
                                     </TableCell>
 
                                     <!-- Pax -->
                                     <TableCell>
-                                        <div class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                                        <div
+                                            class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
+                                        >
                                             <Users class="h-3 w-3" />
                                             {{ dispatch.pax_count }}
                                         </div>
@@ -930,35 +1215,63 @@ watch(confirmDepartOpen, (open) => {
                                                 statusClass(dispatch.status),
                                             ]"
                                         >
-                                            <span :class="['h-1.5 w-1.5 rounded-full', statusDot(dispatch.status)]" />
+                                            <span
+                                                :class="[
+                                                    'h-1.5 w-1.5 rounded-full',
+                                                    statusDot(dispatch.status),
+                                                ]"
+                                            />
                                             {{ statusLabel(dispatch.status) }}
                                         </span>
                                     </TableCell>
 
                                     <!-- Arrived -->
                                     <TableCell class="text-xs text-slate-500">
-                                        <div v-if="dispatch.arrived_at_formatted" class="flex items-center gap-1.5">
-                                            <Clock3 class="h-3 w-3 text-slate-400" />
+                                        <div
+                                            v-if="dispatch.arrived_at_formatted"
+                                            class="flex items-center gap-1.5"
+                                        >
+                                            <Clock3
+                                                class="h-3 w-3 text-slate-400"
+                                            />
                                             {{ dispatch.arrived_at_formatted }}
                                         </div>
-                                        <span v-else class="text-slate-400">—</span>
+                                        <span v-else class="text-slate-400"
+                                            >—</span
+                                        >
                                     </TableCell>
 
                                     <!-- Departed -->
                                     <TableCell class="text-xs text-slate-500">
-                                        <div v-if="dispatch.departed_at_formatted" class="flex items-center gap-1.5">
-                                            <CheckCircle2 class="h-3 w-3 text-slate-400" />
+                                        <div
+                                            v-if="
+                                                dispatch.departed_at_formatted
+                                            "
+                                            class="flex items-center gap-1.5"
+                                        >
+                                            <CheckCircle2
+                                                class="h-3 w-3 text-slate-400"
+                                            />
                                             {{ dispatch.departed_at_formatted }}
                                         </div>
-                                        <span v-else class="text-slate-400">—</span>
+                                        <span v-else class="text-slate-400"
+                                            >—</span
+                                        >
                                     </TableCell>
 
                                     <!-- Dispatcher -->
                                     <TableCell>
                                         <div class="flex items-center gap-1.5">
-                                            <Fingerprint class="h-3.5 w-3.5 text-slate-400" />
-                                            <span class="text-sm text-slate-700">
-                                                {{ dispatch.dispatcher?.name || '—' }}
+                                            <Fingerprint
+                                                class="h-3.5 w-3.5 text-slate-400"
+                                            />
+                                            <span
+                                                class="text-sm text-slate-700"
+                                            >
+                                                {{
+                                                    dispatch.dispatcher?.name ||
+                                                    '—'
+                                                }}
                                             </span>
                                         </div>
                                     </TableCell>
@@ -972,10 +1285,16 @@ watch(confirmDepartOpen, (open) => {
                                             class="h-7 rounded-lg border-slate-200 text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-800"
                                             @click="openRemarksDialog(dispatch)"
                                         >
-                                            <FileText class="mr-1.5 h-3.5 w-3.5" />
+                                            <FileText
+                                                class="mr-1.5 h-3.5 w-3.5"
+                                            />
                                             View
                                         </Button>
-                                        <span v-else class="text-xs text-slate-400">—</span>
+                                        <span
+                                            v-else
+                                            class="text-xs text-slate-400"
+                                            >—</span
+                                        >
                                     </TableCell>
 
                                     <!-- Actions -->
@@ -985,24 +1304,42 @@ watch(confirmDepartOpen, (open) => {
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    class="h-8 w-8 rounded-lg text-slate-400 opacity-0 hover:bg-slate-100 hover:text-slate-700 group-hover:opacity-100"
+                                                    class="h-8 w-8 rounded-lg text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-slate-100 hover:text-slate-700"
                                                 >
-                                                    <MoreHorizontal class="h-4 w-4" />
+                                                    <MoreHorizontal
+                                                        class="h-4 w-4"
+                                                    />
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent align="end" class="w-52 rounded-xl border-slate-200 shadow-lg">
-                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                                            <DropdownMenuContent
+                                                align="end"
+                                                class="w-52 rounded-xl border-slate-200 shadow-lg"
+                                            >
+                                                <DropdownMenuLabel
+                                                    class="text-xs font-semibold tracking-widest text-slate-400 uppercase"
+                                                >
                                                     Actions
                                                 </DropdownMenuLabel>
-                                                <DropdownMenuSeparator class="bg-slate-100" />
+                                                <DropdownMenuSeparator
+                                                    class="bg-slate-100"
+                                                />
 
                                                 <DropdownMenuItem
                                                     as-child
                                                     class="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900"
                                                 >
-                                                    <Link :href="DispatchController.show(dispatch.id).url" class="flex items-center">
-                                                        <ArrowUpRight class="mr-2 h-4 w-4" />
+                                                    <Link
+                                                        :href="
+                                                            DispatchController.show(
+                                                                dispatch.id,
+                                                            ).url
+                                                        "
+                                                        class="flex items-center"
+                                                    >
+                                                        <ArrowUpRight
+                                                            class="mr-2 h-4 w-4"
+                                                        />
                                                         View Details
                                                     </Link>
                                                 </DropdownMenuItem>
@@ -1010,37 +1347,73 @@ watch(confirmDepartOpen, (open) => {
                                                 <DropdownMenuItem
                                                     v-if="dispatch.remarks"
                                                     class="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900"
-                                                    @click="openRemarksDialog(dispatch)"
+                                                    @click="
+                                                        openRemarksDialog(
+                                                            dispatch,
+                                                        )
+                                                    "
                                                 >
-                                                    <FileText class="mr-2 h-4 w-4" />
+                                                    <FileText
+                                                        class="mr-2 h-4 w-4"
+                                                    />
                                                     View Remarks
                                                 </DropdownMenuItem>
 
-                                                <template v-if="dispatch.status === 'arrived'">
-                                                    <DropdownMenuSeparator class="bg-slate-100" />
+                                                <template
+                                                    v-if="
+                                                        dispatch.status ===
+                                                        'arrived'
+                                                    "
+                                                >
+                                                    <DropdownMenuSeparator
+                                                        class="bg-slate-100"
+                                                    />
                                                     <DropdownMenuItem
                                                         class="rounded-lg text-slate-700 focus:bg-amber-50 focus:text-amber-700"
-                                                        @click="openEditDialog(dispatch)"
+                                                        @click="
+                                                            openEditDialog(
+                                                                dispatch,
+                                                            )
+                                                        "
                                                     >
-                                                        <Pencil class="mr-2 h-4 w-4" />
+                                                        <Pencil
+                                                            class="mr-2 h-4 w-4"
+                                                        />
                                                         Edit
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
                                                         class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700"
-                                                        @click="askDepart(dispatch)"
+                                                        @click="
+                                                            askDepart(dispatch)
+                                                        "
                                                     >
-                                                        <LogOut class="mr-2 h-4 w-4" />
+                                                        <LogOut
+                                                            class="mr-2 h-4 w-4"
+                                                        />
                                                         Mark Departed
                                                     </DropdownMenuItem>
                                                 </template>
 
-                                                <template v-if="dispatch.status === 'departed'">
-                                                    <DropdownMenuSeparator class="bg-slate-100" />
+                                                <template
+                                                    v-if="
+                                                        dispatch.status ===
+                                                        'departed'
+                                                    "
+                                                >
+                                                    <DropdownMenuSeparator
+                                                        class="bg-slate-100"
+                                                    />
                                                     <DropdownMenuItem
                                                         class="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900"
-                                                        @click="openChangeRequestModal(dispatch)"
+                                                        @click="
+                                                            openChangeRequestModal(
+                                                                dispatch,
+                                                            )
+                                                        "
                                                     >
-                                                        <Send class="mr-2 h-4 w-4" />
+                                                        <Send
+                                                            class="mr-2 h-4 w-4"
+                                                        />
                                                         Request Change
                                                     </DropdownMenuItem>
                                                 </template>
@@ -1067,7 +1440,6 @@ watch(confirmDepartOpen, (open) => {
                         />
                     </div>
                 </div>
-
             </div>
         </div>
 
@@ -1093,26 +1465,46 @@ watch(confirmDepartOpen, (open) => {
                 <div class="space-y-5">
                     <!-- Summary cards -->
                     <div class="grid grid-cols-3 gap-3">
-                        <div class="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                        <div
+                            class="rounded-lg border border-amber-200 bg-amber-50 p-3"
+                        >
                             <div class="flex items-center justify-between">
-                                <p class="text-xs font-medium text-amber-900">Pending</p>
+                                <p class="text-xs font-medium text-amber-900">
+                                    Pending
+                                </p>
                                 <Clock3 class="h-4 w-4 text-amber-600" />
                             </div>
-                            <p class="mt-2 text-2xl font-bold text-amber-700">{{ pendingChangeRequests.length }}</p>
+                            <p class="mt-2 text-2xl font-bold text-amber-700">
+                                {{ pendingChangeRequests.length }}
+                            </p>
                         </div>
-                        <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                        <div
+                            class="rounded-lg border border-emerald-200 bg-emerald-50 p-3"
+                        >
                             <div class="flex items-center justify-between">
-                                <p class="text-xs font-medium text-emerald-900">Approved</p>
-                                <CheckCircle2 class="h-4 w-4 text-emerald-600" />
+                                <p class="text-xs font-medium text-emerald-900">
+                                    Approved
+                                </p>
+                                <CheckCircle2
+                                    class="h-4 w-4 text-emerald-600"
+                                />
                             </div>
-                            <p class="mt-2 text-2xl font-bold text-emerald-700">{{ approvedChangeRequests.length }}</p>
+                            <p class="mt-2 text-2xl font-bold text-emerald-700">
+                                {{ approvedChangeRequests.length }}
+                            </p>
                         </div>
-                        <div class="rounded-lg border border-rose-200 bg-rose-50 p-3">
+                        <div
+                            class="rounded-lg border border-rose-200 bg-rose-50 p-3"
+                        >
                             <div class="flex items-center justify-between">
-                                <p class="text-xs font-medium text-rose-900">Rejected</p>
+                                <p class="text-xs font-medium text-rose-900">
+                                    Rejected
+                                </p>
                                 <XCircle class="h-4 w-4 text-rose-600" />
                             </div>
-                            <p class="mt-2 text-2xl font-bold text-rose-700">{{ rejectedChangeRequests.length }}</p>
+                            <p class="mt-2 text-2xl font-bold text-rose-700">
+                                {{ rejectedChangeRequests.length }}
+                            </p>
                         </div>
                     </div>
 
@@ -1123,80 +1515,133 @@ watch(confirmDepartOpen, (open) => {
                             :key="request.id"
                             class="cursor-pointer rounded-xl border p-4 transition-shadow hover:shadow-md"
                             :class="{
-                                'border-amber-200 bg-amber-50': request.status === 'pending',
-                                'border-emerald-200 bg-emerald-50': request.status === 'approved',
-                                'border-rose-200 bg-rose-50': request.status === 'rejected',
+                                'border-amber-200 bg-amber-50':
+                                    request.status === 'pending',
+                                'border-emerald-200 bg-emerald-50':
+                                    request.status === 'approved',
+                                'border-rose-200 bg-rose-50':
+                                    request.status === 'rejected',
                             }"
                             @click="openChangeRequestDetail(request)"
                         >
                             <div class="flex items-start justify-between gap-4">
                                 <div class="flex-1 space-y-2">
                                     <div class="flex items-center gap-2">
-                                        <p class="text-sm font-semibold text-slate-800">
+                                        <p
+                                            class="text-sm font-semibold text-slate-800"
+                                        >
                                             {{ request.dispatch.plate_number }}
                                         </p>
                                         <span
                                             class="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold capitalize"
                                             :class="{
-                                                'border-amber-200 bg-amber-100 text-amber-700': request.status === 'pending',
-                                                'border-emerald-200 bg-emerald-100 text-emerald-700': request.status === 'approved',
-                                                'border-rose-200 bg-rose-100 text-rose-700': request.status === 'rejected',
+                                                'border-amber-200 bg-amber-100 text-amber-700':
+                                                    request.status ===
+                                                    'pending',
+                                                'border-emerald-200 bg-emerald-100 text-emerald-700':
+                                                    request.status ===
+                                                    'approved',
+                                                'border-rose-200 bg-rose-100 text-rose-700':
+                                                    request.status ===
+                                                    'rejected',
                                             }"
                                         >
                                             {{ request.status }}
                                         </span>
                                         <span class="text-xs text-slate-400">
-                                            {{ new Date(request.created_at || '').toLocaleDateString() }}
+                                            {{
+                                                new Date(
+                                                    request.created_at || '',
+                                                ).toLocaleDateString()
+                                            }}
                                         </span>
                                     </div>
 
-                                            <div
-                                                class="grid grid-cols-2 gap-3 text-sm"
+                                    <div class="grid grid-cols-2 gap-3 text-sm">
+                                        <div>
+                                            <p
+                                                class="text-xs font-medium text-muted-foreground"
                                             >
-                                                <div>
-                                                    <p
-                                                        class="text-xs font-medium text-muted-foreground"
-                                                    >
-                                                        Field
-                                                    </p>
-                                                    <p class="font-medium">
-                                                        {{
-                                                            request.field_label ||
-                                                            formatFieldLabel(
-                                                                request.requested_field,
-                                                            )
-                                                        }}
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <p
-                                                        class="text-xs font-medium text-muted-foreground"
-                                                    >
-                                                        Change
-                                                    </p>
-                                                    <p
-                                                        class="font-mono text-xs"
-                                                    >
-                                                        {{ formatChangeValue(request, 'old') }}
-                                                        →
-                                                        {{ formatChangeValue(request, 'requested') }}
-                                                    </p>
-                                                </div>
-                                            </div>
+                                                Field
+                                            </p>
+                                            <p class="font-medium">
+                                                {{
+                                                    request.field_label ||
+                                                    formatFieldLabel(
+                                                        request.requested_field,
+                                                    )
+                                                }}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p
+                                                class="text-xs font-medium text-muted-foreground"
+                                            >
+                                                Change
+                                            </p>
+                                            <p class="font-mono text-xs">
+                                                {{
+                                                    formatChangeValue(
+                                                        request,
+                                                        'old',
+                                                    )
+                                                }}
+                                                →
+                                                {{
+                                                    formatChangeValue(
+                                                        request,
+                                                        'requested',
+                                                    )
+                                                }}
+                                            </p>
+                                        </div>
+                                    </div>
 
-                                    <p class="line-clamp-2 text-xs text-slate-500">{{ request.reason }}</p>
+                                    <p
+                                        class="line-clamp-2 text-xs text-slate-500"
+                                    >
+                                        {{ request.reason }}
+                                    </p>
 
-                                    <div v-if="request.status === 'rejected' && request.rejection_reason">
+                                    <div
+                                        v-if="
+                                            request.status === 'rejected' &&
+                                            request.rejection_reason
+                                        "
+                                    >
                                         <Popover>
                                             <PopoverTrigger as-child>
-                                                <Button variant="ghost" size="sm" class="h-auto p-0 text-rose-600 hover:bg-transparent hover:text-rose-700">
-                                                    <XCircle class="mr-1 h-3.5 w-3.5" />
-                                                    <span class="text-xs underline">View rejection reason</span>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    class="h-auto p-0 text-rose-600 hover:bg-transparent hover:text-rose-700"
+                                                >
+                                                    <XCircle
+                                                        class="mr-1 h-3.5 w-3.5"
+                                                    />
+                                                    <span
+                                                        class="text-xs underline"
+                                                        >View rejection
+                                                        reason</span
+                                                    >
                                                 </Button>
                                             </PopoverTrigger>
-                                            <PopoverContent class="w-72 p-4" side="top">
-                                                <p class="text-sm font-semibold text-rose-900">Rejection Reason</p>
-                                                <p class="mt-1 text-sm text-rose-800">{{ request.rejection_reason }}</p>
+                                            <PopoverContent
+                                                class="w-72 p-4"
+                                                side="top"
+                                            >
+                                                <p
+                                                    class="text-sm font-semibold text-rose-900"
+                                                >
+                                                    Rejection Reason
+                                                </p>
+                                                <p
+                                                    class="mt-1 text-sm text-rose-800"
+                                                >
+                                                    {{
+                                                        request.rejection_reason
+                                                    }}
+                                                </p>
                                             </PopoverContent>
                                         </Popover>
                                     </div>
@@ -1204,9 +1649,19 @@ watch(confirmDepartOpen, (open) => {
                             </div>
                         </div>
 
-                        <div v-if="!props.changeRequests || props.changeRequests.length === 0" class="py-10 text-center">
-                            <FileText class="mx-auto mb-3 h-10 w-10 text-slate-300" />
-                            <p class="text-sm font-medium text-slate-500">No change requests yet</p>
+                        <div
+                            v-if="
+                                !props.changeRequests ||
+                                props.changeRequests.length === 0
+                            "
+                            class="py-10 text-center"
+                        >
+                            <FileText
+                                class="mx-auto mb-3 h-10 w-10 text-slate-300"
+                            />
+                            <p class="text-sm font-medium text-slate-500">
+                                No change requests yet
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -1217,9 +1672,15 @@ watch(confirmDepartOpen, (open) => {
         <Dialog v-model:open="dialogOpen">
             <DialogContent class="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>{{ isEditing ? 'Edit Dispatch' : 'Create Dispatch' }}</DialogTitle>
+                    <DialogTitle>{{
+                        isEditing ? 'Edit Dispatch' : 'Create Dispatch'
+                    }}</DialogTitle>
                     <DialogDescription>
-                        {{ isEditing ? 'Update the dispatch details below.' : 'Arrival time is automatically set to now.' }}
+                        {{
+                            isEditing
+                                ? 'Update the dispatch details below.'
+                                : 'Arrival time is automatically set to now.'
+                        }}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -1227,9 +1688,15 @@ watch(confirmDepartOpen, (open) => {
                     <div class="space-y-2">
                         <Label for="vehicle_id">Vehicle</Label>
                         <Select v-model="form.vehicle_id">
-                            <SelectTrigger id="vehicle_id"><SelectValue placeholder="Select a vehicle" /></SelectTrigger>
+                            <SelectTrigger id="vehicle_id"
+                                ><SelectValue placeholder="Select a vehicle"
+                            /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem v-for="vehicle in vehicles" :key="vehicle.id" :value="String(vehicle.id)">
+                                <SelectItem
+                                    v-for="vehicle in vehicles"
+                                    :key="vehicle.id"
+                                    :value="String(vehicle.id)"
+                                >
                                     {{ vehicle.label }}
                                 </SelectItem>
                             </SelectContent>
@@ -1240,10 +1707,18 @@ watch(confirmDepartOpen, (open) => {
                     <div class="space-y-2">
                         <Label for="driver_user_id">Driver</Label>
                         <Select v-model="form.driver_user_id">
-                            <SelectTrigger id="driver_user_id"><SelectValue placeholder="Assign a driver" /></SelectTrigger>
+                            <SelectTrigger id="driver_user_id"
+                                ><SelectValue placeholder="Assign a driver"
+                            /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="unassigned">No driver assigned</SelectItem>
-                                <SelectItem v-for="driver in drivers" :key="driver.id" :value="String(driver.id)">
+                                <SelectItem value="unassigned"
+                                    >No driver assigned</SelectItem
+                                >
+                                <SelectItem
+                                    v-for="driver in drivers"
+                                    :key="driver.id"
+                                    :value="String(driver.id)"
+                                >
                                     {{ driver.label }}
                                 </SelectItem>
                             </SelectContent>
@@ -1253,10 +1728,19 @@ watch(confirmDepartOpen, (open) => {
 
                     <div class="space-y-2">
                         <Label for="gate_id">Gate</Label>
-                        <Select :model-value="form.gate_id" @update:model-value="onGateChange">
-                            <SelectTrigger id="gate_id"><SelectValue placeholder="Select a gate" /></SelectTrigger>
+                        <Select
+                            :model-value="form.gate_id"
+                            @update:model-value="onGateChange"
+                        >
+                            <SelectTrigger id="gate_id"
+                                ><SelectValue placeholder="Select a gate"
+                            /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem v-for="gate in gates" :key="gate.id" :value="String(gate.id)">
+                                <SelectItem
+                                    v-for="gate in gates"
+                                    :key="gate.id"
+                                    :value="String(gate.id)"
+                                >
                                     {{ gate.label }}
                                 </SelectItem>
                             </SelectContent>
@@ -1266,10 +1750,19 @@ watch(confirmDepartOpen, (open) => {
 
                     <div class="space-y-2">
                         <Label for="bay_number">Bay Number</Label>
-                        <Select v-model="form.bay_number" :disabled="!selectedGate">
-                            <SelectTrigger id="bay_number"><SelectValue placeholder="Select a bay" /></SelectTrigger>
+                        <Select
+                            v-model="form.bay_number"
+                            :disabled="!selectedGate"
+                        >
+                            <SelectTrigger id="bay_number"
+                                ><SelectValue placeholder="Select a bay"
+                            /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem v-for="bay in bayOptions" :key="bay.value" :value="String(bay.value)">
+                                <SelectItem
+                                    v-for="bay in bayOptions"
+                                    :key="bay.value"
+                                    :value="String(bay.value)"
+                                >
                                     {{ bay.label }}
                                 </SelectItem>
                             </SelectContent>
@@ -1282,38 +1775,66 @@ watch(confirmDepartOpen, (open) => {
                         v-if="selectedVehicle || selectedGate || selectedDriver"
                         class="flex flex-wrap gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3"
                     >
-                        <div v-if="selectedVehicle" class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm">
+                        <div
+                            v-if="selectedVehicle"
+                            class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm"
+                        >
                             <Bus class="h-3 w-3 text-slate-400" />
                             {{ selectedVehicle.plate_number }}
                         </div>
-                        <div v-if="selectedDriver" class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm">
+                        <div
+                            v-if="selectedDriver"
+                            class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm"
+                        >
                             <UserRound class="h-3 w-3 text-slate-400" />
                             {{ selectedDriver.name }}
                         </div>
-                        <div v-if="selectedGate" class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm">
+                        <div
+                            v-if="selectedGate"
+                            class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm"
+                        >
                             <span class="text-slate-400">Gate</span>
-                            {{ selectedGate.gate_name }} · {{ selectedGate.bays }} bays
+                            {{ selectedGate.gate_name }} ·
+                            {{ selectedGate.bays }} bays
                         </div>
                     </div>
 
                     <div class="space-y-2">
                         <Label for="remarks">
                             Remarks
-                            <span class="ml-1 text-xs font-normal text-slate-400">(optional)</span>
+                            <span
+                                class="ml-1 text-xs font-normal text-slate-400"
+                                >(optional)</span
+                            >
                         </Label>
-                        <Input id="remarks" v-model="form.remarks" placeholder="Optional remarks or notes" />
+                        <Input
+                            id="remarks"
+                            v-model="form.remarks"
+                            placeholder="Optional remarks or notes"
+                        />
                         <InputError :message="form.errors.remarks" />
                     </div>
 
                     <DialogFooter class="pt-2">
-                        <Button type="button" variant="outline" @click="dialogOpen = false">Cancel</Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="dialogOpen = false"
+                            >Cancel</Button
+                        >
                         <Button
                             type="submit"
                             :disabled="form.processing"
                             class="bg-slate-800 text-white hover:bg-slate-900"
                         >
                             <Send class="mr-2 h-4 w-4" />
-                            {{ form.processing ? 'Saving…' : isEditing ? 'Save Changes' : 'Create Dispatch' }}
+                            {{
+                                form.processing
+                                    ? 'Saving…'
+                                    : isEditing
+                                      ? 'Save Changes'
+                                      : 'Create Dispatch'
+                            }}
                         </Button>
                     </DialogFooter>
                 </form>
@@ -1329,7 +1850,9 @@ watch(confirmDepartOpen, (open) => {
                         Dispatch Remarks
                     </DialogTitle>
                     <DialogDescription v-if="viewingDispatch">
-                        {{ viewingDispatch.plate_number }} · {{ viewingDispatch.gate?.gate_name ?? '—' }} · Bay {{ viewingDispatch.bay_number }}
+                        {{ viewingDispatch.plate_number }} ·
+                        {{ viewingDispatch.gate?.gate_name ?? '—' }} · Bay
+                        {{ viewingDispatch.bay_number }}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -1337,37 +1860,70 @@ watch(confirmDepartOpen, (open) => {
 
                 <div
                     class="min-h-[80px] rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed"
-                    :class="!viewingDispatch?.remarks ? 'italic text-slate-400' : 'text-slate-700'"
+                    :class="
+                        !viewingDispatch?.remarks
+                            ? 'text-slate-400 italic'
+                            : 'text-slate-700'
+                    "
                 >
                     {{ viewingDispatch?.remarks || 'No remarks recorded.' }}
                 </div>
 
-                <div v-if="viewingDispatch" class="grid grid-cols-2 gap-3 text-xs">
+                <div
+                    v-if="viewingDispatch"
+                    class="grid grid-cols-2 gap-3 text-xs"
+                >
                     <div class="space-y-0.5">
                         <p class="text-slate-400">Driver</p>
-                        <p class="font-semibold" :class="!viewingDispatch.driver ? 'italic text-slate-400' : 'text-slate-800'">
+                        <p
+                            class="font-semibold"
+                            :class="
+                                !viewingDispatch.driver
+                                    ? 'text-slate-400 italic'
+                                    : 'text-slate-800'
+                            "
+                        >
                             {{ viewingDispatch.driver?.name ?? 'Unassigned' }}
                         </p>
                     </div>
                     <div class="space-y-0.5">
                         <p class="text-slate-400">Dispatcher</p>
-                        <p class="font-semibold text-slate-800">{{ viewingDispatch.dispatcher?.name ?? '—' }}</p>
+                        <p class="font-semibold text-slate-800">
+                            {{ viewingDispatch.dispatcher?.name ?? '—' }}
+                        </p>
                     </div>
                     <div class="space-y-0.5">
                         <p class="text-slate-400">Status</p>
-                        <span :class="['inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium', statusClass(viewingDispatch.status)]">
-                            <span :class="['h-1.5 w-1.5 rounded-full', statusDot(viewingDispatch.status)]" />
+                        <span
+                            :class="[
+                                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                                statusClass(viewingDispatch.status),
+                            ]"
+                        >
+                            <span
+                                :class="[
+                                    'h-1.5 w-1.5 rounded-full',
+                                    statusDot(viewingDispatch.status),
+                                ]"
+                            />
                             {{ statusLabel(viewingDispatch.status) }}
                         </span>
                     </div>
                     <div class="space-y-0.5">
                         <p class="text-slate-400">Arrived</p>
-                        <p class="font-semibold text-slate-800">{{ viewingDispatch.arrived_at_formatted ?? '—' }}</p>
+                        <p class="font-semibold text-slate-800">
+                            {{ viewingDispatch.arrived_at_formatted ?? '—' }}
+                        </p>
                     </div>
                 </div>
 
                 <DialogFooter>
-                    <Button variant="outline" class="w-full" @click="remarksViewOpen = false">Close</Button>
+                    <Button
+                        variant="outline"
+                        class="w-full"
+                        @click="remarksViewOpen = false"
+                        >Close</Button
+                    >
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -1377,23 +1933,41 @@ watch(confirmDepartOpen, (open) => {
             <AlertDialogContent>
                 <form class="space-y-4" @submit.prevent="confirmDepart">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Mark dispatch as departed?</AlertDialogTitle>
+                        <AlertDialogTitle
+                            >Mark dispatch as departed?</AlertDialogTitle
+                        >
                         <AlertDialogDescription>
-                            <span class="block">This will record the departure time as <strong>now</strong>.</span>
-                            <span class="mt-1 block">Departed dispatches can no longer be edited.</span>
+                            <span class="block"
+                                >This will record the departure time as
+                                <strong>now</strong>.</span
+                            >
+                            <span class="mt-1 block"
+                                >Departed dispatches can no longer be
+                                edited.</span
+                            >
                         </AlertDialogDescription>
                     </AlertDialogHeader>
 
                     <div class="space-y-4">
-                        <div v-if="pendingDepartDispatch" class="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
-                            <div class="font-semibold text-slate-800">{{ pendingDepartDispatch.plate_number }}</div>
+                        <div
+                            v-if="pendingDepartDispatch"
+                            class="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm"
+                        >
+                            <div class="font-semibold text-slate-800">
+                                {{ pendingDepartDispatch.plate_number }}
+                            </div>
                             <div class="text-xs text-slate-400">
-                                {{ pendingDepartDispatch.gate?.gate_name ?? '—' }} · Bay {{ pendingDepartDispatch.bay_number }}
+                                {{
+                                    pendingDepartDispatch.gate?.gate_name ?? '—'
+                                }}
+                                · Bay {{ pendingDepartDispatch.bay_number }}
                             </div>
                         </div>
 
                         <div class="space-y-2">
-                            <Label for="depart_pax_count">Passenger Count</Label>
+                            <Label for="depart_pax_count"
+                                >Passenger Count</Label
+                            >
                             <Input
                                 id="depart_pax_count"
                                 v-model="departForm.pax_count"
@@ -1401,14 +1975,28 @@ watch(confirmDepartOpen, (open) => {
                                 min="0"
                                 placeholder="Enter passenger count"
                             />
-                            <InputError :message="departForm.errors.pax_count" />
+                            <InputError
+                                :message="departForm.errors.pax_count"
+                            />
                         </div>
                     </div>
 
                     <AlertDialogFooter>
-                        <AlertDialogCancel type="button" :disabled="departForm.processing">Cancel</AlertDialogCancel>
-                        <Button type="submit" :disabled="departForm.processing" class="bg-slate-800 text-white hover:bg-slate-900">
-                            {{ departForm.processing ? 'Saving…' : 'Confirm Departure' }}
+                        <AlertDialogCancel
+                            type="button"
+                            :disabled="departForm.processing"
+                            >Cancel</AlertDialogCancel
+                        >
+                        <Button
+                            type="submit"
+                            :disabled="departForm.processing"
+                            class="bg-slate-800 text-white hover:bg-slate-900"
+                        >
+                            {{
+                                departForm.processing
+                                    ? 'Saving…'
+                                    : 'Confirm Departure'
+                            }}
                         </Button>
                     </AlertDialogFooter>
                 </form>
@@ -1424,16 +2012,20 @@ watch(confirmDepartOpen, (open) => {
                         Request Change
                     </DialogTitle>
                     <DialogDescription v-if="changeRequestDispatch">
-                        Submit a change request for dispatch {{ changeRequestDispatch.plate_number }}.
+                        Submit a change request for dispatch
+                        {{ changeRequestDispatch.plate_number }}.
                     </DialogDescription>
                 </DialogHeader>
 
                 <form class="space-y-4" @submit.prevent="submitChangeRequest">
                     <!-- Notice -->
-                    <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                    <div
+                        class="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"
+                    >
                         <p class="font-medium">Notice</p>
                         <p class="mt-1 text-xs text-slate-500">
-                            This dispatch has already departed. Changes require approval from management before they are applied.
+                            This dispatch has already departed. Changes require
+                            approval from management before they are applied.
                         </p>
                     </div>
 
@@ -1442,72 +2034,148 @@ watch(confirmDepartOpen, (open) => {
                             {{ changeRequestDispatch?.plate_number }}
                         </div>
                         <div class="text-xs text-muted-foreground">
-                            {{
-                                changeRequestDispatch?.gate?.gate_name ?? '—'
-                            }}
+                            {{ changeRequestDispatch?.gate?.gate_name ?? '—' }}
                             · Bay
                             {{ changeRequestDispatch?.bay_number }}
                         </div>
                     </div>
 
                     <div class="space-y-2">
-                        <Label for="change_field">What do you want to change?</Label>
+                        <Label for="change_field"
+                            >What do you want to change?</Label
+                        >
                         <Select v-model="changeRequestForm.requested_field">
-                            <SelectTrigger id="change_field"><SelectValue placeholder="Select a field to change" /></SelectTrigger>
+                            <SelectTrigger id="change_field"
+                                ><SelectValue
+                                    placeholder="Select a field to change"
+                            /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem v-for="field in changeRequestFields" :key="field.value" :value="field.value">
+                                <SelectItem
+                                    v-for="field in changeRequestFields"
+                                    :key="field.value"
+                                    :value="field.value"
+                                >
                                     {{ field.label }}
                                 </SelectItem>
                             </SelectContent>
                         </Select>
-                        <InputError :message="changeRequestForm.errors.requested_field" />
+                        <InputError
+                            :message="changeRequestForm.errors.requested_field"
+                        />
                     </div>
 
-                    <div v-if="changeRequestForm.requested_field" class="space-y-3">
+                    <div
+                        v-if="changeRequestForm.requested_field"
+                        class="space-y-3"
+                    >
                         <!-- Driver change -->
-                        <template v-if="changeRequestForm.requested_field === 'driver_user_id'">
+                        <template
+                            v-if="
+                                changeRequestForm.requested_field ===
+                                'driver_user_id'
+                            "
+                        >
                             <div>
-                                <Label for="change_driver">Select New Driver</Label>
-                                <Select v-model="changeRequestForm.requested_value" @update:model-value="validateDriverAvailability">
-                                    <SelectTrigger id="change_driver"><SelectValue placeholder="Select a driver" /></SelectTrigger>
+                                <Label for="change_driver"
+                                    >Select New Driver</Label
+                                >
+                                <Select
+                                    v-model="changeRequestForm.requested_value"
+                                    @update:model-value="
+                                        validateDriverAvailability
+                                    "
+                                >
+                                    <SelectTrigger id="change_driver"
+                                        ><SelectValue
+                                            placeholder="Select a driver"
+                                    /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem
                                             v-for="driver in props.drivers"
                                             :key="driver.id"
                                             :value="String(driver.id)"
-                                            :disabled="changeRequestDispatch && changeRequestDispatch.driver?.id === driver.id"
+                                            :disabled="
+                                                changeRequestDispatch &&
+                                                changeRequestDispatch.driver
+                                                    ?.id === driver.id
+                                            "
                                         >
-                                            <span v-if="changeRequestDispatch && changeRequestDispatch.driver?.id === driver.id">
-                                                ✓ {{ driver.label }} (Currently Assigned)
+                                            <span
+                                                v-if="
+                                                    changeRequestDispatch &&
+                                                    changeRequestDispatch.driver
+                                                        ?.id === driver.id
+                                                "
+                                            >
+                                                ✓ {{ driver.label }} (Currently
+                                                Assigned)
                                             </span>
-                                            <span v-else>{{ driver.label }}</span>
+                                            <span v-else>{{
+                                                driver.label
+                                            }}</span>
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <InputError :message="changeRequestForm.errors.requested_value" />
+                                <InputError
+                                    :message="
+                                        changeRequestForm.errors.requested_value
+                                    "
+                                />
                             </div>
-                            <div v-if="driverValidationWarning" class="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                                <p class="text-sm text-amber-900">{{ driverValidationWarning }}</p>
-                                <Button type="button" size="sm" class="bg-amber-600 hover:bg-amber-700" @click="driverConfirmed = true">
+                            <div
+                                v-if="driverValidationWarning"
+                                class="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-3"
+                            >
+                                <p class="text-sm text-amber-900">
+                                    {{ driverValidationWarning }}
+                                </p>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    class="bg-amber-600 hover:bg-amber-700"
+                                    @click="driverConfirmed = true"
+                                >
                                     Confirm Driver Change
                                 </Button>
                             </div>
-                            <div v-else-if="changeRequestForm.requested_value && !driverValidationLoading" class="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-                                <p class="text-sm text-emerald-800">✓ Driver is available</p>
+                            <div
+                                v-else-if="
+                                    changeRequestForm.requested_value &&
+                                    !driverValidationLoading
+                                "
+                                class="rounded-lg border border-emerald-200 bg-emerald-50 p-3"
+                            >
+                                <p class="text-sm text-emerald-800">
+                                    ✓ Driver is available
+                                </p>
                             </div>
                         </template>
 
                         <!-- Pax count -->
-                        <template v-else-if="changeRequestForm.requested_field === 'pax_count'">
+                        <template
+                            v-else-if="
+                                changeRequestForm.requested_field ===
+                                'pax_count'
+                            "
+                        >
                             <div>
-                                <Label for="change_pax">New Passenger Count</Label>
+                                <Label for="change_pax"
+                                    >New Passenger Count</Label
+                                >
                                 <Input
                                     id="change_pax"
                                     v-model="changeRequestForm.requested_value"
                                     type="number"
                                     min="0"
                                     placeholder="Enter new passenger count"
-                                    @input="changeRequestForm.requested_value = String(($event.target as HTMLInputElement).value)"
+                                    @input="
+                                        changeRequestForm.requested_value =
+                                            String(
+                                                (
+                                                    $event.target as HTMLInputElement
+                                                ).value,
+                                            )
+                                    "
                                 />
                                 <InputError
                                     :message="
@@ -1516,83 +2184,157 @@ watch(confirmDepartOpen, (open) => {
                                 />
                                 <p class="mt-1 text-xs text-muted-foreground">
                                     Current:
-                                    {{
-                                        changeRequestDispatch?.pax_count ?? 0
-                                    }}
+                                    {{ changeRequestDispatch?.pax_count ?? 0 }}
                                     passengers
                                 </p>
                             </div>
                         </template>
 
                         <!-- Vehicle change -->
-                        <template v-else-if="changeRequestForm.requested_field === 'vehicle_id'">
+                        <template
+                            v-else-if="
+                                changeRequestForm.requested_field ===
+                                'vehicle_id'
+                            "
+                        >
                             <div>
-                                <Label for="change_vehicle">Select New Vehicle</Label>
-                                <Select v-model="changeRequestForm.requested_value">
-                                    <SelectTrigger id="change_vehicle"><SelectValue placeholder="Select a vehicle" /></SelectTrigger>
+                                <Label for="change_vehicle"
+                                    >Select New Vehicle</Label
+                                >
+                                <Select
+                                    v-model="changeRequestForm.requested_value"
+                                >
+                                    <SelectTrigger id="change_vehicle"
+                                        ><SelectValue
+                                            placeholder="Select a vehicle"
+                                    /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem
                                             v-for="vehicle in props.vehicles"
                                             :key="vehicle.id"
                                             :value="String(vehicle.id)"
-                                            :disabled="changeRequestDispatch && changeRequestDispatch.vehicle?.id === vehicle.id"
+                                            :disabled="
+                                                changeRequestDispatch &&
+                                                changeRequestDispatch.vehicle
+                                                    ?.id === vehicle.id
+                                            "
                                         >
-                                            <span v-if="changeRequestDispatch && changeRequestDispatch.vehicle?.id === vehicle.id">
-                                                ✓ {{ vehicle.label }} (Currently Assigned)
+                                            <span
+                                                v-if="
+                                                    changeRequestDispatch &&
+                                                    changeRequestDispatch
+                                                        .vehicle?.id ===
+                                                        vehicle.id
+                                                "
+                                            >
+                                                ✓ {{ vehicle.label }} (Currently
+                                                Assigned)
                                             </span>
-                                            <span v-else>{{ vehicle.label }}</span>
+                                            <span v-else>{{
+                                                vehicle.label
+                                            }}</span>
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <InputError :message="changeRequestForm.errors.requested_value" />
+                                <InputError
+                                    :message="
+                                        changeRequestForm.errors.requested_value
+                                    "
+                                />
                             </div>
                         </template>
 
                         <!-- Gate & Bay -->
-                        <template v-else-if="changeRequestForm.requested_field === 'gate_id'">
+                        <template
+                            v-else-if="
+                                changeRequestForm.requested_field === 'gate_id'
+                            "
+                        >
                             <div>
                                 <Label for="change_gate">Select New Gate</Label>
-                                <Select v-model="changeRequestForm.requested_value">
-                                    <SelectTrigger id="change_gate"><SelectValue placeholder="Select a gate" /></SelectTrigger>
+                                <Select
+                                    v-model="changeRequestForm.requested_value"
+                                >
+                                    <SelectTrigger id="change_gate"
+                                        ><SelectValue
+                                            placeholder="Select a gate"
+                                    /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem
                                             v-for="gate in props.gates"
                                             :key="gate.id"
                                             :value="String(gate.id)"
-                                            :disabled="changeRequestDispatch && changeRequestDispatch.gate?.id === gate.id"
+                                            :disabled="
+                                                changeRequestDispatch &&
+                                                changeRequestDispatch.gate
+                                                    ?.id === gate.id
+                                            "
                                         >
-                                            <span v-if="changeRequestDispatch && changeRequestDispatch.gate?.id === gate.id">
-                                                ✓ {{ gate.label }} (Currently Assigned)
+                                            <span
+                                                v-if="
+                                                    changeRequestDispatch &&
+                                                    changeRequestDispatch.gate
+                                                        ?.id === gate.id
+                                                "
+                                            >
+                                                ✓ {{ gate.label }} (Currently
+                                                Assigned)
                                             </span>
                                             <span v-else>{{ gate.label }}</span>
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <InputError :message="changeRequestForm.errors.requested_value" />
+                                <InputError
+                                    :message="
+                                        changeRequestForm.errors.requested_value
+                                    "
+                                />
                             </div>
                             <div>
                                 <Label for="change_bay_optional">
                                     Select New Bay
-                                    <span class="text-xs text-slate-400">(optional)</span>
+                                    <span class="text-xs text-slate-400"
+                                        >(optional)</span
+                                    >
                                 </Label>
                                 <Select v-model="changeRequestBay">
-                                    <SelectTrigger id="change_bay_optional"><SelectValue placeholder="Select a bay number (optional)" /></SelectTrigger>
+                                    <SelectTrigger id="change_bay_optional"
+                                        ><SelectValue
+                                            placeholder="Select a bay number (optional)"
+                                    /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem
                                             v-for="n in 10"
                                             :key="n"
                                             :value="String(n)"
-                                            :disabled="changeRequestDispatch && changeRequestDispatch.bay_number === n"
+                                            :disabled="
+                                                changeRequestDispatch &&
+                                                changeRequestDispatch.bay_number ===
+                                                    n
+                                            "
                                         >
-                                            <span v-if="changeRequestDispatch && changeRequestDispatch.bay_number === n">
-                                                ✓ Bay {{ n }} (Currently Assigned)
+                                            <span
+                                                v-if="
+                                                    changeRequestDispatch &&
+                                                    changeRequestDispatch.bay_number ===
+                                                        n
+                                                "
+                                            >
+                                                ✓ Bay {{ n }} (Currently
+                                                Assigned)
                                             </span>
                                             <span v-else>Bay {{ n }}</span>
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <p class="mt-1 text-xs text-slate-400">
-                                    Current: Gate {{ changeRequestDispatch?.gate?.gate_name ?? '—' }} · Bay {{ changeRequestDispatch?.bay_number }}
+                                    Current: Gate
+                                    {{
+                                        changeRequestDispatch?.gate
+                                            ?.gate_name ?? '—'
+                                    }}
+                                    · Bay
+                                    {{ changeRequestDispatch?.bay_number }}
                                 </p>
                             </div>
                         </template>
@@ -1607,11 +2349,18 @@ watch(confirmDepartOpen, (open) => {
                             class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                             rows="3"
                         />
-                        <InputError :message="changeRequestForm.errors.reason" />
+                        <InputError
+                            :message="changeRequestForm.errors.reason"
+                        />
                     </div>
 
                     <DialogFooter>
-                        <Button type="button" variant="outline" :disabled="changeRequestForm.processing" @click="closeChangeRequestModal">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            :disabled="changeRequestForm.processing"
+                            @click="closeChangeRequestModal"
+                        >
                             Cancel
                         </Button>
                         <Button
@@ -1619,15 +2368,24 @@ watch(confirmDepartOpen, (open) => {
                             class="bg-slate-800 text-white hover:bg-slate-900"
                             :disabled="
                                 changeRequestForm.processing ||
-                                (driverValidationWarning !== null && !driverConfirmed) ||
-                                (changeRequestForm.requested_field === 'pax_count' &&
-                                    parseInt(changeRequestForm.requested_value) === changeRequestDispatch?.pax_count) ||
-                                (changeRequestForm.requested_field === 'gate_id' &&
+                                (driverValidationWarning !== null &&
+                                    !driverConfirmed) ||
+                                (changeRequestForm.requested_field ===
+                                    'pax_count' &&
+                                    parseInt(
+                                        changeRequestForm.requested_value,
+                                    ) === changeRequestDispatch?.pax_count) ||
+                                (changeRequestForm.requested_field ===
+                                    'gate_id' &&
                                     !changeRequestForm.requested_value &&
                                     !changeRequestBay)
                             "
                         >
-                            {{ changeRequestForm.processing ? 'Submitting…' : 'Submit Request' }}
+                            {{
+                                changeRequestForm.processing
+                                    ? 'Submitting…'
+                                    : 'Submit Request'
+                            }}
                         </Button>
                     </DialogFooter>
                 </form>
@@ -1643,9 +2401,12 @@ watch(confirmDepartOpen, (open) => {
                         <span
                             class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize"
                             :class="{
-                                'border-amber-200 bg-amber-100 text-amber-700': selectedChangeRequest.status === 'pending',
-                                'border-emerald-200 bg-emerald-100 text-emerald-700': selectedChangeRequest.status === 'approved',
-                                'border-rose-200 bg-rose-100 text-rose-700': selectedChangeRequest.status === 'rejected',
+                                'border-amber-200 bg-amber-100 text-amber-700':
+                                    selectedChangeRequest.status === 'pending',
+                                'border-emerald-200 bg-emerald-100 text-emerald-700':
+                                    selectedChangeRequest.status === 'approved',
+                                'border-rose-200 bg-rose-100 text-rose-700':
+                                    selectedChangeRequest.status === 'rejected',
                             }"
                         >
                             {{ selectedChangeRequest.status }}
@@ -1653,7 +2414,11 @@ watch(confirmDepartOpen, (open) => {
                     </DialogTitle>
                     <DialogDescription>
                         {{ selectedChangeRequest.dispatch.plate_number }} ·
-                        {{ new Date(selectedChangeRequest.created_at || '').toLocaleDateString() }}
+                        {{
+                            new Date(
+                                selectedChangeRequest.created_at || '',
+                            ).toLocaleDateString()
+                        }}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -1662,9 +2427,18 @@ watch(confirmDepartOpen, (open) => {
                 <div v-if="selectedChangeRequest" class="space-y-4">
                     <div class="space-y-3">
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">Field</p>
+                            <p
+                                class="text-xs font-semibold tracking-widest text-slate-400 uppercase"
+                            >
+                                Field
+                            </p>
                             <p class="mt-1 text-sm font-medium text-slate-800">
-                                {{ selectedChangeRequest.field_label || formatFieldLabel(selectedChangeRequest.requested_field) }}
+                                {{
+                                    selectedChangeRequest.field_label ||
+                                    formatFieldLabel(
+                                        selectedChangeRequest.requested_field,
+                                    )
+                                }}
                             </p>
                         </div>
                         <div>
@@ -1674,7 +2448,12 @@ watch(confirmDepartOpen, (open) => {
                                 Current Value
                             </p>
                             <p class="mt-1 font-mono text-sm">
-                                {{ formatChangeValue(selectedChangeRequest, 'old') }}
+                                {{
+                                    formatChangeValue(
+                                        selectedChangeRequest,
+                                        'old',
+                                    )
+                                }}
                             </p>
                         </div>
                         <div>
@@ -1684,40 +2463,69 @@ watch(confirmDepartOpen, (open) => {
                                 Requested Value
                             </p>
                             <p class="mt-1 font-mono text-sm">
-                                {{ formatChangeValue(selectedChangeRequest, 'requested') }}
+                                {{
+                                    formatChangeValue(
+                                        selectedChangeRequest,
+                                        'requested',
+                                    )
+                                }}
                             </p>
                         </div>
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">Reason</p>
-                            <p class="mt-1 text-sm text-slate-700">{{ selectedChangeRequest.reason }}</p>
+                            <p
+                                class="text-xs font-semibold tracking-widest text-slate-400 uppercase"
+                            >
+                                Reason
+                            </p>
+                            <p class="mt-1 text-sm text-slate-700">
+                                {{ selectedChangeRequest.reason }}
+                            </p>
                         </div>
                     </div>
 
-                    <div v-if="selectedChangeRequest.status === 'rejected' && selectedChangeRequest.rejection_reason"
-                        class="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-4">
-                        <XCircle class="mt-0.5 h-5 w-5 shrink-0 text-rose-600" />
+                    <div
+                        v-if="
+                            selectedChangeRequest.status === 'rejected' &&
+                            selectedChangeRequest.rejection_reason
+                        "
+                        class="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-4"
+                    >
+                        <XCircle
+                            class="mt-0.5 h-5 w-5 shrink-0 text-rose-600"
+                        />
                         <div>
-                            <p class="text-sm font-semibold text-rose-900">Rejection Reason</p>
-                            <p class="mt-1 text-sm text-rose-800">{{ selectedChangeRequest.rejection_reason }}</p>
+                            <p class="text-sm font-semibold text-rose-900">
+                                Rejection Reason
+                            </p>
+                            <p class="mt-1 text-sm text-rose-800">
+                                {{ selectedChangeRequest.rejection_reason }}
+                            </p>
                         </div>
                     </div>
 
-                    <div v-if="selectedChangeRequest.status === 'approved'"
-                        class="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                        <CheckCircle2 class="h-5 w-5 shrink-0 text-emerald-600" />
-                        <p class="text-sm font-medium text-emerald-900">This request has been approved.</p>
+                    <div
+                        v-if="selectedChangeRequest.status === 'approved'"
+                        class="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-4"
+                    >
+                        <CheckCircle2
+                            class="h-5 w-5 shrink-0 text-emerald-600"
+                        />
+                        <p class="text-sm font-medium text-emerald-900">
+                            This request has been approved.
+                        </p>
                     </div>
 
-                    <div v-if="selectedChangeRequest.status === 'pending'"
-                        class="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                    <div
+                        v-if="selectedChangeRequest.status === 'pending'"
+                        class="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-4"
+                    >
                         <Clock3 class="h-5 w-5 shrink-0 text-amber-600" />
-                        <p class="text-sm font-medium text-amber-900">Awaiting approval from administrator.</p>
+                        <p class="text-sm font-medium text-amber-900">
+                            Awaiting approval from administrator.
+                        </p>
                     </div>
                 </div>
             </DialogContent>
         </Dialog>
-
     </ExternalLayout>
 </template>
-
-
