@@ -536,6 +536,51 @@ function formatValue(value: unknown): string {
     return String(value);
 }
 
+type ChangeRequestItem = NonNullable<typeof props.changeRequests>[number];
+
+function formatChangeValue(
+    request: ChangeRequestItem,
+    valueType: 'old' | 'requested',
+): string {
+    const displayValue =
+        valueType === 'old'
+            ? request.old_value_display
+            : request.requested_value_display;
+
+    if (displayValue !== null && displayValue !== undefined && displayValue !== '') {
+        return String(displayValue);
+    }
+
+    const rawValue =
+        valueType === 'old' ? request.old_value : request.requested_value;
+
+    if (rawValue === null || rawValue === undefined || rawValue === '') {
+        return '—';
+    }
+
+    const numericId = Number(rawValue);
+    if (!Number.isFinite(numericId)) {
+        return formatValue(rawValue);
+    }
+
+    if (request.requested_field === 'driver_user_id') {
+        const driver = props.drivers.find((item) => item.id === numericId);
+        return driver?.name ?? `Unknown Driver (#${numericId})`;
+    }
+
+    if (request.requested_field === 'vehicle_id') {
+        const vehicle = props.vehicles.find((item) => item.id === numericId);
+        return vehicle?.label ?? `Unknown Vehicle (#${numericId})`;
+    }
+
+    if (request.requested_field === 'gate_id') {
+        const gate = props.gates.find((item) => item.id === numericId);
+        return gate?.gate_name ?? `Unknown Gate (#${numericId})`;
+    }
+
+    return formatValue(rawValue);
+}
+
 const changeRequestDetailOpen = ref(false);
 const selectedChangeRequest = ref<(typeof props.changeRequests)[0] | null>(null);
 
@@ -1132,17 +1177,9 @@ watch(confirmDepartOpen, (open) => {
                                                     <p
                                                         class="font-mono text-xs"
                                                     >
-                                                        {{
-                                                            formatValue(
-                                                                request.old_value,
-                                                            )
-                                                        }}
+                                                        {{ formatChangeValue(request, 'old') }}
                                                         →
-                                                        {{
-                                                            formatValue(
-                                                                request.requested_value,
-                                                            )
-                                                        }}
+                                                        {{ formatChangeValue(request, 'requested') }}
                                                     </p>
                                                 </div>
                                             </div>
@@ -1637,9 +1674,7 @@ watch(confirmDepartOpen, (open) => {
                                 Current Value
                             </p>
                             <p class="mt-1 font-mono text-sm">
-                                {{
-                                    formatValue(selectedChangeRequest.old_value)
-                                }}
+                                {{ formatChangeValue(selectedChangeRequest, 'old') }}
                             </p>
                         </div>
                         <div>
@@ -1649,11 +1684,7 @@ watch(confirmDepartOpen, (open) => {
                                 Requested Value
                             </p>
                             <p class="mt-1 font-mono text-sm">
-                                {{
-                                    formatValue(
-                                        selectedChangeRequest.requested_value,
-                                    )
-                                }}
+                                {{ formatChangeValue(selectedChangeRequest, 'requested') }}
                             </p>
                         </div>
                         <div>
