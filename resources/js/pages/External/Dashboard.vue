@@ -23,6 +23,8 @@ import {
     TrendingUp,
     MapPin,
     Activity,
+    Users,       
+    Building2,
 } from 'lucide-vue-next'
 
 const props = defineProps<{
@@ -310,16 +312,16 @@ const documentChartData = computed(() => {
                             </Button>
 
                             <Button as-child variant="outline">
-                                <Link href="/company/routes">
-                                    <RouteIcon class="mr-2 h-4 w-4" />
-                                    Routes
+                                <Link href="/company/employees">
+                                    <Users class="mr-2 h-4 w-4" />
+                                    Employees
                                 </Link>
                             </Button>
 
-                            <Button as-child>
-                                <Link href="/company/documents">
-                                    <FileText class="mr-2 h-4 w-4" />
-                                    Documents
+                            <Button as-child variant="blue">
+                                <Link href="/company/profile">
+                                    <Building2 class="mr-2 h-4 w-4" />
+                                    Company Profile
                                 </Link>
                             </Button>
                         </div>

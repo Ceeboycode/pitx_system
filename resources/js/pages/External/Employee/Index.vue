@@ -302,82 +302,66 @@ function openDeleteDialog(employee: EmployeeUser) {
 
                 <!-- ── Stats ─────────────────────────────────── -->
                 <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
-                    <div
-                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-                    >
-                        <div
-                            class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700"
-                        >
-                            <Users class="h-4 w-4 text-white" />
+                    <!-- Total -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+                        <div class="flex items-start justify-between">
+                            <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                                Total
+                            </p>
+                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-700">
+                                <Users class="h-4 w-4 text-white" />
+                            </div>
                         </div>
-                        <p
-                            class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                        >
-                            Total
-                        </p>
-                        <p
-                            class="mt-0.5 text-3xl font-bold text-slate-900 tabular-nums"
-                        >
+
+                        <p class="mt-3 text-3xl font-bold tabular-nums text-slate-900">
                             {{ totalEmployees }}
                         </p>
                     </div>
 
-                    <div
-                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-                    >
-                        <div
-                            class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600"
-                        >
-                            <TruckIcon class="h-4 w-4 text-white" />
+                    <!-- Drivers -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+                        <div class="flex items-start justify-between">
+                            <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                                Drivers
+                            </p>
+                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600">
+                                <TruckIcon class="h-4 w-4 text-white" />
+                            </div>
                         </div>
-                        <p
-                            class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                        >
-                            Drivers
-                        </p>
-                        <p
-                            class="mt-0.5 text-3xl font-bold text-slate-900 tabular-nums"
-                        >
+
+                        <p class="mt-3 text-3xl font-bold tabular-nums text-slate-900">
                             {{ totalDrivers }}
                         </p>
                     </div>
 
-                    <div
-                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-                    >
-                        <div
-                            class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-violet-600"
-                        >
-                            <Radio class="h-4 w-4 text-white" />
+                    <!-- Dispatchers -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+                        <div class="flex items-start justify-between">
+                            <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                                Dispatchers
+                            </p>
+                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600">
+                                <Radio class="h-4 w-4 text-white" />
+                            </div>
                         </div>
-                        <p
-                            class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                        >
-                            Dispatchers
-                        </p>
-                        <p
-                            class="mt-0.5 text-3xl font-bold text-slate-900 tabular-nums"
-                        >
+
+                        <p class="mt-3 text-3xl font-bold tabular-nums text-slate-900">
                             {{ totalDispatchers }}
                         </p>
                     </div>
 
-                    <div
-                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-                    >
-                        <div
-                            class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600"
-                        >
-                            <Power class="h-4 w-4 text-white" />
+                    <!-- Active -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+                        <div class="flex items-start justify-between">
+                            <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                                Active
+                            </p>
+                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
+                                <Power class="h-4 w-4 text-white" />
+                            </div>
                         </div>
-                        <p
-                            class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                        >
-                            Active
-                        </p>
-                        <p
-                            class="mt-0.5 text-3xl font-bold text-slate-900 tabular-nums"
-                        >
+
+                        <p class="mt-3 text-3xl font-bold tabular-nums text-slate-900">
                             {{ activeCount }}
                         </p>
                     </div>
@@ -612,75 +596,6 @@ function openDeleteDialog(employee: EmployeeUser) {
                                                         />
                                                         View Profile
                                                     </Link>
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuItem
-                                                    as-child
-                                                    class="rounded-lg text-slate-700 focus:bg-amber-50 focus:text-amber-700"
-                                                >
-                                                    <Link
-                                                        :href="`/employee-users/${employee.id}/edit`"
-                                                    >
-                                                        <Pencil
-                                                            class="mr-2 h-4 w-4"
-                                                        />
-                                                        Edit Details
-                                                    </Link>
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuItem
-                                                    :class="[
-                                                        'rounded-lg',
-                                                        toggleStatusClass(
-                                                            employee.status,
-                                                        ),
-                                                    ]"
-                                                    @click="
-                                                        openStatusDialog(
-                                                            employee,
-                                                        )
-                                                    "
-                                                >
-                                                    <Power
-                                                        class="mr-2 h-4 w-4"
-                                                    />
-                                                    {{
-                                                        toggleStatusLabel(
-                                                            employee.status,
-                                                        )
-                                                    }}
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuItem
-                                                    class="rounded-lg text-slate-700 focus:bg-blue-50 focus:text-blue-700"
-                                                    @click="
-                                                        openResetPasswordDialog(
-                                                            employee,
-                                                        )
-                                                    "
-                                                >
-                                                    <KeyRound
-                                                        class="mr-2 h-4 w-4"
-                                                    />
-                                                    Reset Password
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuSeparator
-                                                    class="bg-slate-100"
-                                                />
-
-                                                <DropdownMenuItem
-                                                    class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600"
-                                                    @click="
-                                                        openDeleteDialog(
-                                                            employee,
-                                                        )
-                                                    "
-                                                >
-                                                    <Trash2
-                                                        class="mr-2 h-4 w-4"
-                                                    />
-                                                    Delete Account
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
