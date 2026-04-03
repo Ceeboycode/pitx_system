@@ -306,6 +306,16 @@ function onReplyAttachmentChange(event: Event) {
     replyAttachment.value = input.files?.[0] ?? null;
 }
 
+function categoryLabel(category: string | null | undefined): string {
+    const map: Record<string, string> = {
+        facilities: 'Facilities',
+        terminal_operations: 'Terminal Operations',
+        commuter_app: 'Commuter App',
+        other: 'Other',
+    };
+    return category ? (map[category] ?? category) : 'General';
+}
+
 function formatThreadDetails(details: unknown) {
     if (typeof details === 'string') {
         return details;
@@ -538,8 +548,10 @@ watch(
                                             @change="applyFilters"
                                         >
                                             <option value="all">All categories</option>
-                                            <option value="compliance">Compliance</option>
-                                            <option value="system">System</option>
+                                            <option value="facilities">Facilities</option>
+                                            <option value="terminal_operations">Terminal Operations</option>
+                                            <option value="commuter_app">Commuter App</option>
+                                            <option value="other">Other</option>
                                         </select>
                                     </label>
 
@@ -603,7 +615,7 @@ watch(
                                     class="mt-3 flex items-center justify-between gap-2 text-[11px] text-muted-foreground"
                                 >
                                     <span class="truncate">
-                                        {{ thread.category || 'General' }}
+                                        {{ categoryLabel(thread.category) }}
                                     </span>
                                     <span>{{ thread.messages_count ?? 0 }} messages</span>
                                 </div>
@@ -770,7 +782,7 @@ watch(
                                         <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                             Category
                                         </p>
-                                        <p>{{ selectedThread.category || 'General' }}</p>
+                                        <p>{{ categoryLabel(selectedThread.category) }}</p>
                                     </div>
 
                                     <div class="space-y-1">

@@ -33,7 +33,8 @@ class AuthTokenController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'phone_number' => $validated['phone_number'] ?? null,
-            'username' => $validated['username'] ?? $this->generateUsername($validated['email']),
+            // 'username' => $validated['username'] ?? $this->generateUsername($validated['email']),
+            'username' => $validated['username'],
             'email_verified_at' => now(),
             'password' => Hash::make($validated['password']),
             'company_id' => null,
@@ -57,7 +58,7 @@ class AuthTokenController extends Controller
         $credentials = $request->validated();
 
         $user = User::query()
-            ->where('email', $credentials['email'])
+            ->where('username', $credentials['username'])
             ->with('roles')
             ->first();
 
@@ -67,11 +68,11 @@ class AuthTokenController extends Controller
             ], 422);
         }
 
-        if (! $user->roles()->where('type', 'commuter')->exists()) {
-            return response()->json([
-                'message' => 'This account is not allowed to access commuter mobile APIs.',
-            ], 403);
-        }
+        // if (! $user->roles()->where('type', 'commuter')->exists()) {
+        //     return response()->json([
+        //         'message' => 'This account is not allowed to access commuter mobile APIs.',
+        //     ], 403);
+        // }
 
         $plainToken = $this->issueToken($user);
 

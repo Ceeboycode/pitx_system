@@ -24,7 +24,7 @@ return new class extends Migration {
                 ->constrained('users')
                 ->nullOnDelete();
 
-            $table->enum('category', ['compliance', 'system']);
+            $table->enum('category', ['facilities', 'terminal_operations', 'commuter_app', 'other']);
             $table->string('subject');
             $table->boolean('is_closed')->default(false);
             $table->timestamp('closed_at')->nullable();

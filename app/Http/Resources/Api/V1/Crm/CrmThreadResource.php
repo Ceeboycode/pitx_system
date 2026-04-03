@@ -21,10 +21,14 @@ class CrmThreadResource extends JsonResource
             'subject' => $this->subject,
             'is_closed' => (bool) $this->is_closed,
             'closed_at' => $this->closed_at?->toISOString(),
+            'closed_at_human' => $this->closed_at?->diffForHumans(),
             'last_message_at' => $this->last_message_at?->toISOString(),
+            'last_message_at_human' => $this->last_message_at?->diffForHumans(),
             'details' => $this->details,
             'messages_count' => $this->whenCounted('messages'),
+            'first_message_id' => $this->whenLoaded('messages', fn () => $this->messages->first()?->id),
             'created_at' => $this->created_at?->toISOString(),
+            'created_at_human' => $this->created_at?->diffForHumans(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
     }

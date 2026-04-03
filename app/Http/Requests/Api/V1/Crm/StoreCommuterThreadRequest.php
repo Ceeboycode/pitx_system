@@ -17,7 +17,7 @@ class StoreCommuterThreadRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'category' => ['required', 'in:compliance,system'],
+            'category' => ['required', 'in:facilities,terminal_operations,commuter_app,other'],
             'subject' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string'],
             'details' => ['nullable', 'array'],

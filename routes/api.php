@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Auth\AuthTokenController;
+use App\Http\Controllers\Api\V1\Crm\CommuterAttachmentController;
 use App\Http\Controllers\Api\V1\Crm\CommuterMessageController;
 use App\Http\Controllers\Api\V1\Crm\CommuterThreadController;
 use App\Http\Controllers\Api\V1\Route\CommuterRouteController;
@@ -26,5 +27,6 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::get('crm/threads/{thread}/messages', [CommuterMessageController::class, 'index'])->name('crm.threads.messages.index');
         Route::post('crm/threads/{thread}/messages', [CommuterMessageController::class, 'store'])->name('crm.threads.messages.store');
+        Route::post('crm/threads/{thread}/messages/{message}/attachments', [CommuterAttachmentController::class, 'store'])->name('crm.threads.messages.attachments.store');
     });
 });

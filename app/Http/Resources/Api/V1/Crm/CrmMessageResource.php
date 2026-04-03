@@ -21,7 +21,15 @@ class CrmMessageResource extends JsonResource
             ]),
             'body' => $this->body,
             'is_internal' => (bool) $this->is_internal,
+            'attachments' => $this->whenLoaded('attachments', fn () => $this->attachments->map(fn ($attachment) => [
+                'id' => $attachment->id,
+                'original_name' => $attachment->original_name,
+                'mime_type' => $attachment->mime_type,
+                'size_bytes' => $attachment->size_bytes,
+                'url' => \Illuminate\Support\Facades\Storage::disk($attachment->disk)->url($attachment->path),
+            ])->values()),
             'created_at' => $this->created_at?->toISOString(),
+            'created_at_human' => $this->created_at?->diffForHumans(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
