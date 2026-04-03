@@ -70,7 +70,7 @@ class CommuterThreadController extends Controller
 
         return response()->json([
             'message' => 'Thread created successfully.',
-            'data' => new CrmThreadResource($thread->loadCount('messages')),
+            'data' => new CrmThreadResource($thread->load('messages')->loadCount('messages')),
         ], 201);
     }
 

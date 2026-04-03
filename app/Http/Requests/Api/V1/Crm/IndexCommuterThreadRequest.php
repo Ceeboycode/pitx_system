@@ -18,7 +18,7 @@ class IndexCommuterThreadRequest extends FormRequest
     {
         return [
             'search' => ['nullable', 'string', 'max:255'],
-            'category' => ['nullable', 'in:compliance,system'],
+            'category' => ['nullable', 'in:facilities,terminal_operations,commuter_app,other'],
             'status' => ['nullable', 'in:open,closed'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ];
