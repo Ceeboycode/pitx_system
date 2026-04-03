@@ -13,6 +13,7 @@ use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate as GateFacade;
 use Illuminate\Support\Str;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,71 +25,26 @@ class AuditLogController extends Controller
     {
         GateFacade::authorize('viewAny', AuditLog::class);
 
-        $includeRequestActions = $request->boolean('include_request_actions', false);
+        $filters = $this->extractFilters($request, true);
 
-        $filters = [
-            'search' => $request->string('search')->toString() ?: null,
-            'action' => $request->string('action')->toString() ?: null,
-            'user_id' => $request->integer('user_id') ?: null,
-            'entity_type' => $request->string('entity_type')->toString() ?: null,
-            'date_from' => $request->string('date_from')->toString() ?: null,
-            'date_to' => $request->string('date_to')->toString() ?: null,
-            'include_request_actions' => $includeRequestActions,
-        ];
+        $auditLogs = $this->buildAuditLogs(
+            filters: $filters,
+            forceUserId: null,
+            forceCompanyId: null,
+            includeTechnicalDetails: true,
+        );
 
-        $auditLogs = AuditLog::query()
-            ->with(['user:id,name,email'])
-            ->when(! $includeRequestActions, fn ($query) => $query->where('action', 'not like', 'request.%'))
-            ->applyFilters($filters)
-            ->latest()
-            ->paginate(15)
-            ->withQueryString()
-            ->through(function (AuditLog $log) {
-                return [
-                    'id' => $log->id,
-                    'user' => $log->user ? [
-                        'id' => $log->user->id,
-                        'name' => $log->user->name,
-                        'email' => $log->user->email,
-                    ] : null,
-                    'action' => $log->action,
-                    'action_label' => $this->formatAction($log->action),
-                    'entity_type' => $log->auditable_type,
-                    'entity_label' => $this->formatEntityType($log->auditable_type),
-                    'entity_name' => $this->resolveEntityName($log->auditable_type, $log->auditable_id),
-                    'changes' => $this->transformChanges($log->changed_fields ?? []),
-                    'metadata' => $log->metadata,
-                    'ip_address' => $log->ip_address,
-                    'request_method' => $log->request_method,
-                    'request_url' => $log->request_url,
-                    'created_at' => $log->created_at?->toIso8601String(),
-                    'created_at_human' => $log->created_at?->timezone(self::DISPLAY_TIMEZONE)->format('M d, Y h:i A'),
-                ];
-            });
+        $actions = $this->buildActionOptions(
+            includeRequestActions: (bool) ($filters['include_request_actions'] ?? false),
+            forceUserId: null,
+            forceCompanyId: null,
+        );
 
-        $actions = AuditLog::query()
-            ->when(! $includeRequestActions, fn ($query) => $query->where('action', 'not like', 'request.%'))
-            ->select('action')
-            ->distinct()
-            ->orderBy('action')
-            ->pluck('action')
-            ->map(fn (string $action) => [
-                'value' => $action,
-                'label' => $this->formatAction($action),
-            ])
-            ->values();
-
-        $entityTypes = AuditLog::query()
-            ->whereNotNull('auditable_type')
-            ->select('auditable_type')
-            ->distinct()
-            ->orderBy('auditable_type')
-            ->pluck('auditable_type')
-            ->map(fn (string $type) => [
-                'value' => $type,
-                'label' => $this->formatEntityType($type),
-            ])
-            ->values();
+        $entityTypes = $this->buildEntityTypeOptions(
+            includeRequestActions: (bool) ($filters['include_request_actions'] ?? false),
+            forceUserId: null,
+            forceCompanyId: null,
+        );
 
         $users = User::query()
             ->select(['id', 'name'])
@@ -102,6 +58,172 @@ class AuditLogController extends Controller
             'entityTypes' => $entityTypes,
             'users' => $users,
         ]);
+    }
+
+    public function myActivity(Request $request): Response
+    {
+        GateFacade::authorize('viewOwn', AuditLog::class);
+
+        $filters = $this->extractFilters($request, false);
+        $authUser = $request->user();
+
+        $auditLogs = $this->buildAuditLogs(
+            filters: $filters,
+            forceUserId: $authUser?->id,
+            forceCompanyId: null,
+            includeTechnicalDetails: true,
+        );
+
+        return Inertia::render('ActivityLogs/Index', [
+            'auditLogs' => $auditLogs,
+            'filters' => $filters,
+            'actions' => $this->buildActionOptions(
+                includeRequestActions: (bool) ($filters['include_request_actions'] ?? false),
+                forceUserId: $authUser?->id,
+                forceCompanyId: null,
+            ),
+            'entityTypes' => $this->buildEntityTypeOptions(
+                includeRequestActions: (bool) ($filters['include_request_actions'] ?? false),
+                forceUserId: $authUser?->id,
+                forceCompanyId: null,
+            ),
+        ]);
+    }
+
+    public function externalMyActivity(Request $request): Response
+    {
+        GateFacade::authorize('viewOwnExternal', AuditLog::class);
+
+        $filters = $this->extractFilters($request, false);
+        $authUser = $request->user();
+        $companyId = $authUser?->company_id;
+
+        $auditLogs = $this->buildAuditLogs(
+            filters: $filters,
+            forceUserId: $authUser?->id,
+            forceCompanyId: $companyId,
+            includeTechnicalDetails: false,
+        );
+
+        return Inertia::render('External/ActivityLogs/Index', [
+            'auditLogs' => $auditLogs,
+            'filters' => $filters,
+            'actions' => $this->buildActionOptions(
+                includeRequestActions: false,
+                forceUserId: $authUser?->id,
+                forceCompanyId: $companyId,
+            ),
+            'entityTypes' => $this->buildEntityTypeOptions(
+                includeRequestActions: false,
+                forceUserId: $authUser?->id,
+                forceCompanyId: $companyId,
+            ),
+        ]);
+    }
+
+    private function extractFilters(Request $request, bool $includeUserFilter): array
+    {
+        $filters = [
+            'search' => $request->string('search')->toString() ?: null,
+            'action' => $request->string('action')->toString() ?: null,
+            'entity_type' => $request->string('entity_type')->toString() ?: null,
+            'date_from' => $request->string('date_from')->toString() ?: null,
+            'date_to' => $request->string('date_to')->toString() ?: null,
+            'include_request_actions' => $request->boolean('include_request_actions', false),
+        ];
+
+        if ($includeUserFilter) {
+            $filters['user_id'] = $request->integer('user_id') ?: null;
+        }
+
+        return $filters;
+    }
+
+    private function buildAuditLogs(
+        array $filters,
+        ?int $forceUserId,
+        ?int $forceCompanyId,
+        bool $includeTechnicalDetails,
+    ): LengthAwarePaginator {
+        $includeRequestActions = (bool) ($filters['include_request_actions'] ?? false);
+
+        return AuditLog::query()
+            ->with(['user:id,name,email'])
+            ->when(! $includeRequestActions, fn ($query) => $query->where('action', 'not like', 'request.%'))
+            ->when($forceUserId !== null, fn ($query) => $query->where('user_id', $forceUserId))
+            ->when($forceCompanyId !== null, fn ($query) => $query->where('company_id', $forceCompanyId))
+            ->applyFilters($filters)
+            ->latest()
+            ->paginate(15)
+            ->withQueryString()
+            ->through(fn (AuditLog $log) => $this->transformAuditLogRow($log, $includeTechnicalDetails));
+    }
+
+    private function buildActionOptions(bool $includeRequestActions, ?int $forceUserId, ?int $forceCompanyId)
+    {
+        return AuditLog::query()
+            ->when(! $includeRequestActions, fn ($query) => $query->where('action', 'not like', 'request.%'))
+            ->when($forceUserId !== null, fn ($query) => $query->where('user_id', $forceUserId))
+            ->when($forceCompanyId !== null, fn ($query) => $query->where('company_id', $forceCompanyId))
+            ->select('action')
+            ->distinct()
+            ->orderBy('action')
+            ->pluck('action')
+            ->map(fn (string $action) => [
+                'value' => $action,
+                'label' => $this->formatAction($action),
+            ])
+            ->values();
+    }
+
+    private function buildEntityTypeOptions(bool $includeRequestActions, ?int $forceUserId, ?int $forceCompanyId)
+    {
+        return AuditLog::query()
+            ->when(! $includeRequestActions, fn ($query) => $query->where('action', 'not like', 'request.%'))
+            ->when($forceUserId !== null, fn ($query) => $query->where('user_id', $forceUserId))
+            ->when($forceCompanyId !== null, fn ($query) => $query->where('company_id', $forceCompanyId))
+            ->whereNotNull('auditable_type')
+            ->select('auditable_type')
+            ->distinct()
+            ->orderBy('auditable_type')
+            ->pluck('auditable_type')
+            ->map(fn (string $type) => [
+                'value' => $type,
+                'label' => $this->formatEntityType($type),
+            ])
+            ->values();
+    }
+
+    private function transformAuditLogRow(AuditLog $log, bool $includeTechnicalDetails): array
+    {
+        $base = [
+            'id' => $log->id,
+            'user' => $log->user ? [
+                'id' => $log->user->id,
+                'name' => $log->user->name,
+                'email' => $log->user->email,
+            ] : null,
+            'action' => $log->action,
+            'action_label' => $this->formatAction($log->action),
+            'entity_type' => $log->auditable_type,
+            'entity_label' => $this->formatEntityType($log->auditable_type),
+            'entity_name' => $this->resolveEntityName($log->auditable_type, $log->auditable_id),
+            'changes' => $this->transformChanges($log->changed_fields ?? []),
+            'created_at' => $log->created_at?->toIso8601String(),
+            'created_at_human' => $log->created_at?->timezone(self::DISPLAY_TIMEZONE)->format('M d, Y h:i A'),
+        ];
+
+        if (! $includeTechnicalDetails) {
+            return $base;
+        }
+
+        return [
+            ...$base,
+            'metadata' => $log->metadata,
+            'ip_address' => $log->ip_address,
+            'request_method' => $log->request_method,
+            'request_url' => $log->request_url,
+        ];
     }
 
     private function transformChanges(array $changes): array

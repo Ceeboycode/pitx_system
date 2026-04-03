@@ -19,6 +19,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
+import { externalMyActivity } from '@/actions/App/Http/Controllers/AuditLogController';
 import CompanyProfileController from '@/actions/App/Http/Controllers/CompanyProfileController';
 import CompanyUserController from '@/actions/App/Http/Controllers/CompanyUserController';
 import CompanyVehicleController from '@/actions/App/Http/Controllers/CompanyVehicleController';
@@ -126,6 +127,11 @@ const navItems = [
         label: 'Company Profile',
         icon: Building2,
         href: CompanyProfileController.show().url,
+    },
+    {
+        label: 'Activity Logs',
+        icon: FileText,
+        href: externalMyActivity().url,
     },
     {
         label: 'Settings',

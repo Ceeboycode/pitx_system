@@ -30,7 +30,10 @@ import { can } from '@/lib/can';
 import AppLogo from './AppLogo.vue';
 
 // Wayfinder routes
-import { index as auditLogsIndex } from '@/actions/App/Http/Controllers/AuditLogController';
+import {
+    index as auditLogsIndex,
+    myActivity as myActivityLogsIndex,
+} from '@/actions/App/Http/Controllers/AuditLogController';
 import { index as changeRequestsIndex } from '@/actions/App/Http/Controllers/DispatchChangeRequestController';
 import { index as dispatchesIndex } from '@/actions/App/Http/Controllers/InternalDispatchController';
 import { dashboard } from '@/routes';
@@ -173,6 +176,11 @@ const mainNavItems: NavItem[] = [
                 id: 'audit-logs',
                 title: 'Audit Logs',
                 href: auditLogsIndex().url,
+            },
+            {
+                id: 'my-activity-logs',
+                title: 'My Activity Logs',
+                href: myActivityLogsIndex().url,
             },
         ],
     },

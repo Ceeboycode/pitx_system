@@ -175,6 +175,9 @@ Route::middleware(['auth', 'role.type:external', 'audit.request'])->group(functi
         Route::patch('employee-users/{employeeUser}/reset-password', [CompanyUserController::class, 'resetPassword'])
             ->name('employee-users.reset-password');
 
+        Route::get('company/activity-logs', [AuditLogController::class, 'externalMyActivity'])
+            ->name('company.activity-logs.index');
+
         /*
         |--------------------------------------------------------------------------
         | Dispatching
@@ -216,6 +219,7 @@ Route::middleware(['auth', 'role.type:external', 'audit.request'])->group(functi
 Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'audit.request'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+    Route::get('/my-activity-logs', [AuditLogController::class, 'myActivity'])->name('activity-logs.index');
 
     /*
     |--------------------------------------------------------------------------
