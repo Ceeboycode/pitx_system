@@ -19,7 +19,8 @@ import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 import { Form, Head } from '@inertiajs/vue3';
-
+import { ArrowLeft } from 'lucide-vue-next';
+import { Link } from '@inertiajs/vue3';
 defineProps<{
     status?: string;
     canResetPassword: boolean;
@@ -35,7 +36,14 @@ defineProps<{
         <Head title="Log in" />
 
         <Card class="mx-auto w-full max-w-md">
-            <CardHeader class="text-center">
+            <CardHeader className="flex items-center justify-center relative">
+                <Link
+                    href="/"
+                    className="absolute left-4 text-gray-500 hover:text-gray-700"
+                >
+                    <ArrowLeft className="h-5 w-5" />
+                </Link>
+
                 <CardTitle>Welcome back</CardTitle>
             </CardHeader>
 
