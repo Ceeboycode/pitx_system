@@ -89,10 +89,10 @@ Route::middleware(['auth', 'audit.request'])->group(function () {
     Route::post('force-password-reset', [ForcePasswordController::class, 'update'])
         ->name('force-password.update');
 
-    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])
+    Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])
         ->name('notifications.read');
 
-    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])
         ->name('notifications.read-all');
 });
 
@@ -339,7 +339,7 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
     Route::get('routes-trash', [RouteController::class, 'trash'])->name('routes.trash');
     Route::patch('routes/{route}/restore', [RouteController::class, 'restore'])->withTrashed()->name('routes.restore');
     Route::delete('routes/{route}/force-delete', [RouteController::class, 'forceDelete'])->withTrashed()->name('routes.forceDelete');
-    Route::patch('routes/{route}/toggle-status', [RouteController::class, 'toggleStatus'])->name('toggleStatus');
+    Route::patch('routes/{route}/toggle-status', [RouteController::class, 'toggleStatus'])->name('routes.toggleStatus');
 
     Route::resource('vehicles', VehicleController::class);
 
