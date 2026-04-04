@@ -20,9 +20,34 @@ class PasswordController extends Controller
     }
 
     /**
+     * Show the external user's password settings page.
+     */
+    public function externalEdit(): Response
+    {
+        return Inertia::render('External/Settings/Password');
+    }
+
+    /**
      * Update the user's password.
      */
     public function update(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', Password::defaults(), 'confirmed'],
+        ]);
+
+        $request->user()->update([
+            'password' => $validated['password'],
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Update the external user's password.
+     */
+    public function externalUpdate(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'current_password' => ['required', 'current_password'],

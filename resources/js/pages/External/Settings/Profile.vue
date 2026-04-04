@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
-import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 
@@ -9,9 +7,8 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import AppLayout from '@/layouts/AppLayout.vue';
-import SettingsLayout from '@/layouts/settings/Layout.vue';
-import { type BreadcrumbItem } from '@/types';
+import ExternalSettingsLayout from '@/layouts/external/SettingsLayout.vue';
+import ExternalLayout from '@/layouts/ExternalLayout.vue';
 
 interface Props {
     mustVerifyEmail: boolean;
@@ -20,24 +17,17 @@ interface Props {
 
 defineProps<Props>();
 
-const breadcrumbItems: BreadcrumbItem[] = [
-    {
-        title: 'Profile settings',
-        href: edit().url,
-    },
-];
-
 const page = usePage();
 const user = page.props.auth.user;
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbItems">
+    <ExternalLayout>
         <Head title="Profile settings" />
 
         <h1 class="sr-only">Profile Settings</h1>
 
-        <SettingsLayout>
+        <ExternalSettingsLayout>
             <div class="flex flex-col space-y-6">
                 <HeadingSmall
                     title="Profile information"
@@ -45,11 +35,15 @@ const user = page.props.auth.user;
                 />
 
                 <Form
-                    v-bind="ProfileController.update.form()"
+                    method="post"
+                    action="/company/settings/profile"
                     class="space-y-6"
                     enctype="multipart/form-data"
+                    :options="{ preserveScroll: true }"
                     v-slot="{ errors, processing, recentlySuccessful }"
                 >
+                    <input type="hidden" name="_method" value="PATCH" />
+
                     <div class="grid gap-2">
                         <Label for="avatar">Profile picture</Label>
 
@@ -131,11 +125,7 @@ const user = page.props.auth.user;
                     </div>
 
                     <div class="flex items-center gap-4">
-                        <Button
-                            :disabled="processing"
-                            data-test="update-profile-button"
-                            >Save</Button
-                        >
+                        <Button :disabled="processing">Save</Button>
 
                         <Transition
                             enter-active-class="transition ease-in-out"
@@ -153,6 +143,6 @@ const user = page.props.auth.user;
                     </div>
                 </Form>
             </div>
-        </SettingsLayout>
-    </AppLayout>
+        </ExternalSettingsLayout>
+    </ExternalLayout>
 </template>

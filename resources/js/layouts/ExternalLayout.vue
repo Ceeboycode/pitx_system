@@ -5,7 +5,7 @@ import { computed, ref, watch } from 'vue';
 
 import MessagingPanel from '@/components/MessagingPanel.vue';
 import NotificationDropdown from '@/components/NotificationDropdown.vue';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -137,20 +137,29 @@ const navItems = [
     {
         label: 'Settings',
         icon: Settings,
-        href: '/company/settings',
+        href: '/company/settings/profile',
     },
 ];
 
 const mobileOpen = ref(false);
 const imgError = ref(false);
+const userAvatarError = ref(false);
 
 const logoSrc = computed(() => company.value?.logo_url ?? null);
+const userAvatarSrc = computed(() => user.value?.avatar ?? null);
 
 watch(logoSrc, () => {
     imgError.value = false;
 });
 
+watch(userAvatarSrc, () => {
+    userAvatarError.value = false;
+});
+
 const showImage = computed(() => !!logoSrc.value && !imgError.value);
+const showUserAvatar = computed(
+    () => !!userAvatarSrc.value && !userAvatarError.value,
+);
 
 const userInitials = computed(() => {
     const name = user.value?.name ?? '';
@@ -294,6 +303,12 @@ watch(
                                 class="flex w-full items-center gap-3 rounded-md px-2 py-2 text-sm transition-colors hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
                             >
                                 <Avatar class="h-7 w-7 shrink-0">
+                                    <AvatarImage
+                                        v-if="showUserAvatar"
+                                        :src="userAvatarSrc!"
+                                        :alt="user?.name ?? 'User'"
+                                        @error="userAvatarError = true"
+                                    />
                                     <AvatarFallback class="text-[11px]">
                                         {{ userInitials }}
                                     </AvatarFallback>
@@ -446,6 +461,12 @@ watch(
                     <div class="p-4">
                         <div class="mb-3 flex items-center gap-3">
                             <Avatar class="h-8 w-8">
+                                <AvatarImage
+                                    v-if="showUserAvatar"
+                                    :src="userAvatarSrc!"
+                                    :alt="user?.name ?? 'User'"
+                                    @error="userAvatarError = true"
+                                />
                                 <AvatarFallback class="text-xs">
                                     {{ userInitials }}
                                 </AvatarFallback>
@@ -523,6 +544,12 @@ watch(
                         <NotificationDropdown />
 
                         <Avatar class="h-7 w-7">
+                            <AvatarImage
+                                v-if="showUserAvatar"
+                                :src="userAvatarSrc!"
+                                :alt="user?.name ?? 'User'"
+                                @error="userAvatarError = true"
+                            />
                             <AvatarFallback class="text-[11px]">
                                 {{ userInitials }}
                             </AvatarFallback>
