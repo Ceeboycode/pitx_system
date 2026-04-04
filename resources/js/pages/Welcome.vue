@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import PitxLogo from '@/components/assets/PITX.png';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { dashboard, login } from '@/routes';
@@ -111,16 +110,6 @@ const features = [
 
             <div class="relative z-10 mx-auto max-w-7xl px-6 py-24 md:py-36">
                 <div class="mx-auto max-w-3xl space-y-8">
-                    <!-- Badges -->
-                    <div class="flex flex-wrap gap-2">
-                        <Badge class="border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm hover:bg-white/10">
-                            <MapPin class="mr-1.5 h-3 w-3 text-[#e74c3c]" />
-                            Parañaque, Philippines
-                        </Badge>
-                        <Badge class="border border-[#c0392b]/50 bg-[#c0392b]/20 px-3 py-1 text-xs font-semibold text-red-300 backdrop-blur-sm hover:bg-[#c0392b]/20">
-                            Centralized Platform
-                        </Badge>
-                    </div>
 
                     <!-- Headline -->
                     <h1 class="text-5xl font-extrabold leading-[1.1] tracking-tight text-white md:text-7xl">
@@ -131,7 +120,7 @@ const features = [
 
                     <!-- Description -->
                     <p class="max-w-xl text-base leading-relaxed text-white/70 md:text-lg">
-                        A unified system for PITX administrators, dispatchers, and operators to manage
+                        A integrated system for PITX administrators, dispatchers, and operators to manage
                         gates, routes, and vehicle dispatch in real time — from one powerful platform.
                     </p>
 
@@ -157,22 +146,6 @@ const features = [
                             <a href="#features">Learn More</a>
                         </Button>
                     </div>
-
-                    <!-- Feature pills -->
-                    <div class="flex flex-wrap gap-x-6 gap-y-2 pt-2 text-sm text-white/55">
-                        <div class="flex items-center gap-2">
-                            <CheckCircle2 class="h-3.5 w-3.5 text-[#e74c3c]" />
-                            Multi-gate management
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <CheckCircle2 class="h-3.5 w-3.5 text-[#e74c3c]" />
-                            Live dispatch control
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <CheckCircle2 class="h-3.5 w-3.5 text-[#e74c3c]" />
-                            Role-secured access
-                        </div>
-                    </div>
                 </div>
             </div>
         </section>
@@ -182,123 +155,119 @@ const features = [
             <div class="mx-auto max-w-7xl px-6 py-10">
                 <div class="grid grid-cols-3 divide-x divide-white/10 text-center">
                     <div class="px-4 py-2">
-                        <div class="text-2xl font-extrabold text-white">Multi-gate</div>
-                        <div class="mt-0.5 text-xs font-medium uppercase tracking-widest text-blue-300">Dispatch Control</div>
+                        <div class="text-2xl font-extrabold text-white">Centralized</div>
+                        <div class="mt-0.5 text-xs font-medium uppercase tracking-widest text-blue-300">Operations Control</div>
                     </div>
                     <div class="px-4 py-2">
-                        <div class="text-2xl font-extrabold text-white">Real-time</div>
-                        <div class="mt-0.5 text-xs font-medium uppercase tracking-widest text-blue-300">Live Monitoring</div>
+                        <div class="text-2xl font-extrabold text-white">Real-time data</div>
+                        <div class="mt-0.5 text-xs font-medium uppercase tracking-widest text-blue-300">System Monitoring</div>
                     </div>
                     <div class="px-4 py-2">
-                        <div class="text-2xl font-extrabold text-white">100%</div>
-                        <div class="mt-0.5 text-xs font-medium uppercase tracking-widest text-blue-300">Role-Secured</div>
+                        <div class="text-2xl font-extrabold text-white">Access Control</div>
+                        <div class="mt-0.5 text-xs font-medium uppercase tracking-widest text-blue-300">User Permissions</div>
                     </div>
                 </div>
             </div>
         </section>
 
         <!-- FEATURES -->
-        <section id="features" class="mx-auto max-w-7xl px-6 py-16 pt-20">
-            <div class="mb-10 text-center">
-                <p class="mb-2 text-xs font-bold uppercase tracking-widest text-[#c0392b]">Platform Capabilities</p>
-                <h2 class="text-2xl font-extrabold tracking-tight text-[#1a1a2e] md:text-3xl">
-                    Designed for large-scale transport terminals.
-                </h2>
-                <p class="mx-auto mt-3 max-w-xl text-sm text-gray-500">
-                    Built with the complexity of PITX in mind — every feature serves real terminal operations.
-                </p>
-            </div>
+<section id="features" class="mx-auto max-w-7xl px-6 py-16 pt-20">
+    <div class="mb-10 text-center">
+        <p class="mb-2 text-xs font-bold uppercase tracking-widest text-[#c0392b]">Core Capabilities</p>
+        <h2 class="text-2xl font-extrabold tracking-tight text-[#1a1a2e] md:text-3xl">
+            Optimized for Large Transport Terminals
+        </h2>
+        <p class="mx-auto mt-3 max-w-xl text-sm text-gray-500">
+            Every feature is crafted to simplify complex operations, from dispatch to compliance, tailored for terminals like PITX.
+        </p>
+    </div>
 
-            <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                <Card
-                    v-for="(feature, i) in features"
-                    :key="i"
+    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <Card
+            v-for="(feature, i) in features"
+            :key="i"
+            :class="[
+                'group relative overflow-hidden rounded-2xl border p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl',
+                feature.cardClass,
+                feature.borderHover,
+            ]"
+        >
+            <CardHeader class="p-0">
+                <div
                     :class="[
-                        'group relative overflow-hidden rounded-2xl border p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl',
-                        feature.cardClass,
-                        feature.borderHover,
+                        'mb-4 flex h-12 w-12 items-center justify-center rounded-xl transition-colors',
+                        feature.iconBg,
                     ]"
                 >
-                    <CardHeader class="p-0">
-                        <div
-                            :class="[
-                                'mb-4 flex h-12 w-12 items-center justify-center rounded-xl transition-colors',
-                                feature.iconBg,
-                            ]"
-                        >
-                            <component :is="feature.icon" class="h-6 w-6" :class="feature.iconColor" />
-                        </div>
+                    <component :is="feature.icon" class="h-6 w-6" :class="feature.iconColor" />
+                </div>
 
-                        <CardTitle class="text-base font-bold text-[#1a1a2e]">
-                            {{ feature.title }}
-                        </CardTitle>
+                <CardTitle class="text-base font-bold text-[#1a1a2e]">
+                    {{ feature.title }}
+                </CardTitle>
 
-                        <p class="mt-1 text-sm font-medium text-gray-400">
-                            {{ feature.subtitle }}
-                        </p>
-                    </CardHeader>
+                <p class="mt-1 text-sm font-medium text-gray-400">
+                    {{ feature.subtitle }}
+                </p>
+            </CardHeader>
 
-                    <CardContent class="p-0 pt-3">
-                        <p class="text-sm leading-relaxed text-gray-500">
-                            {{ feature.description }}
-                        </p>
-                    </CardContent>
+            <CardContent class="p-0 pt-3">
+                <p class="text-sm leading-relaxed text-gray-500">
+                    {{ feature.description }}
+                </p>
+            </CardContent>
 
-                    <div
-                        :class="[
-                            'absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r opacity-0 transition-opacity group-hover:opacity-100',
-                            feature.line,
-                        ]"
-                    ></div>
-                </Card>
+            <div
+                :class="[
+                    'absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r opacity-0 transition-opacity group-hover:opacity-100',
+                    feature.line,
+                ]"
+            ></div>
+        </Card>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="mx-auto max-w-7xl px-6 pb-16">
+    <Card class="relative overflow-hidden rounded-2xl border-0 bg-gradient-to-r from-[#1a3a6b] to-[#0d1b2a] px-6 py-10 text-center shadow-xl sm:px-8 sm:py-12">
+        <div class="absolute right-0 top-0 h-64 w-64 -translate-y-1/2 translate-x-1/4 rounded-full bg-[#c0392b]/20 blur-3xl"></div>
+        <div class="absolute bottom-0 left-0 h-48 w-48 -translate-x-1/4 translate-y-1/3 rounded-full bg-[#1a3a6b]/40 blur-3xl"></div>
+
+        <CardContent class="relative z-10 p-0">
+            <p class="mb-3 text-xs font-bold uppercase tracking-widest text-red-400">Get Onboard</p>
+            <h2 class="text-2xl font-extrabold text-white md:text-3xl">
+                Take Your Terminal Operations to the Next Level
+            </h2>
+            <p class="mx-auto mt-3 max-w-md text-sm text-blue-200">
+                Sign up today to streamline dispatch, verification, and compliance — all from a single platform.
+            </p>
+
+            <div class="mt-7 flex flex-wrap justify-center gap-3">
+                <Button as-child class="rounded-xl bg-[#c0392b] px-8 py-3 font-semibold text-white shadow-lg hover:bg-[#a93226]">
+                    <Link :href="show()">
+                        Get Started
+                        <ArrowRight class="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+
+                <Button
+                    variant="outline"
+                    as-child
+                    class="rounded-xl border-white/30 bg-transparent px-8 py-3 font-semibold text-white hover:bg-white/10"
+                >
+                    <Link :href="login()">Log In</Link>
+                </Button>
             </div>
-        </section>
-
-        <!-- CTA -->
-        <section class="mx-auto max-w-7xl px-6 pb-16">
-            <Card class="relative overflow-hidden rounded-2xl border-0 bg-gradient-to-r from-[#1a3a6b] to-[#0d1b2a] px-6 py-10 text-center shadow-xl sm:px-8 sm:py-12">
-                <div class="absolute right-0 top-0 h-64 w-64 -translate-y-1/2 translate-x-1/4 rounded-full bg-[#c0392b]/20 blur-3xl"></div>
-                <div class="absolute bottom-0 left-0 h-48 w-48 -translate-x-1/4 translate-y-1/3 rounded-full bg-[#1a3a6b]/40 blur-3xl"></div>
-
-                <CardContent class="relative z-10 p-0">
-                    <p class="mb-3 text-xs font-bold uppercase tracking-widest text-red-400">Join the Platform</p>
-                    <h2 class="text-2xl font-extrabold text-white md:text-3xl">
-                        Ready to modernize your terminal operations?
-                    </h2>
-                    <p class="mx-auto mt-3 max-w-md text-sm text-blue-200">
-                        Register your company and start managing dispatch, verification, and compliance from day one.
-                    </p>
-
-                    <div class="mt-7 flex flex-wrap justify-center gap-3">
-                        <Button as-child class="rounded-xl bg-[#c0392b] px-8 py-3 font-semibold text-white shadow-lg hover:bg-[#a93226]">
-                            <Link :href="show()">
-                                Get Started
-                                <ArrowRight class="ml-2 h-4 w-4" />
-                            </Link>
-                        </Button>
-
-                        <Button
-                            variant="outline"
-                            as-child
-                            class="rounded-xl border-white/30 bg-transparent px-8 py-3 font-semibold text-white hover:bg-white/10"
-                        >
-                            <Link :href="login()">Log In</Link>
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-        </section>
+        </CardContent>
+    </Card>
+</section>
 
         <!-- FOOTER -->
         <footer class="border-t border-gray-200 bg-white">
-            <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-6 py-6 sm:flex-row">
+            <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-100 py-6 sm:flex-row">
                 <div class="flex items-center gap-2">
                     <img :src="PitxLogo" alt="PITX Logo" class="h-7 w-auto object-contain opacity-70" />
                     <p class="text-sm text-gray-400">© 2026 PITX System. All rights reserved.</p>
-                </div>
-                <div class="flex gap-5 text-xs font-medium uppercase tracking-widest">
-                    <a href="#" class="text-gray-400 transition-colors hover:text-[#c0392b]">Privacy</a>
-                    <a href="#" class="text-gray-400 transition-colors hover:text-[#1a3a6b]">Terms</a>
                 </div>
             </div>
         </footer>
