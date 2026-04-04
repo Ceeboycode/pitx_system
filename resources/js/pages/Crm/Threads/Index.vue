@@ -15,6 +15,15 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { index } from '@/routes/crm/threads';
 import { type BreadcrumbItem } from '@/types';
 
+import {
+    BusFront,
+    Bug,
+    IdCard,
+    Wrench,
+    SendHorizontal,
+    Paperclip
+} from 'lucide-vue-next';
+
 type UserSummary = {
     id: number;
     name: string;
@@ -493,20 +502,21 @@ watch(
         <div
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
-            <Card class="mx-5">
+            <Card class="mx-5 p-0">
+            <!-- <Card class="mx-5"> -->
                 <div
                     class="grid h-auto grid-cols-1 lg:grid-cols-[22rem_minmax(0,1fr)]"
                 >
                     <section
                         :class="[
-                            'flex min-h-60 min-w-0 flex-col overflow-hidden border-b lg:border-b-0 lg:border-r gap-6',
+                            'flex min-h-60 min-w-0 flex-col overflow-hidden border-b lg:border-b-0 lg:border-r gap-6 py-6',
                             isThreadListOpen ? 'block' : 'hidden lg:block',
                         ]"
                     >
                         <CardHeader>
                             <CardTitle>Reports</CardTitle>
                             <CardDescription>
-                                Superadmin can assign reports. Internal staff only see reports assigned to them.
+                                Superadmin can assign reports.
                             </CardDescription>
                         </CardHeader>
                         <CardContent class="flex min-h-0 flex-1 flex-col space-y-4">
@@ -538,12 +548,25 @@ watch(
                                     }"
                                     @click="selectThread(thread.id)"
                                 >
-                                    <p class="truncate text-sm font-medium">
-                                        {{ thread.subject || `Thread #${thread.id}` }}
-                                    </p>
-                                    <p class="mt-1 text-xs text-muted-foreground">
-                                        {{ thread.company?.company_name || 'No company' }}
-                                    </p>
+                                    <div class="gap-2 flex justify-between p-0">
+                                        <span class="truncate text-sm font-medium">
+                                            {{ thread.subject || `Thread #${thread.id}` }}
+                                        </span>
+                                        <span>
+                                            <span class="text-blue-900 text-end" v-if="categoryLabel(thread.category) == 'Facilities'">
+                                                <BusFront class="inline h-4 w-4" />
+                                            </span>
+                                            <span class="text-blue-900 text-end" v-if="categoryLabel(thread.category) == 'Terminal Operations'">
+                                                <IdCard class="inline h-4 w-4" />
+                                            </span>
+                                            <span class="text-blue-900 text-end" v-if="categoryLabel(thread.category) == 'Commuter App'">
+                                                <Bug class="inline h-4 w-4" />
+                                            </span>
+                                            <span class="text-blue-900 text-end" v-if="categoryLabel(thread.category) == 'Other'">
+                                                <Wrench class="inline h-4 w-4" />
+                                            </span>
+                                        </span>
+                                    </div>
                                     <div
                                         class="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground"
                                     >
@@ -555,7 +578,7 @@ watch(
                                                 {{ statusLabel(thread).text }}
                                             </span>
                                             <span class="truncate">
-                                                {{ categoryLabel(thread.category) }}
+                                                <!-- {{ categoryLabel(thread.category) }} -->
                                                 <span v-if="thread.assigned_to?.name">
                                                     · {{ thread.assigned_to.name }}
                                                 </span>
@@ -576,91 +599,59 @@ watch(
 
                     <section
                         :class="[
-                            'flex min-h-60 min-w-0 flex-col overflow-hidden bg-card',
+                            'flex min-w-0 min-h-60 flex-col overflow-hidden gap-6 py-4',
                             isThreadListOpen ? 'hidden lg:block' : 'block',
                         ]"
                     >
                         <div
-                            class="flex items-start justify-between gap-3 border-b px-4 py-3"
+                            class="flex items-center justify-between gap-3 border-b pb-4 ps-4 pe-6"
                         >
-                            <div>
-                                <p class="text-sm font-semibold">Messages</p>
-                                <p class="text-xs text-muted-foreground">
+                            <div class="w-full">
+                                <p class="font-semibold">
                                     {{
                                         selectedThread?.subject ||
                                         'Select a report'
                                     }}
                                 </p>
+                                <span 
+                                    v-if="selectedThread?.subject != null"
+                                    class="text-sm gap-2 flex text-muted-foreground"
+                                >
+                                    <span>
+                                        <span class="text-blue-900 text-end" v-if="categoryLabel(selectedThread.category) == 'Facilities'">
+                                            <BusFront class="inline h-4 w-4" />
+                                        </span>
+                                        <span class="text-blue-900 text-end" v-if="categoryLabel(selectedThread.category) == 'Terminal Operations'">
+                                            <IdCard class="inline h-4 w-4" />
+                                        </span>
+                                        <span class="text-blue-900 text-end" v-if="categoryLabel(selectedThread.category) == 'Commuter App'">
+                                            <Bug class="inline h-4 w-4" />
+                                        </span>
+                                        <span class="text-blue-900 text-end" v-if="categoryLabel(selectedThread.category) == 'Other'">
+                                            <Wrench class="inline h-4 w-4" />
+                                        </span>
+                                    </span>
+                                    <span class=""text-sm font-medium>
+                                        {{ categoryLabel(selectedThread.category) }}
+                                    </span>
+                                    <span
+                                        class="inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium"
+                                        :class="statusLabel(selectedThread).class"
+                                    >
+                                        {{ statusLabel(selectedThread).text }}
+                                    </span>
+                                </span>
                             </div>
 
-                            <div class="flex items-center gap-2">
-                                <Button
-                                    v-if="selectedThread"
-                                    size="sm"
-                                    variant="outline"
-                                    @click="toggleThreadState"
-                                >
-                                    {{ selectedThread.is_closed ? 'Reopen' : 'Close' }}
-                                </Button>
-                                <Button
-                                    class="lg:hidden"
-                                    size="sm"
-                                    variant="outline"
-                                    @click="isThreadListOpen = true"
-                                >
-                                    Reports
-                                </Button>
-                            </div>
-                        </div>
-
-                        <div
-                            v-if="loadingThread"
-                            class="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground"
-                        >
-                            Loading messages...
-                        </div>
-
-                        <div
-                            v-else-if="threadError"
-                            class="flex min-h-0 flex-1 items-center justify-center px-6 text-center text-sm text-destructive"
-                        >
-                            {{ threadError }}
-                        </div>
-
-                        <div
-                            v-else-if="selectedThread"
-                            class="flex min-h-0 flex-1 flex-col"
-                        >
-                            <div class="border-b px-4 py-3">
+                            <div class="inline">
                                 <div
                                     class="grid gap-3 text-xs text-muted-foreground lg:grid-cols-[minmax(0,1fr)_18rem]"
                                 >
-                                    <div class="space-y-1">
-                                        <p>
-                                            Category:
-                                            {{ categoryLabel(selectedThread.category) }}
-                                        </p>
-                                        <p>
-                                            Company:
-                                            {{ selectedThread.company?.company_name || 'No company' }}
-                                        </p>
-                                        <p class="flex items-center gap-1.5">
-                                            Status:
-                                            <span
-                                                class="inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium"
-                                                :class="statusLabel(selectedThread).class"
-                                            >
-                                                {{ statusLabel(selectedThread).text }}
-                                            </span>
-                                        </p>
-                                    </div>
-
                                     <div class="space-y-2">
                                         <label
                                             v-if="canAssignThreads"
                                             class="flex flex-col gap-1"
                                         >
-                                            <span>Assigned to</span>
                                             <div class="flex gap-2">
                                                 <select
                                                     v-model="selectedAssigneeId"
@@ -682,7 +673,24 @@ watch(
                                                     :disabled="isSavingAssignment"
                                                     @click="saveAssignment"
                                                 >
-                                                    Save
+                                                    Assign
+                                                </Button>
+                                                <!-- TODO: display these buttons as a dropdown actions icon button isntead of having them all out like that -->
+                                                <Button
+                                                    v-if="selectedThread"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    @click="toggleThreadState"
+                                                >
+                                                    {{ selectedThread.is_closed ? 'Reopen' : 'Close' }} Report
+                                                </Button>
+                                                <Button
+                                                    class="lg:hidden"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    @click="isThreadListOpen = true"
+                                                >
+                                                    Reports
                                                 </Button>
                                             </div>
                                         </label>
@@ -702,6 +710,94 @@ watch(
                                 </p>
                             </div>
 
+                            <!-- <div class="flex items-center gap-2">
+                                <Button
+                                    v-if="selectedThread"
+                                    size="sm"
+                                    variant="outline"
+                                    @click="toggleThreadState"
+                                >
+                                    {{ selectedThread.is_closed ? 'Reopen' : 'Close' }} Report
+                                </Button>
+                                <Button
+                                    class="lg:hidden"
+                                    size="sm"
+                                    variant="outline"
+                                    @click="isThreadListOpen = true"
+                                >
+                                    Reports
+                                </Button>
+                            </div> -->
+                        </div>
+
+                        <div
+                            v-if="loadingThread"
+                            class="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground p-10"
+                        >
+                            Loading messages...
+                        </div>
+
+                        <div
+                            v-else-if="threadError"
+                            class="flex min-h-0 flex-1 items-center justify-center px-6 text-center text-sm text-destructive"
+                        >
+                            {{ threadError }}
+                        </div>
+
+                        <div
+                            v-else-if="selectedThread"
+                            class="flex min-h-0 flex-1 flex-col"
+                        >
+                            <!-- <div class="px-4 py-3">
+                                <div
+                                    class="grid gap-3 text-xs text-muted-foreground lg:grid-cols-[minmax(0,1fr)_18rem]"
+                                >
+                                    <div class="space-y-2">
+                                        <label
+                                            v-if="canAssignThreads"
+                                            class="flex flex-col gap-1"
+                                        >
+                                            <div class="flex gap-2">
+                                                <select
+                                                    v-model="selectedAssigneeId"
+                                                    class="h-9 flex-1 rounded-md border bg-background px-3 text-sm"
+                                                >
+                                                    <option value="">
+                                                        Unassigned
+                                                    </option>
+                                                    <option
+                                                        v-for="assignee in assignees"
+                                                        :key="assignee.id"
+                                                        :value="String(assignee.id)"
+                                                    >
+                                                        {{ assignee.name }}
+                                                    </option>
+                                                </select>
+                                                <Button
+                                                    size="sm"
+                                                    :disabled="isSavingAssignment"
+                                                    @click="saveAssignment"
+                                                >
+                                                    Assign
+                                                </Button>
+                                            </div>
+                                        </label>
+
+                                        <p v-else>
+                                            Assigned to:
+                                            {{ selectedThread.assigned_to?.name || 'Unassigned' }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <p
+                                    v-if="actionError"
+                                    class="mt-3 text-sm text-destructive"
+                                >
+                                    {{ actionError }}
+                                </p>
+                            </div> -->
+
                             <div
                                 ref="messagePane"
                                 class="min-h-0 flex-1 overflow-y-auto p-4"
@@ -713,67 +809,81 @@ watch(
                                     <div
                                         v-for="message in selectedThread.messages"
                                         :key="message.id"
-                                        class="rounded-md border px-3 py-2"
-                                        :class="
-                                            message.is_internal
-                                                ? 'border-amber-300 bg-amber-50/70'
-                                                : ''
-                                        "
+                                        :class="{
+                                            'w-full flex': true,
+                                            'justify-end': message.sender?.id === selectedThread.created_by?.id,
+                                        }"
                                     >
-                                        <div
-                                            class="flex items-center justify-between gap-2"
-                                        >
-                                            <p class="text-xs font-medium">
+                                        <div>
+                                            <p
+                                                v-if="message.sender?.id != selectedThread.created_by?.id"
+                                                class="text-xs font-medium mb-1 px-3"
+                                            >
                                                 {{ message.sender?.name || 'Unknown sender' }}
                                             </p>
-                                            <p class="text-[11px] text-muted-foreground">
+                                            <!-- TODO: paragraph element above shoudl not show if the  previous message's sender is the same as this message's sender-->
+                                            <div
+                                                :class="{
+                                                    'rounded-md border px-3 py-2 max-w-lg min-w-0 group': true,
+                                                    'border-blue-300 bg-blue-50/70': message.is_internal
+                                                }"
+                                            >   
+                                            <!-- TODO: when this div is hovered, this message should show the created_at_human data -->
+                                                <p class="whitespace-pre-wrap text-sm">
+                                                    {{ message.body || 'No content' }}
+                                                </p>
+                                                <p
+                                                    v-if="message.is_internal"
+                                                    class="mt-2 text-[11px] font-medium text-blue-700"
+                                                >
+                                                    Internal note
+                                                </p>
+
+                                                <div
+                                                    v-if="(message.attachments?.length ?? 0) > 0"
+                                                    class="mt-2 space-y-3"
+                                                >
+                                                    <div
+                                                        v-for="attachment in message.attachments"
+                                                        :key="attachment.id"
+                                                    >
+                                                        <img
+                                                            v-if="isImageAttachment(attachment) && attachment.preview_url"
+                                                            :src="attachment.preview_url"
+                                                            :alt="attachment.original_name"
+                                                            class="max-h-72 w-full rounded-md border object-cover"
+                                                        />
+
+                                                        <video
+                                                            v-else-if="isVideoAttachment(attachment) && attachment.preview_url"
+                                                            :src="attachment.preview_url"
+                                                            controls
+                                                            preload="metadata"
+                                                            class="max-h-72 w-full rounded-md border bg-black"
+                                                        />
+
+                                                        <a
+                                                            :href="attachment.download_url"
+                                                            class=" my-2 inline-flex items-center rounded-md border px-2 py-1 text-xs text-primary hover:bg-muted"
+                                                        >
+                                                            {{ attachment.original_name }}
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- TODO: fix hover function, only shows the paragraph element below when the div with class 'group' is hovered -->
+                                            <p
+                                                :class="{
+                                                    'text-[11px] text-muted-foreground px-3 hidden group-hover:block transition-all': true,
+                                                    'text-end': message.sender?.id === selectedThread.created_by?.id,
+                                                }"
+                                            >
                                                 {{
                                                     message.created_at_human ||
                                                     message.created_at ||
                                                     ''
                                                 }}
                                             </p>
-                                        </div>
-                                        <p class="mt-2 whitespace-pre-wrap text-sm">
-                                            {{ message.body || 'No content' }}
-                                        </p>
-                                        <p
-                                            v-if="message.is_internal"
-                                            class="mt-2 text-[11px] font-medium text-amber-700"
-                                        >
-                                            Internal note
-                                        </p>
-
-                                        <div
-                                            v-if="(message.attachments?.length ?? 0) > 0"
-                                            class="mt-3 space-y-3"
-                                        >
-                                            <div
-                                                v-for="attachment in message.attachments"
-                                                :key="attachment.id"
-                                            >
-                                                <img
-                                                    v-if="isImageAttachment(attachment) && attachment.preview_url"
-                                                    :src="attachment.preview_url"
-                                                    :alt="attachment.original_name"
-                                                    class="max-h-72 w-full rounded-md border object-cover"
-                                                />
-
-                                                <video
-                                                    v-else-if="isVideoAttachment(attachment) && attachment.preview_url"
-                                                    :src="attachment.preview_url"
-                                                    controls
-                                                    preload="metadata"
-                                                    class="max-h-72 w-full rounded-md border bg-black"
-                                                />
-
-                                                <a
-                                                    :href="attachment.download_url"
-                                                    class="inline-flex items-center rounded-md border px-2 py-1 text-xs text-primary hover:bg-muted"
-                                                >
-                                                    {{ attachment.original_name }}
-                                                </a>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -791,12 +901,35 @@ watch(
                                 class="border-t p-4"
                             >
                                 <div class="space-y-3">
-                                    <textarea
-                                        v-model="draftMessage"
-                                        class="min-h-28 w-full rounded-md border bg-background px-3 py-2 text-sm"
-                                        placeholder="Write a reply or internal note..."
-                                    />
-
+                                    <div class="flex justify-between gap-2 items-end">
+                                        <textarea
+                                            v-model="draftMessage"
+                                            class="min-h-fit w-full rounded-md border bg-background px-3 py-2 text-sm"
+                                            placeholder="Write a reply or internal note..."
+                                        />
+                                        <Button>
+                                            <!-- <input
+                                                ref="attachmentInput"
+                                                type="file"
+                                                accept="image/*,video/*"
+                                                multiple
+                                                @change="onFilesSelected"
+                                            /> -->
+                                            <input
+                                                ref="attachmentInput"
+                                                type="file"
+                                                accept="image/*,video/*"
+                                                multiple
+                                            />
+                                            <!-- TODO: fix this button -->
+                                            <Paperclip class="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            @click="sendMessage"
+                                        >
+                                            <SendHorizontal class="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                     <div
                                         class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
                                     >
@@ -811,7 +944,7 @@ watch(
                                                 />
                                                 Post as internal note
                                             </label>
-
+                                            <!-- TODO: fix this code when the first input for images/videos are fixed -->
                                             <div class="flex flex-col gap-2">
                                                 <input
                                                     ref="attachmentInput"
@@ -828,13 +961,6 @@ watch(
                                                 </p>
                                             </div>
                                         </div>
-
-                                        <Button
-                                            :disabled="isSendingMessage"
-                                            @click="sendMessage"
-                                        >
-                                            {{ isSendingMessage ? 'Sending...' : 'Send Message' }}
-                                        </Button>
                                     </div>
                                 </div>
                             </div>
