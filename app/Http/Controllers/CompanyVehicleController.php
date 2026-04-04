@@ -11,6 +11,7 @@ use App\Models\VehicleDocument;
 use App\Notifications\Internal\NewVehicleSubmittedNotification;
 use App\Notifications\Internal\VehicleResubmittedNotification;
 use App\Services\NotificationService;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -68,6 +69,8 @@ class CompanyVehicleController extends Controller
             ->latest()
             ->paginate(10)
             ->withQueryString();
+
+        $this->syncExpiredDocumentsForCollection($vehicles->getCollection(), $user->id);
 
         $routes = Route::query()
             ->select('id', 'route_name')
@@ -230,6 +233,8 @@ class CompanyVehicleController extends Controller
 
         abort_unless($vehicle->company_id === $company->id, 404);
 
+        $this->syncExpiredDocumentsForVehicle($vehicle, $user->id);
+
         $vehicle->load([
             'route:id,gate_id,route_name,origin_name,destination_name,route_geometry',
             'route.gate:id,gate_name',
@@ -286,6 +291,7 @@ class CompanyVehicleController extends Controller
                 'chassis_number' => $vehicle->chassis_number,
                 'make_model'     => $vehicle->make_model,
                 'status'         => $vehicle->status,
+                'remarks'        => $vehicle->remarks,
                 'created_at'     => optional($vehicle->created_at)?->toDateTimeString(),
                 'route'          => $vehicle->route ? [
                     'id'               => $vehicle->route->id,
@@ -351,6 +357,8 @@ class CompanyVehicleController extends Controller
         abort_unless($vehicle->company_id === $company->id, 404);
         abort_if($vehicle->status === 'suspended', 403, 'Suspended vehicles cannot be edited.');
 
+        $this->syncExpiredDocumentsForVehicle($vehicle, $user->id);
+
         $vehicle->load([
             'documents:id,vehicle_id,document_type,file_name,status,issued_at,expires_at,created_at',
         ]);
@@ -404,6 +412,7 @@ class CompanyVehicleController extends Controller
                 'chassis_number' => $vehicle->chassis_number,
                 'make_model'     => $vehicle->make_model,
                 'status'         => $vehicle->status,
+                'remarks'        => $vehicle->remarks,
                 'documents'      => $vehicle->documents->map(fn ($document) => [
                     'id'            => $document->id,
                     'document_type' => $document->document_type,
@@ -437,21 +446,8 @@ class CompanyVehicleController extends Controller
         abort_if($vehicle->status === 'suspended', 403, 'Suspended vehicles cannot be updated.');
 
         DB::transaction(function () use ($request, $validated, $vehicle, $company, $user) {
-            $vehicle->update([
-                'route_id'       => $validated['route_id'],
-                'vehicle_type'   => $validated['vehicle_type'],
-                'plate_number'   => strtoupper(trim((string) $validated['plate_number'])),
-                'body_number'    => $validated['body_number'],
-                'capacity'       => $validated['capacity'],
-                'color'          => $validated['color'],
-                'engine_number'  => $validated['engine_number'],
-                'chassis_number' => $validated['chassis_number'],
-                'make_model'     => $validated['make_model'],
-                'status'         => 'pending',
-                'updated_by'     => $user->id,
-            ]);
-
             $documentsByType = $vehicle->documents()->get()->keyBy('document_type');
+            $resubmittedDocumentLabels = [];
 
             foreach ($validated['documents'] ?? [] as $index => $docMeta) {
                 $file = data_get($request->file('documents'), "{$index}.file");
@@ -469,9 +465,12 @@ class CompanyVehicleController extends Controller
                     ]);
                 }
 
-                if (! in_array($existingDocument->status, ['pending', 'rejected'], true)) {
+                $isExpiredByStatus = $existingDocument->status === 'expired';
+                $isExpiredByDate = $existingDocument->expires_at !== null && $existingDocument->expires_at->isPast();
+
+                if (! $isExpiredByStatus && ! $isExpiredByDate) {
                     throw ValidationException::withMessages([
-                        "documents.{$index}.file" => 'Only pending or rejected documents can be reuploaded.',
+                        "documents.{$index}.file" => 'Only expired documents can be reuploaded.',
                     ]);
                 }
 
@@ -499,7 +498,30 @@ class CompanyVehicleController extends Controller
                 if ($oldPath !== '' && $oldPath !== $newPath && $this->publicDisk()->exists($oldPath)) {
                     $this->publicDisk()->delete($oldPath);
                 }
+
+                $resubmittedDocumentLabels[] = self::DOC_TYPES[$documentType] ?? strtoupper((string) $documentType);
             }
+
+            if (empty($resubmittedDocumentLabels)) {
+                throw ValidationException::withMessages([
+                    'documents' => 'Upload at least one expired document to resubmit.',
+                ]);
+            }
+
+            $vehicle->update([
+                'route_id'       => $validated['route_id'],
+                'vehicle_type'   => $validated['vehicle_type'],
+                'plate_number'   => strtoupper(trim((string) $validated['plate_number'])),
+                'body_number'    => $validated['body_number'],
+                'capacity'       => $validated['capacity'],
+                'color'          => $validated['color'],
+                'engine_number'  => $validated['engine_number'],
+                'chassis_number' => $validated['chassis_number'],
+                'make_model'     => $validated['make_model'],
+                'status'         => 'pending',
+                'remarks'        => 'Pending review: resubmitted expired documents - ' . collect($resubmittedDocumentLabels)->unique()->implode(', '),
+                'updated_by'     => $user->id,
+            ]);
         });
 
         $this->notificationService->notifyInternalUsers(
@@ -619,5 +641,60 @@ class CompanyVehicleController extends Controller
         $disk = Storage::disk('public');
 
         return $disk;
+    }
+
+    private function syncExpiredDocumentsForCollection(EloquentCollection $vehicles, ?int $userId = null): void
+    {
+        $vehicles->each(function (Vehicle $vehicle) use ($userId): void {
+            $this->syncExpiredDocumentsForVehicle($vehicle, $userId);
+        });
+    }
+
+    private function syncExpiredDocumentsForVehicle(Vehicle $vehicle, ?int $userId = null): void
+    {
+        $vehicle->loadMissing('documents');
+
+        $expiredDocuments = $vehicle->documents->filter(function (VehicleDocument $document): bool {
+            return $document->expires_at !== null && $document->expires_at->isPast();
+        });
+
+        if ($expiredDocuments->isEmpty()) {
+            return;
+        }
+
+        $expiredDocuments->each(function (VehicleDocument $document) use ($userId): void {
+            if ($document->status === 'expired') {
+                return;
+            }
+
+            $payload = ['status' => 'expired'];
+
+            if ($userId !== null) {
+                $payload['updated_by'] = $userId;
+            }
+
+            $document->update($payload);
+            $document->status = 'expired';
+        });
+
+        if ($vehicle->status === 'suspended') {
+            return;
+        }
+
+        $remarks = 'Pending due to expired documents: ' . $expiredDocuments
+            ->map(fn (VehicleDocument $document) => self::DOC_TYPES[$document->document_type] ?? strtoupper((string) $document->document_type))
+            ->unique()
+            ->implode(', ');
+
+        $payload = [
+            'status' => 'pending',
+            'remarks' => $remarks,
+        ];
+
+        if ($userId !== null) {
+            $payload['updated_by'] = $userId;
+        }
+
+        $vehicle->update($payload);
     }
 }
