@@ -37,9 +37,6 @@ defineProps<{
         <Card class="mx-auto w-full max-w-md">
             <CardHeader class="text-center">
                 <CardTitle>Welcome back</CardTitle>
-                <CardDescription>
-                    Sign in to continue to PITX Dispatch
-                </CardDescription>
             </CardHeader>
 
             <CardContent>
@@ -103,7 +100,7 @@ defineProps<{
 
                         <Button
                             type="submit"
-                            class="w-full bg-red-600 hover:bg-red-700"
+                            variant="blue"
                             :disabled="processing"
                         >
                             <Spinner v-if="processing" />

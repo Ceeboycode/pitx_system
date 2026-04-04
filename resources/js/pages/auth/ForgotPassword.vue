@@ -49,6 +49,7 @@ defineProps<{
                         class="w-full"
                         :disabled="processing"
                         data-test="email-password-reset-link-button"
+                        variant="blue"
                     >
                         <Spinner v-if="processing" />
                         Email password reset link

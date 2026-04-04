@@ -2,6 +2,7 @@
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3'
+import AuthBase from '@/layouts/AuthLayout.vue';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -266,6 +267,7 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
 </script>
 
 <template>
+    
     <Head title="Company Registration" />
 
     <!-- Subtle blue-tinted background, close to original bg-muted/40 -->
