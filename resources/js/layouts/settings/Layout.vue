@@ -35,37 +35,42 @@ const { urlIsActive } = useActiveUrl();
             description="Manage your profile and account settings"
         />
 
-        <div class="flex flex-col lg:flex-row lg:space-x-12">
-            <aside class="w-full max-w-xl lg:w-48">
-                <nav
-                    class="flex flex-col space-y-1 space-x-0"
-                    aria-label="Settings"
-                >
+        <Separator class="mb-6" />
+
+        <div class="flex flex-col lg:flex-row lg:gap-12">
+
+            <!-- Sidebar -->
+            <aside class="w-full lg:w-52 shrink-0">
+                <nav class="flex flex-col gap-0.5" aria-label="Settings">
                     <Button
                         v-for="item in sidebarNavItems"
                         :key="toUrl(item.href)"
                         variant="ghost"
                         :class="[
-                            'w-full justify-start',
-                            { 'bg-muted': urlIsActive(item.href) },
+                            'w-full justify-start gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                            urlIsActive(item.href)
+                                ? 'bg-blue-50 text-blue-800 hover:bg-blue-50 border-l-2 border-blue-800 rounded-l-none'
+                                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                         ]"
                         as-child
                     >
                         <Link :href="item.href">
-                            <component :is="item.icon" class="h-4 w-4" />
+                            <component :is="item.icon" class="h-4 w-4 shrink-0" />
                             {{ item.title }}
                         </Link>
                     </Button>
                 </nav>
             </aside>
 
-            <Separator class="my-6 lg:hidden" />
+            <Separator class="lg:hidden" />
 
-            <div class="flex-1 md:max-w-2xl">
-                <section class="max-w-xl space-y-12">
+            <!-- Content -->
+            <div class="flex-1 min-w-0">
+                <section class="max-w-xl space-y-6">
                     <slot />
                 </section>
             </div>
+
         </div>
     </div>
 </template>
