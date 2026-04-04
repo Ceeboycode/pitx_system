@@ -104,7 +104,7 @@ Route::middleware(['auth', 'audit.request'])->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::prefix('messaging')->name('messaging.')->group(function () {
+    Route::prefix('messaging')->name('messaging.')->middleware('password.change.required')->group(function () {
         Route::get('threads', [MessagingController::class, 'index'])->name('threads.index');
         Route::post('threads', [MessagingController::class, 'store'])->name('threads.store');
         Route::get('threads/{thread}/messages', [MessagingController::class, 'messages'])->name('threads.messages');
