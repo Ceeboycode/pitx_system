@@ -16,7 +16,7 @@ import { computed } from 'vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
-import NotificationDropdown from '@/components/NotificationDropdown.vue';
+// import NotificationDropdown from '@/components/NotificationDropdown.vue';
 import {
     Sidebar,
     SidebarContent,
@@ -199,21 +199,21 @@ const visibleMainNavItems = computed(() =>
 );
 
 const footerNavItems: NavFooterItem[] = [
-    {
-        title: 'Support',
-        href: crmIndex().url,
-        icon: Headset,
-    },
+    // {
+    //     title: 'Support',
+    //     href: crmIndex().url,
+    //     icon: Headset,
+    // },
     {
         title: 'FAQ',
         href: '#',
         icon: MessageCircleQuestion,
     },
-    {
-        title: 'Tutorial',
-        href: '#',
-        icon: BookOpen,
-    },
+    // {
+    //     title: 'Tutorial',
+    //     href: '#',
+    //     icon: BookOpen,
+    // },
 ];
 </script>
 
@@ -234,22 +234,22 @@ const footerNavItems: NavFooterItem[] = [
                 </SidebarMenuItem>
             </SidebarMenu>
 
-            <div class="px-2 pb-3">
-                <div
+            <!-- <div class="px-2 pb-3"> -->
+                <!-- <div
                     class="flex items-center justify-between rounded-xl border bg-background px-3 py-2"
-                >
-                    <div class="min-w-0 group-data-[collapsible=icon]:hidden">
+                > -->
+                    <!-- <div class="min-w-0 group-data-[collapsible=icon]:hidden">
                         <p class="truncate text-sm font-semibold">
                             Notifications
                         </p>
                         <p class="truncate text-xs text-muted-foreground">
                             Internal alerts and updates
                         </p>
-                    </div>
+                    </div> -->
 
-                    <NotificationDropdown />
-                </div>
-            </div>
+                    <!-- <NotificationDropdown /> -->
+                <!-- </div> -->
+            <!-- </div> -->
         </SidebarHeader>
 
         <SidebarContent>

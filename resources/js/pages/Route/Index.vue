@@ -292,7 +292,6 @@ function handleToggleStatus(id: number) {
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-                    <!-- Row 1: Search + Import/Export -->
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div class="w-full max-w-sm">
                             <SearchInput
@@ -302,25 +301,6 @@ function handleToggleStatus(id: number) {
                                 :only="['routes', 'filters', 'flash']"
                                 :debounce="350"
                             />
-                        </div>
-
-                        <div class="flex gap-2 sm:justify-end">
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
-                            >
-                                <Upload class="mr-2 h-4 w-4" />
-                                Import
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
-                            >
-                                <Download class="mr-2 h-4 w-4" />
-                                Export
-                            </Button>
                         </div>
                     </div>
 

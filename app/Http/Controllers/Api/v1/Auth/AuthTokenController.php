@@ -39,6 +39,7 @@ class AuthTokenController extends Controller
             'email_verified_at' => now(),
             'password' => Hash::make($validated['password']),
             'company_id' => null,
+            'status' => 'active',
         ]);
 
         $user->assignRole($role);

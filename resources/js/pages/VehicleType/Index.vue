@@ -104,18 +104,6 @@ function openDelete(vehicle_type: VehicleType) {
                                 :debounce="350"
                             />
                         </div>
-
-                        <div class="flex gap-2 sm:justify-end">
-                            <Button size="sm" variant="outline">
-                                <Upload class="mr-2 h-4 w-4" />
-                                Import
-                            </Button>
-
-                            <Button size="sm" variant="outline">
-                                <Download class="mr-2 h-4 w-4" />
-                                Export
-                            </Button>
-                        </div>
                     </div>
 
                     <Table>

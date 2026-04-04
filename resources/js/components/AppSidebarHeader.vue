@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import MessagingPanel from '@/components/MessagingPanel.vue';
+import NotificationDropdown from '@/components/NotificationDropdown.vue';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import type { BreadcrumbItemType } from '@/types';
 
@@ -24,7 +25,9 @@ withDefaults(
                 <Breadcrumbs :breadcrumbs="breadcrumbs" />
             </template>
         </div>
-
-        <MessagingPanel />
+        <div class="flex items-center gap-2">
+            <MessagingPanel />
+            <NotificationDropdown />
+        </div>
     </header>
 </template>

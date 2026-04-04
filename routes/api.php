@@ -9,7 +9,7 @@ use App\Http\Controllers\Api\V1\Crm\CommuterThreadController;
 use Illuminate\Support\Facades\Route;
 
 // production test endpoint
-Route::get('/api/ping', fn() => response()->json(['ok' => true]));
+Route::get('/ping', fn() => response()->json(['ok' => true]));
 
 Route::prefix('v1')->name('api.v1.')->group(function () {
 
