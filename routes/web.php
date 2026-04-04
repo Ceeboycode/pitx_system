@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CompanyDashboardController;
+use App\Http\Controllers\Messaging\MessagingController;
 use App\Http\Controllers\CompanyDocumentController;
 use App\Http\Controllers\CompanyProfileChangeRequestController;
 use App\Http\Controllers\CompanyProfileController;
@@ -94,6 +95,19 @@ Route::middleware(['auth', 'audit.request'])->group(function () {
 
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])
         ->name('notifications.read-all');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Messaging (internal ↔ internal, external ↔ external company)
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('messaging')->name('messaging.')->group(function () {
+        Route::get('threads', [MessagingController::class, 'index'])->name('threads.index');
+        Route::post('threads', [MessagingController::class, 'store'])->name('threads.store');
+        Route::get('threads/{thread}/messages', [MessagingController::class, 'messages'])->name('threads.messages');
+        Route::post('threads/{thread}/messages', [MessagingController::class, 'send'])->name('threads.send');
+    });
 });
 
 /*

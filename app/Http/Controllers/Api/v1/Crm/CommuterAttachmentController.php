@@ -18,6 +18,14 @@ class CommuterAttachmentController extends Controller
         $this->ensureThreadOwner($request, $thread);
 
         abort_unless((int) $message->thread_id === (int) $thread->id, 404);
+        abort_if($thread->is_closed, 403, 'Cannot add attachments to a resolved report.');
+
+        // Enforce maximum 5 attachments per message
+        abort_if(
+            CrmMessageAttachment::where('message_id', $message->id)->count() >= 5,
+            422,
+            'Maximum 5 attachments allowed per message.'
+        );
 
         $validated = $request->validate([
             'file' => ['required', 'file', 'image', 'max:10240'],

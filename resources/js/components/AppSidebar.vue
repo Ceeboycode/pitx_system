@@ -89,7 +89,7 @@ const mainNavItems: NavItem[] = [
         items: [
             {
                 id: 'threads',
-                title: 'Threads',
+                title: 'Reports',
                 href: crmIndex().url,
             },
         ],
