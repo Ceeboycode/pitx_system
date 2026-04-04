@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\V1\Analytics\RouteSearchLogController;
 use App\Http\Controllers\Api\V1\Crm\CommuterAttachmentController;
 use App\Http\Controllers\Api\V1\Crm\CommuterMessageController;
 use App\Http\Controllers\Api\V1\Crm\CommuterThreadController;
+use App\Http\Controllers\Api\V1\Route\LocationController;
+use App\Http\Controllers\Api\V1\Route\RouteSearchController;
 use Illuminate\Support\Facades\Route;
 
 // production test endpoint
@@ -34,5 +36,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('analytics/route-favorites', [RouteFavoriteController::class, 'index'])->name('analytics.route-favorites.index');
         Route::post('analytics/route-favorites', [RouteFavoriteController::class, 'store'])->name('analytics.route-favorites.store');
         Route::delete('analytics/route-favorites/{favorite}', [RouteFavoriteController::class, 'destroy'])->name('analytics.route-favorites.destroy');
+
+        // Routefinding
+        Route::get('locations', [LocationController::class, 'index'])->name('locations.index');
+        Route::get('routes/search', [RouteSearchController::class, 'search'])->name('routes.search');
     });
 });

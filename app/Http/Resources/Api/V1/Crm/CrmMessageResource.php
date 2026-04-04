@@ -27,19 +27,13 @@ class CrmMessageResource extends JsonResource
                 'original_name' => $attachment->original_name,
                 'mime_type' => $attachment->mime_type,
                 'size_bytes' => $attachment->size_bytes,
-                'url' => \Illuminate\Support\Facades\Storage::disk($attachment->disk)->url($attachment->path),
+                'url' => Storage::disk($attachment->disk)->url($attachment->path),
+                'preview_url' => Storage::disk($attachment->disk)->url($attachment->path),
+                'download_url' => route('crm.attachments.download', $attachment),
             ])->values()),
             'created_at' => $this->created_at?->toISOString(),
             'created_at_human' => $this->created_at?->diffForHumans(),
             'updated_at' => $this->updated_at?->toISOString(),
-            'attachments' => $this->whenLoaded('attachments', fn () => $this->attachments->map(fn ($attachment) => [
-                'id' => $attachment->id,
-                'original_name' => $attachment->original_name,
-                'mime_type' => $attachment->mime_type,
-                'size_bytes' => $attachment->size_bytes,
-                'preview_url' => Storage::disk($attachment->disk)->url($attachment->path),
-                'download_url' => route('crm.attachments.download', $attachment),
-            ])->values()),
         ];
     }
 }

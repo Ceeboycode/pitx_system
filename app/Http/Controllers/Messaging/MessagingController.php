@@ -37,7 +37,7 @@ class MessagingController extends Controller
 
         $validated = $request->validate([
             'subject' => 'required|string|max:255',
-            'body'    => 'required|string',
+            'body'    => 'required|string|max:10000',
         ]);
 
         $thread = DB::transaction(function () use ($user, $validated) {
@@ -88,7 +88,7 @@ class MessagingController extends Controller
         abort_if($thread->is_closed, 403, 'This thread has been closed.');
 
         $validated = $request->validate([
-            'body' => 'required|string',
+            'body' => 'required|string|max:10000',
         ]);
 
         $message = $thread->messages()->create([
@@ -120,7 +120,7 @@ class MessagingController extends Controller
         if ($this->isInternal($user)) {
             abort_unless($thread->company_id === null, 403);
         } else {
-            abort_unless((int) $thread->company_id === (int) $user->company_id, 403);
+            abort_unless($user->company_id !== null && (int) $thread->company_id === (int) $user->company_id, 403);
         }
     }
 
@@ -131,6 +131,12 @@ class MessagingController extends Controller
             403,
             'Only internal staff and company accounts can use messaging.'
         );
+
+        // External users must be linked to a company — a null company_id would
+        // cause applyScope() to match internal (company_id IS NULL) threads.
+        if ($this->isExternal($user)) {
+            abort_if($user->company_id === null, 403, 'Your account is not linked to a company.');
+        }
     }
 
     private function isInternal(User $user): bool
