@@ -15,7 +15,7 @@ class RoleSeeder extends Seeder
         $roles = [
             ['name' => 'super-admin', 'type' => 'internal'],
             ['name' => 'admin', 'type' => 'internal'],
-            ['name' => 'it', 'type' => 'internal'],
+            // ['name' => 'it', 'type' => 'internal'],yes
             ['name' => 'terminal manager', 'type' => 'internal'],
 
             ['name' => 'operator', 'type' => 'external'],

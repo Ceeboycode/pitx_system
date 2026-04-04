@@ -343,7 +343,6 @@ function handleDelete(user: User) {
                 <Separator />
 
                 <CardContent class="space-y-4 pt-4">
-                    <!-- Row 1: Search + Import/Export -->
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div class="w-full max-w-sm">
                             <SearchInput
@@ -353,17 +352,6 @@ function handleDelete(user: User) {
                                 :only="['users', 'filters', 'statuses', 'flash']"
                                 :debounce="350"
                             />
-                        </div>
-
-                        <div class="flex gap-2 sm:justify-end">
-                            <Button size="sm" variant="outline">
-                                <Upload class="mr-1.5 h-4 w-4" />
-                                Import
-                            </Button>
-                            <Button size="sm" variant="outline">
-                                <Download class="mr-1.5 h-4 w-4" />
-                                Export
-                            </Button>
                         </div>
                     </div>
 

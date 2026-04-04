@@ -26,7 +26,8 @@ class RolePermissionSeeder extends Seeder
                     ->orWhere('name', 'like', 'vehicle_documents.%')
                     ->orWhere('name', 'like', 'gates.%')
                     ->orWhere('name', 'like', 'routes.%')
-                    ->orWhere('name', 'like', 'dispatches.%');
+                    ->orWhere('name', 'like', 'dispatches.%')
+                    ->orWhere('name', 'like', 'audit_logs.%');
             })
             ->pluck('name')
             ->all();
@@ -34,7 +35,8 @@ class RolePermissionSeeder extends Seeder
         $itPermissions = Permission::query()
             ->where(function ($query) {
                 $query->where('name', 'like', 'roles.%')
-                    ->orWhere('name', 'like', 'users.%');
+                    ->orWhere('name', 'like', 'users.%')
+                    ->orWhere('name', 'like', 'audit_logs.%');
             })
             ->pluck('name')
             ->all();

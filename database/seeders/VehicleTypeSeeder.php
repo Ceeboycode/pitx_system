@@ -21,14 +21,14 @@ class VehicleTypeSeeder extends Seeder
             ]
         );
 
-        $minibus = VehicleType::updateOrCreate(
-            [
-                'type_name' => 'Mini Bus',
-                'is_active' => true,
-                'created_by' => 1,
-                'updated_by' => 1,
-            ]
-        );
+        // $minibus = VehicleType::updateOrCreate(
+        //     [
+        //         'type_name' => 'Mini Bus',
+        //         'is_active' => true,
+        //         'created_by' => 1,
+        //         'updated_by' => 1,
+        //     ]
+        // );
 
         $puv = VehicleType::updateOrCreate(
             [
@@ -39,13 +39,13 @@ class VehicleTypeSeeder extends Seeder
             ]
         );
 
-        $jeep = VehicleType::updateOrCreate(
-            [
-                'type_name' => 'Jeep',
-                'is_active' => true,
-                'created_by' => 1,
-                'updated_by' => 1,
-            ]
-        );
+        // $jeep = VehicleType::updateOrCreate(
+        //     [
+        //         'type_name' => 'Jeep',
+        //         'is_active' => true,
+        //         'created_by' => 1,
+        //         'updated_by' => 1,
+        //     ]
+        // );
     }
 }

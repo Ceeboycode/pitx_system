@@ -32,7 +32,8 @@ class CommuterThreadController extends Controller
             )
             ->when(
                 filled($filters['status'] ?? null),
-                fn ($query) => $query->where('is_closed', $filters['status'] === 'closed')
+                // 'resolved' maps to is_closed=true; 'open' and 'ongoing' both map to is_closed=false
+                fn ($query) => $query->where('is_closed', $filters['status'] === 'resolved')
             )
             ->withCount('messages')
             ->latest('last_message_at')
@@ -70,13 +71,15 @@ class CommuterThreadController extends Controller
 
         return response()->json([
             'message' => 'Thread created successfully.',
-            'data' => new CrmThreadResource($thread->loadCount('messages')),
+            'data' => new CrmThreadResource($thread->load('messages')->loadCount('messages')),
         ], 201);
     }
 
     public function show(Request $request, CrmThread $thread): JsonResponse
     {
         $this->ensureThreadOwner($request, $thread);
+        // Commuters cannot access resolved threads directly
+        abort_if($thread->is_closed, 403, 'This report has been resolved.');
 
         return response()->json([
             'data' => new CrmThreadResource($thread->loadCount('messages')),

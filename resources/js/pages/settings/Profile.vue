@@ -4,7 +4,6 @@ import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 
-import DeleteUser from '@/components/DeleteUser.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -48,8 +47,39 @@ const user = page.props.auth.user;
                 <Form
                     v-bind="ProfileController.update.form()"
                     class="space-y-6"
+                    enctype="multipart/form-data"
                     v-slot="{ errors, processing, recentlySuccessful }"
                 >
+                    <div class="grid gap-2">
+                        <Label for="avatar">Profile picture</Label>
+
+                        <div
+                            v-if="user.avatar"
+                            class="flex items-center gap-3 rounded-md border p-3"
+                        >
+                            <img
+                                :src="user.avatar"
+                                :alt="`${user.name} avatar`"
+                                class="h-12 w-12 rounded-full object-cover"
+                            />
+                            <p class="text-sm text-muted-foreground">
+                                Current profile picture
+                            </p>
+                        </div>
+
+                        <Input
+                            id="avatar"
+                            type="file"
+                            class="mt-1 block w-full"
+                            name="avatar"
+                            accept="image/png,image/jpeg,image/jpg,image/webp"
+                        />
+                        <p class="text-xs text-muted-foreground">
+                            PNG, JPG, or WEBP up to 2MB.
+                        </p>
+                        <InputError class="mt-2" :message="errors.avatar" />
+                    </div>
+
                     <div class="grid gap-2">
                         <Label for="name">Name</Label>
                         <Input
@@ -123,8 +153,6 @@ const user = page.props.auth.user;
                     </div>
                 </Form>
             </div>
-
-            <DeleteUser />
         </SettingsLayout>
     </AppLayout>
 </template>

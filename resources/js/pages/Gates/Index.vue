@@ -283,7 +283,6 @@ const archiveGate = () => {
 
                 <CardContent class="space-y-4">
 
-                    <!-- Search + Filter + Import/Export -->
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 
                         <!-- Search + Filter button -->
@@ -402,15 +401,15 @@ const archiveGate = () => {
                             </Popover>
                         </div>
 
-                        <!-- Import / Export -->
-                        <div class="flex gap-2 sm:justify-end">
+
+                        <!-- <div class="flex gap-2 sm:justify-end">
                             <Button size="sm" variant="outline" class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100">
                                 <Upload class="mr-2 h-4 w-4" />Import
                             </Button>
                             <Button size="sm" variant="outline" class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100">
                                 <Download class="mr-2 h-4 w-4" />Export
                             </Button>
-                        </div>
+                        </div> -->
                     </div>
 
                     <!-- Active filter chips -->

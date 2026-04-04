@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 
 class AuthTokenController extends Controller
@@ -33,10 +34,12 @@ class AuthTokenController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'phone_number' => $validated['phone_number'] ?? null,
-            'username' => $validated['username'] ?? $this->generateUsername($validated['email']),
+            // 'username' => $validated['username'] ?? $this->generateUsername($validated['email']),
+            'username' => $validated['username'],
             'email_verified_at' => now(),
             'password' => Hash::make($validated['password']),
             'company_id' => null,
+            'status' => 'active',
         ]);
 
         $user->assignRole($role);
@@ -57,7 +60,7 @@ class AuthTokenController extends Controller
         $credentials = $request->validated();
 
         $user = User::query()
-            ->where('email', $credentials['email'])
+            ->where('username', $credentials['username'])
             ->with('roles')
             ->first();
 
@@ -67,11 +70,11 @@ class AuthTokenController extends Controller
             ], 422);
         }
 
-        if (! $user->roles()->where('type', 'commuter')->exists()) {
-            return response()->json([
-                'message' => 'This account is not allowed to access commuter mobile APIs.',
-            ], 403);
-        }
+        // if (! $user->roles()->where('type', 'commuter')->exists()) {
+        //     return response()->json([
+        //         'message' => 'This account is not allowed to access commuter mobile APIs.',
+        //     ], 403);
+        // }
 
         $plainToken = $this->issueToken($user);
 
@@ -89,6 +92,24 @@ class AuthTokenController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = request()->user();
+
+        return response()->json([
+            'data' => new UserResource($user->loadMissing('roles')),
+        ]);
+    }
+
+    public function update(): JsonResponse
+    {
+        /** @var \App\Models\User $user */
+        $user = request()->user();
+
+        $validated = request()->validate([
+            'name'         => 'sometimes|string|max:255',
+            'phone_number' => ['sometimes', 'nullable', 'regex:/^\+63[0-9]{10}$/'],
+            'username'     => ['sometimes', 'string', 'max:20', 'alpha_dash', Rule::unique('users')->ignore($user->id)],
+        ]);
+
+        $user->fill($validated)->save();
 
         return response()->json([
             'data' => new UserResource($user->loadMissing('roles')),

@@ -14,13 +14,11 @@ class CommuterMessageController extends Controller
     public function index(Request $request, CrmThread $thread): JsonResponse
     {
         $this->ensureThreadOwner($request, $thread);
-        $perPage = max(1, min((int) $request->integer('per_page', 50), 100));
 
         $messages = $thread->messages()
             ->with(['sender:id,name', 'attachments'])
             ->orderBy('created_at')
-            ->paginate($perPage)
-            ->withQueryString();
+            ->get();
 
         return CrmMessageResource::collection($messages)->response();
     }
@@ -28,6 +26,7 @@ class CommuterMessageController extends Controller
     public function store(StoreCommuterMessageRequest $request, CrmThread $thread): JsonResponse
     {
         $this->ensureThreadOwner($request, $thread);
+        abort_if($thread->is_closed, 403, 'Cannot reply to a resolved report.');
 
         $message = $thread->messages()->create([
             'sender_user_id' => $request->user()->id,

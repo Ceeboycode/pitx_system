@@ -2,6 +2,14 @@
 
 namespace App\Providers;
 
+use App\Observers\AuditableObserver;
+use App\Services\AuditLogger;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -23,6 +31,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::before(function ($user, $ability) {
             return $user->hasRole('super-admin') ? true : null;
         });
+
+        $this->registerAuditObservers();
+        $this->registerAuditAuthEvents();
 
         // ── External Vehicles ─────────────────────────────────────────
         Gate::define('external_vehicles.viewAny', fn ($user) =>
@@ -61,5 +72,96 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('external_vehicle_documents.upload', fn ($user) =>
             $user->hasPermissionTo('external_vehicle_documents.upload')
         );
+    }
+
+    private function registerAuditObservers(): void
+    {
+        $models = config('audit.models', []);
+
+        if (config('audit.discover_models', false)) {
+            $models = array_merge($models, $this->discoverModelClasses());
+        }
+
+        $excludedModels = config('audit.excluded_models', []);
+
+        foreach (array_unique($models) as $modelClass) {
+            if (! is_string($modelClass) || ! class_exists($modelClass)) {
+                continue;
+            }
+
+            if (! is_subclass_of($modelClass, Model::class)) {
+                continue;
+            }
+
+            if (in_array($modelClass, $excludedModels, true)) {
+                continue;
+            }
+
+            $modelClass::observe(AuditableObserver::class);
+        }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function discoverModelClasses(): array
+    {
+        $modelFiles = File::allFiles(app_path('Models'));
+        $classes = [];
+
+        foreach ($modelFiles as $file) {
+            $relativePath = str_replace([app_path() . DIRECTORY_SEPARATOR, '.php'], '', $file->getPathname());
+            $class = 'App\\' . str_replace(DIRECTORY_SEPARATOR, '\\', $relativePath);
+
+            if (class_exists($class) && is_subclass_of($class, Model::class)) {
+                $classes[] = $class;
+            }
+        }
+
+        return $classes;
+    }
+
+    private function registerAuditAuthEvents(): void
+    {
+        Event::listen(Login::class, function (Login $event) {
+            $auditable = $event->user instanceof Model ? $event->user : null;
+
+            app(AuditLogger::class)->log(
+                action: 'auth.login',
+                actor: $event->user,
+                auditable: $auditable,
+                metadata: [
+                    'guard' => $event->guard,
+                ],
+            );
+        });
+
+        Event::listen(Logout::class, function (Logout $event) {
+            $auditable = $event->user instanceof Model ? $event->user : null;
+
+            app(AuditLogger::class)->log(
+                action: 'auth.logout',
+                actor: $event->user,
+                auditable: $auditable,
+                metadata: [
+                    'guard' => $event->guard,
+                ],
+            );
+        });
+
+        Event::listen(Failed::class, function (Failed $event) {
+            $auditable = $event->user instanceof Model ? $event->user : null;
+
+            app(AuditLogger::class)->log(
+                action: 'auth.login_failed',
+                actor: null,
+                auditable: $auditable,
+                metadata: [
+                    'guard' => $event->guard,
+                    'login' => $event->credentials['login'] ?? $event->credentials['email'] ?? null,
+                ],
+                companyId: null,
+            );
+        });
     }
 }

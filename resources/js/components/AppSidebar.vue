@@ -8,6 +8,7 @@ import {
     House,
     LayoutList,
     MessageCircleQuestion,
+    Shield,
     User,
 } from 'lucide-vue-next';
 import { computed } from 'vue';
@@ -15,7 +16,7 @@ import { computed } from 'vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
-import NotificationDropdown from '@/components/NotificationDropdown.vue';
+// import NotificationDropdown from '@/components/NotificationDropdown.vue';
 import {
     Sidebar,
     SidebarContent,
@@ -29,6 +30,10 @@ import { can } from '@/lib/can';
 import AppLogo from './AppLogo.vue';
 
 // Wayfinder routes
+import {
+    index as auditLogsIndex,
+    myActivity as myActivityLogsIndex,
+} from '@/actions/App/Http/Controllers/AuditLogController';
 import { index as changeRequestsIndex } from '@/actions/App/Http/Controllers/DispatchChangeRequestController';
 import { index as dispatchesIndex } from '@/actions/App/Http/Controllers/InternalDispatchController';
 import { dashboard } from '@/routes';
@@ -84,7 +89,7 @@ const mainNavItems: NavItem[] = [
         items: [
             {
                 id: 'threads',
-                title: 'Threads',
+                title: 'Reports',
                 href: crmIndex().url,
             },
         ],
@@ -161,6 +166,24 @@ const mainNavItems: NavItem[] = [
             },
         ],
     },
+    {
+        id: 'system',
+        title: 'System',
+        href: '#',
+        icon: Shield,
+        items: [
+            {
+                id: 'audit-logs',
+                title: 'Audit Logs',
+                href: auditLogsIndex().url,
+            },
+            {
+                id: 'my-activity-logs',
+                title: 'My Activity Logs',
+                href: myActivityLogsIndex().url,
+            },
+        ],
+    },
 ];
 
 const visibleMainNavItems = computed(() =>
@@ -176,21 +199,21 @@ const visibleMainNavItems = computed(() =>
 );
 
 const footerNavItems: NavFooterItem[] = [
-    {
-        title: 'Support',
-        href: crmIndex().url,
-        icon: Headset,
-    },
+    // {
+    //     title: 'Support',
+    //     href: crmIndex().url,
+    //     icon: Headset,
+    // },
     {
         title: 'FAQ',
         href: '#',
         icon: MessageCircleQuestion,
     },
-    {
-        title: 'Tutorial',
-        href: '#',
-        icon: BookOpen,
-    },
+    // {
+    //     title: 'Tutorial',
+    //     href: '#',
+    //     icon: BookOpen,
+    // },
 ];
 </script>
 
@@ -211,22 +234,22 @@ const footerNavItems: NavFooterItem[] = [
                 </SidebarMenuItem>
             </SidebarMenu>
 
-            <div class="px-2 pb-3">
-                <div
+            <!-- <div class="px-2 pb-3"> -->
+                <!-- <div
                     class="flex items-center justify-between rounded-xl border bg-background px-3 py-2"
-                >
-                    <div class="min-w-0 group-data-[collapsible=icon]:hidden">
+                > -->
+                    <!-- <div class="min-w-0 group-data-[collapsible=icon]:hidden">
                         <p class="truncate text-sm font-semibold">
                             Notifications
                         </p>
                         <p class="truncate text-xs text-muted-foreground">
                             Internal alerts and updates
                         </p>
-                    </div>
+                    </div> -->
 
-                    <NotificationDropdown />
-                </div>
-            </div>
+                    <!-- <NotificationDropdown /> -->
+                <!-- </div> -->
+            <!-- </div> -->
         </SidebarHeader>
 
         <SidebarContent>

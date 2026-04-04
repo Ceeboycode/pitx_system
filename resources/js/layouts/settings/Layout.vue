@@ -6,7 +6,6 @@ import { useActiveUrl } from '@/composables/useActiveUrl';
 import { toUrl } from '@/lib/utils';
 import { edit as editAppearance } from '@/routes/appearance';
 import { edit as editProfile } from '@/routes/profile';
-import { show } from '@/routes/two-factor';
 import { edit as editPassword } from '@/routes/user-password';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
@@ -19,10 +18,6 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Password',
         href: editPassword(),
-    },
-    {
-        title: 'Two-Factor Auth',
-        href: show(),
     },
     {
         title: 'Appearance',
@@ -42,7 +37,10 @@ const { urlIsActive } = useActiveUrl();
 
         <div class="flex flex-col lg:flex-row lg:space-x-12">
             <aside class="w-full max-w-xl lg:w-48">
-                <nav class="flex flex-col space-y-1 space-x-0" aria-label="Settings">
+                <nav
+                    class="flex flex-col space-y-1 space-x-0"
+                    aria-label="Settings"
+                >
                     <Button
                         v-for="item in sidebarNavItems"
                         :key="toUrl(item.href)"

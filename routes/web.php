@@ -2,12 +2,14 @@
 
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CompanyDashboardController;
+use App\Http\Controllers\Messaging\MessagingController;
 use App\Http\Controllers\CompanyDocumentController;
 use App\Http\Controllers\CompanyProfileChangeRequestController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CompanyRegistration;
 use App\Http\Controllers\CompanyUserController;
 use App\Http\Controllers\CompanyVehicleController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Crm\CrmMessageAttachmentController;
 use App\Http\Controllers\Crm\CrmMessageController;
 use App\Http\Controllers\Crm\CrmThreadController;
@@ -21,6 +23,8 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\RouteStopController;
+use App\Http\Controllers\Settings\PasswordController as UserSettingsPasswordController;
+use App\Http\Controllers\Settings\ProfileController as UserSettingsProfileController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VehicleTypeController;
@@ -81,18 +85,31 @@ Route::middleware('guest')->prefix('company-registration')->name('company-regist
 |
 */
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'audit.request'])->group(function () {
     Route::get('force-password-reset', [ForcePasswordController::class, 'edit'])
         ->name('force-password.edit');
 
     Route::post('force-password-reset', [ForcePasswordController::class, 'update'])
         ->name('force-password.update');
 
-    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])
+    Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])
         ->name('notifications.read');
 
-    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])
         ->name('notifications.read-all');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Messaging (internal ↔ internal, external ↔ external company)
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('messaging')->name('messaging.')->group(function () {
+        Route::get('threads', [MessagingController::class, 'index'])->name('threads.index');
+        Route::post('threads', [MessagingController::class, 'store'])->name('threads.store');
+        Route::get('threads/{thread}/messages', [MessagingController::class, 'messages'])->name('threads.messages');
+        Route::post('threads/{thread}/messages', [MessagingController::class, 'send'])->name('threads.send');
+    });
 });
 
 /*
@@ -101,7 +118,7 @@ Route::middleware(['auth'])->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role.type:external'])->group(function () {
+Route::middleware(['auth', 'role.type:external', 'audit.request'])->group(function () {
     /*
     |--------------------------------------------------------------------------
     | Registration / Onboarding Status
@@ -122,6 +139,29 @@ Route::middleware(['auth', 'role.type:external'])->group(function () {
     Route::middleware(['company.verified', 'password.change.required'])->group(function () {
         Route::get('company/dashboard', [CompanyDashboardController::class, 'index'])
             ->name('company.dashboard');
+
+        Route::prefix('company/settings')->name('company.settings.')->group(function () {
+            Route::get('/', function () {
+                return redirect()->route('company.settings.profile.edit');
+            })->name('index');
+
+            Route::get('profile', [UserSettingsProfileController::class, 'externalEdit'])
+                ->name('profile.edit');
+
+            Route::patch('profile', [UserSettingsProfileController::class, 'externalUpdate'])
+                ->name('profile.update');
+
+            Route::get('password', [UserSettingsPasswordController::class, 'externalEdit'])
+                ->name('password.edit');
+
+            Route::put('password', [UserSettingsPasswordController::class, 'externalUpdate'])
+                ->middleware('throttle:6,1')
+                ->name('password.update');
+
+            Route::get('appearance', function () {
+                return Inertia::render('External/Settings/Appearance');
+            })->name('appearance.edit');
+        });
 
         /*
         |--------------------------------------------------------------------------
@@ -174,6 +214,9 @@ Route::middleware(['auth', 'role.type:external'])->group(function () {
         Route::patch('employee-users/{employeeUser}/reset-password', [CompanyUserController::class, 'resetPassword'])
             ->name('employee-users.reset-password');
 
+        Route::get('company/activity-logs', [AuditLogController::class, 'externalMyActivity'])
+            ->name('company.activity-logs.index');
+
         /*
         |--------------------------------------------------------------------------
         | Dispatching
@@ -212,8 +255,10 @@ Route::middleware(['auth', 'role.type:external'])->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role.type:internal', 'password.change.required'])->group(function () {
+Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'audit.request'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+    Route::get('/my-activity-logs', [AuditLogController::class, 'myActivity'])->name('activity-logs.index');
 
     /*
     |--------------------------------------------------------------------------
@@ -333,7 +378,7 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required'])->g
     Route::get('routes-trash', [RouteController::class, 'trash'])->name('routes.trash');
     Route::patch('routes/{route}/restore', [RouteController::class, 'restore'])->withTrashed()->name('routes.restore');
     Route::delete('routes/{route}/force-delete', [RouteController::class, 'forceDelete'])->withTrashed()->name('routes.forceDelete');
-    Route::patch('routes/{route}/toggle-status', [RouteController::class, 'toggleStatus'])->name('toggleStatus');
+    Route::patch('routes/{route}/toggle-status', [RouteController::class, 'toggleStatus'])->name('routes.toggleStatus');
 
     Route::resource('vehicles', VehicleController::class);
 
