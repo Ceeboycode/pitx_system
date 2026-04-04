@@ -26,6 +26,7 @@ class CommuterMessageController extends Controller
     public function store(StoreCommuterMessageRequest $request, CrmThread $thread): JsonResponse
     {
         $this->ensureThreadOwner($request, $thread);
+        abort_if($thread->is_closed, 403, 'Cannot reply to a resolved report.');
 
         $message = $thread->messages()->create([
             'sender_user_id' => $request->user()->id,

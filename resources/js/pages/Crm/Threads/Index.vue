@@ -80,8 +80,30 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Threads', href: index().url },
+    { title: 'Reports', href: index().url },
 ];
+
+function categoryLabel(raw: string | null | undefined): string {
+    const map: Record<string, string> = {
+        facilities: 'Facilities',
+        terminal_operations: 'Terminal Operations',
+        commuter_app: 'Commuter App',
+        other: 'Other',
+        platform_message: 'Platform Message',
+    };
+    return raw ? (map[raw] ?? raw) : 'General';
+}
+
+function statusLabel(thread: ThreadSummary): { text: string; class: string } {
+    if (thread.is_closed) {
+        return { text: 'Resolved', class: 'text-green-700 bg-green-50 border-green-200' };
+    }
+    const hasReplies = (thread.messages?.length ?? 0) > 1;
+    if (hasReplies) {
+        return { text: 'Ongoing', class: 'text-blue-700 bg-blue-50 border-blue-200' };
+    }
+    return { text: 'Open', class: 'text-amber-700 bg-amber-50 border-amber-200' };
+}
 
 const selectedThreadId = ref<number | string | null>(null);
 const selectedThread = ref<ThreadDetail | null>(null);
@@ -465,7 +487,7 @@ watch(
 </script>
 
 <template>
-    <Head title="Threads" />
+    <Head title="Reports" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
@@ -482,9 +504,9 @@ watch(
                         ]"
                     >
                         <CardHeader>
-                            <CardTitle>Threads</CardTitle>
+                            <CardTitle>Reports</CardTitle>
                             <CardDescription>
-                                Superadmin can assign threads. Internal staff only see threads assigned to them.
+                                Superadmin can assign reports. Internal staff only see reports assigned to them.
                             </CardDescription>
                         </CardHeader>
                         <CardContent class="flex min-h-0 flex-1 flex-col space-y-4">
@@ -492,7 +514,7 @@ watch(
                                 <SearchInput
                                     :route="index().url"
                                     :initial-value="filters.search"
-                                    placeholder="Search threads..."
+                                    placeholder="Search reports..."
                                     :only="['threads', 'filters', 'flash']"
                                     :debounce="350"
                                 />
@@ -503,7 +525,7 @@ watch(
                                     v-if="threadList.length === 0"
                                     class="px-4 py-10 text-center text-sm text-muted-foreground"
                                 >
-                                    No threads found.
+                                    No reports found.
                                 </div>
 
                                 <button
@@ -525,13 +547,21 @@ watch(
                                     <div
                                         class="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground"
                                     >
-                                        <span class="truncate">
-                                            {{ thread.category || 'General' }}
-                                            <span v-if="thread.assigned_to?.name">
-                                                | {{ thread.assigned_to.name }}
+                                        <div class="flex min-w-0 items-center gap-1.5 truncate">
+                                            <span
+                                                class="inline-flex shrink-0 items-center rounded border px-1.5 py-0.5 text-[10px] font-medium"
+                                                :class="statusLabel(thread).class"
+                                            >
+                                                {{ statusLabel(thread).text }}
                                             </span>
-                                        </span>
-                                        <span>
+                                            <span class="truncate">
+                                                {{ categoryLabel(thread.category) }}
+                                                <span v-if="thread.assigned_to?.name">
+                                                    · {{ thread.assigned_to.name }}
+                                                </span>
+                                            </span>
+                                        </div>
+                                        <span class="shrink-0">
                                             {{
                                                 thread.last_message_at_human ||
                                                 thread.created_at_human ||
@@ -558,7 +588,7 @@ watch(
                                 <p class="text-xs text-muted-foreground">
                                     {{
                                         selectedThread?.subject ||
-                                        'Select a thread'
+                                        'Select a report'
                                     }}
                                 </p>
                             </div>
@@ -578,7 +608,7 @@ watch(
                                     variant="outline"
                                     @click="isThreadListOpen = true"
                                 >
-                                    Threads
+                                    Reports
                                 </Button>
                             </div>
                         </div>
@@ -608,15 +638,20 @@ watch(
                                     <div class="space-y-1">
                                         <p>
                                             Category:
-                                            {{ selectedThread.category || 'General' }}
+                                            {{ categoryLabel(selectedThread.category) }}
                                         </p>
                                         <p>
                                             Company:
                                             {{ selectedThread.company?.company_name || 'No company' }}
                                         </p>
-                                        <p>
+                                        <p class="flex items-center gap-1.5">
                                             Status:
-                                            {{ selectedThread.is_closed ? 'Closed' : 'Open' }}
+                                            <span
+                                                class="inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium"
+                                                :class="statusLabel(selectedThread).class"
+                                            >
+                                                {{ statusLabel(selectedThread).text }}
+                                            </span>
                                         </p>
                                     </div>
 
@@ -809,7 +844,7 @@ watch(
                             v-else
                             class="flex min-h-0 flex-1 items-center justify-center px-6 text-center text-sm text-muted-foreground"
                         >
-                            Select a thread from the left panel.
+                            Select a report from the left panel.
                         </div>
                     </section>
                 </div>

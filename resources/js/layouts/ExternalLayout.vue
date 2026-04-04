@@ -3,6 +3,7 @@ import type { User } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
+import MessagingPanel from '@/components/MessagingPanel.vue';
 import NotificationDropdown from '@/components/NotificationDropdown.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -241,7 +242,7 @@ watch(
                     </div>
                 </div>
 
-                <!-- Notifications -->
+                <!-- Notifications & Messaging -->
                 <div class="border-b px-3 py-3">
                     <div
                         class="flex items-center justify-between rounded-xl border bg-background px-3 py-2"
@@ -255,7 +256,10 @@ watch(
                             </p>
                         </div>
 
-                        <NotificationDropdown />
+                        <div class="flex items-center gap-1.5">
+                            <MessagingPanel />
+                            <NotificationDropdown />
+                        </div>
                     </div>
                 </div>
 
@@ -424,7 +428,10 @@ watch(
                                 </p>
                             </div>
 
-                            <NotificationDropdown />
+                            <div class="flex items-center gap-1.5">
+                                <MessagingPanel />
+                                <NotificationDropdown />
+                            </div>
                         </div>
                     </div>
 
@@ -533,6 +540,7 @@ watch(
                     </div>
 
                     <div class="flex items-center gap-2">
+                        <MessagingPanel />
                         <NotificationDropdown />
 
                         <Avatar class="h-7 w-7">
