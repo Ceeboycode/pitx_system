@@ -1,27 +1,22 @@
 <script setup lang="ts">
-import Heading from '@/components/Heading.vue';
+import HeadingSmall from '@/components/HeadingSmall.vue';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useActiveUrl } from '@/composables/useActiveUrl';
-import { toUrl } from '@/lib/utils';
-import { edit as editAppearance } from '@/routes/appearance';
-import { edit as editProfile } from '@/routes/profile';
-import { edit as editPassword } from '@/routes/user-password';
-import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
 
-const sidebarNavItems: NavItem[] = [
+const sidebarNavItems: Array<{ title: string; href: string }> = [
     {
         title: 'Profile',
-        href: editProfile(),
+        href: '/company/settings/profile',
     },
     {
         title: 'Password',
-        href: editPassword(),
+        href: '/company/settings/password',
     },
     {
         title: 'Appearance',
-        href: editAppearance(),
+        href: '/company/settings/appearance',
     },
 ];
 
@@ -30,7 +25,7 @@ const { urlIsActive } = useActiveUrl();
 
 <template>
     <div class="px-4 py-6">
-        <Heading
+        <HeadingSmall
             title="Settings"
             description="Manage your profile and account settings"
         />
@@ -43,7 +38,7 @@ const { urlIsActive } = useActiveUrl();
                 >
                     <Button
                         v-for="item in sidebarNavItems"
-                        :key="toUrl(item.href)"
+                        :key="item.href"
                         variant="ghost"
                         :class="[
                             'w-full justify-start',
@@ -52,7 +47,6 @@ const { urlIsActive } = useActiveUrl();
                         as-child
                     >
                         <Link :href="item.href">
-                            <component :is="item.icon" class="h-4 w-4" />
                             {{ item.title }}
                         </Link>
                     </Button>

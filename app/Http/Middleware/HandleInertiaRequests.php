@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -50,6 +51,7 @@ class HandleInertiaRequests extends Middleware
                     'name' => $user->name,
                     'username' => $user->username,
                     'email' => $user->email,
+                    'avatar' => $user->profile_photo_path ? Storage::url($user->profile_photo_path) : null,
                     'type' => $user->type,
                     'status' => $user->status,
                     'must_change_password' => (bool) $user->must_change_password,

@@ -22,6 +22,8 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\RouteStopController;
+use App\Http\Controllers\Settings\PasswordController as UserSettingsPasswordController;
+use App\Http\Controllers\Settings\ProfileController as UserSettingsProfileController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VehicleTypeController;
@@ -123,6 +125,29 @@ Route::middleware(['auth', 'role.type:external', 'audit.request'])->group(functi
     Route::middleware(['company.verified', 'password.change.required'])->group(function () {
         Route::get('company/dashboard', [CompanyDashboardController::class, 'index'])
             ->name('company.dashboard');
+
+        Route::prefix('company/settings')->name('company.settings.')->group(function () {
+            Route::get('/', function () {
+                return redirect()->route('company.settings.profile.edit');
+            })->name('index');
+
+            Route::get('profile', [UserSettingsProfileController::class, 'externalEdit'])
+                ->name('profile.edit');
+
+            Route::patch('profile', [UserSettingsProfileController::class, 'externalUpdate'])
+                ->name('profile.update');
+
+            Route::get('password', [UserSettingsPasswordController::class, 'externalEdit'])
+                ->name('password.edit');
+
+            Route::put('password', [UserSettingsPasswordController::class, 'externalUpdate'])
+                ->middleware('throttle:6,1')
+                ->name('password.update');
+
+            Route::get('appearance', function () {
+                return Inertia::render('External/Settings/Appearance');
+            })->name('appearance.edit');
+        });
 
         /*
         |--------------------------------------------------------------------------
