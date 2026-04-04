@@ -4,9 +4,17 @@ namespace App\Services\Vehicle;
 
 use App\Models\Vehicle;
 use App\Models\VehicleDocument;
+use Illuminate\Support\Collection;
 
 class VehicleService
 {
+    private const DOC_LABELS = [
+        'insurance_certificate' => 'Insurance Certificate',
+        'cpc' => 'Certificate of Public Convenience (CPC)',
+        'official_receipt' => 'Official Receipt (OR)',
+        'certificate_of_registration' => 'Certificate of Registration (CR)',
+        'puv_identification_markings' => 'PUV Identification Markings',
+    ];
 
     public function deleteVehicle(Vehicle $vehicle, int $userId): bool
     {
@@ -96,9 +104,7 @@ class VehicleService
             $nextStatus = 'draft';
         } elseif ($expiredDocs->isNotEmpty()) {
             $nextStatus = 'pending';
-            $vehicleRemarks = 'Expired documents: ' . $expiredDocs
-                ->map(fn ($type) => strtoupper((string) $type))
-                ->implode(', ');
+            $vehicleRemarks = $this->expiredDocumentsRemark($expiredDocs);
         } else {
             $missingRequiredDocument = collect($requiredTypes)
                 ->contains(fn ($type) => ! $documents->has($type));
@@ -139,5 +145,58 @@ class VehicleService
         $vehicle->update($payload);
 
         return $vehicle->refresh();
+    }
+
+    public function markExpiredDocumentsAndSync(?Collection $vehicles = null): int
+    {
+        $today = now()->toDateString();
+
+        $query = VehicleDocument::query()
+            ->whereNotNull('expires_at')
+            ->whereDate('expires_at', '<', $today)
+            ->where('status', '!=', 'expired');
+
+        if ($vehicles !== null) {
+            $query->whereIn('vehicle_id', $vehicles->pluck('id'));
+        }
+
+        $affectedVehicleIds = $query
+            ->pluck('vehicle_id')
+            ->unique()
+            ->values();
+
+        if ($affectedVehicleIds->isEmpty()) {
+            return 0;
+        }
+
+        $updatedDocuments = VehicleDocument::query()
+            ->whereIn('vehicle_id', $affectedVehicleIds)
+            ->whereNotNull('expires_at')
+            ->whereDate('expires_at', '<', $today)
+            ->where('status', '!=', 'expired')
+            ->update([
+                'status' => 'expired',
+            ]);
+
+        Vehicle::query()
+            ->whereIn('id', $affectedVehicleIds)
+            ->each(fn (Vehicle $vehicle) => $this->syncVehicleStatus($vehicle));
+
+        return $updatedDocuments;
+    }
+
+    private function expiredDocumentsRemark(Collection $expiredTypes): string
+    {
+        $labels = $expiredTypes
+            ->map(fn ($type) => $this->documentTypeLabel((string) $type))
+            ->unique()
+            ->implode(', ');
+
+        return 'Pending due to expired documents: ' . $labels;
+    }
+
+    private function documentTypeLabel(string $type): string
+    {
+        return self::DOC_LABELS[$type] ?? strtoupper($type);
     }
 }
