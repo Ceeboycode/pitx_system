@@ -17,10 +17,15 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
     Route::post('auth/register', [AuthTokenController::class, 'register'])->name('auth.register');
     Route::post('auth/login', [AuthTokenController::class, 'login'])->name('auth.login');
+    Route::post('auth/forgot-password', [AuthTokenController::class, 'forgotPassword'])->name('auth.forgot-password');
+
+    // Public route — location search does not require user identity
+    Route::get('locations', [LocationController::class, 'index'])->name('locations.index');
 
     Route::middleware(['auth:api', 'role.type:commuter'])->group(function () {
         Route::get('auth/me', [AuthTokenController::class, 'me'])->name('auth.me');
         Route::patch('auth/me', [AuthTokenController::class, 'update'])->name('auth.me.update');
+        Route::post('auth/me/avatar', [AuthTokenController::class, 'uploadAvatar'])->name('auth.me.avatar');
         Route::post('auth/logout', [AuthTokenController::class, 'destroy'])->name('auth.logout');
 
         Route::get('crm/threads', [CommuterThreadController::class, 'index'])->name('crm.threads.index');
@@ -37,8 +42,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('analytics/route-favorites', [RouteFavoriteController::class, 'store'])->name('analytics.route-favorites.store');
         Route::delete('analytics/route-favorites/{favorite}', [RouteFavoriteController::class, 'destroy'])->name('analytics.route-favorites.destroy');
 
-        // Routefinding
-        Route::get('locations', [LocationController::class, 'index'])->name('locations.index');
+        // Routefinding (authenticated — calls Mapbox per request)
         Route::get('routes/search', [RouteSearchController::class, 'search'])->name('routes.search');
     });
 });

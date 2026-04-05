@@ -264,10 +264,15 @@ const features = [
 
         <!-- FOOTER -->
         <footer class="border-t border-gray-200 bg-white">
-            <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-100 py-6 sm:flex-row">
+            <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-6 py-6 sm:flex-row">
                 <div class="flex items-center gap-2">
                     <img :src="PitxLogo" alt="PITX Logo" class="h-7 w-auto object-contain opacity-70" />
                     <p class="text-sm text-gray-400">© 2026 PITX System. All rights reserved.</p>
+                </div>
+                <div class="flex gap-5 text-xs text-gray-400">
+                    <Link href="/privacy" class="hover:text-[#1a3a6b]">Privacy Policy</Link>
+                    <Link href="/terms" class="hover:text-[#1a3a6b]">Terms</Link>
+                    <Link href="/contact" class="hover:text-[#1a3a6b]">Contact</Link>
                 </div>
             </div>
         </footer>

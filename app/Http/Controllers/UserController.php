@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -38,6 +39,7 @@ class UserController extends Controller
                 'company_id',
                 'status',
                 'created_at',
+                'profile_photo_path',
             ])
             ->with([
                 'roles:id,name,type',
@@ -67,6 +69,9 @@ class UserController extends Controller
                     'status'            => $user->status,
                     'created_at'        => $user->created_at,
                     'type'              => $primaryRole?->type,
+                    'avatar_url'        => $user->profile_photo_path
+                        ? Storage::disk('public')->url($user->profile_photo_path)
+                        : null,
                     'roles'             => $user->roles->map(fn ($role) => [
                         'id'   => $role->id,
                         'name' => $role->name,

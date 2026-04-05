@@ -62,6 +62,7 @@ import {
     ChevronRight,
     ClipboardList,
     Clock,
+    Download,
     Filter,
     Hash,
     LogIn,
@@ -407,6 +408,55 @@ function prettyStatus(s: string | null | undefined) {
         .replace(/_/g, ' ')
         .replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+function exportCsv() {
+    const headers = [
+        'ID', 'Plate', 'Body No.', 'Route', 'Bay', 'PAX',
+        'Status', 'Driver', 'Dispatcher', 'Gate',
+        'Arrived At', 'Departed At', 'Dispatched At', 'Remarks',
+    ];
+
+    const escape = (v: string | number | null | undefined) => {
+        const s = String(v ?? '');
+        return s.includes(',') || s.includes('"') || s.includes('\n')
+            ? `"${s.replace(/"/g, '""')}"`
+            : s;
+    };
+
+    const rows = props.dispatches.data.map((d) => [
+        d.id,
+        d.vehicle?.plate_number ?? d.plate_number ?? '',
+        d.vehicle?.body_number ?? '',
+        d.vehicle?.route
+            ? `${d.vehicle.route.origin_name ?? ''} → ${d.vehicle.route.destination_name ?? ''}`
+            : '',
+        d.bay_number ?? '',
+        d.pax_count ?? '',
+        prettyStatus(d.status),
+        d.driver?.name ?? '',
+        d.dispatcher?.name ?? '',
+        d.gate?.gate_name ?? '',
+        d.arrived_at ?? '',
+        d.departed_at ?? '',
+        d.dispatched_at ?? '',
+        d.remarks ?? '',
+    ].map(escape).join(','));
+
+    const label = [
+        props.company.company_name,
+        props.filters?.date ?? 'all-dates',
+        selectedStatus.value !== 'all' ? selectedStatus.value : null,
+    ].filter(Boolean).join('_').replace(/\s+/g, '-');
+
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dispatches_${label}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
 </script>
 
 <template>
@@ -736,10 +786,20 @@ function prettyStatus(s: string | null | undefined) {
                                 </PopoverContent>
                             </Popover>
 
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                class="ml-auto w-full gap-1.5 sm:w-auto"
+                                :disabled="dispatches.data.length === 0"
+                                @click="exportCsv"
+                            >
+                                <Download class="size-3.5" />Export CSV
+                            </Button>
+
                             <Badge
                                 v-if="hasActiveFilters"
                                 variant="outline"
-                                class="ml-auto gap-1.5 text-xs"
+                                class="gap-1.5 text-xs"
                             >
                                 <Filter class="size-3" />{{
                                     activeFilterCount

@@ -15,7 +15,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthBase from '@/layouts/AuthLayout.vue';
-import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 import { Form, Head } from '@inertiajs/vue3';
@@ -24,7 +23,6 @@ import { Link } from '@inertiajs/vue3';
 defineProps<{
     status?: string;
     canResetPassword: boolean;
-    canRegister: boolean;
 }>();
 </script>
 
@@ -118,9 +116,9 @@ defineProps<{
                 </Form>
             </CardContent>
 
-            <CardFooter v-if="canRegister" class="flex justify-center text-sm">
-                Don’t have an account?
-                <TextLink :href="register()" class="ml-1 font-medium">
+            <CardFooter class="flex justify-center text-sm">
+                Need access?
+                <TextLink href="/contact" class="ml-1 font-medium">
                     Contact Admin
                 </TextLink>
             </CardFooter>

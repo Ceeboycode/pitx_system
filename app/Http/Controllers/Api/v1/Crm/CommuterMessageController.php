@@ -8,6 +8,7 @@ use App\Http\Resources\Api\V1\Crm\CrmMessageResource;
 use App\Models\CrmThread;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CommuterMessageController extends Controller
 {
@@ -16,6 +17,7 @@ class CommuterMessageController extends Controller
         $this->ensureThreadOwner($request, $thread);
 
         $messages = $thread->messages()
+            ->where('is_internal', false)
             ->with(['sender:id,name', 'attachments'])
             ->orderBy('created_at')
             ->get();
@@ -28,15 +30,17 @@ class CommuterMessageController extends Controller
         $this->ensureThreadOwner($request, $thread);
         abort_if($thread->is_closed, 403, 'Cannot reply to a resolved report.');
 
-        $message = $thread->messages()->create([
-            'sender_user_id' => $request->user()->id,
-            'body' => $request->validated()['body'],
-            'is_internal' => false,
-        ]);
+        $message = DB::transaction(function () use ($request, $thread) {
+            $message = $thread->messages()->create([
+                'sender_user_id' => $request->user()->id,
+                'body' => $request->validated()['body'],
+                'is_internal' => false,
+            ]);
 
-        $thread->update([
-            'last_message_at' => now(),
-        ]);
+            $thread->update(['last_message_at' => now()]);
+
+            return $message;
+        });
 
         return response()->json([
             'message' => 'Message sent successfully.',

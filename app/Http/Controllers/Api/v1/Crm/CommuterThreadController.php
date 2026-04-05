@@ -36,6 +36,15 @@ class CommuterThreadController extends Controller
                 fn ($query) => $query->where('is_closed', $filters['status'] === 'resolved')
             )
             ->withCount('messages')
+            ->withCount([
+                // Count only visible replies sent by a user with an internal role.
+                // Commuter replies (same user_id) and internal notes (is_internal=true)
+                // are excluded — they must not flip status to 'ongoing'.
+                'messages as staff_replies_count' => fn ($q) => $q
+                    ->where('is_internal', false)
+                    ->whereHas('sender', fn ($u) => $u
+                        ->whereHas('roles', fn ($r) => $r->where('type', 'internal'))),
+            ])
             ->latest('last_message_at')
             ->latest('created_at')
             ->paginate($perPage)
@@ -82,7 +91,13 @@ class CommuterThreadController extends Controller
         abort_if($thread->is_closed, 403, 'This report has been resolved.');
 
         return response()->json([
-            'data' => new CrmThreadResource($thread->loadCount('messages')),
+            'data' => new CrmThreadResource(
+                $thread->loadCount('messages')
+                       ->loadCount(['messages as staff_replies_count' => fn ($q) => $q
+                           ->where('is_internal', false)
+                           ->whereHas('sender', fn ($u) => $u
+                               ->whereHas('roles', fn ($r) => $r->where('type', 'internal')))])
+            ),
         ]);
     }
 

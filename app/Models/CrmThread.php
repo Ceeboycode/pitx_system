@@ -44,6 +44,6 @@ class CrmThread extends Model
 
     public function messages(): HasMany
     {
-        return $this->hasMany(CrmMessage::class, 'thread_id')->latest('created_at');
+        return $this->hasMany(CrmMessage::class, 'thread_id');
     }
 }

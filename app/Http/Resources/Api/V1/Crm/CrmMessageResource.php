@@ -16,10 +16,10 @@ class CrmMessageResource extends JsonResource
         return [
             'id' => $this->id,
             'thread_id' => $this->thread_id,
-            'sender' => $this->whenLoaded('sender', fn () => [
-                'id' => $this->sender?->id,
-                'name' => $this->sender?->name,
-            ]),
+            'sender' => $this->whenLoaded('sender', fn () => $this->sender ? [
+                'id' => $this->sender->id,
+                'name' => $this->sender->name,
+            ] : null),
             'body' => $this->body,
             'is_internal' => (bool) $this->is_internal,
             'attachments' => $this->whenLoaded('attachments', fn () => $this->attachments->map(fn ($attachment) => [

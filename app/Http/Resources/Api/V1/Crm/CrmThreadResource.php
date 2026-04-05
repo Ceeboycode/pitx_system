@@ -20,10 +20,10 @@ class CrmThreadResource extends JsonResource
             'category' => $this->category,
             'subject' => $this->subject,
             'is_closed' => (bool) $this->is_closed,
-            // Derived: resolved = closed, ongoing = has replies, open = new
+            // Derived: resolved = closed, ongoing = staff has replied, open = awaiting response
             'status' => $this->is_closed
                 ? 'resolved'
-                : (($this->messages_count ?? 0) > 1 ? 'ongoing' : 'open'),
+                : (($this->staff_replies_count ?? 0) > 0 ? 'ongoing' : 'open'),
             'closed_at' => $this->closed_at?->toISOString(),
             'closed_at_human' => $this->closed_at?->diffForHumans(),
             'last_message_at' => $this->last_message_at?->toISOString(),

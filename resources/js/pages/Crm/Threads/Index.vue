@@ -9,11 +9,12 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
 import { computed, nextTick, ref, watch } from 'vue';
 
 import { index } from '@/routes/crm/threads';
 import { type BreadcrumbItem } from '@/types';
+import { fetchWithAuth } from '@/utils/fetchWithAuth';
 
 import {
     BusFront,
@@ -92,6 +93,8 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Reports', href: index().url },
 ];
 
+const currentUserId = (usePage().props.auth as { user: { id: number } | null }).user?.id ?? null;
+
 function categoryLabel(raw: string | null | undefined): string {
     const map: Record<string, string> = {
         facilities: 'Facilities',
@@ -123,6 +126,7 @@ const actionError = ref<string | null>(null);
 const isThreadListOpen = ref(true);
 const isSavingAssignment = ref(false);
 const isSendingMessage = ref(false);
+const isTogglingState = ref(false);
 const draftMessage = ref('');
 const internalOnly = ref(false);
 const pendingFiles = ref<File[]>([]);
@@ -246,12 +250,8 @@ async function loadThread(threadId: number | string | null) {
     actionError.value = null;
 
     try {
-        const response = await fetch(`/crm/threads/${threadId}`, {
+        const response = await fetchWithAuth(`/crm/threads/${threadId}`, {
             method: 'GET',
-            headers: {
-                Accept: 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-            },
         });
 
         const data = await parseJson(response);
@@ -302,13 +302,11 @@ async function saveAssignment() {
     actionError.value = null;
 
     try {
-        const response = await fetch(`/crm/threads/${selectedThread.value.id}`, {
+        const response = await fetchWithAuth(`/crm/threads/${selectedThread.value.id}`, {
             method: 'PATCH',
             headers: {
-                Accept: 'application/json',
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrfToken(),
-                'X-Requested-With': 'XMLHttpRequest',
             },
             body: JSON.stringify({
                 assigned_to_user_id: selectedAssigneeId.value
@@ -343,14 +341,12 @@ async function uploadAttachments(threadId: number | string, messageId: number | 
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch(
+        const response = await fetchWithAuth(
             `/crm/threads/${threadId}/messages/${messageId}/attachments`,
             {
                 method: 'POST',
                 headers: {
-                    Accept: 'application/json',
                     'X-CSRF-TOKEN': csrfToken(),
-                    'X-Requested-With': 'XMLHttpRequest',
                 },
                 body: formData,
             },
@@ -377,15 +373,13 @@ async function sendMessage() {
     actionError.value = null;
 
     try {
-        const response = await fetch(
+        const response = await fetchWithAuth(
             `/crm/threads/${selectedThread.value.id}/messages`,
             {
                 method: 'POST',
                 headers: {
-                    Accept: 'application/json',
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': csrfToken(),
-                    'X-Requested-With': 'XMLHttpRequest',
                 },
                 body: JSON.stringify({
                     body: draftMessage.value,
@@ -427,15 +421,14 @@ async function toggleThreadState() {
         ? `/crm/threads/${selectedThread.value.id}/reopen`
         : `/crm/threads/${selectedThread.value.id}/close`;
 
+    isTogglingState.value = true;
     actionError.value = null;
 
     try {
-        const response = await fetch(endpoint, {
+        const response = await fetchWithAuth(endpoint, {
             method: 'PATCH',
             headers: {
-                Accept: 'application/json',
                 'X-CSRF-TOKEN': csrfToken(),
-                'X-Requested-With': 'XMLHttpRequest',
             },
         });
 
@@ -454,6 +447,8 @@ async function toggleThreadState() {
             error instanceof Error
                 ? error.message
                 : 'Failed to update thread status.';
+    } finally {
+        isTogglingState.value = false;
     }
 }
 
@@ -631,7 +626,7 @@ watch(
                                             <Wrench class="inline h-4 w-4" />
                                         </span>
                                     </span>
-                                    <span class=""text-sm font-medium>
+                                    <span class="text-sm font-medium">
                                         {{ categoryLabel(selectedThread.category) }}
                                     </span>
                                     <span
@@ -680,6 +675,7 @@ watch(
                                                     v-if="selectedThread"
                                                     size="sm"
                                                     variant="outline"
+                                                    :disabled="isTogglingState"
                                                     @click="toggleThreadState"
                                                 >
                                                     {{ selectedThread.is_closed ? 'Reopen' : 'Close' }} Report
@@ -811,12 +807,12 @@ watch(
                                         :key="message.id"
                                         :class="{
                                             'w-full flex': true,
-                                            'justify-end': message.sender?.id === selectedThread.created_by?.id,
+                                            'justify-end': message.sender?.id === currentUserId,
                                         }"
                                     >
-                                        <div>
+                                        <div class="group">
                                             <p
-                                                v-if="message.sender?.id != selectedThread.created_by?.id"
+                                                v-if="message.sender?.id !== currentUserId"
                                                 class="text-xs font-medium mb-1 px-3"
                                             >
                                                 {{ message.sender?.name || 'Unknown sender' }}
@@ -824,11 +820,10 @@ watch(
                                             <!-- TODO: paragraph element above shoudl not show if the  previous message's sender is the same as this message's sender-->
                                             <div
                                                 :class="{
-                                                    'rounded-md border px-3 py-2 max-w-lg min-w-0 group': true,
+                                                    'rounded-md border px-3 py-2 max-w-lg min-w-0': true,
                                                     'border-blue-300 bg-blue-50/70': message.is_internal
                                                 }"
-                                            >   
-                                            <!-- TODO: when this div is hovered, this message should show the created_at_human data -->
+                                            >
                                                 <p class="whitespace-pre-wrap text-sm">
                                                     {{ message.body || 'No content' }}
                                                 </p>
@@ -871,11 +866,10 @@ watch(
                                                     </div>
                                                 </div>
                                             </div>
-                                            <!-- TODO: fix hover function, only shows the paragraph element below when the div with class 'group' is hovered -->
                                             <p
                                                 :class="{
                                                     'text-[11px] text-muted-foreground px-3 hidden group-hover:block transition-all': true,
-                                                    'text-end': message.sender?.id === selectedThread.created_by?.id,
+                                                    'text-end': message.sender?.id === currentUserId,
                                                 }"
                                             >
                                                 {{
@@ -907,24 +901,11 @@ watch(
                                             class="min-h-fit w-full rounded-md border bg-background px-3 py-2 text-sm"
                                             placeholder="Write a reply or internal note..."
                                         />
-                                        <Button>
-                                            <!-- <input
-                                                ref="attachmentInput"
-                                                type="file"
-                                                accept="image/*,video/*"
-                                                multiple
-                                                @change="onFilesSelected"
-                                            /> -->
-                                            <input
-                                                ref="attachmentInput"
-                                                type="file"
-                                                accept="image/*,video/*"
-                                                multiple
-                                            />
-                                            <!-- TODO: fix this button -->
+                                        <Button :disabled="isSendingMessage" @click="attachmentInput?.click()">
                                             <Paperclip class="h-4 w-4" />
                                         </Button>
                                         <Button
+                                            :disabled="isSendingMessage"
                                             @click="sendMessage"
                                         >
                                             <SendHorizontal class="h-4 w-4" />
@@ -944,13 +925,13 @@ watch(
                                                 />
                                                 Post as internal note
                                             </label>
-                                            <!-- TODO: fix this code when the first input for images/videos are fixed -->
                                             <div class="flex flex-col gap-2">
                                                 <input
                                                     ref="attachmentInput"
                                                     type="file"
                                                     accept="image/*,video/*"
                                                     multiple
+                                                    class="hidden"
                                                     @change="onFilesSelected"
                                                 />
                                                 <p

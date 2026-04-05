@@ -69,6 +69,7 @@ async function loadThreads() {
     listError.value = ''
     try {
         const response = await fetch('/messaging/threads', {
+            credentials: 'same-origin',
             headers: { Accept: 'application/json' },
         })
         const data = await parseJson(response)
@@ -90,6 +91,7 @@ async function openThread(thread: Thread) {
     isLoadingMessages.value = true
     try {
         const response = await fetch(`/messaging/threads/${thread.id}/messages`, {
+            credentials: 'same-origin',
             headers: { Accept: 'application/json' },
         })
         const data = await parseJson(response)
@@ -109,6 +111,7 @@ async function sendReply() {
     try {
         const response = await fetch(`/messaging/threads/${selectedThread.value.id}/messages`, {
             method: 'POST',
+            credentials: 'same-origin',
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
@@ -137,6 +140,7 @@ async function createThread() {
     try {
         const response = await fetch('/messaging/threads', {
             method: 'POST',
+            credentials: 'same-origin',
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',

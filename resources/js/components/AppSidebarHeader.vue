@@ -26,7 +26,7 @@ withDefaults(
             </template>
         </div>
         <div class="flex items-center gap-2">
-            <MessagingPanel />
+            <!-- <MessagingPanel /> -->
             <NotificationDropdown />
         </div>
     </header>

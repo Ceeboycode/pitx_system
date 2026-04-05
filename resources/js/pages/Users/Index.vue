@@ -6,6 +6,7 @@ import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 
 /* shadcn-vue */
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -121,6 +122,7 @@ interface User {
     company: Company | null;
     roles: Role[];
     status: 'active' | 'inactive' | string;
+    avatar_url: string | null;
 }
 
 type SortField = 'username' | 'name' | 'email' | 'status' | null;
@@ -536,7 +538,13 @@ function handleDelete(user: User) {
                                     </TableCell>
 
                                     <TableCell>
-                                        {{ user.name }}
+                                        <div class="flex items-center gap-2">
+                                            <Avatar class="h-7 w-7 text-[11px]">
+                                                <AvatarImage v-if="user.avatar_url" :src="user.avatar_url" :alt="user.name" />
+                                                <AvatarFallback>{{ user.name.slice(0, 2).toUpperCase() }}</AvatarFallback>
+                                            </Avatar>
+                                            {{ user.name }}
+                                        </div>
                                     </TableCell>
 
                                     <TableCell class="text-sm text-muted-foreground">
