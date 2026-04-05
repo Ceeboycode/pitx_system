@@ -83,7 +83,7 @@ import { computed, ref } from 'vue';
 /* ── Permissions ─────────────────────────────────────────────────── */
 const canCreate    = can('routes.create');
 const canUpdate    = can('routes.update');
-const canDelete    = can('routes.delete');
+const canDelete    = can('routes.archive');
 const canViewTrash = can('routes.viewTrash');
 const canToggle    = can('routes.toggleStatus');
 

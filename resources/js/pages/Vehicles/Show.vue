@@ -157,7 +157,7 @@ const company = computed(() => props.vehicle.company ?? null);
 const route = computed(() => props.vehicle.route ?? null);
 const docs = computed(() => props.vehicle.documents ?? []);
 
-const canArchiveVehicle = computed(() => can('vehicles.delete'));
+const canArchiveVehicle = computed(() => can('vehicles.archive'));
 const archiveOpen = ref(false);
 
 const VEHICLES_INDEX_URL = index().url;

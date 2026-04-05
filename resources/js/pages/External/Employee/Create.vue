@@ -2,6 +2,7 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
 import ExternalLayout from '@/layouts/ExternalLayout.vue';
+import { can } from '@/lib/can';
 
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
@@ -62,6 +63,8 @@ const props = defineProps<{
     defaultStatus: string;
     nextUsernamePreview: string;
 }>();
+
+const canCreateEmployee = can('external_users.create');
 
 // ── Form ──────────────────────────────────────────────────────────────────────
 
@@ -136,6 +139,8 @@ function roleColor(roleName: string) {
 // ── Submit ────────────────────────────────────────────────────────────────────
 
 function submit() {
+    if (!canCreateEmployee) return;
+
     form.post('/employee-users', { preserveScroll: true });
 }
 </script>
@@ -493,6 +498,7 @@ function submit() {
                                         >
                                     </Button>
                                     <Button
+                                        v-if="canCreateEmployee"
                                         type="submit"
                                         :disabled="form.processing"
                                         class="rounded-lg border-0 bg-blue-700 font-semibold text-white shadow-sm hover:bg-blue-800 disabled:opacity-60"

@@ -24,6 +24,7 @@ import { externalMyActivity } from '@/actions/App/Http/Controllers/AuditLogContr
 import CompanyProfileController from '@/actions/App/Http/Controllers/CompanyProfileController';
 import CompanyUserController from '@/actions/App/Http/Controllers/CompanyUserController';
 import CompanyVehicleController from '@/actions/App/Http/Controllers/CompanyVehicleController';
+import { can } from '@/lib/can';
 import { logout } from '@/routes';
 
 import {
@@ -103,7 +104,14 @@ function isActive(href: string) {
     return currentUrl.value.startsWith(href);
 }
 
-const navItems = [
+type NavItem = {
+    label: string;
+    icon: any;
+    href: string;
+    permission?: string;
+};
+
+const navItems: NavItem[] = [
     {
         label: 'Dashboard',
         icon: LayoutDashboard,
@@ -113,21 +121,25 @@ const navItems = [
         label: 'Dispatches',
         icon: BusFront,
         href: '/company/dispatches',
+        permission: 'external_dispatches.viewAny',
     },
     {
         label: 'Registered Vehicles',
         icon: Truck,
         href: CompanyVehicleController.index().url,
+        permission: 'external_vehicles.viewAny',
     },
     {
         label: 'Employee',
         icon: FileText,
         href: CompanyUserController.index().url,
+        permission: 'external_users.viewAny',
     },
     {
         label: 'Company Profile',
         icon: Building2,
         href: CompanyProfileController.show().url,
+        permission: 'external_companies_settings.view',
     },
     {
         label: 'Activity Logs',
@@ -140,6 +152,10 @@ const navItems = [
         href: '/company/settings/profile',
     },
 ];
+
+const visibleNavItems = computed(() =>
+    navItems.filter((item) => !item.permission || can(item.permission)),
+);
 
 const mobileOpen = ref(false);
 const imgError = ref(false);
@@ -266,7 +282,7 @@ watch(
                 <!-- Nav links -->
                 <nav class="flex-1 space-y-0.5 px-2 py-3">
                     <Link
-                        v-for="item in navItems"
+                        v-for="item in visibleNavItems"
                         :key="item.label"
                         :href="item.href"
                         :class="[
@@ -437,7 +453,7 @@ watch(
 
                     <nav class="space-y-0.5 px-2 py-3">
                         <Link
-                            v-for="item in navItems"
+                            v-for="item in visibleNavItems"
                             :key="item.label"
                             :href="item.href"
                             @click="mobileOpen = false"

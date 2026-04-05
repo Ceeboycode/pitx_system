@@ -24,6 +24,7 @@ class DispatchController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
+        abort_unless($user->can('external_dispatches.viewAny'), 403);
         $company = $user->company;
         $search = trim((string) $request->string('search'));
         $status = trim((string) $request->string('status', 'all'));
@@ -287,6 +288,7 @@ class DispatchController extends Controller
     public function show(Request $request, Dispatch $dispatch): Response
     {
         $user = $request->user();
+        abort_unless($user->can('external_dispatches.view'), 403);
         $company = $user->company;
 
         abort_unless($company, 403, 'No company is associated with this user.');
@@ -417,6 +419,7 @@ class DispatchController extends Controller
     public function store(StoreDispatchRequest $request): RedirectResponse
     {
         $user = $request->user();
+        abort_unless($user->can('external_dispatches.create'), 403);
         $company = $user->company;
 
         abort_unless($company, 403, 'No company is associated with this user.');
@@ -501,6 +504,7 @@ class DispatchController extends Controller
     public function update(UpdateDispatchRequest $request, Dispatch $dispatch): RedirectResponse
     {
         $user = $request->user();
+        abort_unless($user->can('external_dispatches.update'), 403);
         $company = $user->company;
 
         abort_unless($company, 403, 'No company is associated with this user.');
@@ -583,6 +587,7 @@ class DispatchController extends Controller
     public function depart(DepartDispatchRequest $request, Dispatch $dispatch): RedirectResponse
     {
         $user = $request->user();
+        abort_unless($user->can('external_dispatches.depart'), 403);
         $company = $user->company;
 
         abort_unless($company, 403, 'No company is associated with this user.');

@@ -136,7 +136,7 @@ const docs = computed(() => props.company.documents ?? []);
 
 /* ── Permissions ─────────────────────────────────────────────────── */
 
-const canArchiveCompany = computed(() => can('companies.delete'));
+const canArchiveCompany = computed(() => can('companies.archive'));
 
 /* ── Logo helpers ────────────────────────────────────────────────── */
 

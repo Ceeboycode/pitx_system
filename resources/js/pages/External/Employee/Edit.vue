@@ -3,6 +3,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 import ExternalLayout from '@/layouts/ExternalLayout.vue';
+import { can } from '@/lib/can';
 
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -78,6 +79,8 @@ const props = defineProps<{
     // FIX: type as string | null | undefined — controller sends first role name or null
     selectedRole?: string | null;
 }>();
+
+const canUpdateEmployee = can('external_users.update');
 
 // ── Form ──────────────────────────────────────────────────────────────────────
 
@@ -166,6 +169,8 @@ const initials = computed(() =>
 // ── Submit ────────────────────────────────────────────────────────────────────
 
 function submit() {
+    if (!canUpdateEmployee) return;
+
     form.put(`/employee-users/${props.employee.id}`, {
         preserveScroll: true,
     });
@@ -406,6 +411,7 @@ function submit() {
                                         >
                                     </Button>
                                     <Button
+                                        v-if="canUpdateEmployee"
                                         type="submit"
                                         :disabled="form.processing"
                                         class="rounded-lg border-0 bg-blue-700 font-semibold text-white shadow-sm hover:bg-blue-800 disabled:opacity-60"

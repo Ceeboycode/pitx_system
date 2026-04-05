@@ -1,4 +1,5 @@
 ﻿<script setup lang="ts">
+import { can } from '@/lib/can';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import {
     Building2,
@@ -86,6 +87,8 @@ const props = defineProps<{
     };
 }>();
 
+const canUpdateCompanyProfile = can('external_companies_settings.update');
+
 const form = useForm({
     company_name: props.company.company_name ?? '',
     company_email: props.company.company_email ?? '',
@@ -141,6 +144,7 @@ const hasComplianceDocumentInputsComplete = computed(() => {
 });
 const canSubmitProfileForm = computed(
     () =>
+        canUpdateCompanyProfile &&
         canSubmitChanges.value &&
         !businessTypeRequiresRegistrationUpdate.value &&
         hasComplianceDocumentInputsComplete.value,
@@ -194,6 +198,8 @@ function onLogoSelected(event: Event) {
 }
 
 function submitProfile() {
+    if (!canUpdateCompanyProfile) return;
+
     form.post('/profile/logo', {
         forceFormData: true,
         preserveScroll: true,
@@ -206,6 +212,8 @@ function onComplianceDocumentSelected(event: Event) {
 }
 
 function requestLogoRemoval() {
+    if (!canUpdateCompanyProfile) return;
+
     form.logo = null;
     form.remove_logo = true;
     submitProfile();
@@ -877,6 +885,7 @@ function openRequestDetails(requestId: number | string): void {
                                     variant="destructive"
                                     :disabled="
                                         form.processing ||
+                                        !canUpdateCompanyProfile ||
                                         !canSubmitChanges ||
                                         !company.logo_url
                                     "

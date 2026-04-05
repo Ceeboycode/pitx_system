@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, reactive } from 'vue';
 
 import ExternalLayout from '@/layouts/ExternalLayout.vue';
+import { can } from '@/lib/can';
 
 import {
     AlertDialog,
@@ -163,6 +164,17 @@ const initials = computed(() =>
 );
 
 const isOwnAccount = computed(() => props.user.id === props.employee.id);
+const canUpdateEmployee = can('external_users.update');
+const canToggleEmployee = can('external_users.toggleStatus');
+const canResetEmployee = can('external_users.resetPassword');
+const canArchiveEmployee = can('external_users.archive');
+const hasManageActions = computed(
+    () =>
+        canUpdateEmployee ||
+        canToggleEmployee ||
+        canResetEmployee ||
+        canArchiveEmployee,
+);
 
 /* ======================================================
    Dialog state
@@ -175,6 +187,8 @@ const archiveDialog = reactive({ open: false });
    Actions (backend untouched)
 ====================================================== */
 function confirmToggleStatus() {
+    if (!canToggleEmployee) return;
+
     router.patch(
         `/employee-users/${props.employee.id}/toggle-status`,
         {},
@@ -188,6 +202,8 @@ function confirmToggleStatus() {
 }
 
 function confirmResetPassword() {
+    if (!canResetEmployee) return;
+
     router.patch(
         `/employee-users/${props.employee.id}/reset-password`,
         {},
@@ -201,6 +217,8 @@ function confirmResetPassword() {
 }
 
 function confirmArchive() {
+    if (!canArchiveEmployee) return;
+
     router.delete(`/employee-users/${props.employee.id}`, {
         preserveScroll: true,
         onSuccess: () => {
@@ -257,6 +275,7 @@ function confirmArchive() {
                         <DropdownMenu>
                             <DropdownMenuTrigger as-child>
                                 <Button
+                                    v-if="!isOwnAccount && hasManageActions"
                                     class="gap-2 rounded-lg border-0 bg-blue-700 text-sm font-semibold text-white shadow-sm hover:bg-blue-800"
                                 >
                                     <MoreHorizontal class="h-4 w-4" />
@@ -278,7 +297,7 @@ function confirmArchive() {
 
                                 <!-- Edit -->
                                 <DropdownMenuItem
-                                    v-if="!isOwnAccount"
+                                    v-if="!isOwnAccount && canUpdateEmployee"
                                     as-child
                                     class="rounded-lg text-slate-700 focus:bg-amber-50 focus:text-amber-700"
                                 >
@@ -292,7 +311,7 @@ function confirmArchive() {
 
                                 <!-- Toggle status -->
                                 <DropdownMenuItem
-                                    v-if="!isOwnAccount"
+                                    v-if="!isOwnAccount && canToggleEmployee"
                                     :class="[
                                         'rounded-lg',
                                         toggleStatusClass(employee.status),
@@ -305,7 +324,7 @@ function confirmArchive() {
 
                                 <!-- Reset password -->
                                 <DropdownMenuItem
-                                    v-if="!isOwnAccount"
+                                    v-if="!isOwnAccount && canResetEmployee"
                                     class="rounded-lg text-slate-700 focus:bg-blue-50 focus:text-blue-700"
                                     @click="resetPasswordDialog.open = true"
                                 >
@@ -314,13 +333,19 @@ function confirmArchive() {
                                 </DropdownMenuItem>
 
                                 <DropdownMenuSeparator
-                                    v-if="!isOwnAccount"
+                                    v-if="
+                                        !isOwnAccount &&
+                                        (canArchiveEmployee ||
+                                            canUpdateEmployee ||
+                                            canToggleEmployee ||
+                                            canResetEmployee)
+                                    "
                                     class="bg-slate-100"
                                 />
 
                                 <!-- Archive -->
                                 <DropdownMenuItem
-                                    v-if="!isOwnAccount"
+                                    v-if="!isOwnAccount && canArchiveEmployee"
                                     class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600"
                                     @click="archiveDialog.open = true"
                                 >
@@ -603,7 +628,10 @@ function confirmArchive() {
         </div>
 
         <!-- ── Toggle status dialog ──────────────────── -->
-        <AlertDialog v-if="!isOwnAccount" v-model:open="statusDialog.open">
+        <AlertDialog
+            v-if="!isOwnAccount && canToggleEmployee"
+            v-model:open="statusDialog.open"
+        >
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
                     <AlertDialogTitle>
@@ -633,7 +661,7 @@ function confirmArchive() {
 
         <!-- ── Reset password dialog ─────────────────── -->
         <AlertDialog
-            v-if="!isOwnAccount"
+            v-if="!isOwnAccount && canResetEmployee"
             v-model:open="resetPasswordDialog.open"
         >
             <AlertDialogContent class="rounded-2xl">
@@ -668,7 +696,10 @@ function confirmArchive() {
         </AlertDialog>
 
         <!-- ── Archive dialog ────────────────────────── -->
-        <AlertDialog v-if="!isOwnAccount" v-model:open="archiveDialog.open">
+        <AlertDialog
+            v-if="!isOwnAccount && canArchiveEmployee"
+            v-model:open="archiveDialog.open"
+        >
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
                     <AlertDialogTitle
