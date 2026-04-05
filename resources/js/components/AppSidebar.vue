@@ -200,7 +200,7 @@ const visibleMainNavItems = computed(() =>
 const footerNavItems: NavFooterItem[] = [
     {
         title: 'FAQ',
-        href: '#',
+        href: '/faq',
         icon: MessageCircleQuestion,
     },
 ];

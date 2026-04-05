@@ -693,6 +693,7 @@ function openRequestDetails(requestId: number | string): void {
 
                             <div class="flex flex-wrap gap-2 md:col-span-2">
                                 <Button
+                                    variant="blue"
                                     type="submit"
                                     :disabled="
                                         form.processing || !canSubmitChanges
