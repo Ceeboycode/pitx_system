@@ -14,9 +14,11 @@ class UpdateDispatchRequest extends FormRequest
     {
         /** @var \App\Models\Dispatch|null $dispatch */
         $dispatch = $this->route('dispatch');
+        $user = $this->user();
 
-        return auth()->check()
-            && auth()->user()?->company_id !== null
+        return $user !== null
+            && $user->company_id !== null
+            && $user->can('external_dispatches.update')
             && $dispatch !== null
             && $dispatch->status !== Dispatch::STATUS_DEPARTED;
     }

@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import InertiaPagination from '@/components/InertiaPagination.vue';
-import SearchInput from '@/components/SearchInput.vue';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { index, restore, trash } from '@/routes/roles';
+import { type BreadcrumbItem } from '@/types';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 
-import RestoreVehicleDialog from '@/components/vehicle/RestoreVehicleDialog.vue';
-
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -21,6 +23,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import {
     Table,
     TableBody,
@@ -30,55 +33,96 @@ import {
     TableRow,
 } from '@/components/ui/table';
 
-import AppLayout from '@/layouts/AppLayout.vue';
-import { index, trash } from '@/routes/vehicles';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/vue3';
+import { can } from '@/lib/can';
 
 import {
     Archive,
     ArrowLeft,
-    Bus,
     MoreHorizontal,
     RotateCcw,
-    Route as RouteIcon,
+    ShieldCheck,
+    X,
 } from 'lucide-vue-next';
+import { toast } from 'vue-sonner';
 
-import { ref } from 'vue';
+type Permission = { id: number; name: string };
+
+type Role = {
+    id: number;
+    name: string;
+    type: 'internal' | 'external';
+    permissions: Permission[];
+    deleted_at_human?: string | null;
+    deleter?: { id: number; name: string } | null;
+};
 
 const props = defineProps<{
-    vehicles: {
-        data: any[];
-        links: { url: string | null; label: string; active: boolean }[];
-        from: number | null;
-        to: number | null;
-        total: number;
-    };
-    filters: { search: string | null };
+    roles: { data: Role[]; links: any[] };
+    filters: { search?: string | null };
 }>();
 
+const canRestore = can('roles.restore');
+
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Vehicles', href: index().url },
-    { title: 'Archived Vehicles', href: trash().url },
+    { title: 'Roles', href: index().url },
+    { title: 'Archived Roles', href: trash().url },
 ];
 
-// We delegate to the dialog components — track which vehicle's dialogs are open
-const restoreOpen = ref(false);
-const selectedVehicle = ref<any | null>(null);
+const search = ref(props.filters.search ?? '');
+const hasActiveFilters = computed(() => !!search.value);
 
-function openRestore(vehicle: any) {
-    selectedVehicle.value = vehicle;
-    restoreOpen.value = true;
+let filterTimer: number | null = null;
+
+function applyFilters() {
+    router.get(
+        trash().url,
+        {
+            search: search.value || undefined,
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+            only: ['roles', 'filters', 'flash'],
+        },
+    );
 }
 
-function humanize(text?: string | null) {
-    if (!text) return '—';
-    return text.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+watch(search, () => {
+    if (filterTimer) window.clearTimeout(filterTimer);
+    filterTimer = window.setTimeout(() => applyFilters(), 350);
+});
+
+function clearFilters() {
+    search.value = '';
+    applyFilters();
+}
+
+function typeClass(type: Role['type']): string {
+    return type === 'internal'
+        ? 'bg-blue-100 text-blue-700 border-blue-200'
+        : 'bg-violet-100 text-violet-700 border-violet-200';
+}
+
+function handleRestore(role: Role) {
+    if (!confirm(`Restore role ${role.name}?`)) {
+        toast.info('Restore cancelled.');
+        return;
+    }
+
+    router.patch(
+        restore({ role: role.id }).url,
+        {},
+        {
+            preserveScroll: true,
+            onError: () => toast.error('Failed to restore role.'),
+        },
+    );
 }
 </script>
 
 <template>
-    <Head title="Archived Vehicles" />
+    <Head title="Archived Roles" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
@@ -89,11 +133,11 @@ function humanize(text?: string | null) {
                     <div>
                         <CardTitle class="flex items-center gap-2">
                             <Archive class="h-5 w-5 text-muted-foreground" />
-                            Archived Vehicles
+                            Archived Roles
                         </CardTitle>
                         <CardDescription class="mt-1">
-                            List of archived vehicles. You can restore them
-                            anytime.
+                            Archived roles can be restored back to the active
+                            roles list.
                         </CardDescription>
                     </div>
 
@@ -106,52 +150,51 @@ function humanize(text?: string | null) {
                         >
                             <Link :href="index().url">
                                 <ArrowLeft class="mr-2 h-4 w-4" />
-                                Back to Vehicles
+                                Back to Roles
                             </Link>
                         </Button>
                     </CardAction>
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-                    <!-- Search -->
                     <div
-                        class="flex flex-col gap-2 sm:flex-row sm:items-center"
+                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
                     >
                         <div class="w-full max-w-sm">
-                            <SearchInput
-                                :route="trash().url"
-                                :initial-value="filters.search"
-                                placeholder="Search archived vehicles…"
-                                :only="['vehicles', 'filters', 'flash']"
-                                :debounce="350"
+                            <Input
+                                v-model="search"
+                                placeholder="Search archived roles..."
+                                class="rounded-lg border-slate-200 focus-visible:ring-blue-500"
                             />
                         </div>
+
+                        <Button
+                            v-if="hasActiveFilters"
+                            size="sm"
+                            variant="ghost"
+                            class="h-7 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
+                            @click="clearFilters"
+                        >
+                            <X class="mr-1 h-3.5 w-3.5" />
+                            Clear
+                        </Button>
                     </div>
 
-                    <!-- Table -->
                     <div class="overflow-x-auto rounded-lg border">
                         <Table>
                             <TableHeader>
                                 <TableRow class="bg-muted/40 hover:bg-muted/40">
                                     <TableHead
                                         class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Company</TableHead
+                                        >Name</TableHead
                                     >
                                     <TableHead
                                         class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Route</TableHead
+                                        >Type</TableHead
                                     >
                                     <TableHead
                                         class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Vehicle Info</TableHead
-                                    >
-                                    <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Plate Number</TableHead
-                                    >
-                                    <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Cap.</TableHead
+                                        >Permissions</TableHead
                                     >
                                     <TableHead
                                         class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
@@ -169,13 +212,12 @@ function humanize(text?: string | null) {
                             </TableHeader>
 
                             <TableBody>
-                                <!-- Empty state -->
                                 <TableRow
-                                    v-if="vehicles.data.length === 0"
+                                    v-if="!props.roles.data.length"
                                     class="hover:bg-transparent"
                                 >
                                     <TableCell
-                                        colspan="8"
+                                        colspan="6"
                                         class="py-20 text-center"
                                     >
                                         <div
@@ -184,7 +226,7 @@ function humanize(text?: string | null) {
                                             <div
                                                 class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted"
                                             >
-                                                <Bus
+                                                <ShieldCheck
                                                     class="h-6 w-6 text-muted-foreground/40"
                                                 />
                                             </div>
@@ -192,7 +234,7 @@ function humanize(text?: string | null) {
                                                 <p
                                                     class="text-sm font-semibold text-foreground"
                                                 >
-                                                    No archived vehicles
+                                                    No archived roles
                                                 </p>
                                                 <p
                                                     class="mt-0.5 text-xs text-muted-foreground"
@@ -206,100 +248,54 @@ function humanize(text?: string | null) {
                                 </TableRow>
 
                                 <TableRow
-                                    v-for="vehicle in vehicles.data"
-                                    :key="vehicle.id"
+                                    v-for="role in props.roles.data"
+                                    :key="role.id"
                                     class="transition-colors hover:bg-muted/30"
                                 >
-                                    <!-- Company -->
-                                    <TableCell class="text-sm font-medium">
-                                        {{
-                                            vehicle.company?.company_name || '—'
-                                        }}
+                                    <TableCell
+                                        class="text-sm font-semibold capitalize"
+                                        >{{ role.name }}</TableCell
+                                    >
+
+                                    <TableCell>
+                                        <Badge :class="typeClass(role.type)">
+                                            {{
+                                                role.type === 'internal'
+                                                    ? 'Internal'
+                                                    : 'External'
+                                            }}
+                                        </Badge>
                                     </TableCell>
 
-                                    <!-- Route -->
                                     <TableCell>
-                                        <div
-                                            v-if="vehicle.route?.route_name"
-                                            class="flex items-center gap-1.5"
-                                        >
-                                            <RouteIcon
-                                                class="h-3.5 w-3.5 shrink-0 text-sky-600"
-                                            />
-                                            <span class="text-sm">{{
-                                                vehicle.route.route_name
-                                            }}</span>
-                                        </div>
                                         <span
-                                            v-else
                                             class="text-sm text-muted-foreground"
-                                            >—</span
                                         >
-                                    </TableCell>
-
-                                    <!-- Vehicle Info -->
-                                    <TableCell>
-                                        <div class="flex items-center gap-2">
-                                            <div
-                                                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-100"
-                                            >
-                                                <Bus
-                                                    class="h-3.5 w-3.5 text-blue-700"
-                                                />
-                                            </div>
-                                            <div>
-                                                <p class="text-sm font-medium">
-                                                    {{
-                                                        humanize(
-                                                            vehicle.vehicle_type
-                                                                ?.type_name ??
-                                                                vehicle.vehicle_type,
-                                                        )
-                                                    }}
-                                                </p>
-                                                <p
-                                                    class="text-xs text-muted-foreground"
-                                                >
-                                                    {{
-                                                        vehicle.body_number ||
-                                                        '—'
-                                                    }}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </TableCell>
-
-                                    <!-- Plate Number -->
-                                    <TableCell>
-                                        <span
-                                            class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold"
-                                        >
-                                            {{ vehicle.plate_number || '—' }}
+                                            {{
+                                                role.permissions?.length ?? 0
+                                            }}
+                                            permission{{
+                                                (role.permissions?.length ??
+                                                    0) !== 1
+                                                    ? 's'
+                                                    : ''
+                                            }}
                                         </span>
                                     </TableCell>
 
-                                    <!-- Capacity -->
-                                    <TableCell
-                                        class="text-sm text-muted-foreground tabular-nums"
-                                    >
-                                        {{ vehicle.capacity || '—' }}
-                                    </TableCell>
-
-                                    <!-- Archived At -->
                                     <TableCell
                                         class="text-sm text-muted-foreground"
+                                        >{{
+                                            role.deleted_at_human ?? '—'
+                                        }}</TableCell
                                     >
-                                        {{ vehicle.deleted_at_human || '—' }}
-                                    </TableCell>
-
-                                    <!-- Archived By -->
                                     <TableCell
                                         class="text-sm text-muted-foreground"
+                                        >{{
+                                            role.deleter?.name ?? '—'
+                                        }}</TableCell
                                     >
-                                        {{ vehicle.deleter?.name || '—' }}
-                                    </TableCell>
 
-                                    <!-- Actions -->
                                     <TableCell class="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
@@ -324,23 +320,19 @@ function humanize(text?: string | null) {
                                                 <DropdownMenuLabel
                                                     class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
                                                 >
-                                                    {{
-                                                        vehicle.plate_number ||
-                                                        'Vehicle'
-                                                    }}
+                                                    {{ role.name }}
                                                 </DropdownMenuLabel>
                                                 <DropdownMenuSeparator />
 
                                                 <DropdownMenuItem
+                                                    v-if="canRestore"
                                                     class="rounded-lg text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700"
-                                                    @click="
-                                                        openRestore(vehicle)
-                                                    "
+                                                    @click="handleRestore(role)"
                                                 >
                                                     <RotateCcw
                                                         class="mr-2 h-4 w-4"
                                                     />
-                                                    Restore Vehicle
+                                                    Restore
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -349,24 +341,8 @@ function humanize(text?: string | null) {
                             </TableBody>
                         </Table>
                     </div>
-
-                    <InertiaPagination
-                        :links="vehicles.links"
-                        :meta="{
-                            from: vehicles.from,
-                            to: vehicles.to,
-                            total: vehicles.total,
-                        }"
-                    />
                 </CardContent>
             </Card>
         </div>
-
-        <!-- Dialogs -->
-        <RestoreVehicleDialog
-            v-if="selectedVehicle"
-            v-model:open="restoreOpen"
-            :vehicle="selectedVehicle"
-        />
     </AppLayout>
 </template>

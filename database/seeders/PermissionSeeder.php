@@ -17,9 +17,8 @@ class PermissionSeeder extends Seeder
         'companies' => [
             'viewAny',
             'view',
-            'delete',
+            'archive',
             'restore',
-            'forceDelete',
         ],
 
         'company_documents' => [
@@ -28,7 +27,7 @@ class PermissionSeeder extends Seeder
             'verify',
             'update',
             'reject',
-            'delete',
+            'archive',
         ],
 
         'vehicles' => [
@@ -36,9 +35,8 @@ class PermissionSeeder extends Seeder
             'view',
             'create',
             'update',
-            'delete',
+            'archive',
             'restore',
-            'forceDelete',
             'toggleStatus',
         ],
 
@@ -53,9 +51,8 @@ class PermissionSeeder extends Seeder
             'view',
             'create',
             'update',
-            'delete',
+            'archive',
             'restore',
-            'forceDelete',
             'viewTrash',
         ],
 
@@ -64,9 +61,8 @@ class PermissionSeeder extends Seeder
             'view',
             'create',
             'update',
-            'delete',
+            'archive',
             'restore',
-            'forceDelete',
             'viewTrash',
             'toggleStatus',
         ],
@@ -76,7 +72,9 @@ class PermissionSeeder extends Seeder
             'view',
             'create',
             'update',
-            'delete',
+            'archive',
+            'restore',
+            'viewTrash',
             'toggleStatus',
             'resetPassword',
         ],
@@ -86,7 +84,9 @@ class PermissionSeeder extends Seeder
             'view',
             'create',
             'update',
-            'delete',
+            'archive',
+            'restore',
+            'viewTrash',
         ],
 
         'dispatches' => [
@@ -96,12 +96,13 @@ class PermissionSeeder extends Seeder
 
         'audit_logs' => [
             'viewAny',
+            'viewOwn',
         ],
 
         // ── External ──────────────────────────────────────────
         // prefix ALL external modules with external_
         // e.g. if companies can be managed by external users too:
-        'external_companies' => [
+        'external_companies_settings' => [
             'view',
             'update',
         ],
@@ -109,6 +110,9 @@ class PermissionSeeder extends Seeder
         'external_dispatches' => [
             'viewAny',
             'view',
+            'create',
+            'update',
+            'depart',
         ],
 
         'external_vehicles' => [
@@ -129,12 +133,20 @@ class PermissionSeeder extends Seeder
             'view',
             'create',
             'update',
-            'delete',
+            'archive',
             'toggleStatus',
             'resetPassword',
         ],
 
     ];
+
+        Permission::query()
+            ->where(function ($query) {
+                $query->where('name', 'like', '%.delete')
+                    ->orWhere('name', 'like', '%.forceDelete')
+                    ->orWhere('name', 'like', 'external_companies.%');
+            })
+            ->delete();
 
         foreach ($modules as $module => $actions) {
             foreach ($actions as $action) {

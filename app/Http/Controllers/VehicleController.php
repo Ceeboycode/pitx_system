@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Company;
 use App\Models\Route;
 use App\Models\Vehicle;
 use App\Models\VehicleDocument;
-use App\Models\VehicleType;
 use App\Notifications\External\VehicleApprovedNotification;
 use App\Notifications\External\VehicleDocumentNeedsRevisionNotification;
 use App\Notifications\External\VehicleReactivatedNotification;
@@ -218,7 +216,7 @@ class VehicleController extends Controller
 
         $this->vehicleService->deleteVehicle($vehicle, request()->user()->id);
 
-        return back()->with('success', 'Vehicle deleted successfully.');
+        return to_route('vehicles.index')->with('success', 'Vehicle archived successfully.');
     }
 
     public function trash(Request $request): Response

@@ -31,6 +31,11 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -45,11 +50,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover';
 
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
@@ -62,24 +62,23 @@ import {
     ChevronRight,
     Download,
     FileSearch,
+    FileText,
     Filter,
     MoreHorizontal,
-    Pencil,
     Power,
     Route as RouteIcon,
     Upload,
     X,
-    FileText,
 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
-import { destroy, edit, index, show, trash } from '@/routes/vehicles';
+import { destroy, index, show, trash } from '@/routes/vehicles';
 import { type BreadcrumbItem } from '@/types';
 
 /* ── Types ──────────────────────────────────────────────────────── */
 
 type SortField = 'capacity' | 'created_at' | 'status' | null;
-type SortDir   = 'asc' | 'desc';
+type SortDir = 'asc' | 'desc';
 
 type VehicleItem = {
     id: number;
@@ -124,48 +123,60 @@ const breadcrumbs: BreadcrumbItem[] = [
 /* ── Dialog state ────────────────────────────────────────────────── */
 
 const archiveDialogOpen = ref(false);
-const selectedVehicle   = ref<VehicleItem | null>(null);
+const selectedVehicle = ref<VehicleItem | null>(null);
 const suspendDialogOpen = ref(false);
 const activateDialogOpen = ref(false);
-const statusVehicle     = ref<VehicleItem | null>(null);
-const suspendRemarks    = ref('');
+const statusVehicle = ref<VehicleItem | null>(null);
+const suspendRemarks = ref('');
 
 /* ── Filter & Sort state ─────────────────────────────────────────── */
 
-const statusFilter      = ref<string>(props.filters.status       ?? 'all');
+const statusFilter = ref<string>(props.filters.status ?? 'all');
 const vehicleTypeFilter = ref<string>(props.filters.vehicle_type ?? 'all');
-const routeFilter       = ref<string>(props.filters.route_id     ?? 'all');
-const sortBy            = ref<SortField>(props.filters.sort_by   ?? null);
-const sortDir           = ref<SortDir>(props.filters.sort_dir    ?? 'asc');
+const routeFilter = ref<string>(props.filters.route_id ?? 'all');
+const sortBy = ref<SortField>(props.filters.sort_by ?? null);
+const sortDir = ref<SortDir>(props.filters.sort_dir ?? 'asc');
 
-const hasActiveFilters = computed(() =>
-    (statusFilter.value && statusFilter.value !== 'all') ||
-    (vehicleTypeFilter.value && vehicleTypeFilter.value !== 'all') ||
-    (routeFilter.value && routeFilter.value !== 'all') ||
-    sortBy.value !== null,
+const hasActiveFilters = computed(
+    () =>
+        (statusFilter.value && statusFilter.value !== 'all') ||
+        (vehicleTypeFilter.value && vehicleTypeFilter.value !== 'all') ||
+        (routeFilter.value && routeFilter.value !== 'all') ||
+        sortBy.value !== null,
 );
 
 const resultsLabel = computed(() => {
     const from = props.vehicles.from ?? 0;
-    const to   = props.vehicles.to ?? props.vehicles.data.length;
+    const to = props.vehicles.to ?? props.vehicles.data.length;
     const total = props.vehicles.total ?? props.vehicles.data.length;
     if (!total) return 'No results';
     return `${from}-${to} of ${total} vehicles`;
 });
 
-function applyFilters(overrides: Record<string, string | null | undefined> = {}) {
+function applyFilters(
+    overrides: Record<string, string | null | undefined> = {},
+) {
     router.get(
         index().url,
         {
-            search:       props.filters.search ?? undefined,
-            status:       statusFilter.value !== 'all'      ? statusFilter.value      : undefined,
-            vehicle_type: vehicleTypeFilter.value !== 'all' ? vehicleTypeFilter.value : undefined,
-            route_id:     routeFilter.value !== 'all'       ? routeFilter.value       : undefined,
-            sort_by:      sortBy.value ?? undefined,
-            sort_dir:     sortBy.value ? sortDir.value : undefined,
+            search: props.filters.search ?? undefined,
+            status:
+                statusFilter.value !== 'all' ? statusFilter.value : undefined,
+            vehicle_type:
+                vehicleTypeFilter.value !== 'all'
+                    ? vehicleTypeFilter.value
+                    : undefined,
+            route_id:
+                routeFilter.value !== 'all' ? routeFilter.value : undefined,
+            sort_by: sortBy.value ?? undefined,
+            sort_dir: sortBy.value ? sortDir.value : undefined,
             ...overrides,
         },
-        { preserveState: true, replace: true, only: ['vehicles', 'filters', 'flash'] },
+        {
+            preserveState: true,
+            replace: true,
+            only: ['vehicles', 'filters', 'flash'],
+        },
     );
 }
 
@@ -188,21 +199,24 @@ function toggleSort(field: SortField) {
     if (sortBy.value === field) {
         sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
     } else {
-        sortBy.value  = field;
+        sortBy.value = field;
         sortDir.value = 'asc';
     }
     applyFilters();
 }
 
 function clearFilters() {
-    statusFilter.value      = 'all';
+    statusFilter.value = 'all';
     vehicleTypeFilter.value = 'all';
-    routeFilter.value       = 'all';
-    sortBy.value            = null;
-    sortDir.value           = 'asc';
+    routeFilter.value = 'all';
+    sortBy.value = null;
+    sortDir.value = 'asc';
     applyFilters({
-        status: undefined, vehicle_type: undefined,
-        route_id: undefined, sort_by: undefined, sort_dir: undefined,
+        status: undefined,
+        vehicle_type: undefined,
+        route_id: undefined,
+        sort_by: undefined,
+        sort_dir: undefined,
     });
 }
 
@@ -214,7 +228,9 @@ function sortIcon(field: SortField) {
 }
 
 function sortIconClass(field: SortField) {
-    return sortBy.value === field ? 'text-blue-600' : 'text-muted-foreground/40';
+    return sortBy.value === field
+        ? 'text-blue-600'
+        : 'text-muted-foreground/40';
 }
 
 /* ── Helpers ─────────────────────────────────────────────────────── */
@@ -222,7 +238,9 @@ function sortIconClass(field: SortField) {
 const formatDate = (value?: string | null) => {
     if (!value) return '—';
     return new Date(value).toLocaleDateString('en-PH', {
-        year: 'numeric', month: 'short', day: 'numeric',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
     });
 };
 
@@ -234,28 +252,38 @@ const humanize = (text?: string | null) => {
 function statusClass(status?: string | null): string {
     switch (status) {
         case 'active':
-        case 'verified':         return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-        case 'for_verification': return 'bg-violet-100 text-violet-700 border-violet-200';
+        case 'verified':
+            return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        case 'for_verification':
+            return 'bg-violet-100 text-violet-700 border-violet-200';
         case 'draft':
-        case 'pending':          return 'bg-amber-100 text-amber-700 border-amber-200';
+        case 'pending':
+            return 'bg-amber-100 text-amber-700 border-amber-200';
         case 'invalid':
         case 'inactive':
-        case 'needs_revision':   return 'bg-rose-100 text-rose-600 border-rose-200';
-        default:                 return 'bg-slate-100 text-slate-500 border-0';
+        case 'needs_revision':
+            return 'bg-rose-100 text-rose-600 border-rose-200';
+        default:
+            return 'bg-slate-100 text-slate-500 border-0';
     }
 }
 
 function statusDot(status?: string | null): string {
     switch (status) {
         case 'active':
-        case 'verified':         return 'bg-emerald-500';
-        case 'for_verification': return 'bg-violet-500';
+        case 'verified':
+            return 'bg-emerald-500';
+        case 'for_verification':
+            return 'bg-violet-500';
         case 'draft':
-        case 'pending':          return 'bg-amber-500';
+        case 'pending':
+            return 'bg-amber-500';
         case 'invalid':
         case 'inactive':
-        case 'needs_revision':   return 'bg-rose-500';
-        default:                 return 'bg-slate-400';
+        case 'needs_revision':
+            return 'bg-rose-500';
+        default:
+            return 'bg-slate-400';
     }
 }
 
@@ -266,7 +294,11 @@ function toggleStatusClass(status?: string | null): string {
 }
 
 const toggleLabel = (status?: string | null) =>
-    status === 'active' ? 'Suspend' : status === 'suspended' ? 'Unsuspend' : 'Suspend';
+    status === 'active'
+        ? 'Suspend'
+        : status === 'suspended'
+          ? 'Unsuspend'
+          : 'Suspend';
 
 const canToggle = (vehicle: VehicleItem) =>
     !['pending', 'for_verification', 'inactive'].includes(vehicle.status ?? '');
@@ -296,7 +328,11 @@ const confirmSuspend = () => {
         { remarks: suspendRemarks.value },
         {
             preserveScroll: true,
-            onSuccess: () => { suspendDialogOpen.value = false; statusVehicle.value = null; suspendRemarks.value = ''; },
+            onSuccess: () => {
+                suspendDialogOpen.value = false;
+                statusVehicle.value = null;
+                suspendRemarks.value = '';
+            },
         },
     );
 };
@@ -308,7 +344,10 @@ const confirmActivate = () => {
         {},
         {
             preserveScroll: true,
-            onSuccess: () => { activateDialogOpen.value = false; statusVehicle.value = null; },
+            onSuccess: () => {
+                activateDialogOpen.value = false;
+                statusVehicle.value = null;
+            },
         },
     );
 };
@@ -316,7 +355,10 @@ const confirmActivate = () => {
 const archiveVehicle = (vehicle: VehicleItem) => {
     router.delete(destroy({ vehicle: vehicle.id }).url, {
         preserveScroll: true,
-        onSuccess: () => { archiveDialogOpen.value = false; selectedVehicle.value = null; },
+        onSuccess: () => {
+            archiveDialogOpen.value = false;
+            selectedVehicle.value = null;
+        },
     });
 };
 </script>
@@ -325,7 +367,9 @@ const archiveVehicle = (vehicle: VehicleItem) => {
     <Head title="Vehicles" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+        <div
+            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
+        >
             <Card class="mx-5">
                 <CardHeader>
                     <div>
@@ -339,7 +383,10 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                     </div>
 
                     <CardAction class="flex items-center gap-2">
-                        <Badge variant="outline" class="rounded-lg border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
+                        <Badge
+                            variant="outline"
+                            class="rounded-lg border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600"
+                        >
                             {{ resultsLabel }}
                         </Badge>
                         <Button
@@ -357,9 +404,10 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-
                     <!-- Row 1: Search + Import/Export -->
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div
+                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                    >
                         <div class="w-full max-w-sm">
                             <SearchInput
                                 :route="index().url"
@@ -394,48 +442,95 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                     <!-- Row 2: Filters + Sort -->
                     <div class="flex flex-wrap items-center gap-2">
                         <!-- Filter label -->
-                        <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                        <div
+                            class="flex items-center gap-1.5 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                        >
                             <Filter class="h-3.5 w-3.5" />
                             Filter
                         </div>
 
                         <!-- Status filter -->
-                        <Select :model-value="statusFilter" @update:model-value="onStatusChange">
-                            <SelectTrigger class="h-8 w-40 rounded-lg border-slate-200 text-xs">
+                        <Select
+                            :model-value="statusFilter"
+                            @update:model-value="onStatusChange"
+                        >
+                            <SelectTrigger
+                                class="h-8 w-40 rounded-lg border-slate-200 text-xs"
+                            >
                                 <SelectValue placeholder="All Statuses" />
                             </SelectTrigger>
                             <SelectContent class="rounded-xl">
-                                <SelectItem value="all" class="text-xs">All Statuses</SelectItem>
-                                <SelectItem value="active" class="text-xs">Active</SelectItem>
-                                <SelectItem value="suspended" class="text-xs">Suspended</SelectItem>
-                                <SelectItem value="for_verification" class="text-xs">For Verification</SelectItem>
-                                <SelectItem value="pending" class="text-xs">Pending</SelectItem>
-                                <SelectItem value="needs_revision" class="text-xs">Needs Revision</SelectItem>
+                                <SelectItem value="all" class="text-xs"
+                                    >All Statuses</SelectItem
+                                >
+                                <SelectItem value="active" class="text-xs"
+                                    >Active</SelectItem
+                                >
+                                <SelectItem value="suspended" class="text-xs"
+                                    >Suspended</SelectItem
+                                >
+                                <SelectItem
+                                    value="for_verification"
+                                    class="text-xs"
+                                    >For Verification</SelectItem
+                                >
+                                <SelectItem value="pending" class="text-xs"
+                                    >Pending</SelectItem
+                                >
+                                <SelectItem
+                                    value="needs_revision"
+                                    class="text-xs"
+                                    >Needs Revision</SelectItem
+                                >
                             </SelectContent>
                         </Select>
 
                         <!-- Vehicle Type filter -->
-                        <Select :model-value="vehicleTypeFilter" @update:model-value="onVehicleTypeChange">
-                            <SelectTrigger class="h-8 w-40 rounded-lg border-slate-200 text-xs">
+                        <Select
+                            :model-value="vehicleTypeFilter"
+                            @update:model-value="onVehicleTypeChange"
+                        >
+                            <SelectTrigger
+                                class="h-8 w-40 rounded-lg border-slate-200 text-xs"
+                            >
                                 <SelectValue placeholder="All Types" />
                             </SelectTrigger>
                             <SelectContent class="rounded-xl">
-                                <SelectItem value="all" class="text-xs">All Types</SelectItem>
-                                <SelectItem value="bus" class="text-xs">Bus</SelectItem>
-                                <SelectItem value="minibus" class="text-xs">Minibus</SelectItem>
-                                <SelectItem value="jeepney" class="text-xs">Jeepney</SelectItem>
-                                <SelectItem value="van" class="text-xs">Van</SelectItem>
-                                <SelectItem value="uv_express" class="text-xs">UV Express</SelectItem>
+                                <SelectItem value="all" class="text-xs"
+                                    >All Types</SelectItem
+                                >
+                                <SelectItem value="bus" class="text-xs"
+                                    >Bus</SelectItem
+                                >
+                                <SelectItem value="minibus" class="text-xs"
+                                    >Minibus</SelectItem
+                                >
+                                <SelectItem value="jeepney" class="text-xs"
+                                    >Jeepney</SelectItem
+                                >
+                                <SelectItem value="van" class="text-xs"
+                                    >Van</SelectItem
+                                >
+                                <SelectItem value="uv_express" class="text-xs"
+                                    >UV Express</SelectItem
+                                >
                             </SelectContent>
                         </Select>
 
                         <!-- Route filter -->
-                        <Select :model-value="routeFilter" @update:model-value="onRouteChange">
-                            <SelectTrigger class="h-8 w-44 rounded-lg border-slate-200 text-xs">
+                        <Select
+                            :model-value="routeFilter"
+                            @update:model-value="onRouteChange"
+                        >
+                            <SelectTrigger
+                                class="h-8 w-44 rounded-lg border-slate-200 text-xs"
+                            >
                                 <SelectValue placeholder="All Routes" />
                             </SelectTrigger>
                             <SelectContent class="rounded-xl">
-                                <SelectItem value="all" class="text-xs">All Routes</SelectItem>
+                                <SelectItem value="all" class="text-xs"
+                                    >All Routes</SelectItem
+                                >
                                 <SelectItem
                                     v-for="route in props.routes"
                                     :key="route.id"
@@ -448,7 +543,9 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                         </Select>
 
                         <!-- Sort label -->
-                        <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground ml-2">
+                        <div
+                            class="ml-2 flex items-center gap-1.5 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                        >
                             <ArrowUpDown class="h-3.5 w-3.5" />
                             Sort
                         </div>
@@ -456,16 +553,34 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                         <!-- Sort by -->
                         <Select
                             :model-value="sortBy ?? 'none'"
-                            @update:model-value="(val) => { sortBy = val === 'none' ? null : val as SortField; applyFilters(); }"
+                            @update:model-value="
+                                (val) => {
+                                    sortBy =
+                                        val === 'none'
+                                            ? null
+                                            : (val as SortField);
+                                    applyFilters();
+                                }
+                            "
                         >
-                            <SelectTrigger class="h-8 w-40 rounded-lg border-slate-200 text-xs">
+                            <SelectTrigger
+                                class="h-8 w-40 rounded-lg border-slate-200 text-xs"
+                            >
                                 <SelectValue placeholder="Sort by…" />
                             </SelectTrigger>
                             <SelectContent class="rounded-xl">
-                                <SelectItem value="none" class="text-xs">No Sort</SelectItem>
-                                <SelectItem value="status" class="text-xs">Status</SelectItem>
-                                <SelectItem value="capacity" class="text-xs">Capacity</SelectItem>
-                                <SelectItem value="created_at" class="text-xs">Created Date</SelectItem>
+                                <SelectItem value="none" class="text-xs"
+                                    >No Sort</SelectItem
+                                >
+                                <SelectItem value="status" class="text-xs"
+                                    >Status</SelectItem
+                                >
+                                <SelectItem value="capacity" class="text-xs"
+                                    >Capacity</SelectItem
+                                >
+                                <SelectItem value="created_at" class="text-xs"
+                                    >Created Date</SelectItem
+                                >
                             </SelectContent>
                         </Select>
 
@@ -475,16 +590,30 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                             size="sm"
                             variant="outline"
                             class="h-8 rounded-lg border-slate-200 px-3 text-xs text-slate-600 hover:bg-slate-100"
-                            @click="sortDir = sortDir === 'asc' ? 'desc' : 'asc'; applyFilters()"
+                            @click="
+                                sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+                                applyFilters();
+                            "
                         >
-                            <ArrowUp v-if="sortDir === 'asc'" class="mr-1.5 h-3.5 w-3.5 text-blue-600" />
-                            <ArrowDown v-else class="mr-1.5 h-3.5 w-3.5 text-blue-600" />
+                            <ArrowUp
+                                v-if="sortDir === 'asc'"
+                                class="mr-1.5 h-3.5 w-3.5 text-blue-600"
+                            />
+                            <ArrowDown
+                                v-else
+                                class="mr-1.5 h-3.5 w-3.5 text-blue-600"
+                            />
                             {{ sortDir === 'asc' ? 'Ascending' : 'Descending' }}
                         </Button>
 
                         <!-- Active filter badge + clear -->
-                        <div v-if="hasActiveFilters" class="ml-auto flex items-center gap-2">
-                            <Badge class="gap-1 rounded-lg bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 border border-blue-200 hover:bg-blue-50">
+                        <div
+                            v-if="hasActiveFilters"
+                            class="ml-auto flex items-center gap-2"
+                        >
+                            <Badge
+                                class="gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-50"
+                            >
                                 <Filter class="h-3 w-3" />
                                 Filters active
                             </Badge>
@@ -505,62 +634,118 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                         <Table>
                             <TableHeader>
                                 <TableRow class="bg-muted/40 hover:bg-muted/40">
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Company</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Route</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Vehicle Info</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Plate Number</TableHead>
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        >Company</TableHead
+                                    >
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        >Route</TableHead
+                                    >
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        >Vehicle Info</TableHead
+                                    >
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        >Plate Number</TableHead
+                                    >
 
                                     <!-- Sortable: Capacity -->
                                     <TableHead
-                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('capacity')"
                                     >
                                         <div class="flex items-center gap-1.5">
                                             Cap.
-                                            <component :is="sortIcon('capacity')" class="h-3.5 w-3.5" :class="sortIconClass('capacity')" />
+                                            <component
+                                                :is="sortIcon('capacity')"
+                                                class="h-3.5 w-3.5"
+                                                :class="
+                                                    sortIconClass('capacity')
+                                                "
+                                            />
                                         </div>
                                     </TableHead>
 
                                     <!-- Sortable: Status -->
                                     <TableHead
-                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('status')"
                                     >
                                         <div class="flex items-center gap-1.5">
                                             Status
-                                            <component :is="sortIcon('status')" class="h-3.5 w-3.5" :class="sortIconClass('status')" />
+                                            <component
+                                                :is="sortIcon('status')"
+                                                class="h-3.5 w-3.5"
+                                                :class="sortIconClass('status')"
+                                            />
                                         </div>
                                     </TableHead>
 
                                     <!-- Sortable: Created -->
                                     <TableHead
-                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('created_at')"
                                     >
                                         <div class="flex items-center gap-1.5">
                                             Created
-                                            <component :is="sortIcon('created_at')" class="h-3.5 w-3.5" :class="sortIconClass('created_at')" />
+                                            <component
+                                                :is="sortIcon('created_at')"
+                                                class="h-3.5 w-3.5"
+                                                :class="
+                                                    sortIconClass('created_at')
+                                                "
+                                            />
                                         </div>
                                     </TableHead>
 
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Remarks</TableHead>
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        >Remarks</TableHead
+                                    >
 
-                                    <TableHead class="text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Actions</TableHead>
+                                    <TableHead
+                                        class="text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        >Actions</TableHead
+                                    >
                                 </TableRow>
                             </TableHeader>
 
                             <TableBody>
                                 <!-- Empty state -->
-                                <TableRow v-if="vehicles.data.length === 0" class="hover:bg-transparent">
-                                    <TableCell colspan="8" class="py-20 text-center">
-                                        <div class="flex flex-col items-center gap-3">
-                                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-                                                <Bus class="h-6 w-6 text-muted-foreground/40" />
+                                <TableRow
+                                    v-if="vehicles.data.length === 0"
+                                    class="hover:bg-transparent"
+                                >
+                                    <TableCell
+                                        colspan="8"
+                                        class="py-20 text-center"
+                                    >
+                                        <div
+                                            class="flex flex-col items-center gap-3"
+                                        >
+                                            <div
+                                                class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted"
+                                            >
+                                                <Bus
+                                                    class="h-6 w-6 text-muted-foreground/40"
+                                                />
                                             </div>
                                             <div>
-                                                <p class="text-sm font-semibold text-foreground">No vehicles found</p>
-                                                <p class="mt-0.5 text-xs text-muted-foreground">
-                                                    {{ hasActiveFilters ? 'Try adjusting your filters or search.' : 'Try adjusting your search.' }}
+                                                <p
+                                                    class="text-sm font-semibold text-foreground"
+                                                >
+                                                    No vehicles found
+                                                </p>
+                                                <p
+                                                    class="mt-0.5 text-xs text-muted-foreground"
+                                                >
+                                                    {{
+                                                        hasActiveFilters
+                                                            ? 'Try adjusting your filters or search.'
+                                                            : 'Try adjusting your search.'
+                                                    }}
                                                 </p>
                                             </div>
                                             <Button
@@ -584,53 +769,99 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                 >
                                     <!-- Company -->
                                     <TableCell class="text-sm font-medium">
-                                        {{ vehicle.company?.company_name || '—' }}
+                                        {{
+                                            vehicle.company?.company_name || '—'
+                                        }}
                                     </TableCell>
 
                                     <!-- Route -->
                                     <TableCell>
-                                        <div v-if="vehicle.route?.route_name" class="flex items-center gap-1.5">
-                                            <RouteIcon class="h-3.5 w-3.5 shrink-0 text-sky-600" />
-                                            <span class="text-sm">{{ vehicle.route.route_name }}</span>
+                                        <div
+                                            v-if="vehicle.route?.route_name"
+                                            class="flex items-center gap-1.5"
+                                        >
+                                            <RouteIcon
+                                                class="h-3.5 w-3.5 shrink-0 text-sky-600"
+                                            />
+                                            <span class="text-sm">{{
+                                                vehicle.route.route_name
+                                            }}</span>
                                         </div>
-                                        <span v-else class="text-sm text-muted-foreground">—</span>
+                                        <span
+                                            v-else
+                                            class="text-sm text-muted-foreground"
+                                            >—</span
+                                        >
                                     </TableCell>
 
                                     <!-- Vehicle Info -->
                                     <TableCell>
                                         <div class="flex items-center gap-2">
-                                            <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-100">
-                                                <Bus class="h-3.5 w-3.5 text-blue-700" />
+                                            <div
+                                                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-100"
+                                            >
+                                                <Bus
+                                                    class="h-3.5 w-3.5 text-blue-700"
+                                                />
                                             </div>
                                             <div>
-                                                <p class="text-sm font-medium">{{ humanize(vehicle.vehicle_type) }}</p>
-                                                <p class="text-xs text-muted-foreground">{{ vehicle.body_number || '—' }}</p>
+                                                <p class="text-sm font-medium">
+                                                    {{
+                                                        humanize(
+                                                            vehicle.vehicle_type,
+                                                        )
+                                                    }}
+                                                </p>
+                                                <p
+                                                    class="text-xs text-muted-foreground"
+                                                >
+                                                    {{
+                                                        vehicle.body_number ||
+                                                        '—'
+                                                    }}
+                                                </p>
                                             </div>
                                         </div>
                                     </TableCell>
 
                                     <!-- Plate Number -->
                                     <TableCell>
-                                        <span class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
+                                        <span
+                                            class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold"
+                                        >
                                             {{ vehicle.plate_number || '—' }}
                                         </span>
                                     </TableCell>
 
                                     <!-- Capacity -->
-                                    <TableCell class="text-sm text-muted-foreground tabular-nums">
+                                    <TableCell
+                                        class="text-sm text-muted-foreground tabular-nums"
+                                    >
                                         {{ vehicle.capacity || '—' }}
                                     </TableCell>
 
                                     <!-- Status -->
                                     <TableCell>
-                                        <Badge :class="['gap-1.5', statusClass(vehicle.status)]">
-                                            <span :class="['h-1.5 w-1.5 rounded-full', statusDot(vehicle.status)]" />
+                                        <Badge
+                                            :class="[
+                                                'gap-1.5',
+                                                statusClass(vehicle.status),
+                                            ]"
+                                        >
+                                            <span
+                                                :class="[
+                                                    'h-1.5 w-1.5 rounded-full',
+                                                    statusDot(vehicle.status),
+                                                ]"
+                                            />
                                             {{ humanize(vehicle.status) }}
                                         </Badge>
                                     </TableCell>
 
                                     <!-- Created -->
-                                    <TableCell class="text-sm text-muted-foreground">
+                                    <TableCell
+                                        class="text-sm text-muted-foreground"
+                                    >
                                         {{ formatDate(vehicle.created_at) }}
                                     </TableCell>
 
@@ -644,18 +875,30 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                         size="sm"
                                                         class="h-7 rounded-lg border-slate-200 text-xs text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
                                                     >
-                                                        <FileText class="mr-1.5 h-3.5 w-3.5" />
+                                                        <FileText
+                                                            class="mr-1.5 h-3.5 w-3.5"
+                                                        />
                                                         View
                                                     </Button>
                                                 </PopoverTrigger>
-                                                <PopoverContent class="w-64 rounded-xl border-slate-200 p-3 text-sm text-slate-700 shadow-lg">
+                                                <PopoverContent
+                                                    class="w-64 rounded-xl border-slate-200 p-3 text-sm text-slate-700 shadow-lg"
+                                                >
                                                     {{ vehicle.remarks }}
                                                 </PopoverContent>
                                             </Popover>
-                                            <Badge v-if="vehicle.remarks" variant="secondary" class="rounded-full bg-slate-100 text-[11px] font-semibold text-slate-700">
+                                            <Badge
+                                                v-if="vehicle.remarks"
+                                                variant="secondary"
+                                                class="rounded-full bg-slate-100 text-[11px] font-semibold text-slate-700"
+                                            >
                                                 Has remarks
                                             </Badge>
-                                            <span v-else class="text-xs text-muted-foreground">&mdash;</span>
+                                            <span
+                                                v-else
+                                                class="text-xs text-muted-foreground"
+                                                >&mdash;</span
+                                            >
                                         </div>
                                     </TableCell>
 
@@ -668,14 +911,26 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     size="icon"
                                                     class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                                                 >
-                                                    <MoreHorizontal class="h-4 w-4" />
-                                                    <span class="sr-only">Open actions</span>
+                                                    <MoreHorizontal
+                                                        class="h-4 w-4"
+                                                    />
+                                                    <span class="sr-only"
+                                                        >Open actions</span
+                                                    >
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent align="end" class="w-52 rounded-xl border-slate-200 shadow-lg">
-                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                                    {{ vehicle.plate_number || 'Vehicle' }}
+                                            <DropdownMenuContent
+                                                align="end"
+                                                class="w-52 rounded-xl border-slate-200 shadow-lg"
+                                            >
+                                                <DropdownMenuLabel
+                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                                >
+                                                    {{
+                                                        vehicle.plate_number ||
+                                                        'Vehicle'
+                                                    }}
                                                 </DropdownMenuLabel>
                                                 <DropdownMenuSeparator />
 
@@ -683,40 +938,80 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     as-child
                                                     class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700"
                                                 >
-                                                    <Link :href="show({ vehicle: vehicle.id }).url" class="flex items-center">
-                                                        <FileSearch class="mr-2 h-4 w-4" />
+                                                    <Link
+                                                        :href="
+                                                            show({
+                                                                vehicle:
+                                                                    vehicle.id,
+                                                            }).url
+                                                        "
+                                                        class="flex items-center"
+                                                    >
+                                                        <FileSearch
+                                                            class="mr-2 h-4 w-4"
+                                                        />
                                                         Review
-                                                        <ChevronRight class="ml-auto h-3.5 w-3.5 text-blue-400" />
+                                                        <ChevronRight
+                                                            class="ml-auto h-3.5 w-3.5 text-blue-400"
+                                                        />
                                                     </Link>
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
-                                                    as-child
-                                                    class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700"
+                                                    v-if="
+                                                        vehicle.status ===
+                                                        'active'
+                                                    "
+                                                    :disabled="
+                                                        !canToggle(vehicle)
+                                                    "
+                                                    :class="[
+                                                        'rounded-lg',
+                                                        canToggle(vehicle)
+                                                            ? toggleStatusClass(
+                                                                  vehicle.status,
+                                                              )
+                                                            : 'text-slate-300',
+                                                    ]"
+                                                    @click="
+                                                        canToggle(vehicle) &&
+                                                        openSuspendDialog(
+                                                            vehicle,
+                                                        )
+                                                    "
                                                 >
-                                                    <Link :href="edit({ vehicle: vehicle.id }).url">
-                                                        <Pencil class="mr-2 h-4 w-4" />
-                                                        Edit
-                                                    </Link>
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuItem
-                                                    v-if="vehicle.status === 'active'"
-                                                    :disabled="!canToggle(vehicle)"
-                                                    :class="['rounded-lg', canToggle(vehicle) ? toggleStatusClass(vehicle.status) : 'text-slate-300']"
-                                                    @click="canToggle(vehicle) && openSuspendDialog(vehicle)"
-                                                >
-                                                    <Power class="mr-2 h-4 w-4" />
+                                                    <Power
+                                                        class="mr-2 h-4 w-4"
+                                                    />
                                                     Suspend
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
-                                                    v-else-if="vehicle.status === 'suspended'"
-                                                    :disabled="!canToggle(vehicle)"
-                                                    :class="['rounded-lg', canToggle(vehicle) ? toggleStatusClass(vehicle.status) : 'text-slate-300']"
-                                                    @click="canToggle(vehicle) && openActivateDialog(vehicle)"
+                                                    v-else-if="
+                                                        vehicle.status ===
+                                                        'suspended'
+                                                    "
+                                                    :disabled="
+                                                        !canToggle(vehicle)
+                                                    "
+                                                    :class="[
+                                                        'rounded-lg',
+                                                        canToggle(vehicle)
+                                                            ? toggleStatusClass(
+                                                                  vehicle.status,
+                                                              )
+                                                            : 'text-slate-300',
+                                                    ]"
+                                                    @click="
+                                                        canToggle(vehicle) &&
+                                                        openActivateDialog(
+                                                            vehicle,
+                                                        )
+                                                    "
                                                 >
-                                                    <Power class="mr-2 h-4 w-4" />
+                                                    <Power
+                                                        class="mr-2 h-4 w-4"
+                                                    />
                                                     Unsuspend
                                                 </DropdownMenuItem>
 
@@ -726,8 +1021,14 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     disabled
                                                     class="rounded-lg text-slate-300"
                                                 >
-                                                    <Power class="mr-2 h-4 w-4" />
-                                                    {{ toggleLabel(vehicle.status) }}
+                                                    <Power
+                                                        class="mr-2 h-4 w-4"
+                                                    />
+                                                    {{
+                                                        toggleLabel(
+                                                            vehicle.status,
+                                                        )
+                                                    }}
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -756,15 +1057,23 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                     <AlertDialogTitle>Archive Vehicle</AlertDialogTitle>
                     <AlertDialogDescription>
                         You are about to archive
-                        <span class="font-semibold text-foreground">{{ selectedVehicle?.plate_number || 'this vehicle' }}</span>.
-                        You can restore it later from Archived Vehicles.
+                        <span class="font-semibold text-foreground">{{
+                            selectedVehicle?.plate_number || 'this vehicle'
+                        }}</span
+                        >. You can restore it later from Archived Vehicles.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg" @click="selectedVehicle = null">Cancel</AlertDialogCancel>
+                    <AlertDialogCancel
+                        class="rounded-lg"
+                        @click="selectedVehicle = null"
+                        >Cancel</AlertDialogCancel
+                    >
                     <AlertDialogAction
-                        class="rounded-lg bg-rose-600 text-white hover:bg-rose-700 border-0"
-                        @click="selectedVehicle && archiveVehicle(selectedVehicle)"
+                        class="rounded-lg border-0 bg-rose-600 text-white hover:bg-rose-700"
+                        @click="
+                            selectedVehicle && archiveVehicle(selectedVehicle)
+                        "
                     >
                         Archive
                     </AlertDialogAction>
@@ -776,14 +1085,21 @@ const archiveVehicle = (vehicle: VehicleItem) => {
         <AlertDialog v-model:open="suspendDialogOpen">
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Set Vehicle to Suspended</AlertDialogTitle>
+                    <AlertDialogTitle
+                        >Set Vehicle to Suspended</AlertDialogTitle
+                    >
                     <AlertDialogDescription>
                         Provide a reason before suspending
-                        <span class="font-semibold text-foreground">{{ statusVehicle?.plate_number || 'this vehicle' }}</span>.
+                        <span class="font-semibold text-foreground">{{
+                            statusVehicle?.plate_number || 'this vehicle'
+                        }}</span
+                        >.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div class="space-y-2">
-                    <label class="text-xs font-semibold text-slate-600">Reason</label>
+                    <label class="text-xs font-semibold text-slate-600"
+                        >Reason</label
+                    >
                     <textarea
                         v-model="suspendRemarks"
                         rows="3"
@@ -792,9 +1108,13 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                     />
                 </div>
                 <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg" @click="statusVehicle = null">Cancel</AlertDialogCancel>
+                    <AlertDialogCancel
+                        class="rounded-lg"
+                        @click="statusVehicle = null"
+                        >Cancel</AlertDialogCancel
+                    >
                     <AlertDialogAction
-                        class="rounded-lg bg-rose-600 text-white hover:bg-rose-700 border-0"
+                        class="rounded-lg border-0 bg-rose-600 text-white hover:bg-rose-700"
                         :disabled="!suspendRemarks.trim()"
                         @click="confirmSuspend"
                     >
@@ -811,13 +1131,20 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                     <AlertDialogTitle>Activate Vehicle</AlertDialogTitle>
                     <AlertDialogDescription>
                         Activate
-                        <span class="font-semibold text-foreground">{{ statusVehicle?.plate_number || 'this vehicle' }}</span>?
+                        <span class="font-semibold text-foreground">{{
+                            statusVehicle?.plate_number || 'this vehicle'
+                        }}</span
+                        >?
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg" @click="statusVehicle = null">Cancel</AlertDialogCancel>
+                    <AlertDialogCancel
+                        class="rounded-lg"
+                        @click="statusVehicle = null"
+                        >Cancel</AlertDialogCancel
+                    >
                     <AlertDialogAction
-                        class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0"
+                        class="rounded-lg border-0 bg-blue-700 text-white hover:bg-blue-800"
                         @click="confirmActivate"
                     >
                         Confirm

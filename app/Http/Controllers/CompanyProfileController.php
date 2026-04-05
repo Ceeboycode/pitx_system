@@ -10,6 +10,7 @@ use App\Services\Company\CompanyStatusService;
 use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -30,6 +31,8 @@ class CompanyProfileController extends Controller
     */
     public function show(Request $request): Response
     {
+        Gate::authorize('external_companies_settings.view');
+
         $user    = $request->user();
         $company = $user->company;
 
@@ -101,6 +104,8 @@ class CompanyProfileController extends Controller
     */
     public function submitUpdate(StoreCompanyProfileChangeRequest $request): RedirectResponse
     {
+        Gate::authorize('external_companies_settings.update');
+
         $user = $request->user();
         $company = $user->company;
         $validated = $request->validated();
@@ -211,6 +216,8 @@ class CompanyProfileController extends Controller
 
     public function removeLogo(Request $request): RedirectResponse
     {
+        Gate::authorize('external_companies_settings.update');
+
         $user = $request->user();
         $company = $user->company;
 

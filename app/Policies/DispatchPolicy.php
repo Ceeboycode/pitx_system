@@ -85,7 +85,7 @@ class DispatchPolicy
             return false;
         }
 
-        return $user->can('dispatches.delete');
+        return $user->can('dispatches.archive');
     }
 
     /**

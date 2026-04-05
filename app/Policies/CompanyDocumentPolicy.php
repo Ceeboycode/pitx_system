@@ -40,7 +40,7 @@ class CompanyDocumentPolicy
 
     public function delete(User $user, CompanyDocument $companyDocument): bool
     {
-        if (! $user->can('company_documents.delete')) {
+        if (! $user->can('company_documents.archive')) {
             return false;
         }
 

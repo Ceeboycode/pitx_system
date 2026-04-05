@@ -45,7 +45,7 @@ class CompanyPolicy
 
     public function delete(User $user, Company $company): bool
     {
-        if (! $user->can('companies.delete')) {
+        if (! $user->can('companies.archive')) {
             return false;
         }
 

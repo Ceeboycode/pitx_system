@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Dispatch;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreDispatchChangeRequestRequest extends FormRequest
 {
@@ -31,6 +32,8 @@ class StoreDispatchChangeRequestRequest extends FormRequest
 
     public function rules(): array
     {
+        $driverField = 'driver_user_id';
+
         $rules = [
             'requested_field' => 'required|string|in:driver_user_id,pax_count,vehicle_id,gate_id,bay_number',
             'requested_value' => 'required',
@@ -41,6 +44,12 @@ class StoreDispatchChangeRequestRequest extends FormRequest
         $numericFields = ['pax_count', 'gate_id', 'bay_number'];
         if (in_array($this->input('requested_field'), $numericFields, true)) {
             $rules['requested_value'] = 'required|numeric';
+        } elseif ($this->input('requested_field') === $driverField) {
+            $rules['requested_value'] = [
+                'required',
+                'integer',
+                Rule::exists('users', 'id'),
+            ];
         } else {
             $rules['requested_value'] = 'required|string';
         }

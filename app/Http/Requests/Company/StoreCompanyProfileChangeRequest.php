@@ -43,6 +43,36 @@ class StoreCompanyProfileChangeRequest extends FormRequest
         ];
     }
 
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator): void {
+            $company = $this->user()?->company;
+
+            if (! $company) {
+                return;
+            }
+
+            $newBusinessType = $this->input('business_type', $company->business_type);
+            $currentBusinessType = $company->business_type;
+            $businessTypeChanged = $newBusinessType !== $currentBusinessType;
+
+            if (! $businessTypeChanged) {
+                return;
+            }
+
+            $newRegistrationNumber = trim((string) $this->input('registration_number', (string) $company->registration_number));
+            $currentRegistrationNumber = trim((string) $company->registration_number);
+            $registrationNumberChanged = $newRegistrationNumber !== $currentRegistrationNumber;
+
+            if (! $registrationNumberChanged) {
+                $validator->errors()->add(
+                    'registration_number',
+                    'Registration number must also be updated when changing business type.'
+                );
+            }
+        });
+    }
+
     protected function failedAuthorization(): void
     {
         throw new \Illuminate\Auth\Access\AuthorizationException(

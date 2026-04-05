@@ -121,7 +121,9 @@ const gateSuggestions = Array.from({ length: 20 }, (_, i) => `Gate ${i + 1}`);
 const baySuggestions  = Array.from({ length: 20 }, (_, i) => String(i + 1));
 
 /* ── Filter state ────────────────────────────────────────────────── */
-const filterStatus = ref<string>(props.filters?.status ?? 'all');
+const filterStatus = ref<string>(
+    props.filters?.status ? String(props.filters.status) : 'all'
+);
 const filterBays   = ref<string>(props.filters?.bays ?? '');
 const filterOpen   = ref(false);
 
@@ -136,9 +138,9 @@ function applyFilters() {
     router.get(
         index().url,
         {
-            search:  props.filters?.search || undefined,
-            status:  filterStatus.value !== 'all' ? filterStatus.value : undefined,
-            bays:    filterBays.value || undefined,
+            search: props.filters?.search || undefined,
+            status: filterStatus.value === 'all' ? undefined : filterStatus.value,
+            bays: filterBays.value || undefined,
         },
         {
             preserveScroll: true,
@@ -152,10 +154,11 @@ function applyFilters() {
 
 function clearFilters() {
     filterStatus.value = 'all';
-    filterBays.value   = '';
+    filterBays.value = '';
+
     router.get(
         index().url,
-        { search: props.filters?.search || undefined },
+        {},
         {
             preserveScroll: true,
             preserveState: true,
@@ -163,6 +166,7 @@ function clearFilters() {
             only: ['gates', 'filters'],
         },
     );
+
     filterOpen.value = false;
 }
 

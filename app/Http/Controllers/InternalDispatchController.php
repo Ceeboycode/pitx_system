@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
-use App\Models\Dispatch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -13,7 +12,7 @@ class InternalDispatchController extends Controller
 {
     public function index(Request $request): Response
     {
-        Gate::authorize('viewAny', Dispatch::class);
+        Gate::authorize('dispatches.viewAny');
 
         $search = trim((string) $request->string('search'));
 
@@ -49,7 +48,7 @@ class InternalDispatchController extends Controller
 
     public function show(Request $request, int $company): Response
     {
-        Gate::authorize('view', Dispatch::class);
+        Gate::authorize('dispatches.view');
 
         $selectedDate = trim((string) $request->string('date'));
         $search       = trim((string) $request->string('search'));

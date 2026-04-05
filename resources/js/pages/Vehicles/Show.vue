@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue'
-import type { BreadcrumbItem } from '@/types'
-import { Head, Link, useForm } from '@inertiajs/vue3'
-import { computed, ref, watch } from 'vue'
-import ArchiveCompanyDialog from '@/components/company/ArchiveCompanyDialog.vue';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { destroy, index } from '@/routes/vehicles';
+import type { BreadcrumbItem } from '@/types';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
+import { toast } from 'vue-sonner';
 
-import InputError from '@/components/InputError.vue'
-import RouteMapDialog from '@/components/routes/RouteMapDialog.vue'
-import { can } from '@/lib/can'
+import InputError from '@/components/InputError.vue';
+import RouteMapDialog from '@/components/routes/RouteMapDialog.vue';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -17,10 +17,11 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -28,7 +29,7 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/ui/dialog'
+} from '@/components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -36,15 +37,14 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Label } from '@/components/ui/label'
+} from '@/components/ui/dropdown-menu';
+import { Label } from '@/components/ui/label';
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-} from '@/components/ui/popover'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Separator } from '@/components/ui/separator'
+} from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
 import {
     Table,
     TableBody,
@@ -52,11 +52,12 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from '@/components/ui/table'
-import { Textarea } from '@/components/ui/textarea'
+} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import { can } from '@/lib/can';
 
-import { edit } from '@/routes/vehicles'
 import {
+    Archive,
     ArrowLeft,
     CheckCircle2,
     CircleHelp,
@@ -65,103 +66,101 @@ import {
     FileText,
     Map,
     MoreHorizontal,
-    Pencil,
     RotateCcw,
     Route as RouteIcon,
     Truck,
     XCircle,
-    Archive,
-} from 'lucide-vue-next'
+} from 'lucide-vue-next';
 
-type UserMini = { id?: number; name: string }
+type UserMini = { id?: number; name: string };
 
 type VehicleDocument = {
-    id: number
-    document_type: string
-    file_name?: string | null
-    file_mime_type?: string | null
-    file_size?: number | null
-    file_url?: string | null
-    status?: string | null
-    issued_at?: string | null
-    expires_at?: string | null
-    remarks?: string | null
-    created_at?: string | null
-    updated_at?: string | null
-}
+    id: number;
+    document_type: string;
+    file_name?: string | null;
+    file_mime_type?: string | null;
+    file_size?: number | null;
+    file_url?: string | null;
+    status?: string | null;
+    issued_at?: string | null;
+    expires_at?: string | null;
+    remarks?: string | null;
+    created_at?: string | null;
+    updated_at?: string | null;
+};
 
 type RouteStop = {
-    id: number
-    stop_name: string
-    stop_type: 'origin' | 'stop' | 'destination' | 'landmark' | string
-    address: string | null
-    latitude: number
-    longitude: number
-    stop_order: number
-}
+    id: number;
+    stop_name: string;
+    stop_type: 'origin' | 'stop' | 'destination' | 'landmark' | string;
+    address: string | null;
+    latitude: number;
+    longitude: number;
+    stop_order: number;
+};
 
 type RouteData = {
-    id: number
-    route_name: string
-    gate: { id: number; gate_name: string } | null
-    origin_name: string
-    origin_lat: number
-    origin_lng: number
-    destination_name: string
-    destination_lat: number
-    destination_lng: number
-    distance_meters: number | null
-    duration_seconds: number | null
-    route_geometry: string | null
-    status: string | null
-    stops: RouteStop[]
-} | null
+    id: number;
+    route_name: string;
+    gate: { id: number; gate_name: string } | null;
+    origin_name: string;
+    origin_lat: number;
+    origin_lng: number;
+    destination_name: string;
+    destination_lat: number;
+    destination_lng: number;
+    distance_meters: number | null;
+    duration_seconds: number | null;
+    route_geometry: string | null;
+    status: string | null;
+    stops: RouteStop[];
+} | null;
 
 type VehicleModel = {
-    id: number
-    vehicle_type?: string | null
-    plate_number?: string | null
-    body_number?: string | null
-    capacity?: string | number | null
-    color?: string | null
-    engine_number?: string | null
-    chassis_number?: string | null
-    make_model?: string | null
-    status?: string | null
-    docs_status?: string | null
-    remarks?: string | null
-    created_at?: string | null
-    updated_at?: string | null
-    deleted_at?: string | null
+    id: number;
+    vehicle_type?: string | null;
+    plate_number?: string | null;
+    body_number?: string | null;
+    capacity?: string | number | null;
+    color?: string | null;
+    engine_number?: string | null;
+    chassis_number?: string | null;
+    make_model?: string | null;
+    status?: string | null;
+    docs_status?: string | null;
+    remarks?: string | null;
+    created_at?: string | null;
+    updated_at?: string | null;
+    deleted_at?: string | null;
     company?: {
-        id: number
-        company_name: string
-        company_code?: string | null
-        company_email?: string | null
-        company_phone?: string | null
-        company_address?: string | null
-    } | null
-    route?: RouteData
-    documents?: VehicleDocument[]
-    creator?: UserMini | null
-    updater?: UserMini | null
-    deleter?: UserMini | null
-}
+        id: number;
+        company_name: string;
+        company_code?: string | null;
+        company_email?: string | null;
+        company_phone?: string | null;
+        company_address?: string | null;
+    } | null;
+    route?: RouteData;
+    documents?: VehicleDocument[];
+    creator?: UserMini | null;
+    updater?: UserMini | null;
+    deleter?: UserMini | null;
+};
 
 const props = defineProps<{
-    vehicle: VehicleModel
-    mapConfig: { mapboxToken: string }
-}>()
+    vehicle: VehicleModel;
+    mapConfig: { mapboxToken: string };
+}>();
 
-const vehicle = computed(() => props.vehicle)
-const company = computed(() => props.vehicle.company ?? null)
-const route = computed(() => props.vehicle.route ?? null)
-const docs = computed(() => props.vehicle.documents ?? [])
+const vehicle = computed(() => props.vehicle);
+const company = computed(() => props.vehicle.company ?? null);
+const route = computed(() => props.vehicle.route ?? null);
+const docs = computed(() => props.vehicle.documents ?? []);
 
-const canArchiveVehicle = computed(() => can('vehicles.delete'));
+const canArchiveVehicle = computed(() => can('vehicles.archive'));
 const archiveOpen = ref(false);
 
-const VEHICLES_INDEX_URL = '/vehicles'
+const VEHICLES_INDEX_URL = index().url;
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Vehicles', href: VEHICLES_INDEX_URL },
@@ -169,51 +168,62 @@ const breadcrumbs: BreadcrumbItem[] = [
         title: vehicle.value.plate_number || `Vehicle #${vehicle.value.id}`,
         href: '#',
     },
-]
+];
 
-const canViewVehicle = can('vehicles.view')
-const canUpdateVehicle = can('vehicles.update')
-const canVerifyVehicleDocument = can('vehicle_documents.verify')
-const canUnverifyVehicleDocument = can('vehicle_documents.unverify')
-const canInvalidateVehicleDocument = can('vehicle_documents.invalidate')
+const canViewVehicle = can('vehicles.view');
+const canVerifyVehicleDocument = can('vehicle_documents.verify');
+const canUnverifyVehicleDocument = can('vehicle_documents.unverify');
+const canInvalidateVehicleDocument = can('vehicle_documents.invalidate');
+
+function archiveVehicle() {
+    router.delete(destroy(vehicle.value.id).url, {
+        preserveScroll: true,
+        onSuccess: () => {
+            archiveOpen.value = false;
+            toast.success('Vehicle archived successfully.');
+        },
+        onError: () => toast.error('Failed to archive vehicle.'),
+    });
+}
 
 const sortedStops = computed(() =>
     [...(route.value?.stops ?? [])].sort((a, b) => a.stop_order - b.stop_order),
-)
+);
 
 const verifiedCount = computed(
     () => docs.value.filter((d) => d.status === 'verified').length,
-)
+);
 const pendingCount = computed(
     () => docs.value.filter((d) => d.status === 'pending').length,
-)
+);
 const invalidCount = computed(
     () => docs.value.filter((d) => d.status === 'invalid').length,
-)
+);
 const expiredCount = computed(
     () => docs.value.filter((d) => isExpired(d.expires_at)).length,
-)
-const actionRequiredCount = computed(() =>
-    docs.value.filter(
-        (d) =>
-            d.status === 'pending' ||
-            d.status === 'invalid' ||
-            isExpired(d.expires_at),
-    ).length,
-)
+);
+const actionRequiredCount = computed(
+    () =>
+        docs.value.filter(
+            (d) =>
+                d.status === 'pending' ||
+                d.status === 'invalid' ||
+                isExpired(d.expires_at),
+        ).length,
+);
 const docsCompletionRate = computed(() => {
-    if (!docs.value.length) return 0
-    return Math.round((verifiedCount.value / docs.value.length) * 100)
-})
+    if (!docs.value.length) return 0;
+    return Math.round((verifiedCount.value / docs.value.length) * 100);
+});
 
 const docHealthSummary = computed(() => {
-    const parts = []
-    parts.push(`${verifiedCount.value} verified`)
-    if (pendingCount.value) parts.push(`${pendingCount.value} pending`)
-    if (invalidCount.value) parts.push(`${invalidCount.value} invalid`)
-    if (expiredCount.value) parts.push(`${expiredCount.value} expired`)
-    return parts.join(' · ')
-})
+    const parts = [];
+    parts.push(`${verifiedCount.value} verified`);
+    if (pendingCount.value) parts.push(`${pendingCount.value} pending`);
+    if (invalidCount.value) parts.push(`${invalidCount.value} invalid`);
+    if (expiredCount.value) parts.push(`${expiredCount.value} expired`);
+    return parts.join(' · ');
+});
 
 const vehicleMeta = computed(() => [
     { label: 'Vehicle Type', value: humanize(vehicle.value.vehicle_type) },
@@ -225,51 +235,50 @@ const vehicleMeta = computed(() => [
     {
         label: 'Route',
         value: route.value?.route_name || 'No route assigned',
-        helper:
-            route.value?.gate?.gate_name
-                ? `Gate: ${route.value.gate.gate_name}`
-                : null,
+        helper: route.value?.gate?.gate_name
+            ? `Gate: ${route.value.gate.gate_name}`
+            : null,
     },
     {
         label: 'Status',
         value: humanize(vehicle.value.status),
         helper: vehicle.value.remarks || null,
     },
-])
+]);
 
 function humanize(text?: string | null) {
-    if (!text) return '—'
-    return text.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+    if (!text) return '—';
+    return text.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function requiredLabel(type?: string | null) {
     switch (type) {
         case 'ltfrb_certificate':
-            return 'LTFRB Certificate'
+            return 'LTFRB Certificate';
         case 'cpc':
-            return 'Certificate of Public Convenience'
+            return 'Certificate of Public Convenience';
         case 'or_cr':
-            return 'OR / CR'
+            return 'OR / CR';
         default:
-            return humanize(type)
+            return humanize(type);
     }
 }
 
 function formatDate(date?: string | null) {
-    if (!date) return '—'
-    const d = new Date(date)
-    if (Number.isNaN(d.getTime())) return '—'
+    if (!date) return '—';
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return '—';
     return d.toLocaleDateString('en-PH', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
-    })
+    });
 }
 
 function formatDateTime(date?: string | null) {
-    if (!date) return '—'
-    const d = new Date(date)
-    if (Number.isNaN(d.getTime())) return '—'
+    if (!date) return '—';
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return '—';
     return d.toLocaleString('en-PH', {
         year: 'numeric',
         month: 'short',
@@ -277,39 +286,39 @@ function formatDateTime(date?: string | null) {
         hour: '2-digit',
         minute: '2-digit',
         hour12: true,
-    })
+    });
 }
 
 function fmtDistance(m?: number | null) {
-    if (!m) return '—'
-    return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(2)} km`
+    if (!m) return '—';
+    return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(2)} km`;
 }
 
 function fmtDuration(s?: number | null) {
-    if (!s) return '—'
-    const h = Math.floor(s / 3600)
-    const m = Math.ceil((s % 3600) / 60)
-    return h > 0 ? `${h}h ${m}m` : `${Math.ceil(s / 60)}m`
+    if (!s) return '—';
+    const h = Math.floor(s / 3600);
+    const m = Math.ceil((s % 3600) / 60);
+    return h > 0 ? `${h}h ${m}m` : `${Math.ceil(s / 60)}m`;
 }
 
 function formatBytes(value?: number | null) {
-    if (!value) return '—'
-    const units = ['B', 'KB', 'MB', 'GB']
-    let size = value
-    let unitIndex = 0
+    if (!value) return '—';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = value;
+    let unitIndex = 0;
 
     while (size >= 1024 && unitIndex < units.length - 1) {
-        size /= 1024
-        unitIndex++
+        size /= 1024;
+        unitIndex++;
     }
 
-    return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
+    return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
 function isExpired(expiresAt?: string | null) {
-    if (!expiresAt) return false
-    const d = new Date(expiresAt)
-    return !Number.isNaN(d.getTime()) && d.getTime() < Date.now()
+    if (!expiresAt) return false;
+    const d = new Date(expiresAt);
+    return !Number.isNaN(d.getTime()) && d.getTime() < Date.now();
 }
 
 function statusVariant(
@@ -319,88 +328,88 @@ function statusVariant(
         case 'verified':
         case 'active':
         case 'complete':
-            return 'default'
+            return 'default';
         case 'pending':
         case 'draft':
         case 'for_verification':
         case 'partial':
-            return 'secondary'
+            return 'secondary';
         case 'invalid':
         case 'expired':
         case 'needs_revision':
         case 'none':
-            return 'destructive'
+            return 'destructive';
         default:
-            return 'outline'
+            return 'outline';
     }
 }
 
 function fileUrl(doc: VehicleDocument) {
-    return doc.file_url ?? ''
+    return doc.file_url ?? '';
 }
 
 function isImage(doc: VehicleDocument) {
-    if (doc.file_mime_type) return doc.file_mime_type.startsWith('image/')
+    if (doc.file_mime_type) return doc.file_mime_type.startsWith('image/');
     return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(
         (doc.file_name ?? '').split('.').pop()?.toLowerCase() ?? '',
-    )
+    );
 }
 
 function isPdf(doc: VehicleDocument) {
-    if (doc.file_mime_type) return doc.file_mime_type === 'application/pdf'
-    return (doc.file_name ?? '').split('.').pop()?.toLowerCase() === 'pdf'
+    if (doc.file_mime_type) return doc.file_mime_type === 'application/pdf';
+    return (doc.file_name ?? '').split('.').pop()?.toLowerCase() === 'pdf';
 }
 
 function canPreview(doc: VehicleDocument) {
-    return Boolean(fileUrl(doc)) && (isImage(doc) || isPdf(doc))
+    return Boolean(fileUrl(doc)) && (isImage(doc) || isPdf(doc));
 }
 
 function stopTypeLabel(type: RouteStop['stop_type']) {
     switch (type) {
         case 'origin':
-            return 'Origin'
+            return 'Origin';
         case 'destination':
-            return 'Destination'
+            return 'Destination';
         case 'landmark':
-            return 'Landmark'
+            return 'Landmark';
         default:
-            return 'Stop'
+            return 'Stop';
     }
 }
 
 function stopDotClass(type: RouteStop['stop_type']) {
     switch (type) {
         case 'origin':
-            return 'bg-green-600'
+            return 'bg-green-600';
         case 'destination':
-            return 'bg-red-600'
+            return 'bg-red-600';
         case 'landmark':
-            return 'bg-violet-500'
+            return 'bg-violet-500';
         default:
-            return 'bg-amber-500'
+            return 'bg-amber-500';
     }
 }
 
-const mapDialogOpen = ref(false)
+const mapDialogOpen = ref(false);
 const parsedRouteGeometry = computed(() => {
-    if (!route.value?.route_geometry) return null
+    if (!route.value?.route_geometry) return null;
 
     try {
-        const parsed = JSON.parse(route.value.route_geometry)
+        const parsed = JSON.parse(route.value.route_geometry);
 
-        if (parsed?.type === 'LineString') return parsed
+        if (parsed?.type === 'LineString') return parsed;
         if (
             parsed?.type === 'Feature' &&
             parsed.geometry?.type === 'LineString'
         ) {
-            return parsed.geometry
+            return parsed.geometry;
         }
     } catch {
-        return null
+        return null;
     }
 
-    return null
-})
+    return null;
+});
 
 const routeMapStops = computed(() =>
     sortedStops.value.map((stop) => ({
@@ -412,62 +421,62 @@ const routeMapStops = computed(() =>
         latitude: stop.latitude,
         longitude: stop.longitude,
     })),
-)
+);
 
 /* stops dialog */
-const stopsDialogOpen = ref(false)
+const stopsDialogOpen = ref(false);
 
 /* preview dialog */
-const previewOpen = ref(false)
-const previewDoc = ref<VehicleDocument | null>(null)
-const pdfLoadError = ref(false)
+const previewOpen = ref(false);
+const previewDoc = ref<VehicleDocument | null>(null);
+const pdfLoadError = ref(false);
 
 function openPreview(doc: VehicleDocument) {
-    if (!canPreview(doc)) return
-    previewDoc.value = doc
-    pdfLoadError.value = false
-    previewOpen.value = true
+    if (!canPreview(doc)) return;
+    previewDoc.value = doc;
+    pdfLoadError.value = false;
+    previewOpen.value = true;
 }
 
 function closePreview() {
-    previewOpen.value = false
-    previewDoc.value = null
-    pdfLoadError.value = false
+    previewOpen.value = false;
+    previewDoc.value = null;
+    pdfLoadError.value = false;
 }
 
 /* verify / unverify only from preview */
-const actionForm = useForm({})
-const confirmOpen = ref(false)
-const actionType = ref<'verify' | 'unverify'>('verify')
-const actionDoc = ref<VehicleDocument | null>(null)
+const actionForm = useForm({});
+const confirmOpen = ref(false);
+const actionType = ref<'verify' | 'unverify'>('verify');
+const actionDoc = ref<VehicleDocument | null>(null);
 
 function openConfirm(type: 'verify' | 'unverify', doc: VehicleDocument) {
-    actionType.value = type
-    actionDoc.value = doc
-    confirmOpen.value = true
+    actionType.value = type;
+    actionDoc.value = doc;
+    confirmOpen.value = true;
 }
 
 function openConfirmFromPreview(type: 'verify' | 'unverify') {
-    if (!previewDoc.value) return
-    openConfirm(type, previewDoc.value)
+    if (!previewDoc.value) return;
+    openConfirm(type, previewDoc.value);
 }
 
 function submitConfirm() {
-    if (!actionDoc.value) return
+    if (!actionDoc.value) return;
 
     const url =
         actionType.value === 'verify'
             ? `/vehicles/${vehicle.value.id}/documents/${actionDoc.value.id}/verify`
-            : `/vehicles/${vehicle.value.id}/documents/${actionDoc.value.id}/unverify`
+            : `/vehicles/${vehicle.value.id}/documents/${actionDoc.value.id}/unverify`;
 
     actionForm.patch(url, {
         preserveScroll: true,
         onSuccess: () => {
-            confirmOpen.value = false
-            actionDoc.value = null
-            closePreview()
+            confirmOpen.value = false;
+            actionDoc.value = null;
+            closePreview();
         },
-    })
+    });
 }
 
 /* invalidate dialog with stackable checkbox remarks */
@@ -502,72 +511,78 @@ const invalidPresets = [
         label: 'Please upload as PDF',
         text: 'Please re-upload this requirement as a PDF file.',
     },
-] as const
+] as const;
 
-type InvalidPresetValue = (typeof invalidPresets)[number]['value']
+type InvalidPresetValue = (typeof invalidPresets)[number]['value'];
 
-const selectedInvalidPresets = ref<InvalidPresetValue[]>([])
+const selectedInvalidPresets = ref<InvalidPresetValue[]>([]);
 
 const invalidateForm = useForm<{
-    remarks: string
+    remarks: string;
 }>({
     remarks: '',
-})
-const invalidateOpen = ref(false)
+});
+const invalidateOpen = ref(false);
 
 watch(
     selectedInvalidPresets,
     (values) => {
         const lines = values
-            .map((value) => invalidPresets.find((preset) => preset.value === value)?.text ?? '')
-            .filter(Boolean)
+            .map(
+                (value) =>
+                    invalidPresets.find((preset) => preset.value === value)
+                        ?.text ?? '',
+            )
+            .filter(Boolean);
 
-        invalidateForm.remarks = lines.join('\n')
+        invalidateForm.remarks = lines.join('\n');
     },
     { deep: true },
-)
+);
 
 function toggleInvalidPreset(value: InvalidPresetValue) {
-    const exists = selectedInvalidPresets.value.includes(value)
+    const exists = selectedInvalidPresets.value.includes(value);
 
     if (exists) {
-        selectedInvalidPresets.value = selectedInvalidPresets.value.filter((item) => item !== value)
-        return
+        selectedInvalidPresets.value = selectedInvalidPresets.value.filter(
+            (item) => item !== value,
+        );
+        return;
     }
 
-    selectedInvalidPresets.value = [...selectedInvalidPresets.value, value]
+    selectedInvalidPresets.value = [...selectedInvalidPresets.value, value];
 }
 
 function openInvalidate(doc: VehicleDocument) {
-    actionDoc.value = doc
-    selectedInvalidPresets.value = []
-    invalidateForm.reset()
-    invalidateForm.clearErrors()
-    invalidateForm.remarks = doc.remarks ?? ''
-    invalidateOpen.value = true
+    actionDoc.value = doc;
+    selectedInvalidPresets.value = [];
+    invalidateForm.reset();
+    invalidateForm.clearErrors();
+    invalidateForm.remarks = doc.remarks ?? '';
+    invalidateOpen.value = true;
 }
 
 function openInvalidateFromPreview() {
-    if (!previewDoc.value) return
-    openInvalidate(previewDoc.value)
-    closePreview()
+    if (!previewDoc.value) return;
+    openInvalidate(previewDoc.value);
+    closePreview();
 }
 
 function submitInvalidate() {
-    if (!actionDoc.value || invalidateForm.processing) return
+    if (!actionDoc.value || invalidateForm.processing) return;
 
     invalidateForm.patch(
         `/vehicles/${vehicle.value.id}/documents/${actionDoc.value.id}/invalidate`,
         {
             preserveScroll: true,
             onSuccess: () => {
-                invalidateOpen.value = false
-                actionDoc.value = null
-                selectedInvalidPresets.value = []
-                invalidateForm.reset()
+                invalidateOpen.value = false;
+                actionDoc.value = null;
+                selectedInvalidPresets.value = [];
+                invalidateForm.reset();
             },
         },
-    )
+    );
 }
 </script>
 
@@ -620,23 +635,16 @@ function submitInvalidate() {
                         </Link>
                     </Button>
 
-                    <Button v-if="canUpdateVehicle" size="sm" as-child variant="outline">
-                        <Link :href="edit({ vehicle: vehicle.id }).url">
-                            <Pencil class="mr-1.5 h-4 w-4" />
-                            Edit
-                        </Link>
-                    </Button>
-
                     <Button
-                            v-if="canArchiveVehicle"
-                            variant="outline"
-                            size="sm"
-                            class="rounded-lg border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                            @click="archiveOpen = true"
-                        >
-                            <Archive class="mr-2 h-4 w-4" />
-                            Archive
-                        </Button>
+                        v-if="canArchiveVehicle"
+                        variant="outline"
+                        size="sm"
+                        class="rounded-lg border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                        @click="archiveOpen = true"
+                    >
+                        <Archive class="mr-2 h-4 w-4" />
+                        Archive
+                    </Button>
                 </div>
             </div>
         </div>
@@ -685,79 +693,112 @@ function submitInvalidate() {
                         Created {{ formatDate(vehicle.created_at) }}
                     </p>
                 </div>
-              </div>
+            </div>
 
-              <div class="grid gap-4 xl:grid-cols-[2fr_1fr]">
-                  <Card>
-                      <CardHeader>
-                          <CardTitle class="text-base">Vehicle Snapshot</CardTitle>
-                      </CardHeader>
-                      <CardContent class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                          <div
-                              v-for="item in vehicleMeta"
-                              :key="item.label"
-                              class="rounded-lg border bg-muted/20 p-3"
-                          >
-                              <p class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                                  {{ item.label }}
-                              </p>
-                              <p class="mt-1 text-sm font-medium text-foreground">
-                                  {{ item.value }}
-                              </p>
-                              <p v-if="item.helper" class="mt-0.5 text-xs text-muted-foreground">
-                                  {{ item.helper }}
-                              </p>
-                          </div>
-                      </CardContent>
-                  </Card>
+            <div class="grid gap-4 xl:grid-cols-[2fr_1fr]">
+                <Card>
+                    <CardHeader>
+                        <CardTitle class="text-base"
+                            >Vehicle Snapshot</CardTitle
+                        >
+                    </CardHeader>
+                    <CardContent
+                        class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                    >
+                        <div
+                            v-for="item in vehicleMeta"
+                            :key="item.label"
+                            class="rounded-lg border bg-muted/20 p-3"
+                        >
+                            <p
+                                class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
+                            >
+                                {{ item.label }}
+                            </p>
+                            <p class="mt-1 text-sm font-medium text-foreground">
+                                {{ item.value }}
+                            </p>
+                            <p
+                                v-if="item.helper"
+                                class="mt-0.5 text-xs text-muted-foreground"
+                            >
+                                {{ item.helper }}
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
 
-                  <Card>
-                      <CardHeader class="pb-2">
-                          <CardTitle class="text-base">Operational State</CardTitle>
-                      </CardHeader>
-                      <CardContent class="space-y-3">
-                          <div class="flex items-center gap-2">
-                              <Badge :variant="statusVariant(vehicle.status)">
-                                  {{ humanize(vehicle.status) }}
-                              </Badge>
-                              <span class="text-xs text-muted-foreground">
-                                  {{ formatDateTime(vehicle.updated_at) }}
-                              </span>
-                          </div>
-                          <div class="rounded-lg border p-3">
-                              <p class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                                  Documents
-                              </p>
-                              <div class="mt-2 flex flex-wrap gap-2 text-sm">
-                                  <Badge variant="outline">{{ verifiedCount }} verified</Badge>
-                                  <Badge v-if="pendingCount" variant="secondary">{{ pendingCount }} pending</Badge>
-                                  <Badge v-if="invalidCount" variant="destructive">{{ invalidCount }} invalid</Badge>
-                                  <Badge v-if="expiredCount" variant="destructive">{{ expiredCount }} expired</Badge>
-                              </div>
-                              <p class="mt-1 text-xs text-muted-foreground">
-                                  {{ docHealthSummary || 'No documents uploaded yet.' }}
-                              </p>
-                          </div>
+                <Card>
+                    <CardHeader class="pb-2">
+                        <CardTitle class="text-base"
+                            >Operational State</CardTitle
+                        >
+                    </CardHeader>
+                    <CardContent class="space-y-3">
+                        <div class="flex items-center gap-2">
+                            <Badge :variant="statusVariant(vehicle.status)">
+                                {{ humanize(vehicle.status) }}
+                            </Badge>
+                            <span class="text-xs text-muted-foreground">
+                                {{ formatDateTime(vehicle.updated_at) }}
+                            </span>
+                        </div>
+                        <div class="rounded-lg border p-3">
+                            <p
+                                class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
+                            >
+                                Documents
+                            </p>
+                            <div class="mt-2 flex flex-wrap gap-2 text-sm">
+                                <Badge variant="outline"
+                                    >{{ verifiedCount }} verified</Badge
+                                >
+                                <Badge v-if="pendingCount" variant="secondary"
+                                    >{{ pendingCount }} pending</Badge
+                                >
+                                <Badge v-if="invalidCount" variant="destructive"
+                                    >{{ invalidCount }} invalid</Badge
+                                >
+                                <Badge v-if="expiredCount" variant="destructive"
+                                    >{{ expiredCount }} expired</Badge
+                                >
+                            </div>
+                            <p class="mt-1 text-xs text-muted-foreground">
+                                {{
+                                    docHealthSummary ||
+                                    'No documents uploaded yet.'
+                                }}
+                            </p>
+                        </div>
 
-                          <div class="rounded-lg border p-3">
-                              <p class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                                  Remarks
-                              </p>
-                              <p class="mt-1 text-sm text-foreground" v-if="vehicle.remarks">
-                                  {{ vehicle.remarks }}
-                              </p>
-                              <p v-else class="text-sm text-muted-foreground">—</p>
-                          </div>
-                      </CardContent>
-                  </Card>
-              </div>
+                        <div class="rounded-lg border p-3">
+                            <p
+                                class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
+                            >
+                                Remarks
+                            </p>
+                            <p
+                                class="mt-1 text-sm text-foreground"
+                                v-if="vehicle.remarks"
+                            >
+                                {{ vehicle.remarks }}
+                            </p>
+                            <p v-else class="text-sm text-muted-foreground">
+                                —
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
 
-              <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-                  <div class="space-y-5">
+            <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+                <div class="space-y-5">
                     <div class="grid gap-4 lg:grid-cols-2">
                         <Card>
                             <CardHeader>
-                                <CardTitle class="text-base">Vehicle Details</CardTitle>
+                                <CardTitle class="text-base"
+                                    >Vehicle Details</CardTitle
+                                >
                             </CardHeader>
 
                             <CardContent class="grid gap-4 sm:grid-cols-2">
@@ -814,7 +855,9 @@ function submitInvalidate() {
 
                         <Card>
                             <CardHeader>
-                                <CardTitle class="text-base">Company Details</CardTitle>
+                                <CardTitle class="text-base"
+                                    >Company Details</CardTitle
+                                >
                             </CardHeader>
 
                             <CardContent class="space-y-4">
@@ -862,7 +905,9 @@ function submitInvalidate() {
                                 class="flex flex-wrap items-center justify-between gap-3"
                             >
                                 <div>
-                                    <CardTitle class="text-base">Route Overview</CardTitle>
+                                    <CardTitle class="text-base"
+                                        >Route Overview</CardTitle
+                                    >
                                     <p class="text-sm text-muted-foreground">
                                         {{ sortedStops.length }} stops
                                         configured. Open the map or stops list
@@ -959,15 +1004,21 @@ function submitInvalidate() {
                                 class="flex flex-wrap items-center justify-between gap-3"
                             >
                                 <div>
-                                    <CardTitle class="text-base">Documents</CardTitle>
+                                    <CardTitle class="text-base"
+                                        >Documents</CardTitle
+                                    >
                                     <p class="text-sm text-muted-foreground">
-                                        Review every document and update its status.
+                                        Review every document and update its
+                                        status.
                                     </p>
                                 </div>
 
                                 <div class="flex flex-wrap gap-2">
                                     <Badge variant="outline">
-                                        {{ verifiedCount }}/{{ docs.length }} verified
+                                        {{ verifiedCount }}/{{
+                                            docs.length
+                                        }}
+                                        verified
                                     </Badge>
                                     <Badge
                                         v-if="actionRequiredCount > 0"
@@ -990,11 +1041,22 @@ function submitInvalidate() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead class="w-[28%] pl-6">Document</TableHead>
-                                            <TableHead class="w-[14%]">Status</TableHead>
-                                            <TableHead class="w-[20%]">Dates</TableHead>
-                                            <TableHead class="w-[30%]">File</TableHead>
-                                            <TableHead class="w-[8%] pr-4 text-right">Actions</TableHead>
+                                            <TableHead class="w-[28%] pl-6"
+                                                >Document</TableHead
+                                            >
+                                            <TableHead class="w-[14%]"
+                                                >Status</TableHead
+                                            >
+                                            <TableHead class="w-[20%]"
+                                                >Dates</TableHead
+                                            >
+                                            <TableHead class="w-[30%]"
+                                                >File</TableHead
+                                            >
+                                            <TableHead
+                                                class="w-[8%] pr-4 text-right"
+                                                >Actions</TableHead
+                                            >
                                         </TableRow>
                                     </TableHeader>
 
@@ -1006,7 +1068,11 @@ function submitInvalidate() {
                                             <TableCell class="pl-6">
                                                 <div class="space-y-1">
                                                     <p class="font-medium">
-                                                        {{ requiredLabel(doc.document_type) }}
+                                                        {{
+                                                            requiredLabel(
+                                                                doc.document_type,
+                                                            )
+                                                        }}
                                                     </p>
                                                     <p
                                                         v-if="doc.remarks"
@@ -1019,12 +1085,28 @@ function submitInvalidate() {
 
                                             <TableCell>
                                                 <div class="space-y-1.5">
-                                                    <div class="flex flex-wrap gap-1.5">
-                                                        <Badge :variant="statusVariant(doc.status)">
-                                                            {{ humanize(doc.status) }}
+                                                    <div
+                                                        class="flex flex-wrap gap-1.5"
+                                                    >
+                                                        <Badge
+                                                            :variant="
+                                                                statusVariant(
+                                                                    doc.status,
+                                                                )
+                                                            "
+                                                        >
+                                                            {{
+                                                                humanize(
+                                                                    doc.status,
+                                                                )
+                                                            }}
                                                         </Badge>
                                                         <Badge
-                                                            v-if="isExpired(doc.expires_at)"
+                                                            v-if="
+                                                                isExpired(
+                                                                    doc.expires_at,
+                                                                )
+                                                            "
                                                             variant="destructive"
                                                         >
                                                             Expired
@@ -1032,29 +1114,44 @@ function submitInvalidate() {
                                                     </div>
 
                                                     <p
-                                                        v-if="doc.status === 'pending'"
+                                                        v-if="
+                                                            doc.status ===
+                                                            'pending'
+                                                        "
                                                         class="text-xs text-muted-foreground"
                                                     >
                                                         Waiting for review.
                                                     </p>
 
                                                     <p
-                                                        v-else-if="doc.status === 'invalid'"
+                                                        v-else-if="
+                                                            doc.status ===
+                                                            'invalid'
+                                                        "
                                                         class="text-xs text-destructive"
                                                     >
-                                                        Needs correction before approval.
+                                                        Needs correction before
+                                                        approval.
                                                     </p>
 
                                                     <Popover
-                                                        v-if="doc.status === 'invalid' && doc.remarks"
+                                                        v-if="
+                                                            doc.status ===
+                                                                'invalid' &&
+                                                            doc.remarks
+                                                        "
                                                     >
-                                                        <PopoverTrigger as-child>
+                                                        <PopoverTrigger
+                                                            as-child
+                                                        >
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
                                                                 class="h-auto px-0 py-0 text-xs text-destructive hover:bg-transparent"
                                                             >
-                                                                <CircleHelp class="mr-1 h-3.5 w-3.5" />
+                                                                <CircleHelp
+                                                                    class="mr-1 h-3.5 w-3.5"
+                                                                />
                                                                 Why invalid?
                                                             </Button>
                                                         </PopoverTrigger>
@@ -1062,23 +1159,41 @@ function submitInvalidate() {
                                                             align="start"
                                                             class="max-w-72 text-xs"
                                                         >
-                                                            <p class="font-medium text-foreground">
+                                                            <p
+                                                                class="font-medium text-foreground"
+                                                            >
                                                                 Invalid reason
                                                             </p>
-                                                            <p class="mt-1 whitespace-pre-wrap text-muted-foreground">
-                                                                {{ doc.remarks }}
+                                                            <p
+                                                                class="mt-1 whitespace-pre-wrap text-muted-foreground"
+                                                            >
+                                                                {{
+                                                                    doc.remarks
+                                                                }}
                                                             </p>
                                                         </PopoverContent>
                                                     </Popover>
                                                 </div>
                                             </TableCell>
 
-                                            <TableCell class="text-xs text-muted-foreground">
+                                            <TableCell
+                                                class="text-xs text-muted-foreground"
+                                            >
                                                 <div>
-                                                    Issued: {{ formatDate(doc.issued_at) }}
+                                                    Issued:
+                                                    {{
+                                                        formatDate(
+                                                            doc.issued_at,
+                                                        )
+                                                    }}
                                                 </div>
                                                 <div>
-                                                    Expires: {{ formatDate(doc.expires_at) }}
+                                                    Expires:
+                                                    {{
+                                                        formatDate(
+                                                            doc.expires_at,
+                                                        )
+                                                    }}
                                                 </div>
                                             </TableCell>
 
@@ -1087,42 +1202,70 @@ function submitInvalidate() {
                                                     <button
                                                         v-if="canPreview(doc)"
                                                         class="flex w-full items-center gap-1.5 text-left text-sm text-primary hover:underline"
-                                                        @click="openPreview(doc)"
+                                                        @click="
+                                                            openPreview(doc)
+                                                        "
                                                     >
-                                                        <Eye class="h-3.5 w-3.5 shrink-0" />
-                                                        <span class="min-w-0 flex-1 truncate">
-                                                            {{ doc.file_name ?? '—' }}
+                                                        <Eye
+                                                            class="h-3.5 w-3.5 shrink-0"
+                                                        />
+                                                        <span
+                                                            class="min-w-0 flex-1 truncate"
+                                                        >
+                                                            {{
+                                                                doc.file_name ??
+                                                                '—'
+                                                            }}
                                                         </span>
                                                     </button>
                                                     <span
                                                         v-else
                                                         class="block truncate text-sm text-muted-foreground"
-                                                        :title="doc.file_name ?? '—'"
+                                                        :title="
+                                                            doc.file_name ?? '—'
+                                                        "
                                                     >
-                                                        {{ doc.file_name ?? '—' }}
+                                                        {{
+                                                            doc.file_name ?? '—'
+                                                        }}
                                                     </span>
-                                                    <p class="text-xs text-muted-foreground">
-                                                        {{ formatBytes(doc.file_size) }}
+                                                    <p
+                                                        class="text-xs text-muted-foreground"
+                                                    >
+                                                        {{
+                                                            formatBytes(
+                                                                doc.file_size,
+                                                            )
+                                                        }}
                                                     </p>
                                                     <p
                                                         v-if="!fileUrl(doc)"
                                                         class="text-xs text-destructive"
                                                     >
-                                                        File link is unavailable.
+                                                        File link is
+                                                        unavailable.
                                                     </p>
                                                 </div>
                                             </TableCell>
 
                                             <TableCell class="pr-4 text-right">
                                                 <DropdownMenu>
-                                                    <DropdownMenuTrigger as-child>
+                                                    <DropdownMenuTrigger
+                                                        as-child
+                                                    >
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
                                                             class="h-8 w-8 p-0"
                                                         >
-                                                            <MoreHorizontal class="h-4 w-4" />
-                                                            <span class="sr-only">Open actions</span>
+                                                            <MoreHorizontal
+                                                                class="h-4 w-4"
+                                                            />
+                                                            <span
+                                                                class="sr-only"
+                                                                >Open
+                                                                actions</span
+                                                            >
                                                         </Button>
                                                     </DropdownMenuTrigger>
 
@@ -1130,14 +1273,22 @@ function submitInvalidate() {
                                                         align="end"
                                                         class="w-52"
                                                     >
-                                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                        <DropdownMenuLabel
+                                                            >Actions</DropdownMenuLabel
+                                                        >
                                                         <DropdownMenuSeparator />
 
                                                         <DropdownMenuItem
-                                                            v-if="canPreview(doc)"
-                                                            @click="openPreview(doc)"
+                                                            v-if="
+                                                                canPreview(doc)
+                                                            "
+                                                            @click="
+                                                                openPreview(doc)
+                                                            "
                                                         >
-                                                            <Eye class="mr-2 h-4 w-4" />
+                                                            <Eye
+                                                                class="mr-2 h-4 w-4"
+                                                            />
                                                             Review Document
                                                         </DropdownMenuItem>
 
@@ -1146,47 +1297,18 @@ function submitInvalidate() {
                                                             as-child
                                                         >
                                                             <a
-                                                                :href="fileUrl(doc)"
+                                                                :href="
+                                                                    fileUrl(doc)
+                                                                "
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
                                                                 download
                                                             >
-                                                                <Download class="mr-2 h-4 w-4" />
+                                                                <Download
+                                                                    class="mr-2 h-4 w-4"
+                                                                />
                                                                 Download
                                                             </a>
-                                                        </DropdownMenuItem>
-
-                                                        <DropdownMenuSeparator
-                                                            v-if="
-                                                                canVerifyVehicleDocument ||
-                                                                canUnverifyVehicleDocument ||
-                                                                canInvalidateVehicleDocument
-                                                            "
-                                                        />
-
-                                                        <DropdownMenuItem
-                                                            v-if="canVerifyVehicleDocument && doc.status !== 'verified'"
-                                                            @click="openConfirm('verify', doc)"
-                                                        >
-                                                            <CheckCircle2 class="mr-2 h-4 w-4" />
-                                                            Verify
-                                                        </DropdownMenuItem>
-
-                                                        <DropdownMenuItem
-                                                            v-if="canUnverifyVehicleDocument && doc.status === 'verified'"
-                                                            @click="openConfirm('unverify', doc)"
-                                                        >
-                                                            <RotateCcw class="mr-2 h-4 w-4" />
-                                                            Move to Pending
-                                                        </DropdownMenuItem>
-
-                                                        <DropdownMenuItem
-                                                            v-if="canInvalidateVehicleDocument"
-                                                            class="text-destructive focus:text-destructive"
-                                                            @click="openInvalidate(doc)"
-                                                        >
-                                                            <XCircle class="mr-2 h-4 w-4" />
-                                                            Mark Invalid
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -1211,7 +1333,9 @@ function submitInvalidate() {
                 <div class="space-y-5">
                     <Card>
                         <CardHeader>
-                            <CardTitle class="text-base">Quick Summary</CardTitle>
+                            <CardTitle class="text-base"
+                                >Quick Summary</CardTitle
+                            >
                         </CardHeader>
 
                         <CardContent class="space-y-4">
@@ -1220,7 +1344,9 @@ function submitInvalidate() {
                                     Vehicle Status
                                 </p>
                                 <div class="mt-2">
-                                    <Badge :variant="statusVariant(vehicle.status)">
+                                    <Badge
+                                        :variant="statusVariant(vehicle.status)"
+                                    >
                                         {{ humanize(vehicle.status) }}
                                     </Badge>
                                 </div>
@@ -1231,7 +1357,9 @@ function submitInvalidate() {
                                     Document Health
                                 </p>
                                 <div class="mt-2 flex flex-wrap gap-2">
-                                    <Badge variant="outline">{{ verifiedCount }} verified</Badge>
+                                    <Badge variant="outline"
+                                        >{{ verifiedCount }} verified</Badge
+                                    >
                                     <Badge
                                         v-if="pendingCount > 0"
                                         variant="secondary"
@@ -1253,7 +1381,9 @@ function submitInvalidate() {
                                 </div>
                             </div>
 
-                            <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                            <div
+                                class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1"
+                            >
                                 <div class="rounded-lg border p-4">
                                     <p class="text-xs text-muted-foreground">
                                         Verification Rate
@@ -1268,7 +1398,10 @@ function submitInvalidate() {
                                         Assigned Company
                                     </p>
                                     <p class="mt-1 text-sm font-semibold">
-                                        {{ company?.company_name ?? 'No company' }}
+                                        {{
+                                            company?.company_name ??
+                                            'No company'
+                                        }}
                                     </p>
                                 </div>
 
@@ -1381,12 +1514,17 @@ function submitInvalidate() {
                             <DialogDescription
                                 class="mt-1 flex flex-wrap items-center gap-2 text-xs"
                             >
-                                <Badge :variant="statusVariant(previewDoc?.status)">
+                                <Badge
+                                    :variant="statusVariant(previewDoc?.status)"
+                                >
                                     {{ humanize(previewDoc?.status) }}
                                 </Badge>
-                                <span>{{ humanize(previewDoc?.document_type) }}</span>
+                                <span>{{
+                                    humanize(previewDoc?.document_type)
+                                }}</span>
                                 <span v-if="previewDoc?.expires_at">
-                                    · Expires {{ formatDate(previewDoc.expires_at) }}
+                                    · Expires
+                                    {{ formatDate(previewDoc.expires_at) }}
                                 </span>
                             </DialogDescription>
                         </div>
@@ -1417,9 +1555,13 @@ function submitInvalidate() {
                     >
                         <img
                             :src="fileUrl(previewDoc)"
-                            :alt="previewDoc.file_name ?? previewDoc.document_type"
+                            :alt="
+                                previewDoc.file_name ?? previewDoc.document_type
+                            "
                             class="max-h-[70vh] max-w-full rounded-lg object-contain shadow-md"
-                            @error="(e) => ((e.target as HTMLImageElement).src = '')"
+                            @error="
+                                (e) => ((e.target as HTMLImageElement).src = '')
+                            "
                         />
                     </div>
 
@@ -1438,7 +1580,9 @@ function submitInvalidate() {
                             class="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground"
                         >
                             <FileText class="h-12 w-12 opacity-30" />
-                            <p class="text-sm">Cannot preview this PDF inline.</p>
+                            <p class="text-sm">
+                                Cannot preview this PDF inline.
+                            </p>
                             <Button as-child variant="secondary" size="sm">
                                 <a
                                     :href="fileUrl(previewDoc)"
@@ -1463,7 +1607,11 @@ function submitInvalidate() {
                 <DialogFooter class="shrink-0 border-t px-6 py-3">
                     <div class="flex flex-1 flex-wrap items-center gap-2">
                         <Button
-                            v-if="previewDoc && previewDoc.status !== 'verified' && canVerifyVehicleDocument"
+                            v-if="
+                                previewDoc &&
+                                previewDoc.status !== 'verified' &&
+                                canVerifyVehicleDocument
+                            "
                             size="sm"
                             class="bg-emerald-600 text-white hover:bg-emerald-700"
                             :disabled="actionForm.processing"
@@ -1474,7 +1622,11 @@ function submitInvalidate() {
                         </Button>
 
                         <Button
-                            v-if="previewDoc && previewDoc.status === 'verified' && canUnverifyVehicleDocument"
+                            v-if="
+                                previewDoc &&
+                                previewDoc.status === 'verified' &&
+                                canUnverifyVehicleDocument
+                            "
                             variant="outline"
                             size="sm"
                             :disabled="actionForm.processing"
@@ -1496,16 +1648,39 @@ function submitInvalidate() {
                         </Button>
                     </div>
 
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        @click="closePreview"
-                    >
+                    <Button variant="outline" size="sm" @click="closePreview">
                         Close
                     </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+
+        <AlertDialog v-model:open="archiveOpen">
+            <AlertDialogContent class="rounded-2xl">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Archive Vehicle</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Are you sure you want to archive
+                        <span class="font-semibold text-foreground">{{
+                            vehicle.plate_number || `Vehicle #${vehicle.id}`
+                        }}</span
+                        >? You can restore it later from Archived Vehicles.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+
+                <AlertDialogFooter>
+                    <AlertDialogCancel class="rounded-lg"
+                        >Cancel</AlertDialogCancel
+                    >
+                    <AlertDialogAction
+                        class="rounded-lg border-0 bg-rose-600 text-white hover:bg-rose-700"
+                        @click="archiveVehicle"
+                    >
+                        Archive
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
 
         <AlertDialog v-model:open="confirmOpen">
             <AlertDialogContent>
@@ -1542,111 +1717,133 @@ function submitInvalidate() {
         </AlertDialog>
 
         <Dialog v-model:open="invalidateOpen">
-    <DialogContent class="rounded-2xl sm:max-w-lg">
-        <DialogHeader>
-            <DialogTitle>Mark as Invalid</DialogTitle>
-            <DialogDescription>
-                Select one or more reasons below. The remarks field will be built automatically —
-                you can still edit it before submitting for
-                <span class="font-medium text-foreground">
-                    {{ humanize(actionDoc?.document_type) }}
-                </span>.
-            </DialogDescription>
-        </DialogHeader>
+            <DialogContent class="rounded-2xl sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>Mark as Invalid</DialogTitle>
+                    <DialogDescription>
+                        Select one or more reasons below. The remarks field will
+                        be built automatically — you can still edit it before
+                        submitting for
+                        <span class="font-medium text-foreground">
+                            {{ humanize(actionDoc?.document_type) }} </span
+                        >.
+                    </DialogDescription>
+                </DialogHeader>
 
-        <Separator />
+                <Separator />
 
-        <div class="space-y-4">
-            <div>
-                <p class="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                    Reasons
-                </p>
+                <div class="space-y-4">
+                    <div>
+                        <p
+                            class="mb-2.5 text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
+                        >
+                            Reasons
+                        </p>
 
-                <div class="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                    <label
-                        v-for="preset in invalidPresets"
-                        :key="preset.value"
-                        :class="[
-                            'flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors',
-                            selectedInvalidPresets.includes(preset.value)
-                                ? 'border-rose-300 bg-rose-50 text-rose-700'
-                                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
-                        ]"
-                        @click="toggleInvalidPreset(preset.value)"
-                    >
-                        <Checkbox
-                            :checked="selectedInvalidPresets.includes(preset.value)"
-                            :class="
-                                selectedInvalidPresets.includes(preset.value)
-                                    ? 'border-rose-400 data-[state=checked]:border-rose-600 data-[state=checked]:bg-rose-600'
-                                    : ''
-                            "
-                            @click.stop
-                            @update:checked="toggleInvalidPreset(preset.value)"
+                        <div class="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                            <label
+                                v-for="preset in invalidPresets"
+                                :key="preset.value"
+                                :class="[
+                                    'flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors',
+                                    selectedInvalidPresets.includes(
+                                        preset.value,
+                                    )
+                                        ? 'border-rose-300 bg-rose-50 text-rose-700'
+                                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+                                ]"
+                                @click="toggleInvalidPreset(preset.value)"
+                            >
+                                <Checkbox
+                                    :checked="
+                                        selectedInvalidPresets.includes(
+                                            preset.value,
+                                        )
+                                    "
+                                    :class="
+                                        selectedInvalidPresets.includes(
+                                            preset.value,
+                                        )
+                                            ? 'border-rose-400 data-[state=checked]:border-rose-600 data-[state=checked]:bg-rose-600'
+                                            : ''
+                                    "
+                                    @click.stop
+                                    @update:checked="
+                                        toggleInvalidPreset(preset.value)
+                                    "
+                                />
+                                <span class="leading-snug">{{
+                                    preset.label
+                                }}</span>
+                            </label>
+                        </div>
+
+                        <p
+                            v-if="selectedInvalidPresets.length > 0"
+                            class="mt-2 text-xs font-medium text-rose-600"
+                        >
+                            {{ selectedInvalidPresets.length }}
+                            reason{{
+                                selectedInvalidPresets.length > 1 ? 's' : ''
+                            }}
+                            selected
+                        </p>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <Label
+                            for="inv-remarks"
+                            class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
+                        >
+                            Remarks <span class="text-destructive">*</span>
+                        </Label>
+
+                        <Textarea
+                            id="inv-remarks"
+                            v-model="invalidateForm.remarks"
+                            placeholder="Select reasons above or write your own…"
+                            class="min-h-[100px] rounded-lg text-sm"
                         />
-                        <span class="leading-snug">{{ preset.label }}</span>
-                    </label>
+
+                        <InputError
+                            class="mt-1"
+                            :message="invalidateForm.errors.remarks"
+                        />
+
+                        <p class="text-[11px] text-muted-foreground">
+                            You can edit the auto-generated text or write your
+                            own remarks.
+                        </p>
+                    </div>
                 </div>
 
-                <p
-                    v-if="selectedInvalidPresets.length > 0"
-                    class="mt-2 text-xs font-medium text-rose-600"
-                >
-                    {{ selectedInvalidPresets.length }}
-                    reason{{ selectedInvalidPresets.length > 1 ? 's' : '' }} selected
-                </p>
-            </div>
+                <DialogFooter class="gap-2">
+                    <Button
+                        variant="outline"
+                        class="rounded-lg"
+                        :disabled="invalidateForm.processing"
+                        @click="invalidateOpen = false"
+                    >
+                        Cancel
+                    </Button>
 
-            <div class="space-y-1.5">
-                <Label
-                    for="inv-remarks"
-                    class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground"
-                >
-                    Remarks <span class="text-destructive">*</span>
-                </Label>
-
-                <Textarea
-                    id="inv-remarks"
-                    v-model="invalidateForm.remarks"
-                    placeholder="Select reasons above or write your own…"
-                    class="min-h-[100px] rounded-lg text-sm"
-                />
-
-                <InputError
-                    class="mt-1"
-                    :message="invalidateForm.errors.remarks"
-                />
-
-                <p class="text-[11px] text-muted-foreground">
-                    You can edit the auto-generated text or write your own remarks.
-                </p>
-            </div>
-        </div>
-
-        <DialogFooter class="gap-2">
-            <Button
-                variant="outline"
-                class="rounded-lg"
-                :disabled="invalidateForm.processing"
-                @click="invalidateOpen = false"
-            >
-                Cancel
-            </Button>
-
-            <Button
-                variant="destructive"
-                class="rounded-lg border-0 bg-rose-600 text-white hover:bg-rose-700"
-                :disabled="invalidateForm.processing || !invalidateForm.remarks.trim()"
-                @click="submitInvalidate"
-            >
-                {{
-                    invalidateForm.processing
-                        ? 'Submitting…'
-                        : 'Mark Invalid'
-                }}
-            </Button>
-        </DialogFooter>
-    </DialogContent>
-</Dialog>
+                    <Button
+                        variant="destructive"
+                        class="rounded-lg border-0 bg-rose-600 text-white hover:bg-rose-700"
+                        :disabled="
+                            invalidateForm.processing ||
+                            !invalidateForm.remarks.trim()
+                        "
+                        @click="submitInvalidate"
+                    >
+                        {{
+                            invalidateForm.processing
+                                ? 'Submitting…'
+                                : 'Mark Invalid'
+                        }}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>

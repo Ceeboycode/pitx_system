@@ -17,6 +17,10 @@ class RolePermissionSeeder extends Seeder
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $allPermissions = Permission::query()->pluck('name')->all();
+        $internalPermissions = Permission::query()
+            ->where('name', 'not like', 'external_%')
+            ->pluck('name')
+            ->all();
 
         $terminalManagerPermissions = Permission::query()
             ->where(function ($query) {
@@ -27,7 +31,7 @@ class RolePermissionSeeder extends Seeder
                     ->orWhere('name', 'like', 'gates.%')
                     ->orWhere('name', 'like', 'routes.%')
                     ->orWhere('name', 'like', 'dispatches.%')
-                    ->orWhere('name', 'like', 'audit_logs.%');
+                    ->orWhere('name', 'audit_logs.viewOwn');
             })
             ->pluck('name')
             ->all();
@@ -81,8 +85,13 @@ class RolePermissionSeeder extends Seeder
             ->where('type', 'external')
             ->firstOrFail();
 
+        $commuter = Role::query()
+            ->where('name', 'commuter')
+            ->where('type', 'external')
+            ->firstOrFail();
+
         $superAdmin->syncPermissions($allPermissions);
-        $admin->syncPermissions($allPermissions);
+        $admin->syncPermissions($internalPermissions);
 
         $it->syncPermissions($itPermissions);
         $terminalManager->syncPermissions($terminalManagerPermissions);
@@ -92,6 +101,7 @@ class RolePermissionSeeder extends Seeder
         // No permissions yet unless you want them too
         $dispatcher->syncPermissions([]);
         $driver->syncPermissions([]);
+        $commuter->syncPermissions([]);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

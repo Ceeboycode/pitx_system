@@ -15,12 +15,13 @@ class RoleSeeder extends Seeder
         $roles = [
             ['name' => 'super-admin', 'type' => 'internal'],
             ['name' => 'admin', 'type' => 'internal'],
-            // ['name' => 'it', 'type' => 'internal'],yes
+            ['name' => 'it', 'type' => 'internal'],
             ['name' => 'terminal manager', 'type' => 'internal'],
 
             ['name' => 'operator', 'type' => 'external'],
             ['name' => 'dispatcher', 'type' => 'external'],
             ['name' => 'driver', 'type' => 'external'],
+            ['name' => 'commuter', 'type' => 'external'],
         ];
 
         foreach ($roles as $role) {

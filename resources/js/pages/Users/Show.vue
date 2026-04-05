@@ -1,20 +1,22 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { edit, index } from '@/routes/users';
+import { can } from '@/lib/can';
+import { destroy, edit, index, trash } from '@/routes/users';
 import type { BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import {
+    Archive,
     ArrowLeft,
     Building2,
     CalendarDays,
     CheckCircle2,
     Mail,
-    Phone,
     Pencil,
+    Phone,
     ShieldCheck,
-    User2,
     XCircle,
 } from 'lucide-vue-next';
+import { toast } from 'vue-sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -40,12 +42,14 @@ type Company = {
 };
 
 const props = defineProps<{
+    currentUserId: number | null;
     user: {
         id: number;
         username: string;
         name: string;
         email: string;
         email_verified_at: string | null;
+        avatar: string | null;
         phone_number: string | null;
         type: 'internal' | 'external' | null;
         status: 'active' | 'inactive' | string;
@@ -57,10 +61,32 @@ const props = defineProps<{
     };
 }>();
 
+const isOwnAccount = props.currentUserId === props.user.id;
+
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Users', href: index().url },
     { title: props.user.name, href: '#' },
 ];
+
+const canArchiveUser = can('users.archive');
+const canViewTrash = can('users.viewTrash');
+
+function handleArchiveUser() {
+    if (
+        !confirm(
+            `Archive account for ${props.user.name}? You can restore it from Archived Users.`,
+        )
+    ) {
+        toast.info('Archive cancelled.');
+        return;
+    }
+
+    router.delete(destroy(props.user.id).url, {
+        preserveScroll: true,
+        onSuccess: () => toast.success('User archived successfully.'),
+        onError: () => toast.error('Failed to archive user.'),
+    });
+}
 
 function formatDate(value: string | null | undefined) {
     if (!value) return '—';
@@ -122,6 +148,12 @@ function verificationBadgeClass(date?: string | null) {
         ? 'border-blue-200 bg-blue-100 text-blue-700'
         : 'border-amber-200 bg-amber-100 text-amber-700';
 }
+
+function initials(name: string) {
+    const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
+
+    return parts.map((part) => part.charAt(0).toUpperCase()).join('') || 'U';
+}
 </script>
 
 <template>
@@ -130,10 +162,23 @@ function verificationBadgeClass(date?: string | null) {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-1 flex-col gap-4 p-4">
             <div class="mx-5 flex flex-col gap-4">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div
+                    class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                >
                     <div class="space-y-1">
                         <div class="flex items-center gap-2">
-                            <User2 class="h-5 w-5 text-muted-foreground" />
+                            <img
+                                v-if="user.avatar"
+                                :src="user.avatar"
+                                :alt="`${user.name} profile photo`"
+                                class="h-10 w-10 rounded-full border border-slate-200 object-cover"
+                            />
+                            <div
+                                v-else
+                                class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-xs font-semibold text-slate-600"
+                            >
+                                {{ initials(user.name) }}
+                            </div>
                             <h1 class="text-2xl font-semibold tracking-tight">
                                 {{ user.name }}
                             </h1>
@@ -145,6 +190,13 @@ function verificationBadgeClass(date?: string | null) {
                     </div>
 
                     <div class="flex flex-wrap items-center gap-2">
+                        <Button v-if="canViewTrash" variant="outline" as-child>
+                            <Link :href="trash().url">
+                                <Archive class="mr-2 h-4 w-4" />
+                                View Archived
+                            </Link>
+                        </Button>
+
                         <Button variant="outline" as-child>
                             <Link :href="index().url">
                                 <ArrowLeft class="mr-2 h-4 w-4" />
@@ -152,39 +204,70 @@ function verificationBadgeClass(date?: string | null) {
                             </Link>
                         </Button>
 
-                        <Button as-child variant="blue">
+                        <Button
+                            v-if="canArchiveUser && !isOwnAccount"
+                            variant="destructive"
+                            @click="handleArchiveUser"
+                        >
+                            <Archive class="mr-2 h-4 w-4" />
+                            Archive User
+                        </Button>
+
+                        <Button v-if="!isOwnAccount" as-child variant="blue">
                             <Link :href="edit(user.id).url">
                                 <Pencil class="mr-2 h-4 w-4" />
                                 Edit User
                             </Link>
+                        </Button>
+
+                        <Button v-if="isOwnAccount" variant="outline" disabled>
+                            You cannot manage your own account here
                         </Button>
                     </div>
                 </div>
 
                 <Card>
                     <CardHeader class="pb-4">
-                        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div
+                            class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between"
+                        >
                             <div class="space-y-2">
-                                <CardTitle class="text-xl">{{ user.username }}</CardTitle>
+                                <CardTitle class="text-xl">{{
+                                    user.username
+                                }}</CardTitle>
                                 <CardDescription>
                                     Profile details based on assigned role type.
                                 </CardDescription>
                             </div>
 
                             <div class="flex flex-wrap gap-2">
-                                <Badge :class="statusBadgeClass(user.status)" class="border capitalize">
+                                <Badge
+                                    :class="statusBadgeClass(user.status)"
+                                    class="border capitalize"
+                                >
                                     {{ user.status }}
                                 </Badge>
 
-                                <Badge :class="typeBadgeClass(user.type)" class="border capitalize">
+                                <Badge
+                                    :class="typeBadgeClass(user.type)"
+                                    class="border capitalize"
+                                >
                                     {{ user.type ?? 'No Role Type' }}
                                 </Badge>
 
                                 <Badge
-                                    :class="verificationBadgeClass(user.email_verified_at)"
+                                    :class="
+                                        verificationBadgeClass(
+                                            user.email_verified_at,
+                                        )
+                                    "
                                     class="border"
                                 >
-                                    {{ user.email_verified_at ? 'Email Verified' : 'Email Not Verified' }}
+                                    {{
+                                        user.email_verified_at
+                                            ? 'Email Verified'
+                                            : 'Email Not Verified'
+                                    }}
                                 </Badge>
                             </div>
                         </div>
@@ -192,46 +275,70 @@ function verificationBadgeClass(date?: string | null) {
 
                     <Separator />
 
-                    <CardContent class="grid gap-4 pt-6 md:grid-cols-2 xl:grid-cols-4">
+                    <CardContent
+                        class="grid gap-4 pt-6 md:grid-cols-2 xl:grid-cols-4"
+                    >
                         <div class="rounded-xl border bg-muted/30 p-4">
-                            <div class="mb-2 flex items-center gap-2 text-sm font-medium">
+                            <div
+                                class="mb-2 flex items-center gap-2 text-sm font-medium"
+                            >
                                 <Mail class="h-4 w-4 text-muted-foreground" />
                                 Email Address
                             </div>
-                            <p class="break-all text-sm">{{ user.email }}</p>
+                            <p class="text-sm break-all">{{ user.email }}</p>
                             <p class="mt-2 text-xs text-muted-foreground">
-                                {{ user.email_verified_at ? `Verified on ${formatDateTime(user.email_verified_at)}` : 'Not yet verified' }}
+                                {{
+                                    user.email_verified_at
+                                        ? `Verified on ${formatDateTime(user.email_verified_at)}`
+                                        : 'Not yet verified'
+                                }}
                             </p>
                         </div>
 
                         <div class="rounded-xl border bg-muted/30 p-4">
-                            <div class="mb-2 flex items-center gap-2 text-sm font-medium">
+                            <div
+                                class="mb-2 flex items-center gap-2 text-sm font-medium"
+                            >
                                 <Phone class="h-4 w-4 text-muted-foreground" />
                                 Phone Number
                             </div>
-                            <p class="text-sm">{{ user.phone_number || '—' }}</p>
+                            <p class="text-sm">
+                                {{ user.phone_number || '—' }}
+                            </p>
                             <p class="mt-2 text-xs text-muted-foreground">
                                 Contact number on record
                             </p>
                         </div>
 
                         <div class="rounded-xl border bg-muted/30 p-4">
-                            <div class="mb-2 flex items-center gap-2 text-sm font-medium">
-                                <CalendarDays class="h-4 w-4 text-muted-foreground" />
+                            <div
+                                class="mb-2 flex items-center gap-2 text-sm font-medium"
+                            >
+                                <CalendarDays
+                                    class="h-4 w-4 text-muted-foreground"
+                                />
                                 Created At
                             </div>
-                            <p class="text-sm">{{ formatDateTime(user.created_at) }}</p>
+                            <p class="text-sm">
+                                {{ formatDateTime(user.created_at) }}
+                            </p>
                             <p class="mt-2 text-xs text-muted-foreground">
                                 Account creation date
                             </p>
                         </div>
 
                         <div class="rounded-xl border bg-muted/30 p-4">
-                            <div class="mb-2 flex items-center gap-2 text-sm font-medium">
-                                <ShieldCheck class="h-4 w-4 text-muted-foreground" />
+                            <div
+                                class="mb-2 flex items-center gap-2 text-sm font-medium"
+                            >
+                                <ShieldCheck
+                                    class="h-4 w-4 text-muted-foreground"
+                                />
                                 Role Type
                             </div>
-                            <p class="text-sm capitalize">{{ user.type ?? '—' }}</p>
+                            <p class="text-sm capitalize">
+                                {{ user.type ?? '—' }}
+                            </p>
                             <p class="mt-2 text-xs text-muted-foreground">
                                 Based on assigned role
                             </p>
@@ -239,55 +346,95 @@ function verificationBadgeClass(date?: string | null) {
                     </CardContent>
                 </Card>
 
-                <div v-if="user.type === 'internal'" class="grid gap-4 lg:grid-cols-3">
+                <div
+                    v-if="user.type === 'internal'"
+                    class="grid gap-4 lg:grid-cols-3"
+                >
                     <Card class="lg:col-span-2">
                         <CardHeader>
                             <CardTitle>Internal User Details</CardTitle>
                             <CardDescription>
-                                Internal account information and internal roles only.
+                                Internal account information and internal roles
+                                only.
                             </CardDescription>
                         </CardHeader>
 
                         <CardContent class="space-y-5">
                             <div class="grid gap-4 sm:grid-cols-2">
                                 <div class="space-y-2">
-                                    <p class="text-sm font-medium text-muted-foreground">Full Name</p>
-                                    <div class="rounded-lg border px-3 py-2 text-sm">
+                                    <p
+                                        class="text-sm font-medium text-muted-foreground"
+                                    >
+                                        Full Name
+                                    </p>
+                                    <div
+                                        class="rounded-lg border px-3 py-2 text-sm"
+                                    >
                                         {{ user.name }}
                                     </div>
                                 </div>
 
                                 <div class="space-y-2">
-                                    <p class="text-sm font-medium text-muted-foreground">Username</p>
-                                    <div class="rounded-lg border px-3 py-2 text-sm">
+                                    <p
+                                        class="text-sm font-medium text-muted-foreground"
+                                    >
+                                        Username
+                                    </p>
+                                    <div
+                                        class="rounded-lg border px-3 py-2 text-sm"
+                                    >
                                         {{ user.username }}
                                     </div>
                                 </div>
 
                                 <div class="space-y-2">
-                                    <p class="text-sm font-medium text-muted-foreground">Email</p>
-                                    <div class="rounded-lg border px-3 py-2 text-sm break-all">
+                                    <p
+                                        class="text-sm font-medium text-muted-foreground"
+                                    >
+                                        Email
+                                    </p>
+                                    <div
+                                        class="rounded-lg border px-3 py-2 text-sm break-all"
+                                    >
                                         {{ user.email }}
                                     </div>
                                 </div>
 
                                 <div class="space-y-2">
-                                    <p class="text-sm font-medium text-muted-foreground">Phone Number</p>
-                                    <div class="rounded-lg border px-3 py-2 text-sm">
+                                    <p
+                                        class="text-sm font-medium text-muted-foreground"
+                                    >
+                                        Phone Number
+                                    </p>
+                                    <div
+                                        class="rounded-lg border px-3 py-2 text-sm"
+                                    >
                                         {{ user.phone_number || '—' }}
                                     </div>
                                 </div>
 
                                 <div class="space-y-2">
-                                    <p class="text-sm font-medium text-muted-foreground">User Type</p>
-                                    <div class="rounded-lg border px-3 py-2 text-sm capitalize">
+                                    <p
+                                        class="text-sm font-medium text-muted-foreground"
+                                    >
+                                        User Type
+                                    </p>
+                                    <div
+                                        class="rounded-lg border px-3 py-2 text-sm capitalize"
+                                    >
                                         internal
                                     </div>
                                 </div>
 
                                 <div class="space-y-2">
-                                    <p class="text-sm font-medium text-muted-foreground">Status</p>
-                                    <div class="rounded-lg border px-3 py-2 text-sm capitalize">
+                                    <p
+                                        class="text-sm font-medium text-muted-foreground"
+                                    >
+                                        Status
+                                    </p>
+                                    <div
+                                        class="rounded-lg border px-3 py-2 text-sm capitalize"
+                                    >
                                         {{ user.status }}
                                     </div>
                                 </div>
@@ -328,69 +475,121 @@ function verificationBadgeClass(date?: string | null) {
                     </Card>
                 </div>
 
-                <div v-else-if="user.type === 'external'" class="grid gap-4 lg:grid-cols-3">
+                <div
+                    v-else-if="user.type === 'external'"
+                    class="grid gap-4 lg:grid-cols-3"
+                >
                     <Card class="lg:col-span-2">
                         <CardHeader>
                             <CardTitle>External User Details</CardTitle>
                             <CardDescription>
-                                External account information, assigned company, and external roles only.
+                                External account information, assigned company,
+                                and external roles only.
                             </CardDescription>
                         </CardHeader>
 
                         <CardContent class="space-y-5">
                             <div class="grid gap-4 sm:grid-cols-2">
                                 <div class="space-y-2">
-                                    <p class="text-sm font-medium text-muted-foreground">Full Name</p>
-                                    <div class="rounded-lg border px-3 py-2 text-sm">
+                                    <p
+                                        class="text-sm font-medium text-muted-foreground"
+                                    >
+                                        Full Name
+                                    </p>
+                                    <div
+                                        class="rounded-lg border px-3 py-2 text-sm"
+                                    >
                                         {{ user.name }}
                                     </div>
                                 </div>
 
                                 <div class="space-y-2">
-                                    <p class="text-sm font-medium text-muted-foreground">Username</p>
-                                    <div class="rounded-lg border px-3 py-2 text-sm">
+                                    <p
+                                        class="text-sm font-medium text-muted-foreground"
+                                    >
+                                        Username
+                                    </p>
+                                    <div
+                                        class="rounded-lg border px-3 py-2 text-sm"
+                                    >
                                         {{ user.username }}
                                     </div>
                                 </div>
 
                                 <div class="space-y-2">
-                                    <p class="text-sm font-medium text-muted-foreground">Email</p>
-                                    <div class="rounded-lg border px-3 py-2 text-sm break-all">
+                                    <p
+                                        class="text-sm font-medium text-muted-foreground"
+                                    >
+                                        Email
+                                    </p>
+                                    <div
+                                        class="rounded-lg border px-3 py-2 text-sm break-all"
+                                    >
                                         {{ user.email }}
                                     </div>
                                 </div>
 
                                 <div class="space-y-2">
-                                    <p class="text-sm font-medium text-muted-foreground">Phone Number</p>
-                                    <div class="rounded-lg border px-3 py-2 text-sm">
+                                    <p
+                                        class="text-sm font-medium text-muted-foreground"
+                                    >
+                                        Phone Number
+                                    </p>
+                                    <div
+                                        class="rounded-lg border px-3 py-2 text-sm"
+                                    >
                                         {{ user.phone_number || '—' }}
                                     </div>
                                 </div>
 
                                 <div class="space-y-2">
-                                    <p class="text-sm font-medium text-muted-foreground">Company</p>
-                                    <div class="rounded-lg border px-3 py-2 text-sm">
+                                    <p
+                                        class="text-sm font-medium text-muted-foreground"
+                                    >
+                                        Company
+                                    </p>
+                                    <div
+                                        class="rounded-lg border px-3 py-2 text-sm"
+                                    >
                                         {{ user.company?.company_name ?? '—' }}
                                     </div>
                                 </div>
 
                                 <div class="space-y-2">
-                                    <p class="text-sm font-medium text-muted-foreground">Company Code</p>
-                                    <div class="rounded-lg border px-3 py-2 text-sm">
+                                    <p
+                                        class="text-sm font-medium text-muted-foreground"
+                                    >
+                                        Company Code
+                                    </p>
+                                    <div
+                                        class="rounded-lg border px-3 py-2 text-sm"
+                                    >
                                         {{ user.company?.company_code ?? '—' }}
                                     </div>
                                 </div>
 
                                 <div class="space-y-2">
-                                    <p class="text-sm font-medium text-muted-foreground">User Type</p>
-                                    <div class="rounded-lg border px-3 py-2 text-sm capitalize">
+                                    <p
+                                        class="text-sm font-medium text-muted-foreground"
+                                    >
+                                        User Type
+                                    </p>
+                                    <div
+                                        class="rounded-lg border px-3 py-2 text-sm capitalize"
+                                    >
                                         external
                                     </div>
                                 </div>
 
                                 <div class="space-y-2">
-                                    <p class="text-sm font-medium text-muted-foreground">Status</p>
-                                    <div class="rounded-lg border px-3 py-2 text-sm capitalize">
+                                    <p
+                                        class="text-sm font-medium text-muted-foreground"
+                                    >
+                                        Status
+                                    </p>
+                                    <div
+                                        class="rounded-lg border px-3 py-2 text-sm capitalize"
+                                    >
                                         {{ user.status }}
                                     </div>
                                 </div>
@@ -432,11 +631,18 @@ function verificationBadgeClass(date?: string | null) {
 
                             <div class="space-y-3 text-sm">
                                 <div class="flex items-start gap-2">
-                                    <Building2 class="mt-0.5 h-4 w-4 text-muted-foreground" />
+                                    <Building2
+                                        class="mt-0.5 h-4 w-4 text-muted-foreground"
+                                    />
                                     <div>
-                                        <p class="font-medium">Assigned Company</p>
+                                        <p class="font-medium">
+                                            Assigned Company
+                                        </p>
                                         <p class="text-muted-foreground">
-                                            {{ user.company?.company_name ?? '—' }}
+                                            {{
+                                                user.company?.company_name ??
+                                                '—'
+                                            }}
                                         </p>
                                     </div>
                                 </div>
@@ -451,15 +657,23 @@ function verificationBadgeClass(date?: string | null) {
                                         class="mt-0.5 h-4 w-4 text-muted-foreground"
                                     />
                                     <div>
-                                        <p class="font-medium">Email Verification</p>
+                                        <p class="font-medium">
+                                            Email Verification
+                                        </p>
                                         <p class="text-muted-foreground">
-                                            {{ user.email_verified_at ? 'Verified' : 'Not Verified' }}
+                                            {{
+                                                user.email_verified_at
+                                                    ? 'Verified'
+                                                    : 'Not Verified'
+                                            }}
                                         </p>
                                     </div>
                                 </div>
 
                                 <div class="flex items-start gap-2">
-                                    <CalendarDays class="mt-0.5 h-4 w-4 text-muted-foreground" />
+                                    <CalendarDays
+                                        class="mt-0.5 h-4 w-4 text-muted-foreground"
+                                    />
                                     <div>
                                         <p class="font-medium">Created On</p>
                                         <p class="text-muted-foreground">
@@ -481,8 +695,11 @@ function verificationBadgeClass(date?: string | null) {
                     </CardHeader>
 
                     <CardContent>
-                        <div class="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-                            This user does not currently have a valid internal or external role assigned.
+                        <div
+                            class="rounded-xl border border-dashed p-4 text-sm text-muted-foreground"
+                        >
+                            This user does not currently have a valid internal
+                            or external role assigned.
                         </div>
                     </CardContent>
                 </Card>

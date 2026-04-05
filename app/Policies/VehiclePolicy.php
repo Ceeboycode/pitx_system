@@ -29,7 +29,7 @@ class VehiclePolicy
 
     public function delete(User $user, Vehicle $vehicle): bool
     {
-        return $user->can('vehicles.delete');
+        return $user->can('vehicles.archive');
     }
 
     public function restore(User $user, Vehicle $vehicle): bool
