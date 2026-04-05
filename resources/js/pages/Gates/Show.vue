@@ -124,17 +124,6 @@ function formatDate(value?: string | null): string {
                     </Button>
 
                     <Button
-                        as-child
-                        size="sm"
-                        class="rounded-lg border-0 bg-blue-700 text-white shadow-sm hover:bg-blue-800"
-                    >
-                        <Link :href="edit(gate.id).url">
-                            <Pencil class="mr-2 h-4 w-4" />
-                            Edit Gate
-                        </Link>
-                    </Button>
-
-                    <Button
                         v-if="canArchiveGate"
                         size="sm"
                         variant="outline"
