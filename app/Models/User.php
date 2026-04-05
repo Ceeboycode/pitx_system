@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -15,7 +16,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, Notifiable, TwoFactorAuthenticatable, HasRoles, Notifiable;
+    use HasFactory, Notifiable, TwoFactorAuthenticatable, HasRoles, SoftDeletes;
 
     protected $fillable = [
         'username',
@@ -26,6 +27,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'company_id',
         'status',
+        'deleted_by',
         'must_change_password',
         'email_verified_at',
     ];
@@ -45,12 +47,18 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'must_change_password' => 'boolean',
+            'deleted_at' => 'datetime',
         ];
     }
 
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function deleter(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'deleted_by');
     }
 
     public function scopeSearch(Builder $query, ?string $search): Builder

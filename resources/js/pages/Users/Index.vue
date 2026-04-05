@@ -47,12 +47,12 @@ import {
 import AppLayout from '@/layouts/AppLayout.vue';
 import {
     create,
-    destroy,
     edit,
     index,
     resetPassword,
     show,
     toggleStatus,
+    trash,
 } from '@/routes/users';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
@@ -61,6 +61,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
    Icons
 ====================================================== */
 import {
+    Archive,
     ArrowDown,
     ArrowUp,
     ArrowUpDown,
@@ -80,6 +81,7 @@ import {
    Vue Core
 ====================================================== */
 import { computed, ref } from 'vue';
+import { toast } from 'vue-sonner';
 
 /* ======================================================
    Permissions
@@ -88,9 +90,9 @@ import { can } from '@/lib/can';
 
 const canCreate = can('users.create');
 const canUpdate = can('users.update');
-const canDelete = can('users.delete');
 const canToggle = can('users.toggleStatus');
 const canResetPass = can('users.resetPassword');
+const canViewTrash = can('users.viewTrash');
 
 /* ======================================================
    Types
@@ -149,6 +151,7 @@ const props = defineProps<{
     };
     statuses?: string[];
     canSeeSuperAdmin?: boolean;
+    currentUserId: number;
 }>();
 
 /* ======================================================
@@ -295,32 +298,44 @@ function initials(name: string) {
     return parts.map((part) => part.charAt(0).toUpperCase()).join('') || 'U';
 }
 
+function isOwnAccount(user: User) {
+    return user.id === props.currentUserId;
+}
+
 /* ======================================================
    Actions
 ====================================================== */
 function handleToggleStatus(user: User) {
     const actionLabel = isActive(user) ? 'set inactive' : 'set active';
-    if (!confirm(`Are you sure you want to ${actionLabel} ${user.name}?`))
+    if (!confirm(`Are you sure you want to ${actionLabel} ${user.name}?`)) {
+        toast.info('Status update cancelled.');
         return;
+    }
 
-    router.put(toggleStatus(user.id).url, {}, { preserveScroll: true });
+    router.put(
+        toggleStatus(user.id).url,
+        {},
+        {
+            preserveScroll: true,
+            onError: () => toast.error('Failed to update user status.'),
+        },
+    );
 }
 
 function handleResetPassword(user: User) {
-    if (!confirm(`Reset password for ${user.name}?`)) return;
-
-    router.post(resetPassword(user.id).url, {}, { preserveScroll: true });
-}
-
-function handleDelete(user: User) {
-    if (
-        !confirm(
-            `Delete account for ${user.name}? This action cannot be undone.`,
-        )
-    )
+    if (!confirm(`Reset password for ${user.name}?`)) {
+        toast.info('Password reset cancelled.');
         return;
+    }
 
-    router.delete(destroy(user.id).url, { preserveScroll: true });
+    router.post(
+        resetPassword(user.id).url,
+        {},
+        {
+            preserveScroll: true,
+            onError: () => toast.error('Failed to reset password.'),
+        },
+    );
 }
 </script>
 
@@ -347,6 +362,16 @@ function handleDelete(user: User) {
                     </div>
 
                     <CardAction class="flex gap-2">
+                        <Button size="sm" variant="outline" as-child>
+                            <Link
+                                :href="trash().url"
+                                class="flex items-center gap-1.5"
+                            >
+                                <Archive class="h-4 w-4" />
+                                View Archived
+                            </Link>
+                        </Button>
+
                         <Button
                             v-if="canCreate"
                             size="sm"
@@ -815,7 +840,10 @@ function handleDelete(user: User) {
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
-                                                    v-if="canUpdate"
+                                                    v-if="
+                                                        canUpdate &&
+                                                        !isOwnAccount(user)
+                                                    "
                                                     as-child
                                                 >
                                                     <Link
@@ -835,7 +863,10 @@ function handleDelete(user: User) {
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
-                                                    v-if="canToggle"
+                                                    v-if="
+                                                        canToggle &&
+                                                        !isOwnAccount(user)
+                                                    "
                                                     class="rounded-lg text-rose-700 focus:bg-rose-50 focus:text-rose-700"
                                                     @click="
                                                         handleToggleStatus(user)
@@ -852,7 +883,10 @@ function handleDelete(user: User) {
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
-                                                    v-if="canResetPass"
+                                                    v-if="
+                                                        canResetPass &&
+                                                        !isOwnAccount(user)
+                                                    "
                                                     class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700"
                                                     @click="
                                                         handleResetPassword(
@@ -864,6 +898,15 @@ function handleDelete(user: User) {
                                                         class="mr-2 h-4 w-4"
                                                     />
                                                     Reset Password
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuItem
+                                                    v-if="isOwnAccount(user)"
+                                                    disabled
+                                                    class="pointer-events-none rounded-lg text-muted-foreground"
+                                                >
+                                                    You cannot manage your own
+                                                    account here
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>

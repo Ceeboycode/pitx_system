@@ -33,7 +33,7 @@ function fileName(document: VehicleDocumentItem) {
 }
 
 function canReupload(status?: string | null) {
-    if (!status) return false;
+    if (!status) return true;
     return status === 'expired';
 }
 
@@ -62,6 +62,7 @@ function showExpiresAt(documentType: string) {
 }
 
 function isEditableDate(status?: string | null) {
+    if (!status) return true;
     return status === 'expired';
 }
 </script>
@@ -113,7 +114,8 @@ function isEditableDate(status?: string | null) {
             <div
                 class="grid gap-4 p-4"
                 :class="
-                    showIssuedAt(document.document_type) || showExpiresAt(document.document_type)
+                    showIssuedAt(document.document_type) ||
+                    showExpiresAt(document.document_type)
                         ? 'md:grid-cols-3'
                         : 'md:grid-cols-2'
                 "
@@ -136,7 +138,8 @@ function isEditableDate(status?: string | null) {
                         v-if="document.status && !canReupload(document.status)"
                         class="text-xs text-muted-foreground"
                     >
-                        Reupload (and date edits) are only allowed for expired documents.
+                        Reupload (and date edits) are only allowed for expired
+                        documents.
                     </p>
                     <InputError :message="errors[`documents.${index}.file`]" />
                 </div>
@@ -184,4 +187,3 @@ function isEditableDate(status?: string | null) {
         </div>
     </div>
 </template>
-

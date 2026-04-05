@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { edit, index } from '@/routes/users';
+import { can } from '@/lib/can';
+import { destroy, edit, index, trash } from '@/routes/users';
 import type { BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import {
+    Archive,
     ArrowLeft,
     Building2,
     CalendarDays,
@@ -14,6 +16,7 @@ import {
     ShieldCheck,
     XCircle,
 } from 'lucide-vue-next';
+import { toast } from 'vue-sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -39,6 +42,7 @@ type Company = {
 };
 
 const props = defineProps<{
+    currentUserId: number | null;
     user: {
         id: number;
         username: string;
@@ -57,10 +61,32 @@ const props = defineProps<{
     };
 }>();
 
+const isOwnAccount = props.currentUserId === props.user.id;
+
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Users', href: index().url },
     { title: props.user.name, href: '#' },
 ];
+
+const canArchiveUser = can('users.delete');
+const canViewTrash = can('users.viewTrash');
+
+function handleArchiveUser() {
+    if (
+        !confirm(
+            `Archive account for ${props.user.name}? You can restore it from Archived Users.`,
+        )
+    ) {
+        toast.info('Archive cancelled.');
+        return;
+    }
+
+    router.delete(destroy(props.user.id).url, {
+        preserveScroll: true,
+        onSuccess: () => toast.success('User archived successfully.'),
+        onError: () => toast.error('Failed to archive user.'),
+    });
+}
 
 function formatDate(value: string | null | undefined) {
     if (!value) return '—';
@@ -164,6 +190,13 @@ function initials(name: string) {
                     </div>
 
                     <div class="flex flex-wrap items-center gap-2">
+                        <Button v-if="canViewTrash" variant="outline" as-child>
+                            <Link :href="trash().url">
+                                <Archive class="mr-2 h-4 w-4" />
+                                View Archived
+                            </Link>
+                        </Button>
+
                         <Button variant="outline" as-child>
                             <Link :href="index().url">
                                 <ArrowLeft class="mr-2 h-4 w-4" />
@@ -171,11 +204,24 @@ function initials(name: string) {
                             </Link>
                         </Button>
 
-                        <Button as-child variant="blue">
+                        <Button
+                            v-if="canArchiveUser && !isOwnAccount"
+                            variant="destructive"
+                            @click="handleArchiveUser"
+                        >
+                            <Archive class="mr-2 h-4 w-4" />
+                            Archive User
+                        </Button>
+
+                        <Button v-if="!isOwnAccount" as-child variant="blue">
                             <Link :href="edit(user.id).url">
                                 <Pencil class="mr-2 h-4 w-4" />
                                 Edit User
                             </Link>
+                        </Button>
+
+                        <Button v-if="isOwnAccount" variant="outline" disabled>
+                            You cannot manage your own account here
                         </Button>
                     </div>
                 </div>

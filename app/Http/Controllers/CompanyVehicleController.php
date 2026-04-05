@@ -180,9 +180,8 @@ class CompanyVehicleController extends Controller
                 'created_by'     => $user->id,
             ]);
 
-            foreach ($request->file('documents', []) as $index => $docInput) {
-                $docMeta = $validated['documents'][$index] ?? null;
-                $file    = $docInput['file'] ?? null;
+            foreach ($validated['documents'] ?? [] as $index => $docMeta) {
+                $file = data_get($request->file('documents'), "{$index}.file");
 
                 if (! $docMeta || ! $file) {
                     continue;
