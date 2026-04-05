@@ -76,7 +76,7 @@ import {
 /* ── Permissions ─────────────────────────────────────────────────── */
 const canCreate = can('roles.create');
 const canUpdate = can('roles.update');
-const canDelete = can('roles.delete');
+const canDelete = can('roles.archive');
 const canViewTrash = can('roles.viewTrash');
 
 /* ── Types ──────────────────────────────────────────────────────── */

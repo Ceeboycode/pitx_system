@@ -6,6 +6,7 @@ import InertiaPagination from '@/components/InertiaPagination.vue';
 import InputError from '@/components/InputError.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import ExternalLayout from '@/layouts/ExternalLayout.vue';
+import { can } from '@/lib/can';
 
 import { store as storeChangeRequest } from '@/actions/App/Http/Controllers/DispatchChangeRequestController';
 import DispatchController from '@/actions/App/Http/Controllers/DispatchController';
@@ -205,6 +206,10 @@ const props = defineProps<{
         created_at: string | null;
     }>;
 }>();
+
+const canCreateDispatch = can('external_dispatches.create');
+const canUpdateDispatch = can('external_dispatches.update');
+const canDepartDispatch = can('external_dispatches.depart');
 
 /* ======================================================
    Date filter
@@ -450,12 +455,15 @@ function resetDepartForm() {
 }
 
 function openCreateDialog() {
+    if (!canCreateDispatch) return;
+
     editingDispatchId.value = null;
     resetForm();
     dialogOpen.value = true;
 }
 
 function openEditDialog(dispatch: DispatchItem) {
+    if (!canUpdateDispatch) return;
     if (dispatch.status === 'departed') return;
     editingDispatchId.value = dispatch.id;
     form.transform((d) => d);
@@ -479,6 +487,9 @@ function openRemarksDialog(dispatch: DispatchItem) {
 }
 
 function submit() {
+    if (isEditing.value && !canUpdateDispatch) return;
+    if (!isEditing.value && !canCreateDispatch) return;
+
     const payload = {
         ...form.data(),
         driver_user_id:
@@ -511,6 +522,8 @@ function submit() {
 }
 
 function askDepart(dispatch: DispatchItem) {
+    if (!canDepartDispatch) return;
+
     pendingDepartId.value = dispatch.id;
     pendingDepartDispatch.value = dispatch;
     resetDepartForm();
@@ -795,7 +808,11 @@ watch(confirmDepartOpen, (open) => {
                         </p>
                     </div>
 
-                    <Button @click="openCreateDialog" variant="blue">
+                    <Button
+                        v-if="canCreateDispatch"
+                        @click="openCreateDialog"
+                        variant="blue"
+                    >
                         <Plus class="h-4 w-4" />
                         Add Dispatch
                     </Button>
@@ -1437,13 +1454,16 @@ watch(confirmDepartOpen, (open) => {
                                                 <template
                                                     v-if="
                                                         dispatch.status ===
-                                                        'arrived'
+                                                            'arrived' &&
+                                                        (canUpdateDispatch ||
+                                                            canDepartDispatch)
                                                     "
                                                 >
                                                     <DropdownMenuSeparator
                                                         class="bg-slate-100"
                                                     />
                                                     <DropdownMenuItem
+                                                        v-if="canUpdateDispatch"
                                                         class="rounded-lg text-slate-700 focus:bg-amber-50 focus:text-amber-700"
                                                         @click="
                                                             openEditDialog(
@@ -1457,6 +1477,7 @@ watch(confirmDepartOpen, (open) => {
                                                         Edit
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
+                                                        v-if="canDepartDispatch"
                                                         class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700"
                                                         @click="
                                                             askDepart(dispatch)

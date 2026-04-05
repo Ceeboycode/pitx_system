@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -26,6 +27,8 @@ class CompanyUserController extends Controller
 
     public function index(Request $request)
     {
+        Gate::authorize('external_users.viewAny');
+
         $company = $request->user()->company;
 
         abort_if(! $company, 403, 'No company assigned.');
@@ -91,6 +94,8 @@ class CompanyUserController extends Controller
 
     public function create(Request $request)
     {
+        Gate::authorize('external_users.create');
+
         $company = $request->user()->company;
 
         abort_if(! $company, 403, 'No company assigned.');
@@ -109,6 +114,8 @@ class CompanyUserController extends Controller
 
     public function store(Request $request)
     {
+        Gate::authorize('external_users.create');
+
         $company = $request->user()->company;
 
         abort_if(! $company, 403, 'No company assigned.');
@@ -151,6 +158,8 @@ class CompanyUserController extends Controller
 
     public function show(Request $request, User $employeeUser)
     {
+        Gate::authorize('external_users.view');
+
         $this->ensureCompanyUser($request, $employeeUser);
 
         $employeeUser->load(['roles', 'company']);
@@ -182,6 +191,8 @@ class CompanyUserController extends Controller
 
     public function edit(Request $request, User $employeeUser)
     {
+        Gate::authorize('external_users.update');
+
         $this->ensureCompanyUser($request, $employeeUser);
         $this->ensureNotActingOnSelf($request, $employeeUser);
 
@@ -219,6 +230,8 @@ class CompanyUserController extends Controller
 
     public function update(Request $request, User $employeeUser)
     {
+        Gate::authorize('external_users.update');
+
         $this->ensureCompanyUser($request, $employeeUser);
         $this->ensureNotActingOnSelf($request, $employeeUser);
 
@@ -248,6 +261,8 @@ class CompanyUserController extends Controller
 
     public function toggleStatus(Request $request, User $employeeUser)
     {
+        Gate::authorize('external_users.toggleStatus');
+
         $this->ensureCompanyUser($request, $employeeUser);
         $this->ensureNotActingOnSelf($request, $employeeUser);
 
@@ -268,6 +283,8 @@ class CompanyUserController extends Controller
 
     public function resetPassword(Request $request, User $employeeUser)
     {
+        Gate::authorize('external_users.resetPassword');
+
         $this->ensureCompanyUser($request, $employeeUser);
         $this->ensureNotActingOnSelf($request, $employeeUser);
 
@@ -283,6 +300,8 @@ class CompanyUserController extends Controller
 
     public function destroy(Request $request, User $employeeUser)
     {
+        Gate::authorize('external_users.archive');
+
         $this->ensureCompanyUser($request, $employeeUser);
         $this->ensureNotActingOnSelf($request, $employeeUser);
 

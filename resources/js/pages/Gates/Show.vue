@@ -53,7 +53,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: props.gate.gate_name, href: '#' },
 ];
 
-const canArchiveGate = computed(() => can('gates.delete'));
+const canArchiveGate = computed(() => can('gates.archive'));
 const archiveOpen = ref(false);
 
 function archiveGate() {

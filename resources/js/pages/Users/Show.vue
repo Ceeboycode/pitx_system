@@ -68,7 +68,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: props.user.name, href: '#' },
 ];
 
-const canArchiveUser = can('users.delete');
+const canArchiveUser = can('users.archive');
 const canViewTrash = can('users.viewTrash');
 
 function handleArchiveUser() {

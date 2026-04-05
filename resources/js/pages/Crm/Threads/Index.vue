@@ -16,12 +16,12 @@ import { index } from '@/routes/crm/threads';
 import { type BreadcrumbItem } from '@/types';
 
 import {
-    BusFront,
     Bug,
+    BusFront,
     IdCard,
-    Wrench,
+    Paperclip,
     SendHorizontal,
-    Paperclip
+    Wrench,
 } from 'lucide-vue-next';
 
 type UserSummary = {
@@ -88,9 +88,7 @@ const props = defineProps<{
     assignees: UserSummary[];
 }>();
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Reports', href: index().url },
-];
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Reports', href: index().url }];
 
 function categoryLabel(raw: string | null | undefined): string {
     const map: Record<string, string> = {
@@ -105,13 +103,22 @@ function categoryLabel(raw: string | null | undefined): string {
 
 function statusLabel(thread: ThreadSummary): { text: string; class: string } {
     if (thread.is_closed) {
-        return { text: 'Resolved', class: 'text-green-700 bg-green-50 border-green-200' };
+        return {
+            text: 'Resolved',
+            class: 'text-green-700 bg-green-50 border-green-200',
+        };
     }
     const hasReplies = (thread.messages?.length ?? 0) > 1;
     if (hasReplies) {
-        return { text: 'Ongoing', class: 'text-blue-700 bg-blue-50 border-blue-200' };
+        return {
+            text: 'Ongoing',
+            class: 'text-blue-700 bg-blue-50 border-blue-200',
+        };
     }
-    return { text: 'Open', class: 'text-amber-700 bg-amber-50 border-amber-200' };
+    return {
+        text: 'Open',
+        class: 'text-amber-700 bg-amber-50 border-amber-200',
+    };
 }
 
 const selectedThreadId = ref<number | string | null>(null);
@@ -177,7 +184,9 @@ function errorMessage(payload: unknown, fallback: string) {
         payload.errors &&
         typeof payload.errors === 'object'
     ) {
-        const firstError = Object.values(payload.errors as Record<string, unknown>)
+        const firstError = Object.values(
+            payload.errors as Record<string, unknown>,
+        )
             .flat()
             .find((value) => typeof value === 'string');
 
@@ -302,20 +311,23 @@ async function saveAssignment() {
     actionError.value = null;
 
     try {
-        const response = await fetch(`/crm/threads/${selectedThread.value.id}`, {
-            method: 'PATCH',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken(),
-                'X-Requested-With': 'XMLHttpRequest',
+        const response = await fetch(
+            `/crm/threads/${selectedThread.value.id}`,
+            {
+                method: 'PATCH',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({
+                    assigned_to_user_id: selectedAssigneeId.value
+                        ? Number(selectedAssigneeId.value)
+                        : null,
+                }),
             },
-            body: JSON.stringify({
-                assigned_to_user_id: selectedAssigneeId.value
-                    ? Number(selectedAssigneeId.value)
-                    : null,
-            }),
-        });
+        );
 
         const data = await parseJson(response);
 
@@ -338,7 +350,10 @@ function onFilesSelected(event: Event) {
     pendingFiles.value = Array.from(input?.files ?? []);
 }
 
-async function uploadAttachments(threadId: number | string, messageId: number | string) {
+async function uploadAttachments(
+    threadId: number | string,
+    messageId: number | string,
+) {
     for (const file of pendingFiles.value) {
         const formData = new FormData();
         formData.append('file', file);
@@ -503,13 +518,13 @@ watch(
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
             <Card class="mx-5 p-0">
-            <!-- <Card class="mx-5"> -->
+                <!-- <Card class="mx-5"> -->
                 <div
                     class="grid h-auto grid-cols-1 lg:grid-cols-[22rem_minmax(0,1fr)]"
                 >
                     <section
                         :class="[
-                            'flex min-h-60 min-w-0 flex-col overflow-hidden border-b lg:border-b-0 lg:border-r gap-6 py-6',
+                            'flex min-h-60 min-w-0 flex-col gap-6 overflow-hidden border-b py-6 lg:border-r lg:border-b-0',
                             isThreadListOpen ? 'block' : 'hidden lg:block',
                         ]"
                     >
@@ -519,7 +534,9 @@ watch(
                                 Superadmin can assign reports.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent class="flex min-h-0 flex-1 flex-col space-y-4">
+                        <CardContent
+                            class="flex min-h-0 flex-1 flex-col space-y-4"
+                        >
                             <div class="w-full max-w-sm">
                                 <SearchInput
                                     :route="index().url"
@@ -544,43 +561,95 @@ watch(
                                     type="button"
                                     class="w-full border-b px-4 py-3 text-left transition-colors hover:bg-muted/50"
                                     :class="{
-                                        'bg-muted': String(thread.id) === String(selectedThreadId),
+                                        'bg-muted':
+                                            String(thread.id) ===
+                                            String(selectedThreadId),
                                     }"
                                     @click="selectThread(thread.id)"
                                 >
-                                    <div class="gap-2 flex justify-between p-0">
-                                        <span class="truncate text-sm font-medium">
-                                            {{ thread.subject || `Thread #${thread.id}` }}
+                                    <div class="flex justify-between gap-2 p-0">
+                                        <span
+                                            class="truncate text-sm font-medium"
+                                        >
+                                            {{
+                                                thread.subject ||
+                                                `Thread #${thread.id}`
+                                            }}
                                         </span>
                                         <span>
-                                            <span class="text-blue-900 text-end" v-if="categoryLabel(thread.category) == 'Facilities'">
-                                                <BusFront class="inline h-4 w-4" />
+                                            <span
+                                                class="text-end text-blue-900"
+                                                v-if="
+                                                    categoryLabel(
+                                                        thread.category,
+                                                    ) == 'Facilities'
+                                                "
+                                            >
+                                                <BusFront
+                                                    class="inline h-4 w-4"
+                                                />
                                             </span>
-                                            <span class="text-blue-900 text-end" v-if="categoryLabel(thread.category) == 'Terminal Operations'">
-                                                <IdCard class="inline h-4 w-4" />
+                                            <span
+                                                class="text-end text-blue-900"
+                                                v-if="
+                                                    categoryLabel(
+                                                        thread.category,
+                                                    ) == 'Terminal Operations'
+                                                "
+                                            >
+                                                <IdCard
+                                                    class="inline h-4 w-4"
+                                                />
                                             </span>
-                                            <span class="text-blue-900 text-end" v-if="categoryLabel(thread.category) == 'Commuter App'">
+                                            <span
+                                                class="text-end text-blue-900"
+                                                v-if="
+                                                    categoryLabel(
+                                                        thread.category,
+                                                    ) == 'Commuter App'
+                                                "
+                                            >
                                                 <Bug class="inline h-4 w-4" />
                                             </span>
-                                            <span class="text-blue-900 text-end" v-if="categoryLabel(thread.category) == 'Other'">
-                                                <Wrench class="inline h-4 w-4" />
+                                            <span
+                                                class="text-end text-blue-900"
+                                                v-if="
+                                                    categoryLabel(
+                                                        thread.category,
+                                                    ) == 'Other'
+                                                "
+                                            >
+                                                <Wrench
+                                                    class="inline h-4 w-4"
+                                                />
                                             </span>
                                         </span>
                                     </div>
                                     <div
                                         class="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground"
                                     >
-                                        <div class="flex min-w-0 items-center gap-1.5 truncate">
+                                        <div
+                                            class="flex min-w-0 items-center gap-1.5 truncate"
+                                        >
                                             <span
                                                 class="inline-flex shrink-0 items-center rounded border px-1.5 py-0.5 text-[10px] font-medium"
-                                                :class="statusLabel(thread).class"
+                                                :class="
+                                                    statusLabel(thread).class
+                                                "
                                             >
                                                 {{ statusLabel(thread).text }}
                                             </span>
                                             <span class="truncate">
                                                 <!-- {{ categoryLabel(thread.category) }} -->
-                                                <span v-if="thread.assigned_to?.name">
-                                                    · {{ thread.assigned_to.name }}
+                                                <span
+                                                    v-if="
+                                                        thread.assigned_to?.name
+                                                    "
+                                                >
+                                                    ·
+                                                    {{
+                                                        thread.assigned_to.name
+                                                    }}
                                                 </span>
                                             </span>
                                         </div>
@@ -599,12 +668,12 @@ watch(
 
                     <section
                         :class="[
-                            'flex min-w-0 min-h-60 flex-col overflow-hidden gap-6 py-4',
+                            'flex min-h-60 min-w-0 flex-col gap-6 overflow-hidden py-4',
                             isThreadListOpen ? 'hidden lg:block' : 'block',
                         ]"
                     >
                         <div
-                            class="flex items-center justify-between gap-3 border-b pb-4 ps-4 pe-6"
+                            class="flex items-center justify-between gap-3 border-b ps-4 pe-6 pb-4"
                         >
                             <div class="w-full">
                                 <p class="font-semibold">
@@ -613,30 +682,64 @@ watch(
                                         'Select a report'
                                     }}
                                 </p>
-                                <span 
+                                <span
                                     v-if="selectedThread?.subject != null"
-                                    class="text-sm gap-2 flex text-muted-foreground"
+                                    class="flex gap-2 text-sm text-muted-foreground"
                                 >
                                     <span>
-                                        <span class="text-blue-900 text-end" v-if="categoryLabel(selectedThread.category) == 'Facilities'">
+                                        <span
+                                            class="text-end text-blue-900"
+                                            v-if="
+                                                categoryLabel(
+                                                    selectedThread.category,
+                                                ) == 'Facilities'
+                                            "
+                                        >
                                             <BusFront class="inline h-4 w-4" />
                                         </span>
-                                        <span class="text-blue-900 text-end" v-if="categoryLabel(selectedThread.category) == 'Terminal Operations'">
+                                        <span
+                                            class="text-end text-blue-900"
+                                            v-if="
+                                                categoryLabel(
+                                                    selectedThread.category,
+                                                ) == 'Terminal Operations'
+                                            "
+                                        >
                                             <IdCard class="inline h-4 w-4" />
                                         </span>
-                                        <span class="text-blue-900 text-end" v-if="categoryLabel(selectedThread.category) == 'Commuter App'">
+                                        <span
+                                            class="text-end text-blue-900"
+                                            v-if="
+                                                categoryLabel(
+                                                    selectedThread.category,
+                                                ) == 'Commuter App'
+                                            "
+                                        >
                                             <Bug class="inline h-4 w-4" />
                                         </span>
-                                        <span class="text-blue-900 text-end" v-if="categoryLabel(selectedThread.category) == 'Other'">
+                                        <span
+                                            class="text-end text-blue-900"
+                                            v-if="
+                                                categoryLabel(
+                                                    selectedThread.category,
+                                                ) == 'Other'
+                                            "
+                                        >
                                             <Wrench class="inline h-4 w-4" />
                                         </span>
                                     </span>
-                                    <span class=""text-sm font-medium>
-                                        {{ categoryLabel(selectedThread.category) }}
+                                    <span class="text-sm font-medium">
+                                        {{
+                                            categoryLabel(
+                                                selectedThread.category,
+                                            )
+                                        }}
                                     </span>
                                     <span
                                         class="inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium"
-                                        :class="statusLabel(selectedThread).class"
+                                        :class="
+                                            statusLabel(selectedThread).class
+                                        "
                                     >
                                         {{ statusLabel(selectedThread).text }}
                                     </span>
@@ -663,14 +766,18 @@ watch(
                                                     <option
                                                         v-for="assignee in assignees"
                                                         :key="assignee.id"
-                                                        :value="String(assignee.id)"
+                                                        :value="
+                                                            String(assignee.id)
+                                                        "
                                                     >
                                                         {{ assignee.name }}
                                                     </option>
                                                 </select>
                                                 <Button
                                                     size="sm"
-                                                    :disabled="isSavingAssignment"
+                                                    :disabled="
+                                                        isSavingAssignment
+                                                    "
                                                     @click="saveAssignment"
                                                 >
                                                     Assign
@@ -682,13 +789,20 @@ watch(
                                                     variant="outline"
                                                     @click="toggleThreadState"
                                                 >
-                                                    {{ selectedThread.is_closed ? 'Reopen' : 'Close' }} Report
+                                                    {{
+                                                        selectedThread.is_closed
+                                                            ? 'Reopen'
+                                                            : 'Close'
+                                                    }}
+                                                    Report
                                                 </Button>
                                                 <Button
                                                     class="lg:hidden"
                                                     size="sm"
                                                     variant="outline"
-                                                    @click="isThreadListOpen = true"
+                                                    @click="
+                                                        isThreadListOpen = true
+                                                    "
                                                 >
                                                     Reports
                                                 </Button>
@@ -697,7 +811,10 @@ watch(
 
                                         <p v-else>
                                             Assigned to:
-                                            {{ selectedThread.assigned_to?.name || 'Unassigned' }}
+                                            {{
+                                                selectedThread?.assigned_to
+                                                    ?.name || 'Unassigned'
+                                            }}
                                         </p>
                                     </div>
                                 </div>
@@ -732,7 +849,7 @@ watch(
 
                         <div
                             v-if="loadingThread"
-                            class="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground p-10"
+                            class="flex min-h-0 flex-1 items-center justify-center p-10 text-sm text-muted-foreground"
                         >
                             Loading messages...
                         </div>
@@ -803,34 +920,52 @@ watch(
                                 class="min-h-0 flex-1 overflow-y-auto p-4"
                             >
                                 <div
-                                    v-if="(selectedThread.messages?.length ?? 0) > 0"
+                                    v-if="
+                                        (selectedThread.messages?.length ?? 0) >
+                                        0
+                                    "
                                     class="flex min-h-full flex-col justify-end space-y-3"
                                 >
                                     <div
                                         v-for="message in selectedThread.messages"
                                         :key="message.id"
                                         :class="{
-                                            'w-full flex': true,
-                                            'justify-end': message.sender?.id === selectedThread.created_by?.id,
+                                            'flex w-full': true,
+                                            'justify-end':
+                                                message.sender?.id ===
+                                                selectedThread.created_by?.id,
                                         }"
                                     >
                                         <div>
                                             <p
-                                                v-if="message.sender?.id != selectedThread.created_by?.id"
-                                                class="text-xs font-medium mb-1 px-3"
+                                                v-if="
+                                                    message.sender?.id !=
+                                                    selectedThread.created_by
+                                                        ?.id
+                                                "
+                                                class="mb-1 px-3 text-xs font-medium"
                                             >
-                                                {{ message.sender?.name || 'Unknown sender' }}
+                                                {{
+                                                    message.sender?.name ||
+                                                    'Unknown sender'
+                                                }}
                                             </p>
                                             <!-- TODO: paragraph element above shoudl not show if the  previous message's sender is the same as this message's sender-->
                                             <div
                                                 :class="{
-                                                    'rounded-md border px-3 py-2 max-w-lg min-w-0 group': true,
-                                                    'border-blue-300 bg-blue-50/70': message.is_internal
+                                                    'group max-w-lg min-w-0 rounded-md border px-3 py-2': true,
+                                                    'border-blue-300 bg-blue-50/70':
+                                                        message.is_internal,
                                                 }"
-                                            >   
-                                            <!-- TODO: when this div is hovered, this message should show the created_at_human data -->
-                                                <p class="whitespace-pre-wrap text-sm">
-                                                    {{ message.body || 'No content' }}
+                                            >
+                                                <!-- TODO: when this div is hovered, this message should show the created_at_human data -->
+                                                <p
+                                                    class="text-sm whitespace-pre-wrap"
+                                                >
+                                                    {{
+                                                        message.body ||
+                                                        'No content'
+                                                    }}
                                                 </p>
                                                 <p
                                                     v-if="message.is_internal"
@@ -840,7 +975,10 @@ watch(
                                                 </p>
 
                                                 <div
-                                                    v-if="(message.attachments?.length ?? 0) > 0"
+                                                    v-if="
+                                                        (message.attachments
+                                                            ?.length ?? 0) > 0
+                                                    "
                                                     class="mt-2 space-y-3"
                                                 >
                                                     <div
@@ -848,25 +986,45 @@ watch(
                                                         :key="attachment.id"
                                                     >
                                                         <img
-                                                            v-if="isImageAttachment(attachment) && attachment.preview_url"
-                                                            :src="attachment.preview_url"
-                                                            :alt="attachment.original_name"
+                                                            v-if="
+                                                                isImageAttachment(
+                                                                    attachment,
+                                                                ) &&
+                                                                attachment.preview_url
+                                                            "
+                                                            :src="
+                                                                attachment.preview_url
+                                                            "
+                                                            :alt="
+                                                                attachment.original_name
+                                                            "
                                                             class="max-h-72 w-full rounded-md border object-cover"
                                                         />
 
                                                         <video
-                                                            v-else-if="isVideoAttachment(attachment) && attachment.preview_url"
-                                                            :src="attachment.preview_url"
+                                                            v-else-if="
+                                                                isVideoAttachment(
+                                                                    attachment,
+                                                                ) &&
+                                                                attachment.preview_url
+                                                            "
+                                                            :src="
+                                                                attachment.preview_url
+                                                            "
                                                             controls
                                                             preload="metadata"
                                                             class="max-h-72 w-full rounded-md border bg-black"
                                                         />
 
                                                         <a
-                                                            :href="attachment.download_url"
-                                                            class=" my-2 inline-flex items-center rounded-md border px-2 py-1 text-xs text-primary hover:bg-muted"
+                                                            :href="
+                                                                attachment.download_url
+                                                            "
+                                                            class="my-2 inline-flex items-center rounded-md border px-2 py-1 text-xs text-primary hover:bg-muted"
                                                         >
-                                                            {{ attachment.original_name }}
+                                                            {{
+                                                                attachment.original_name
+                                                            }}
                                                         </a>
                                                     </div>
                                                 </div>
@@ -874,8 +1032,11 @@ watch(
                                             <!-- TODO: fix hover function, only shows the paragraph element below when the div with class 'group' is hovered -->
                                             <p
                                                 :class="{
-                                                    'text-[11px] text-muted-foreground px-3 hidden group-hover:block transition-all': true,
-                                                    'text-end': message.sender?.id === selectedThread.created_by?.id,
+                                                    'hidden px-3 text-[11px] text-muted-foreground transition-all group-hover:block': true,
+                                                    'text-end':
+                                                        message.sender?.id ===
+                                                        selectedThread
+                                                            .created_by?.id,
                                                 }"
                                             >
                                                 {{
@@ -901,7 +1062,9 @@ watch(
                                 class="border-t p-4"
                             >
                                 <div class="space-y-3">
-                                    <div class="flex justify-between gap-2 items-end">
+                                    <div
+                                        class="flex items-end justify-between gap-2"
+                                    >
                                         <textarea
                                             v-model="draftMessage"
                                             class="min-h-fit w-full rounded-md border bg-background px-3 py-2 text-sm"
@@ -924,9 +1087,7 @@ watch(
                                             <!-- TODO: fix this button -->
                                             <Paperclip class="h-4 w-4" />
                                         </Button>
-                                        <Button
-                                            @click="sendMessage"
-                                        >
+                                        <Button @click="sendMessage">
                                             <SendHorizontal class="h-4 w-4" />
                                         </Button>
                                     </div>
@@ -954,10 +1115,15 @@ watch(
                                                     @change="onFilesSelected"
                                                 />
                                                 <p
-                                                    v-if="pendingFiles.length > 0"
+                                                    v-if="
+                                                        pendingFiles.length > 0
+                                                    "
                                                     class="text-xs text-muted-foreground"
                                                 >
-                                                    {{ pendingFiles.length }} file(s) selected
+                                                    {{
+                                                        pendingFiles.length
+                                                    }}
+                                                    file(s) selected
                                                 </p>
                                             </div>
                                         </div>

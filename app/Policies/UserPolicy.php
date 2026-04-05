@@ -33,7 +33,7 @@ class UserPolicy
 
     public function delete(User $user, User $model): bool
     {
-        return $user->can('users.delete') && $user->id !== $model->id;
+        return $user->can('users.archive') && $user->id !== $model->id;
     }
 
     public function restore(User $user, User $model): bool

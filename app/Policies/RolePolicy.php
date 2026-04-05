@@ -34,7 +34,7 @@ class RolePolicy
 
     public function delete(User $user, Role $role): bool
     {
-        return $user->can('roles.delete');
+        return $user->can('roles.archive');
     }
 
     public function restore(User $user, Role $role): bool

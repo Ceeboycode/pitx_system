@@ -29,7 +29,7 @@ class GatePolicy
 
     public function delete(User $user, Gate $gate): bool
     {
-        return $user->can('gates.delete');
+        return $user->can('gates.archive');
     }
 
     public function restore(User $user, Gate $gate): bool

@@ -5,6 +5,7 @@ import { computed, reactive } from 'vue';
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import ExternalLayout from '@/layouts/ExternalLayout.vue';
+import { can } from '@/lib/can';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -102,6 +103,8 @@ const props = defineProps<{
     roles: string[];
     statuses: string[];
 }>();
+
+const canCreateEmployee = can('external_users.create');
 
 /* ======================================================
    Helpers
@@ -291,6 +294,7 @@ function openDeleteDialog(employee: EmployeeUser) {
                     </div>
 
                     <Button
+                        v-if="canCreateEmployee"
                         as-child
                         class="shrink-0 gap-2 self-start rounded-lg border-0 bg-blue-700 text-sm font-semibold text-white shadow-sm hover:bg-blue-800"
                     >
