@@ -244,6 +244,25 @@ function confirmArchive() {
 function handleToggleStatus(id: number) {
     router.patch(toggleStatus(id).url, {}, { preserveScroll: true });
 }
+
+const togglingRoute = ref<RouteRow | null>(null);
+const toggleOpen = ref(false);
+
+function openToggleDialog(route: RouteRow) {
+    togglingRoute.value = route;
+    toggleOpen.value = true;
+}
+
+function confirmToggle() {
+    if (!togglingRoute.value) return;
+    router.patch(toggleStatus(togglingRoute.value.id).url, {}, {
+        preserveScroll: true,
+        onFinish: () => {
+            togglingRoute.value = null;
+            toggleOpen.value = false;
+        },
+    });
+}
 </script>
 
 <template>
@@ -541,7 +560,7 @@ function handleToggleStatus(id: number) {
                                                 <DropdownMenuItem
                                                     v-if="canToggle"
                                                     :class="['rounded-lg', toggleStatusClass(routeItem.status)]"
-                                                    @click="handleToggleStatus(routeItem.id)"
+                                                    @click="openToggleDialog(routeItem)"
                                                 >
                                                     <Power class="mr-2 h-4 w-4" />
                                                     {{ routeItem.status === 'active' ? 'Set Inactive' : 'Set Active' }}
@@ -566,24 +585,37 @@ function handleToggleStatus(id: number) {
             </Card>
         </div>
 
-        <AlertDialog v-model:open="archiveOpen">
+        <!-- Toggle status confirmation -->
+        <AlertDialog v-model:open="toggleOpen">
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Archive Route</AlertDialogTitle>
+                    <AlertDialogTitle>
+                        {{ togglingRoute?.status === 'active' ? 'Set Route Inactive' : 'Set Route Active' }}
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                        Are you sure you want to archive
-                        <span class="font-semibold text-foreground">{{ archivingRoute?.route_name ?? 'this route' }}</span>?
-                        You can restore it later from the Archived Routes page.
+                        Are you sure you want to set
+                        <span class="font-semibold text-foreground">{{ togglingRoute?.route_name ?? 'this route' }}</span>
+                        to
+                        <span class="font-semibold" :class="togglingRoute?.status === 'active' ? 'text-rose-600' : 'text-emerald-600'">
+                            {{ togglingRoute?.status === 'active' ? 'inactive' : 'active' }}
+                        </span>?
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg" @click="archivingRoute = null">Cancel</AlertDialogCancel>
+                    <AlertDialogCancel class="rounded-lg" @click="togglingRoute = null">
+                        Cancel
+                    </AlertDialogCancel>
                     <AlertDialogAction
-                        class="rounded-lg border-0 bg-rose-600 text-white hover:bg-rose-700"
-                        @click="confirmArchive"
+                        :class="[
+                            'rounded-lg border-0 text-white',
+                            togglingRoute?.status === 'active'
+                                ? 'bg-rose-600 hover:bg-rose-700'
+                                : 'bg-emerald-600 hover:bg-emerald-700'
+                        ]"
+                        @click="confirmToggle"
                     >
-                        <Archive class="mr-2 h-4 w-4" />
-                        Archive
+                        <Power class="mr-2 h-4 w-4" />
+                        {{ togglingRoute?.status === 'active' ? 'Set Inactive' : 'Set Active' }}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

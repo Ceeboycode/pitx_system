@@ -860,6 +860,7 @@ function openRequestDetails(requestId: number | string): void {
                                 class="flex flex-wrap items-center gap-2 border-t pt-3 md:col-span-2"
                             >
                                 <Button
+                                    variant="blue"
                                     type="submit"
                                     :disabled="
                                         form.processing || !canSubmitProfileForm
