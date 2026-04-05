@@ -97,7 +97,7 @@ class GateController extends Controller
 
         $this->gateService->deleteGate($gate);
 
-        return redirect()->back()->with('success', 'Gate archived successfully.');
+        return to_route('gates.index')->with('success', 'Gate archived successfully.');
     }
 
     public function restore(int $id)

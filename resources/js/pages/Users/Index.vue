@@ -65,7 +65,6 @@ import {
     ArrowUp,
     ArrowUpDown,
     ChevronRight,
-    Download,
     Eye,
     Filter,
     KeyRound,
@@ -73,8 +72,6 @@ import {
     Pencil,
     Plus,
     Power,
-    Trash2,
-    Upload,
     Users,
     X,
 } from 'lucide-vue-next';
@@ -116,6 +113,7 @@ interface User {
     name: string;
     email: string;
     email_verified_at: string | null;
+    avatar: string | null;
     phone_number: string | null;
     company_id: number | null;
     company: Company | null;
@@ -161,19 +159,23 @@ const statusFilter = ref<string>(props.filters.status ?? 'all');
 const sortBy = ref<SortField>(props.filters.sort_by ?? null);
 const sortDir = ref<SortDir>(props.filters.sort_dir ?? 'asc');
 
-const hasActiveFilters = computed(() =>
-    (typeFilter.value && typeFilter.value !== 'all') ||
-    (statusFilter.value && statusFilter.value !== 'all') ||
-    sortBy.value !== null,
+const hasActiveFilters = computed(
+    () =>
+        (typeFilter.value && typeFilter.value !== 'all') ||
+        (statusFilter.value && statusFilter.value !== 'all') ||
+        sortBy.value !== null,
 );
 
-function applyFilters(overrides: Record<string, string | null | undefined> = {}) {
+function applyFilters(
+    overrides: Record<string, string | null | undefined> = {},
+) {
     router.get(
         index().url,
         {
             search: props.filters.search ?? undefined,
             type: typeFilter.value !== 'all' ? typeFilter.value : undefined,
-            status: statusFilter.value !== 'all' ? statusFilter.value : undefined,
+            status:
+                statusFilter.value !== 'all' ? statusFilter.value : undefined,
             sort_by: sortBy.value ?? undefined,
             sort_dir: sortBy.value ? sortDir.value : undefined,
             ...overrides,
@@ -270,7 +272,9 @@ function sortIcon(field: SortField) {
 }
 
 function sortIconClass(field: SortField) {
-    return sortBy.value === field ? 'text-blue-600' : 'text-muted-foreground/40';
+    return sortBy.value === field
+        ? 'text-blue-600'
+        : 'text-muted-foreground/40';
 }
 
 /* ======================================================
@@ -285,12 +289,19 @@ function isActive(user: User) {
     return user.status === 'active';
 }
 
+function initials(name: string) {
+    const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
+
+    return parts.map((part) => part.charAt(0).toUpperCase()).join('') || 'U';
+}
+
 /* ======================================================
    Actions
 ====================================================== */
 function handleToggleStatus(user: User) {
     const actionLabel = isActive(user) ? 'set inactive' : 'set active';
-    if (!confirm(`Are you sure you want to ${actionLabel} ${user.name}?`)) return;
+    if (!confirm(`Are you sure you want to ${actionLabel} ${user.name}?`))
+        return;
 
     router.put(toggleStatus(user.id).url, {}, { preserveScroll: true });
 }
@@ -302,7 +313,12 @@ function handleResetPassword(user: User) {
 }
 
 function handleDelete(user: User) {
-    if (!confirm(`Delete account for ${user.name}? This action cannot be undone.`)) return;
+    if (
+        !confirm(
+            `Delete account for ${user.name}? This action cannot be undone.`,
+        )
+    )
+        return;
 
     router.delete(destroy(user.id).url, { preserveScroll: true });
 }
@@ -314,14 +330,19 @@ function handleDelete(user: User) {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 p-4">
             <Card>
-                <CardHeader class="flex flex-col gap-4 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                <CardHeader
+                    class="flex flex-col gap-4 pb-3 sm:flex-row sm:items-center sm:justify-between"
+                >
                     <div class="flex items-center gap-2">
                         <div>
                             <CardTitle class="flex items-center gap-2">
                                 <Users class="h-5 w-5 text-blue-700" />
                                 User List
                             </CardTitle>
-                            <CardDescription>Manage users, assign roles, and control access.</CardDescription>
+                            <CardDescription
+                                >Manage users, assign roles, and control
+                                access.</CardDescription
+                            >
                         </div>
                     </div>
 
@@ -332,7 +353,10 @@ function handleDelete(user: User) {
                             variant="blue"
                             as-child
                         >
-                            <Link :href="create().url" class="flex items-center gap-1.5">
+                            <Link
+                                :href="create().url"
+                                class="flex items-center gap-1.5"
+                            >
                                 <Plus class="h-4 w-4" />
                                 New User
                             </Link>
@@ -343,13 +367,20 @@ function handleDelete(user: User) {
                 <Separator />
 
                 <CardContent class="space-y-4 pt-4">
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div
+                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                    >
                         <div class="w-full max-w-sm">
                             <SearchInput
                                 :route="`${index().url}?type=${typeFilter !== 'all' ? typeFilter : ''}&status=${statusFilter !== 'all' ? statusFilter : ''}&sort_by=${sortBy ?? ''}&sort_dir=${sortBy ? sortDir : ''}`"
                                 :initial-value="props.filters.search"
                                 placeholder="Search users..."
-                                :only="['users', 'filters', 'statuses', 'flash']"
+                                :only="[
+                                    'users',
+                                    'filters',
+                                    'statuses',
+                                    'flash',
+                                ]"
                                 :debounce="350"
                             />
                         </div>
@@ -357,51 +388,97 @@ function handleDelete(user: User) {
 
                     <!-- Row 2: Filters + Sort -->
                     <div class="flex flex-wrap items-center gap-2">
-                        <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                        <div
+                            class="flex items-center gap-1.5 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                        >
                             <Filter class="h-3.5 w-3.5" />
                             Filter
                         </div>
 
-                        <Select :model-value="typeFilter" @update:model-value="onTypeChange">
-                            <SelectTrigger class="h-8 w-36 rounded-lg border-slate-200 text-xs">
+                        <Select
+                            :model-value="typeFilter"
+                            @update:model-value="onTypeChange"
+                        >
+                            <SelectTrigger
+                                class="h-8 w-36 rounded-lg border-slate-200 text-xs"
+                            >
                                 <SelectValue placeholder="All Types" />
                             </SelectTrigger>
                             <SelectContent class="rounded-xl">
-                                <SelectItem value="all" class="text-xs">All Types</SelectItem>
-                                <SelectItem value="internal" class="text-xs">Internal</SelectItem>
-                                <SelectItem value="external" class="text-xs">External</SelectItem>
+                                <SelectItem value="all" class="text-xs"
+                                    >All Types</SelectItem
+                                >
+                                <SelectItem value="internal" class="text-xs"
+                                    >Internal</SelectItem
+                                >
+                                <SelectItem value="external" class="text-xs"
+                                    >External</SelectItem
+                                >
                             </SelectContent>
                         </Select>
 
-                        <Select :model-value="statusFilter" @update:model-value="onStatusChange">
-                            <SelectTrigger class="h-8 w-36 rounded-lg border-slate-200 text-xs">
+                        <Select
+                            :model-value="statusFilter"
+                            @update:model-value="onStatusChange"
+                        >
+                            <SelectTrigger
+                                class="h-8 w-36 rounded-lg border-slate-200 text-xs"
+                            >
                                 <SelectValue placeholder="All Statuses" />
                             </SelectTrigger>
                             <SelectContent class="rounded-xl">
-                                <SelectItem value="all" class="text-xs">All Statuses</SelectItem>
-                                <SelectItem value="active" class="text-xs">Active</SelectItem>
-                                <SelectItem value="inactive" class="text-xs">Inactive</SelectItem>
+                                <SelectItem value="all" class="text-xs"
+                                    >All Statuses</SelectItem
+                                >
+                                <SelectItem value="active" class="text-xs"
+                                    >Active</SelectItem
+                                >
+                                <SelectItem value="inactive" class="text-xs"
+                                    >Inactive</SelectItem
+                                >
                             </SelectContent>
                         </Select>
 
-                        <div class="ml-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                        <div
+                            class="ml-2 flex items-center gap-1.5 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                        >
                             <ArrowUpDown class="h-3.5 w-3.5" />
                             Sort
                         </div>
 
                         <Select
                             :model-value="sortBy ?? 'none'"
-                            @update:model-value="(val) => { sortBy = val === 'none' ? null : val as SortField; applyFilters(); }"
+                            @update:model-value="
+                                (val) => {
+                                    sortBy =
+                                        val === 'none'
+                                            ? null
+                                            : (val as SortField);
+                                    applyFilters();
+                                }
+                            "
                         >
-                            <SelectTrigger class="h-8 w-36 rounded-lg border-slate-200 text-xs">
+                            <SelectTrigger
+                                class="h-8 w-36 rounded-lg border-slate-200 text-xs"
+                            >
                                 <SelectValue placeholder="Sort by…" />
                             </SelectTrigger>
                             <SelectContent class="rounded-xl">
-                                <SelectItem value="none" class="text-xs">No Sort</SelectItem>
-                                <SelectItem value="username" class="text-xs">Username</SelectItem>
-                                <SelectItem value="name" class="text-xs">Name</SelectItem>
-                                <SelectItem value="email" class="text-xs">Email</SelectItem>
-                                <SelectItem value="status" class="text-xs">Status</SelectItem>
+                                <SelectItem value="none" class="text-xs"
+                                    >No Sort</SelectItem
+                                >
+                                <SelectItem value="username" class="text-xs"
+                                    >Username</SelectItem
+                                >
+                                <SelectItem value="name" class="text-xs"
+                                    >Name</SelectItem
+                                >
+                                <SelectItem value="email" class="text-xs"
+                                    >Email</SelectItem
+                                >
+                                <SelectItem value="status" class="text-xs"
+                                    >Status</SelectItem
+                                >
                             </SelectContent>
                         </Select>
 
@@ -410,15 +487,29 @@ function handleDelete(user: User) {
                             size="sm"
                             variant="outline"
                             class="h-8 rounded-lg border-slate-200 px-3 text-xs text-slate-600 hover:bg-slate-100"
-                            @click="sortDir = sortDir === 'asc' ? 'desc' : 'asc'; applyFilters()"
+                            @click="
+                                sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+                                applyFilters();
+                            "
                         >
-                            <ArrowUp v-if="sortDir === 'asc'" class="mr-1.5 h-3.5 w-3.5 text-blue-600" />
-                            <ArrowDown v-else class="mr-1.5 h-3.5 w-3.5 text-blue-600" />
+                            <ArrowUp
+                                v-if="sortDir === 'asc'"
+                                class="mr-1.5 h-3.5 w-3.5 text-blue-600"
+                            />
+                            <ArrowDown
+                                v-else
+                                class="mr-1.5 h-3.5 w-3.5 text-blue-600"
+                            />
                             {{ sortDir === 'asc' ? 'Ascending' : 'Descending' }}
                         </Button>
 
-                        <div v-if="hasActiveFilters" class="ml-auto flex items-center gap-2">
-                            <Badge class="gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-50">
+                        <div
+                            v-if="hasActiveFilters"
+                            class="ml-auto flex items-center gap-2"
+                        >
+                            <Badge
+                                class="gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-50"
+                            >
                                 <Filter class="h-3 w-3" />
                                 Filters active
                             </Badge>
@@ -439,77 +530,123 @@ function handleDelete(user: User) {
                             <TableHeader>
                                 <TableRow class="bg-muted/40 hover:bg-muted/40">
                                     <TableHead
-                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('username')"
                                     >
                                         <div class="flex items-center gap-1.5">
                                             Username
-                                            <component :is="sortIcon('username')" class="h-3.5 w-3.5" :class="sortIconClass('username')" />
+                                            <component
+                                                :is="sortIcon('username')"
+                                                class="h-3.5 w-3.5"
+                                                :class="
+                                                    sortIconClass('username')
+                                                "
+                                            />
                                         </div>
                                     </TableHead>
 
                                     <TableHead
-                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('name')"
                                     >
                                         <div class="flex items-center gap-1.5">
                                             Name
-                                            <component :is="sortIcon('name')" class="h-3.5 w-3.5" :class="sortIconClass('name')" />
+                                            <component
+                                                :is="sortIcon('name')"
+                                                class="h-3.5 w-3.5"
+                                                :class="sortIconClass('name')"
+                                            />
                                         </div>
                                     </TableHead>
 
                                     <TableHead
-                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('email')"
                                     >
                                         <div class="flex items-center gap-1.5">
                                             Email
-                                            <component :is="sortIcon('email')" class="h-3.5 w-3.5" :class="sortIconClass('email')" />
+                                            <component
+                                                :is="sortIcon('email')"
+                                                class="h-3.5 w-3.5"
+                                                :class="sortIconClass('email')"
+                                            />
                                         </div>
                                     </TableHead>
 
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                    >
                                         Verification
                                     </TableHead>
 
                                     <TableHead
-                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('status')"
                                     >
                                         <div class="flex items-center gap-1.5">
                                             Status
-                                            <component :is="sortIcon('status')" class="h-3.5 w-3.5" :class="sortIconClass('status')" />
+                                            <component
+                                                :is="sortIcon('status')"
+                                                class="h-3.5 w-3.5"
+                                                :class="sortIconClass('status')"
+                                            />
                                         </div>
                                     </TableHead>
 
                                     <TableHead
                                         v-if="showCompanyColumn"
-                                        class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
+                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                     >
                                         Company
                                     </TableHead>
 
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                                    <TableHead
+                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                    >
                                         Roles
                                     </TableHead>
 
-                                    <TableHead class="text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                                    <TableHead
+                                        class="text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                    >
                                         Actions
                                     </TableHead>
                                 </TableRow>
                             </TableHeader>
 
                             <TableBody>
-                                <TableRow v-if="props.users.data.length === 0" class="hover:bg-transparent">
-                                    <TableCell :colspan="showCompanyColumn ? 8 : 7" class="py-20 text-center">
-                                        <div class="flex flex-col items-center gap-3">
-                                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-                                                <Users class="h-6 w-6 text-muted-foreground/40" />
+                                <TableRow
+                                    v-if="props.users.data.length === 0"
+                                    class="hover:bg-transparent"
+                                >
+                                    <TableCell
+                                        :colspan="showCompanyColumn ? 8 : 7"
+                                        class="py-20 text-center"
+                                    >
+                                        <div
+                                            class="flex flex-col items-center gap-3"
+                                        >
+                                            <div
+                                                class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted"
+                                            >
+                                                <Users
+                                                    class="h-6 w-6 text-muted-foreground/40"
+                                                />
                                             </div>
                                             <div>
-                                                <p class="text-sm font-semibold text-foreground">No users found</p>
-                                                <p class="mt-0.5 text-xs text-muted-foreground">
-                                                    {{ hasActiveFilters ? 'Try adjusting your filters or search.' : 'Try adjusting your search.' }}
+                                                <p
+                                                    class="text-sm font-semibold text-foreground"
+                                                >
+                                                    No users found
+                                                </p>
+                                                <p
+                                                    class="mt-0.5 text-xs text-muted-foreground"
+                                                >
+                                                    {{
+                                                        hasActiveFilters
+                                                            ? 'Try adjusting your filters or search.'
+                                                            : 'Try adjusting your search.'
+                                                    }}
                                                 </p>
                                             </div>
                                             <Button
@@ -536,25 +673,52 @@ function handleDelete(user: User) {
                                     </TableCell>
 
                                     <TableCell>
-                                        {{ user.name }}
+                                        <div class="flex items-center gap-2.5">
+                                            <img
+                                                v-if="user.avatar"
+                                                :src="user.avatar"
+                                                :alt="`${user.name} profile photo`"
+                                                class="h-8 w-8 rounded-full border border-slate-200 object-cover"
+                                            />
+                                            <div
+                                                v-else
+                                                class="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-[11px] font-semibold text-slate-600"
+                                            >
+                                                {{ initials(user.name) }}
+                                            </div>
+
+                                            <span>{{ user.name }}</span>
+                                        </div>
                                     </TableCell>
 
-                                    <TableCell class="text-sm text-muted-foreground">
+                                    <TableCell
+                                        class="text-sm text-muted-foreground"
+                                    >
                                         {{ user.email }}
                                     </TableCell>
 
                                     <TableCell>
                                         <Badge
-                                            :class="emailVerificationBadgeClass(user.email_verified_at)"
+                                            :class="
+                                                emailVerificationBadgeClass(
+                                                    user.email_verified_at,
+                                                )
+                                            "
                                             class="border"
                                         >
-                                            {{ emailVerificationLabel(user.email_verified_at) }}
+                                            {{
+                                                emailVerificationLabel(
+                                                    user.email_verified_at,
+                                                )
+                                            }}
                                         </Badge>
                                     </TableCell>
 
                                     <TableCell>
                                         <Badge
-                                            :class="statusBadgeClass(user.status)"
+                                            :class="
+                                                statusBadgeClass(user.status)
+                                            "
                                             class="border capitalize"
                                         >
                                             {{ user.status }}
@@ -566,16 +730,23 @@ function handleDelete(user: User) {
                                         class="text-sm text-muted-foreground"
                                     >
                                         {{
-                                            visibleRoles(user).some((r) => r.type === 'external')
-                                                ? (user.company?.company_name ?? '-')
+                                            visibleRoles(user).some(
+                                                (r) => r.type === 'external',
+                                            )
+                                                ? (user.company?.company_name ??
+                                                  '-')
                                                 : '-'
                                         }}
                                     </TableCell>
 
                                     <TableCell>
-                                        <div class="flex flex-wrap gap-1 capitalize">
+                                        <div
+                                            class="flex flex-wrap gap-1 capitalize"
+                                        >
                                             <Badge
-                                                v-for="role in visibleRoles(user)"
+                                                v-for="role in visibleRoles(
+                                                    user,
+                                                )"
                                                 :key="role.id"
                                                 :class="roleBadgeClass(role)"
                                                 class="border"
@@ -583,7 +754,10 @@ function handleDelete(user: User) {
                                                 {{ role.name }}
                                             </Badge>
                                             <span
-                                                v-if="visibleRoles(user).length === 0"
+                                                v-if="
+                                                    visibleRoles(user)
+                                                        .length === 0
+                                                "
                                                 class="text-sm text-muted-foreground"
                                             >
                                                 -
@@ -599,13 +773,22 @@ function handleDelete(user: User) {
                                                     size="icon"
                                                     class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                                                 >
-                                                    <MoreHorizontal class="h-4 w-4" />
-                                                    <span class="sr-only">Open actions</span>
+                                                    <MoreHorizontal
+                                                        class="h-4 w-4"
+                                                    />
+                                                    <span class="sr-only"
+                                                        >Open actions</span
+                                                    >
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent align="end" class="w-52 rounded-xl border-slate-200 shadow-lg">
-                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                            <DropdownMenuContent
+                                                align="end"
+                                                class="w-52 rounded-xl border-slate-200 shadow-lg"
+                                            >
+                                                <DropdownMenuLabel
+                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                                >
                                                     {{ user.username }}
                                                 </DropdownMenuLabel>
 
@@ -615,10 +798,19 @@ function handleDelete(user: User) {
                                                     as-child
                                                     class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700"
                                                 >
-                                                    <Link :href="show(user.id).url" class="flex items-center">
-                                                        <Eye class="mr-2 h-4 w-4" />
+                                                    <Link
+                                                        :href="
+                                                            show(user.id).url
+                                                        "
+                                                        class="flex items-center"
+                                                    >
+                                                        <Eye
+                                                            class="mr-2 h-4 w-4"
+                                                        />
                                                         View Profile
-                                                        <ChevronRight class="ml-auto h-3.5 w-3.5 text-blue-400" />
+                                                        <ChevronRight
+                                                            class="ml-auto h-3.5 w-3.5 text-blue-400"
+                                                        />
                                                     </Link>
                                                 </DropdownMenuItem>
 
@@ -626,28 +818,51 @@ function handleDelete(user: User) {
                                                     v-if="canUpdate"
                                                     as-child
                                                 >
-                                                    <Link :href="edit(user.id).url" class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700">
-                                                        <Pencil class="mr-2 h-4 w-4" />
+                                                    <Link
+                                                        :href="
+                                                            edit(user.id).url
+                                                        "
+                                                        class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700"
+                                                    >
+                                                        <Pencil
+                                                            class="mr-2 h-4 w-4"
+                                                        />
                                                         Edit Details
-                                                        <ChevronRight class="ml-auto h-3.5 w-3.5 text-amber-400" />
+                                                        <ChevronRight
+                                                            class="ml-auto h-3.5 w-3.5 text-amber-400"
+                                                        />
                                                     </Link>
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
                                                     v-if="canToggle"
                                                     class="rounded-lg text-rose-700 focus:bg-rose-50 focus:text-rose-700"
-                                                    @click="handleToggleStatus(user)"
+                                                    @click="
+                                                        handleToggleStatus(user)
+                                                    "
                                                 >
-                                                    <Power class="mr-2 h-4 w-4" />
-                                                    {{ isActive(user) ? 'Set Inactive' : 'Set Active' }}
+                                                    <Power
+                                                        class="mr-2 h-4 w-4"
+                                                    />
+                                                    {{
+                                                        isActive(user)
+                                                            ? 'Set Inactive'
+                                                            : 'Set Active'
+                                                    }}
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
                                                     v-if="canResetPass"
                                                     class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700"
-                                                    @click="handleResetPassword(user)"
+                                                    @click="
+                                                        handleResetPassword(
+                                                            user,
+                                                        )
+                                                    "
                                                 >
-                                                    <KeyRound class="mr-2 h-4 w-4" />
+                                                    <KeyRound
+                                                        class="mr-2 h-4 w-4"
+                                                    />
                                                     Reset Password
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>

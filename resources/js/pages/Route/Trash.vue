@@ -6,15 +6,6 @@ import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 
 /* shadcn-vue */
-import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardAction,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -25,6 +16,15 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardAction,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -47,13 +47,13 @@ import {
 /* ======================================================
    Layout, Routing & Inertia
 ====================================================== */
-import AppLayout from '@/layouts/AppLayout.vue';
 import {
     forceDelete,
     index,
     restore,
     trash,
 } from '@/actions/App/Http/Controllers/RouteController';
+import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 
@@ -138,7 +138,9 @@ const deleteOpen = ref(false);
 const selectedRoute = ref<RouteRow | null>(null);
 const confirmText = ref('');
 
-const canConfirmForceDelete = computed(() => confirmText.value.trim() === 'delete');
+const canConfirmForceDelete = computed(
+    () => confirmText.value.trim() === 'delete',
+);
 
 /* ======================================================
    Dialog helpers
@@ -171,7 +173,7 @@ function closeDeleteDialog() {
 function restoreRoute() {
     if (!selectedRoute.value) return;
 
-    router.post(
+    router.patch(
         restore(selectedRoute.value.id).url,
         {},
         {
@@ -200,13 +202,18 @@ function forceDeleteRoute() {
     <Head title="Archived Routes" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+        <div
+            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
+        >
             <Card class="mx-10 mt-3">
-                <CardHeader class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <CardHeader
+                    class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+                >
                     <div>
                         <CardTitle>Archived Routes</CardTitle>
                         <CardDescription>
-                            Routes that have been archived. Restore or permanently delete them.
+                            Routes that have been archived. Restore or
+                            permanently delete them.
                         </CardDescription>
                     </div>
 
@@ -238,7 +245,9 @@ function forceDeleteRoute() {
                                 <TableHead>Gate</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Archived At</TableHead>
-                                <TableHead class="w-[100px] text-right">Actions</TableHead>
+                                <TableHead class="w-[100px] text-right"
+                                    >Actions</TableHead
+                                >
                             </TableRow>
                         </TableHeader>
 
@@ -249,7 +258,9 @@ function forceDeleteRoute() {
                             >
                                 <TableCell class="font-medium capitalize">
                                     <div class="flex items-center gap-2">
-                                        <RouteIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
+                                        <RouteIcon
+                                            class="h-4 w-4 shrink-0 text-muted-foreground"
+                                        />
                                         {{ routeItem.route_name }}
                                     </div>
                                 </TableCell>
@@ -275,11 +286,17 @@ function forceDeleteRoute() {
                                                     : 'bg-zinc-400',
                                             ]"
                                         />
-                                        {{ routeItem.status === 'active' ? 'Active' : 'Inactive' }}
+                                        {{
+                                            routeItem.status === 'active'
+                                                ? 'Active'
+                                                : 'Inactive'
+                                        }}
                                     </span>
                                 </TableCell>
 
-                                <TableCell class="text-sm text-muted-foreground">
+                                <TableCell
+                                    class="text-sm text-muted-foreground"
+                                >
                                     {{ routeItem.deleted_at_human ?? '—' }}
                                 </TableCell>
 
@@ -291,8 +308,12 @@ function forceDeleteRoute() {
                                                 size="icon"
                                                 class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                                             >
-                                                <MoreHorizontal class="h-4 w-4" />
-                                                <span class="sr-only">Open menu</span>
+                                                <MoreHorizontal
+                                                    class="h-4 w-4"
+                                                />
+                                                <span class="sr-only"
+                                                    >Open menu</span
+                                                >
                                             </Button>
                                         </DropdownMenuTrigger>
 
@@ -300,7 +321,9 @@ function forceDeleteRoute() {
                                             align="end"
                                             class="w-56 rounded-xl border-slate-200 shadow-lg"
                                         >
-                                            <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                            <DropdownMenuLabel
+                                                class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                            >
                                                 {{ routeItem.route_name }}
                                             </DropdownMenuLabel>
                                             <DropdownMenuSeparator />
@@ -308,11 +331,17 @@ function forceDeleteRoute() {
                                             <DropdownMenuItem
                                                 v-if="canRestore"
                                                 class="rounded-lg text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700"
-                                                @click="openRestoreDialog(routeItem)"
+                                                @click="
+                                                    openRestoreDialog(routeItem)
+                                                "
                                             >
-                                                <ArchiveRestore class="mr-2 h-4 w-4" />
+                                                <ArchiveRestore
+                                                    class="mr-2 h-4 w-4"
+                                                />
                                                 Restore
-                                                <ChevronRight class="ml-auto h-3.5 w-3.5 text-emerald-400" />
+                                                <ChevronRight
+                                                    class="ml-auto h-3.5 w-3.5 text-emerald-400"
+                                                />
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -353,14 +382,15 @@ function forceDeleteRoute() {
                 <AlertDialogDescription>
                     Are you sure you want to restore
                     <span class="font-medium text-foreground">
-                        {{ selectedRoute?.route_name ?? 'this route' }}
-                    </span>?
-                    It will be moved back to the active routes list.
+                        {{ selectedRoute?.route_name ?? 'this route' }} </span
+                    >? It will be moved back to the active routes list.
                 </AlertDialogDescription>
             </AlertDialogHeader>
 
             <AlertDialogFooter>
-                <AlertDialogCancel @click="closeRestoreDialog">Cancel</AlertDialogCancel>
+                <AlertDialogCancel @click="closeRestoreDialog"
+                    >Cancel</AlertDialogCancel
+                >
                 <AlertDialogAction
                     class="bg-emerald-600 hover:bg-emerald-700 focus-visible:ring-emerald-500"
                     @click="restoreRoute"
@@ -379,12 +409,17 @@ function forceDeleteRoute() {
                     Delete Permanently
                 </AlertDialogTitle>
                 <AlertDialogDescription>
-                    This action <span class="font-semibold text-destructive">cannot be undone</span>.
-                    Type <span class="font-mono font-semibold text-destructive">delete</span> below
-                    to permanently remove
+                    This action
+                    <span class="font-semibold text-destructive"
+                        >cannot be undone</span
+                    >. Type
+                    <span class="font-mono font-semibold text-destructive"
+                        >delete</span
+                    >
+                    below to permanently remove
                     <span class="font-medium text-foreground">
-                        {{ selectedRoute?.route_name ?? 'this route' }}
-                    </span>.
+                        {{ selectedRoute?.route_name ?? 'this route' }} </span
+                    >.
                 </AlertDialogDescription>
             </AlertDialogHeader>
 
@@ -398,7 +433,9 @@ function forceDeleteRoute() {
             </div>
 
             <AlertDialogFooter>
-                <AlertDialogCancel @click="closeDeleteDialog">Cancel</AlertDialogCancel>
+                <AlertDialogCancel @click="closeDeleteDialog"
+                    >Cancel</AlertDialogCancel
+                >
                 <AlertDialogAction
                     class="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:pointer-events-none disabled:opacity-50"
                     :disabled="!canConfirmForceDelete"

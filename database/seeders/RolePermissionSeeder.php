@@ -81,6 +81,11 @@ class RolePermissionSeeder extends Seeder
             ->where('type', 'external')
             ->firstOrFail();
 
+        $commuter = Role::query()
+            ->where('name', 'commuter')
+            ->where('type', 'external')
+            ->firstOrFail();
+
         $superAdmin->syncPermissions($allPermissions);
         $admin->syncPermissions($allPermissions);
 
@@ -92,6 +97,7 @@ class RolePermissionSeeder extends Seeder
         // No permissions yet unless you want them too
         $dispatcher->syncPermissions([]);
         $driver->syncPermissions([]);
+        $commuter->syncPermissions([]);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

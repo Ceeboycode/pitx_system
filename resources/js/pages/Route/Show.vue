@@ -2,9 +2,9 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { toast } from 'vue-sonner';
 
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -13,6 +13,14 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 
 import {
@@ -123,17 +131,21 @@ const routeHealthText = computed(() => {
 });
 
 const startStop = computed(() => {
-    return sortedStops.value.find((stop) => stop.stop_type === 'origin')
-        ?? sortedStops.value[0]
-        ?? null;
+    return (
+        sortedStops.value.find((stop) => stop.stop_type === 'origin') ??
+        sortedStops.value[0] ??
+        null
+    );
 });
 
 const endStop = computed(() => {
-    return [...sortedStops.value]
-        .reverse()
-        .find((stop) => stop.stop_type === 'destination')
-        ?? sortedStops.value[sortedStops.value.length - 1]
-        ?? null;
+    return (
+        [...sortedStops.value]
+            .reverse()
+            .find((stop) => stop.stop_type === 'destination') ??
+        sortedStops.value[sortedStops.value.length - 1] ??
+        null
+    );
 });
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -207,6 +219,10 @@ function archiveRoute() {
         preserveScroll: true,
         onSuccess: () => {
             archiveOpen.value = false;
+            toast.success('Route archived successfully.');
+        },
+        onError: () => {
+            toast.error('Failed to archive route.');
         },
     });
 }
@@ -323,14 +339,20 @@ onBeforeUnmount(() => {
         <div
             class="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
         >
-            <div class="flex h-14 items-center justify-between gap-4 px-4 sm:px-6">
+            <div
+                class="flex h-14 items-center justify-between gap-4 px-4 sm:px-6"
+            >
                 <div class="flex min-w-0 items-center gap-3">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                    <div
+                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground"
+                    >
                         <RouteIcon class="h-4 w-4" />
                     </div>
 
                     <div class="min-w-0">
-                        <div class="flex items-center gap-2 text-sm font-semibold">
+                        <div
+                            class="flex items-center gap-2 text-sm font-semibold"
+                        >
                             <span class="truncate">{{ route.route_name }}</span>
                             <span
                                 v-if="route.destination_name"
@@ -341,7 +363,9 @@ onBeforeUnmount(() => {
                         </div>
                         <p class="truncate text-xs text-muted-foreground">
                             Fixed origin:
-                            <span class="font-medium text-foreground">{{ route.origin_name }}</span>
+                            <span class="font-medium text-foreground">{{
+                                route.origin_name
+                            }}</span>
                         </p>
                     </div>
                 </div>
@@ -349,7 +373,9 @@ onBeforeUnmount(() => {
                 <div class="flex shrink-0 items-center gap-2">
                     <div class="hidden items-center gap-1.5 sm:flex">
                         <span class="h-2 w-2 rounded-full bg-green-500" />
-                        <span class="text-xs text-muted-foreground">{{ routeHealthText }}</span>
+                        <span class="text-xs text-muted-foreground">{{
+                            routeHealthText
+                        }}</span>
                     </div>
                 </div>
             </div>
@@ -371,12 +397,18 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div class="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                <div
+                    class="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm"
+                >
+                    <div
+                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600"
+                    >
                         <MapPinned class="h-4 w-4" />
                     </div>
                     <div class="min-w-0">
-                        <p class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                        <p
+                            class="text-[11px] font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             Destination
                         </p>
                         <p class="truncate text-sm font-semibold">
@@ -385,40 +417,66 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                <div
+                    class="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm"
+                >
+                    <div
+                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600"
+                    >
                         <Milestone class="h-4 w-4" />
                     </div>
                     <div class="min-w-0">
-                        <p class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                        <p
+                            class="text-[11px] font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             Distance
                         </p>
                         <p class="text-sm font-semibold">
-                            {{ route.distance_meters ? fmtDistance(route.distance_meters) : '—' }}
+                            {{
+                                route.distance_meters
+                                    ? fmtDistance(route.distance_meters)
+                                    : '—'
+                            }}
                         </p>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                <div
+                    class="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm"
+                >
+                    <div
+                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600"
+                    >
                         <Clock3 class="h-4 w-4" />
                     </div>
                     <div class="min-w-0">
-                        <p class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                        <p
+                            class="text-[11px] font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             Duration
                         </p>
                         <p class="text-sm font-semibold">
-                            {{ route.duration_seconds ? fmtDuration(route.duration_seconds) : '—' }}
+                            {{
+                                route.duration_seconds
+                                    ? fmtDuration(route.duration_seconds)
+                                    : '—'
+                            }}
                         </p>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm">
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-600">
+                <div
+                    class="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm"
+                >
+                    <div
+                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-600"
+                    >
                         <RouteIcon class="h-4 w-4" />
                     </div>
                     <div class="min-w-0">
-                        <p class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                        <p
+                            class="text-[11px] font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             Total Stops
                         </p>
                         <p class="text-sm font-semibold">{{ totalStops }}</p>
@@ -430,15 +488,23 @@ onBeforeUnmount(() => {
                 <div class="space-y-5">
                     <Card class="overflow-hidden rounded-2xl">
                         <CardHeader class="pb-3">
-                            <div class="flex items-center justify-between gap-3">
+                            <div
+                                class="flex items-center justify-between gap-3"
+                            >
                                 <div>
-                                    <CardTitle class="text-base">Map Workspace</CardTitle>
+                                    <CardTitle class="text-base"
+                                        >Map Workspace</CardTitle
+                                    >
                                     <CardDescription class="text-xs">
-                                        Inspect the saved route path and stop locations.
+                                        Inspect the saved route path and stop
+                                        locations.
                                     </CardDescription>
                                 </div>
 
-                                <Badge variant="secondary" class="shrink-0 text-xs">
+                                <Badge
+                                    variant="secondary"
+                                    class="shrink-0 text-xs"
+                                >
                                     View only
                                 </Badge>
                             </div>
@@ -451,43 +517,68 @@ onBeforeUnmount(() => {
                                     class="h-[500px] w-full overflow-hidden rounded-xl border sm:h-[620px]"
                                 />
 
-                                <div class="pointer-events-none absolute inset-x-3 top-3 z-10 sm:left-3 sm:right-auto sm:w-[420px]">
-                                    <div class="pointer-events-auto rounded-2xl border bg-background/95 p-3 shadow-lg backdrop-blur">
+                                <div
+                                    class="pointer-events-none absolute inset-x-3 top-3 z-10 sm:right-auto sm:left-3 sm:w-[420px]"
+                                >
+                                    <div
+                                        class="pointer-events-auto rounded-2xl border bg-background/95 p-3 shadow-lg backdrop-blur"
+                                    >
                                         <div class="mb-2">
-                                            <p class="text-sm font-semibold">Destination</p>
-                                            <p class="text-xs text-muted-foreground">
-                                                Saved destination for this route.
+                                            <p class="text-sm font-semibold">
+                                                Destination
+                                            </p>
+                                            <p
+                                                class="text-xs text-muted-foreground"
+                                            >
+                                                Saved destination for this
+                                                route.
                                             </p>
                                         </div>
 
                                         <div
                                             class="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2"
                                         >
-                                            <MapPinned class="h-3.5 w-3.5 shrink-0 text-red-600" />
-                                            <span class="min-w-0 truncate text-sm font-medium text-red-800">
+                                            <MapPinned
+                                                class="h-3.5 w-3.5 shrink-0 text-red-600"
+                                            />
+                                            <span
+                                                class="min-w-0 truncate text-sm font-medium text-red-800"
+                                            >
                                                 {{ route.destination_name }}
                                             </span>
-                                            <CheckCircle2 class="ml-auto h-3.5 w-3.5 shrink-0 text-red-500" />
+                                            <CheckCircle2
+                                                class="ml-auto h-3.5 w-3.5 shrink-0 text-red-500"
+                                            />
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-muted-foreground">
+                            <div
+                                class="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-muted-foreground"
+                            >
                                 <span class="flex items-center gap-1.5">
-                                    <span class="inline-block h-2 w-2 rounded-full bg-green-600" />
+                                    <span
+                                        class="inline-block h-2 w-2 rounded-full bg-green-600"
+                                    />
                                     Origin
                                 </span>
                                 <span class="flex items-center gap-1.5">
-                                    <span class="inline-block h-2 w-2 rounded-full bg-red-600" />
+                                    <span
+                                        class="inline-block h-2 w-2 rounded-full bg-red-600"
+                                    />
                                     Destination
                                 </span>
                                 <span class="flex items-center gap-1.5">
-                                    <span class="inline-block h-2 w-2 rounded-full bg-yellow-500" />
+                                    <span
+                                        class="inline-block h-2 w-2 rounded-full bg-yellow-500"
+                                    />
                                     Bus stops
                                 </span>
                                 <span class="flex items-center gap-1.5">
-                                    <span class="inline-block h-2 w-2 rounded-full bg-violet-500" />
+                                    <span
+                                        class="inline-block h-2 w-2 rounded-full bg-violet-500"
+                                    />
                                     Landmark stops
                                 </span>
                             </div>
@@ -496,9 +587,13 @@ onBeforeUnmount(() => {
 
                     <Card class="rounded-2xl">
                         <CardHeader class="pb-2">
-                            <div class="flex items-center justify-between gap-2">
+                            <div
+                                class="flex items-center justify-between gap-2"
+                            >
                                 <div>
-                                    <CardTitle class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                                    <CardTitle
+                                        class="text-sm font-semibold tracking-wide text-muted-foreground uppercase"
+                                    >
                                         Stops Preview
                                     </CardTitle>
                                     <CardDescription class="text-xs">
@@ -513,7 +608,9 @@ onBeforeUnmount(() => {
 
                         <CardContent class="pt-0">
                             <div v-if="sortedStops.length" class="relative">
-                                <div class="absolute bottom-6 left-[18px] top-6 w-px bg-border" />
+                                <div
+                                    class="absolute top-6 bottom-6 left-[18px] w-px bg-border"
+                                />
 
                                 <div class="space-y-1">
                                     <div
@@ -523,12 +620,14 @@ onBeforeUnmount(() => {
                                     >
                                         <div
                                             :class="[
-                                                'relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ring-2 ring-background text-[9px] font-bold text-white',
+                                                'relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white ring-2 ring-background',
                                                 stop.stop_type === 'origin'
                                                     ? 'bg-green-600'
-                                                    : stop.stop_type === 'destination'
+                                                    : stop.stop_type ===
+                                                        'destination'
                                                       ? 'bg-red-600'
-                                                      : stop.stop_type === 'landmark'
+                                                      : stop.stop_type ===
+                                                          'landmark'
                                                         ? 'bg-violet-500'
                                                         : 'bg-amber-500',
                                             ]"
@@ -537,26 +636,50 @@ onBeforeUnmount(() => {
                                         </div>
 
                                         <div class="min-w-0 flex-1 pt-0.5">
-                                            <div class="flex items-center gap-2">
-                                                <p class="truncate text-sm font-medium leading-tight">
+                                            <div
+                                                class="flex items-center gap-2"
+                                            >
+                                                <p
+                                                    class="truncate text-sm leading-tight font-medium"
+                                                >
                                                     {{ stop.stop_name }}
                                                 </p>
                                                 <span
                                                     :class="[
                                                         'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium',
-                                                        stopTypeBadgeClass(stop.stop_type),
+                                                        stopTypeBadgeClass(
+                                                            stop.stop_type,
+                                                        ),
                                                     ]"
                                                 >
-                                                    {{ stopTypeLabel(stop.stop_type) }}
+                                                    {{
+                                                        stopTypeLabel(
+                                                            stop.stop_type,
+                                                        )
+                                                    }}
                                                 </span>
                                             </div>
 
-                                            <p class="truncate text-[11px] text-muted-foreground">
-                                                {{ stop.address || 'No address' }}
+                                            <p
+                                                class="truncate text-[11px] text-muted-foreground"
+                                            >
+                                                {{
+                                                    stop.address || 'No address'
+                                                }}
                                             </p>
-                                            <p class="text-[10px] text-muted-foreground">
-                                                {{ Number(stop.latitude).toFixed(5) }},
-                                                {{ Number(stop.longitude).toFixed(5) }}
+                                            <p
+                                                class="text-[10px] text-muted-foreground"
+                                            >
+                                                {{
+                                                    Number(
+                                                        stop.latitude,
+                                                    ).toFixed(5)
+                                                }},
+                                                {{
+                                                    Number(
+                                                        stop.longitude,
+                                                    ).toFixed(5)
+                                                }}
                                             </p>
                                         </div>
                                     </div>
@@ -576,55 +699,105 @@ onBeforeUnmount(() => {
                 <div class="space-y-5">
                     <Card class="rounded-2xl">
                         <CardHeader class="pb-2">
-                            <CardTitle class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                            <CardTitle
+                                class="text-sm font-semibold tracking-wide text-muted-foreground uppercase"
+                            >
                                 Route Summary
                             </CardTitle>
                         </CardHeader>
 
                         <CardContent class="space-y-0 pt-0">
                             <div class="flex items-center gap-3 border-b py-3">
-                                <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-600 text-[10px] font-bold text-white">
+                                <span
+                                    class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-600 text-[10px] font-bold text-white"
+                                >
                                     A
                                 </span>
                                 <div class="min-w-0">
-                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Origin</p>
+                                    <p
+                                        class="text-[10px] tracking-wide text-muted-foreground uppercase"
+                                    >
+                                        Origin
+                                    </p>
                                     <p class="truncate text-sm font-medium">
-                                        {{ startStop?.stop_name ?? route.origin_name }}
+                                        {{
+                                            startStop?.stop_name ??
+                                            route.origin_name
+                                        }}
                                     </p>
                                 </div>
                             </div>
 
                             <div class="flex items-center gap-3 border-b py-3">
-                                <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
+                                <span
+                                    class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white"
+                                >
                                     B
                                 </span>
                                 <div class="min-w-0">
-                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Destination</p>
+                                    <p
+                                        class="text-[10px] tracking-wide text-muted-foreground uppercase"
+                                    >
+                                        Destination
+                                    </p>
                                     <p class="truncate text-sm font-medium">
-                                        {{ endStop?.stop_name ?? route.destination_name }}
+                                        {{
+                                            endStop?.stop_name ??
+                                            route.destination_name
+                                        }}
                                     </p>
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-2 gap-x-3 gap-y-0">
-                                <div class="border-b border-r py-3 pr-3">
-                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Distance</p>
+                                <div class="border-r border-b py-3 pr-3">
+                                    <p
+                                        class="text-[10px] tracking-wide text-muted-foreground uppercase"
+                                    >
+                                        Distance
+                                    </p>
                                     <p class="text-sm font-semibold">
-                                        {{ route.distance_meters ? fmtDistance(route.distance_meters) : '—' }}
+                                        {{
+                                            route.distance_meters
+                                                ? fmtDistance(
+                                                      route.distance_meters,
+                                                  )
+                                                : '—'
+                                        }}
                                     </p>
                                 </div>
                                 <div class="border-b py-3 pl-3">
-                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Duration</p>
+                                    <p
+                                        class="text-[10px] tracking-wide text-muted-foreground uppercase"
+                                    >
+                                        Duration
+                                    </p>
                                     <p class="text-sm font-semibold">
-                                        {{ route.duration_seconds ? fmtDuration(route.duration_seconds) : '—' }}
+                                        {{
+                                            route.duration_seconds
+                                                ? fmtDuration(
+                                                      route.duration_seconds,
+                                                  )
+                                                : '—'
+                                        }}
                                     </p>
                                 </div>
-                                <div class="border-b border-r py-3 pr-3">
-                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Stops</p>
-                                    <p class="text-sm font-semibold">{{ totalStops }}</p>
+                                <div class="border-r border-b py-3 pr-3">
+                                    <p
+                                        class="text-[10px] tracking-wide text-muted-foreground uppercase"
+                                    >
+                                        Stops
+                                    </p>
+                                    <p class="text-sm font-semibold">
+                                        {{ totalStops }}
+                                    </p>
                                 </div>
                                 <div class="border-b py-3 pl-3">
-                                    <p class="text-[10px] uppercase tracking-wide text-muted-foreground">Gate</p>
+                                    <p
+                                        class="text-[10px] tracking-wide text-muted-foreground uppercase"
+                                    >
+                                        Gate
+                                    </p>
                                     <p class="text-sm font-semibold">
                                         {{ route.gate?.gate_name ?? '—' }}
                                     </p>
@@ -643,7 +816,9 @@ onBeforeUnmount(() => {
 
                         <CardContent class="space-y-4 text-sm">
                             <div class="rounded-xl border p-4">
-                                <div class="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                <div
+                                    class="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                >
                                     <User2 class="h-3.5 w-3.5" />
                                     Created By
                                 </div>
@@ -656,7 +831,9 @@ onBeforeUnmount(() => {
                             </div>
 
                             <div class="rounded-xl border p-4">
-                                <div class="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                <div
+                                    class="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                >
                                     <User2 class="h-3.5 w-3.5" />
                                     Last Updated By
                                 </div>
@@ -673,16 +850,23 @@ onBeforeUnmount(() => {
                     <div class="rounded-2xl border bg-card p-4 shadow-sm">
                         <div class="space-y-4">
                             <div>
-                                <p class="text-sm font-semibold">Quick Actions</p>
+                                <p class="text-sm font-semibold">
+                                    Quick Actions
+                                </p>
                                 <p class="text-xs text-muted-foreground">
-                                    Go back to the route list or edit this route.
+                                    Go back to the route list or edit this
+                                    route.
                                 </p>
                             </div>
 
                             <Separator />
 
                             <div class="grid gap-2 sm:grid-cols-2">
-                                <Button as-child class="w-full" variant="outline">
+                                <Button
+                                    as-child
+                                    class="w-full"
+                                    variant="outline"
+                                >
                                     <Link :href="edit(route.id).url">
                                         <Pencil class="mr-2 h-4 w-4" />
                                         Edit Route
@@ -710,8 +894,10 @@ onBeforeUnmount(() => {
                         <DialogTitle>Archive Route</DialogTitle>
                         <DialogDescription>
                             Are you sure you want to archive
-                            <span class="font-semibold text-foreground">{{ route.route_name }}</span>?
-                            This action will remove it from active records.
+                            <span class="font-semibold text-foreground">{{
+                                route.route_name
+                            }}</span
+                            >? This action will remove it from active records.
                         </DialogDescription>
                     </DialogHeader>
 
