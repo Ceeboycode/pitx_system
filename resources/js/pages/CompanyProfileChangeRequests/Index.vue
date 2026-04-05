@@ -121,10 +121,10 @@ const pending = computed(() =>
 
 function badgeVariant(
     status: ChangeRequest['status'],
-): 'default' | 'secondary' | 'destructive' {
-    if (status === 'approved') return 'default';
+): 'success' | 'warning' | 'destructive' {
+    if (status === 'approved') return 'success';
     if (status === 'rejected') return 'destructive';
-    return 'secondary';
+    return 'warning';
 }
 
 function approveRequest(item: ChangeRequest) {
