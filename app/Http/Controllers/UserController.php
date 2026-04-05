@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -34,6 +35,7 @@ class UserController extends Controller
                 'name',
                 'email',
                 'email_verified_at',
+                'profile_photo_path',
                 'phone_number',
                 'company_id',
                 'status',
@@ -62,6 +64,7 @@ class UserController extends Controller
                     'name'              => $user->name,
                     'email'             => $user->email,
                     'email_verified_at' => $user->email_verified_at,
+                    'avatar'            => $user->profile_photo_path ? Storage::url($user->profile_photo_path) : null,
                     'phone_number'      => $user->phone_number,
                     'company_id'        => $user->company_id,
                     'status'            => $user->status,
@@ -174,6 +177,7 @@ class UserController extends Controller
                 'name'              => $user->name,
                 'email'             => $user->email,
                 'email_verified_at' => $user->email_verified_at,
+                'avatar'            => $user->profile_photo_path ? Storage::url($user->profile_photo_path) : null,
                 'phone_number'      => $user->phone_number,
                 'status'            => $user->status,
                 'created_at'        => $user->created_at,

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { edit, index } from '@/routes/gates';
+import { can } from '@/lib/can';
+import { destroy, index } from '@/routes/gates';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import { can } from '@/lib/can';
+import { toast } from 'vue-sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,7 +30,6 @@ import {
     CalendarDays,
     DoorOpen,
     Layers,
-    Pencil,
     UserRound,
 } from 'lucide-vue-next';
 
@@ -57,10 +57,11 @@ const canArchiveGate = computed(() => can('gates.delete'));
 const archiveOpen = ref(false);
 
 function archiveGate() {
-    router.delete(route('gates.destroy', props.gate.id), {
+    router.delete(destroy(props.gate.id).url, {
         preserveScroll: true,
         onSuccess: () => {
             archiveOpen.value = false;
+            toast.success('Gate archived successfully.');
         },
     });
 }
@@ -91,19 +92,26 @@ function formatDate(value?: string | null): string {
     <Head :title="`Gate — ${gate.gate_name}`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4 md:p-6">
-
+        <div
+            class="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4 md:p-6"
+        >
             <div class="flex items-start justify-between gap-4">
                 <div class="space-y-1">
-                    <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    <div
+                        class="flex items-center gap-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                    >
                         <DoorOpen class="h-3.5 w-3.5" />
                         Gates · Details
                     </div>
                     <div class="flex items-center gap-2.5">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700">
+                        <div
+                            class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700"
+                        >
                             <DoorOpen class="h-4 w-4 text-white" />
                         </div>
-                        <h1 class="text-2xl font-bold tracking-tight">{{ gate.gate_name }}</h1>
+                        <h1 class="text-2xl font-bold tracking-tight">
+                            {{ gate.gate_name }}
+                        </h1>
                     </div>
                     <p class="text-sm text-muted-foreground">
                         Gate profile, configuration, and audit details.
@@ -137,42 +145,87 @@ function formatDate(value?: string | null): string {
             </div>
 
             <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
-                <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700">
-                        <DoorOpen class="h-4 w-4 text-white" />
-                    </div>
-                    <p class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Gate Name</p>
-                    <p class="mt-0.5 truncate text-sm font-bold">{{ gate.gate_name }}</p>
-                </div>
-
-                <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div
+                    class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                >
                     <div
-                        class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg"
-                        :class="gate.status === 'active' ? 'bg-emerald-600' : 'bg-slate-400'"
+                        class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700"
                     >
                         <DoorOpen class="h-4 w-4 text-white" />
                     </div>
-                    <p class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Status</p>
+                    <p
+                        class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
+                    >
+                        Gate Name
+                    </p>
+                    <p class="mt-0.5 truncate text-sm font-bold">
+                        {{ gate.gate_name }}
+                    </p>
+                </div>
+
+                <div
+                    class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                >
+                    <div
+                        class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg"
+                        :class="
+                            gate.status === 'active'
+                                ? 'bg-emerald-600'
+                                : 'bg-slate-400'
+                        "
+                    >
+                        <DoorOpen class="h-4 w-4 text-white" />
+                    </div>
+                    <p
+                        class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
+                    >
+                        Status
+                    </p>
                     <Badge :class="['mt-1 gap-1.5', statusClass(gate.status)]">
-                        <span :class="['h-1.5 w-1.5 rounded-full', statusDot(gate.status)]" />
+                        <span
+                            :class="[
+                                'h-1.5 w-1.5 rounded-full',
+                                statusDot(gate.status),
+                            ]"
+                        />
                         {{ gate.status === 'active' ? 'Active' : 'Inactive' }}
                     </Badge>
                 </div>
 
-                <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600">
+                <div
+                    class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                >
+                    <div
+                        class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600"
+                    >
                         <Layers class="h-4 w-4 text-white" />
                     </div>
-                    <p class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Bays</p>
-                    <p class="mt-0.5 text-3xl font-bold tabular-nums">{{ gate.bays }}</p>
+                    <p
+                        class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
+                    >
+                        Bays
+                    </p>
+                    <p class="mt-0.5 text-3xl font-bold tabular-nums">
+                        {{ gate.bays }}
+                    </p>
                 </div>
 
-                <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <div class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-slate-600">
+                <div
+                    class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                >
+                    <div
+                        class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-slate-600"
+                    >
                         <UserRound class="h-4 w-4 text-white" />
                     </div>
-                    <p class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Created By</p>
-                    <p class="mt-0.5 truncate text-sm font-bold">{{ gate.creator?.name ?? '—' }}</p>
+                    <p
+                        class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
+                    >
+                        Created By
+                    </p>
+                    <p class="mt-0.5 truncate text-sm font-bold">
+                        {{ gate.creator?.name ?? '—' }}
+                    </p>
                 </div>
             </div>
 
@@ -182,54 +235,100 @@ function formatDate(value?: string | null): string {
                         <DoorOpen class="h-4 w-4 text-blue-700" />
                         Gate Details
                     </CardTitle>
-                    <CardDescription>Full configuration and audit information.</CardDescription>
+                    <CardDescription
+                        >Full configuration and audit
+                        information.</CardDescription
+                    >
                 </CardHeader>
 
                 <CardContent class="divide-y divide-slate-100 p-0">
                     <div class="flex items-center justify-between px-6 py-3">
-                        <span class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Gate Name</span>
-                        <span class="text-sm font-semibold">{{ gate.gate_name }}</span>
+                        <span
+                            class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
+                            >Gate Name</span
+                        >
+                        <span class="text-sm font-semibold">{{
+                            gate.gate_name
+                        }}</span>
                     </div>
 
                     <div class="flex items-center justify-between px-6 py-3">
-                        <span class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Status</span>
+                        <span
+                            class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
+                            >Status</span
+                        >
                         <Badge :class="['gap-1.5', statusClass(gate.status)]">
-                            <span :class="['h-1.5 w-1.5 rounded-full', statusDot(gate.status)]" />
-                            {{ gate.status === 'active' ? 'Active' : 'Inactive' }}
+                            <span
+                                :class="[
+                                    'h-1.5 w-1.5 rounded-full',
+                                    statusDot(gate.status),
+                                ]"
+                            />
+                            {{
+                                gate.status === 'active' ? 'Active' : 'Inactive'
+                            }}
                         </Badge>
                     </div>
 
                     <div class="flex items-center justify-between px-6 py-3">
-                        <span class="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Bays</span>
-                        <span class="rounded bg-muted px-2 py-0.5 font-mono text-sm font-semibold tabular-nums">{{ gate.bays }}</span>
+                        <span
+                            class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
+                            >Bays</span
+                        >
+                        <span
+                            class="rounded bg-muted px-2 py-0.5 font-mono text-sm font-semibold tabular-nums"
+                            >{{ gate.bays }}</span
+                        >
                     </div>
 
                     <Separator />
 
                     <div class="flex items-center justify-between px-6 py-3">
-                        <div class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                        <div
+                            class="flex items-center gap-2 text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
+                        >
                             <CalendarDays class="h-3.5 w-3.5" />
                             Created
                         </div>
                         <div class="text-right">
-                            <p class="text-sm text-muted-foreground">{{ formatDate(gate.created_at) }}</p>
-                            <p v-if="gate.creator" class="text-xs text-muted-foreground">
-                                by <span class="font-medium text-foreground">{{ gate.creator.name }}</span>
+                            <p class="text-sm text-muted-foreground">
+                                {{ formatDate(gate.created_at) }}
+                            </p>
+                            <p
+                                v-if="gate.creator"
+                                class="text-xs text-muted-foreground"
+                            >
+                                by
+                                <span class="font-medium text-foreground">{{
+                                    gate.creator.name
+                                }}</span>
                             </p>
                         </div>
                     </div>
 
                     <div class="flex items-center justify-between px-6 py-3">
-                        <div class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                        <div
+                            class="flex items-center gap-2 text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
+                        >
                             <CalendarDays class="h-3.5 w-3.5" />
                             Last Updated
                         </div>
                         <div class="text-right">
-                            <p class="text-sm text-muted-foreground">{{ formatDate(gate.updated_at) }}</p>
-                            <p v-if="gate.updater" class="text-xs text-muted-foreground">
-                                by <span class="font-medium text-foreground">{{ gate.updater.name }}</span>
+                            <p class="text-sm text-muted-foreground">
+                                {{ formatDate(gate.updated_at) }}
                             </p>
-                            <p v-else class="text-xs text-muted-foreground">—</p>
+                            <p
+                                v-if="gate.updater"
+                                class="text-xs text-muted-foreground"
+                            >
+                                by
+                                <span class="font-medium text-foreground">{{
+                                    gate.updater.name
+                                }}</span>
+                            </p>
+                            <p v-else class="text-xs text-muted-foreground">
+                                —
+                            </p>
                         </div>
                     </div>
                 </CardContent>
@@ -241,8 +340,10 @@ function formatDate(value?: string | null): string {
                         <DialogTitle>Archive Gate</DialogTitle>
                         <DialogDescription>
                             Are you sure you want to archive
-                            <span class="font-semibold text-foreground">{{ gate.gate_name }}</span>?
-                            This action will remove it from active records.
+                            <span class="font-semibold text-foreground">{{
+                                gate.gate_name
+                            }}</span
+                            >? This action will remove it from active records.
                         </DialogDescription>
                     </DialogHeader>
 
