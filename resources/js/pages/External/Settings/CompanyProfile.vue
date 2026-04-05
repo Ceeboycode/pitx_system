@@ -7,7 +7,12 @@ import {
     FileCheck2,
     FileWarning,
     ImageIcon,
+    Lock,
+    Mail,
+    MapPin,
+    Phone,
     ShieldCheck,
+    User,
 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
@@ -119,8 +124,26 @@ const hasRegistrationNumberChange = computed(
         (form.registration_number || '').trim() !==
         (props.company.registration_number || '').trim(),
 );
+const businessTypeRequiresRegistrationUpdate = computed(
+    () => hasBusinessTypeChange.value && !hasRegistrationNumberChange.value,
+);
 const requiresComplianceDocument = computed(
     () => hasBusinessTypeChange.value || hasRegistrationNumberChange.value,
+);
+const hasComplianceDocumentInputsComplete = computed(() => {
+    if (!requiresComplianceDocument.value) return true;
+
+    return (
+        !!form.compliance_document_file &&
+        !!form.compliance_document_issued_at &&
+        !!form.compliance_document_expires_at
+    );
+});
+const canSubmitProfileForm = computed(
+    () =>
+        canSubmitChanges.value &&
+        !businessTypeRequiresRegistrationUpdate.value &&
+        hasComplianceDocumentInputsComplete.value,
 );
 const requiredComplianceDocType = computed(() =>
     form.business_type === 'corporate' ? 'SEC_CERT' : 'DTI_CERT',
@@ -143,6 +166,9 @@ const actionRequiredDocs = computed(() =>
 const flaggedDocsCount = computed(() => actionRequiredDocs.value.length);
 const canResubmitNow = computed(
     () => canResubmitDocuments.value && actionRequiredDocs.value.length > 0,
+);
+const profileError = computed(
+    () => (form.errors as Record<string, string | undefined>).profile,
 );
 const requestDialogOpen = ref(false);
 const requestDetailsDialogOpen = ref(false);
@@ -454,9 +480,8 @@ function openRequestDetails(requestId: number | string): void {
                     <CardHeader>
                         <CardTitle>Edit Company Details</CardTitle>
                         <CardDescription>
-                            Minor changes keep your current status. Changing
-                            business type or registration number requires
-                            re-uploading {{ requiredComplianceDocType }}.
+                            Update your contact and representative details.
+                            Locked fields are managed by admin.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -464,11 +489,60 @@ function openRequestDetails(requestId: number | string): void {
                             class="grid gap-4 md:grid-cols-2"
                             @submit.prevent="submitProfile"
                         >
+                            <div
+                                class="space-y-2 rounded-lg border border-sky-200 bg-sky-50 p-3 md:col-span-2"
+                            >
+                                <div class="flex items-center gap-2">
+                                    <ShieldCheck class="h-4 w-4 text-sky-700" />
+                                    <p
+                                        class="text-xs font-semibold tracking-widest text-sky-700 uppercase"
+                                    >
+                                        Before You Submit
+                                    </p>
+                                </div>
+                                <p class="text-xs text-sky-800">
+                                    1) Update editable details (email, phone,
+                                    address, representative info, or logo). 2)
+                                    Locked fields (Company Name, Registration
+                                    Number, Business Type) are read-only. 3)
+                                    Submit once your updates are complete.
+                                </p>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <div
+                                    class="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                                >
+                                    <div class="inline-flex items-center gap-2">
+                                        <Lock class="h-4 w-4 text-slate-500" />
+                                        <p
+                                            class="text-xs font-semibold tracking-widest text-slate-700 uppercase"
+                                        >
+                                            Read-only Company Identity
+                                        </p>
+                                    </div>
+                                    <Badge
+                                        variant="secondary"
+                                        class="text-[11px]"
+                                    >
+                                        Managed by Admin
+                                    </Badge>
+                                </div>
+                            </div>
+
                             <div class="space-y-2">
-                                <Label for="company_name">Company Name</Label>
+                                <Label
+                                    for="company_name"
+                                    class="inline-flex items-center gap-2"
+                                >
+                                    <Building2 class="h-4 w-4" />
+                                    Company Name
+                                </Label>
                                 <Input
                                     id="company_name"
                                     v-model="form.company_name"
+                                    disabled
+                                    class="bg-slate-100 disabled:cursor-not-allowed disabled:opacity-80"
                                 />
                                 <p
                                     v-if="form.errors.company_name"
@@ -479,7 +553,13 @@ function openRequestDetails(requestId: number | string): void {
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="company_email">Company Email</Label>
+                                <Label
+                                    for="company_email"
+                                    class="inline-flex items-center gap-2"
+                                >
+                                    <Mail class="h-4 w-4" />
+                                    Company Email
+                                </Label>
                                 <Input
                                     id="company_email"
                                     type="email"
@@ -494,7 +574,13 @@ function openRequestDetails(requestId: number | string): void {
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="company_phone">Phone</Label>
+                                <Label
+                                    for="company_phone"
+                                    class="inline-flex items-center gap-2"
+                                >
+                                    <Phone class="h-4 w-4" />
+                                    Phone
+                                </Label>
                                 <Input
                                     id="company_phone"
                                     v-model="form.company_phone"
@@ -502,21 +588,40 @@ function openRequestDetails(requestId: number | string): void {
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="registration_number"
-                                    >Registration Number</Label
+                                <Label
+                                    for="registration_number"
+                                    class="inline-flex items-center gap-2"
                                 >
+                                    <FileCheck2 class="h-4 w-4" />
+                                    Registration Number
+                                </Label>
                                 <Input
                                     id="registration_number"
                                     v-model="form.registration_number"
+                                    disabled
+                                    class="bg-slate-100 disabled:cursor-not-allowed disabled:opacity-80"
                                 />
+                                <p
+                                    v-if="form.errors.registration_number"
+                                    class="text-xs text-destructive"
+                                >
+                                    {{ form.errors.registration_number }}
+                                </p>
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="business_type">Business Type</Label>
+                                <Label
+                                    for="business_type"
+                                    class="inline-flex items-center gap-2"
+                                >
+                                    <Building2 class="h-4 w-4" />
+                                    Business Type
+                                </Label>
                                 <select
                                     id="business_type"
                                     v-model="form.business_type"
-                                    class="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                                    disabled
+                                    class="w-full rounded-md border bg-slate-100 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-80"
                                 >
                                     <option value="">
                                         Select business type
@@ -528,10 +633,36 @@ function openRequestDetails(requestId: number | string): void {
                                 </select>
                             </div>
 
-                            <div class="space-y-2">
-                                <Label for="authorized_representative_name"
-                                    >Authorized Representative</Label
+                            <div class="md:col-span-2">
+                                <div
+                                    class="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2"
                                 >
+                                    <div class="inline-flex items-center gap-2">
+                                        <ShieldCheck
+                                            class="h-4 w-4 text-emerald-700"
+                                        />
+                                        <p
+                                            class="text-xs font-semibold tracking-widest text-emerald-700 uppercase"
+                                        >
+                                            Editable Profile Details
+                                        </p>
+                                    </div>
+                                    <Badge
+                                        class="border-emerald-300 bg-white text-[11px] text-emerald-700"
+                                    >
+                                        You Can Update
+                                    </Badge>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label
+                                    for="authorized_representative_name"
+                                    class="inline-flex items-center gap-2"
+                                >
+                                    <User class="h-4 w-4" />
+                                    Authorized Representative
+                                </Label>
                                 <Input
                                     id="authorized_representative_name"
                                     v-model="
@@ -541,9 +672,13 @@ function openRequestDetails(requestId: number | string): void {
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="authorized_representative_position"
-                                    >Representative Position</Label
+                                <Label
+                                    for="authorized_representative_position"
+                                    class="inline-flex items-center gap-2"
                                 >
+                                    <ShieldCheck class="h-4 w-4" />
+                                    Representative Position
+                                </Label>
                                 <Input
                                     id="authorized_representative_position"
                                     v-model="
@@ -553,9 +688,13 @@ function openRequestDetails(requestId: number | string): void {
                             </div>
 
                             <div class="space-y-2">
-                                <Label for="authorized_representative_contact"
-                                    >Representative Contact</Label
+                                <Label
+                                    for="authorized_representative_contact"
+                                    class="inline-flex items-center gap-2"
                                 >
+                                    <Phone class="h-4 w-4" />
+                                    Representative Contact
+                                </Label>
                                 <Input
                                     id="authorized_representative_contact"
                                     v-model="
@@ -565,9 +704,13 @@ function openRequestDetails(requestId: number | string): void {
                             </div>
 
                             <div class="space-y-2 md:col-span-2">
-                                <Label for="company_address"
-                                    >Company Address</Label
+                                <Label
+                                    for="company_address"
+                                    class="inline-flex items-center gap-2"
                                 >
+                                    <MapPin class="h-4 w-4" />
+                                    Company Address
+                                </Label>
                                 <Textarea
                                     id="company_address"
                                     v-model="form.company_address"
@@ -576,13 +719,24 @@ function openRequestDetails(requestId: number | string): void {
                             </div>
 
                             <div class="space-y-2 md:col-span-2">
-                                <Label for="logo">Company Logo</Label>
+                                <Label
+                                    for="logo"
+                                    class="inline-flex items-center gap-2"
+                                >
+                                    <ImageIcon class="h-4 w-4" />
+                                    Company Logo
+                                </Label>
                                 <input
                                     id="logo"
                                     type="file"
                                     accept="image/jpeg,image/png,image/webp"
+                                    class="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
                                     @change="onLogoSelected"
                                 />
+                                <p class="text-xs text-muted-foreground">
+                                    Optional. Upload JPG, PNG, or WEBP (max
+                                    2MB).
+                                </p>
                                 <p
                                     v-if="company.logo_url"
                                     class="text-xs text-muted-foreground"
@@ -612,18 +766,23 @@ function openRequestDetails(requestId: number | string): void {
                                 </p>
 
                                 <div class="space-y-2">
-                                    <Label for="compliance_document_file"
-                                        >{{
-                                            requiredComplianceDocType
-                                        }}
-                                        File</Label
+                                    <Label
+                                        for="compliance_document_file"
+                                        class="inline-flex items-center gap-2"
                                     >
+                                        <FileCheck2 class="h-4 w-4" />
+                                        {{ requiredComplianceDocType }} File
+                                    </Label>
                                     <input
                                         id="compliance_document_file"
                                         type="file"
                                         accept="application/pdf,image/jpeg,image/png"
+                                        class="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-100"
                                         @change="onComplianceDocumentSelected"
                                     />
+                                    <p class="text-xs text-amber-700">
+                                        Upload PDF, JPG, or PNG (max 5MB).
+                                    </p>
                                     <p
                                         v-if="
                                             form.errors.compliance_document_file
@@ -640,8 +799,11 @@ function openRequestDetails(requestId: number | string): void {
                                     <div class="space-y-2">
                                         <Label
                                             for="compliance_document_issued_at"
-                                            >Issue Date</Label
+                                            class="inline-flex items-center gap-2"
                                         >
+                                            <CalendarClock class="h-4 w-4" />
+                                            Issue Date
+                                        </Label>
                                         <Input
                                             id="compliance_document_issued_at"
                                             type="date"
@@ -666,8 +828,11 @@ function openRequestDetails(requestId: number | string): void {
                                     <div class="space-y-2">
                                         <Label
                                             for="compliance_document_expires_at"
-                                            >Expiry Date</Label
+                                            class="inline-flex items-center gap-2"
                                         >
+                                            <CalendarClock class="h-4 w-4" />
+                                            Expiry Date
+                                        </Label>
                                         <Input
                                             id="compliance_document_expires_at"
                                             type="date"
@@ -691,17 +856,19 @@ function openRequestDetails(requestId: number | string): void {
                                 </div>
                             </div>
 
-                            <div class="flex flex-wrap gap-2 md:col-span-2">
+                            <div
+                                class="flex flex-wrap items-center gap-2 border-t pt-3 md:col-span-2"
+                            >
                                 <Button
                                     type="submit"
                                     :disabled="
-                                        form.processing || !canSubmitChanges
+                                        form.processing || !canSubmitProfileForm
                                     "
                                 >
                                     {{
                                         form.processing
                                             ? 'Submitting...'
-                                            : 'Submit For Admin Verification'
+                                            : 'Submit Changes for Review'
                                     }}
                                 </Button>
                                 <Button
@@ -714,9 +881,35 @@ function openRequestDetails(requestId: number | string): void {
                                     "
                                     @click="requestLogoRemoval"
                                 >
-                                    Request Logo Removal
+                                    Remove Current Logo
                                 </Button>
                             </div>
+
+                            <p
+                                v-if="businessTypeRequiresRegistrationUpdate"
+                                class="rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-xs text-rose-800 md:col-span-2"
+                            >
+                                <FileWarning
+                                    class="mr-1 inline h-3.5 w-3.5 align-text-bottom"
+                                />
+                                Action required: Update Registration Number to
+                                match your new Business Type.
+                            </p>
+
+                            <p
+                                v-if="
+                                    requiresComplianceDocument &&
+                                    !hasComplianceDocumentInputsComplete
+                                "
+                                class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 md:col-span-2"
+                            >
+                                <CalendarClock
+                                    class="mr-1 inline h-3.5 w-3.5 align-text-bottom"
+                                />
+                                Action required: Upload
+                                {{ requiredComplianceDocType }} and complete the
+                                issue and expiry dates.
+                            </p>
 
                             <p
                                 v-if="!canSubmitChanges"
@@ -726,10 +919,10 @@ function openRequestDetails(requestId: number | string): void {
                                 for admin action before submitting again.
                             </p>
                             <p
-                                v-if="form.errors.profile"
+                                v-if="profileError"
                                 class="text-xs text-destructive md:col-span-2"
                             >
-                                {{ form.errors.profile }}
+                                {{ profileError }}
                             </p>
                         </form>
                     </CardContent>

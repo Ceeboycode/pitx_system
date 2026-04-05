@@ -7,13 +7,16 @@ use App\Http\Requests\Dispatch\RejectChangeRequestRequest;
 use App\Http\Requests\Dispatch\StoreDispatchChangeRequestRequest;
 use App\Models\Dispatch;
 use App\Models\DispatchChangeRequest;
+use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\DriverAssignmentValidator;
 use App\Notifications\DispatchChangeRequestApprovedNotification;
 use App\Notifications\DispatchChangeRequestRejectedNotification;
 use App\Notifications\DispatchChangeRequestSubmittedNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -101,6 +104,21 @@ class DispatchChangeRequestController extends Controller
      */
     public function store(Dispatch $dispatch, StoreDispatchChangeRequestRequest $request): RedirectResponse|JsonResponse
     {
+        if ($request->requested_field === DispatchChangeRequest::FIELD_DRIVER_USER_ID) {
+            $driver = User::query()
+                ->where('company_id', $dispatch->company_id)
+                ->where('status', 'active')
+                ->whereHas('roles', fn ($query) => $query->where('name', 'driver'))
+                ->findOrFail((int) $request->requested_value);
+
+            $validator = new DriverAssignmentValidator();
+            if (! $validator->canAssignToday($driver, now(), $dispatch)) {
+                throw ValidationException::withMessages([
+                    'requested_value' => $validator->getValidationMessage($driver, now()),
+                ]);
+            }
+        }
+
         // Store old value before creating the request
         $oldValue = $dispatch->{$request->requested_field};
 
@@ -162,6 +180,32 @@ class DispatchChangeRequestController extends Controller
                 ], 422);
             }
             return redirect()->back()->withErrors(['message' => 'Only pending requests can be approved.']);
+        }
+
+        if ($changeRequest->requested_field === DispatchChangeRequest::FIELD_DRIVER_USER_ID) {
+            $dispatch = $changeRequest->dispatch;
+            $driverId = is_numeric($changeRequest->requested_value)
+                ? (int) $changeRequest->requested_value
+                : null;
+
+            if (! $driverId) {
+                throw ValidationException::withMessages([
+                    'message' => 'The selected driver is invalid.',
+                ]);
+            }
+
+            $driver = User::query()
+                ->where('company_id', $dispatch->company_id)
+                ->where('status', 'active')
+                ->whereHas('roles', fn ($query) => $query->where('name', 'driver'))
+                ->findOrFail($driverId);
+
+            $validator = new DriverAssignmentValidator();
+            if (! $validator->canAssignToday($driver, now(), $dispatch)) {
+                throw ValidationException::withMessages([
+                    'message' => $validator->getValidationMessage($driver, now()),
+                ]);
+            }
         }
 
         // Approve the request and apply the change

@@ -299,6 +299,13 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
 
     Route::resource('users', UserController::class);
 
+    Route::get('users-trash', [UserController::class, 'trash'])
+        ->name('users.trash');
+
+    Route::patch('users/{user}/restore', [UserController::class, 'restore'])
+        ->withTrashed()
+        ->name('users.restore');
+
     Route::put('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])
         ->name('users.toggle-status');
 
@@ -306,6 +313,13 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
         ->name('users.reset-password');
 
     Route::resource('roles', RoleController::class);
+
+    Route::get('roles-trash', [RoleController::class, 'trash'])
+        ->name('roles.trash');
+
+    Route::patch('roles/{role}/restore', [RoleController::class, 'restore'])
+        ->withTrashed()
+        ->name('roles.restore');
 
     Route::prefix('company-profile-change-requests')->name('company-profile-change-requests.')->group(function () {
         Route::get('/', [CompanyProfileChangeRequestController::class, 'index'])->name('index');

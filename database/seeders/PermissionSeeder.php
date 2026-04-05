@@ -77,6 +77,8 @@ class PermissionSeeder extends Seeder
             'create',
             'update',
             'delete',
+            'restore',
+            'viewTrash',
             'toggleStatus',
             'resetPassword',
         ],
@@ -87,6 +89,8 @@ class PermissionSeeder extends Seeder
             'create',
             'update',
             'delete',
+            'restore',
+            'viewTrash',
         ],
 
         'dispatches' => [

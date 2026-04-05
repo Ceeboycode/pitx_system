@@ -12,6 +12,11 @@ class RolePolicy
         return $user->can('roles.viewAny');
     }
 
+    public function viewTrash(User $user): bool
+    {
+        return $user->can('roles.viewTrash');
+    }
+
     public function view(User $user, Role $role): bool
     {
         return $user->can('roles.view');
@@ -30,5 +35,10 @@ class RolePolicy
     public function delete(User $user, Role $role): bool
     {
         return $user->can('roles.delete');
+    }
+
+    public function restore(User $user, Role $role): bool
+    {
+        return $user->can('roles.restore');
     }
 }

@@ -106,6 +106,19 @@ type Vehicle = {
     vehicle_type?: string | null;
     make_model?: string | null;
     status?: string | null;
+    route?: {
+        id: number;
+        gate_id?: number | null;
+        route_name?: string | null;
+        origin_name?: string | null;
+        destination_name?: string | null;
+        status?: string | null;
+        gate?: {
+            id: number;
+            gate_name?: string | null;
+            status?: string | null;
+        } | null;
+    } | null;
     label: string;
 };
 
@@ -166,6 +179,8 @@ const props = defineProps<{
     company: Company;
     vehicles: Vehicle[];
     drivers: Driver[];
+    assigned_driver_ids_today: number[];
+    assigned_vehicle_ids_active: number[];
     gates: Gate[];
     dispatches: Paginated<DispatchItem>;
     filters?: {
@@ -282,8 +297,6 @@ const departForm = useForm({ pax_count: '' });
 const changeRequestOpen = ref(false);
 const changeRequestDispatch = ref<DispatchItem | null>(null);
 const driverValidationWarning = ref<string | null>(null);
-const driverValidationLoading = ref(false);
-const driverConfirmed = ref(false);
 const changeRequestStatusOpen = ref(false);
 const changeRequestForm = useForm({
     requested_field: '',
@@ -328,6 +341,26 @@ const selectedDriver = computed(() => {
 });
 const bayOptions = computed(() => selectedGate.value?.bay_options ?? []);
 const isEditing = computed(() => editingDispatchId.value !== null);
+const isGateAutoLocked = computed(
+    () => !!selectedVehicle.value?.route?.gate_id,
+);
+const selectedVehicleRouteGateInactive = computed(
+    () => selectedVehicle.value?.route?.gate?.status === 'inactive',
+);
+const selectedVehicleRouteGateName = computed(
+    () => selectedVehicle.value?.route?.gate?.gate_name ?? 'this route gate',
+);
+const assignedDriverIdsToday = computed(
+    () => new Set(props.assigned_driver_ids_today ?? []),
+);
+const assignedVehicleIdsActive = computed(
+    () => new Set(props.assigned_vehicle_ids_active ?? []),
+);
+const editingDispatch = computed(
+    () =>
+        props.dispatches.data.find((d) => d.id === editingDispatchId.value) ??
+        null,
+);
 
 const arrivedCount = computed(
     () => props.dispatches.data.filter((d) => d.status === 'arrived').length,
@@ -348,12 +381,60 @@ const rejectedChangeRequests = computed(
     () => props.changeRequests?.filter((r) => r.status === 'rejected') ?? [],
 );
 
+function isDriverDisabledForDispatchForm(driverId: number): boolean {
+    if (editingDispatch.value?.driver?.id === driverId) {
+        return false;
+    }
+
+    return assignedDriverIdsToday.value.has(driverId);
+}
+
+function isVehicleDisabledForDispatchForm(vehicleId: number): boolean {
+    if (editingDispatch.value?.vehicle?.id === vehicleId) {
+        return false;
+    }
+
+    return assignedVehicleIdsActive.value.has(vehicleId);
+}
+
+function isDriverDisabledForChangeRequest(driverId: number): boolean {
+    if (changeRequestDispatch.value?.driver?.id === driverId) {
+        return true;
+    }
+
+    return assignedDriverIdsToday.value.has(driverId);
+}
+
 /* ======================================================
    Methods
 ====================================================== */
-function onGateChange(value: string) {
-    form.gate_id = value;
+function onGateChange(value: unknown) {
+    form.gate_id = String(value ?? '');
     form.bay_number = '';
+}
+
+function onVehicleChange(value: string) {
+    form.vehicle_id = value;
+
+    const vehicle = props.vehicles.find((v) => String(v.id) === value) ?? null;
+    const routeGateId = vehicle?.route?.gate_id
+        ? String(vehicle.route.gate_id)
+        : '';
+
+    if (vehicle?.route?.gate?.status === 'inactive') {
+        form.gate_id = '';
+        form.bay_number = '';
+        return;
+    }
+
+    if (!routeGateId) {
+        return;
+    }
+
+    if (form.gate_id !== routeGateId) {
+        form.gate_id = routeGateId;
+        form.bay_number = '';
+    }
 }
 
 function resetForm() {
@@ -380,10 +461,13 @@ function openEditDialog(dispatch: DispatchItem) {
     form.transform((d) => d);
     form.clearErrors();
     form.vehicle_id = dispatch.vehicle?.id ? String(dispatch.vehicle.id) : '';
+    onVehicleChange(form.vehicle_id);
     form.driver_user_id = dispatch.driver?.id
         ? String(dispatch.driver.id)
         : 'unassigned';
-    form.gate_id = dispatch.gate?.id ? String(dispatch.gate.id) : '';
+    if (!selectedVehicle.value?.route?.gate_id) {
+        form.gate_id = dispatch.gate?.id ? String(dispatch.gate.id) : '';
+    }
     form.bay_number = String(dispatch.bay_number ?? '');
     form.remarks = dispatch.remarks ?? '';
     dialogOpen.value = true;
@@ -452,7 +536,6 @@ function openChangeRequestModal(dispatch: DispatchItem) {
     changeRequestForm.reset();
     changeRequestBay.value = '';
     driverValidationWarning.value = null;
-    driverConfirmed.value = false;
     changeRequestOpen.value = true;
 }
 
@@ -462,33 +545,42 @@ function closeChangeRequestModal() {
     changeRequestForm.reset();
     changeRequestBay.value = '';
     driverValidationWarning.value = null;
-    driverConfirmed.value = false;
 }
 
-async function validateDriverAvailability(driverId: string) {
+function validateDriverAvailability(driverId: unknown) {
     if (changeRequestForm.requested_field !== 'driver_user_id') return;
-    driverValidationLoading.value = true;
+
     driverValidationWarning.value = null;
-    driverConfirmed.value = false;
-    try {
-        const driver = props.drivers.find((d) => String(d.id) === driverId);
-        if (driver) {
-            const assignedToday = props.dispatches.data.some(
-                (d) =>
-                    d.driver?.id === driver.id &&
-                    d.id !== changeRequestDispatch.value?.id &&
-                    d.status !== 'departed',
-            );
-            if (assignedToday) {
-                driverValidationWarning.value = `⚠️ ${driver.name} is already assigned to another dispatch today. Click "Confirm" to proceed.`;
-            }
-        }
-    } catch (error) {
-        console.error('Driver validation error:', error);
-    } finally {
-        driverValidationLoading.value = false;
+
+    const normalizedDriverId = String(driverId ?? '');
+
+    const driver = props.drivers.find(
+        (d) => String(d.id) === normalizedDriverId,
+    );
+    if (!driver) {
+        return;
+    }
+
+    if (isDriverDisabledForChangeRequest(driver.id)) {
+        driverValidationWarning.value = `Driver ${driver.name} is already assigned today and cannot be selected.`;
     }
 }
+
+watch(
+    () => [
+        changeRequestForm.requested_field,
+        changeRequestForm.requested_value,
+        changeRequestDispatch.value?.id,
+    ],
+    () => {
+        if (changeRequestForm.requested_field !== 'driver_user_id') {
+            driverValidationWarning.value = null;
+            return;
+        }
+
+        validateDriverAvailability(changeRequestForm.requested_value);
+    },
+);
 
 function submitChangeRequest() {
     if (!changeRequestDispatch.value) return;
@@ -502,10 +594,8 @@ function submitChangeRequest() {
             return;
         }
     }
-    if (driverValidationWarning.value && !driverConfirmed.value) {
-        window.$toast?.warning(
-            'Please confirm the driver change before submitting',
-        );
+    if (driverValidationWarning.value) {
+        window.$toast?.error(driverValidationWarning.value);
         return;
     }
     if (changeRequestForm.requested_field === 'gate_id') {
@@ -585,21 +675,6 @@ function statusDot(status?: string | null) {
 function statusLabel(status?: string | null) {
     if (!status) return 'Unknown';
     return status.replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function statusVariant(
-    status?: string | null,
-): 'default' | 'secondary' | 'outline' | 'destructive' {
-    switch (status) {
-        case 'departed':
-            return 'outline';
-        case 'arrived':
-            return 'default';
-        case 'pending':
-            return 'secondary';
-        default:
-            return 'secondary';
-    }
 }
 
 function formatFieldLabel(field: string): string {
@@ -1687,7 +1762,12 @@ watch(confirmDepartOpen, (open) => {
                 <form class="space-y-4" @submit.prevent="submit">
                     <div class="space-y-2">
                         <Label for="vehicle_id">Vehicle</Label>
-                        <Select v-model="form.vehicle_id">
+                        <Select
+                            :model-value="form.vehicle_id"
+                            @update:model-value="
+                                (value) => onVehicleChange(String(value ?? ''))
+                            "
+                        >
                             <SelectTrigger id="vehicle_id"
                                 ><SelectValue placeholder="Select a vehicle"
                             /></SelectTrigger>
@@ -1696,8 +1776,22 @@ watch(confirmDepartOpen, (open) => {
                                     v-for="vehicle in vehicles"
                                     :key="vehicle.id"
                                     :value="String(vehicle.id)"
+                                    :disabled="
+                                        isVehicleDisabledForDispatchForm(
+                                            vehicle.id,
+                                        )
+                                    "
                                 >
-                                    {{ vehicle.label }}
+                                    <span
+                                        v-if="
+                                            isVehicleDisabledForDispatchForm(
+                                                vehicle.id,
+                                            )
+                                        "
+                                    >
+                                        {{ vehicle.label }} (Already arrived)
+                                    </span>
+                                    <span v-else>{{ vehicle.label }}</span>
                                 </SelectItem>
                             </SelectContent>
                         </Select>
@@ -1718,8 +1812,23 @@ watch(confirmDepartOpen, (open) => {
                                     v-for="driver in drivers"
                                     :key="driver.id"
                                     :value="String(driver.id)"
+                                    :disabled="
+                                        isDriverDisabledForDispatchForm(
+                                            driver.id,
+                                        )
+                                    "
                                 >
-                                    {{ driver.label }}
+                                    <span
+                                        v-if="
+                                            isDriverDisabledForDispatchForm(
+                                                driver.id,
+                                            )
+                                        "
+                                    >
+                                        {{ driver.label }} (Already assigned
+                                        today)
+                                    </span>
+                                    <span v-else>{{ driver.label }}</span>
                                 </SelectItem>
                             </SelectContent>
                         </Select>
@@ -1729,6 +1838,7 @@ watch(confirmDepartOpen, (open) => {
                     <div class="space-y-2">
                         <Label for="gate_id">Gate</Label>
                         <Select
+                            :disabled="isGateAutoLocked"
                             :model-value="form.gate_id"
                             @update:model-value="onGateChange"
                         >
@@ -1745,6 +1855,21 @@ watch(confirmDepartOpen, (open) => {
                                 </SelectItem>
                             </SelectContent>
                         </Select>
+                        <p
+                            v-if="isGateAutoLocked"
+                            class="text-xs text-slate-500"
+                        >
+                            Gate is automatically selected from the vehicle
+                            route.
+                        </p>
+                        <p
+                            v-if="selectedVehicleRouteGateInactive"
+                            class="text-xs text-rose-600"
+                        >
+                            {{ selectedVehicleRouteGateName }} is inactive.
+                            Please contact the terminal manager to activate
+                            this gate before dispatching this vehicle.
+                        </p>
                         <InputError :message="form.errors.gate_id" />
                     </div>
 
@@ -1824,7 +1949,10 @@ watch(confirmDepartOpen, (open) => {
                         >
                         <Button
                             type="submit"
-                            :disabled="form.processing"
+                            :disabled="
+                                form.processing ||
+                                selectedVehicleRouteGateInactive
+                            "
                             class="bg-slate-800 text-white hover:bg-slate-900"
                         >
                             <Send class="mr-2 h-4 w-4" />
@@ -2095,9 +2223,9 @@ watch(confirmDepartOpen, (open) => {
                                             :key="driver.id"
                                             :value="String(driver.id)"
                                             :disabled="
-                                                changeRequestDispatch &&
-                                                changeRequestDispatch.driver
-                                                    ?.id === driver.id
+                                                isDriverDisabledForChangeRequest(
+                                                    driver.id,
+                                                )
                                             "
                                         >
                                             <span
@@ -2109,6 +2237,16 @@ watch(confirmDepartOpen, (open) => {
                                             >
                                                 ✓ {{ driver.label }} (Currently
                                                 Assigned)
+                                            </span>
+                                            <span
+                                                v-else-if="
+                                                    isDriverDisabledForChangeRequest(
+                                                        driver.id,
+                                                    )
+                                                "
+                                            >
+                                                {{ driver.label }} (Already
+                                                assigned today)
                                             </span>
                                             <span v-else>{{
                                                 driver.label
@@ -2128,25 +2266,6 @@ watch(confirmDepartOpen, (open) => {
                             >
                                 <p class="text-sm text-amber-900">
                                     {{ driverValidationWarning }}
-                                </p>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    class="bg-amber-600 hover:bg-amber-700"
-                                    @click="driverConfirmed = true"
-                                >
-                                    Confirm Driver Change
-                                </Button>
-                            </div>
-                            <div
-                                v-else-if="
-                                    changeRequestForm.requested_value &&
-                                    !driverValidationLoading
-                                "
-                                class="rounded-lg border border-emerald-200 bg-emerald-50 p-3"
-                            >
-                                <p class="text-sm text-emerald-800">
-                                    ✓ Driver is available
                                 </p>
                             </div>
                         </template>
@@ -2368,8 +2487,7 @@ watch(confirmDepartOpen, (open) => {
                             class="bg-slate-800 text-white hover:bg-slate-900"
                             :disabled="
                                 changeRequestForm.processing ||
-                                (driverValidationWarning !== null &&
-                                    !driverConfirmed) ||
+                                driverValidationWarning !== null ||
                                 (changeRequestForm.requested_field ===
                                     'pax_count' &&
                                     parseInt(

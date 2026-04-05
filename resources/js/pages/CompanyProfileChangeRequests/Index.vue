@@ -277,6 +277,16 @@ function downloadPrimary(item: ChangeRequest) {
     if (!doc?.preview_url) return;
     window.open(doc.preview_url, '_blank', 'noopener,noreferrer');
 }
+
+function canTakePreviewAction(): boolean {
+    if (previewRequest.value?.status !== 'pending') return false;
+
+    const isCurrentLogoPreview =
+        previewDoc.value?.doc_type === 'company_logo' &&
+        previewDoc.value?.original_name === 'Current Logo';
+
+    return !isCurrentLogoPreview;
+}
 </script>
 
 <template>
@@ -580,9 +590,7 @@ function downloadPrimary(item: ChangeRequest) {
                                             </DropdownMenuItem>
 
                                             <DropdownMenuItem
-                                                :disabled="
-                                                    !primaryPreviewDoc(item)
-                                                "
+                                                v-if="primaryPreviewDoc(item)"
                                                 @click="
                                                     openPrimaryPreview(item)
                                                 "
@@ -592,15 +600,42 @@ function downloadPrimary(item: ChangeRequest) {
                                             </DropdownMenuItem>
 
                                             <DropdownMenuItem
-                                                :disabled="
-                                                    !primaryPreviewDoc(item)
-                                                "
+                                                v-if="primaryPreviewDoc(item)"
                                                 @click="downloadPrimary(item)"
                                             >
                                                 <FileDown
                                                     class="mr-2 h-3.5 w-3.5"
                                                 />
                                                 Download
+                                            </DropdownMenuItem>
+
+                                            <DropdownMenuItem
+                                                v-if="
+                                                    item.status === 'pending' &&
+                                                    !primaryPreviewDoc(item)
+                                                "
+                                                :disabled="
+                                                    approvingId === item.id
+                                                "
+                                                @click="approveRequest(item)"
+                                            >
+                                                <CheckCircle2
+                                                    class="mr-2 h-3.5 w-3.5"
+                                                />
+                                                Approve
+                                            </DropdownMenuItem>
+
+                                            <DropdownMenuItem
+                                                v-if="
+                                                    item.status === 'pending' &&
+                                                    !primaryPreviewDoc(item)
+                                                "
+                                                @click="openReject(item)"
+                                            >
+                                                <XCircle
+                                                    class="mr-2 h-3.5 w-3.5"
+                                                />
+                                                Reject
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -726,7 +761,7 @@ function downloadPrimary(item: ChangeRequest) {
                         class="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-3"
                     >
                         <Button
-                            v-if="previewRequest?.status === 'pending'"
+                            v-if="canTakePreviewAction() && previewRequest"
                             size="sm"
                             :disabled="approvingId === previewRequest.id"
                             @click="approveRequest(previewRequest)"
@@ -734,7 +769,7 @@ function downloadPrimary(item: ChangeRequest) {
                             Approve
                         </Button>
                         <Button
-                            v-if="previewRequest?.status === 'pending'"
+                            v-if="canTakePreviewAction() && previewRequest"
                             size="sm"
                             variant="destructive"
                             @click="openRejectFromPreview"

@@ -15,6 +15,7 @@ use App\Services\DriverAssignmentValidator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -44,6 +45,7 @@ class DispatchController extends Controller
             ])
             ->with([
                 'route:id,gate_id,route_name,origin_name,destination_name,route_geometry,status',
+                'route.gate:id,gate_name,status',
             ])
             ->orderBy('plate_number')
             ->get()
@@ -56,10 +58,16 @@ class DispatchController extends Controller
                 'status' => $vehicle->status,
                 'route' => $vehicle->route ? [
                     'id' => $vehicle->route->id,
+                    'gate_id' => $vehicle->route->gate_id,
                     'route_name' => $vehicle->route->route_name,
                     'origin_name' => $vehicle->route->origin_name,
                     'destination_name' => $vehicle->route->destination_name,
                     'status' => $vehicle->route->status,
+                    'gate' => $vehicle->route->gate ? [
+                        'id' => $vehicle->route->gate->id,
+                        'gate_name' => $vehicle->route->gate->gate_name,
+                        'status' => $vehicle->route->gate->status,
+                    ] : null,
                 ] : null,
                 'label' => trim(implode(' • ', array_filter([
                     $vehicle->plate_number,
@@ -192,6 +200,38 @@ class DispatchController extends Controller
                 ] : null,
             ]);
 
+        $assignedDriverIdsToday = Dispatch::query()
+            ->where('company_id', $company->id)
+            ->whereNotNull('driver_user_id')
+            ->where(function ($dateQuery) {
+                $today = now()->toDateString();
+
+                $dateQuery->whereDate('dispatched_at', $today)
+                    ->orWhere(function ($fallbackQuery) use ($today) {
+                        $fallbackQuery->whereNull('dispatched_at')
+                            ->whereDate('arrived_at', $today);
+                    })
+                    ->orWhere(function ($legacyQuery) use ($today) {
+                        $legacyQuery->whereNull('dispatched_at')
+                            ->whereNull('arrived_at')
+                            ->whereDate('created_at', $today);
+                    });
+            })
+            ->where('status', '!=', Dispatch::STATUS_DEPARTED)
+            ->pluck('driver_user_id')
+            ->map(fn ($driverId) => (int) $driverId)
+            ->unique()
+            ->values();
+
+        $assignedVehicleIdsActive = Dispatch::query()
+            ->where('company_id', $company->id)
+            ->where('status', '!=', Dispatch::STATUS_DEPARTED)
+            ->whereNotNull('vehicle_id')
+            ->pluck('vehicle_id')
+            ->map(fn ($vehicleId) => (int) $vehicleId)
+            ->unique()
+            ->values();
+
         return Inertia::render('External/Dispatches/Index', [
             'company' => [
                 'id' => $company->id,
@@ -202,6 +242,8 @@ class DispatchController extends Controller
             ],
             'vehicles' => $vehicles,
             'drivers' => $drivers,
+            'assigned_driver_ids_today' => $assignedDriverIdsToday,
+            'assigned_vehicle_ids_active' => $assignedVehicleIdsActive,
             'gates' => $gates,
             'dispatches' => $dispatches,
             'filters' => [
@@ -382,11 +424,36 @@ class DispatchController extends Controller
         $vehicle = Vehicle::query()
             ->where('company_id', $company->id)
             ->where('status', 'active')
+            ->with(['route:id,gate_id', 'route.gate:id,gate_name,status'])
             ->findOrFail($request->integer('vehicle_id'));
+
+        if ($vehicle->route?->gate && $vehicle->route->gate->status !== 'active') {
+            throw ValidationException::withMessages([
+                'gate_id' => "Gate {$vehicle->route->gate->gate_name} is inactive. Please contact the terminal manager to activate this gate before dispatching this vehicle.",
+            ]);
+        }
+
+        $hasActiveDispatchForVehicle = Dispatch::query()
+            ->where('company_id', $company->id)
+            ->where('vehicle_id', $vehicle->id)
+            ->where('status', '!=', Dispatch::STATUS_DEPARTED)
+            ->exists();
+
+        if ($hasActiveDispatchForVehicle) {
+            throw ValidationException::withMessages([
+                'vehicle_id' => "Vehicle {$vehicle->plate_number} is already arrived and cannot be dispatched again.",
+            ]);
+        }
 
         $gate = Gate::query()
             ->where('status', 'active')
             ->findOrFail($request->integer('gate_id'));
+
+        if ($vehicle->route?->gate_id && $gate->id !== (int) $vehicle->route->gate_id) {
+            throw ValidationException::withMessages([
+                'gate_id' => 'The selected gate must match the vehicle route gate.',
+            ]);
+        }
 
         $driverId = $request->filled('driver_user_id')
             ? $request->integer('driver_user_id')
@@ -402,7 +469,9 @@ class DispatchController extends Controller
             // Validate driver availability
             $validator = new DriverAssignmentValidator();
             if (!$validator->canAssignToday($driver, now())) {
-                return back()->with('error', $validator->getValidationMessage($driver, now()));
+                throw ValidationException::withMessages([
+                    'driver_user_id' => $validator->getValidationMessage($driver, now()),
+                ]);
             }
         }
 
@@ -444,11 +513,37 @@ class DispatchController extends Controller
         $vehicle = Vehicle::query()
             ->where('company_id', $company->id)
             ->where('status', 'active')
+            ->with(['route:id,gate_id', 'route.gate:id,gate_name,status'])
             ->findOrFail($request->integer('vehicle_id'));
+
+        if ($vehicle->route?->gate && $vehicle->route->gate->status !== 'active') {
+            throw ValidationException::withMessages([
+                'gate_id' => "Gate {$vehicle->route->gate->gate_name} is inactive. Please contact the terminal manager to activate this gate before dispatching this vehicle.",
+            ]);
+        }
+
+        $hasActiveDispatchForVehicle = Dispatch::query()
+            ->where('company_id', $company->id)
+            ->where('vehicle_id', $vehicle->id)
+            ->where('status', '!=', Dispatch::STATUS_DEPARTED)
+            ->where('id', '!=', $dispatch->id)
+            ->exists();
+
+        if ($hasActiveDispatchForVehicle) {
+            throw ValidationException::withMessages([
+                'vehicle_id' => "Vehicle {$vehicle->plate_number} is already arrived and cannot be assigned to another active dispatch.",
+            ]);
+        }
 
         $gate = Gate::query()
             ->where('status', 'active')
             ->findOrFail($request->integer('gate_id'));
+
+        if ($vehicle->route?->gate_id && $gate->id !== (int) $vehicle->route->gate_id) {
+            throw ValidationException::withMessages([
+                'gate_id' => 'The selected gate must match the vehicle route gate.',
+            ]);
+        }
 
         $driverId = $request->filled('driver_user_id')
             ? $request->integer('driver_user_id')
@@ -464,7 +559,9 @@ class DispatchController extends Controller
             // Validate driver availability (exclude current dispatch)
             $validator = new DriverAssignmentValidator();
             if (!$validator->canAssignToday($driver, now(), $dispatch)) {
-                return back()->with('error', $validator->getValidationMessage($driver, now()));
+                throw ValidationException::withMessages([
+                    'driver_user_id' => $validator->getValidationMessage($driver, now()),
+                ]);
             }
         }
 
