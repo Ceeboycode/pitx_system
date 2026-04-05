@@ -44,6 +44,13 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
+Route::get('/privacy', function () {
+    return Inertia::render('PrivacyPolicy');
+})->name('privacy');
+
+Route::get('/terms', function () {
+    return Inertia::render('TermsAndConditions');
+})->name('terms');
 /*
 |--------------------------------------------------------------------------
 | Company Registration

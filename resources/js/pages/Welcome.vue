@@ -152,7 +152,7 @@ const features = [
 
         <!-- STATS -->
         <section class="bg-[#1a3a6b]">
-            <div class="mx-auto max-w-7xl px-6 py-10">
+            <div class="mx-auto max-w-7xl px-6 py-12">
                 <div class="grid grid-cols-3 divide-x divide-white/10 text-center">
                     <div class="px-4 py-2">
                         <div class="text-2xl font-extrabold text-white">Centralized</div>
@@ -264,10 +264,14 @@ const features = [
 
         <!-- FOOTER -->
         <footer class="border-t border-gray-200 bg-white">
-            <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-100 py-6 sm:flex-row">
+            <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-6 py-6 sm:flex-row">
                 <div class="flex items-center gap-2">
                     <img :src="PitxLogo" alt="PITX Logo" class="h-7 w-auto object-contain opacity-70" />
                     <p class="text-sm text-gray-400">© 2026 PITX System. All rights reserved.</p>
+                </div>
+                <div class="flex gap-5 text-xs font-medium uppercase tracking-widest">
+                    <a href="/privacy" class="text-gray-400 transition-colors hover:text-[#c0392b]">Privacy</a>
+                    <a href="/terms" class="text-gray-400 transition-colors hover:text-[#1a3a6b]">Terms</a>
                 </div>
             </div>
         </footer>
