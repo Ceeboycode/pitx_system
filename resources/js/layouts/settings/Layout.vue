@@ -12,7 +12,7 @@ import { Link } from '@inertiajs/vue3';
 
 const sidebarNavItems: NavItem[] = [
     {
-        title: 'Profile',
+        title: 'Personal Profile',
         href: editProfile(),
     },
     {
