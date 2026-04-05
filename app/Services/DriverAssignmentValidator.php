@@ -25,7 +25,20 @@ class DriverAssignmentValidator
 
         // Query dispatches where this driver is assigned on the same date
         $query = Dispatch::where('driver_user_id', $driver->id)
-            ->whereDate('dispatched_at', $date->toDateString())
+            ->where(function ($dateQuery) use ($date) {
+                $dateString = $date->toDateString();
+
+                $dateQuery->whereDate('dispatched_at', $dateString)
+                    ->orWhere(function ($fallbackQuery) use ($dateString) {
+                        $fallbackQuery->whereNull('dispatched_at')
+                            ->whereDate('arrived_at', $dateString);
+                    })
+                    ->orWhere(function ($legacyQuery) use ($dateString) {
+                        $legacyQuery->whereNull('dispatched_at')
+                            ->whereNull('arrived_at')
+                            ->whereDate('created_at', $dateString);
+                    });
+            })
             ->where('status', '!=', Dispatch::STATUS_DEPARTED); // Don't count departed dispatches
 
         // If editing existing dispatch, exclude it from the check
@@ -33,7 +46,7 @@ class DriverAssignmentValidator
             $query->where('id', '!=', $excludeDispatch->id);
         }
 
-        return $query->count() === 0;
+        return ! $query->exists();
     }
 
     /**
@@ -46,7 +59,7 @@ class DriverAssignmentValidator
         }
 
         $formattedDate = $date->format('M d, Y');
-        
+
         return "Driver {$driver->name} is already assigned on {$formattedDate}. Each driver can only be assigned once per day.";
     }
 }

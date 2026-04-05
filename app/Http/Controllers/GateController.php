@@ -20,22 +20,39 @@ class GateController extends Controller
     ) {}
 
     public function index(Request $request)
-    {
-        Gate::authorize('viewAny', GateModel::class);
+{
+    Gate::authorize('viewAny', GateModel::class);
 
-        $gates = GateModel::query()
-            ->select('id', 'gate_name', 'status', 'bays', 'created_by')
-            ->with('creator:id,name')
-            ->when($request->search, fn ($q, $s) => $q->where('gate_name', 'like', "%{$s}%"))
-            ->latest()
-            ->paginate(10)
-            ->withQueryString();
+    $gates = GateModel::query()
+        ->select('id', 'gate_name', 'status', 'bays', 'created_by')
+        ->with('creator:id,name')
 
-        return Inertia::render('Gates/Index', [
-            'gates'   => $gates,
-            'filters' => $request->only('search'),
-        ]);
-    }
+        // ✅ Search
+        ->when($request->search, fn ($q, $s) =>
+            $q->where('gate_name', 'like', "%{$s}%")
+        )
+
+        // ✅ Status filter (FIXED)
+        ->when($request->filled('status'), fn ($q) =>
+            $q->where('status', $request->status)
+        )
+
+        // ✅ Bays filter (optional but you already have it in UI)
+        ->when($request->filled('bays'), fn ($q) =>
+            $q->where('bays', $request->bays)
+        )
+
+        ->latest()
+        ->paginate(10)
+        ->withQueryString();
+
+    return Inertia::render('Gates/Index', [
+        'gates' => $gates,
+
+        // ✅ IMPORTANT: include ALL filters
+        'filters' => $request->only('search', 'status', 'bays'),
+    ]);
+}
 
     public function show(GateModel $gate)
     {
@@ -97,7 +114,7 @@ class GateController extends Controller
 
         $this->gateService->deleteGate($gate);
 
-        return redirect()->back()->with('success', 'Gate archived successfully.');
+        return to_route('gates.index')->with('success', 'Gate archived successfully.');
     }
 
     public function restore(int $id)

@@ -7,7 +7,7 @@ import { Link } from '@inertiajs/vue3';
 
 const sidebarNavItems: Array<{ title: string; href: string }> = [
     {
-        title: 'Profile',
+        title: 'Personal Profile',
         href: '/company/settings/profile',
     },
     {

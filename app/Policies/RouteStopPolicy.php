@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\RouteStop;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class RouteStopPolicy
 {
@@ -50,7 +49,7 @@ class RouteStopPolicy
      */
     public function delete(User $user, RouteStop $routeStop): bool
     {
-        return $user->can('route_stop.delete');
+        return $user->can('route_stop.archive');
     }
 
     /**

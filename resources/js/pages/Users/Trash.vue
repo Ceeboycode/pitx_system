@@ -2,8 +2,6 @@
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 
-import RestoreVehicleDialog from '@/components/vehicle/RestoreVehicleDialog.vue';
-
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -31,54 +29,58 @@ import {
 } from '@/components/ui/table';
 
 import AppLayout from '@/layouts/AppLayout.vue';
-import { index, trash } from '@/routes/vehicles';
+import { index, restore, trash } from '@/routes/users';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 
 import {
     Archive,
     ArrowLeft,
-    Bus,
     MoreHorizontal,
     RotateCcw,
-    Route as RouteIcon,
+    Users,
 } from 'lucide-vue-next';
 
-import { ref } from 'vue';
+import { toast } from 'vue-sonner';
+
+type UserArchive = {
+    id: number;
+    username: string;
+    name: string;
+    email: string;
+    deleted_at_human?: string;
+    deleter?: { id: number; name: string } | null;
+};
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Users', href: index().url },
+    { title: 'Archived Users', href: trash().url },
+];
 
 const props = defineProps<{
-    vehicles: {
-        data: any[];
-        links: { url: string | null; label: string; active: boolean }[];
-        from: number | null;
-        to: number | null;
-        total: number;
-    };
+    users: any;
     filters: { search: string | null };
 }>();
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Vehicles', href: index().url },
-    { title: 'Archived Vehicles', href: trash().url },
-];
+function handleRestore(user: UserArchive) {
+    if (!confirm(`Restore ${user.name}?`)) {
+        toast.info('Restore cancelled.');
+        return;
+    }
 
-// We delegate to the dialog components — track which vehicle's dialogs are open
-const restoreOpen = ref(false);
-const selectedVehicle = ref<any | null>(null);
-
-function openRestore(vehicle: any) {
-    selectedVehicle.value = vehicle;
-    restoreOpen.value = true;
-}
-
-function humanize(text?: string | null) {
-    if (!text) return '—';
-    return text.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    router.patch(
+        restore({ user: user.id }).url,
+        {},
+        {
+            preserveScroll: true,
+            onError: () => toast.error('Failed to restore user.'),
+        },
+    );
 }
 </script>
 
 <template>
-    <Head title="Archived Vehicles" />
+    <Head title="Archived Users" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
@@ -89,11 +91,11 @@ function humanize(text?: string | null) {
                     <div>
                         <CardTitle class="flex items-center gap-2">
                             <Archive class="h-5 w-5 text-muted-foreground" />
-                            Archived Vehicles
+                            Archived Users
                         </CardTitle>
                         <CardDescription class="mt-1">
-                            List of archived vehicles. You can restore them
-                            anytime.
+                            Archived users can be restored back to the active
+                            user list.
                         </CardDescription>
                     </div>
 
@@ -106,14 +108,13 @@ function humanize(text?: string | null) {
                         >
                             <Link :href="index().url">
                                 <ArrowLeft class="mr-2 h-4 w-4" />
-                                Back to Vehicles
+                                Back to Users
                             </Link>
                         </Button>
                     </CardAction>
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-                    <!-- Search -->
                     <div
                         class="flex flex-col gap-2 sm:flex-row sm:items-center"
                     >
@@ -121,37 +122,28 @@ function humanize(text?: string | null) {
                             <SearchInput
                                 :route="trash().url"
                                 :initial-value="filters.search"
-                                placeholder="Search archived vehicles…"
-                                :only="['vehicles', 'filters', 'flash']"
+                                placeholder="Search archived users..."
+                                :only="['users', 'filters', 'flash']"
                                 :debounce="350"
                             />
                         </div>
                     </div>
 
-                    <!-- Table -->
                     <div class="overflow-x-auto rounded-lg border">
                         <Table>
                             <TableHeader>
                                 <TableRow class="bg-muted/40 hover:bg-muted/40">
                                     <TableHead
                                         class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Company</TableHead
+                                        >Username</TableHead
                                     >
                                     <TableHead
                                         class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Route</TableHead
+                                        >Name</TableHead
                                     >
                                     <TableHead
                                         class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Vehicle Info</TableHead
-                                    >
-                                    <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Plate Number</TableHead
-                                    >
-                                    <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Cap.</TableHead
+                                        >Email</TableHead
                                     >
                                     <TableHead
                                         class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
@@ -169,13 +161,12 @@ function humanize(text?: string | null) {
                             </TableHeader>
 
                             <TableBody>
-                                <!-- Empty state -->
                                 <TableRow
-                                    v-if="vehicles.data.length === 0"
+                                    v-if="users.data.length === 0"
                                     class="hover:bg-transparent"
                                 >
                                     <TableCell
-                                        colspan="8"
+                                        colspan="6"
                                         class="py-20 text-center"
                                     >
                                         <div
@@ -184,7 +175,7 @@ function humanize(text?: string | null) {
                                             <div
                                                 class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted"
                                             >
-                                                <Bus
+                                                <Users
                                                     class="h-6 w-6 text-muted-foreground/40"
                                                 />
                                             </div>
@@ -192,7 +183,7 @@ function humanize(text?: string | null) {
                                                 <p
                                                     class="text-sm font-semibold text-foreground"
                                                 >
-                                                    No archived vehicles
+                                                    No archived users
                                                 </p>
                                                 <p
                                                     class="mt-0.5 text-xs text-muted-foreground"
@@ -206,100 +197,31 @@ function humanize(text?: string | null) {
                                 </TableRow>
 
                                 <TableRow
-                                    v-for="vehicle in vehicles.data"
-                                    :key="vehicle.id"
+                                    v-for="user in users.data"
+                                    :key="user.id"
                                     class="transition-colors hover:bg-muted/30"
                                 >
-                                    <!-- Company -->
-                                    <TableCell class="text-sm font-medium">
-                                        {{
-                                            vehicle.company?.company_name || '—'
-                                        }}
-                                    </TableCell>
-
-                                    <!-- Route -->
-                                    <TableCell>
-                                        <div
-                                            v-if="vehicle.route?.route_name"
-                                            class="flex items-center gap-1.5"
-                                        >
-                                            <RouteIcon
-                                                class="h-3.5 w-3.5 shrink-0 text-sky-600"
-                                            />
-                                            <span class="text-sm">{{
-                                                vehicle.route.route_name
-                                            }}</span>
-                                        </div>
-                                        <span
-                                            v-else
-                                            class="text-sm text-muted-foreground"
-                                            >—</span
-                                        >
-                                    </TableCell>
-
-                                    <!-- Vehicle Info -->
-                                    <TableCell>
-                                        <div class="flex items-center gap-2">
-                                            <div
-                                                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-100"
-                                            >
-                                                <Bus
-                                                    class="h-3.5 w-3.5 text-blue-700"
-                                                />
-                                            </div>
-                                            <div>
-                                                <p class="text-sm font-medium">
-                                                    {{
-                                                        humanize(
-                                                            vehicle.vehicle_type
-                                                                ?.type_name ??
-                                                                vehicle.vehicle_type,
-                                                        )
-                                                    }}
-                                                </p>
-                                                <p
-                                                    class="text-xs text-muted-foreground"
-                                                >
-                                                    {{
-                                                        vehicle.body_number ||
-                                                        '—'
-                                                    }}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </TableCell>
-
-                                    <!-- Plate Number -->
-                                    <TableCell>
-                                        <span
-                                            class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold"
-                                        >
-                                            {{ vehicle.plate_number || '—' }}
-                                        </span>
-                                    </TableCell>
-
-                                    <!-- Capacity -->
-                                    <TableCell
-                                        class="text-sm text-muted-foreground tabular-nums"
-                                    >
-                                        {{ vehicle.capacity || '—' }}
-                                    </TableCell>
-
-                                    <!-- Archived At -->
+                                    <TableCell class="font-medium">{{
+                                        user.username
+                                    }}</TableCell>
+                                    <TableCell>{{ user.name }}</TableCell>
                                     <TableCell
                                         class="text-sm text-muted-foreground"
+                                        >{{ user.email }}</TableCell
                                     >
-                                        {{ vehicle.deleted_at_human || '—' }}
-                                    </TableCell>
-
-                                    <!-- Archived By -->
                                     <TableCell
                                         class="text-sm text-muted-foreground"
+                                        >{{
+                                            user.deleted_at_human ?? '—'
+                                        }}</TableCell
                                     >
-                                        {{ vehicle.deleter?.name || '—' }}
-                                    </TableCell>
+                                    <TableCell
+                                        class="text-sm text-muted-foreground"
+                                        >{{
+                                            user.deleter?.name ?? '—'
+                                        }}</TableCell
+                                    >
 
-                                    <!-- Actions -->
                                     <TableCell class="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
@@ -324,23 +246,19 @@ function humanize(text?: string | null) {
                                                 <DropdownMenuLabel
                                                     class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
                                                 >
-                                                    {{
-                                                        vehicle.plate_number ||
-                                                        'Vehicle'
-                                                    }}
+                                                    {{ user.username }}
                                                 </DropdownMenuLabel>
+
                                                 <DropdownMenuSeparator />
 
                                                 <DropdownMenuItem
                                                     class="rounded-lg text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700"
-                                                    @click="
-                                                        openRestore(vehicle)
-                                                    "
+                                                    @click="handleRestore(user)"
                                                 >
                                                     <RotateCcw
                                                         class="mr-2 h-4 w-4"
                                                     />
-                                                    Restore Vehicle
+                                                    Restore User
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -351,22 +269,15 @@ function humanize(text?: string | null) {
                     </div>
 
                     <InertiaPagination
-                        :links="vehicles.links"
+                        :links="users.links"
                         :meta="{
-                            from: vehicles.from,
-                            to: vehicles.to,
-                            total: vehicles.total,
+                            from: users.from,
+                            to: users.to,
+                            total: users.total,
                         }"
                     />
                 </CardContent>
             </Card>
         </div>
-
-        <!-- Dialogs -->
-        <RestoreVehicleDialog
-            v-if="selectedVehicle"
-            v-model:open="restoreOpen"
-            :vehicle="selectedVehicle"
-        />
     </AppLayout>
 </template>

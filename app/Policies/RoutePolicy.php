@@ -29,7 +29,7 @@ class RoutePolicy
 
     public function delete(User $user, Route $route): bool
     {
-        return $user->can('routes.delete');
+        return $user->can('routes.archive');
     }
 
     public function restore(User $user, Route $route): bool

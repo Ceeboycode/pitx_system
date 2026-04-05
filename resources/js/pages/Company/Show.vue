@@ -136,7 +136,7 @@ const docs = computed(() => props.company.documents ?? []);
 
 /* ── Permissions ─────────────────────────────────────────────────── */
 
-const canArchiveCompany = computed(() => can('companies.delete'));
+const canArchiveCompany = computed(() => can('companies.archive'));
 
 /* ── Logo helpers ────────────────────────────────────────────────── */
 
@@ -1263,7 +1263,7 @@ const flaggedDocs = computed(
                                 Verify
                             </Button>
 
-                            <!-- Unverify -->
+                            <!-- Unverify 
                             <Button
                                 v-if="previewDoc.status === 'verified'"
                                 variant="outline"
@@ -1280,7 +1280,7 @@ const flaggedDocs = computed(
                             >
                                 <RotateCcw class="mr-2 h-4 w-4" />
                                 Unverify
-                            </Button>
+                            </Button> -->
 
                             <!-- Invalid -->
                             <Button

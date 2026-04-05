@@ -152,7 +152,7 @@ const features = [
 
         <!-- STATS -->
         <section class="bg-[#1a3a6b]">
-            <div class="mx-auto max-w-7xl px-6 py-10">
+            <div class="mx-auto max-w-7xl px-6 py-12">
                 <div class="grid grid-cols-3 divide-x divide-white/10 text-center">
                     <div class="px-4 py-2">
                         <div class="text-2xl font-extrabold text-white">Centralized</div>

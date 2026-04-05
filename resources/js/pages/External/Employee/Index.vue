@@ -5,6 +5,7 @@ import { computed, reactive } from 'vue';
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import ExternalLayout from '@/layouts/ExternalLayout.vue';
+import { can } from '@/lib/can';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -62,6 +63,7 @@ type EmployeeUser = {
     id: number;
     username: string;
     name: string;
+    avatar?: string | null;
     email?: string | null;
     phone_number?: string | null;
     status: string;
@@ -101,6 +103,8 @@ const props = defineProps<{
     roles: string[];
     statuses: string[];
 }>();
+
+const canCreateEmployee = can('external_users.create');
 
 /* ======================================================
    Helpers
@@ -290,6 +294,7 @@ function openDeleteDialog(employee: EmployeeUser) {
                     </div>
 
                     <Button
+                        v-if="canCreateEmployee"
                         as-child
                         class="shrink-0 gap-2 self-start rounded-lg border-0 bg-blue-700 text-sm font-semibold text-white shadow-sm hover:bg-blue-800"
                     >
@@ -303,65 +308,97 @@ function openDeleteDialog(employee: EmployeeUser) {
                 <!-- ── Stats ─────────────────────────────────── -->
                 <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
                     <!-- Total -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+                    <div
+                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+                    >
                         <div class="flex items-start justify-between">
-                            <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            <p
+                                class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
+                            >
                                 Total
                             </p>
-                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-700">
+                            <div
+                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-700"
+                            >
                                 <Users class="h-4 w-4 text-white" />
                             </div>
                         </div>
 
-                        <p class="mt-3 text-3xl font-bold tabular-nums text-slate-900">
+                        <p
+                            class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
+                        >
                             {{ totalEmployees }}
                         </p>
                     </div>
 
                     <!-- Drivers -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+                    <div
+                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+                    >
                         <div class="flex items-start justify-between">
-                            <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            <p
+                                class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
+                            >
                                 Drivers
                             </p>
-                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600">
+                            <div
+                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600"
+                            >
                                 <TruckIcon class="h-4 w-4 text-white" />
                             </div>
                         </div>
 
-                        <p class="mt-3 text-3xl font-bold tabular-nums text-slate-900">
+                        <p
+                            class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
+                        >
                             {{ totalDrivers }}
                         </p>
                     </div>
 
                     <!-- Dispatchers -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+                    <div
+                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+                    >
                         <div class="flex items-start justify-between">
-                            <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            <p
+                                class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
+                            >
                                 Dispatchers
                             </p>
-                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600">
+                            <div
+                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600"
+                            >
                                 <Radio class="h-4 w-4 text-white" />
                             </div>
                         </div>
 
-                        <p class="mt-3 text-3xl font-bold tabular-nums text-slate-900">
+                        <p
+                            class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
+                        >
                             {{ totalDispatchers }}
                         </p>
                     </div>
 
                     <!-- Active -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+                    <div
+                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+                    >
                         <div class="flex items-start justify-between">
-                            <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                            <p
+                                class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
+                            >
                                 Active
                             </p>
-                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
+                            <div
+                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600"
+                            >
                                 <Power class="h-4 w-4 text-white" />
                             </div>
                         </div>
 
-                        <p class="mt-3 text-3xl font-bold tabular-nums text-slate-900">
+                        <p
+                            class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
+                        >
                             {{ activeCount }}
                         </p>
                     </div>
@@ -489,7 +526,14 @@ function openDeleteDialog(employee: EmployeeUser) {
                                     <!-- Employee info -->
                                     <TableCell>
                                         <div class="flex items-center gap-2.5">
+                                            <img
+                                                v-if="employee.avatar"
+                                                :src="employee.avatar"
+                                                :alt="`${employee.name} avatar`"
+                                                class="h-8 w-8 shrink-0 rounded-full border border-slate-200 object-cover"
+                                            />
                                             <div
+                                                v-else
                                                 :class="[
                                                     'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold uppercase',
                                                     roleIconBg(employee),

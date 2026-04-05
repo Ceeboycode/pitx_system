@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
+    CardAction,
     CardContent,
     CardDescription,
     CardHeader,
@@ -30,6 +31,12 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 /* ======================================================
    Icons
@@ -40,6 +47,7 @@ import {
     Eye,
     Mail,
     Phone,
+    Truck,
 } from 'lucide-vue-next';
 
 /* ======================================================
@@ -97,15 +105,27 @@ function prettyStatus(value: string | null | undefined) {
         .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function badgeVariant(status: string | null | undefined) {
+function statusClass(status: string | null | undefined): string {
     switch (status) {
         case 'verified':
         case 'active':
-            return 'default';
+            return 'bg-emerald-100 text-emerald-700 border-emerald-200';
         case 'pending':
-            return 'secondary';
+            return 'bg-amber-100 text-amber-700 border-amber-200';
         default:
-            return 'outline';
+            return 'bg-slate-100 text-slate-500 border-0';
+    }
+}
+
+function statusDot(status: string | null | undefined): string {
+    switch (status) {
+        case 'verified':
+        case 'active':
+            return 'bg-emerald-500';
+        case 'pending':
+            return 'bg-amber-400';
+        default:
+            return 'bg-slate-400';
     }
 }
 </script>
@@ -114,37 +134,54 @@ function badgeVariant(status: string | null | undefined) {
     <Head title="Dispatches" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
-            <Card class="rounded-2xl">
-                <CardHeader class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div class="flex h-full flex-1 flex-col gap-4 p-4">
+            <Card>
+                <CardHeader>
                     <div>
-                        <CardTitle class="text-2xl">Dispatch Companies</CardTitle>
-                        <CardDescription>
-                            Quickly find a company and view its total dispatch records.
+                        <CardTitle class="flex items-center gap-2">
+                            <Truck class="h-5 w-5 text-blue-700" />
+                            Dispatch Companies
+                        </CardTitle>
+                        <CardDescription class="mt-1">
+                            Find a company and view its total dispatch records.
                         </CardDescription>
                     </div>
 
-                    <div class="w-full md:w-[320px]">
-                        <SearchInput
-                            :route="InternalDispatchController.index().url"
-                            input-name="search"
-                            placeholder="Search company..."
-                            :default-value="props.filters.search"
-                        />
-                    </div>
+                    <CardAction>
+                        <div class="w-full md:w-72">
+                            <SearchInput
+                                :route="InternalDispatchController.index().url"
+                                input-name="search"
+                                placeholder="Search company…"
+                                :default-value="props.filters.search"
+                            />
+                        </div>
+                    </CardAction>
                 </CardHeader>
 
-                <CardContent>
-                    <div class="overflow-x-auto">
+                <CardContent class="space-y-4">
+                    <div class="overflow-x-auto rounded-lg border">
                         <Table>
                             <TableHeader>
-                                <TableRow>
-                                    <TableHead class="min-w-[220px]">Company</TableHead>
-                                    <TableHead class="min-w-[160px]">Code</TableHead>
-                                    <TableHead class="min-w-[220px]">Contact</TableHead>
-                                    <TableHead class="min-w-[140px]">Status</TableHead>
-                                    <TableHead class="min-w-[160px] text-center">Total Dispatches</TableHead>
-                                    <TableHead class="min-w-[140px] text-right">Action</TableHead>
+                                <TableRow class="bg-muted/40 hover:bg-muted/40">
+                                    <TableHead class="pl-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                                        Company
+                                    </TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                                        Code
+                                    </TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                                        Contact
+                                    </TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                                        Status
+                                    </TableHead>
+                                    <TableHead class="text-center text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                                        Dispatches
+                                    </TableHead>
+                                    <TableHead class="pr-4 text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                                        Actions
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
 
@@ -152,79 +189,115 @@ function badgeVariant(status: string | null | undefined) {
                                 <TableRow
                                     v-for="company in companies.data"
                                     :key="company.id"
+                                    class="transition-colors hover:bg-muted/30"
                                 >
-                                    <TableCell>
-                                        <div class="flex items-start gap-3">
-                                            <div class="rounded-lg bg-muted p-2">
-                                                <Building2 class="h-4 w-4 text-muted-foreground" />
+                                    <!-- Company -->
+                                    <TableCell class="pl-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 ring-1 ring-blue-100">
+                                                <Building2 class="h-4 w-4 text-blue-600" />
                                             </div>
-
-                                            <div class="space-y-1">
-                                                <div class="font-medium">
+                                            <div>
+                                                <div class="text-sm font-semibold">
                                                     {{ company.company_name }}
                                                 </div>
                                                 <div class="text-xs text-muted-foreground">
-                                                    Company ID: {{ company.id }}
+                                                    ID #{{ company.id }}
                                                 </div>
                                             </div>
                                         </div>
                                     </TableCell>
 
+                                    <!-- Code -->
                                     <TableCell>
-                                        {{ company.company_code || '—' }}
+                                        <span
+                                            v-if="company.company_code"
+                                            class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold"
+                                        >
+                                            {{ company.company_code }}
+                                        </span>
+                                        <span v-else class="text-sm text-muted-foreground">—</span>
                                     </TableCell>
 
+                                    <!-- Contact -->
                                     <TableCell>
-                                        <div class="space-y-1 text-sm">
-                                            <div class="flex items-center gap-2 text-muted-foreground">
-                                                <Mail class="h-4 w-4" />
-                                                <span>{{ company.company_email || '—' }}</span>
+                                        <div class="space-y-1">
+                                            <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                <Mail class="h-3.5 w-3.5 shrink-0" />
+                                                <span class="truncate max-w-[180px]">
+                                                    {{ company.company_email || '—' }}
+                                                </span>
                                             </div>
-                                            <div class="flex items-center gap-2 text-muted-foreground">
-                                                <Phone class="h-4 w-4" />
+                                            <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                <Phone class="h-3.5 w-3.5 shrink-0" />
                                                 <span>{{ company.company_phone || '—' }}</span>
                                             </div>
                                         </div>
                                     </TableCell>
 
+                                    <!-- Status -->
                                     <TableCell>
-                                        <Badge :variant="badgeVariant(company.status)">
+                                        <Badge :class="['gap-1.5', statusClass(company.status)]">
+                                            <span :class="['h-1.5 w-1.5 rounded-full', statusDot(company.status)]" />
                                             {{ prettyStatus(company.status) }}
                                         </Badge>
                                     </TableCell>
 
+                                    <!-- Dispatches count -->
                                     <TableCell class="text-center">
-                                        <div class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium">
-                                            <ClipboardList class="h-4 w-4 text-muted-foreground" />
-                                            <span>{{ company.dispatches_count }}</span>
+                                        <div class="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+                                            <ClipboardList class="h-3.5 w-3.5" />
+                                            {{ company.dispatches_count }}
                                         </div>
                                     </TableCell>
 
-                                    <TableCell class="text-right">
-                                        <Button as-child variant="outline" class="gap-2">
-                                            <Link :href="InternalDispatchController.show(company.id).url">
-                                                <Eye class="h-4 w-4" />
-                                                View
-                                            </Link>
-                                        </Button>
+                                    <!-- Action -->
+                                    <TableCell class="pr-4 text-right">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger as-child>
+                                                    <Button
+                                                        as-child
+                                                        size="icon"
+                                                        class="h-8 w-8 rounded-lg border-0 bg-blue-700 text-white hover:bg-blue-800"
+                                                    >
+                                                        <Link :href="InternalDispatchController.show(company.id).url">
+                                                            <Eye class="h-3.5 w-3.5" />
+                                                        </Link>
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="left">
+                                                    View
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
                                     </TableCell>
                                 </TableRow>
 
-                                <TableRow v-if="companies.data.length === 0">
-                                    <TableCell
-                                        colspan="6"
-                                        class="py-10 text-center text-muted-foreground"
-                                    >
-                                        No companies found.
+                                <!-- Empty state -->
+                                <TableRow v-if="companies.data.length === 0" class="hover:bg-transparent">
+                                    <TableCell colspan="6" class="py-20 text-center">
+                                        <div class="flex flex-col items-center gap-3">
+                                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+                                                <Truck class="h-6 w-6 text-muted-foreground/40" />
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-semibold text-foreground">No companies found</p>
+                                                <p class="mt-0.5 text-xs text-muted-foreground">
+                                                    Try adjusting your search term.
+                                                </p>
+                                            </div>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             </TableBody>
                         </Table>
                     </div>
 
-                    <div v-if="companies.links?.length" class="mt-6">
-                        <InertiaPagination :links="companies.links" />
-                    </div>
+                    <InertiaPagination
+                        v-if="companies.links?.length"
+                        :links="companies.links"
+                    />
                 </CardContent>
             </Card>
         </div>

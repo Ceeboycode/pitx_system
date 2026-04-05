@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreRoleRequest;
 use App\Http\Requests\UpdateRoleRequest;
 use App\Models\Role;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -100,8 +101,59 @@ class RoleController extends Controller
     {
         Gate::authorize('delete', $role);
 
+        $role->deleted_by = request()->user()?->id;
+        $role->save();
         $role->delete();
 
-        return back()->with('success', 'Role deleted successfully.');
+        return back()->with('success', 'Role archived successfully.');
+    }
+
+    public function trash(Request $request)
+    {
+        Gate::authorize('viewTrash', Role::class);
+
+        $search = $request->input('search');
+
+        $roles = Role::onlyTrashed()
+            ->select('id', 'name', 'type', 'deleted_at', 'deleted_by')
+            ->with(['permissions:id,name', 'deleter:id,name'])
+            ->when($search, fn ($q) => $q->where('name', 'like', "%{$search}%"))
+            ->latest('deleted_at')
+            ->paginate(20)
+            ->withQueryString()
+            ->through(function (Role $role) {
+                return [
+                    'id' => $role->id,
+                    'name' => $role->name,
+                    'type' => $role->type,
+                    'deleted_at_human' => $role->deleted_at?->diffForHumans(),
+                    'permissions' => $role->permissions->map(fn ($permission) => [
+                        'id' => $permission->id,
+                        'name' => $permission->name,
+                    ])->values(),
+                    'deleter' => $role->deleter
+                        ? [
+                            'id' => $role->deleter->id,
+                            'name' => $role->deleter->name,
+                        ]
+                        : null,
+                ];
+            });
+
+        return Inertia::render('Roles/Trash', [
+            'roles'   => $roles,
+            'filters' => [
+                'search' => $search,
+            ],
+        ]);
+    }
+
+    public function restore(Role $role): RedirectResponse
+    {
+        Gate::authorize('restore', $role);
+
+        $role->restore();
+
+        return back()->with('success', 'Role restored successfully.');
     }
 }

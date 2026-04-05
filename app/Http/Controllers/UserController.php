@@ -9,6 +9,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
@@ -35,6 +36,7 @@ class UserController extends Controller
                 'name',
                 'email',
                 'email_verified_at',
+                'profile_photo_path',
                 'phone_number',
                 'company_id',
                 'status',
@@ -64,6 +66,7 @@ class UserController extends Controller
                     'name'              => $user->name,
                     'email'             => $user->email,
                     'email_verified_at' => $user->email_verified_at,
+                    'avatar'            => $user->profile_photo_path ? Storage::url($user->profile_photo_path) : null,
                     'phone_number'      => $user->phone_number,
                     'company_id'        => $user->company_id,
                     'status'            => $user->status,
@@ -94,6 +97,7 @@ class UserController extends Controller
                 'type'   => $type,
                 'status' => $status,
             ],
+            'currentUserId' => $request->user()->id,
             'statuses' => ['active', 'inactive'],
             'types'    => ['internal', 'external'],
         ]);
@@ -173,12 +177,14 @@ class UserController extends Controller
         $resolvedType = $primaryRole?->type;
 
         return Inertia::render('Users/Show', [
+            'currentUserId' => Auth::id(),
             'user' => [
                 'id'                => $user->id,
                 'username'          => $user->username,
                 'name'              => $user->name,
                 'email'             => $user->email,
                 'email_verified_at' => $user->email_verified_at,
+                'avatar'            => $user->profile_photo_path ? Storage::url($user->profile_photo_path) : null,
                 'phone_number'      => $user->phone_number,
                 'status'            => $user->status,
                 'created_at'        => $user->created_at,
@@ -321,13 +327,78 @@ class UserController extends Controller
         );
     }
 
-    public function destroy(User $user): RedirectResponse
+    public function destroy(Request $request, User $user): RedirectResponse
     {
         Gate::authorize('delete', $user);
 
+        $user->deleted_by = $request->user()?->id;
+        $user->save();
         $user->delete();
 
-        return back()->with('success', 'User deleted successfully.');
+        return redirect()
+            ->route('users.index')
+            ->with('success', 'User archived successfully.');
+    }
+
+    public function trash(Request $request): Response
+    {
+        Gate::authorize('viewTrash', User::class);
+
+        $search = $request->input('search');
+
+        $users = User::onlyTrashed()
+            ->select([
+                'id',
+                'username',
+                'name',
+                'email',
+                'deleted_at',
+                'deleted_by',
+            ])
+            ->with(['deleter:id,name'])
+            ->when($search, function ($query) use ($search) {
+                $like = '%' . $search . '%';
+
+                $query->where(function ($innerQuery) use ($like) {
+                    $innerQuery->where('username', 'like', $like)
+                        ->orWhere('name', 'like', $like)
+                        ->orWhere('email', 'like', $like);
+                });
+            })
+            ->latest('deleted_at')
+            ->paginate(10)
+            ->withQueryString()
+            ->through(function (User $user) {
+                return [
+                    'id'              => $user->id,
+                    'username'        => $user->username,
+                    'name'            => $user->name,
+                    'email'           => $user->email,
+                    'deleted_at_human' => $user->deleted_at?->diffForHumans(),
+                    'deleter'         => $user->deleter
+                        ? [
+                            'id'   => $user->deleter->id,
+                            'name' => $user->deleter->name,
+                        ]
+                        : null,
+                ];
+            });
+
+        return Inertia::render('Users/Trash', [
+            'users'    => $users,
+            'filters' => [
+                'search' => $search,
+            ],
+        ]);
+    }
+
+    public function restore(User $user): RedirectResponse
+    {
+        Gate::authorize('restore', $user);
+
+        $user->restore();
+
+        return back()->with('success', 'User restored successfully.');
     }
 
     private function generateUsername(string $type, ?int $companyId = null): string

@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\User;
 use App\Models\VehicleType;
-use Illuminate\Auth\Access\Response;
 
 class VehicleTypePolicy
 {
@@ -53,7 +52,7 @@ class VehicleTypePolicy
      */
     public function delete(User $user, VehicleType $vehicleType): bool
     {
-        return $user->can('vehicle_type.delete');
+        return $user->can('vehicle_type.archive');
     }
 
     /**

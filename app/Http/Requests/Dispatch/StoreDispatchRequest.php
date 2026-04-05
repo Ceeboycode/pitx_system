@@ -11,7 +11,11 @@ class StoreDispatchRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->check() && auth()->user()?->company_id !== null;
+        $user = $this->user();
+
+        return $user !== null
+            && $user->company_id !== null
+            && $user->can('external_dispatches.create');
     }
 
     public function rules(): array

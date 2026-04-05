@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -25,6 +27,8 @@ class CompanyUserController extends Controller
 
     public function index(Request $request)
     {
+        Gate::authorize('external_users.viewAny');
+
         $company = $request->user()->company;
 
         abort_if(! $company, 403, 'No company assigned.');
@@ -52,7 +56,25 @@ class CompanyUserController extends Controller
             ->search($search)
             ->orderBy('name')
             ->paginate(10)
-            ->withQueryString();
+            ->withQueryString()
+            ->through(function (User $employeeUser) {
+                return [
+                    'id'           => $employeeUser->id,
+                    'username'     => $employeeUser->username,
+                    'name'         => $employeeUser->name,
+                    'email'        => $employeeUser->email,
+                    'phone_number' => $employeeUser->phone_number,
+                    'status'       => $employeeUser->status,
+                    'created_at'   => $employeeUser->created_at,
+                    'avatar'       => $employeeUser->profile_photo_path
+                        ? Storage::url($employeeUser->profile_photo_path)
+                        : null,
+                    'roles' => $employeeUser->roles->map(fn ($role) => [
+                        'id'   => $role->id,
+                        'name' => $role->name,
+                    ])->values(),
+                ];
+            });
 
         return Inertia::render('External/Employee/Index', [
             'company'  => $company,
@@ -72,6 +94,8 @@ class CompanyUserController extends Controller
 
     public function create(Request $request)
     {
+        Gate::authorize('external_users.create');
+
         $company = $request->user()->company;
 
         abort_if(! $company, 403, 'No company assigned.');
@@ -90,6 +114,8 @@ class CompanyUserController extends Controller
 
     public function store(Request $request)
     {
+        Gate::authorize('external_users.create');
+
         $company = $request->user()->company;
 
         abort_if(! $company, 403, 'No company assigned.');
@@ -132,6 +158,8 @@ class CompanyUserController extends Controller
 
     public function show(Request $request, User $employeeUser)
     {
+        Gate::authorize('external_users.view');
+
         $this->ensureCompanyUser($request, $employeeUser);
 
         $employeeUser->load(['roles', 'company']);
@@ -139,7 +167,23 @@ class CompanyUserController extends Controller
         return Inertia::render('External/Employee/Show', [
             'company'  => $request->user()->company,
             'user'     => $request->user(),
-            'employee' => $employeeUser,
+            'employee' => [
+                'id'           => $employeeUser->id,
+                'username'     => $employeeUser->username,
+                'name'         => $employeeUser->name,
+                'email'        => $employeeUser->email,
+                'phone_number' => $employeeUser->phone_number,
+                'status'       => $employeeUser->status,
+                'created_at'   => $employeeUser->created_at,
+                'avatar'       => $employeeUser->profile_photo_path
+                    ? Storage::url($employeeUser->profile_photo_path)
+                    : null,
+                'roles' => $employeeUser->roles->map(fn ($role) => [
+                    'id'   => $role->id,
+                    'name' => $role->name,
+                ])->values(),
+                'company' => $employeeUser->company,
+            ],
         ]);
     }
 
@@ -147,14 +191,33 @@ class CompanyUserController extends Controller
 
     public function edit(Request $request, User $employeeUser)
     {
+        Gate::authorize('external_users.update');
+
         $this->ensureCompanyUser($request, $employeeUser);
+        $this->ensureNotActingOnSelf($request, $employeeUser);
 
         $employeeUser->load(['roles', 'company']);
 
         return Inertia::render('External/Employee/Edit', [
             'company'      => $request->user()->company,
             'user'         => $request->user(),
-            'employee'     => $employeeUser,
+            'employee'     => [
+                'id'           => $employeeUser->id,
+                'username'     => $employeeUser->username,
+                'name'         => $employeeUser->name,
+                'email'        => $employeeUser->email,
+                'phone_number' => $employeeUser->phone_number,
+                'status'       => $employeeUser->status,
+                'created_at'   => $employeeUser->created_at,
+                'avatar'       => $employeeUser->profile_photo_path
+                    ? Storage::url($employeeUser->profile_photo_path)
+                    : null,
+                'roles' => $employeeUser->roles->map(fn ($role) => [
+                    'id'   => $role->id,
+                    'name' => $role->name,
+                ])->values(),
+                'company' => $employeeUser->company,
+            ],
             'roles'        => $this->getExternalRoles()->values(),
             // FIX: statuses on edit do not include 'pending' — only real operational states
             'statuses'     => ['active', 'inactive', 'suspended'],
@@ -167,7 +230,10 @@ class CompanyUserController extends Controller
 
     public function update(Request $request, User $employeeUser)
     {
+        Gate::authorize('external_users.update');
+
         $this->ensureCompanyUser($request, $employeeUser);
+        $this->ensureNotActingOnSelf($request, $employeeUser);
 
         $externalRoleNames = $this->getExternalRoles()->pluck('name')->toArray();
 
@@ -195,7 +261,10 @@ class CompanyUserController extends Controller
 
     public function toggleStatus(Request $request, User $employeeUser)
     {
+        Gate::authorize('external_users.toggleStatus');
+
         $this->ensureCompanyUser($request, $employeeUser);
+        $this->ensureNotActingOnSelf($request, $employeeUser);
 
         $nextStatus = match ($employeeUser->status) {
             'active'    => 'inactive',
@@ -214,7 +283,10 @@ class CompanyUserController extends Controller
 
     public function resetPassword(Request $request, User $employeeUser)
     {
+        Gate::authorize('external_users.resetPassword');
+
         $this->ensureCompanyUser($request, $employeeUser);
+        $this->ensureNotActingOnSelf($request, $employeeUser);
 
         $employeeUser->update([
             'password'             => 'pitx@123',
@@ -228,7 +300,14 @@ class CompanyUserController extends Controller
 
     public function destroy(Request $request, User $employeeUser)
     {
+        Gate::authorize('external_users.archive');
+
         $this->ensureCompanyUser($request, $employeeUser);
+        $this->ensureNotActingOnSelf($request, $employeeUser);
+
+        if ($employeeUser->profile_photo_path) {
+            Storage::disk('public')->delete($employeeUser->profile_photo_path);
+        }
 
         $employeeUser->delete();
 
@@ -255,6 +334,15 @@ class CompanyUserController extends Controller
             $user->hasAnyRole($externalRoleNames),
             403,
             'This user does not have an external role.'
+        );
+    }
+
+    private function ensureNotActingOnSelf(Request $request, User $user): void
+    {
+        abort_if(
+            $request->user()->id === $user->id,
+            403,
+            'You cannot perform this action on your own account in Employee module.'
         );
     }
 
