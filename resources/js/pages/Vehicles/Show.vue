@@ -323,17 +323,17 @@ function isExpired(expiresAt?: string | null) {
 
 function statusVariant(
     s?: string | null,
-): 'default' | 'secondary' | 'destructive' | 'outline' {
+): 'success' | 'warning' | 'destructive' | 'outline' {
     switch (s) {
         case 'verified':
         case 'active':
         case 'complete':
-            return 'default';
+            return 'success';
         case 'pending':
         case 'draft':
         case 'for_verification':
         case 'partial':
-            return 'secondary';
+            return 'warning';
         case 'invalid':
         case 'expired':
         case 'needs_revision':
