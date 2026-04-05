@@ -1867,8 +1867,8 @@ watch(confirmDepartOpen, (open) => {
                             class="text-xs text-rose-600"
                         >
                             {{ selectedVehicleRouteGateName }} is inactive.
-                            Please contact the terminal manager to activate
-                            this gate before dispatching this vehicle.
+                            Please contact the terminal manager to activate this
+                            gate before dispatching this vehicle.
                         </p>
                         <InputError :message="form.errors.gate_id" />
                     </div>
