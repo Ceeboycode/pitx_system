@@ -161,13 +161,48 @@ class CompanyRegistration extends Controller
 
     public function storeStep2(Request $request): RedirectResponse
     {
+        $request->merge([
+            'registration_number' => Str::upper(preg_replace('/\s+/', '', (string) $request->input('registration_number'))),
+        ]);
+
         $validated = $request->validate([
             'company_name' => ['required', 'string', 'max:255'],
             'company_email' => ['required', 'email', 'max:255'],
             'company_phone' => ['required', 'string', 'max:20'],
             'company_address' => ['required', 'string', 'max:500'],
             'business_type' => ['required', 'in:corporate,sole_proprietorship'],
-            'registration_number' => ['required', 'string', 'max:100'],
+            'registration_number' => [
+                'required',
+                'string',
+                'max:100',
+                'unique:companies,registration_number',
+                function (string $attribute, mixed $value, \Closure $fail) use ($request): void {
+                    $registrationNumber = trim((string) $value);
+                    $businessType = $request->input('business_type');
+
+                    if ($businessType === 'sole_proprietorship') {
+                        if (! preg_match('/^\d{7}$/', $registrationNumber)) {
+                            $fail('For sole proprietorship, enter the 7-digit DTI Registration Number.');
+                        }
+
+                        return;
+                    }
+
+                    if ($businessType === 'corporate') {
+                        if (! preg_match('/^[A-Z0-9-]+$/', $registrationNumber)) {
+                            $fail('For corporate entities, SEC Registration Number may contain letters, numbers, and hyphens only.');
+
+                            return;
+                        }
+
+                        $coreLength = strlen(str_replace('-', '', $registrationNumber));
+
+                        if ($coreLength < 9 || $coreLength > 12) {
+                            $fail('For corporate entities, SEC Registration Number is usually 9 to 12 characters (excluding hyphens).');
+                        }
+                    }
+                },
+            ],
             'authorized_representative_name' => ['required', 'string', 'max:255'],
             'authorized_representative_position' => ['required', 'string', 'max:255'],
             'authorized_representative_contact' => ['required', 'string', 'max:20'],
