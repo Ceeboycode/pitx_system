@@ -405,7 +405,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
 
                 <CardContent class="space-y-4">
                     <!-- Row 1: Search + Import/Export -->
-                    <div
+                    <!-- <div
                         class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
                     >
                         <div class="w-full max-w-sm">
@@ -437,7 +437,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                 Export
                             </Button>
                         </div>
-                    </div>
+                    </div> -->
 
                     <!-- Row 2: Filters + Sort -->
                     <div class="flex flex-wrap items-center gap-2">
