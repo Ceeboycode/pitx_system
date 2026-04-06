@@ -1970,11 +1970,11 @@ watch(confirmDepartOpen, (open) => {
                         >
                         <Button
                             type="submit"
+                            variant="blue"
                             :disabled="
                                 form.processing ||
                                 selectedVehicleRouteGateInactive
                             "
-                            class="bg-slate-800 text-white hover:bg-slate-900"
                         >
                             <Send class="mr-2 h-4 w-4" />
                             {{
@@ -2139,7 +2139,7 @@ watch(confirmDepartOpen, (open) => {
                         <Button
                             type="submit"
                             :disabled="departForm.processing"
-                            class="bg-slate-800 text-white hover:bg-slate-900"
+                            variant="blue"
                         >
                             {{
                                 departForm.processing
