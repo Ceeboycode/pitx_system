@@ -333,7 +333,7 @@ const requiredMark = '*';
                                 <Link :href="index().url">Cancel</Link>
                             </Button>
 
-                            <Button type="submit" :disabled="form.processing">
+                            <Button type="submit" variant="blue" :disabled="form.processing">
                                 {{ form.processing ? 'Creating...' : 'Create User' }}
                             </Button>
                         </div>
