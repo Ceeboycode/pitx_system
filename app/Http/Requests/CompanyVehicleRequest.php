@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -61,16 +62,30 @@ class CompanyVehicleRequest extends FormRequest
     {
         return [
             'vehicle_type' => ['required', 'string', 'max:100'],
-            'plate_number' => ['required', 'string', 'max:20', 'unique:vehicles,plate_number'],
-            'body_number' => ['required', 'string', 'max:50'],
+            'plate_number' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9][A-Z0-9\s-]*$/', 'unique:vehicles,plate_number'],
+            'body_number' => ['required', 'string', 'max:50', 'regex:/^[A-Za-z0-9-]+$/'],
             'capacity' => ['required', 'integer', 'min:1', 'max:200'],
             'color' => ['required', 'string', 'max:50'],
-            'engine_number' => ['required', 'string', 'max:100'],
-            'chassis_number' => ['required', 'string', 'max:100'],
+            'engine_number' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9-]+$/', 'unique:vehicles,engine_number'],
+            'chassis_number' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9-]+$/', 'unique:vehicles,chassis_number'],
             'make_model' => ['required', 'string', 'max:100'],
             'route_id' => [
                 'required',
-                Rule::exists('routes', 'id')->where(fn ($query) => $query->where('status', 'active')),
+                Rule::exists('routes', 'id')->where(function (Builder $query): void {
+                    $query
+                        ->where('status', 'active')
+                        ->where(function (Builder $gateQuery): void {
+                            $gateQuery
+                                ->whereNull('gate_id')
+                                ->orWhereExists(function (Builder $existsQuery): void {
+                                    $existsQuery
+                                        ->selectRaw('1')
+                                        ->from('gates')
+                                        ->whereColumn('gates.id', 'routes.gate_id')
+                                        ->where('gates.status', 'active');
+                                });
+                        });
+                }),
             ],
 
             'documents' => ['required', 'array', 'size:5'],
@@ -80,8 +95,8 @@ class CompanyVehicleRequest extends FormRequest
                 Rule::in(array_keys(self::DOC_TYPES)),
             ],
             'documents.*.file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
-            'documents.*.issued_at' => ['nullable', 'date'],
-            'documents.*.expires_at' => ['nullable', 'date'],
+            'documents.*.issued_at' => ['nullable', 'date', 'date_format:Y-m-d'],
+            'documents.*.expires_at' => ['nullable', 'date', 'date_format:Y-m-d'],
         ];
     }
 
@@ -93,10 +108,12 @@ class CompanyVehicleRequest extends FormRequest
 
             'plate_number.required' => 'Please enter the plate number.',
             'plate_number.max' => 'The plate number may not exceed 20 characters.',
+            'plate_number.regex' => 'Plate number may only contain letters, numbers, spaces, and hyphens.',
             'plate_number.unique' => 'This plate number is already registered.',
 
             'body_number.required' => 'Please enter the body number.',
             'body_number.max' => 'The body number may not exceed 50 characters.',
+            'body_number.regex' => 'Body number may only contain letters, numbers, and hyphens.',
 
             'capacity.required' => 'Please enter the seating capacity.',
             'capacity.integer' => 'The seating capacity must be a whole number.',
@@ -108,9 +125,13 @@ class CompanyVehicleRequest extends FormRequest
 
             'engine_number.required' => 'Please enter the engine number.',
             'engine_number.max' => 'The engine number may not exceed 100 characters.',
+            'engine_number.regex' => 'Engine number may only contain letters, numbers, and hyphens.',
+            'engine_number.unique' => 'This engine number is already registered.',
 
             'chassis_number.required' => 'Please enter the chassis number.',
             'chassis_number.max' => 'The chassis number may not exceed 100 characters.',
+            'chassis_number.regex' => 'Chassis number may only contain letters, numbers, and hyphens.',
+            'chassis_number.unique' => 'This chassis number is already registered.',
 
             'make_model.required' => 'Please enter the make and model.',
             'make_model.max' => 'The make and model may not exceed 100 characters.',
@@ -131,7 +152,9 @@ class CompanyVehicleRequest extends FormRequest
             'documents.*.file.max' => 'The document file must not exceed 5 MB.',
 
             'documents.*.issued_at.date' => 'The issue date must be a valid date.',
+            'documents.*.issued_at.date_format' => 'The issue date must use YYYY-MM-DD format.',
             'documents.*.expires_at.date' => 'The expiry date must be a valid date.',
+            'documents.*.expires_at.date_format' => 'The expiry date must use YYYY-MM-DD format.',
         ];
     }
 
@@ -178,10 +201,24 @@ class CompanyVehicleRequest extends FormRequest
                 }
 
                 try {
+                    if (Carbon::parse($issuedAt)->isFuture()) {
+                        $validator->errors()->add(
+                            "documents.$index.issued_at",
+                            'The issue date cannot be in the future.'
+                        );
+                    }
+
                     if (Carbon::parse($expiresAt)->lt(Carbon::parse($issuedAt))) {
                         $validator->errors()->add(
                             "documents.$index.expires_at",
                             'The expiry date must be on or after the issued date.'
+                        );
+                    }
+
+                    if (Carbon::parse($expiresAt)->lt(Carbon::today())) {
+                        $validator->errors()->add(
+                            "documents.$index.expires_at",
+                            'The expiry date must be today or later.'
                         );
                     }
                 } catch (\Throwable $e) {

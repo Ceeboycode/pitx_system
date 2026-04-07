@@ -444,9 +444,10 @@ class CompanyVehicleController extends Controller
         abort_unless($vehicle->company_id === $company->id, 404);
         abort_if($vehicle->status === 'suspended', 403, 'Suspended vehicles cannot be updated.');
 
-        DB::transaction(function () use ($request, $validated, $vehicle, $company, $user) {
+        $result = DB::transaction(function () use ($request, $validated, $vehicle, $company, $user) {
             $documentsByType = $vehicle->documents()->get()->keyBy('document_type');
             $resubmittedDocumentLabels = [];
+            $oldPathsToDelete = [];
 
             foreach ($validated['documents'] ?? [] as $index => $docMeta) {
                 $file = data_get($request->file('documents'), "{$index}.file");
@@ -465,7 +466,8 @@ class CompanyVehicleController extends Controller
                 }
 
                 $isExpiredByStatus = $existingDocument->status === 'expired';
-                $isExpiredByDate = $existingDocument->expires_at !== null && $existingDocument->expires_at->isPast();
+                $isExpiredByDate = $existingDocument->expires_at !== null
+                    && $existingDocument->expires_at->toDateString() < now()->toDateString();
 
                 if (! $isExpiredByStatus && ! $isExpiredByDate) {
                     throw ValidationException::withMessages([
@@ -494,8 +496,8 @@ class CompanyVehicleController extends Controller
                     'updated_by'     => $user->id,
                 ]);
 
-                if ($oldPath !== '' && $oldPath !== $newPath && $this->publicDisk()->exists($oldPath)) {
-                    $this->publicDisk()->delete($oldPath);
+                if ($oldPath !== '' && $oldPath !== $newPath) {
+                    $oldPathsToDelete[] = $oldPath;
                 }
 
                 $resubmittedDocumentLabels[] = self::DOC_TYPES[$documentType] ?? strtoupper((string) $documentType);
@@ -521,7 +523,17 @@ class CompanyVehicleController extends Controller
                 'remarks'        => 'Pending review: resubmitted expired documents - ' . collect($resubmittedDocumentLabels)->unique()->implode(', '),
                 'updated_by'     => $user->id,
             ]);
+
+            return [
+                'old_paths_to_delete' => array_values(array_unique($oldPathsToDelete)),
+            ];
         });
+
+        foreach ($result['old_paths_to_delete'] as $path) {
+            if ($this->publicDisk()->exists($path)) {
+                $this->publicDisk()->delete($path);
+            }
+        }
 
         $this->notificationService->notifyInternalUsers(
             new VehicleResubmittedNotification($vehicle->fresh(), $user),
@@ -653,8 +665,10 @@ class CompanyVehicleController extends Controller
     {
         $vehicle->loadMissing('documents');
 
-        $expiredDocuments = $vehicle->documents->filter(function (VehicleDocument $document): bool {
-            return $document->expires_at !== null && $document->expires_at->isPast();
+        $today = now()->toDateString();
+
+        $expiredDocuments = $vehicle->documents->filter(function (VehicleDocument $document) use ($today): bool {
+            return $document->expires_at !== null && $document->expires_at->toDateString() < $today;
         });
 
         if ($expiredDocuments->isEmpty()) {

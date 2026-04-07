@@ -19,16 +19,16 @@ class UpdateUserRequest extends FormRequest
         $userId = $this->route('user')?->id;
 
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', "regex:/^[A-Za-z][A-Za-z\s.'-]*$/"],
 
             'email' => [
                 'required',
-                'email',
+                'email:rfc,dns',
                 'max:255',
                 Rule::unique('users', 'email')->ignore($userId),
             ],
 
-            'phone_number' => ['nullable', 'string', 'max:20'],
+            'phone_number' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-()\s]{7,20}$/', Rule::unique('users', 'phone_number')->ignore($userId)],
 
             'role' => [
                 'required',
@@ -69,7 +69,21 @@ class UpdateUserRequest extends FormRequest
                         'The company field is required for external roles.'
                     );
                 }
+
+                if ($role->type === 'internal' && $this->filled('company_id')) {
+                    $validator->errors()->add(
+                        'company_id',
+                        'The company field is not allowed for internal roles.'
+                    );
+                }
             },
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'name.regex' => 'Name may only contain letters, spaces, apostrophes, periods, and hyphens.',
         ];
     }
 }

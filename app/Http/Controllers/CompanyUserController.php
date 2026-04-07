@@ -7,8 +7,10 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class CompanyUserController extends Controller
@@ -123,10 +125,19 @@ class CompanyUserController extends Controller
         $externalRoleNames = $this->getExternalRoles()->pluck('name')->toArray();
 
         $validated = $request->validate([
-            'name'         => ['required', 'string', 'max:255'],
-            'email'        => ['nullable', 'email', 'max:255', 'unique:users,email'],
-            'phone_number' => ['nullable', 'string', 'max:20'],
-            'role'         => ['required', 'string', 'in:' . implode(',', $externalRoleNames)],
+            'name'         => ['required', 'string', 'max:255', "regex:/^[A-Za-z][A-Za-z\s.'-]*$/"],
+            'email'        => ['required', 'email:rfc,dns', 'max:255', Rule::unique('users', 'email')],
+            'phone_number' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-()\s]{7,20}$/', Rule::unique('users', 'phone_number')],
+            'role'         => ['required', 'string', Rule::in($externalRoleNames)],
+        ], [
+            'name.regex' => 'Name may only contain letters, spaces, apostrophes, periods, and hyphens.',
+            'email.required' => 'Email is required.',
+            'email.email' => 'Please enter a valid email address (e.g., name@example.com).',
+            'email.unique' => 'This email is already in use.',
+            'phone_number.required' => 'Phone number is required.',
+            'phone_number.regex' => 'Phone number must be a valid number (digits, spaces, +, -, and parentheses only).',
+            'phone_number.unique' => 'This phone number is already in use.',
+            'role.in' => 'Please select a valid external role.',
         ]);
 
         $user = DB::transaction(function () use ($company, $validated) {
@@ -135,12 +146,12 @@ class CompanyUserController extends Controller
             $user = User::create([
                 'username'             => $username,
                 'name'                 => $validated['name'],
-                'email'                => $validated['email'] ?? null,
-                'phone_number'         => $validated['phone_number'] ?? null,
+                'email'                => $validated['email'],
+                'phone_number'         => $validated['phone_number'],
                 'company_id'           => $company->id,
                 // FIX: create as 'active', not 'pending'
                 'status'               => 'active',
-                'password'             => 'pitx@123',
+                'password'             => Hash::make('pitx@123'),
                 'must_change_password' => true,
             ]);
 
@@ -238,16 +249,25 @@ class CompanyUserController extends Controller
         $externalRoleNames = $this->getExternalRoles()->pluck('name')->toArray();
 
         $validated = $request->validate([
-            'name'         => ['required', 'string', 'max:255'],
-            'email'        => ['nullable', 'email', 'max:255', 'unique:users,email,' . $employeeUser->id],
-            'phone_number' => ['nullable', 'string', 'max:20'],
-            'role'         => ['required', 'string', 'in:' . implode(',', $externalRoleNames)],
+            'name'         => ['required', 'string', 'max:255', "regex:/^[A-Za-z][A-Za-z\s.'-]*$/"],
+            'email'        => ['required', 'email:rfc,dns', 'max:255', Rule::unique('users', 'email')->ignore($employeeUser->id)],
+            'phone_number' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-()\s]{7,20}$/', Rule::unique('users', 'phone_number')->ignore($employeeUser->id)],
+            'role'         => ['required', 'string', Rule::in($externalRoleNames)],
+        ], [
+            'name.regex' => 'Name may only contain letters, spaces, apostrophes, periods, and hyphens.',
+            'email.required' => 'Email is required.',
+            'email.email' => 'Please enter a valid email address (e.g., name@example.com).',
+            'email.unique' => 'This email is already in use.',
+            'phone_number.required' => 'Phone number is required.',
+            'phone_number.regex' => 'Phone number must be a valid number (digits, spaces, +, -, and parentheses only).',
+            'phone_number.unique' => 'This phone number is already in use.',
+            'role.in' => 'Please select a valid external role.',
         ]);
 
         $employeeUser->update([
             'name'         => $validated['name'],
-            'email'        => $validated['email'] ?? null,
-            'phone_number' => $validated['phone_number'] ?? null,
+            'email'        => $validated['email'],
+            'phone_number' => $validated['phone_number'],
         ]);
 
         $employeeUser->syncRoles([$validated['role']]);
@@ -289,7 +309,7 @@ class CompanyUserController extends Controller
         $this->ensureNotActingOnSelf($request, $employeeUser);
 
         $employeeUser->update([
-            'password'             => 'pitx@123',
+            'password'             => Hash::make('pitx@123'),
             'must_change_password' => true,
         ]);
 

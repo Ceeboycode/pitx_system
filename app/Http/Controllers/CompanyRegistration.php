@@ -58,8 +58,8 @@ class CompanyRegistration extends Controller
         ]);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'name' => ['required', 'string', 'max:255', "regex:/^[A-Za-z][A-Za-z\s.'-]*$/"],
+            'email' => ['required', 'string', 'max:255', 'email:rfc,dns', 'unique:users,email'],
             'phone' => [
                 'required',
                 'string',
@@ -70,7 +70,9 @@ class CompanyRegistration extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'password_confirmation' => ['required', 'string'],
         ], [
-            'email.unique' => 'This email address is already registered.',
+            'name.regex' => 'Name may only contain letters, spaces, apostrophes, periods, and hyphens.',
+            'email.email' => 'Please enter a valid email address (e.g., name@example.com).',
+            'email.unique' => 'This email address is already in use. Try signing in or use a different email.',
             'phone.regex' => 'Phone number must be a valid PH mobile number (09XXXXXXXXX or +639XXXXXXXXX).',
             'phone.unique' => 'This phone number is already registered.',
             'password.confirmed' => 'Password confirmation does not match.',
@@ -166,9 +168,9 @@ class CompanyRegistration extends Controller
         ]);
 
         $validated = $request->validate([
-            'company_name' => ['required', 'string', 'max:255'],
-            'company_email' => ['required', 'email', 'max:255'],
-            'company_phone' => ['required', 'string', 'max:20'],
+            'company_name' => ['required', 'string', 'max:255', "regex:/^[A-Za-z][A-Za-z\s.'-]*$/"],
+            'company_email' => ['required', 'string', 'max:255', 'email:rfc,dns', 'unique:companies,company_email'],
+            'company_phone' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-()\s]{7,20}$/', 'unique:companies,company_phone'],
             'company_address' => ['required', 'string', 'max:500'],
             'business_type' => ['required', 'in:corporate,sole_proprietorship'],
             'registration_number' => [
@@ -203,11 +205,19 @@ class CompanyRegistration extends Controller
                     }
                 },
             ],
-            'authorized_representative_name' => ['required', 'string', 'max:255'],
+            'authorized_representative_name' => ['required', 'string', 'max:255', "regex:/^[A-Za-z][A-Za-z\s.'-]*$/"],
             'authorized_representative_position' => ['required', 'string', 'max:255'],
-            'authorized_representative_contact' => ['required', 'string', 'max:20'],
+            'authorized_representative_contact' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-()\s]{7,20}$/', 'unique:companies,authorized_representative_contact'],
             'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ], [
+            'company_name.regex' => 'Company name may only contain letters, spaces, apostrophes, periods, and hyphens.',
+            'company_email.email' => 'Please enter a valid company email address (e.g., company@example.com).',
+            'company_email.unique' => 'This company email is already registered.',
+            'company_phone.regex' => 'Company phone must be a valid number (digits, spaces, +, -, and parentheses only).',
+            'company_phone.unique' => 'This company phone number is already registered.',
+            'authorized_representative_name.regex' => 'Authorized representative name may only contain letters, spaces, apostrophes, periods, and hyphens.',
+            'authorized_representative_contact.regex' => 'Authorized representative contact must be a valid number (digits, spaces, +, -, and parentheses only).',
+            'authorized_representative_contact.unique' => 'This authorized representative contact is already registered.',
             'business_type.in' => 'Business type must be Corporate or Sole Proprietorship.',
             'logo.image' => 'The logo must be an image file.',
             'logo.mimes' => 'Logo must be a JPG, PNG, or WebP file.',
@@ -337,23 +347,23 @@ class CompanyRegistration extends Controller
         $request->validate([
             'documents.MAYORS_PERMIT.file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'documents.MAYORS_PERMIT.issued_at' => ['required', 'date', 'before_or_equal:today'],
-            'documents.MAYORS_PERMIT.expires_at' => ['required', 'date', 'after:documents.MAYORS_PERMIT.issued_at'],
+            'documents.MAYORS_PERMIT.expires_at' => ['required', 'date', 'after:documents.MAYORS_PERMIT.issued_at', 'after_or_equal:today'],
 
             'documents.BIR_2303.file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'documents.BIR_2303.issued_at' => ['required', 'date', 'before_or_equal:today'],
-            'documents.BIR_2303.expires_at' => ['required', 'date', 'after:documents.BIR_2303.issued_at'],
+            'documents.BIR_2303.expires_at' => ['required', 'date', 'after:documents.BIR_2303.issued_at', 'after_or_equal:today'],
 
-            'documents.AUTHORIZATION_LETTER.file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'documents.AUTHORIZATION_LETTER.issued_at' => ['nullable', 'date', 'before_or_equal:today'],
-            'documents.AUTHORIZATION_LETTER.expires_at' => ['nullable', 'date', 'after:documents.AUTHORIZATION_LETTER.issued_at'],
+            'documents.AUTHORIZATION_LETTER.file' => ['nullable', 'required_with:documents.AUTHORIZATION_LETTER.issued_at,documents.AUTHORIZATION_LETTER.expires_at', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'documents.AUTHORIZATION_LETTER.issued_at' => ['nullable', 'required_with:documents.AUTHORIZATION_LETTER.file', 'date', 'before_or_equal:today'],
+            'documents.AUTHORIZATION_LETTER.expires_at' => ['nullable', 'required_with:documents.AUTHORIZATION_LETTER.file', 'date', 'after:documents.AUTHORIZATION_LETTER.issued_at', 'after_or_equal:today'],
 
-            'documents.SEC_CERT.file' => [$isCorporate ? 'required' : 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'documents.SEC_CERT.issued_at' => [$isCorporate ? 'required' : 'nullable', 'date', 'before_or_equal:today'],
-            'documents.SEC_CERT.expires_at' => [$isCorporate ? 'required' : 'nullable', 'date', 'after:documents.SEC_CERT.issued_at'],
+            'documents.SEC_CERT.file' => [$isCorporate ? 'required' : 'nullable', 'required_with:documents.SEC_CERT.issued_at,documents.SEC_CERT.expires_at', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'documents.SEC_CERT.issued_at' => [$isCorporate ? 'required' : 'nullable', 'required_with:documents.SEC_CERT.file', 'date', 'before_or_equal:today'],
+            'documents.SEC_CERT.expires_at' => [$isCorporate ? 'required' : 'nullable', 'required_with:documents.SEC_CERT.file', 'date', 'after:documents.SEC_CERT.issued_at', 'after_or_equal:today'],
 
-            'documents.DTI_CERT.file' => [! $isCorporate ? 'required' : 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-            'documents.DTI_CERT.issued_at' => [! $isCorporate ? 'required' : 'nullable', 'date', 'before_or_equal:today'],
-            'documents.DTI_CERT.expires_at' => [! $isCorporate ? 'required' : 'nullable', 'date', 'after:documents.DTI_CERT.issued_at'],
+            'documents.DTI_CERT.file' => [! $isCorporate ? 'required' : 'nullable', 'required_with:documents.DTI_CERT.issued_at,documents.DTI_CERT.expires_at', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'documents.DTI_CERT.issued_at' => [! $isCorporate ? 'required' : 'nullable', 'required_with:documents.DTI_CERT.file', 'date', 'before_or_equal:today'],
+            'documents.DTI_CERT.expires_at' => [! $isCorporate ? 'required' : 'nullable', 'required_with:documents.DTI_CERT.file', 'date', 'after:documents.DTI_CERT.issued_at', 'after_or_equal:today'],
         ], $this->documentMessages());
 
         $result = DB::transaction(function () use ($request, $step1, $step2) {
@@ -567,7 +577,7 @@ class CompanyRegistration extends Controller
 
             $rules["documents.$t.file"] = ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'];
             $rules["documents.$t.issued_at"] = ['required', 'date', 'before_or_equal:today'];
-            $rules["documents.$t.expires_at"] = ['required', 'date', "after:documents.$t.issued_at"];
+            $rules["documents.$t.expires_at"] = ['required', 'date', 'after_or_equal:today', "after:documents.$t.issued_at"];
         }
 
         $request->validate($rules, $this->documentMessages());
@@ -689,12 +699,17 @@ class CompanyRegistration extends Controller
         $messages = [];
         foreach ($labels as $key => $label) {
             $messages["documents.{$key}.file.required"] = "{$label} file is required.";
+            $messages["documents.{$key}.file.required_with"] = "{$label} file is required when issue or expiry date is provided.";
             $messages["documents.{$key}.file.mimes"] = "{$label} must be a PDF, JPG, or PNG.";
             $messages["documents.{$key}.file.max"] = "{$label} must not exceed 5 MB.";
             $messages["documents.{$key}.issued_at.required"] = "{$label}: issue date is required.";
+            $messages["documents.{$key}.issued_at.required_with"] = "{$label}: issue date is required when a file is uploaded.";
             $messages["documents.{$key}.issued_at.date"] = "{$label}: issue date must be a valid date.";
+            $messages["documents.{$key}.issued_at.before_or_equal"] = "{$label}: issue date cannot be in the future.";
             $messages["documents.{$key}.expires_at.required"] = "{$label}: expiry date is required.";
+            $messages["documents.{$key}.expires_at.required_with"] = "{$label}: expiry date is required when a file is uploaded.";
             $messages["documents.{$key}.expires_at.after"] = "{$label}: expiry date must be after the issue date.";
+            $messages["documents.{$key}.expires_at.after_or_equal"] = "{$label}: expiry date must be today or later.";
         }
 
         return $messages;
