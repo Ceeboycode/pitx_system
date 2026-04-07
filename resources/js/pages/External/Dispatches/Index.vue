@@ -38,6 +38,13 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardDescription,
+    CardTitle
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -71,6 +78,7 @@ import {
     CheckCircle2,
     Clock3,
     FileText,
+    Filter,
     Fingerprint,
     LogOut,
     MoreHorizontal,
@@ -914,24 +922,27 @@ watch(confirmDepartOpen, (open) => {
                 </div>
 
                 <!-- ── Table card ─────────────────────────────── -->
-                <div
-                    class="rounded-xl border border-slate-200 bg-white shadow-sm"
-                >
-                    <!-- Card toolbar -->
-                    <div
-                        class="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-start sm:justify-between"
-                    >
-                        <div>
-                            <h2 class="text-base font-semibold text-slate-800">
-                                Dispatch Records
-                            </h2>
-                            <p class="mt-0.5 text-xs text-slate-400">
-                                Arrival time is automatically recorded on
-                                dispatch creation.
-                            </p>
-                        </div>
-
-                        <div class="flex flex-wrap items-center gap-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle class="flex items-center gap-2">
+                            <!-- <p class="block overflow-hidden text-ellipsis">Dispatches</p> -->
+                            <!-- Dispatch Records -->
+                             Dispatches
+                            <div class="ml-2 flex w-full items-center">
+                                <hr class="h-px w-full border border-rose-500" />
+                                <div class="rounded-xs border-7 border-rose-500">
+                                    <div class="rounded-xs border-3 border-white"></div>
+                                </div>
+                            </div>
+                        </CardTitle>
+                        <CardDescription class="mt-1">
+                            Arrival time is automatically recorded on dispatch creation.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div
+                            class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
+                        >
                             <!-- Change Requests badge button -->
                             <Button
                                 v-if="
@@ -953,12 +964,13 @@ watch(confirmDepartOpen, (open) => {
                             </Button>
 
                             <!-- Search -->
-                            <div class="w-full sm:w-56">
+                            <div class="w-full sm:w-72">
                                 <SearchInput
                                     :route="DispatchController.index().url"
                                     :initial-value="props.filters?.search ?? ''"
                                     placeholder="Search plate, remarks…"
                                     :only="['dispatches', 'filters']"
+                                    class="rounded-lg shadow-sm"
                                 />
                             </div>
 
@@ -1099,7 +1111,7 @@ watch(confirmDepartOpen, (open) => {
                                 </PopoverContent>
                             </Popover>
                         </div>
-                    </div>
+                    </CardContent>
 
                     <!-- Active date chip -->
                     <div
@@ -1535,7 +1547,7 @@ watch(confirmDepartOpen, (open) => {
                             }"
                         />
                     </div>
-                </div>
+                </Card>
             </div>
         </div>
 

@@ -16,7 +16,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardHeader,
@@ -66,7 +65,6 @@ import {
     ArrowUp,
     ArrowUpDown,
     ChevronRight,
-    Download,
     Eye,
     Filter,
     MoreHorizontal,
@@ -74,7 +72,6 @@ import {
     Plus,
     Power,
     Route as RouteIcon,
-    Upload,
     X,
 } from 'lucide-vue-next';
 
@@ -270,56 +267,76 @@ function confirmToggle() {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-            <Card class="mx-5">
+            <Card>
                 <CardHeader>
-                    <div>
-                        <CardTitle class="flex items-center gap-2">
-                            <RouteIcon class="h-5 w-5 text-blue-700" />
-                            Routes
-                        </CardTitle>
-                        <CardDescription class="mt-1">
-                            Manage and view all available routes in the system.
-                        </CardDescription>
-                    </div>
-
-                    <CardAction class="flex items-center gap-2">
-                        <Button
-                            v-if="canViewTrash"
-                            as-child
-                            size="sm"
-                            variant="outline"
-                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
-                        >
-                            <Link :href="trash().url">
-                                <Archive class="mr-2 h-4 w-4" />
-                                View Archived
-                            </Link>
-                        </Button>
-
-                        <Button
-                            v-if="canCreate"
-                            as-child
-                            size="sm"
-                            class="rounded-lg border-0 bg-blue-700 text-white shadow-sm hover:bg-blue-800"
-                        >
-                            <Link :href="create().url">
-                                <Plus class="mr-2 h-4 w-4" />
-                                Create Route
-                            </Link>
-                        </Button>
-                    </CardAction>
+                    <CardTitle class="flex items-center gap-2">
+                        Routes
+                        <div class="ml-2 flex w-full items-center">
+                            <hr class="h-px w-full border border-rose-500" />
+                            <div class="rounded-xs border-7 border-rose-500">
+                                <div class="rounded-xs border-3 border-white"></div>
+                            </div>
+                        </div>
+                    </CardTitle>
+                    <CardDescription class="mt-1">
+                        Manage and view all available routes in the system.
+                    </CardDescription>
                 </CardHeader>
 
                 <CardContent class="space-y-4">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="w-full max-w-sm">
+                        <div class="w-50/100">
                             <SearchInput
                                 :route="index().url"
                                 :initial-value="props.filters.search"
                                 placeholder="Search routes…"
                                 :only="['routes', 'filters', 'flash']"
                                 :debounce="350"
+                                class="rounded-lg shadow-sm"
                             />
+                        </div>
+
+                        <div class="flex items-center gap-2 sm:justify-end">
+                            <DropdownMenu class="w-fit">
+                                <DropdownMenuTrigger as-child class="m-0">
+                                    <div class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm">
+                                        <Button
+                                            variant="ghost"
+                                            class="group/segment cursor-pointer gap-0 rounded-lg border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10"
+                                        >
+                                            <MoreHorizontal class="h-4 w-4 shrink-0" />
+                                            <span
+                                                class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-20 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-20 group-focus-visible/segment:opacity-100"
+                                            >
+                                                Actions
+                                            </span>
+                                        </Button>
+                                    </div>
+                                </DropdownMenuTrigger>
+
+                                <DropdownMenuContent align="end" class="w-fit rounded-lg shadow-lg">
+                                    <DropdownMenuItem
+                                        v-if="canCreate"
+                                        as-child
+                                        class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
+                                    >
+                                        <Link :href="create().url" class="flex items-center">
+                                            <Plus class="h-4 w-4" />
+                                            Create Route
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        v-if="canViewTrash"
+                                        as-child
+                                        class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
+                                    >
+                                        <Link :href="trash().url" class="flex items-center">
+                                            <Archive class="h-4 w-4" />
+                                            Archived
+                                        </Link>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                     </div>
 
