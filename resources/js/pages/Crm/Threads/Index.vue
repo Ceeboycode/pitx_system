@@ -143,6 +143,11 @@ const selectedAssigneeId = ref<string>('');
 const attachmentInput = ref<HTMLInputElement | null>(null);
 const messagePane = ref<HTMLElement | null>(null);
 
+const page = usePage();
+const currentUserId = computed(
+    () => ((page.props.auth as { user?: UserSummary | null } | undefined)?.user?.id ?? null),
+);
+
 const hasSelectedThread = computed(() => selectedThread.value !== null);
 const selectedThreadIsClosed = computed(
     () => selectedThread.value?.is_closed === true,
@@ -272,6 +277,9 @@ async function loadThread(threadId: number | string | null) {
         if (requestId !== activeRequest) return;
 
         selectedThread.value = data?.data ?? null;
+
+        // print('loaded thread', selectedThread.value);
+        
         upsertThreadSummary(selectedThread.value);
         selectedAssigneeId.value = selectedThread.value?.assigned_to?.id
             ? String(selectedThread.value.assigned_to.id)
@@ -817,25 +825,6 @@ watch(
                                     {{ actionError }}
                                 </p>
                             </div>
-
-                            <!-- <div class="flex items-center gap-2">
-                                <Button
-                                    v-if="selectedThread"
-                                    size="sm"
-                                    variant="outline"
-                                    @click="toggleThreadState"
-                                >
-                                    {{ selectedThread.is_closed ? 'Reopen' : 'Close' }} Report
-                                </Button>
-                                <Button
-                                    class="lg:hidden"
-                                    size="sm"
-                                    variant="outline"
-                                    @click="isThreadListOpen = true"
-                                >
-                                    Reports
-                                </Button>
-                            </div> -->
                         </div>
 
                         <div
@@ -856,55 +845,6 @@ watch(
                             v-else-if="selectedThread"
                             class="flex min-h-0 flex-1 flex-col"
                         >
-                            <!-- <div class="px-4 py-3">
-                                <div
-                                    class="grid gap-3 text-xs text-muted-foreground lg:grid-cols-[minmax(0,1fr)_18rem]"
-                                >
-                                    <div class="space-y-2">
-                                        <label
-                                            v-if="canAssignThreads"
-                                            class="flex flex-col gap-1"
-                                        >
-                                            <div class="flex gap-2">
-                                                <select
-                                                    v-model="selectedAssigneeId"
-                                                    class="h-9 flex-1 rounded-md border bg-background px-3 text-sm"
-                                                >
-                                                    <option value="">
-                                                        Unassigned
-                                                    </option>
-                                                    <option
-                                                        v-for="assignee in assignees"
-                                                        :key="assignee.id"
-                                                        :value="String(assignee.id)"
-                                                    >
-                                                        {{ assignee.name }}
-                                                    </option>
-                                                </select>
-                                                <Button
-                                                    size="sm"
-                                                    :disabled="isSavingAssignment"
-                                                    @click="saveAssignment"
-                                                >
-                                                    Assign
-                                                </Button>
-                                            </div>
-                                        </label>
-
-                                        <p v-else>
-                                            Assigned to:
-                                            {{ selectedThread.assigned_to?.name || 'Unassigned' }}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <p
-                                    v-if="actionError"
-                                    class="mt-3 text-sm text-destructive"
-                                >
-                                    {{ actionError }}
-                                </p>
-                            </div> -->
 
                             <div
                                 ref="messagePane"
@@ -918,16 +858,26 @@ watch(
                                     class="flex min-h-full flex-col justify-end space-y-3"
                                 >
                                     <div
-                                        v-for="message in selectedThread.messages"
+                                        v-for="(message, index) in selectedThread.messages"
                                         :key="message.id"
                                         :class="{
                                             'w-full flex': true,
-                                            'justify-end': message.sender?.id === selectedThread.created_by?.id,
+                                            'justify-end': message.sender?.id === currentUserId,
                                         }"
                                     >
-                                        <div class="group">
+                                        <!-- <div> {{ message.sender }} </div> -->
+                                        <!-- <div> {{  }} </div> -->
+
+                                        <div>
                                             <p
-                                                v-if="message.sender?.id != selectedThread.created_by?.id"
+                                                v-if="
+                                                    message.sender?.id !== currentUserId &&
+                                                    (
+                                                        index === 0 ||
+                                                        selectedThread.messages[index - 1]?.sender?.id !==
+                                                            message.sender?.id
+                                                    )
+                                                "
                                                 class="text-xs font-medium mb-1 px-3"
                                             >
                                                 {{
@@ -935,91 +885,91 @@ watch(
                                                     'Unknown sender'
                                                 }}
                                             </p>
-                                            <!-- TODO: paragraph element above shoudl not show if the  previous message's sender is the same as this message's sender-->
-                                            <div
-                                                :class="{
-                                                    'rounded-md border px-3 py-2 max-w-lg min-w-0 group': true,
-                                                    'border-blue-300 bg-blue-50/70': message.is_internal
-                                                }"
-                                            >   
-                                            <!-- TODO: when this div is hovered, this message should show the created_at_human data -->
-                                                <p class="whitespace-pre-wrap text-sm">
-                                                    {{ message.body || 'No content' }}
-                                                </p>
-                                                <p
+                                            <div class="group">
+                                                <div
+                                                    :class="{
+                                                        'rounded-md border px-3 py-2 max-w-lg min-w-0': true,
+                                                        'border-blue-300 bg-blue-50/70': message.is_internal
+                                                    }"
+                                                >
+                                                    <p class="whitespace-pre-wrap text-sm">
+                                                        {{ message.body || 'No content' }}
+                                                    </p>
+                                                <!-- <p
                                                     v-if="message.is_internal"
                                                     class="mt-2 text-[11px] font-medium text-blue-700"
                                                 >
                                                     Internal note
-                                                </p>
+                                                </p> -->
 
-                                                <div
-                                                    v-if="
-                                                        (message.attachments
-                                                            ?.length ?? 0) > 0
-                                                    "
-                                                    class="mt-2 space-y-3"
-                                                >
                                                     <div
-                                                        v-for="attachment in message.attachments"
-                                                        :key="attachment.id"
+                                                        v-if="
+                                                            (message.attachments
+                                                                ?.length ?? 0) > 0
+                                                        "
+                                                        class="mt-2 space-y-3"
                                                     >
-                                                        <img
-                                                            v-if="
-                                                                isImageAttachment(
-                                                                    attachment,
-                                                                ) &&
-                                                                attachment.preview_url
-                                                            "
-                                                            :src="
-                                                                attachment.preview_url
-                                                            "
-                                                            :alt="
-                                                                attachment.original_name
-                                                            "
-                                                            class="max-h-72 w-full rounded-md border object-cover"
-                                                        />
-
-                                                        <video
-                                                            v-else-if="
-                                                                isVideoAttachment(
-                                                                    attachment,
-                                                                ) &&
-                                                                attachment.preview_url
-                                                            "
-                                                            :src="
-                                                                attachment.preview_url
-                                                            "
-                                                            controls
-                                                            preload="metadata"
-                                                            class="max-h-72 w-full rounded-md border bg-black"
-                                                        />
-
-                                                        <a
-                                                            :href="
-                                                                attachment.download_url
-                                                            "
-                                                            class="my-2 inline-flex items-center rounded-md border px-2 py-1 text-xs text-primary hover:bg-muted"
+                                                        <div
+                                                            v-for="attachment in message.attachments"
+                                                            :key="attachment.id"
                                                         >
-                                                            {{
-                                                                attachment.original_name
-                                                            }}
-                                                        </a>
+                                                            <img
+                                                                v-if="
+                                                                    isImageAttachment(
+                                                                        attachment,
+                                                                    ) &&
+                                                                    attachment.preview_url
+                                                                "
+                                                                :src="
+                                                                    attachment.preview_url
+                                                                "
+                                                                :alt="
+                                                                    attachment.original_name
+                                                                "
+                                                                class="max-h-72 w-full rounded-md border object-cover"
+                                                            />
+
+                                                            <video
+                                                                v-else-if="
+                                                                    isVideoAttachment(
+                                                                        attachment,
+                                                                    ) &&
+                                                                    attachment.preview_url
+                                                                "
+                                                                :src="
+                                                                    attachment.preview_url
+                                                                "
+                                                                controls
+                                                                preload="metadata"
+                                                                class="max-h-72 w-full rounded-md border bg-black"
+                                                            />
+
+                                                            <a
+                                                                :href="
+                                                                    attachment.download_url
+                                                                "
+                                                                class="my-2 inline-flex items-center rounded-md border px-2 py-1 text-xs text-primary hover:bg-muted"
+                                                            >
+                                                                {{
+                                                                    attachment.original_name
+                                                                }}
+                                                            </a>
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                <p
+                                                    :class="{
+                                                        'text-[11px] text-muted-foreground px-3 max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out group-hover:max-h-6 group-hover:opacity-100': true,
+                                                        'text-end': message.sender?.id === currentUserId,
+                                                    }"
+                                                >
+                                                    {{
+                                                        message.created_at_human ||
+                                                        message.created_at ||
+                                                        ''
+                                                    }}
+                                                </p>
                                             </div>
-                                            <p
-                                                :class="{
-                                                    'text-[11px] text-muted-foreground px-3 hidden group-hover:block transition-all': true,
-                                                    'text-end': message.sender?.id === selectedThread.created_by?.id,
-                                                }"
-                                            >
-                                                {{
-                                                    message.created_at_human ||
-                                                    message.created_at ||
-                                                    ''
-                                                }}
-                                            </p>
                                         </div>
                                     </div>
                                 </div>

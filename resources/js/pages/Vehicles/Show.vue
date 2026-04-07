@@ -328,12 +328,12 @@ function statusVariant(
         case 'verified':
         case 'active':
         case 'complete':
-            return 'success';
+            return 'default'
         case 'pending':
         case 'draft':
         case 'for_verification':
         case 'partial':
-            return 'warning';
+            return 'secondary'
         case 'invalid':
         case 'expired':
         case 'needs_revision':

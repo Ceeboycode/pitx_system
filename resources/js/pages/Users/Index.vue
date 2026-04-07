@@ -26,11 +26,17 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
+
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -171,6 +177,12 @@ const hasActiveFilters = computed(
         sortBy.value !== null,
 );
 
+const hasCategoryFilters = computed(
+    () =>
+        (typeFilter.value && typeFilter.value !== 'all') ||
+        (statusFilter.value && statusFilter.value !== 'all'),
+);
+
 function applyFilters(
     overrides: Record<string, string | null | undefined> = {},
 ) {
@@ -189,7 +201,7 @@ function applyFilters(
             preserveScroll: true,
             preserveState: true,
             replace: true,
-            only: ['users', 'filters', 'statuses', 'flash'],
+            only: ['users', 'filters', 'flash'],
         },
     );
 }
@@ -203,6 +215,7 @@ function onStatusChange(val: string) {
     statusFilter.value = val;
     applyFilters();
 }
+
 
 function toggleSort(field: SortField) {
     if (sortBy.value === field) {
@@ -339,6 +352,7 @@ function handleResetPassword(user: User) {
         },
     );
 }
+
 </script>
 
 <template>
@@ -347,57 +361,25 @@ function handleResetPassword(user: User) {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 p-4">
             <Card>
-                <CardHeader
-                    class="flex flex-col gap-4 pb-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                    <div class="flex items-center gap-2">
-                        <div>
-                            <CardTitle class="flex items-center gap-2">
-                                <Users class="h-5 w-5 text-blue-700" />
-                                User List
-                            </CardTitle>
-                            <CardDescription
-                                >Manage users, assign roles, and control
-                                access.</CardDescription
-                            >
+                <CardHeader>
+                    <CardTitle class="flex items-center gap-2">
+                        Users
+                        <div class="ml-2 flex items-center w-full">
+                            <hr class="h-px w-full border border-rose-600 " />
+                            <div class="border-7 border-rose-600 rounded-xs">
+                                <div class="border-3 border-white rounded-xs"></div>
+                            </div>
                         </div>
-                    </div>
-
-                    <CardAction class="flex gap-2">
-                        <Button size="sm" variant="outline" as-child>
-                            <Link
-                                :href="trash().url"
-                                class="flex items-center gap-1.5"
-                            >
-                                <Archive class="h-4 w-4" />
-                                View Archived
-                            </Link>
-                        </Button>
-
-                        <Button
-                            v-if="canCreate"
-                            size="sm"
-                            variant="blue"
-                            as-child
-                        >
-                            <Link
-                                :href="create().url"
-                                class="flex items-center gap-1.5"
-                            >
-                                <Plus class="h-4 w-4" />
-                                New User
-                            </Link>
-                        </Button>
-                    </CardAction>
+                    </CardTitle>
+                    <CardDescription class="mt-1">
+                        Manage users, assign roles, and control access.
+                    </CardDescription>
                 </CardHeader>
-
-                <Separator />
-
-                <CardContent class="space-y-4 pt-4">
+                <CardContent class="space-y-4">
                     <div
                         class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
                     >
-                        <div class="w-full max-w-sm">
+                        <div class="w-50/100">
                             <SearchInput
                                 :route="`${index().url}?type=${typeFilter !== 'all' ? typeFilter : ''}&status=${statusFilter !== 'all' ? statusFilter : ''}&sort_by=${sortBy ?? ''}&sort_dir=${sortBy ? sortDir : ''}`"
                                 :initial-value="props.filters.search"
@@ -409,146 +391,110 @@ function handleResetPassword(user: User) {
                                     'flash',
                                 ]"
                                 :debounce="350"
+                                class="shadow-sm rounded-lg "
                             />
                         </div>
-                    </div>
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-50/100">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <Popover>
+                                    <PopoverTrigger as-child class="cursor-pointer h-full w-fit rounded-lg border-slate-200 shadow-sm">
+                                        <Button
+                                            variant="outline"
+                                            class="rounded-lg border-slate-200 px-3 text-slate-600 shadow-sm hover:bg-slate-100"
+                                        >
+                                            <Filter class="h-3.5 w-3.5" />
+                                            {{
+                                                hasCategoryFilters
+                                                    ? 'Filters Active'
+                                                    : 'Filters'
+                                            }}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                        align="start"
+                                        class="w-80 rounded-lg border-slate-200 p-4 shadow-lg"
+                                    >
+                                        <div class="grid gap-y-4">
+                                            <div class="space-y-2">
+                                                <p
+                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                                >
+                                                    Type
+                                                </p>
+                                                <Select
+                                                    :model-value="typeFilter"
+                                                    @update:model-value="onTypeChange"
+                                                >
+                                                    <SelectTrigger
+                                                        class="cursor-pointer h-8 w-full rounded-lg border-slate-200 shadow-sm"
+                                                    >
+                                                        <SelectValue
+                                                            placeholder="All Types"
+                                                            class="flex justify-start"
+                                                        />
+                                                    </SelectTrigger>
+                                                    <SelectContent class="rounded-lg shadow-lg">
+                                                        <SelectItem value="all" class="cursor-pointer text-sm">
+                                                            All Types
+                                                        </SelectItem>
+                                                        <SelectItem value="active" class="cursor-pointer text-sm">
+                                                            Internal
+                                                        </SelectItem>
+                                                        <SelectItem value="suspended" class="cursor-pointer text-sm">
+                                                            External
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
 
-                    <!-- Row 2: Filters + Sort -->
-                    <div class="flex flex-wrap items-center gap-2">
-                        <div
-                            class="flex items-center gap-1.5 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-                        >
-                            <Filter class="h-3.5 w-3.5" />
-                            Filter
-                        </div>
-
-                        <Select
-                            :model-value="typeFilter"
-                            @update:model-value="onTypeChange"
-                        >
-                            <SelectTrigger
-                                class="h-8 w-36 rounded-lg border-slate-200 text-xs"
-                            >
-                                <SelectValue placeholder="All Types" />
-                            </SelectTrigger>
-                            <SelectContent class="rounded-xl">
-                                <SelectItem value="all" class="text-xs"
-                                    >All Types</SelectItem
-                                >
-                                <SelectItem value="internal" class="text-xs"
-                                    >Internal</SelectItem
-                                >
-                                <SelectItem value="external" class="text-xs"
-                                    >External</SelectItem
-                                >
-                            </SelectContent>
-                        </Select>
-
-                        <Select
-                            :model-value="statusFilter"
-                            @update:model-value="onStatusChange"
-                        >
-                            <SelectTrigger
-                                class="h-8 w-36 rounded-lg border-slate-200 text-xs"
-                            >
-                                <SelectValue placeholder="All Statuses" />
-                            </SelectTrigger>
-                            <SelectContent class="rounded-xl">
-                                <SelectItem value="all" class="text-xs"
-                                    >All Statuses</SelectItem
-                                >
-                                <SelectItem value="active" class="text-xs"
-                                    >Active</SelectItem
-                                >
-                                <SelectItem value="inactive" class="text-xs"
-                                    >Inactive</SelectItem
-                                >
-                            </SelectContent>
-                        </Select>
-
-                        <div
-                            class="ml-2 flex items-center gap-1.5 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-                        >
-                            <ArrowUpDown class="h-3.5 w-3.5" />
-                            Sort
-                        </div>
-
-                        <Select
-                            :model-value="sortBy ?? 'none'"
-                            @update:model-value="
-                                (val) => {
-                                    sortBy =
-                                        val === 'none'
-                                            ? null
-                                            : (val as SortField);
-                                    applyFilters();
-                                }
-                            "
-                        >
-                            <SelectTrigger
-                                class="h-8 w-36 rounded-lg border-slate-200 text-xs"
-                            >
-                                <SelectValue placeholder="Sort by…" />
-                            </SelectTrigger>
-                            <SelectContent class="rounded-xl">
-                                <SelectItem value="none" class="text-xs"
-                                    >No Sort</SelectItem
-                                >
-                                <SelectItem value="username" class="text-xs"
-                                    >Username</SelectItem
-                                >
-                                <SelectItem value="name" class="text-xs"
-                                    >Name</SelectItem
-                                >
-                                <SelectItem value="email" class="text-xs"
-                                    >Email</SelectItem
-                                >
-                                <SelectItem value="status" class="text-xs"
-                                    >Status</SelectItem
-                                >
-                            </SelectContent>
-                        </Select>
-
-                        <Button
-                            v-if="sortBy"
-                            size="sm"
-                            variant="outline"
-                            class="h-8 rounded-lg border-slate-200 px-3 text-xs text-slate-600 hover:bg-slate-100"
-                            @click="
-                                sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-                                applyFilters();
-                            "
-                        >
-                            <ArrowUp
-                                v-if="sortDir === 'asc'"
-                                class="mr-1.5 h-3.5 w-3.5 text-blue-600"
-                            />
-                            <ArrowDown
-                                v-else
-                                class="mr-1.5 h-3.5 w-3.5 text-blue-600"
-                            />
-                            {{ sortDir === 'asc' ? 'Ascending' : 'Descending' }}
-                        </Button>
-
-                        <div
-                            v-if="hasActiveFilters"
-                            class="ml-auto flex items-center gap-2"
-                        >
-                            <Badge
-                                class="gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-50"
-                            >
-                                <Filter class="h-3 w-3" />
-                                Filters active
-                            </Badge>
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                class="h-7 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
-                                @click="clearFilters"
-                            >
-                                <X class="mr-1 h-3.5 w-3.5" />
-                                Clear
-                            </Button>
+                                            <div class="space-y-2">
+                                                <p
+                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                                >
+                                                    Status
+                                                </p>
+                                                <Select
+                                                    :model-value="statusFilter"
+                                                    @update:model-value="onStatusChange"
+                                                >
+                                                    <SelectTrigger
+                                                        class="cursor-pointer h-8 w-full rounded-lg border-slate-200 shadow-sm"
+                                                    >
+                                                        <SelectValue
+                                                            placeholder="All Statuses"
+                                                            class="flex justify-start"
+                                                        />
+                                                    </SelectTrigger>
+                                                    <SelectContent class="rounded-lg shadow-lg">
+                                                        <SelectItem value="bus" class="cursor-pointer text-sm">
+                                                            All Statuses
+                                                        </SelectItem>
+                                                        <SelectItem value="all" class="cursor-pointer text-sm">
+                                                            Active
+                                                        </SelectItem>
+                                                        <SelectItem value="bus" class="cursor-pointer text-sm">
+                                                            Inactive
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div class="flex justify-end">
+                                                <Button
+                                                    v-if="hasCategoryFilters"
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    class="h-8 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
+                                                    @click="clearFilters"
+                                                >
+                                                    <X class="mr-1 h-3.5 w-3.5" />
+                                                    Clear filters
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                            
                         </div>
                     </div>
 

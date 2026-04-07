@@ -16,7 +16,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardHeader,
@@ -61,6 +60,7 @@ import {
     Bus,
     ChevronRight,
     Download,
+    Ellipsis,
     FileSearch,
     FileText,
     Filter,
@@ -145,13 +145,12 @@ const hasActiveFilters = computed(
         sortBy.value !== null,
 );
 
-const resultsLabel = computed(() => {
-    const from = props.vehicles.from ?? 0;
-    const to = props.vehicles.to ?? props.vehicles.data.length;
-    const total = props.vehicles.total ?? props.vehicles.data.length;
-    if (!total) return 'No results';
-    return `${from}-${to} of ${total} vehicles`;
-});
+const hasCategoryFilters = computed(
+    () =>
+        (statusFilter.value && statusFilter.value !== 'all') ||
+        (vehicleTypeFilter.value && vehicleTypeFilter.value !== 'all') ||
+        (routeFilter.value && routeFilter.value !== 'all'),
+);
 
 function applyFilters(
     overrides: Record<string, string | null | undefined> = {},
@@ -370,262 +369,269 @@ const archiveVehicle = (vehicle: VehicleItem) => {
         <div
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
-            <Card class="mx-5">
+            <Card>
                 <CardHeader>
-                    <div>
-                        <CardTitle class="flex items-center gap-2">
-                            <Bus class="h-5 w-5 text-blue-700" />
-                            Vehicles
-                        </CardTitle>
-                        <CardDescription class="mt-1">
-                            List of all vehicles in the system.
-                        </CardDescription>
-                    </div>
-
-                    <CardAction class="flex items-center gap-2">
-                        <Badge
-                            variant="outline"
-                            class="rounded-lg border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600"
-                        >
-                            {{ resultsLabel }}
-                        </Badge>
-                        <Button
-                            as-child
-                            size="sm"
-                            variant="outline"
-                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
-                        >
-                            <Link :href="trash().url">
-                                <Archive class="mr-2 h-4 w-4" />
-                                View Archived
-                            </Link>
-                        </Button>
-                    </CardAction>
+                    <CardTitle class="flex items-center gap-2">
+                        Vehicles
+                        <div class="ml-2 flex w-full items-center">
+                            <hr
+                                class="h-px w-full border border-rose-500"
+                            />
+                            <div
+                                class="rounded-xs border-7 border-rose-500"
+                            >
+                                <div
+                                    class="rounded-xs border-3 border-white"
+                                ></div>
+                            </div>
+                        </div>
+                    </CardTitle>
+                    <CardDescription class="mt-1">
+                        List of all vehicles in the system.
+                    </CardDescription>
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-                    <!-- Row 1: Search + Import/Export -->
-                    <!-- <div
+                    <div
                         class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
                     >
-                        <div class="w-full max-w-sm">
+                        <div class="w-50/100">
                             <SearchInput
                                 :route="index().url"
                                 :initial-value="filters.search"
                                 placeholder="Search vehicles…"
                                 :only="['vehicles', 'filters', 'flash']"
                                 :debounce="350"
+                                class="rounded-lg shadow-sm"
                             />
                         </div>
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-50/100">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <Popover>
+                                    <PopoverTrigger as-child class="cursor-pointer h-full w-fit rounded-lg border-slate-200 shadow-sm">
+                                        <Button
+                                            variant="outline"
+                                            class="rounded-lg border-slate-200 px-3 text-slate-600 shadow-sm hover:bg-slate-100"
+                                        >
+                                            <Filter class="h-3.5 w-3.5" />
+                                            {{
+                                                hasCategoryFilters
+                                                    ? 'Filters Active'
+                                                    : 'Filters'
+                                            }}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                        align="start"
+                                        class="w-80 rounded-lg border-slate-200 p-4 shadow-lg"
+                                    >
+                                        <div class="grid gap-y-4">
+                                            <div class="space-y-2">
+                                                <p
+                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                                >
+                                                    Status
+                                                </p>
+                                                <Select
+                                                    :model-value="statusFilter"
+                                                    @update:model-value="onStatusChange"
+                                                >
+                                                    <SelectTrigger
+                                                        class="cursor-pointer h-8 w-full rounded-lg border-slate-200 shadow-sm"
+                                                    >
+                                                        <SelectValue
+                                                            placeholder="All Statuses"
+                                                            class="flex justify-start"
+                                                        />
+                                                    </SelectTrigger>
+                                                    <SelectContent class="rounded-lg shadow-lg">
+                                                        <SelectItem value="all" class="cursor-pointer text-sm">
+                                                            All Statuses
+                                                        </SelectItem>
+                                                        <SelectItem value="active" class="cursor-pointer text-sm">
+                                                            Active
+                                                        </SelectItem>
+                                                        <SelectItem value="suspended" class="cursor-pointer text-sm">
+                                                            Suspended
+                                                        </SelectItem>
+                                                        <SelectItem value="for_verification" class="cursor-pointer text-sm">
+                                                            For Verification
+                                                        </SelectItem>
+                                                        <SelectItem value="pending" class="cursor-pointer text-sm">
+                                                            Pending
+                                                        </SelectItem>
+                                                        <SelectItem value="needs_revision" class="cursor-pointer text-sm">
+                                                            Needs Revision
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
 
-                        <div class="flex gap-2 sm:justify-end">
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
+                                            <div class="space-y-2">
+                                                <p
+                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                                >
+                                                    Vehicle Type
+                                                </p>
+                                                <Select
+                                                    :model-value="vehicleTypeFilter"
+                                                    @update:model-value="onVehicleTypeChange"
+                                                >
+                                                    <SelectTrigger
+                                                        class="cursor-pointer h-8 w-full rounded-lg border-slate-200 shadow-sm"
+                                                    >
+                                                        <SelectValue
+                                                            placeholder="All Types"
+                                                            class="flex justify-start"
+                                                        />
+                                                    </SelectTrigger>
+                                                    <SelectContent class="rounded-lg shadow-lg">
+                                                        <SelectItem value="all" class="cursor-pointer text-sm">
+                                                            All Types
+                                                        </SelectItem>
+                                                        <SelectItem value="bus" class="cursor-pointer text-sm">
+                                                            Bus
+                                                        </SelectItem>
+                                                        <SelectItem value="minibus" class="cursor-pointer text-sm">
+                                                            Minibus
+                                                        </SelectItem>
+                                                        <SelectItem value="jeepney" class="cursor-pointer text-sm">
+                                                            Jeepney
+                                                        </SelectItem>
+                                                        <SelectItem value="van" class="cursor-pointer text-sm">
+                                                            Van
+                                                        </SelectItem>
+                                                        <SelectItem value="uv_express" class="cursor-pointer text-sm">
+                                                            UV Express
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div class="space-y-2">
+                                                <p
+                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                                >
+                                                    Route
+                                                </p>
+                                                <Select
+                                                    :model-value="routeFilter"
+                                                    @update:model-value="onRouteChange"
+                                                >
+                                                    <SelectTrigger
+                                                        class="cursor-pointer h-8 w-full rounded-lg border-slate-200 shadow-sm"
+                                                    >
+                                                        <SelectValue
+                                                            placeholder="All Routes"
+                                                            class="flex justify-start"
+                                                        />
+                                                    </SelectTrigger>
+                                                    <SelectContent class="rounded-lg shadow-lg">
+                                                        <SelectItem value="all" class="cursor-pointer text-sm">
+                                                            All Routes
+                                                        </SelectItem>
+                                                        <SelectItem
+                                                            v-for="route in props.routes"
+                                                            :key="route.id"
+                                                            :value="String(route.id)"
+                                                            class="cursor-pointer text-sm"
+                                                        >
+                                                            {{ route.route_name }}
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div class="flex justify-end">
+                                                <Button
+                                                    v-if="hasCategoryFilters"
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    class="h-8 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
+                                                    @click="clearFilters"
+                                                >
+                                                    <X class="mr-1 h-3.5 w-3.5" />
+                                                    Clear filters
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                            <div
+                                class="flex min-w-50/100 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end"
                             >
-                                <Upload class="mr-2 h-4 w-4" />
-                                Import
-                            </Button>
+                                <div
+                                    class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm"
+                                >
+                                    <Button
+                                        variant="ghost"
+                                        class="group/segment cursor-pointer gap-0 rounded-l-lg rounded-r-none border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10"
+                                    >
+                                        <Upload class="h-4 w-4 shrink-0" />
+                                        <span
+                                            class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-20 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-20 group-focus-visible/segment:opacity-100"
+                                        >
+                                            Import
+                                        </span>
+                                    </Button>
+                                    <div
+                                        aria-hidden="true"
+                                        class="w-px shrink-0 self-stretch bg-slate-200"
+                                    />
+                                    <Button
+                                        variant="ghost"
+                                        class="group/segment cursor-pointer gap-0 rounded-l-none rounded-r-lg px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10"
+                                    >
+                                        <Download class="h-4 w-4 shrink-0" />
+                                        <span
+                                            class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-24 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-24 group-focus-visible/segment:opacity-100"
+                                        >
+                                            Export
+                                        </span>
+                                    </Button>
+                                </div>
 
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
-                            >
-                                <Download class="mr-2 h-4 w-4" />
-                                Export
-                            </Button>
-                        </div>
-                    </div> -->
+                                <DropdownMenu class="w-fit">
+                                    <DropdownMenuTrigger as-child class="m-0">
+                                        <div
+                                            class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm"
+                                        >
+                                            <Button
+                                                variant="ghost"
+                                                class="group/segment cursor-pointer gap-0 rounded-lg border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10"
+                                            >
+                                                <Ellipsis
+                                                    class="h-4 w-4 shrink-0"
+                                                />
+                                                <span
+                                                    class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-20 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-20 group-focus-visible/segment:opacity-100"
+                                                >
+                                                    Actions
+                                                </span>
+                                            </Button>
+                                        </div>
+                                    </DropdownMenuTrigger>
 
-                    <!-- Row 2: Filters + Sort -->
-                    <div class="flex flex-wrap items-center gap-2">
-                        <!-- Filter label -->
-                        <div
-                            class="flex items-center gap-1.5 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-                        >
-                            <Filter class="h-3.5 w-3.5" />
-                            Filter
-                        </div>
-
-                        <!-- Status filter -->
-                        <Select
-                            :model-value="statusFilter"
-                            @update:model-value="onStatusChange"
-                        >
-                            <SelectTrigger
-                                class="h-8 w-40 rounded-lg border-slate-200 text-xs"
-                            >
-                                <SelectValue placeholder="All Statuses" />
-                            </SelectTrigger>
-                            <SelectContent class="rounded-xl">
-                                <SelectItem value="all" class="text-xs"
-                                    >All Statuses</SelectItem
-                                >
-                                <SelectItem value="active" class="text-xs"
-                                    >Active</SelectItem
-                                >
-                                <SelectItem value="suspended" class="text-xs"
-                                    >Suspended</SelectItem
-                                >
-                                <SelectItem
-                                    value="for_verification"
-                                    class="text-xs"
-                                    >For Verification</SelectItem
-                                >
-                                <SelectItem value="pending" class="text-xs"
-                                    >Pending</SelectItem
-                                >
-                                <SelectItem
-                                    value="needs_revision"
-                                    class="text-xs"
-                                    >Needs Revision</SelectItem
-                                >
-                            </SelectContent>
-                        </Select>
-
-                        <!-- Vehicle Type filter -->
-                        <Select
-                            :model-value="vehicleTypeFilter"
-                            @update:model-value="onVehicleTypeChange"
-                        >
-                            <SelectTrigger
-                                class="h-8 w-40 rounded-lg border-slate-200 text-xs"
-                            >
-                                <SelectValue placeholder="All Types" />
-                            </SelectTrigger>
-                            <SelectContent class="rounded-xl">
-                                <SelectItem value="all" class="text-xs"
-                                    >All Types</SelectItem
-                                >
-                                <SelectItem value="bus" class="text-xs"
-                                    >Bus</SelectItem
-                                >
-                                <SelectItem value="minibus" class="text-xs"
-                                    >Minibus</SelectItem
-                                >
-                                <SelectItem value="jeepney" class="text-xs"
-                                    >Jeepney</SelectItem
-                                >
-                                <SelectItem value="van" class="text-xs"
-                                    >Van</SelectItem
-                                >
-                                <SelectItem value="uv_express" class="text-xs"
-                                    >UV Express</SelectItem
-                                >
-                            </SelectContent>
-                        </Select>
-
-                        <!-- Route filter -->
-                        <Select
-                            :model-value="routeFilter"
-                            @update:model-value="onRouteChange"
-                        >
-                            <SelectTrigger
-                                class="h-8 w-44 rounded-lg border-slate-200 text-xs"
-                            >
-                                <SelectValue placeholder="All Routes" />
-                            </SelectTrigger>
-                            <SelectContent class="rounded-xl">
-                                <SelectItem value="all" class="text-xs"
-                                    >All Routes</SelectItem
-                                >
-                                <SelectItem
-                                    v-for="route in props.routes"
-                                    :key="route.id"
-                                    :value="String(route.id)"
-                                    class="text-xs"
-                                >
-                                    {{ route.route_name }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-
-                        <!-- Sort label -->
-                        <div
-                            class="ml-2 flex items-center gap-1.5 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-                        >
-                            <ArrowUpDown class="h-3.5 w-3.5" />
-                            Sort
-                        </div>
-
-                        <!-- Sort by -->
-                        <Select
-                            :model-value="sortBy ?? 'none'"
-                            @update:model-value="
-                                (val) => {
-                                    sortBy =
-                                        val === 'none'
-                                            ? null
-                                            : (val as SortField);
-                                    applyFilters();
-                                }
-                            "
-                        >
-                            <SelectTrigger
-                                class="h-8 w-40 rounded-lg border-slate-200 text-xs"
-                            >
-                                <SelectValue placeholder="Sort by…" />
-                            </SelectTrigger>
-                            <SelectContent class="rounded-xl">
-                                <SelectItem value="none" class="text-xs"
-                                    >No Sort</SelectItem
-                                >
-                                <SelectItem value="status" class="text-xs"
-                                    >Status</SelectItem
-                                >
-                                <SelectItem value="capacity" class="text-xs"
-                                    >Capacity</SelectItem
-                                >
-                                <SelectItem value="created_at" class="text-xs"
-                                    >Created Date</SelectItem
-                                >
-                            </SelectContent>
-                        </Select>
-
-                        <!-- Sort direction toggle -->
-                        <Button
-                            v-if="sortBy"
-                            size="sm"
-                            variant="outline"
-                            class="h-8 rounded-lg border-slate-200 px-3 text-xs text-slate-600 hover:bg-slate-100"
-                            @click="
-                                sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-                                applyFilters();
-                            "
-                        >
-                            <ArrowUp
-                                v-if="sortDir === 'asc'"
-                                class="mr-1.5 h-3.5 w-3.5 text-blue-600"
-                            />
-                            <ArrowDown
-                                v-else
-                                class="mr-1.5 h-3.5 w-3.5 text-blue-600"
-                            />
-                            {{ sortDir === 'asc' ? 'Ascending' : 'Descending' }}
-                        </Button>
-
-                        <!-- Active filter badge + clear -->
-                        <div
-                            v-if="hasActiveFilters"
-                            class="ml-auto flex items-center gap-2"
-                        >
-                            <Badge
-                                class="gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-50"
-                            >
-                                <Filter class="h-3 w-3" />
-                                Filters active
-                            </Badge>
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                class="h-7 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
-                                @click="clearFilters"
-                            >
-                                <X class="mr-1 h-3.5 w-3.5" />
-                                Clear
-                            </Button>
+                                    <DropdownMenuContent
+                                        align="end"
+                                        class="w-fit rounded-lg shadow-lg"
+                                    >
+                                        <DropdownMenuItem
+                                            as-child
+                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
+                                        >
+                                            <Link
+                                                :href="trash().url"
+                                                class="flex items-center"
+                                            >
+                                                <Archive class="h-4 w-4" />
+                                                Archives
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
                         </div>
                     </div>
 
@@ -719,7 +725,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                     class="hover:bg-transparent"
                                 >
                                     <TableCell
-                                        colspan="8"
+                                        colspan="9"
                                         class="py-20 text-center"
                                     >
                                         <div

@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardHeader,
@@ -53,7 +52,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import {
     Table,
     TableBody,
@@ -71,7 +69,6 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import {
     Archive,
     ChevronRight,
-    Download,
     Eye,
     Filter,
     Loader2,
@@ -79,7 +76,6 @@ import {
     Pencil,
     Plus,
     Save,
-    Upload,
     X,
 } from 'lucide-vue-next';
 
@@ -256,33 +252,16 @@ const archiveGate = () => {
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
             <Card>
                 <CardHeader>
-                    <div>
-                        <CardTitle class="flex items-center gap-2">Gates</CardTitle>
-                        <CardDescription class="mt-1">List of all gates in the system.</CardDescription>
-                    </div>
-
-                    <CardAction class="flex items-center gap-2">
-                        <Button
-                            as-child
-                            size="sm"
-                            variant="outline"
-                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
-                        >
-                            <Link :href="trash().url">
-                                <Archive class="mr-2 h-4 w-4" />
-                                View Archive
-                            </Link>
-                        </Button>
-
-                        <Button
-                            size="sm"
-                            class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0 shadow-sm"
-                            @click="createOpen = true"
-                        >
-                            <Plus class="mr-2 h-4 w-4" />
-                            New Gate
-                        </Button>
-                    </CardAction>
+                    <CardTitle class="flex items-center gap-2">
+                        Gates
+                        <div class="ml-2 flex w-full items-center">
+                            <hr class="h-px w-full border border-rose-500" />
+                            <div class="rounded-xs border-7 border-rose-500">
+                                <div class="rounded-xs border-3 border-white"></div>
+                            </div>
+                        </div>
+                    </CardTitle>
+                    <CardDescription class="mt-1">List of all gates in the system.</CardDescription>
                 </CardHeader>
 
                 <CardContent class="space-y-4">
@@ -290,153 +269,166 @@ const archiveGate = () => {
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 
                         <!-- Search + Filter button -->
-                        <div class="flex items-center gap-2 w-full max-w-md">
-                            <div class="flex-1">
+                        <div class="w-50/100">
                                 <SearchInput
                                     :route="index().url"
                                     :initial-value="props.filters?.search"
                                     placeholder="Search gates…"
                                     :only="['gates', 'filters']"
                                     :debounce="350"
+                                    class="rounded-lg shadow-sm"
                                 />
                             </div>
 
-                            <!-- Filter popover -->
-                            <Popover v-model:open="filterOpen">
-                                <PopoverTrigger as-child>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        class="relative shrink-0 rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
-                                        :class="activeFilterCount > 0 ? 'border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100' : ''"
+                        <div class="flex min-w-50/100 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <Popover v-model:open="filterOpen">
+                                    <PopoverTrigger
+                                        as-child
+                                        class="cursor-pointer h-full w-fit rounded-lg border-slate-200 shadow-sm"
                                     >
-                                        <Filter class="mr-2 h-4 w-4" />
-                                        Filter
-                                        <!-- Active filter count badge -->
-                                        <span
-                                            v-if="activeFilterCount > 0"
-                                            class="ml-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-700 text-[10px] font-bold text-white"
-                                        >
-                                            {{ activeFilterCount }}
-                                        </span>
-                                    </Button>
-                                </PopoverTrigger>
-
-                                <PopoverContent align="start" class="w-64 rounded-xl p-0 shadow-lg border-slate-200">
-                                    <!-- Popover header -->
-                                    <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                                        <p class="text-sm font-semibold text-slate-800">Filter Gates</p>
-                                        <button
-                                            v-if="activeFilterCount > 0"
-                                            class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-                                            @click="clearFilters"
-                                        >
-                                            <X class="h-3 w-3" />
-                                            Clear all
-                                        </button>
-                                    </div>
-
-                                    <div class="space-y-4 p-4">
-
-                                        <!-- Status filter -->
-                                        <div class="space-y-1.5">
-                                            <Label class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                                Status
-                                            </Label>
-                                            <Select v-model="filterStatus">
-                                                <SelectTrigger class="w-full rounded-lg border-slate-200 focus:ring-blue-500">
-                                                    <SelectValue placeholder="Any status" />
-                                                </SelectTrigger>
-                                                <SelectContent class="rounded-xl">
-                                                    <SelectItem value="all" class="rounded-lg">Any status</SelectItem>
-                                                    <SelectItem value="active" class="rounded-lg">
-                                                        <span class="flex items-center gap-2">
-                                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                                            Active
-                                                        </span>
-                                                    </SelectItem>
-                                                    <SelectItem value="inactive" class="rounded-lg">
-                                                        <span class="flex items-center gap-2">
-                                                            <span class="h-1.5 w-1.5 rounded-full bg-slate-400" />
-                                                            Inactive
-                                                        </span>
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <!-- Bays filter -->
-                                        <div class="space-y-1.5">
-                                            <Label class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                                Number of Bays
-                                            </Label>
-                                            <Input
-                                                v-model="filterBays"
-                                                type="number"
-                                                min="0"
-                                                placeholder="e.g. 5"
-                                                class="rounded-lg border-slate-200 focus-visible:ring-blue-500"
-                                            />
-                                        </div>
-
-                                    </div>
-
-                                    <Separator />
-
-                                    <!-- Popover footer -->
-                                    <div class="flex items-center justify-end gap-2 px-4 py-3">
                                         <Button
                                             variant="outline"
-                                            size="sm"
-                                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
-                                            @click="filterOpen = false"
+                                            class="rounded-lg border-slate-200 px-3 text-slate-600 shadow-sm hover:bg-slate-100"
+                                            :class="
+                                                activeFilterCount > 0
+                                                    ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                                                    : ''
+                                            "
                                         >
-                                            Cancel
+                                            <Filter class="h-3.5 w-3.5" />
+                                            {{
+                                                activeFilterCount > 0
+                                                    ? 'Filters Active'
+                                                    : 'Filters'
+                                            }}
                                         </Button>
-                                        <Button
-                                            size="sm"
-                                            class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0"
-                                            @click="applyFilters"
+                                    </PopoverTrigger>
+
+                                    <PopoverContent
+                                        align="start"
+                                        class="w-80 rounded-lg border-slate-200 p-4 shadow-lg"
+                                    >
+                                        <div class="grid gap-y-4">
+                                            <div class="space-y-2">
+                                                <p class="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                                                    Status
+                                                </p>
+                                                <Select v-model="filterStatus">
+                                                    <SelectTrigger class="h-8 w-full rounded-lg border-slate-200 shadow-sm focus:ring-blue-500">
+                                                        <SelectValue placeholder="Any status" class="flex justify-start" />
+                                                    </SelectTrigger>
+                                                    <SelectContent class="rounded-lg shadow-lg">
+                                                        <SelectItem value="all" class="cursor-pointer text-sm">
+                                                            Any status
+                                                        </SelectItem>
+                                                        <SelectItem value="active" class="cursor-pointer text-sm">
+                                                            Active
+                                                        </SelectItem>
+                                                        <SelectItem value="inactive" class="cursor-pointer text-sm">
+                                                            Inactive
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div class="space-y-2">
+                                                <Label class="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                                                    Number of Bays
+                                                </Label>
+                                                <Input
+                                                    v-model="filterBays"
+                                                    type="number"
+                                                    min="0"
+                                                    placeholder="e.g. 5"
+                                                    class="h-8 rounded-lg border-slate-200 shadow-sm focus-visible:ring-blue-500"
+                                                />
+                                            </div>
+
+                                            <div class="flex items-center justify-between gap-2">
+                                                <Button
+                                                    v-if="activeFilterCount > 0"
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    class="h-8 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
+                                                    @click="clearFilters"
+                                                >
+                                                    <X class="mr-1 h-3.5 w-3.5" />
+                                                    Clear filters
+                                                </Button>
+
+                                                <div class="ml-auto flex items-center gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        class="h-8 rounded-lg border-slate-200 px-3 text-xs text-slate-600 hover:bg-slate-100"
+                                                        @click="filterOpen = false"
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        class="h-8 rounded-lg border-0 bg-blue-700 px-3 text-xs text-white hover:bg-blue-800"
+                                                        @click="applyFilters"
+                                                    >
+                                                        Apply
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+
+                                <Badge
+                                    v-if="activeFilterCount > 0"
+                                    class="gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-50"
+                                >
+                                    <Filter class="h-3 w-3" />
+                                    {{ activeFilterCount }}
+                                    {{ activeFilterCount === 1 ? 'filter' : 'filters' }}
+                                    active
+                                </Badge>
+                            </div>
+
+                            <div class="flex items-center gap-2 sm:justify-end">
+                                <DropdownMenu class="w-fit">
+                                    <DropdownMenuTrigger as-child class="m-0">
+                                        <div class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm">
+                                            <Button
+                                                variant="ghost"
+                                                class="group/segment cursor-pointer gap-0 rounded-lg border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10"
+                                            >
+                                                <MoreHorizontal class="h-4 w-4 shrink-0" />
+                                                <span
+                                                    class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-20 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-20 group-focus-visible/segment:opacity-100"
+                                                >
+                                                    Actions
+                                                </span>
+                                            </Button>
+                                        </div>
+                                    </DropdownMenuTrigger>
+
+                                    <DropdownMenuContent align="end" class="w-fit rounded-lg shadow-lg">
+                                        <DropdownMenuItem
+                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
+                                            @click="createOpen = true"
                                         >
-                                            Apply
-                                        </Button>
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
+                                            <Plus class="h-4 w-4" />
+                                            New Gate
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            as-child
+                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
+                                        >
+                                            <Link :href="trash().url" class="flex items-center">
+                                                <Archive class="h-4 w-4" />
+                                                Archives
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
                         </div>
-
-
-                        <!-- <div class="flex gap-2 sm:justify-end">
-                            <Button size="sm" variant="outline" class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100">
-                                <Upload class="mr-2 h-4 w-4" />Import
-                            </Button>
-                            <Button size="sm" variant="outline" class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100">
-                                <Download class="mr-2 h-4 w-4" />Export
-                            </Button>
-                        </div> -->
-                    </div>
-
-                    <!-- Active filter chips -->
-                    <div v-if="activeFilterCount > 0" class="flex flex-wrap items-center gap-2">
-                        <span class="text-xs text-muted-foreground">Filtered by:</span>
-
-                        <button
-                            v-if="filterStatus && filterStatus !== 'all'"
-                            class="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
-                            @click="filterStatus = 'all'; applyFilters()"
-                        >
-                            Status: {{ filterStatus === 'active' ? 'Active' : 'Inactive' }}
-                            <X class="h-3 w-3" />
-                        </button>
-
-                        <button
-                            v-if="filterBays"
-                            class="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
-                            @click="filterBays = ''; applyFilters()"
-                        >
-                            Bays: {{ filterBays }}
-                            <X class="h-3 w-3" />
-                        </button>
                     </div>
 
                     <!-- Table -->

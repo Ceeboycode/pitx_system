@@ -17,7 +17,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardHeader,
@@ -137,29 +136,33 @@ function statusDot(status: string | null | undefined): string {
         <div class="flex h-full flex-1 flex-col gap-4 p-4">
             <Card>
                 <CardHeader>
-                    <div>
-                        <CardTitle class="flex items-center gap-2">
-                            <Truck class="h-5 w-5 text-blue-700" />
-                            Dispatch Companies
-                        </CardTitle>
-                        <CardDescription class="mt-1">
-                            Find a company and view its total dispatch records.
-                        </CardDescription>
-                    </div>
-
-                    <CardAction>
-                        <div class="w-full md:w-72">
-                            <SearchInput
-                                :route="InternalDispatchController.index().url"
-                                input-name="search"
-                                placeholder="Search company…"
-                                :default-value="props.filters.search"
-                            />
+                    <CardTitle class="flex items-center gap-2">
+                        Dispatch Companies
+                        <div class="ml-2 flex w-full items-center">
+                            <hr class="h-px w-full border border-rose-500" />
+                            <div class="rounded-xs border-7 border-rose-500">
+                                <div class="rounded-xs border-3 border-white"></div>
+                            </div>
                         </div>
-                    </CardAction>
+                    </CardTitle>
+                    <CardDescription class="mt-1">
+                        Find a company and view its total dispatch records.
+                    </CardDescription>
                 </CardHeader>
 
                 <CardContent class="space-y-4">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="w-50/100">
+                            <SearchInput
+                                :route="InternalDispatchController.index().url"
+                                input-name="search"
+                                placeholder="Search company..."
+                                :default-value="props.filters.search"
+                                class="rounded-lg shadow-sm"
+                            />
+                        </div>
+                    </div>
+
                     <div class="overflow-x-auto rounded-lg border">
                         <Table>
                             <TableHeader>
@@ -191,7 +194,6 @@ function statusDot(status: string | null | undefined): string {
                                     :key="company.id"
                                     class="transition-colors hover:bg-muted/30"
                                 >
-                                    <!-- Company -->
                                     <TableCell class="pl-4">
                                         <div class="flex items-center gap-3">
                                             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 ring-1 ring-blue-100">
@@ -208,7 +210,6 @@ function statusDot(status: string | null | undefined): string {
                                         </div>
                                     </TableCell>
 
-                                    <!-- Code -->
                                     <TableCell>
                                         <span
                                             v-if="company.company_code"
@@ -219,7 +220,6 @@ function statusDot(status: string | null | undefined): string {
                                         <span v-else class="text-sm text-muted-foreground">—</span>
                                     </TableCell>
 
-                                    <!-- Contact -->
                                     <TableCell>
                                         <div class="space-y-1">
                                             <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -235,7 +235,6 @@ function statusDot(status: string | null | undefined): string {
                                         </div>
                                     </TableCell>
 
-                                    <!-- Status -->
                                     <TableCell>
                                         <Badge :class="['gap-1.5', statusClass(company.status)]">
                                             <span :class="['h-1.5 w-1.5 rounded-full', statusDot(company.status)]" />
@@ -243,7 +242,6 @@ function statusDot(status: string | null | undefined): string {
                                         </Badge>
                                     </TableCell>
 
-                                    <!-- Dispatches count -->
                                     <TableCell class="text-center">
                                         <div class="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
                                             <ClipboardList class="h-3.5 w-3.5" />
@@ -251,7 +249,6 @@ function statusDot(status: string | null | undefined): string {
                                         </div>
                                     </TableCell>
 
-                                    <!-- Action -->
                                     <TableCell class="pr-4 text-right">
                                         <TooltipProvider>
                                             <Tooltip>
@@ -274,7 +271,6 @@ function statusDot(status: string | null | undefined): string {
                                     </TableCell>
                                 </TableRow>
 
-                                <!-- Empty state -->
                                 <TableRow v-if="companies.data.length === 0" class="hover:bg-transparent">
                                     <TableCell colspan="6" class="py-20 text-center">
                                         <div class="flex flex-col items-center gap-3">

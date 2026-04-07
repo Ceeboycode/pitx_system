@@ -243,7 +243,7 @@ watch(
                             <p class="truncate text-xs text-muted-foreground">Company alerts and updates</p>
                         </div>
                         <div class="flex items-center gap-1.5">
-                            <MessagingPanel />
+                            <!-- <MessagingPanel /> -->
                             <NotificationDropdown />
                         </div>
                     </div>

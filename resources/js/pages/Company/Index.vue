@@ -45,8 +45,8 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-
 import AppLayout from '@/layouts/AppLayout.vue';
+import { index as companyProfileChangeRequestsIndex } from '@/routes/company-profile-change-requests';
 import { index, show, trash } from '@/routes/companies';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
@@ -68,6 +68,7 @@ import {
     MoreHorizontal,
     Upload,
     X,
+    Ellipsis
 } from 'lucide-vue-next';
 
 import { computed, ref } from 'vue';
@@ -296,255 +297,193 @@ function hasVerifiedEmail(company: Company): boolean {
         <div
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
-            <Card class="mx-5">
+            <Card>
                 <CardHeader>
-                    <div>
-                        <CardTitle class="flex items-center gap-2">
-                            <Building2 class="h-5 w-5 text-blue-700" />
-                            Companies
-                        </CardTitle>
-                        <CardDescription class="mt-1">
-                            Manage company records, review submissions, and
-                            monitor verification status.
-                        </CardDescription>
-                    </div>
-
-                    <CardAction class="flex items-center gap-2">
-                        <Button
-                            v-if="canViewProfileChangeRequests"
-                            as-child
-                            size="sm"
-                            variant="outline"
-                            class="rounded-lg border-blue-200 text-blue-700 hover:bg-blue-50"
-                        >
-                            <Link href="/company-profile-change-requests">
-                                <ClipboardList class="mr-2 h-4 w-4" />
-                                Profile Requests
-                            </Link>
-                        </Button>
-
-                        <Button
-                            v-if="canViewArchived"
-                            as-child
-                            size="sm"
-                            variant="outline"
-                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
-                        >
-                            <Link :href="trash().url">
-                                <Archive class="mr-2 h-4 w-4" />
-                                View Archived
-                            </Link>
-                        </Button>
-                    </CardAction>
+                    <CardTitle class="flex items-center gap-2">
+                        Companies
+                        <div class="ml-2 flex items-center w-full">
+                            <hr class="h-px w-full border border-rose-600 " />
+                            <div class="border-7 border-rose-600 rounded-xs">
+                                <div class="border-3 border-white rounded-xs"></div>
+                            </div>
+                        </div>
+                    </CardTitle>
+                    <CardDescription class="mt-1">
+                        Manage company records, review submissions, and
+                        monitor verification status.
+                    </CardDescription>
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-                    <!-- Row 1: Search + Import/Export -->
-                    <!-- <div
+                    <div
                         class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
                     >
-                        <div class="w-full max-w-sm">
+                        <div class="w-50/100">
                             <SearchInput
                                 :route="index().url"
                                 :initial-value="props.filters.search"
                                 placeholder="Search companies…"
                                 :only="['companies', 'filters', 'flash']"
                                 :debounce="350"
+                                class="shadow-sm rounded-lg "
                             />
                         </div>
-
-                        <div class="flex gap-2 sm:justify-end">
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger as-child>
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
-                                            @click="importOpen = true"
-                                        >
-                                            <Upload class="mr-2 h-4 w-4" />
-                                            Import
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent
-                                        >Restore companies from a backup
-                                        ZIP</TooltipContent
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-50/100">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <Select
+                                    :model-value="statusFilter"
+                                    @update:model-value="onStatusChange"
+                                >
+                                    <SelectTrigger
+                                        class="cursor-pointer h-8 w-fit rounded-lg border-slate-200 shadow-sm"
                                     >
-                                </Tooltip>
-                            </TooltipProvider>
-
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger as-child>
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
-                                            :disabled="exporting"
-                                            @click="triggerExport"
+                                        <Filter class="h-3.5 w-3.5 text-slate-600" />
+                                        <SelectValue placeholder="All Statuses" class="justify-start flex"/>
+                                    </SelectTrigger>
+                                    <SelectContent class="rounded-lg shadow-lg">
+                                        <SelectItem value="all" class="cursor-pointer text-sm"
+                                            >All Statuses</SelectItem
                                         >
-                                            <Loader2
-                                                v-if="exporting"
-                                                class="mr-2 h-4 w-4 animate-spin"
-                                            />
-                                            <Download
-                                                v-else
-                                                class="mr-2 h-4 w-4"
-                                            />
+                                        <SelectItem value="draft" class="cursor-pointer text-sm"
+                                            >Draft</SelectItem
+                                        >
+                                        <SelectItem
+                                            value="docs_completed"
+                                            class="cursor-pointer text-sm"
+                                            >Docs Completed</SelectItem
+                                        >
+                                        <SelectItem
+                                            value="for_verification"
+                                            class="cursor-pointer text-sm"
+                                            >For Verification</SelectItem
+                                        >
+                                        <SelectItem value="verified" class="cursor-pointer text-sm"
+                                            >Verified</SelectItem
+                                        >
+                                        <SelectItem
+                                            value="needs_revision"
+                                            class="cursor-pointer text-sm"
+                                            >Needs Revision</SelectItem
+                                        >
+                                        <SelectItem value="rejected" class="cursor-pointer text-sm"
+                                            >Rejected</SelectItem
+                                        >
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-auto">
+                                <div
+                                    class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm"
+                                >
+                                    <Button
+                                        variant="ghost"
+                                        class="cursor-pointer group/segment rounded-r-none rounded-l-lg border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10 gap-0"
+                                        @click="importOpen = true"
+                                    >
+                                        <Download
+                                            class="h-4 w-4 shrink-0"
+                                        />
+                                        <span
+                                            class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-20 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-20 group-focus-visible/segment:opacity-100"
+                                        >
+                                            Import
+                                        </span>
+                                    </Button>
+                                    <div
+                                        aria-hidden="true"
+                                        class="w-px shrink-0 self-stretch bg-slate-200"
+                                    />
+                                    <Button
+                                        variant="ghost"
+                                        class="cursor-pointer group/segment rounded-r-lg rounded-l-none px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10 gap-0"
+                                        :disabled="exporting"
+                                        @click="triggerExport"
+                                    >
+                                        <Loader2
+                                            v-if="exporting"
+                                            class="h-4 w-4 shrink-0 animate-spin"
+                                        />
+                                        <Upload
+                                            v-else
+                                            class="h-4 w-4 shrink-0"
+                                        />
+                                        <span
+                                            class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-24 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-24 group-focus-visible/segment:opacity-100"
+                                        >
                                             {{
                                                 exporting
                                                     ? 'Exporting…'
                                                     : 'Export'
                                             }}
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent
-                                        >Download all companies as a backup
-                                        ZIP</TooltipContent
+                                        </span>
+                                    </Button>
+                                </div>
+                                <DropdownMenu
+                                    v-if="
+                                        canViewProfileChangeRequests ||
+                                        canViewArchived
+                                    "
+                                    class="w-fit"
+                                >
+                                    <DropdownMenuTrigger as-child class="m-0">
+                                        <div
+                                            class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm"
+                                        >
+                                            <Button
+                                                variant="ghost"
+                                                class="rounded-lg cursor-pointer group/segment border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10 gap-0"
+                                            >
+                                                <Ellipsis
+                                                    class="h-4 w-4 shrink-0"
+                                                />
+                                                <span
+                                                    class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-20 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-20 group-focus-visible/segment:opacity-100"
+                                                >
+                                                    Actions
+                                                </span>
+                                            </Button>
+                                        </div>
+                                    </DropdownMenuTrigger>
+
+                                    <DropdownMenuContent
+                                        align="end"
+                                        class="w-fit rounded-lg shadow-lg"
                                     >
-                                </Tooltip>
-                            </TooltipProvider>
-                        </div>
-                    </div> -->
+                                        <DropdownMenuItem
+                                            v-if="canViewProfileChangeRequests"
+                                            as-child
+                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
+                                        >
+                                            <Link
+                                                :href="
+                                                    companyProfileChangeRequestsIndex()
+                                                        .url
+                                                "
+                                                class="flex items-center"
+                                            >
+                                                <ClipboardList
+                                                    class="h-4 w-4"
+                                                />
+                                                Profile Requests
+                                            </Link>
+                                        </DropdownMenuItem>
 
-                    <!-- Row 2: Filters + Sort -->
-                    <div class="flex flex-wrap items-center gap-2">
-                        <!-- Filter icon label -->
-                        <div
-                            class="flex items-center gap-1.5 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-                        >
-                            <Filter class="h-3.5 w-3.5" />
-                            Filter
-                        </div>
-
-                        <!-- Status filter -->
-                        <Select
-                            :model-value="statusFilter"
-                            @update:model-value="onStatusChange"
-                        >
-                            <SelectTrigger
-                                class="h-8 w-44 rounded-lg border-slate-200 text-xs"
-                            >
-                                <SelectValue placeholder="All Statuses" />
-                            </SelectTrigger>
-                            <SelectContent class="rounded-xl">
-                                <SelectItem value="all" class="text-xs"
-                                    >All Statuses</SelectItem
-                                >
-                                <SelectItem value="draft" class="text-xs"
-                                    >Draft</SelectItem
-                                >
-                                <SelectItem
-                                    value="docs_completed"
-                                    class="text-xs"
-                                    >Docs Completed</SelectItem
-                                >
-                                <SelectItem
-                                    value="for_verification"
-                                    class="text-xs"
-                                    >For Verification</SelectItem
-                                >
-                                <SelectItem value="verified" class="text-xs"
-                                    >Verified</SelectItem
-                                >
-                                <SelectItem
-                                    value="needs_revision"
-                                    class="text-xs"
-                                    >Needs Revision</SelectItem
-                                >
-                                <SelectItem value="rejected" class="text-xs"
-                                    >Rejected</SelectItem
-                                >
-                            </SelectContent>
-                        </Select>
-
-                        <!-- Sort by -->
-                        <div
-                            class="ml-2 flex items-center gap-1.5 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-                        >
-                            <ArrowUpDown class="h-3.5 w-3.5" />
-                            Sort
-                        </div>
-
-                        <Select
-                            :model-value="sortBy ?? 'none'"
-                            @update:model-value="
-                                (val) => {
-                                    sortBy =
-                                        val === 'none'
-                                            ? null
-                                            : (val as SortField);
-                                    applyFilters();
-                                }
-                            "
-                        >
-                            <SelectTrigger
-                                class="h-8 w-40 rounded-lg border-slate-200 text-xs"
-                            >
-                                <SelectValue placeholder="Sort by…" />
-                            </SelectTrigger>
-                            <SelectContent class="rounded-xl">
-                                <SelectItem value="none" class="text-xs"
-                                    >No Sort</SelectItem
-                                >
-                                <SelectItem value="company_name" class="text-xs"
-                                    >Company Name</SelectItem
-                                >
-                                <SelectItem value="company_code" class="text-xs"
-                                    >Company Code</SelectItem
-                                >
-                                <SelectItem value="status" class="text-xs"
-                                    >Status</SelectItem
-                                >
-                                <SelectItem value="created_at" class="text-xs"
-                                    >Created Date</SelectItem
-                                >
-                            </SelectContent>
-                        </Select>
-
-                        <!-- Sort direction toggle — only shown when a sort field is active -->
-                        <Button
-                            v-if="sortBy"
-                            size="sm"
-                            variant="outline"
-                            class="h-8 rounded-lg border-slate-200 px-3 text-xs text-slate-600 hover:bg-slate-100"
-                            @click="
-                                sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-                                applyFilters();
-                            "
-                        >
-                            <ArrowUp
-                                v-if="sortDir === 'asc'"
-                                class="mr-1.5 h-3.5 w-3.5 text-blue-600"
-                            />
-                            <ArrowDown
-                                v-else
-                                class="mr-1.5 h-3.5 w-3.5 text-blue-600"
-                            />
-                            {{ sortDir === 'asc' ? 'Ascending' : 'Descending' }}
-                        </Button>
-
-                        <!-- Active filter badge + clear -->
-                        <div
-                            v-if="hasActiveFilters"
-                            class="ml-auto flex items-center gap-2"
-                        >
-                            <Badge
-                                class="gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-50"
-                            >
-                                <Filter class="h-3 w-3" />
-                                Filters active
-                            </Badge>
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                class="h-7 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
-                                @click="clearFilters"
-                            >
-                                <X class="mr-1 h-3.5 w-3.5" />
-                                Clear
-                            </Button>
+                                        <DropdownMenuItem
+                                            v-if="canViewArchived"
+                                            as-child
+                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
+                                        >
+                                            <Link
+                                                :href="trash().url"
+                                                class="flex items-center"
+                                            >
+                                                <Archive class="h-4 w-4" />
+                                                View Archived
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
                         </div>
                     </div>
 
