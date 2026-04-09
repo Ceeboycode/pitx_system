@@ -37,7 +37,13 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import AppLayout from '@/layouts/AppLayout.vue';
-
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import {
     ArrowRight,
     Building2,
@@ -49,12 +55,14 @@ import {
     MoreHorizontal,
     RefreshCw,
     XCircle,
+    Filter
 } from 'lucide-vue-next';
-
 import { type BreadcrumbItem } from '@/types';
+import { index } from '@/routes/companies';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Company Profile Change Requests', href: '/company-profile-change-requests' },
+    { title: 'Companies', href: index().url },
+    { title: 'Change Requests', href: '/company-profile-change-requests' },
 ];
 
 type ChangeRequest = {
@@ -114,6 +122,10 @@ const props = defineProps<{
         data: ChangeRequest[];
     };
 }>();
+
+const selectedStatus = ref<'all' | 'pending' | 'approved' | 'rejected'>(
+    'pending',
+);
 
 const rejectModalOpen = ref(false);
 const selected = ref<ChangeRequest | null>(null);
@@ -266,287 +278,279 @@ function canTakePreviewAction(): boolean {
 </script>
 
 <template>
+    <Head title="Change Requests" />
+
     <AppLayout :breadcrumbs="breadcrumbs">
-        <Head title="Company Profile Change Requests" />
-
-        <div class="space-y-6 p-4 md:p-6">
-
-            <!-- Page Header -->
-            <div class="flex items-center justify-between">
-                <div class="space-y-1">
-                    <h1 class="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-                        <RefreshCw class="h-5 w-5 text-blue-700" />
-                        Company Profile Change Requests
-                    </h1>
-                    <p class="text-sm text-muted-foreground">
-                        Review and approve external company profile updates.
-                    </p>
-                </div>
-                <Badge v-if="pending.length > 0" variant="warning" class="mt-1">
-                    {{ pending.length }} awaiting review
-                </Badge>
-            </div>
-
-            <!-- Stat Cards -->
-            <div class="grid grid-cols-3 gap-4">
-                <Card class="border-l-4 border-l-amber-400">
-                    <CardContent class="p-4">
-                        <div class="flex items-center justify-between">
-                            <p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Pending</p>
-                            <Clock3 class="h-4 w-4 text-amber-500" />
-                        </div>
-                        <p class="mt-2 text-3xl font-bold text-amber-600">
-                            {{ requests.data.filter((r) => r.status === 'pending').length }}
-                        </p>
-                        <p class="mt-1 text-xs text-muted-foreground">Awaiting your action</p>
-                    </CardContent>
-                </Card>
-
-                <Card class="border-l-4 border-l-blue-500">
-                    <CardContent class="p-4">
-                        <div class="flex items-center justify-between">
-                            <p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Approved</p>
-                            <CheckCircle2 class="h-4 w-4 text-blue-500" />
-                        </div>
-                        <p class="mt-2 text-3xl font-bold text-blue-600">
-                            {{ requests.data.filter((r) => r.status === 'approved').length }}
-                        </p>
-                        <p class="mt-1 text-xs text-muted-foreground">Changes applied</p>
-                    </CardContent>
-                </Card>
-
-                <Card class="border-l-4 border-l-red-500">
-                    <CardContent class="p-4">
-                        <div class="flex items-center justify-between">
-                            <p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Rejected</p>
-                            <XCircle class="h-4 w-4 text-red-500" />
-                        </div>
-                        <p class="mt-2 text-3xl font-bold text-red-600">
-                            {{ requests.data.filter((r) => r.status === 'rejected').length }}
-                        </p>
-                        <p class="mt-1 text-xs text-muted-foreground">Requests denied</p>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <!-- Requests Table -->
+        <div
+            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
+        >
             <Card>
-                <CardHeader class="border-b pb-4">
-                    <div>
-                        <CardTitle>All Requests</CardTitle>
-                        <CardDescription class="mt-1">
-                            {{ requests.data.length }} total · {{ pending.length }} pending
-                        </CardDescription>
-                    </div>
+                <CardHeader>
+                    <CardTitle class="flex items-center gap-2">
+                        <!-- <span>Change Requests</span> -->
+                         <!-- TODO: make the text straight, not wrapped -->
+                        Change Requests
+                        <span class="ml-2 flex flex-1 items-center">
+                            <hr class="h-px w-full border border-rose-500 " />
+                            <div class="border-7 border-rose-500 rounded-xs">
+                                <div class="border-3 border-white rounded-xs"></div>
+                            </div>
+                        </span>
+                    </CardTitle>
+                    <CardDescription class="mt-1">
+                        Review and approve external company profile updates.
+                    </CardDescription>
                 </CardHeader>
+                <CardContent class="space-y-4">
+                    <div
+                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-50/100">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <Select
+                                    v-model="selectedStatus"
+                                >
+                                    <SelectTrigger
+                                        class="cursor-pointer h-8 w-fit rounded-lg border-slate-200 shadow-sm"
+                                    >
+                                        <Filter class="h-3.5 w-3.5 text-slate-600" />
+                                        <SelectValue placeholder="All Statuses" class="justify-start flex"/>
+                                    </SelectTrigger>
+                                    <SelectContent class="rounded-lg shadow-lg">
+                                        <SelectItem key="all" value="all" class="cursor-pointer text-sm"
+                                            >All Statuses</SelectItem
+                                        >
+                                        <SelectItem key="pending" value="pending" class="cursor-pointer text-sm"
+                                            >Pending</SelectItem
+                                        >
+                                        <SelectItem
+                                            key="approved"    
+                                            value="approved"
+                                            class="cursor-pointer text-sm"
+                                            >Approved</SelectItem
+                                        >
+                                        <SelectItem
+                                            key="rejected"
+                                            value="rejected"
+                                            class="cursor-pointer text-sm"
+                                            >Rejected</SelectItem
+                                        >
+                                    </SelectContent>
+                                </Select>
+                                <!-- <CardDescription class="mt-1">
+                                    {{ requests.data.length }} total · {{ pending.length }} pending
+                                </CardDescription> -->
+                            </div>
+                        </div>  
+                    </div>
+                    <div class="overflow-x-auto rounded-lg border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow class="bg-muted/40 hover:bg-muted/40">
+                                    <TableHead class="pl-6 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Company</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Requester</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Status</TableHead>
+                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Requested Changes</TableHead>
+                                    <TableHead class="pr-6 text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Action</TableHead>
+                                </TableRow>
+                            </TableHeader>
 
-                <CardContent class="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow class="bg-muted/40 hover:bg-muted/40">
-                                <TableHead class="pl-6 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Company</TableHead>
-                                <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Requester</TableHead>
-                                <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Status</TableHead>
-                                <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Requested Changes</TableHead>
-                                <TableHead class="pr-6 text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Action</TableHead>
-                            </TableRow>
-                        </TableHeader>
-
-                        <TableBody>
-                            <!-- Empty state -->
-                            <TableRow v-if="requests.data.length === 0" class="hover:bg-transparent">
-                                <TableCell colspan="5" class="py-20 text-center">
-                                    <div class="flex flex-col items-center gap-3">
-                                        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-                                            <RefreshCw class="h-6 w-6 text-muted-foreground/40" />
-                                        </div>
-                                        <div>
-                                            <p class="text-sm font-semibold text-foreground">No change requests found</p>
-                                            <p class="mt-0.5 text-xs text-muted-foreground">All caught up!</p>
-                                        </div>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-
-                            <TableRow
-                                v-for="item in requests.data"
-                                :key="item.id"
-                                :class="item.status === 'pending' ? 'border-l-2 border-l-blue-500' : ''"
-                                class="transition-colors hover:bg-muted/30"
-                            >
-                                <!-- Company -->
-                                <TableCell class="pl-6">
-                                    <div class="flex items-center gap-2.5">
-                                        <div>
-                                            <div class="text-sm font-semibold">{{ item.company.company_name }}</div>
-                                            <div class="text-xs text-muted-foreground">
-                                                {{ item.company.company_code ?? '—' }}
+                            <TableBody>
+                                <!-- Empty state -->
+                                <TableRow v-if="requests.data.length === 0" class="hover:bg-transparent">
+                                    <TableCell colspan="5" class="py-20 text-center">
+                                        <div class="flex flex-col items-center gap-3">
+                                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+                                                <RefreshCw class="h-6 w-6 text-muted-foreground/40" />
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-semibold text-foreground">No change requests found</p>
+                                                <p class="mt-0.5 text-xs text-muted-foreground">All caught up!</p>
                                             </div>
                                         </div>
-                                    </div>
-                                </TableCell>
+                                    </TableCell>
+                                </TableRow>
 
-                                <!-- Requester -->
-                                <TableCell>
-                                    <div class="text-sm">{{ item.requester?.name ?? '—' }}</div>
-                                    <div class="text-xs text-muted-foreground">{{ item.requester?.email ?? '' }}</div>
-                                </TableCell>
-
-                                <!-- Status -->
-                                <TableCell>
-                                    <Badge :variant="badgeVariant(item.status)" class="capitalize">
-                                        {{ item.status }}
-                                    </Badge>
-                                    <div v-if="item.approved_at" class="mt-1 text-[11px] text-muted-foreground">
-                                        {{ item.approved_at }}
-                                    </div>
-                                </TableCell>
-
-                                <!-- Changes -->
-                                <TableCell class="max-w-sm">
-                                    <div class="space-y-1.5 text-xs">
-                                        <!-- Field changes -->
-                                        <div
-                                            v-for="(newValue, key) in item.requested_values"
-                                            :key="key"
-                                            class="flex flex-wrap items-center gap-1 rounded-md bg-muted/60 px-2 py-1"
-                                        >
-                                            <span class="font-semibold text-foreground">{{ normalizeFieldName(String(key)) }}</span>
-                                            <span class="text-muted-foreground line-through">{{ displayValue(item.current_values?.[String(key)]) }}</span>
-                                            <ArrowRight class="h-3 w-3 text-muted-foreground/50" />
-                                            <span class="font-medium text-foreground">{{ displayValue(newValue) }}</span>
-                                        </div>
-
-                                        <!-- Logo change -->
-                                        <div
-                                            v-if="item.logo_change?.has_change"
-                                            class="rounded-md border border-blue-200 bg-blue-50 px-2 py-1.5"
-                                        >
-                                            <div class="mb-1 font-semibold text-blue-700">Company Logo</div>
-                                            <div class="flex flex-wrap gap-1.5">
-                                                <button
-                                                    v-if="item.logo_change.old_preview_url"
-                                                    type="button"
-                                                    @click="previewRequest = item; openLogoPreview(item.logo_change.old_preview_url, 'Current Logo')"
-                                                    class="inline-flex items-center gap-1 rounded border border-blue-300 bg-white px-2 py-0.5 text-[11px] font-medium text-blue-700 transition-colors hover:bg-blue-50"
-                                                >
-                                                    <Eye class="h-3 w-3" /> Current
-                                                </button>
-                                                <button
-                                                    v-if="item.logo_change.new_preview_url"
-                                                    type="button"
-                                                    @click="previewRequest = item; openLogoPreview(item.logo_change.new_preview_url, 'Requested Logo')"
-                                                    class="inline-flex items-center gap-1 rounded border border-blue-300 bg-white px-2 py-0.5 text-[11px] font-medium text-blue-700 transition-colors hover:bg-blue-50"
-                                                >
-                                                    <Eye class="h-3 w-3" /> Requested
-                                                </button>
-                                                <span v-if="item.logo_change.is_remove" class="text-[11px] font-medium text-red-600">
-                                                    Remove logo requested
-                                                </span>
+                                <TableRow
+                                    v-for="item in requests.data"
+                                    :key="item.id"
+                                    :class="item.status === 'pending' ? 'border-l-2 border-l-blue-500' : ''"
+                                    class="transition-colors hover:bg-muted/30"
+                                >
+                                    <!-- Company -->
+                                    <TableCell class="pl-6">
+                                        <div class="flex items-center gap-2.5">
+                                            <div>
+                                                <div class="text-sm font-semibold">{{ item.company.company_name }}</div>
+                                                <div class="text-xs text-muted-foreground">
+                                                    {{ item.company.company_code ?? '—' }}
+                                                </div>
                                             </div>
                                         </div>
+                                    </TableCell>
 
-                                        <!-- Supporting documents -->
-                                        <div
-                                            v-for="(doc, index) in item.supporting_documents ?? []"
-                                            :key="`doc-${item.id}-${index}`"
-                                            class="rounded-md border border-red-200 bg-red-50 px-2 py-1.5"
-                                        >
-                                            <div class="mb-0.5 font-semibold text-red-700">{{ humanize(doc.doc_type) }}</div>
-                                            <div class="text-[11px] text-muted-foreground">{{ doc.original_name ?? 'Pending upload' }}</div>
-                                            <div v-if="doc.preview_url" class="mt-1 flex gap-1.5">
-                                                <button
-                                                    v-if="canPreviewDoc(doc)"
-                                                    type="button"
-                                                    @click="openPreviewDoc(doc, item)"
-                                                    class="inline-flex items-center gap-1 rounded border border-red-300 bg-white px-2 py-0.5 text-[11px] font-medium text-red-700 transition-colors hover:bg-red-50"
-                                                >
-                                                    <Eye class="h-3 w-3" /> Preview
-                                                </button>
-                                                <a
-                                                    v-else
-                                                    :href="doc.preview_url"
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    class="inline-flex items-center gap-1 rounded border border-red-300 bg-white px-2 py-0.5 text-[11px] font-medium text-red-700 transition-colors hover:bg-red-50"
-                                                >
-                                                    <Eye class="h-3 w-3" /> Open
-                                                </a>
-                                                <a
-                                                    :href="doc.preview_url"
-                                                    download
-                                                    class="inline-flex items-center gap-1 rounded border border-red-300 bg-white px-2 py-0.5 text-[11px] font-medium text-red-700 transition-colors hover:bg-red-50"
-                                                >
-                                                    <FileDown class="h-3 w-3" /> Download
-                                                </a>
+                                    <!-- Requester -->
+                                    <TableCell>
+                                        <div class="text-sm">{{ item.requester?.name ?? '—' }}</div>
+                                        <div class="text-xs text-muted-foreground">{{ item.requester?.email ?? '' }}</div>
+                                    </TableCell>
+
+                                    <!-- Status -->
+                                    <TableCell>
+                                        <Badge :variant="badgeVariant(item.status)" class="capitalize">
+                                            {{ item.status }}
+                                        </Badge>
+                                        <div v-if="item.approved_at" class="mt-1 text-[11px] text-muted-foreground">
+                                            {{ item.approved_at }}
+                                        </div>
+                                    </TableCell>
+
+                                    <!-- Changes -->
+                                    <TableCell class="max-w-sm">
+                                        <div class="space-y-1.5 text-xs">
+                                            <!-- Field changes -->
+                                            <div
+                                                v-for="(newValue, key) in item.requested_values"
+                                                :key="key"
+                                                class="flex flex-wrap items-center gap-1 rounded-md bg-muted/60 px-2 py-1"
+                                            >
+                                                <span class="font-semibold text-foreground">{{ normalizeFieldName(String(key)) }}</span>
+                                                <span class="text-muted-foreground line-through">{{ displayValue(item.current_values?.[String(key)]) }}</span>
+                                                <ArrowRight class="h-3 w-3 text-muted-foreground/50" />
+                                                <span class="font-medium text-foreground">{{ displayValue(newValue) }}</span>
+                                            </div>
+
+                                            <!-- Logo change -->
+                                            <div
+                                                v-if="item.logo_change?.has_change"
+                                                class="rounded-md border border-blue-200 bg-blue-50 px-2 py-1.5"
+                                            >
+                                                <div class="mb-1 font-semibold text-blue-700">Company Logo</div>
+                                                <div class="flex flex-wrap gap-1.5">
+                                                    <button
+                                                        v-if="item.logo_change.old_preview_url"
+                                                        type="button"
+                                                        @click="previewRequest = item; openLogoPreview(item.logo_change.old_preview_url, 'Current Logo')"
+                                                        class="inline-flex items-center gap-1 rounded border border-blue-300 bg-white px-2 py-0.5 text-[11px] font-medium text-blue-700 transition-colors hover:bg-blue-50"
+                                                    >
+                                                        <Eye class="h-3 w-3" /> Current
+                                                    </button>
+                                                    <button
+                                                        v-if="item.logo_change.new_preview_url"
+                                                        type="button"
+                                                        @click="previewRequest = item; openLogoPreview(item.logo_change.new_preview_url, 'Requested Logo')"
+                                                        class="inline-flex items-center gap-1 rounded border border-blue-300 bg-white px-2 py-0.5 text-[11px] font-medium text-blue-700 transition-colors hover:bg-blue-50"
+                                                    >
+                                                        <Eye class="h-3 w-3" /> Requested
+                                                    </button>
+                                                    <span v-if="item.logo_change.is_remove" class="text-[11px] font-medium text-red-600">
+                                                        Remove logo requested
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Supporting documents -->
+                                            <div
+                                                v-for="(doc, index) in item.supporting_documents ?? []"
+                                                :key="`doc-${item.id}-${index}`"
+                                                class="rounded-md border border-red-200 bg-red-50 px-2 py-1.5"
+                                            >
+                                                <div class="mb-0.5 font-semibold text-red-700">{{ humanize(doc.doc_type) }}</div>
+                                                <div class="text-[11px] text-muted-foreground">{{ doc.original_name ?? 'Pending upload' }}</div>
+                                                <div v-if="doc.preview_url" class="mt-1 flex gap-1.5">
+                                                    <button
+                                                        v-if="canPreviewDoc(doc)"
+                                                        type="button"
+                                                        @click="openPreviewDoc(doc, item)"
+                                                        class="inline-flex items-center gap-1 rounded border border-red-300 bg-white px-2 py-0.5 text-[11px] font-medium text-red-700 transition-colors hover:bg-red-50"
+                                                    >
+                                                        <Eye class="h-3 w-3" /> Preview
+                                                    </button>
+                                                    <a
+                                                        v-else
+                                                        :href="doc.preview_url"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        class="inline-flex items-center gap-1 rounded border border-red-300 bg-white px-2 py-0.5 text-[11px] font-medium text-red-700 transition-colors hover:bg-red-50"
+                                                    >
+                                                        <Eye class="h-3 w-3" /> Open
+                                                    </a>
+                                                    <a
+                                                        :href="doc.preview_url"
+                                                        download
+                                                        class="inline-flex items-center gap-1 rounded border border-red-300 bg-white px-2 py-0.5 text-[11px] font-medium text-red-700 transition-colors hover:bg-red-50"
+                                                    >
+                                                        <FileDown class="h-3 w-3" /> Download
+                                                    </a>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </TableCell>
+                                    </TableCell>
 
-                                <!-- Actions -->
-                                <TableCell class="pr-6 text-right">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger as-child>
-                                            <Button variant="ghost" size="icon" class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground">
-                                                <MoreHorizontal class="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" class="w-48 rounded-xl shadow-lg">
+                                    <!-- Actions -->
+                                    <TableCell class="pr-6 text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger as-child>
+                                                <Button variant="ghost" size="icon" class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground">
+                                                    <MoreHorizontal class="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" class="w-48 rounded-xl shadow-lg">
 
-                                            <!-- Pending primary actions -->
-                                            <template v-if="item.status === 'pending' && !primaryPreviewDoc(item)">
+                                                <!-- Pending primary actions -->
+                                                <template v-if="item.status === 'pending' && !primaryPreviewDoc(item)">
+                                                    <DropdownMenuItem
+                                                        :disabled="approvingId === item.id"
+                                                        class="rounded-lg text-blue-600 focus:bg-blue-50 focus:text-blue-600"
+                                                        @click="approveRequest(item)"
+                                                    >
+                                                        <CheckCircle2 class="mr-2 h-3.5 w-3.5" />
+                                                        Approve
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        class="rounded-lg text-red-600 focus:bg-red-50 focus:text-red-600"
+                                                        @click="openReject(item)"
+                                                    >
+                                                        <XCircle class="mr-2 h-3.5 w-3.5" />
+                                                        Reject
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                </template>
+
+                                                <!-- Secondary actions -->
                                                 <DropdownMenuItem
-                                                    :disabled="approvingId === item.id"
-                                                    class="rounded-lg text-blue-600 focus:bg-blue-50 focus:text-blue-600"
-                                                    @click="approveRequest(item)"
+                                                    v-if="item.company.show_url"
+                                                    as-child
+                                                    class="rounded-lg"
                                                 >
-                                                    <CheckCircle2 class="mr-2 h-3.5 w-3.5" />
-                                                    Approve
+                                                    <a :href="item.company.show_url" class="flex items-center">
+                                                        <ExternalLink class="mr-2 h-3.5 w-3.5" />
+                                                        View Company
+                                                    </a>
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
-                                                    class="rounded-lg text-red-600 focus:bg-red-50 focus:text-red-600"
-                                                    @click="openReject(item)"
+                                                    v-if="primaryPreviewDoc(item)"
+                                                    class="rounded-lg"
+                                                    @click="openPrimaryPreview(item)"
                                                 >
-                                                    <XCircle class="mr-2 h-3.5 w-3.5" />
-                                                    Reject
+                                                    <Eye class="mr-2 h-3.5 w-3.5" />
+                                                    Preview Document
                                                 </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                            </template>
-
-                                            <!-- Secondary actions -->
-                                            <DropdownMenuItem
-                                                v-if="item.company.show_url"
-                                                as-child
-                                                class="rounded-lg"
-                                            >
-                                                <a :href="item.company.show_url" class="flex items-center">
-                                                    <ExternalLink class="mr-2 h-3.5 w-3.5" />
-                                                    View Company
-                                                </a>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                v-if="primaryPreviewDoc(item)"
-                                                class="rounded-lg"
-                                                @click="openPrimaryPreview(item)"
-                                            >
-                                                <Eye class="mr-2 h-3.5 w-3.5" />
-                                                Preview Document
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                v-if="primaryPreviewDoc(item)"
-                                                class="rounded-lg"
-                                                @click="downloadPrimary(item)"
-                                            >
-                                                <FileDown class="mr-2 h-3.5 w-3.5" />
-                                                Download
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
+                                                <DropdownMenuItem
+                                                    v-if="primaryPreviewDoc(item)"
+                                                    class="rounded-lg"
+                                                    @click="downloadPrimary(item)"
+                                                >
+                                                    <FileDown class="mr-2 h-3.5 w-3.5" />
+                                                    Download
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
         </div>

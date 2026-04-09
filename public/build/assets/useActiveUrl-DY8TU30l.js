@@ -1,0 +1,1 @@
+import{t as a}from"./app-BfjPw7Og.js";import{cS as u,i as c,aI as i}from"./vendor-Cc2-RGKX.js";const s=i(),r=c(()=>new URL(s.url,window?.location.origin).pathname);function p(){function t(e,o){const n=o??r.value;return a(e)===n}return{currentUrl:u(r),urlIsActive:t}}export{p as u};

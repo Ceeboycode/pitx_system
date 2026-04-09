@@ -54,6 +54,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import SearchInput from '@/components/SearchInput.vue';
 
 import { can } from '@/lib/can';
 
@@ -71,13 +72,14 @@ import {
     Plus,
     ShieldCheck,
     X,
+    Ellipsis,
 } from 'lucide-vue-next';
 
 /* ── Permissions ─────────────────────────────────────────────────── */
-const canCreate = can('roles.create');
-const canUpdate = can('roles.update');
-const canDelete = can('roles.archive');
-const canViewTrash = can('roles.viewTrash');
+const canCreate = computed(() => can('roles.create'));
+const canUpdate = computed(() => can('roles.update'));
+const canDelete = computed(() => can('roles.archive'));
+const canViewTrash = computed(() => can('roles.viewTrash'));
 
 /* ── Types ──────────────────────────────────────────────────────── */
 type Permission = { id: number; name: string };
@@ -185,6 +187,7 @@ function typeClass(type: Role['type']): string {
 }
 
 /* ── Delete dialog ───────────────────────────────────────────────── */
+const createOpen = ref(false);
 const deleteOpen = ref(false);
 const selectedRole = ref<Role | null>(null);
 const processing = ref(false);
@@ -215,177 +218,133 @@ function deleteRole() {
         <div
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
-            <Card class="mx-5">
+            <Card>
                 <CardHeader>
-                    <div>
-                        <CardTitle class="flex items-center gap-2">
-                            <ShieldCheck class="h-5 w-5 text-blue-700" />
-                            Roles
-                        </CardTitle>
-                        <CardDescription class="mt-1">
-                            Manage the roles and their permissions.
-                        </CardDescription>
-                    </div>
-
-                    <CardAction>
-                        <div class="flex items-center gap-2">
-                            <Button as-child size="sm" variant="outline">
-                                <Link :href="trash().url">
-                                    <Archive class="mr-2 h-4 w-4" />
-                                    View Archived
-                                </Link>
-                            </Button>
-
-                            <Button
-                                v-if="canCreate"
-                                as-child
-                                size="sm"
-                                variant="blue"
-                            >
-                                <Link :href="create().url">
-                                    <Plus class="mr-2 h-4 w-4" />
-                                    Create Role
-                                </Link>
-                            </Button>
+                    <CardTitle class="flex items-center gap-2">
+                        Roles
+                        <div class="ml-2 flex flex-1 items-center">
+                            <hr class="h-px w-full border border-rose-500 " />
+                            <div class="border-7 border-rose-500 rounded-xs">
+                                <div class="border-3 border-white rounded-xs"></div>
+                            </div>
                         </div>
-                    </CardAction>
+                    </CardTitle>
+                    <CardDescription class="mt-1">
+                        Manage the roles and their permissions.
+                    </CardDescription>
                 </CardHeader>
-
                 <CardContent class="space-y-4">
-                    <!-- Search -->
                     <div
                         class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
                     >
-                        <div class="w-full max-w-sm">
-                            <Input
-                                v-model="search"
-                                placeholder="Search roles..."
-                                class="rounded-lg border-slate-200 focus-visible:ring-blue-500"
+                        <div class="w-50/100">
+                            <SearchInput
+                                :route="index().url"
+                                :initial-value="props.filters.search"
+                                placeholder="Search roles"
+                                :only="['roles', 'filters', 'flash']"
+                                :debounce="350"
+                                class="shadow-sm rounded-lg "
                             />
+                        </div>
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-50/100">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <Select
+                                    :model-value="roleType"
+                                >
+                                    <SelectTrigger
+                                        class="cursor-pointer h-8 w-fit rounded-lg border-slate-200 shadow-sm"
+                                    >
+                                        <Filter class="h-3.5 w-3.5 text-slate-600" />
+                                        <SelectValue placeholder="All Types" class="justify-start flex"/>
+                                    </SelectTrigger>
+                                    <SelectContent class="rounded-lg shadow-lg">
+                                        <SelectItem value="all" class="cursor-pointer text-sm"
+                                            >All Types</SelectItem
+                                        >
+                                        <SelectItem value="internal" class="cursor-pointer text-sm"
+                                            >Internal</SelectItem
+                                        >
+                                        <SelectItem
+                                            value="external"
+                                            class="cursor-pointer text-sm"
+                                            >External</SelectItem
+                                        >
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-auto">
+                                <DropdownMenu
+                                    v-if="canCreate || canViewTrash"
+                                >
+                                    <DropdownMenuTrigger as-child class="m-0">
+                                        <div
+                                            class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm"
+                                        >
+                                            <Button
+                                                variant="ghost"
+                                                class="rounded-lg cursor-pointer group/segment border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10 gap-0"
+                                            >
+                                                <Ellipsis
+                                                    class="h-4 w-4 shrink-0"
+                                                />
+                                                <span
+                                                    class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-20 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-20 group-focus-visible/segment:opacity-100"
+                                                >
+                                                    Actions
+                                                </span>
+                                            </Button>
+                                        </div>
+                                    </DropdownMenuTrigger>
+
+                                    <DropdownMenuContent
+                                        align="end"
+                                        class="w-fit rounded-lg shadow-lg"
+                                    >
+                                        <DropdownMenuItem
+                                            v-if="canCreate"
+                                            as-child
+                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
+                                        >
+                                            <Link
+                                                :href="
+                                                    create().url
+                                                "
+                                                class="flex items-center"
+                                            >
+                                                <Plus
+                                                    class="h-4 w-4"
+                                                />
+                                                Create Role
+                                            </Link>
+                                        </DropdownMenuItem>
+
+                                        <DropdownMenuItem
+                                            v-if="canViewTrash"
+                                            as-child
+                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
+                                        >
+                                            <Link
+                                                :href="trash().url"
+                                                class="flex items-center"
+                                            >
+                                                <Archive class="h-4 w-4" />
+                                                Archives
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Filter + Sort -->
-                    <div class="flex flex-wrap items-center gap-2">
-                        <div
-                            class="flex items-center gap-1.5 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-                        >
-                            <Filter class="h-3.5 w-3.5" />
-                            Filter
-                        </div>
 
-                        <Select v-model="roleType">
-                            <SelectTrigger
-                                class="h-8 w-36 rounded-lg border-slate-200 text-xs"
-                            >
-                                <SelectValue placeholder="All Types" />
-                            </SelectTrigger>
-                            <SelectContent class="rounded-xl">
-                                <SelectItem value="all" class="text-xs"
-                                    >All Types</SelectItem
-                                >
-                                <SelectItem value="internal" class="text-xs"
-                                    >Internal</SelectItem
-                                >
-                                <SelectItem value="external" class="text-xs"
-                                    >External</SelectItem
-                                >
-                            </SelectContent>
-                        </Select>
 
-                        <div
-                            class="ml-2 flex items-center gap-1.5 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-                        >
-                            <ArrowUpDown class="h-3.5 w-3.5" />
-                            Sort
-                        </div>
 
-                        <Select
-                            :model-value="sortBy ?? 'none'"
-                            @update:model-value="
-                                (val) => {
-                                    sortBy =
-                                        val === 'none'
-                                            ? null
-                                            : (val as SortField);
-                                    applyFilters();
-                                }
-                            "
-                        >
-                            <SelectTrigger
-                                class="h-8 w-44 rounded-lg border-slate-200 text-xs"
-                            >
-                                <SelectValue placeholder="Sort by..." />
-                            </SelectTrigger>
-                            <SelectContent class="rounded-xl">
-                                <SelectItem value="none" class="text-xs"
-                                    >No Sort</SelectItem
-                                >
-                                <SelectItem value="name" class="text-xs"
-                                    >Name</SelectItem
-                                >
-                                <SelectItem value="type" class="text-xs"
-                                    >Type</SelectItem
-                                >
-                                <SelectItem
-                                    value="permissions_count"
-                                    class="text-xs"
-                                    >Permissions Count</SelectItem
-                                >
-                                <SelectItem value="created_at" class="text-xs"
-                                    >Created Date</SelectItem
-                                >
-                            </SelectContent>
-                        </Select>
-
-                        <Button
-                            v-if="sortBy"
-                            size="sm"
-                            variant="outline"
-                            class="h-8 rounded-lg border-slate-200 px-3 text-xs text-slate-600 hover:bg-slate-100"
-                            @click="
-                                sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-                                applyFilters();
-                            "
-                        >
-                            <ArrowUp
-                                v-if="sortDir === 'asc'"
-                                class="mr-1.5 h-3.5 w-3.5 text-blue-600"
-                            />
-                            <ArrowDown
-                                v-else
-                                class="mr-1.5 h-3.5 w-3.5 text-blue-600"
-                            />
-                            {{ sortDir === 'asc' ? 'Ascending' : 'Descending' }}
-                        </Button>
-
-                        <div
-                            v-if="hasActiveFilters"
-                            class="ml-auto flex items-center gap-2"
-                        >
-                            <Badge
-                                class="gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-50"
-                            >
-                                <Filter class="h-3 w-3" />
-                                Filters active
-                            </Badge>
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                class="h-7 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
-                                @click="clearFilters"
-                            >
-                                <X class="mr-1 h-3.5 w-3.5" />
-                                Clear
-                            </Button>
-                        </div>
-                    </div>
-
-                    <!-- Table -->
                     <div class="overflow-x-auto rounded-lg border">
                         <Table>
                             <TableHeader>
-                                <TableRow class="bg-muted/40 hover:bg-muted/40">
+                                <TableRow>
                                     <TableHead
                                         class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('name')"
@@ -613,7 +572,7 @@ function deleteRole() {
                                                 <DropdownMenuItem
                                                     v-if="canUpdate"
                                                     as-child
-                                                    class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700"
+                                                    class="rounded-lg"
                                                 >
                                                     <Link
                                                         :href="
@@ -628,14 +587,14 @@ function deleteRole() {
                                                         />
                                                         Edit
                                                         <ChevronRight
-                                                            class="ml-auto h-3.5 w-3.5 text-amber-400"
+                                                            class="ml-auto h-3.5 w-3."
                                                         />
                                                     </Link>
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
                                                     v-if="canDelete"
-                                                    class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-700"
+                                                    class="rounded-lg"
                                                     @click="openDelete(role)"
                                                 >
                                                     <ArchiveX

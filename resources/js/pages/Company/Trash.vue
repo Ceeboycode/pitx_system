@@ -47,8 +47,6 @@ import {
 
 import { ref } from 'vue';
 
-/* ── Types ──────────────────────────────────────────────────────────── */
-
 type Company = {
     id: number;
     company_name: string;
@@ -57,21 +55,15 @@ type Company = {
     deleter?: { id: number; name: string } | null;
 };
 
-/* ── Breadcrumbs ─────────────────────────────────────────────────── */
-
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Companies', href: index().url },
     { title: 'Archived', href: trash().url },
 ];
 
-/* ── Props ───────────────────────────────────────────────────────── */
-
 const props = defineProps<{
     companies: any;
     filters: { search: string | null };
 }>();
-
-/* ── Dialog state ────────────────────────────────────────────────── */
 
 const restoreOpen     = ref(false);
 const forceDeleteOpen = ref(false);
@@ -92,37 +84,37 @@ function openForceDelete(company: Company) {
     <Head title="Archived Companies" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-            <Card class="mx-5">
+        <div
+            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
+        >
+            <Card>
                 <CardHeader>
-                    <div>
-                        <CardTitle class="flex items-center gap-2">
-                            <Archive class="h-5 w-5 text-muted-foreground" />
-                            Archived Companies
-                        </CardTitle>
-                        <CardDescription class="mt-1">
-                            Archived companies can be restored or permanently deleted.
-                        </CardDescription>
-                    </div>
-
-                    <CardAction>
+                    <CardTitle class="flex items-center gap-2">
+                        <!-- <span>Change Requests</span> -->
+                         <!-- TODO: make the text straight, not wrapped -->
                         <Button
                             as-child
-                            size="sm"
                             variant="outline"
-                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
+                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 mr-2"
                         >
                             <Link :href="index().url">
-                                <ArrowLeft class="mr-2 h-4 w-4" />
-                                Back to Companies
+                                <ArrowLeft class="h-4 w-4" />
                             </Link>
                         </Button>
-                    </CardAction>
+                        Archives
+                        <span class="ml-2 flex flex-1 items-center">
+                            <hr class="h-px w-full border border-rose-500 " />
+                            <div class="border-7 border-rose-500 rounded-xs">
+                                <div class="border-3 border-white rounded-xs"></div>
+                            </div>
+                        </span>
+                    </CardTitle>
+                    <CardDescription class="mt-1">
+                        Archived companies can be restored or permanently deleted.
+                    </CardDescription>
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-
-                    <!-- Search -->
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <div class="w-full max-w-sm">
                             <SearchInput
@@ -134,8 +126,6 @@ function openForceDelete(company: Company) {
                             />
                         </div>
                     </div>
-
-                    <!-- Table -->
                     <div class="overflow-x-auto rounded-lg border">
                         <Table>
                             <TableHeader>

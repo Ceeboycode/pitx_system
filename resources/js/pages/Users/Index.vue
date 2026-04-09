@@ -82,6 +82,7 @@ import {
     Power,
     Users,
     X,
+    Ellipsis
 } from 'lucide-vue-next';
 
 /* ======================================================
@@ -152,7 +153,7 @@ const props = defineProps<{
     };
     filters: {
         search?: string | null;
-        type?: string | null;
+        roles?: string | null;
         status?: string | null;
         sort_by?: SortField;
         sort_dir?: SortDir;
@@ -165,23 +166,43 @@ const props = defineProps<{
 /* ======================================================
    Filter & Sort state
 ====================================================== */
-const typeFilter = ref<string>(props.filters.type ?? 'all');
+const roleFilter = ref<string>(props.filters.roles ?? 'all');
 const statusFilter = ref<string>(props.filters.status ?? 'all');
 const sortBy = ref<SortField>(props.filters.sort_by ?? null);
 const sortDir = ref<SortDir>(props.filters.sort_dir ?? 'asc');
 
 const hasActiveFilters = computed(
     () =>
-        (typeFilter.value && typeFilter.value !== 'all') ||
+        (roleFilter.value && roleFilter.value !== 'all') ||
         (statusFilter.value && statusFilter.value !== 'all') ||
         sortBy.value !== null,
 );
 
 const hasCategoryFilters = computed(
     () =>
-        (typeFilter.value && typeFilter.value !== 'all') ||
+        (roleFilter.value && roleFilter.value !== 'all') ||
         (statusFilter.value && statusFilter.value !== 'all'),
 );
+
+const filteredUsers = computed(() => {
+    let users = props.users.data;
+
+    // Role type filter
+    if (roleFilter.value !== 'all') {
+        users = users.filter(user =>
+            user.roles?.some(role => role.type === roleFilter.value)
+        );
+    }
+
+    // Status filter
+    if (statusFilter.value !== 'all') {
+        users = users.filter(user =>
+            user.status === statusFilter.value
+        );
+    }
+
+    return users;
+});
 
 function applyFilters(
     overrides: Record<string, string | null | undefined> = {},
@@ -190,7 +211,7 @@ function applyFilters(
         index().url,
         {
             search: props.filters.search ?? undefined,
-            type: typeFilter.value !== 'all' ? typeFilter.value : undefined,
+            role: roleFilter.value !== 'all' ? roleFilter.value : undefined,
             status:
                 statusFilter.value !== 'all' ? statusFilter.value : undefined,
             sort_by: sortBy.value ?? undefined,
@@ -206,8 +227,8 @@ function applyFilters(
     );
 }
 
-function onTypeChange(val: string) {
-    typeFilter.value = val;
+function onRoleChange(val: string) {
+    roleFilter.value = val;
     applyFilters();
 }
 
@@ -228,13 +249,13 @@ function toggleSort(field: SortField) {
 }
 
 function clearFilters() {
-    typeFilter.value = 'all';
+    roleFilter.value = 'all';
     statusFilter.value = 'all';
     sortBy.value = null;
     sortDir.value = 'asc';
 
     applyFilters({
-        type: undefined,
+        role: undefined,
         status: undefined,
         sort_by: undefined,
         sort_dir: undefined,
@@ -244,7 +265,7 @@ function clearFilters() {
 /* ======================================================
    Computed
 ====================================================== */
-const showCompanyColumn = computed(() => typeFilter.value !== 'internal');
+const showCompanyColumn = computed(() => roleFilter.value !== 'internal');
 
 /* ======================================================
    Badge helpers
@@ -359,14 +380,16 @@ function handleResetPassword(user: User) {
     <Head title="Users" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 p-4">
+        <div
+            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
+        >
             <Card>
                 <CardHeader>
                     <CardTitle class="flex items-center gap-2">
                         Users
-                        <div class="ml-2 flex items-center w-full">
-                            <hr class="h-px w-full border border-rose-600 " />
-                            <div class="border-7 border-rose-600 rounded-xs">
+                        <div class="ml-2 flex flex-1 items-center">
+                            <hr class="h-px w-full border border-rose-500 " />
+                            <div class="border-7 border-rose-500 rounded-xs">
                                 <div class="border-3 border-white rounded-xs"></div>
                             </div>
                         </div>
@@ -381,7 +404,7 @@ function handleResetPassword(user: User) {
                     >
                         <div class="w-50/100">
                             <SearchInput
-                                :route="`${index().url}?type=${typeFilter !== 'all' ? typeFilter : ''}&status=${statusFilter !== 'all' ? statusFilter : ''}&sort_by=${sortBy ?? ''}&sort_dir=${sortBy ? sortDir : ''}`"
+                                :route="`${index().url}?type=${roleFilter !== 'all' ? roleFilter : ''}&status=${statusFilter !== 'all' ? statusFilter : ''}&sort_by=${sortBy ?? ''}&sort_dir=${sortBy ? sortDir : ''}`"
                                 :initial-value="props.filters.search"
                                 placeholder="Search users..."
                                 :only="[
@@ -422,14 +445,14 @@ function handleResetPassword(user: User) {
                                                     Type
                                                 </p>
                                                 <Select
-                                                    :model-value="typeFilter"
-                                                    @update:model-value="onTypeChange"
+                                                    :model-value="roleFilter"
+                                                    @update:model-value="onRoleChange"
                                                 >
                                                     <SelectTrigger
                                                         class="cursor-pointer h-8 w-full rounded-lg border-slate-200 shadow-sm"
                                                     >
                                                         <SelectValue
-                                                            placeholder="All Types"
+                                                            placeholder="All Roles"
                                                             class="flex justify-start"
                                                         />
                                                     </SelectTrigger>
@@ -437,10 +460,10 @@ function handleResetPassword(user: User) {
                                                         <SelectItem value="all" class="cursor-pointer text-sm">
                                                             All Types
                                                         </SelectItem>
-                                                        <SelectItem value="active" class="cursor-pointer text-sm">
+                                                        <SelectItem value="internal" class="cursor-pointer text-sm">
                                                             Internal
                                                         </SelectItem>
-                                                        <SelectItem value="suspended" class="cursor-pointer text-sm">
+                                                        <SelectItem value="external" class="cursor-pointer text-sm">
                                                             External
                                                         </SelectItem>
                                                     </SelectContent>
@@ -466,13 +489,13 @@ function handleResetPassword(user: User) {
                                                         />
                                                     </SelectTrigger>
                                                     <SelectContent class="rounded-lg shadow-lg">
-                                                        <SelectItem value="bus" class="cursor-pointer text-sm">
+                                                        <SelectItem value="all" class="cursor-pointer text-sm">
                                                             All Statuses
                                                         </SelectItem>
-                                                        <SelectItem value="all" class="cursor-pointer text-sm">
+                                                        <SelectItem value="active" class="cursor-pointer text-sm">
                                                             Active
                                                         </SelectItem>
-                                                        <SelectItem value="bus" class="cursor-pointer text-sm">
+                                                        <SelectItem value="inactive" class="cursor-pointer text-sm">
                                                             Inactive
                                                         </SelectItem>
                                                     </SelectContent>
@@ -494,7 +517,76 @@ function handleResetPassword(user: User) {
                                     </PopoverContent>
                                 </Popover>
                             </div>
-                            
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-auto">
+                                <DropdownMenu
+                                    v-if="
+                                        canCreate
+                                    "
+                                    class="w-fit"
+                                >
+                                    <DropdownMenuTrigger as-child class="m-0">
+                                        <div
+                                            class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm"
+                                        >
+                                            <Button
+                                                variant="ghost"
+                                                class="rounded-lg cursor-pointer group/segment border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10 gap-0"
+                                            >
+                                                <Ellipsis
+                                                    class="h-4 w-4 shrink-0"
+                                                />
+                                                <span
+                                                    class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-20 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-20 group-focus-visible/segment:opacity-100"
+                                                >
+                                                    Actions
+                                                </span>
+                                            </Button>
+                                        </div>
+                                    </DropdownMenuTrigger>
+
+                                    <DropdownMenuContent
+                                        align="end"
+                                        class="w-fit rounded-lg shadow-lg"
+                                    >
+                                        <DropdownMenuItem
+                                            v-if="canCreate || canViewTrash"
+                                            as-child
+                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
+                                        >
+                                            <Link
+                                                :href="create().url"
+                                                class="flex items-center"
+                                            >
+                                                <Plus class="h-4 w-4" />
+                                                Create User
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            as-child
+                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
+                                        >
+                                            <Link
+                                                :href="trash().url"
+                                                class="flex items-center"
+                                            >
+                                                <Archive class="h-4 w-4" />
+                                                Archives
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                            <!-- <Button
+                                    v-if="canCreate"
+                                    size="sm"
+                                    variant="blue"
+                                    as-child
+                                >
+                                    <Link :href="create().url" class="flex items-center gap-1.5">
+                                        <Plus class="h-4 w-4" />
+                                        New User
+                                    </Link>
+                                </Button> -->
                         </div>
                     </div>
 
@@ -589,7 +681,7 @@ function handleResetPassword(user: User) {
 
                             <TableBody>
                                 <TableRow
-                                    v-if="props.users.data.length === 0"
+                                    v-if="filteredUsers.length === 0"
                                     class="hover:bg-transparent"
                                 >
                                     <TableCell
@@ -636,8 +728,13 @@ function handleResetPassword(user: User) {
                                     </TableCell>
                                 </TableRow>
 
-                                <TableRow
+                                <!-- <TableRow
                                     v-for="user in props.users.data"
+                                    :key="user.id"
+                                    class="group transition-colors hover:bg-muted/30"
+                                > -->
+                                <TableRow
+                                    v-for="user in filteredUsers"
                                     :key="user.id"
                                     class="group transition-colors hover:bg-muted/30"
                                 >

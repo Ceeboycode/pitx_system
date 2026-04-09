@@ -254,7 +254,7 @@ const archiveGate = () => {
                 <CardHeader>
                     <CardTitle class="flex items-center gap-2">
                         Gates
-                        <div class="ml-2 flex w-full items-center">
+                        <div class="ml-2 flex flex-1 items-center">
                             <hr class="h-px w-full border border-rose-500" />
                             <div class="rounded-xs border-7 border-rose-500">
                                 <div class="rounded-xs border-3 border-white"></div>
@@ -270,15 +270,15 @@ const archiveGate = () => {
 
                         <!-- Search + Filter button -->
                         <div class="w-50/100">
-                                <SearchInput
-                                    :route="index().url"
-                                    :initial-value="props.filters?.search"
-                                    placeholder="Search gates…"
-                                    :only="['gates', 'filters']"
-                                    :debounce="350"
-                                    class="rounded-lg shadow-sm"
-                                />
-                            </div>
+                            <SearchInput
+                                :route="index().url"
+                                :initial-value="props.filters?.search"
+                                placeholder="Search gates…"
+                                :only="['gates', 'filters']"
+                                :debounce="350"
+                                class="rounded-lg shadow-sm"
+                            />
+                        </div>
 
                         <div class="flex min-w-50/100 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <div class="flex flex-wrap items-center gap-2">
@@ -439,7 +439,7 @@ const archiveGate = () => {
                                     <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Gate Name</TableHead>
                                     <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Status</TableHead>
                                     <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Bays</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Created By</TableHead>
+                                    <!-- <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Created By</TableHead> -->
                                     <TableHead class="text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -487,7 +487,7 @@ const archiveGate = () => {
 
                                     <TableCell class="text-sm tabular-nums text-muted-foreground">{{ gate.bays }}</TableCell>
 
-                                    <TableCell class="text-sm text-muted-foreground">{{ gate.creator?.name ?? '—' }}</TableCell>
+                                    <!-- <TableCell class="text-sm text-muted-foreground">{{ gate.creator?.name ?? '—' }}</TableCell> -->
 
                                     <TableCell class="text-right">
                                         <DropdownMenu>

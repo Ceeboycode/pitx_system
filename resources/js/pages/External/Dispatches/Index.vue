@@ -928,7 +928,7 @@ watch(confirmDepartOpen, (open) => {
                             <!-- <p class="block overflow-hidden text-ellipsis">Dispatches</p> -->
                             <!-- Dispatch Records -->
                              Dispatches
-                            <div class="ml-2 flex w-full items-center">
+                            <div class="ml-2 flex flex-col items-center">
                                 <hr class="h-px w-full border border-rose-500" />
                                 <div class="rounded-xs border-7 border-rose-500">
                                     <div class="rounded-xs border-3 border-white"></div>

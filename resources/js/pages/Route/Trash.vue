@@ -205,159 +205,167 @@ function forceDeleteRoute() {
         <div
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
-            <Card class="mx-10 mt-3">
-                <CardHeader
-                    class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
-                >
-                    <div>
-                        <CardTitle>Archived Routes</CardTitle>
-                        <CardDescription>
-                            Routes that have been archived. Restore or
-                            permanently delete them.
-                        </CardDescription>
-                    </div>
-
-                    <CardAction>
-                        <Button size="sm" variant="outline" as-child>
+            <Card>
+                <CardHeader>
+                    <CardTitle class="flex items-center gap-2">
+                        <!-- <span>Change Requests</span> -->
+                         <!-- TODO: make the text straight, not wrapped -->
+                        <Button
+                            as-child
+                            variant="outline"
+                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 mr-2"
+                        >
                             <Link :href="index().url">
-                                <ArrowLeft class="mr-2 h-4 w-4" />
-                                Back to Routes
+                                <ArrowLeft class="h-4 w-4" />
                             </Link>
                         </Button>
-                    </CardAction>
+                        Archives
+                        <span class="ml-2 flex flex-1 items-center">
+                            <hr class="h-px w-full border border-rose-500 " />
+                            <div class="border-7 border-rose-500 rounded-xs">
+                                <div class="border-3 border-white rounded-xs"></div>
+                            </div>
+                        </span>
+                    </CardTitle>
+                    <CardDescription class="mt-1">
+                        Routes that have been archived. Restore or permanently delete them.
+                    </CardDescription>
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-                    <div class="w-full max-w-sm">
-                        <SearchInput
-                            :route="trash().url"
-                            :initial-value="props.filters.search"
-                            placeholder="Search archived routes..."
-                            :only="['routes', 'filters']"
-                            :debounce="350"
-                        />
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <div class="w-full max-w-sm">
+                            <SearchInput
+                                :route="trash().url"
+                                :initial-value="filters.search"
+                                placeholder="Search archived routes…"
+                                :only="['routes', 'filters', 'flash']"
+                                :debounce="350"
+                            />
+                        </div>
                     </div>
-
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Route Name</TableHead>
-                                <TableHead>Gate</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Archived At</TableHead>
-                                <TableHead class="w-[100px] text-right"
-                                    >Actions</TableHead
-                                >
-                            </TableRow>
-                        </TableHeader>
-
-                        <TableBody>
-                            <TableRow
-                                v-for="routeItem in props.routes.data"
-                                :key="routeItem.id"
-                            >
-                                <TableCell class="font-medium capitalize">
-                                    <div class="flex items-center gap-2">
-                                        <RouteIcon
-                                            class="h-4 w-4 shrink-0 text-muted-foreground"
-                                        />
-                                        {{ routeItem.route_name }}
-                                    </div>
-                                </TableCell>
-
-                                <TableCell class="text-muted-foreground">
-                                    {{ routeItem.gate?.gate_name ?? '—' }}
-                                </TableCell>
-
-                                <TableCell>
-                                    <span
-                                        :class="[
-                                            'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
-                                            routeItem.status === 'active'
-                                                ? 'bg-green-100 text-green-800'
-                                                : 'bg-zinc-100 text-zinc-600',
-                                        ]"
+                    <div class="overflow-x-auto rounded-lg border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Route Name</TableHead>
+                                    <TableHead>Gate</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Archived At</TableHead>
+                                    <TableHead class="w-[100px] text-right"
+                                        >Actions</TableHead
                                     >
+                                </TableRow>
+                            </TableHeader>
+
+                            <TableBody>
+                                <TableRow
+                                    v-for="routeItem in props.routes.data"
+                                    :key="routeItem.id"
+                                >
+                                    <TableCell class="font-medium capitalize">
+                                        <div class="flex items-center gap-2">
+                                            <RouteIcon
+                                                class="h-4 w-4 shrink-0 text-muted-foreground"
+                                            />
+                                            {{ routeItem.route_name }}
+                                        </div>
+                                    </TableCell>
+
+                                    <TableCell class="text-muted-foreground">
+                                        {{ routeItem.gate?.gate_name ?? '—' }}
+                                    </TableCell>
+
+                                    <TableCell>
                                         <span
                                             :class="[
-                                                'h-1.5 w-1.5 rounded-full',
+                                                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
                                                 routeItem.status === 'active'
-                                                    ? 'animate-pulse bg-green-500'
-                                                    : 'bg-zinc-400',
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-zinc-100 text-zinc-600',
                                             ]"
-                                        />
-                                        {{
-                                            routeItem.status === 'active'
-                                                ? 'Active'
-                                                : 'Inactive'
-                                        }}
-                                    </span>
-                                </TableCell>
-
-                                <TableCell
-                                    class="text-sm text-muted-foreground"
-                                >
-                                    {{ routeItem.deleted_at_human ?? '—' }}
-                                </TableCell>
-
-                                <TableCell class="text-right">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger as-child>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-                                            >
-                                                <MoreHorizontal
-                                                    class="h-4 w-4"
-                                                />
-                                                <span class="sr-only"
-                                                    >Open menu</span
-                                                >
-                                            </Button>
-                                        </DropdownMenuTrigger>
-
-                                        <DropdownMenuContent
-                                            align="end"
-                                            class="w-56 rounded-xl border-slate-200 shadow-lg"
                                         >
-                                            <DropdownMenuLabel
-                                                class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-                                            >
-                                                {{ routeItem.route_name }}
-                                            </DropdownMenuLabel>
-                                            <DropdownMenuSeparator />
+                                            <span
+                                                :class="[
+                                                    'h-1.5 w-1.5 rounded-full',
+                                                    routeItem.status === 'active'
+                                                        ? 'animate-pulse bg-green-500'
+                                                        : 'bg-zinc-400',
+                                                ]"
+                                            />
+                                            {{
+                                                routeItem.status === 'active'
+                                                    ? 'Active'
+                                                    : 'Inactive'
+                                            }}
+                                        </span>
+                                    </TableCell>
 
-                                            <DropdownMenuItem
-                                                v-if="canRestore"
-                                                class="rounded-lg text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700"
-                                                @click="
-                                                    openRestoreDialog(routeItem)
-                                                "
-                                            >
-                                                <ArchiveRestore
-                                                    class="mr-2 h-4 w-4"
-                                                />
-                                                Restore
-                                                <ChevronRight
-                                                    class="ml-auto h-3.5 w-3.5 text-emerald-400"
-                                                />
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
-                            </TableRow>
+                                    <TableCell
+                                        class="text-sm text-muted-foreground"
+                                    >
+                                        {{ routeItem.deleted_at_human ?? '—' }}
+                                    </TableCell>
 
-                            <TableRow v-if="props.routes.data.length === 0">
-                                <TableCell
-                                    colspan="5"
-                                    class="py-10 text-center text-muted-foreground"
-                                >
-                                    No archived routes found.
-                                </TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
+                                    <TableCell class="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger as-child>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                >
+                                                    <MoreHorizontal
+                                                        class="h-4 w-4"
+                                                    />
+                                                    <span class="sr-only"
+                                                        >Open menu</span
+                                                    >
+                                                </Button>
+                                            </DropdownMenuTrigger>
+
+                                            <DropdownMenuContent
+                                                align="end"
+                                                class="w-56 rounded-xl border-slate-200 shadow-lg"
+                                            >
+                                                <DropdownMenuLabel
+                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                                >
+                                                    {{ routeItem.route_name }}
+                                                </DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
+
+                                                <DropdownMenuItem
+                                                    v-if="canRestore"
+                                                    class="rounded-lg text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700"
+                                                    @click="
+                                                        openRestoreDialog(routeItem)
+                                                    "
+                                                >
+                                                    <ArchiveRestore
+                                                        class="mr-2 h-4 w-4"
+                                                    />
+                                                    Restore
+                                                    <ChevronRight
+                                                        class="ml-auto h-3.5 w-3.5 text-emerald-400"
+                                                    />
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+
+                                <TableRow v-if="props.routes.data.length === 0">
+                                    <TableCell
+                                        colspan="5"
+                                        class="py-10 text-center text-muted-foreground"
+                                    >
+                                        No archived routes found.
+                                    </TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </div>
 
                     <InertiaPagination
                         :links="props.routes.links"

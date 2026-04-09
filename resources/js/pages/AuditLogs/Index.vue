@@ -29,6 +29,11 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import {
+    Popover,
+    PopoverTrigger,
+    PopoverContent
+} from '@/components/ui/popover';
+import {
     Table,
     TableBody,
     TableCell,
@@ -123,6 +128,13 @@ const entityTypeFilter = ref<string>(props.filters.entity_type ?? 'all');
 const dateFrom = ref<string>(props.filters.date_from ?? '');
 const dateTo = ref<string>(props.filters.date_to ?? '');
 const sortDir = ref<SortDir>('desc');
+
+const hasCategoryFilters = computed(
+    () =>
+        (actionFilter.value && actionFilter.value !== 'all') ||
+        (userFilter.value && userFilter.value !== 'all') ||
+        (entityTypeFilter.value && entityTypeFilter.value !== 'all')
+);
 
 const hasActiveFilters = computed(
     () =>
@@ -240,149 +252,198 @@ function actionBadgeClass(action: string): string {
         <div
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
-            <Card class="mx-5">
+            <Card>
                 <CardHeader>
-                    <div>
-                        <CardTitle class="flex items-center gap-2">
-                            <ShieldCheck class="h-5 w-5 text-blue-700" />
-                            Audit Logs
-                        </CardTitle>
-
-                        <CardDescription class="mt-1">
-                            Track internal actions, approvals, and
-                            authentication events.
-                        </CardDescription>
-                    </div>
-
-                    <CardAction>
-                        <div
-                            class="flex items-center gap-2 rounded-lg border px-3 py-2 text-xs text-muted-foreground"
-                        >
-                            <SlidersHorizontal class="h-4 w-4" />
-                            {{
-                                hasActiveFilters
-                                    ? 'Filtered view'
-                                    : 'Live activity feed'
-                            }}
+                    <CardTitle class="flex items-center gap-2">
+                        Audit Logs
+                        <div class="ml-2 flex w-full items-center">
+                            <hr
+                                class="h-px w-full border border-rose-500"
+                            />
+                            <div
+                                class="rounded-xs border-7 border-rose-500"
+                            >
+                                <div
+                                    class="rounded-xs border-3 border-white"
+                                ></div>
+                            </div>
                         </div>
-                    </CardAction>
+                    </CardTitle>
+                    <CardDescription class="mt-1">
+                        Track internal actions, approvals, and authentication events.
+                    </CardDescription>
                 </CardHeader>
-
                 <CardContent class="space-y-4">
-                    <div class="grid grid-cols-1 gap-3 lg:grid-cols-6">
-                        <div class="lg:col-span-2">
+                    <div
+                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                        <div class="w-50/100">
                             <SearchInput
                                 :route="index().url"
                                 :initial-value="filters.search"
-                                placeholder="Search action, user, or entity"
+                                placeholder="Search my activity…"
                                 :only="[
                                     'auditLogs',
                                     'filters',
                                     'actions',
                                     'entityTypes',
-                                    'users',
                                     'flash',
                                 ]"
+                                :debounce="350"
+                                class="rounded-lg shadow-sm"
                             />
                         </div>
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-50/100">
+                            <div class="flex flex-row items-center gap-2">
+                                <Popover>
+                                    <PopoverTrigger as-child class="cursor-pointer h-full w-fit rounded-lg border-slate-200 shadow-sm">
+                                        <Button
+                                            variant="outline"
+                                            class="rounded-lg border-slate-200 px-3 text-slate-600 shadow-sm hover:bg-slate-100"
+                                        >
+                                            <Filter class="h-3.5 w-3.5" />
+                                            {{
+                                                hasCategoryFilters
+                                                    ? 'Filters Active'
+                                                    : 'Filters'
+                                            }}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                        align="start"
+                                        class="w-80 rounded-lg border-slate-200 p-4 shadow-lg"
+                                    >
+                                        <div class="grid gap-y-4">
+                                            <div class="space-y-2">
+                                                <p
+                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                                >
+                                                    Action
+                                                </p>
+                                                <Select
+                                                    :model-value="actionFilter"
+                                                    @update:model-value="onActionChange"
+                                                >
+                                                    <SelectTrigger
+                                                        class="cursor-pointer h-8 w-full rounded-lg border-slate-200 shadow-sm"
+                                                    >
+                                                        <SelectValue
+                                                            placeholder="All Actions"
+                                                            class="flex justify-start"
+                                                        />
+                                                    </SelectTrigger>
+                                                    <SelectContent class="rounded-lg shadow-lg">
+                                                        <SelectItem value="all" class="cursor-pointer text-sm">
+                                                            All Actions
+                                                        </SelectItem>
+                                                        <SelectItem
+                                                            v-for="action in actions"
+                                                            :key="action.value"
+                                                            :value="action.value"
+                                                            class="cursor-pointer text-sm">
+                                                            {{ action.label }}
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
 
-                        <Select
-                            :model-value="actionFilter"
-                            @update:model-value="onActionChange"
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Action" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All actions</SelectItem>
-                                <SelectItem
-                                    v-for="action in actions"
-                                    :key="action.value"
-                                    :value="action.value"
-                                >
-                                    {{ action.label }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
+                                            <div class="space-y-2">
+                                                <p
+                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                                >
+                                                    User
+                                                </p>
+                                                <Select
+                                                    :model-value="userFilter"
+                                                    @update:model-value="onUserChange"
+                                                >
+                                                    <SelectTrigger
+                                                        class="cursor-pointer h-8 w-full rounded-lg border-slate-200 shadow-sm"
+                                                    >
+                                                        <SelectValue
+                                                            placeholder="All Users"
+                                                            class="flex justify-start"
+                                                        />
+                                                    </SelectTrigger>
+                                                    <SelectContent class="rounded-lg shadow-lg">
+                                                        <SelectItem value="all" class="cursor-pointer text-sm">
+                                                            All Users
+                                                        </SelectItem>
+                                                        <SelectItem
+                                                            v-for="user in users"
+                                                            :key="user.id"
+                                                            :value="String(user.id)"
+                                                            class="cursor-pointer text-sm">
+                                                        >
+                                                            {{ user.name }}
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
 
-                        <Select
-                            :model-value="userFilter"
-                            @update:model-value="onUserChange"
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="User" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All users</SelectItem>
-                                <SelectItem
-                                    v-for="user in users"
-                                    :key="user.id"
-                                    :value="String(user.id)"
-                                >
-                                    {{ user.name }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-
-                        <Select
-                            :model-value="entityTypeFilter"
-                            @update:model-value="onEntityTypeChange"
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Entity" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all"
-                                    >All entities</SelectItem
-                                >
-                                <SelectItem
-                                    v-for="entity in entityTypes"
-                                    :key="entity.value"
-                                    :value="entity.value"
-                                >
-                                    {{ entity.label }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-
-                        <div class="flex items-center gap-2">
-                            <Input
-                                v-model="dateFrom"
-                                type="date"
-                                class="w-full"
-                                @change="applyFilters()"
-                            />
-                            <Input
-                                v-model="dateTo"
-                                type="date"
-                                class="w-full"
-                                @change="applyFilters()"
-                            />
+                                            <div class="space-y-2">
+                                                <p
+                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                                >
+                                                    Entity Type
+                                                </p>
+                                                <Select
+                                                    :model-value="entityTypeFilter"
+                                                    @update:model-value="onEntityTypeChange"
+                                                >
+                                                    <SelectTrigger
+                                                        class="cursor-pointer h-8 w-full rounded-lg border-slate-200 shadow-sm"
+                                                    >
+                                                        <SelectValue
+                                                            placeholder="All Types"
+                                                            class="flex justify-start"
+                                                        />
+                                                    </SelectTrigger>
+                                                    <SelectContent class="rounded-lg shadow-lg">
+                                                        <SelectItem value="all" class="cursor-pointer text-sm">
+                                                            All Entities
+                                                        </SelectItem>
+                                                        <SelectItem
+                                                            v-for="entity in entityTypes"
+                                                            :key="entity.value"
+                                                            :value="entity.value"
+                                                        >
+                                                            {{ entity.label }}
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div class="flex justify-end">
+                                                <Button
+                                                    v-if="hasCategoryFilters"
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    class="h-8 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
+                                                    @click="clearFilters"
+                                                >
+                                                    <X class="mr-1 h-3.5 w-3.5" />
+                                                    Clear filters
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                                <!-- TODO: ayusin yung order n icon and text, gap, and yung color? pati yung date popover pagandahin -->
+                                <Input
+                                    v-model="dateFrom"
+                                    type="date"
+                                    class="cursor-pointer h-full w-fit py-2 rounded-lg border-slate-200 shadow-sm"
+                                    @change="applyFilters()"
+                                />
+                                <Input
+                                    v-model="dateTo"
+                                    type="date"
+                                    class="cursor-pointer h-full w-fit py-2 rounded-lg border-slate-200 shadow-sm"
+                                    @change="applyFilters()"
+                                />
+                            </div>
                         </div>
                     </div>
-
-                    <div class="flex items-center justify-between">
-                        <div
-                            class="flex items-center gap-2 text-xs text-muted-foreground"
-                        >
-                            <Filter class="h-4 w-4" />
-                            <span v-if="hasActiveFilters"
-                                >Filters are active</span
-                            >
-                            <span v-else>Showing latest audit activity</span>
-                        </div>
-
-                        <Button
-                            v-if="hasActiveFilters"
-                            variant="outline"
-                            size="sm"
-                            @click="clearFilters"
-                        >
-                            <X class="mr-1 h-4 w-4" />
-                            Clear filters
-                        </Button>
-                    </div>
-
                     <div class="overflow-x-auto rounded-xl border">
                         <Table>
                             <TableHeader>

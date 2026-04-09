@@ -32,6 +32,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import SearchInput from '@/components/SearchInput.vue';
 
 import { can } from '@/lib/can';
 
@@ -58,7 +59,7 @@ type Role = {
 
 const props = defineProps<{
     roles: { data: Role[]; links: any[] };
-    filters: { search?: string | null };
+    filters: { search: string | null };
 }>();
 
 const canRestore = can('roles.restore');
@@ -93,11 +94,6 @@ watch(search, () => {
     filterTimer = window.setTimeout(() => applyFilters(), 350);
 });
 
-function clearFilters() {
-    search.value = '';
-    applyFilters();
-}
-
 function typeClass(type: Role['type']): string {
     return type === 'internal'
         ? 'bg-blue-100 text-blue-700 border-blue-200'
@@ -128,58 +124,45 @@ function handleRestore(role: Role) {
         <div
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
-            <Card class="mx-5">
+            <Card>
                 <CardHeader>
-                    <div>
-                        <CardTitle class="flex items-center gap-2">
-                            <Archive class="h-5 w-5 text-muted-foreground" />
-                            Archived Roles
-                        </CardTitle>
-                        <CardDescription class="mt-1">
-                            Archived roles can be restored back to the active
-                            roles list.
-                        </CardDescription>
-                    </div>
-
-                    <CardAction>
+                    <CardTitle class="flex items-center gap-2">
+                        <!-- <span>Change Requests</span> -->
+                         <!-- TODO: make the text straight, not wrapped -->
                         <Button
                             as-child
-                            size="sm"
                             variant="outline"
-                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
+                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 mr-2"
                         >
                             <Link :href="index().url">
-                                <ArrowLeft class="mr-2 h-4 w-4" />
-                                Back to Roles
+                                <ArrowLeft class="h-4 w-4" />
                             </Link>
                         </Button>
-                    </CardAction>
+                        Archives
+                        <span class="ml-2 flex flex-1 items-center">
+                            <hr class="h-px w-full border border-rose-500 " />
+                            <div class="border-7 border-rose-500 rounded-xs">
+                                <div class="border-3 border-white rounded-xs"></div>
+                            </div>
+                        </span>
+                    </CardTitle>
+                    <CardDescription class="mt-1">
+                        Archived roles can be restored back to the active roles list.
+                    </CardDescription>
                 </CardHeader>
-
                 <CardContent class="space-y-4">
-                    <div
-                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                    >
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <div class="w-full max-w-sm">
-                            <Input
-                                v-model="search"
-                                placeholder="Search archived roles..."
-                                class="rounded-lg border-slate-200 focus-visible:ring-blue-500"
+                            <SearchInput
+                                :route="trash().url"
+                                :initial-value="filters.search"
+                                placeholder="Search archived roles…"
+                                :only="['roles', 'filters', 'flash']"
+                                :debounce="350"
                             />
                         </div>
-
-                        <Button
-                            v-if="hasActiveFilters"
-                            size="sm"
-                            variant="ghost"
-                            class="h-7 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
-                            @click="clearFilters"
-                        >
-                            <X class="mr-1 h-3.5 w-3.5" />
-                            Clear
-                        </Button>
                     </div>
-
+                    
                     <div class="overflow-x-auto rounded-lg border">
                         <Table>
                             <TableHeader>
@@ -326,7 +309,7 @@ function handleRestore(role: Role) {
 
                                                 <DropdownMenuItem
                                                     v-if="canRestore"
-                                                    class="rounded-lg text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700"
+                                                    class="rounded-lg focus:bg-emerald-50 focus:text-emerald-700"
                                                     @click="handleRestore(role)"
                                                 >
                                                     <RotateCcw

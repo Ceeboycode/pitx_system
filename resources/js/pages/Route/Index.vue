@@ -271,7 +271,7 @@ function confirmToggle() {
                 <CardHeader>
                     <CardTitle class="flex items-center gap-2">
                         Routes
-                        <div class="ml-2 flex w-full items-center">
+                        <div class="ml-2 flex flex-1 items-center">
                             <hr class="h-px w-full border border-rose-500" />
                             <div class="rounded-xs border-7 border-rose-500">
                                 <div class="rounded-xs border-3 border-white"></div>
@@ -295,121 +295,78 @@ function confirmToggle() {
                                 class="rounded-lg shadow-sm"
                             />
                         </div>
-
-                        <div class="flex items-center gap-2 sm:justify-end">
-                            <DropdownMenu class="w-fit">
-                                <DropdownMenuTrigger as-child class="m-0">
-                                    <div class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm">
-                                        <Button
-                                            variant="ghost"
-                                            class="group/segment cursor-pointer gap-0 rounded-lg border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10"
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-50/100">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <Select
+                                    :model-value="statusFilter"
+                                    @update:model-value="onStatusChange"
+                                >
+                                    <SelectTrigger
+                                        class="cursor-pointer h-8 w-fit rounded-lg border-slate-200 shadow-sm"
+                                    >
+                                        <Filter class="h-3.5 w-3.5 text-slate-600" />
+                                        <SelectValue placeholder="All Statuses" class="justify-start flex"/>
+                                    </SelectTrigger>
+                                    <SelectContent class="rounded-lg shadow-lg">
+                                        <SelectItem value="all" class="cursor-pointer text-sm"
+                                            >All Statuses</SelectItem
                                         >
-                                            <MoreHorizontal class="h-4 w-4 shrink-0" />
-                                            <span
-                                                class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-20 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-20 group-focus-visible/segment:opacity-100"
+                                        <SelectItem value="active" class="cursor-pointer text-sm"
+                                            >Active</SelectItem
+                                        >
+                                        <SelectItem
+                                            value="inactive"
+                                            class="cursor-pointer text-sm"
+                                            >Inactive</SelectItem
+                                        >
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div class="flex items-center gap-2 sm:justify-end">
+                                <DropdownMenu class="w-fit">
+                                    <DropdownMenuTrigger as-child class="m-0">
+                                        <div class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm">
+                                            <Button
+                                                variant="ghost"
+                                                class="group/segment cursor-pointer gap-0 rounded-lg border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10"
                                             >
-                                                Actions
-                                            </span>
-                                        </Button>
-                                    </div>
-                                </DropdownMenuTrigger>
+                                                <MoreHorizontal class="h-4 w-4 shrink-0" />
+                                                <span
+                                                    class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-20 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-20 group-focus-visible/segment:opacity-100"
+                                                >
+                                                    Actions
+                                                </span>
+                                            </Button>
+                                        </div>
+                                    </DropdownMenuTrigger>
 
-                                <DropdownMenuContent align="end" class="w-fit rounded-lg shadow-lg">
-                                    <DropdownMenuItem
-                                        v-if="canCreate"
-                                        as-child
-                                        class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
-                                    >
-                                        <Link :href="create().url" class="flex items-center">
-                                            <Plus class="h-4 w-4" />
-                                            Create Route
-                                        </Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        v-if="canViewTrash"
-                                        as-child
-                                        class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
-                                    >
-                                        <Link :href="trash().url" class="flex items-center">
-                                            <Archive class="h-4 w-4" />
-                                            Archived
-                                        </Link>
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                                    <DropdownMenuContent align="end" class="w-fit rounded-lg shadow-lg">
+                                        <DropdownMenuItem
+                                            v-if="canCreate"
+                                            as-child
+                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
+                                        >
+                                            <Link :href="create().url" class="flex items-center">
+                                                <Plus class="h-4 w-4" />
+                                                Create Route
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            v-if="canViewTrash"
+                                            as-child
+                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
+                                        >
+                                            <Link :href="trash().url" class="flex items-center">
+                                                <Archive class="h-4 w-4" />
+                                                Archived
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Row 2: Filters + Sort -->
-                    <div class="flex flex-wrap items-center gap-2">
-                        <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                            <Filter class="h-3.5 w-3.5" />
-                            Filter
-                        </div>
-
-                        <Select :model-value="statusFilter" @update:model-value="onStatusChange">
-                            <SelectTrigger class="h-8 w-40 rounded-lg border-slate-200 text-xs">
-                                <SelectValue placeholder="All Statuses" />
-                            </SelectTrigger>
-                            <SelectContent class="rounded-xl">
-                                <SelectItem value="all" class="text-xs">All Statuses</SelectItem>
-                                <SelectItem value="active" class="text-xs">Active</SelectItem>
-                                <SelectItem value="inactive" class="text-xs">Inactive</SelectItem>
-                            </SelectContent>
-                        </Select>
-
-                        <div class="ml-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                            <ArrowUpDown class="h-3.5 w-3.5" />
-                            Sort
-                        </div>
-
-                        <Select
-                            :model-value="sortBy ?? 'none'"
-                            @update:model-value="(val) => { sortBy = val === 'none' ? null : val as SortField; applyFilters(); }"
-                        >
-                            <SelectTrigger class="h-8 w-40 rounded-lg border-slate-200 text-xs">
-                                <SelectValue placeholder="Sort by…" />
-                            </SelectTrigger>
-                            <SelectContent class="rounded-xl">
-                                <SelectItem value="none" class="text-xs">No Sort</SelectItem>
-                                <SelectItem value="route_name" class="text-xs">Route Name</SelectItem>
-                                <SelectItem value="gate_name" class="text-xs">Gate</SelectItem>
-                                <SelectItem value="status" class="text-xs">Status</SelectItem>
-                                <SelectItem value="created_at" class="text-xs">Created Date</SelectItem>
-                            </SelectContent>
-                        </Select>
-
-                        <Button
-                            v-if="sortBy"
-                            size="sm"
-                            variant="outline"
-                            class="h-8 rounded-lg border-slate-200 px-3 text-xs text-slate-600 hover:bg-slate-100"
-                            @click="sortDir = sortDir === 'asc' ? 'desc' : 'asc'; applyFilters()"
-                        >
-                            <ArrowUp v-if="sortDir === 'asc'" class="mr-1.5 h-3.5 w-3.5 text-blue-600" />
-                            <ArrowDown v-else class="mr-1.5 h-3.5 w-3.5 text-blue-600" />
-                            {{ sortDir === 'asc' ? 'Ascending' : 'Descending' }}
-                        </Button>
-
-                        <div v-if="hasActiveFilters" class="ml-auto flex items-center gap-2">
-                            <Badge class="gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-50">
-                                <Filter class="h-3 w-3" />
-                                Filters active
-                            </Badge>
-
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                class="h-7 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
-                                @click="clearFilters"
-                            >
-                                <X class="mr-1 h-3.5 w-3.5" />
-                                Clear
-                            </Button>
-                        </div>
-                    </div>
-
-                    <!-- Table -->
                     <div class="overflow-x-auto rounded-lg border">
                         <Table>
                             <TableHeader>

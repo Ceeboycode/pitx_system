@@ -301,9 +301,9 @@ function hasVerifiedEmail(company: Company): boolean {
                 <CardHeader>
                     <CardTitle class="flex items-center gap-2">
                         Companies
-                        <div class="ml-2 flex items-center w-full">
-                            <hr class="h-px w-full border border-rose-600 " />
-                            <div class="border-7 border-rose-600 rounded-xs">
+                        <div class="ml-2 flex flex-1 items-center">
+                            <hr class="h-px w-full border border-rose-500 " />
+                            <div class="border-7 border-rose-500 rounded-xs">
                                 <div class="border-3 border-white rounded-xs"></div>
                             </div>
                         </div>
@@ -478,7 +478,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                                 class="flex items-center"
                                             >
                                                 <Archive class="h-4 w-4" />
-                                                View Archived
+                                                Archives
                                             </Link>
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>

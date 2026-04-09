@@ -94,9 +94,9 @@
 }
 
 :root {
-    --background: oklch(96.8% 0.007 247.896);
+    --background: oklch(98.4% 0.003 247.858);
     --foreground: oklch(20.8% 0.042 265.755);
-    --card: oklch(98.4% 0.003 247.858);
+    --card: hsl(0 0% 100%);
     --card-foreground: oklch(20.8% 0.042 265.755);
     --popover: oklch(98.4% 0.003 247.858);
     --popover-foreground: oklch(20.8% 0.042 265.755);
@@ -120,22 +120,16 @@
     --chart-4: hsl(43 74% 66%);
     --chart-5: hsl(27 87% 67%);
     --radius: 0.5rem;
-    --sidebar-background: oklch(92.9% 0.013 255.508);
+    --sidebar-background: oklch(96.8% 0.007 247.896);
     --sidebar-foreground: oklch(20.8% 0.042 265.755);
     --sidebar-primary: hsl(222.857, 48.276%, 11.373%);
-    --sidebar-primary-foreground: hsl(0 0% 98%);
-    --sidebar-accent: oklch(98.4% 0.003 247.858);
+    --sidebar-primary-foreground: hsl(225, 62%, 36%);
+    --sidebar-accent: oklch(86.9% 0.022 252.894);
     --sidebar-accent-foreground: hsl(225, 62%, 36%);
-    --sidebar-border: oklch(98.4% 0.003 247.858);
-    --sidebar-ring: hsl(225, 62%, 36%);
-    --sidebar: oklch(98.4% 0.003 247.858);
+    --sidebar-border: oklch(92.9% 0.013 255.508);
+    --sidebar-ring: hsl(0, 0%, 100%);
+    --sidebar: oklch(86.9% 0.022 252.894);
     --pitxred:  hsl(7, 84, 54);
-
-    /* hsl(200.727, 96.491%, 22.353%) */
-
-
-
-
 }
 
 .dark {

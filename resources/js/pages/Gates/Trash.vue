@@ -36,9 +36,10 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import SearchInput from '@/components/SearchInput.vue';
 
 import AppLayout from '@/layouts/AppLayout.vue';
-import { index, restore } from '@/routes/gates';
+import { index, restore, trash } from '@/routes/gates';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 
@@ -63,7 +64,10 @@ interface PaginatedGates {
 }
 
 /* ── Props ───────────────────────────────────────────────────────── */
-const props = defineProps<{ gates: PaginatedGates }>();
+const props = defineProps<{
+    gates: PaginatedGates;
+    filters: { search: string | null };
+}>();
 
 /* ── Breadcrumbs ─────────────────────────────────────────────────── */
 const breadcrumbs: BreadcrumbItem[] = [
@@ -101,42 +105,51 @@ function restoreGate() {
 </script>
 
 <template>
-    <Head title="Trash — Gates" />
+    <Head title="Archived Gates" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
-            <Card class="mx-5">
+            <Card>
                 <CardHeader>
-                    <div>
-                        <CardTitle class="flex items-center gap-2">
-                            <Archive class="h-5 w-5 text-muted-foreground" />
-                            Trashed Gates
-                        </CardTitle>
-                        <CardDescription class="mt-1">
-                            Gates that have been moved to trash. You can restore
-                            them back to active.
-                        </CardDescription>
-                    </div>
-
-                    <CardAction>
+                    <CardTitle class="flex items-center gap-2">
+                        <!-- <span>Change Requests</span> -->
+                         <!-- TODO: make the text straight, not wrapped -->
                         <Button
                             as-child
-                            size="sm"
                             variant="outline"
-                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
+                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 mr-2"
                         >
                             <Link :href="index().url">
-                                <ArrowLeft class="mr-2 h-4 w-4" />
-                                Back to Gates
+                                <ArrowLeft class="h-4 w-4" />
                             </Link>
                         </Button>
-                    </CardAction>
+                        Archives
+                        <span class="ml-2 flex flex-1 items-center">
+                            <hr class="h-px w-full border border-rose-500 " />
+                            <div class="border-7 border-rose-500 rounded-xs">
+                                <div class="border-3 border-white rounded-xs"></div>
+                            </div>
+                        </span>
+                    </CardTitle>
+                    <CardDescription class="mt-1">
+                        Gates that have been moved to trash. You can restore them back to active.
+                    </CardDescription>
                 </CardHeader>
 
                 <CardContent class="space-y-4">
-                    <!-- Table -->
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <div class="w-full max-w-sm">
+                            <SearchInput
+                                :route="trash().url"
+                                :initial-value="filters.search"
+                                placeholder="Search archived gates…"
+                                :only="['gates', 'filters', 'flash']"
+                                :debounce="350"
+                            />
+                        </div>
+                    </div>
                     <div class="overflow-x-auto rounded-lg border">
                         <Table>
                             <TableHeader>

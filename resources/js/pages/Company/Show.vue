@@ -56,6 +56,13 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 
+import {
+    Accordion,
+    AccordionContent,
+    AccordionTrigger,
+    AccordionItem
+} from '@/components/ui/accordion';
+
 import { index, show } from '@/routes/companies';
 import {
     destroy as destroyDoc,
@@ -83,6 +90,13 @@ import {
     RotateCcw,
     UserRound,
     XCircle,
+    Mail,
+    Phone,
+    MapPin,
+    ChevronDown,
+    ChevronRight,
+    User,
+    IdCard,
 } from 'lucide-vue-next';
 
 /* ── Types ──────────────────────────────────────────────────────── */
@@ -535,13 +549,13 @@ const flaggedDocs = computed(
     <Head :title="company.company_name" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="w-full px-4 py-6 sm:px-6">
-            <div class="mx-auto w-full max-w-6xl space-y-6">
-                <!-- ── Page header ────────────────────────────────── -->
-                <div class="flex items-start justify-between gap-4">
-                    <div class="flex items-center gap-4">
+        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+        <!-- TODO: make the background a gradient, the bottom color the theme colro for cards, and the top color the 'average' color of the company logo. if the company logo is null, use the theme primary color instead -->
+            <Card class="bg-emerald-500">
+                <CardHeader class="py-0">
+                    <div class="flex items-center gap-2">
                         <div
-                            class="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border-2 bg-muted shadow-sm"
+                            class="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border-2 bg-white shadow-sm"
                         >
                             <img
                                 v-if="showLogo"
@@ -561,334 +575,309 @@ const flaggedDocs = computed(
                             </div>
                         </div>
 
-                        <div class="space-y-1">
+                        <div class="flex flex-col gap-2">
                             <h1
                                 class="text-2xl leading-tight font-bold tracking-tight"
                             >
                                 {{ company.company_name }}
                             </h1>
-                            <p class="text-sm text-muted-foreground">
-                                Review company profile, representative info, and
-                                submitted documents.
-                            </p>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <Badge
+                                    class="gap-1.5 border-0 bg-muted font-mono text-foreground"
+                                >
+                                    {{ company.company_code ?? '—' }}
+                                </Badge>
+                                <Badge :class="['gap-1.5', statusClass(company.status)]">
+                                    <span
+                                        :class="[
+                                            'h-1.5 w-1.5 rounded-full',
+                                            statusDot(company.status),
+                                        ]"
+                                    />
+                                    {{ humanize(company.status) }}
+                                </Badge>
+                                <Badge class="border-0 bg-slate-100 text-slate-600">
+                                    {{
+                                        company.business_type
+                                            ? humanize(company.business_type)
+                                            : '—'
+                                    }}
+                                </Badge>
+                            </div>
+                        </div>
+
+                        <div class="ml-2 flex flex-1 items-center">
+                            <hr class="h-px w-full border border-rose-500" />
+                            <div class="border-7 border-rose-500 rounded-xs">
+                                <div class="border-3 border-white rounded-xs"></div>
+                            </div>
                         </div>
                     </div>
-
-                    <!-- Header actions -->
-                    <div class="flex shrink-0 items-center gap-2">
-                        <Button
-                            as-child
-                            variant="outline"
-                            size="sm"
-                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
-                        >
-                            <Link :href="index().url">
-                                <ArrowLeft class="mr-2 h-4 w-4" />
-                                Back
-                            </Link>
-                        </Button>
-
-                        <Button
-                            v-if="canArchiveCompany"
-                            variant="outline"
-                            size="sm"
-                            class="rounded-lg border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                            @click="archiveOpen = true"
-                        >
-                            <Archive class="mr-2 h-4 w-4" />
-                            Archive
-                        </Button>
-                    </div>
-                </div>
-
-                <!-- Summary badges -->
-                <div class="flex flex-wrap items-center gap-2">
-                    <Badge
-                        class="gap-1.5 border-0 bg-muted font-mono text-foreground"
+                </CardHeader>
+            </Card>
+            <div class="flex items-start justify-between gap-4">
+                <!-- Header actions -->
+                <div class="flex shrink-0 items-center gap-2">
+                    <Button
+                        as-child
+                        variant="outline"
+                        class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
                     >
-                        {{ company.company_code ?? '—' }}
-                    </Badge>
-                    <Badge :class="['gap-1.5', statusClass(company.status)]">
-                        <span
-                            :class="[
-                                'h-1.5 w-1.5 rounded-full',
-                                statusDot(company.status),
-                            ]"
-                        />
-                        {{ humanize(company.status) }}
-                    </Badge>
-                    <Badge class="border-0 bg-slate-100 text-slate-600">
-                        {{
-                            company.business_type
-                                ? humanize(company.business_type)
-                                : '—'
-                        }}
-                    </Badge>
+                        <Link :href="index().url">
+                            <ArrowLeft class="h-4 w-4" />
+                        </Link>
+                    </Button>
+
+                    <Button
+                        v-if="canArchiveCompany"
+                        variant="outline"
+                        class="rounded-lg border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                        @click="archiveOpen = true"
+                    >
+                        <Archive class="h-4 w-4" />
+                    </Button>
                 </div>
+            </div>
 
-                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <Card class="border-slate-200 shadow-sm">
-                        <CardContent
-                            class="flex items-center justify-between p-4"
-                        >
-                            <div>
-                                <p
-                                    class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
-                                >
-                                    Total Documents
-                                </p>
-                                <p class="mt-1 text-2xl font-bold">
-                                    {{ totalDocs }}
-                                </p>
-                            </div>
-                            <div class="rounded-lg bg-slate-100 p-2.5">
-                                <Files class="h-4 w-4 text-slate-600" />
-                            </div>
-                        </CardContent>
-                    </Card>
+            <!-- <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <Card class="border-slate-200 shadow-sm">
+                    <CardContent
+                        class="flex items-center justify-between p-4"
+                    >
+                        <div>
+                            <p
+                                class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
+                            >
+                                Total Documents
+                            </p>
+                            <p class="mt-1 text-2xl font-bold">
+                                {{ totalDocs }}
+                            </p>
+                        </div>
+                        <div class="rounded-lg bg-slate-100 p-2.5">
+                            <Files class="h-4 w-4 text-slate-600" />
+                        </div>
+                    </CardContent>
+                </Card>
 
-                    <Card class="border-emerald-200 shadow-sm">
-                        <CardContent
-                            class="flex items-center justify-between p-4"
-                        >
-                            <div>
-                                <p
-                                    class="text-[11px] font-semibold tracking-widest text-emerald-700/80 uppercase"
-                                >
-                                    Verified
-                                </p>
-                                <p
-                                    class="mt-1 text-2xl font-bold text-emerald-700"
-                                >
-                                    {{ verifiedDocs }}
-                                </p>
-                            </div>
-                            <div class="rounded-lg bg-emerald-100 p-2.5">
-                                <CheckCircle2
-                                    class="h-4 w-4 text-emerald-700"
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
+                <Card class="border-emerald-200 shadow-sm">
+                    <CardContent
+                        class="flex items-center justify-between p-4"
+                    >
+                        <div>
+                            <p
+                                class="text-[11px] font-semibold tracking-widest text-emerald-700/80 uppercase"
+                            >
+                                Verified
+                            </p>
+                            <p
+                                class="mt-1 text-2xl font-bold text-emerald-700"
+                            >
+                                {{ verifiedDocs }}
+                            </p>
+                        </div>
+                        <div class="rounded-lg bg-emerald-100 p-2.5">
+                            <CheckCircle2
+                                class="h-4 w-4 text-emerald-700"
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
 
-                    <Card class="border-amber-200 shadow-sm">
-                        <CardContent
-                            class="flex items-center justify-between p-4"
-                        >
-                            <div>
-                                <p
-                                    class="text-[11px] font-semibold tracking-widest text-amber-700/80 uppercase"
-                                >
-                                    Pending Review
-                                </p>
-                                <p
-                                    class="mt-1 text-2xl font-bold text-amber-700"
-                                >
-                                    {{ pendingDocs }}
-                                </p>
-                            </div>
-                            <div class="rounded-lg bg-amber-100 p-2.5">
-                                <Clock3 class="h-4 w-4 text-amber-700" />
-                            </div>
-                        </CardContent>
-                    </Card>
+                <Card class="border-amber-200 shadow-sm">
+                    <CardContent
+                        class="flex items-center justify-between p-4"
+                    >
+                        <div>
+                            <p
+                                class="text-[11px] font-semibold tracking-widest text-amber-700/80 uppercase"
+                            >
+                                Pending Review
+                            </p>
+                            <p
+                                class="mt-1 text-2xl font-bold text-amber-700"
+                            >
+                                {{ pendingDocs }}
+                            </p>
+                        </div>
+                        <div class="rounded-lg bg-amber-100 p-2.5">
+                            <Clock3 class="h-4 w-4 text-amber-700" />
+                        </div>
+                    </CardContent>
+                </Card>
 
-                    <Card class="border-rose-200 shadow-sm">
-                        <CardContent
-                            class="flex items-center justify-between p-4"
-                        >
-                            <div>
-                                <p
-                                    class="text-[11px] font-semibold tracking-widest text-rose-700/80 uppercase"
-                                >
-                                    Flagged / Expired
-                                </p>
-                                <p
-                                    class="mt-1 text-2xl font-bold text-rose-700"
-                                >
-                                    {{ flaggedDocs }}
-                                </p>
-                            </div>
-                            <div class="rounded-lg bg-rose-100 p-2.5">
-                                <CircleAlert class="h-4 w-4 text-rose-700" />
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                <Card class="border-rose-200 shadow-sm">
+                    <CardContent
+                        class="flex items-center justify-between p-4"
+                    >
+                        <div>
+                            <p
+                                class="text-[11px] font-semibold tracking-widest text-rose-700/80 uppercase"
+                            >
+                                Flagged / Expired
+                            </p>
+                            <p
+                                class="mt-1 text-2xl font-bold text-rose-700"
+                            >
+                                {{ flaggedDocs }}
+                            </p>
+                        </div>
+                        <div class="rounded-lg bg-rose-100 p-2.5">
+                            <CircleAlert class="h-4 w-4 text-rose-700" />
+                        </div>
+                    </CardContent>
+                </Card>
+            </div> -->
 
-                <!-- ── Top grid ───────────────────────────────────── -->
-                <div class="grid gap-4 lg:grid-cols-3">
-                    <!-- Company details -->
-                    <Card class="lg:col-span-2">
-                        <CardHeader class="border-b border-slate-100 pb-4">
-                            <div class="flex items-center gap-3">
-                                <div
-                                    class="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border bg-muted shadow-sm"
-                                >
-                                    <img
-                                        v-if="showLogo"
-                                        :src="company.logo_url!"
-                                        :alt="company.company_name"
-                                        class="h-full w-full object-cover"
-                                        @error="logoError = true"
-                                    />
-                                    <div
-                                        v-else
-                                        class="flex h-full w-full items-center justify-center bg-primary/10"
-                                    >
-                                        <Building2
-                                            class="h-4 w-4 text-primary/60"
-                                        />
+            <div class="grid gap-4 lg:grid-cols-3 h-fit">
+                <div class="grid gap-4 col-span-1 h-fit">
+                    <Card class="py-2">
+                        <Accordion collapsible class="p-0">
+                            <AccordionItem 
+                                :key="companyDetails"
+                                :value="companyDetails"
+                            >
+                                <CardHeader class="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle>
+                                            Company Details
+                                        </CardTitle>
                                     </div>
-                                </div>
-                                <div>
-                                    <CardTitle class="text-base"
-                                        >Company Details</CardTitle
-                                    >
-                                    <CardDescription
-                                        >Basic information and contact
-                                        details.</CardDescription
-                                    >
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent class="divide-y divide-slate-100 p-0">
-                            <div
-                                class="flex items-center justify-between px-6 py-3"
-                            >
-                                <span
-                                    class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
-                                    >Email</span
-                                >
-                                <span class="text-sm">{{
-                                    company.company_email ?? '—'
-                                }}</span>
-                            </div>
-                            <div
-                                class="flex items-center justify-between px-6 py-3"
-                            >
-                                <span
-                                    class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
-                                    >Phone</span
-                                >
-                                <span class="text-sm">{{
-                                    company.company_phone ?? '—'
-                                }}</span>
-                            </div>
-                            <div
-                                class="flex items-start justify-between gap-4 px-6 py-3"
-                            >
-                                <span
-                                    class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
-                                    >Address</span
-                                >
-                                <span class="text-right text-sm">{{
-                                    company.company_address ?? '—'
-                                }}</span>
-                            </div>
-                            <div
-                                class="flex items-center justify-between px-6 py-3"
-                            >
-                                <span
-                                    class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
-                                    >Registration No.</span
-                                >
-                                <span class="font-mono text-sm">{{
-                                    company.registration_number ?? '—'
-                                }}</span>
-                            </div>
-                            <div
-                                class="flex items-center justify-between px-6 py-3"
-                            >
-                                <span
-                                    class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
-                                    >Created</span
-                                >
-                                <span class="text-sm text-muted-foreground">
-                                    {{ formatDate(company.created_at) }} ·
-                                    {{ company.creator?.name ?? 'N/A' }}
-                                </span>
-                            </div>
-                            <div
-                                class="flex items-center justify-between px-6 py-3"
-                            >
-                                <span
-                                    class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
-                                    >Last Updated</span
-                                >
-                                <span class="text-sm text-muted-foreground">
-                                    {{ company.updated_at_human ?? '—' }} ·
-                                    {{ company.updater?.name ?? 'N/A' }}
-                                </span>
-                            </div>
-                        </CardContent>
-                    </Card>
+                                    <AccordionTrigger></AccordionTrigger>
+                                </CardHeader>
 
-                    <!-- Representative -->
-                    <Card>
-                        <CardHeader class="border-b border-slate-100 pb-4">
-                            <CardTitle
-                                class="flex items-center gap-2 text-base"
+                                <AccordionContent class="mt-2 pt-2 border-t border-slate-100">
+                                    <CardContent class="px-6 grid divide-y gap-y-2">
+                                        <div class="py-2">
+                                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                                                Registration No.
+                                            </span>
+                                            <span class="font-mono text-sm">{{
+                                                company.registration_number ?? '—'
+                                            }}</span>
+                                        </div>
+                                        <div class="py-2">
+                                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                                                Created
+                                            </span>
+                                            <span class="text-sm text-muted-foreground">
+                                                {{ formatDate(company.created_at) }} ·
+                                                {{ company.creator?.name ?? 'N/A' }}
+                                            </span>
+                                        </div>
+                                        <div class="py-2">
+                                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                                                Last Updated
+                                            </span>
+                                            <span class="text-sm text-muted-foreground">
+                                                {{ company.updated_at_human ?? '—' }} ·
+                                                {{ company.updater?.name ?? 'N/A' }}
+                                            </span>
+                                        </div>
+                                        <div class="grid gap-y-2 pt-2">
+                                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                                                Contacts
+                                            </span>
+                                            <div class="items-start flex">
+                                                <div class="h-full mr-4">
+                                                    <Mail class="h-4 w-4 inline-block text-primary" />
+                                                </div>
+                                                <!-- TODO: make the email clickable, nagoopen ang email when the email is clicked -->
+                                                <span class="text-sm">{{
+                                                    company.company_email ?? '—'
+                                                }}</span>
+                                            </div>
+                                            <div class="items-start flex">
+                                                <div class="h-full mr-4">
+                                                    <Phone class="h-4 w-4 inline-block text-primary" />
+                                                </div>
+                                                <span class="text-sm">{{
+                                                    company.company_phone ?? '—'
+                                                }}</span>
+                                            </div>
+                                            <div class="items-start flex">
+                                                <div class="h-full mr-4">
+                                                    <MapPin class="h-4 w-4 inline-block text-primary" />
+                                                </div>
+                                                <span class="text-sm">{{
+                                                    company.company_address ?? '—'
+                                                }}</span>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                    </Card>
+                    <Card class="py-2">
+                        <Accordion collapsible class="p-0">
+                            <AccordionItem 
+                                :key="repreDetails"
+                                :value="repreDetails"
                             >
-                                <UserRound class="h-4 w-4 text-blue-700" />
-                                Representative
-                            </CardTitle>
-                            <CardDescription
-                                >Who to contact for
-                                coordination.</CardDescription
-                            >
-                        </CardHeader>
-                        <CardContent class="divide-y divide-slate-100 p-0">
-                            <div class="px-5 py-3">
-                                <p
-                                    class="mb-0.5 text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
-                                >
-                                    Name
-                                </p>
-                                <p class="text-sm font-medium">
-                                    {{
-                                        company.authorized_representative_name ??
-                                        '—'
-                                    }}
-                                </p>
-                            </div>
-                            <div class="px-5 py-3">
-                                <p
-                                    class="mb-0.5 text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
-                                >
-                                    Position
-                                </p>
-                                <p class="text-sm">
-                                    {{
-                                        company.authorized_representative_position ??
-                                        '—'
-                                    }}
-                                </p>
-                            </div>
-                            <div class="px-5 py-3">
-                                <p
-                                    class="mb-0.5 text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
-                                >
-                                    Contact
-                                </p>
-                                <p class="text-sm">
-                                    {{
-                                        company.authorized_representative_contact ??
-                                        '—'
-                                    }}
-                                </p>
-                            </div>
-                            <div v-if="!repHasAny" class="px-5 py-4">
-                                <p class="text-xs text-muted-foreground">
-                                    No representative details provided.
-                                </p>
-                            </div>
-                        </CardContent>
+                                <CardHeader class="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle>
+                                            Representative
+                                        </CardTitle>
+                                    </div>
+                                    <AccordionTrigger></AccordionTrigger>
+                                </CardHeader>
+
+                                <AccordionContent class="mt-2 pt-2 border-t border-slate-100">
+                                    <CardContent class="px-6 grid divide-y gap-y-2">                                        
+                                        <div class="grid gap-y-2 pt-2">
+                                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                                                Contacts
+                                            </span>
+                                            <div class="items-start flex">
+                                                <div class="h-full mr-4">
+                                                    <Mail class="h-4 w-4 inline-block text-primary" />
+                                                </div>
+                                                <!-- TODO: make the email clickable, nagoopen ang email when the email is clicked -->
+                                                <span class="text-sm">
+                                                    {{
+                                                        company.authorized_representative_name ??
+                                                        '—'
+                                                    }}
+                                                </span>
+                                            </div>
+                                            <div class="items-start flex">
+                                                <div class="h-full mr-4">
+                                                    <IdCard class="h-4 w-4 inline-block text-primary" />
+                                                </div>
+                                                <span class="text-sm">
+                                                    {{
+                                                        company.authorized_representative_position ??
+                                                        '—'
+                                                    }}
+                                                </span>
+                                            </div>
+                                            <div class="items-start flex">
+                                                <div class="h-full mr-4">
+                                                    <Phone class="h-4 w-4 inline-block text-primary" />
+                                                </div>
+                                                <span class="text-sm">
+                                                    {{
+                                                        company.authorized_representative_contact ??
+                                                        '—'
+                                                    }}
+                                                </span>
+                                            </div>
+                                            <div v-if="!repHasAny" class="px-5 py-4">
+                                                <p class="text-xs text-muted-foreground">
+                                                    No representative details provided.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
                     </Card>
                 </div>
-
-                <!-- ── Documents card ─────────────────────────────── -->
-                <Card>
+            <!-- ── Documents card ─────────────────────────────── -->
+                <Card class="col-span-2">
                     <CardHeader class="border-b border-slate-100 pb-4">
                         <div class="flex items-start justify-between gap-4">
                             <div>

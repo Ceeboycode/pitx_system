@@ -86,32 +86,31 @@ function handleRestore(user: UserArchive) {
         <div
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
-            <Card class="mx-5">
+            <Card>
                 <CardHeader>
-                    <div>
-                        <CardTitle class="flex items-center gap-2">
-                            <Archive class="h-5 w-5 text-muted-foreground" />
-                            Archived Users
-                        </CardTitle>
-                        <CardDescription class="mt-1">
-                            Archived users can be restored back to the active
-                            user list.
-                        </CardDescription>
-                    </div>
-
-                    <CardAction>
+                    <CardTitle class="flex items-center gap-2">
+                        <!-- <span>Change Requests</span> -->
+                         <!-- TODO: make the text straight, not wrapped -->
                         <Button
                             as-child
-                            size="sm"
                             variant="outline"
-                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
+                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 mr-2"
                         >
                             <Link :href="index().url">
-                                <ArrowLeft class="mr-2 h-4 w-4" />
-                                Back to Users
+                                <ArrowLeft class="h-4 w-4" />
                             </Link>
                         </Button>
-                    </CardAction>
+                        Archives
+                        <span class="ml-2 flex flex-1 items-center">
+                            <hr class="h-px w-full border border-rose-500 " />
+                            <div class="border-7 border-rose-500 rounded-xs">
+                                <div class="border-3 border-white rounded-xs"></div>
+                            </div>
+                        </span>
+                    </CardTitle>
+                    <CardDescription class="mt-1">
+                        Archived users can be restored back to the active user list.
+                    </CardDescription>
                 </CardHeader>
 
                 <CardContent class="space-y-4">

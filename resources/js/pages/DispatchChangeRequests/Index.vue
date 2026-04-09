@@ -44,6 +44,13 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Select,
+    SelectTrigger,
+    SelectContent,
+    SelectValue,
+    SelectItem
+} from '@/components/ui/select';
 
 import {
     CheckCircle2,
@@ -51,6 +58,7 @@ import {
     Eye,
     MoreHorizontal,
     XCircle,
+    Filter
 } from 'lucide-vue-next';
 
 type DispatchChangeRequest = {
@@ -84,6 +92,8 @@ type DispatchChangeRequest = {
         bay_number?: string | number | null;
     } | null;
 };
+
+import { type BreadcrumbItem } from '@/types';
 
 const props = defineProps<{
     changeRequests?: DispatchChangeRequest[];
@@ -126,6 +136,10 @@ const rejectedCount = computed(
         props.changeRequests?.filter((r) => r.status === 'rejected').length ??
         0,
 );
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Change Requests', href: '#' },
+];
 
 function formatFieldLabel(field: string): string {
     return field.replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -217,24 +231,414 @@ function statusIcon(status: string) {
 </script>
 
 <template>
-    <AppLayout>
-        <Head title="Dispatch Change Requests" />
+    <Head title="Change Requests" />
 
-        <div class="space-y-5 p-4 md:p-6">
-            <div
-                class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
-            >
-                <div class="space-y-1">
-                    <h1 class="text-2xl font-semibold tracking-tight">
-                        Dispatch Change Requests
-                    </h1>
-                    <p class="text-sm text-muted-foreground">
+    <AppLayout :breadcrumbs="breadcrumbs">
+        <div
+            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
+        >
+            <Card>
+                <CardHeader>
+                    <CardTitle class="flex items-center gap-2">
+                        <!-- <span>Change Requests</span> -->
+                         <!-- TODO: make the text straight, not wrapped -->
+                        Change Requests
+                        <span class="ml-2 flex flex-1 items-center">
+                            <hr class="h-px w-full border border-rose-500 " />
+                            <div class="border-7 border-rose-500 rounded-xs">
+                                <div class="border-3 border-white rounded-xs"></div>
+                            </div>
+                        </span>
+                    </CardTitle>
+                    <CardDescription class="mt-1">
                         Review and approve or reject change requests from
-                        companies
-                    </p>
-                </div>
-            </div>
+                        companies.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent class="space-y-4">
+                    <div
+                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-50/100">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <Select
+                                    v-model="selectedStatus"
+                                >
+                                    <SelectTrigger
+                                        class="cursor-pointer h-8 w-fit rounded-lg border-slate-200 shadow-sm"
+                                    >
+                                        <Filter class="h-3.5 w-3.5 text-slate-600" />
+                                        <SelectValue placeholder="All Statuses" class="justify-start flex"/>
+                                    </SelectTrigger>
+                                    <SelectContent class="rounded-lg shadow-lg">
+                                        <SelectItem key="all" value="all" class="cursor-pointer text-sm"
+                                            >All Statuses</SelectItem
+                                        >
+                                        <SelectItem key="pending" value="pending" class="cursor-pointer text-sm"
+                                            >Pending</SelectItem
+                                        >
+                                        <SelectItem
+                                            key="approved"    
+                                            value="approved"
+                                            class="cursor-pointer text-sm"
+                                            >Approved</SelectItem
+                                        >
+                                        <SelectItem
+                                            key="rejected"
+                                            value="rejected"
+                                            class="cursor-pointer text-sm"
+                                            >Rejected</SelectItem
+                                        >
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>  
+                    </div>
+                    <div class="overflow-x-auto rounded-lg border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow
+                                    class="bg-muted/40 hover:bg-muted/40"
+                                >
+                                    <TableHead
+                                        class="pl-6 font-semibold"
+                                        >Dispatch</TableHead
+                                    >
+                                    <TableHead class="font-semibold"
+                                        >Requester</TableHead
+                                    >
+                                    <TableHead class="font-semibold"
+                                        >Company</TableHead
+                                    >
+                                    <TableHead class="font-semibold"
+                                        >Change</TableHead
+                                    >
+                                    <TableHead class="font-semibold"
+                                        >Reason</TableHead
+                                    >
+                                    <TableHead class="font-semibold"
+                                        >Status</TableHead
+                                    >
+                                    <TableHead
+                                        class="pr-6 text-right font-semibold"
+                                        >Action</TableHead
+                                    >
+                                </TableRow>
+                            </TableHeader>
 
+                            <TableBody>
+                                <TableRow
+                                    v-if="filteredRequests.length === 0"
+                                >
+                                    <TableCell
+                                        colspan="7"
+                                        class="py-20 text-center"
+                                    >
+                                        <div
+                                            class="flex flex-col items-center gap-2 text-muted-foreground"
+                                        >
+                                            <Eye
+                                                class="h-8 w-8 opacity-30"
+                                            />
+                                            <p
+                                                class="text-sm font-medium"
+                                            >
+                                                No change requests found
+                                            </p>
+                                            <p class="text-xs">
+                                                {{
+                                                    selectedStatus ===
+                                                    'pending'
+                                                        ? 'No pending requests to review.'
+                                                        : 'This section is empty.'
+                                                }}
+                                            </p>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+
+                                <template
+                                    v-for="request in filteredRequests"
+                                    :key="request.id"
+                                >
+                                    <TableRow
+                                        class="group transition-colors hover:bg-muted/50"
+                                    >
+                                        <TableCell class="pl-6">
+                                            <div class="space-y-0.5">
+                                                <p
+                                                    class="text-sm font-semibold"
+                                                >
+                                                    {{
+                                                        request.dispatch
+                                                            ?.plate_number ??
+                                                        '—'
+                                                    }}
+                                                </p>
+                                                <p
+                                                    class="text-xs text-muted-foreground"
+                                                >
+                                                    {{
+                                                        request.dispatch
+                                                            ?.gate
+                                                            ?.gate_name ??
+                                                        '—'
+                                                    }}
+                                                    · Bay
+                                                    {{
+                                                        request.dispatch
+                                                            ?.bay_number
+                                                    }}
+                                                </p>
+                                            </div>
+                                        </TableCell>
+
+                                        <TableCell>
+                                            <div class="space-y-0.5">
+                                                <p
+                                                    class="text-sm font-medium"
+                                                >
+                                                    {{
+                                                        request
+                                                            .requested_by
+                                                            .name
+                                                    }}
+                                                </p>
+                                                <p
+                                                    class="text-xs text-muted-foreground"
+                                                >
+                                                    {{
+                                                        request
+                                                            .requested_by
+                                                            .email ??
+                                                        '—'
+                                                    }}
+                                                </p>
+                                            </div>
+                                        </TableCell>
+
+                                        <TableCell>
+                                            <div class="space-y-0.5">
+                                                <p
+                                                    class="text-sm font-medium"
+                                                >
+                                                    {{
+                                                        request.company_name
+                                                    }}
+                                                </p>
+                                                <p
+                                                    class="text-xs text-muted-foreground"
+                                                >
+                                                    {{
+                                                        request.company_code
+                                                    }}
+                                                </p>
+                                            </div>
+                                        </TableCell>
+
+                                        <TableCell>
+                                            <div class="space-y-0.5">
+                                                <p
+                                                    class="text-sm font-medium"
+                                                >
+                                                    {{
+                                                        request.field_label ||
+                                                        formatFieldLabel(
+                                                            request.requested_field,
+                                                        )
+                                                    }}
+                                                </p>
+                                                <p
+                                                    class="text-xs text-muted-foreground"
+                                                >
+                                                    {{
+                                                        request.old_value_display ??
+                                                        formatValue(
+                                                            request.old_value,
+                                                        )
+                                                    }}
+                                                    →
+                                                    {{
+                                                        request.requested_value_display ??
+                                                        formatValue(
+                                                            request.requested_value,
+                                                        )
+                                                    }}
+                                                </p>
+                                            </div>
+                                        </TableCell>
+
+                                        <TableCell>
+                                            <p
+                                                class="max-w-xs truncate text-sm"
+                                                :title="request.reason"
+                                            >
+                                                {{ request.reason }}
+                                            </p>
+                                        </TableCell>
+
+                                        <TableCell>
+                                            <Badge
+                                                :variant="
+                                                    statusVariant(
+                                                        request.status,
+                                                    )
+                                                "
+                                            >
+                                                {{ request.status }}
+                                            </Badge>
+                                        </TableCell>
+
+                                        <TableCell
+                                            class="pr-6 text-right"
+                                        >
+                                            <DropdownMenu
+                                                v-if="
+                                                    request.status ===
+                                                    'pending'
+                                                "
+                                            >
+                                                <DropdownMenuTrigger
+                                                    as-child
+                                                >
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        class="h-8 w-8"
+                                                    >
+                                                        <MoreHorizontal
+                                                            class="h-4 w-4"
+                                                        />
+                                                        <span
+                                                            class="sr-only"
+                                                            >Actions</span
+                                                        >
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+
+                                                <DropdownMenuContent
+                                                    align="end"
+                                                    class="w-44"
+                                                >
+                                                    <DropdownMenuItem
+                                                        as-child
+                                                        class="cursor-pointer text-emerald-600 focus:text-emerald-600"
+                                                        @click="
+                                                            approveRequest(
+                                                                request,
+                                                            )
+                                                        "
+                                                    >
+                                                        <div
+                                                            :class="{
+                                                                'pointer-events-none opacity-50':
+                                                                    approvingId ===
+                                                                    request.id,
+                                                            }"
+                                                        >
+                                                            <CheckCircle2
+                                                                class="mr-2 h-4 w-4"
+                                                            />
+                                                            {{
+                                                                approvingId ===
+                                                                request.id
+                                                                    ? 'Approving…'
+                                                                    : 'Approve'
+                                                            }}
+                                                        </div>
+                                                    </DropdownMenuItem>
+
+                                                    <DropdownMenuSeparator />
+
+                                                    <DropdownMenuItem
+                                                        class="cursor-pointer text-red-600 focus:text-red-600"
+                                                        @click="
+                                                            openRejectModal(
+                                                                request,
+                                                            )
+                                                        "
+                                                    >
+                                                        <XCircle
+                                                            class="mr-2 h-4 w-4"
+                                                        />
+                                                        Reject
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+
+                                            <span
+                                                v-else
+                                                class="text-xs font-medium"
+                                                :class="
+                                                    request.status ===
+                                                    'approved'
+                                                        ? 'text-emerald-600'
+                                                        : 'text-red-600'
+                                                "
+                                            >
+                                                {{
+                                                    request.status ===
+                                                    'approved'
+                                                        ? 'Approved'
+                                                        : 'Rejected'
+                                                }}
+                                            </span>
+                                        </TableCell>
+                                    </TableRow>
+
+                                    <!-- Rejection Reason Row -->
+                                    <TableRow
+                                        v-if="
+                                            request.status ===
+                                                'rejected' &&
+                                            request.rejection_reason
+                                        "
+                                        class="bg-red-50/50 hover:bg-red-50"
+                                    >
+                                        <TableCell
+                                            colspan="6"
+                                            class="pr-6 pl-6"
+                                        >
+                                            <div class="space-y-2 py-3">
+                                                <div
+                                                    class="flex items-start gap-2"
+                                                >
+                                                    <XCircle
+                                                        class="mt-0.5 h-4 w-4 shrink-0 text-red-600"
+                                                    />
+                                                    <div
+                                                        class="flex-1 space-y-1"
+                                                    >
+                                                        <p
+                                                            class="text-xs font-semibold text-red-900"
+                                                        >
+                                                            Rejection
+                                                            Reason
+                                                        </p>
+                                                        <p
+                                                            class="text-sm text-red-800"
+                                                        >
+                                                            {{
+                                                                request.rejection_reason
+                                                            }}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                </template>
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+        
+
+        <!-- ============ -->
+
+            <!-- TODO: make them badges that count:)) -->
             <div class="grid grid-cols-3 gap-3">
                 <div class="rounded-xl border bg-card p-4 shadow-sm">
                     <div class="flex items-center justify-between">
@@ -281,401 +685,6 @@ function statusIcon(status: string) {
                     <p class="text-xs text-muted-foreground">not approved</p>
                 </div>
             </div>
-
-            <Card class="shadow-sm">
-                <CardHeader class="pb-4">
-                    <div
-                        class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
-                    >
-                        <div>
-                            <CardTitle class="text-base"
-                                >Change Requests</CardTitle
-                            >
-                            <CardDescription class="mt-0.5 text-xs">
-                                {{ filteredRequests.length }} request{{
-                                    filteredRequests.length !== 1 ? 's' : ''
-                                }}
-                                shown
-                            </CardDescription>
-                        </div>
-                    </div>
-                </CardHeader>
-
-                <CardContent>
-                    <Tabs v-model="selectedStatus" class="w-full">
-                        <TabsList class="grid w-full grid-cols-4">
-                            <TabsTrigger value="pending">
-                                Pending
-                                <Badge
-                                    v-if="pendingCount > 0"
-                                    variant="secondary"
-                                    class="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs"
-                                >
-                                    {{ pendingCount }}
-                                </Badge>
-                            </TabsTrigger>
-                            <TabsTrigger value="approved">
-                                Approved
-                            </TabsTrigger>
-                            <TabsTrigger value="rejected">
-                                Rejected
-                            </TabsTrigger>
-                            <TabsTrigger value="all">All</TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent
-                            v-for="status in [
-                                'pending',
-                                'approved',
-                                'rejected',
-                                'all',
-                            ]"
-                            :key="status"
-                            :value="status"
-                            class="mt-4"
-                        >
-                            <div class="overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow
-                                            class="bg-muted/40 hover:bg-muted/40"
-                                        >
-                                            <TableHead
-                                                class="pl-6 font-semibold"
-                                                >Dispatch</TableHead
-                                            >
-                                            <TableHead class="font-semibold"
-                                                >Requester</TableHead
-                                            >
-                                            <TableHead class="font-semibold"
-                                                >Company</TableHead
-                                            >
-                                            <TableHead class="font-semibold"
-                                                >Change</TableHead
-                                            >
-                                            <TableHead class="font-semibold"
-                                                >Reason</TableHead
-                                            >
-                                            <TableHead class="font-semibold"
-                                                >Status</TableHead
-                                            >
-                                            <TableHead
-                                                class="pr-6 text-right font-semibold"
-                                                >Action</TableHead
-                                            >
-                                        </TableRow>
-                                    </TableHeader>
-
-                                    <TableBody>
-                                        <TableRow
-                                            v-if="filteredRequests.length === 0"
-                                        >
-                                            <TableCell
-                                                colspan="7"
-                                                class="py-20 text-center"
-                                            >
-                                                <div
-                                                    class="flex flex-col items-center gap-2 text-muted-foreground"
-                                                >
-                                                    <Eye
-                                                        class="h-8 w-8 opacity-30"
-                                                    />
-                                                    <p
-                                                        class="text-sm font-medium"
-                                                    >
-                                                        No change requests found
-                                                    </p>
-                                                    <p class="text-xs">
-                                                        {{
-                                                            selectedStatus ===
-                                                            'pending'
-                                                                ? 'No pending requests to review.'
-                                                                : 'This section is empty.'
-                                                        }}
-                                                    </p>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-
-                                        <template
-                                            v-for="request in filteredRequests"
-                                            :key="request.id"
-                                        >
-                                            <TableRow
-                                                class="group transition-colors hover:bg-muted/50"
-                                            >
-                                                <TableCell class="pl-6">
-                                                    <div class="space-y-0.5">
-                                                        <p
-                                                            class="text-sm font-semibold"
-                                                        >
-                                                            {{
-                                                                request.dispatch
-                                                                    ?.plate_number ??
-                                                                '—'
-                                                            }}
-                                                        </p>
-                                                        <p
-                                                            class="text-xs text-muted-foreground"
-                                                        >
-                                                            {{
-                                                                request.dispatch
-                                                                    ?.gate
-                                                                    ?.gate_name ??
-                                                                '—'
-                                                            }}
-                                                            · Bay
-                                                            {{
-                                                                request.dispatch
-                                                                    ?.bay_number
-                                                            }}
-                                                        </p>
-                                                    </div>
-                                                </TableCell>
-
-                                                <TableCell>
-                                                    <div class="space-y-0.5">
-                                                        <p
-                                                            class="text-sm font-medium"
-                                                        >
-                                                            {{
-                                                                request
-                                                                    .requested_by
-                                                                    .name
-                                                            }}
-                                                        </p>
-                                                        <p
-                                                            class="text-xs text-muted-foreground"
-                                                        >
-                                                            {{
-                                                                request
-                                                                    .requested_by
-                                                                    .email ??
-                                                                '—'
-                                                            }}
-                                                        </p>
-                                                    </div>
-                                                </TableCell>
-
-                                                <TableCell>
-                                                    <div class="space-y-0.5">
-                                                        <p
-                                                            class="text-sm font-medium"
-                                                        >
-                                                            {{
-                                                                request.company_name
-                                                            }}
-                                                        </p>
-                                                        <p
-                                                            class="text-xs text-muted-foreground"
-                                                        >
-                                                            {{
-                                                                request.company_code
-                                                            }}
-                                                        </p>
-                                                    </div>
-                                                </TableCell>
-
-                                                <TableCell>
-                                                    <div class="space-y-0.5">
-                                                        <p
-                                                            class="text-sm font-medium"
-                                                        >
-                                                            {{
-                                                                request.field_label ||
-                                                                formatFieldLabel(
-                                                                    request.requested_field,
-                                                                )
-                                                            }}
-                                                        </p>
-                                                        <p
-                                                            class="text-xs text-muted-foreground"
-                                                        >
-                                                            {{
-                                                                request.old_value_display ??
-                                                                formatValue(
-                                                                    request.old_value,
-                                                                )
-                                                            }}
-                                                            →
-                                                            {{
-                                                                request.requested_value_display ??
-                                                                formatValue(
-                                                                    request.requested_value,
-                                                                )
-                                                            }}
-                                                        </p>
-                                                    </div>
-                                                </TableCell>
-
-                                                <TableCell>
-                                                    <p
-                                                        class="max-w-xs truncate text-sm"
-                                                        :title="request.reason"
-                                                    >
-                                                        {{ request.reason }}
-                                                    </p>
-                                                </TableCell>
-
-                                                <TableCell>
-                                                    <Badge
-                                                        :variant="
-                                                            statusVariant(
-                                                                request.status,
-                                                            )
-                                                        "
-                                                    >
-                                                        {{ request.status }}
-                                                    </Badge>
-                                                </TableCell>
-
-                                                <TableCell
-                                                    class="pr-6 text-right"
-                                                >
-                                                    <DropdownMenu
-                                                        v-if="
-                                                            request.status ===
-                                                            'pending'
-                                                        "
-                                                    >
-                                                        <DropdownMenuTrigger
-                                                            as-child
-                                                        >
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                class="h-8 w-8"
-                                                            >
-                                                                <MoreHorizontal
-                                                                    class="h-4 w-4"
-                                                                />
-                                                                <span
-                                                                    class="sr-only"
-                                                                    >Actions</span
-                                                                >
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-
-                                                        <DropdownMenuContent
-                                                            align="end"
-                                                            class="w-44"
-                                                        >
-                                                            <DropdownMenuItem
-                                                                as-child
-                                                                class="cursor-pointer text-emerald-600 focus:text-emerald-600"
-                                                                @click="
-                                                                    approveRequest(
-                                                                        request,
-                                                                    )
-                                                                "
-                                                            >
-                                                                <div
-                                                                    :class="{
-                                                                        'pointer-events-none opacity-50':
-                                                                            approvingId ===
-                                                                            request.id,
-                                                                    }"
-                                                                >
-                                                                    <CheckCircle2
-                                                                        class="mr-2 h-4 w-4"
-                                                                    />
-                                                                    {{
-                                                                        approvingId ===
-                                                                        request.id
-                                                                            ? 'Approving…'
-                                                                            : 'Approve'
-                                                                    }}
-                                                                </div>
-                                                            </DropdownMenuItem>
-
-                                                            <DropdownMenuSeparator />
-
-                                                            <DropdownMenuItem
-                                                                class="cursor-pointer text-red-600 focus:text-red-600"
-                                                                @click="
-                                                                    openRejectModal(
-                                                                        request,
-                                                                    )
-                                                                "
-                                                            >
-                                                                <XCircle
-                                                                    class="mr-2 h-4 w-4"
-                                                                />
-                                                                Reject
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-
-                                                    <span
-                                                        v-else
-                                                        class="text-xs font-medium"
-                                                        :class="
-                                                            request.status ===
-                                                            'approved'
-                                                                ? 'text-emerald-600'
-                                                                : 'text-red-600'
-                                                        "
-                                                    >
-                                                        {{
-                                                            request.status ===
-                                                            'approved'
-                                                                ? 'Approved'
-                                                                : 'Rejected'
-                                                        }}
-                                                    </span>
-                                                </TableCell>
-                                            </TableRow>
-
-                                            <!-- Rejection Reason Row -->
-                                            <TableRow
-                                                v-if="
-                                                    request.status ===
-                                                        'rejected' &&
-                                                    request.rejection_reason
-                                                "
-                                                class="bg-red-50/50 hover:bg-red-50"
-                                            >
-                                                <TableCell
-                                                    colspan="6"
-                                                    class="pr-6 pl-6"
-                                                >
-                                                    <div class="space-y-2 py-3">
-                                                        <div
-                                                            class="flex items-start gap-2"
-                                                        >
-                                                            <XCircle
-                                                                class="mt-0.5 h-4 w-4 shrink-0 text-red-600"
-                                                            />
-                                                            <div
-                                                                class="flex-1 space-y-1"
-                                                            >
-                                                                <p
-                                                                    class="text-xs font-semibold text-red-900"
-                                                                >
-                                                                    Rejection
-                                                                    Reason
-                                                                </p>
-                                                                <p
-                                                                    class="text-sm text-red-800"
-                                                                >
-                                                                    {{
-                                                                        request.rejection_reason
-                                                                    }}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        </template>
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        </TabsContent>
-                    </Tabs>
-                </CardContent>
-            </Card>
-        </div>
 
         <!-- Rejection Reason Modal -->
         <Dialog v-model:open="rejectModalOpen">

@@ -137,8 +137,8 @@ function statusDot(status: string | null | undefined): string {
             <Card>
                 <CardHeader>
                     <CardTitle class="flex items-center gap-2">
-                        Dispatch Companies
-                        <div class="ml-2 flex w-full items-center">
+                        Dispatches
+                        <div class="ml-2 flex flex-1 items-center">
                             <hr class="h-px w-full border border-rose-500" />
                             <div class="rounded-xs border-7 border-rose-500">
                                 <div class="rounded-xs border-3 border-white"></div>
