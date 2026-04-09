@@ -23,6 +23,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -38,13 +45,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardDescription,
-    CardTitle
-} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -78,7 +78,6 @@ import {
     CheckCircle2,
     Clock3,
     FileText,
-    Filter,
     Fingerprint,
     LogOut,
     MoreHorizontal,
@@ -316,20 +315,18 @@ const changeRequestForm = useForm({
     requested_value: '',
     reason: '',
 });
-const changeRequestBay = ref<string>('');
 
 type ChangeRequestField =
     | 'driver_user_id'
     | 'pax_count'
     | 'vehicle_id'
-    | 'gate_id'
     | 'bay_number';
 const changeRequestFields: Array<{ value: ChangeRequestField; label: string }> =
     [
         { value: 'driver_user_id', label: 'Change Driver Assignment' },
         { value: 'pax_count', label: 'Update Passenger Count' },
         { value: 'vehicle_id', label: 'Change Vehicle' },
-        { value: 'gate_id', label: 'Change Gate & Bay' },
+        { value: 'bay_number', label: 'Change Bay Number' },
     ];
 
 /* ======================================================
@@ -393,6 +390,26 @@ const approvedChangeRequests = computed(
 const rejectedChangeRequests = computed(
     () => props.changeRequests?.filter((r) => r.status === 'rejected') ?? [],
 );
+const changeRequestGate = computed(() => {
+    const gateId = changeRequestDispatch.value?.gate?.id;
+    if (!gateId) return null;
+    return props.gates.find((gate) => gate.id === gateId) ?? null;
+});
+const changeRequestBayOptions = computed(() => {
+    if (changeRequestGate.value?.bay_options?.length) {
+        return changeRequestGate.value.bay_options;
+    }
+
+    const fallbackBays =
+        changeRequestGate.value?.bays && changeRequestGate.value.bays > 0
+            ? changeRequestGate.value.bays
+            : 10;
+
+    return Array.from({ length: fallbackBays }, (_, index) => ({
+        value: index + 1,
+        label: `Bay ${index + 1}`,
+    }));
+});
 
 function isDriverDisabledForDispatchForm(driverId: number): boolean {
     if (editingDispatch.value?.driver?.id === driverId) {
@@ -555,7 +572,6 @@ function confirmDepart() {
 function openChangeRequestModal(dispatch: DispatchItem) {
     changeRequestDispatch.value = dispatch;
     changeRequestForm.reset();
-    changeRequestBay.value = '';
     driverValidationWarning.value = null;
     changeRequestOpen.value = true;
 }
@@ -564,7 +580,6 @@ function closeChangeRequestModal() {
     changeRequestOpen.value = false;
     changeRequestDispatch.value = null;
     changeRequestForm.reset();
-    changeRequestBay.value = '';
     driverValidationWarning.value = null;
 }
 
@@ -619,62 +634,33 @@ function submitChangeRequest() {
         window.$toast?.error(driverValidationWarning.value);
         return;
     }
-    if (changeRequestForm.requested_field === 'gate_id') {
-        const gateChanged =
-            changeRequestDispatch.value.gate?.id !==
-            parseInt(changeRequestForm.requested_value, 10);
-        const bayChanged =
-            changeRequestDispatch.value.bay_number !==
-            parseInt(changeRequestBay.value, 10);
-        if (!gateChanged && !bayChanged) {
+    if (changeRequestForm.requested_field === 'bay_number') {
+        const requestedBay = parseInt(changeRequestForm.requested_value, 10);
+        const currentBay = Number(changeRequestDispatch.value.bay_number);
+
+        if (!Number.isFinite(requestedBay)) {
+            window.$toast?.error('Please select a new bay number');
+            return;
+        }
+
+        if (requestedBay === currentBay) {
             window.$toast?.error(
-                'Gate or Bay must be different from current value',
+                'New bay number must be different from current value',
             );
             return;
         }
-        if (!gateChanged && bayChanged) {
-            const bayForm = useForm({
-                requested_field: 'bay_number',
-                requested_value: changeRequestBay.value,
-                reason: changeRequestForm.reason,
-            });
-            bayForm.post(storeChangeRequest(changeRequestDispatch.value.id), {
-                preserveScroll: true,
-                onSuccess: () => {
-                    closeChangeRequestModal();
-                    window.$toast?.success(
-                        'Change request submitted successfully',
-                    );
-                },
-            });
-        } else {
-            changeRequestForm.post(
-                storeChangeRequest(changeRequestDispatch.value.id),
-                {
-                    preserveScroll: true,
-                    onSuccess: () => {
-                        closeChangeRequestModal();
-                        window.$toast?.success(
-                            'Change request submitted successfully',
-                        );
-                    },
-                },
-            );
-        }
-    } else {
-        changeRequestForm.post(
-            storeChangeRequest(changeRequestDispatch.value.id),
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    closeChangeRequestModal();
-                    window.$toast?.success(
-                        'Change request submitted successfully',
-                    );
-                },
-            },
-        );
     }
+
+    changeRequestForm.post(
+        storeChangeRequest(changeRequestDispatch.value.id).url,
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                closeChangeRequestModal();
+                window.$toast?.success('Change request submitted successfully');
+            },
+        },
+    );
 }
 
 function statusClass(status?: string | null) {
@@ -936,7 +922,8 @@ watch(confirmDepartOpen, (open) => {
                             </div>
                         </CardTitle>
                         <CardDescription class="mt-1">
-                            Arrival time is automatically recorded on dispatch creation.
+                            Arrival time is automatically recorded on dispatch
+                            creation.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -2166,7 +2153,7 @@ watch(confirmDepartOpen, (open) => {
 
         <!-- Request Change Modal -->
         <Dialog v-model:open="changeRequestOpen">
-            <DialogContent class="sm:max-w-md">
+            <DialogContent class="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle class="flex items-center gap-2">
                         <Send class="h-4 w-4 text-slate-500" />
@@ -2190,7 +2177,9 @@ watch(confirmDepartOpen, (open) => {
                         </p>
                     </div>
 
-                    <div class="rounded-lg border bg-muted/30 p-3 text-sm">
+                    <div
+                        class="rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-sm"
+                    >
                         <div class="font-medium">
                             {{ changeRequestDispatch?.plate_number }}
                         </div>
@@ -2366,9 +2355,12 @@ watch(confirmDepartOpen, (open) => {
                                             :key="vehicle.id"
                                             :value="String(vehicle.id)"
                                             :disabled="
-                                                changeRequestDispatch &&
-                                                changeRequestDispatch.vehicle
-                                                    ?.id === vehicle.id
+                                                Boolean(
+                                                    changeRequestDispatch &&
+                                                    changeRequestDispatch
+                                                        .vehicle?.id ===
+                                                        vehicle.id,
+                                                )
                                             "
                                         >
                                             <span
@@ -2396,43 +2388,61 @@ watch(confirmDepartOpen, (open) => {
                             </div>
                         </template>
 
-                        <!-- Gate & Bay -->
+                        <!-- Bay change -->
                         <template
                             v-else-if="
-                                changeRequestForm.requested_field === 'gate_id'
+                                changeRequestForm.requested_field ===
+                                'bay_number'
                             "
                         >
                             <div>
-                                <Label for="change_gate">Select New Gate</Label>
+                                <Label>Current Gate (Locked)</Label>
+                                <div
+                                    class="mt-1 rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-600"
+                                >
+                                    {{
+                                        changeRequestDispatch?.gate
+                                            ?.gate_name ?? '—'
+                                    }}
+                                    <span class="text-slate-400">
+                                        ·
+                                        {{ changeRequestGate?.bays ?? 0 }} bays
+                                    </span>
+                                </div>
+                            </div>
+                            <div>
+                                <Label for="change_bay">Select New Bay</Label>
                                 <Select
                                     v-model="changeRequestForm.requested_value"
                                 >
-                                    <SelectTrigger id="change_gate"
+                                    <SelectTrigger id="change_bay"
                                         ><SelectValue
-                                            placeholder="Select a gate"
+                                            placeholder="Select a bay number"
                                     /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem
-                                            v-for="gate in props.gates"
-                                            :key="gate.id"
-                                            :value="String(gate.id)"
+                                            v-for="bay in changeRequestBayOptions"
+                                            :key="bay.value"
+                                            :value="String(bay.value)"
                                             :disabled="
-                                                changeRequestDispatch &&
-                                                changeRequestDispatch.gate
-                                                    ?.id === gate.id
+                                                Boolean(
+                                                    changeRequestDispatch &&
+                                                    changeRequestDispatch.bay_number ===
+                                                        bay.value,
+                                                )
                                             "
                                         >
                                             <span
                                                 v-if="
                                                     changeRequestDispatch &&
-                                                    changeRequestDispatch.gate
-                                                        ?.id === gate.id
+                                                    changeRequestDispatch.bay_number ===
+                                                        bay.value
                                                 "
                                             >
-                                                ✓ {{ gate.label }} (Currently
+                                                ✓ {{ bay.label }} (Currently
                                                 Assigned)
                                             </span>
-                                            <span v-else>{{ gate.label }}</span>
+                                            <span v-else>{{ bay.label }}</span>
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -2441,44 +2451,6 @@ watch(confirmDepartOpen, (open) => {
                                         changeRequestForm.errors.requested_value
                                     "
                                 />
-                            </div>
-                            <div>
-                                <Label for="change_bay_optional">
-                                    Select New Bay
-                                    <span class="text-xs text-slate-400"
-                                        >(optional)</span
-                                    >
-                                </Label>
-                                <Select v-model="changeRequestBay">
-                                    <SelectTrigger id="change_bay_optional"
-                                        ><SelectValue
-                                            placeholder="Select a bay number (optional)"
-                                    /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem
-                                            v-for="n in 10"
-                                            :key="n"
-                                            :value="String(n)"
-                                            :disabled="
-                                                changeRequestDispatch &&
-                                                changeRequestDispatch.bay_number ===
-                                                    n
-                                            "
-                                        >
-                                            <span
-                                                v-if="
-                                                    changeRequestDispatch &&
-                                                    changeRequestDispatch.bay_number ===
-                                                        n
-                                                "
-                                            >
-                                                ✓ Bay {{ n }} (Currently
-                                                Assigned)
-                                            </span>
-                                            <span v-else>Bay {{ n }}</span>
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
                                 <p class="mt-1 text-xs text-slate-400">
                                     Current: Gate
                                     {{
@@ -2527,9 +2499,12 @@ watch(confirmDepartOpen, (open) => {
                                         changeRequestForm.requested_value,
                                     ) === changeRequestDispatch?.pax_count) ||
                                 (changeRequestForm.requested_field ===
-                                    'gate_id' &&
-                                    !changeRequestForm.requested_value &&
-                                    !changeRequestBay)
+                                    'bay_number' &&
+                                    (!changeRequestForm.requested_value ||
+                                        parseInt(
+                                            changeRequestForm.requested_value,
+                                        ) ===
+                                            changeRequestDispatch?.bay_number))
                             "
                         >
                             {{
