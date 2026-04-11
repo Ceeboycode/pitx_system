@@ -42,7 +42,7 @@ function restoreCompany() {
 
 <template>
     <AlertDialog v-model:open="open">
-        <AlertDialogContent>
+        <AlertDialogContent class="rounded-lg p-4">
             <AlertDialogHeader>
                 <AlertDialogTitle>Restore Company</AlertDialogTitle>
 
@@ -58,11 +58,11 @@ function restoreCompany() {
             </AlertDialogHeader>
 
             <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel class="rounded-lg cursor-pointer hover:bg-slate-100">Cancel</AlertDialogCancel>
 
-                <AlertDialogAction as-child>
-                    <Button variant="secondary" @click="restoreCompany">
-                        <RotateCcw class="mr-2 h-4 w-4" />
+                <AlertDialogAction as-child class="rounded-lg border-0 cursor-pointer bg-primary hover:bg-primary/90 text-primary-foreground hover:text-primary-foreground">
+                    <Button variant="outline" @click="restoreCompany">
+                        <RotateCcw class="h-4 w-4" />
                         Restore
                     </Button>
                 </AlertDialogAction>

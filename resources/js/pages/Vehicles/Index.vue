@@ -636,30 +636,30 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                     </div>
 
                     <!-- Table -->
-                    <div class="overflow-x-auto rounded-lg border">
+                    <div class="overflow-x-auto">
                         <Table>
-                            <TableHeader>
-                                <TableRow class="bg-muted/40 hover:bg-muted/40">
+                            <TableHeader class="border-y border-slate-200">
+                                <TableRow class="gap-2">
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Company</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Route</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Vehicle Info</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Plate Number</TableHead
                                     >
 
                                     <!-- Sortable: Capacity -->
                                     <TableHead
-                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('capacity')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -676,7 +676,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
 
                                     <!-- Sortable: Status -->
                                     <TableHead
-                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('status')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -690,8 +690,8 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                     </TableHead>
 
                                     <!-- Sortable: Created -->
-                                    <TableHead
-                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                    <!-- <TableHead
+                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('created_at')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -704,21 +704,21 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                 "
                                             />
                                         </div>
-                                    </TableHead>
+                                    </TableHead> -->
 
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Remarks</TableHead
                                     >
 
                                     <TableHead
-                                        class="text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Actions</TableHead
                                     >
                                 </TableRow>
                             </TableHeader>
 
-                            <TableBody>
+                            <TableBody class="border-y border-slate-200">
                                 <!-- Empty state -->
                                 <TableRow
                                     v-if="vehicles.data.length === 0"
@@ -771,24 +771,24 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                 <TableRow
                                     v-for="vehicle in vehicles.data"
                                     :key="vehicle.id"
-                                    class="transition-colors hover:bg-muted/30"
+                                    class="group transition-colors hover:bg-muted/30"
                                 >
                                     <!-- Company -->
-                                    <TableCell class="text-sm font-medium">
+                                    <TableCell class="text-sm font-medium px-0">
                                         {{
                                             vehicle.company?.company_name || '—'
                                         }}
                                     </TableCell>
 
                                     <!-- Route -->
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <div
                                             v-if="vehicle.route?.route_name"
                                             class="flex items-center gap-1.5"
                                         >
-                                            <RouteIcon
+                                            <!-- <RouteIcon
                                                 class="h-3.5 w-3.5 shrink-0 text-sky-600"
-                                            />
+                                            /> -->
                                             <span class="text-sm">{{
                                                 vehicle.route.route_name
                                             }}</span>
@@ -801,15 +801,15 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                     </TableCell>
 
                                     <!-- Vehicle Info -->
-                                    <TableCell>
-                                        <div class="flex items-center gap-2">
-                                            <div
+                                    <TableCell class="px-0">
+                                        <!-- <div class="flex items-center gap-2"> -->
+                                            <!-- <div
                                                 class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-100"
                                             >
                                                 <Bus
                                                     class="h-3.5 w-3.5 text-blue-700"
                                                 />
-                                            </div>
+                                            </div> -->
                                             <div>
                                                 <p class="text-sm font-medium">
                                                     {{
@@ -827,11 +827,11 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     }}
                                                 </p>
                                             </div>
-                                        </div>
+                                        <!-- </div> -->
                                     </TableCell>
 
                                     <!-- Plate Number -->
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <span
                                             class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold"
                                         >
@@ -841,13 +841,13 @@ const archiveVehicle = (vehicle: VehicleItem) => {
 
                                     <!-- Capacity -->
                                     <TableCell
-                                        class="text-sm text-muted-foreground tabular-nums"
+                                        class="text-sm text-muted-foreground tabular-nums px-0"
                                     >
                                         {{ vehicle.capacity || '—' }}
                                     </TableCell>
 
                                     <!-- Status -->
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <Badge
                                             :class="[
                                                 'gap-1.5',
@@ -865,14 +865,14 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                     </TableCell>
 
                                     <!-- Created -->
-                                    <TableCell
-                                        class="text-sm text-muted-foreground"
+                                    <!-- <TableCell
+                                        class="text-sm text-muted-foreground px-0"
                                     >
                                         {{ formatDate(vehicle.created_at) }}
-                                    </TableCell>
+                                    </TableCell> -->
 
                                     <!-- Remarks -->
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <div class="flex items-center gap-2">
                                             <Popover v-if="vehicle.remarks">
                                                 <PopoverTrigger as-child>
@@ -909,13 +909,12 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                     </TableCell>
 
                                     <!-- Actions -->
-                                    <TableCell class="text-right">
+                                    <TableCell class="text-right px-0">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    variant="outline"
+                                                    class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                                                 >
                                                     <MoreHorizontal
                                                         class="h-4 w-4"
@@ -928,7 +927,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
 
                                             <DropdownMenuContent
                                                 align="end"
-                                                class="w-52 rounded-xl border-slate-200 shadow-lg"
+                                                class="w-fit rounded-lg border-slate-200 shadow-lg"
                                             >
                                                 <DropdownMenuLabel
                                                     class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
@@ -942,7 +941,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
 
                                                 <DropdownMenuItem
                                                     as-child
-                                                    class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700"
+                                                    class="rounded-lg cursor-pointer hover:bg-slate-100"
                                                 >
                                                     <Link
                                                         :href="
@@ -954,12 +953,12 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                         class="flex items-center"
                                                     >
                                                         <FileSearch
-                                                            class="mr-2 h-4 w-4"
+                                                            class="h-4 w-4"
                                                         />
                                                         Review
-                                                        <ChevronRight
+                                                        <!-- <ChevronRight
                                                             class="ml-auto h-3.5 w-3.5 text-blue-400"
-                                                        />
+                                                        /> -->
                                                     </Link>
                                                 </DropdownMenuItem>
 
@@ -972,7 +971,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                         !canToggle(vehicle)
                                                     "
                                                     :class="[
-                                                        'rounded-lg',
+                                                        'rounded-lg cursor-pointer hover:bg-slate-100',
                                                         canToggle(vehicle)
                                                             ? toggleStatusClass(
                                                                   vehicle.status,
@@ -987,7 +986,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     "
                                                 >
                                                     <Power
-                                                        class="mr-2 h-4 w-4"
+                                                        class="h-4 w-4"
                                                     />
                                                     Suspend
                                                 </DropdownMenuItem>
@@ -1001,7 +1000,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                         !canToggle(vehicle)
                                                     "
                                                     :class="[
-                                                        'rounded-lg',
+                                                        'rounded-lg cursor-pointer hover:bg-slate-100',
                                                         canToggle(vehicle)
                                                             ? toggleStatusClass(
                                                                   vehicle.status,
@@ -1016,7 +1015,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     "
                                                 >
                                                     <Power
-                                                        class="mr-2 h-4 w-4"
+                                                        class="h-4 w-4"
                                                     />
                                                     Unsuspend
                                                 </DropdownMenuItem>
@@ -1028,7 +1027,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     class="rounded-lg text-slate-300"
                                                 >
                                                     <Power
-                                                        class="mr-2 h-4 w-4"
+                                                        class="h-4 w-4"
                                                     />
                                                     {{
                                                         toggleLabel(

@@ -43,14 +43,14 @@ function archive() {
 
 <template>
     <AlertDialog v-model:open="open">
-        <AlertDialogContent>
+        <AlertDialogContent class="rounded-lg p-4">
             <AlertDialogHeader>
                 <AlertDialogTitle>Archive Company</AlertDialogTitle>
 
-                <AlertDialogDescription class="space-y-2">
+                <AlertDialogDescription class="">
                     <span>
                         Are you sure you want to archive
-                        <span class="font-medium">{{
+                        <span class="font-bold">{{
                             props.company.company_name
                         }}</span
                         >?
@@ -64,7 +64,8 @@ function archive() {
 
             <AlertDialogFooter>
                 <AlertDialogCancel
-                    class="cursor-pointer"
+                    variant="outline"
+                    class="cursor-pointer hover:bg-slate-100 rounded-lg"
                     :disabled="processing"
                 >
                     Cancel
@@ -73,9 +74,9 @@ function archive() {
                 <AlertDialogAction
                     :disabled="processing"
                     @click="archive"
-                    class="cursor-pointer bg-destructive text-destructive-foreground hover:bg-destructive/70"
+                    class="cursor-pointer bg-destructive text-destructive-foreground hover:bg-destructive/70 rounded-lg"
                 >
-                    <ArchiveX class="mr-2 h-4 w-4" />
+                    <ArchiveX class="h-4 w-4" />
                     {{ processing ? 'Archiving...' : 'Yes, Archive Company' }}
                 </AlertDialogAction>
             </AlertDialogFooter>

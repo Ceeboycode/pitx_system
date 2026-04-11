@@ -63,7 +63,6 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import {
     ArchiveRestore,
     ArrowLeft,
-    ChevronRight,
     MoreHorizontal,
     Route as RouteIcon,
     Trash2,
@@ -244,26 +243,76 @@ function forceDeleteRoute() {
                             />
                         </div>
                     </div>
-                    <div class="overflow-x-auto rounded-lg border">
+                    <div class="overflow-x-auto">
                         <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Route Name</TableHead>
-                                    <TableHead>Gate</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Archived At</TableHead>
-                                    <TableHead class="w-[100px] text-right"
+                            <TableHeader class="border-y border-slate-200">
+                                <TableRow class="gap-2">
+                                    <TableHead
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        >Route Name</TableHead
+                                    >
+                                    <TableHead
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        >Gate</TableHead
+                                    >
+                                    <TableHead
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        >Status</TableHead
+                                    >
+                                    <TableHead
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        >Archived At</TableHead
+                                    >
+                                    <TableHead
+                                        class="px-0 text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Actions</TableHead
                                     >
                                 </TableRow>
                             </TableHeader>
 
-                            <TableBody>
+                            <TableBody class="border-y border-slate-200">
+                                <!-- Empty state -->
+                                <TableRow
+                                    v-if="props.routes.data.length === 0"
+                                    class="hover:bg-transparent"
+                                >
+                                    <TableCell
+                                        colspan="5"
+                                        class="py-20 text-center"
+                                    >
+                                        <div
+                                            class="flex flex-col items-center gap-3"
+                                        >
+                                            <div
+                                                class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted"
+                                            >
+                                                <RouteIcon
+                                                    class="h-6 w-6 text-muted-foreground/40"
+                                                />
+                                            </div>
+                                            <div>
+                                                <p
+                                                    class="text-sm font-semibold text-foreground"
+                                                >
+                                                    No archived routes
+                                                </p>
+                                                <p
+                                                    class="mt-0.5 text-xs text-muted-foreground"
+                                                >
+                                                    Nothing has been archived
+                                                    yet.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+
                                 <TableRow
                                     v-for="routeItem in props.routes.data"
                                     :key="routeItem.id"
+                                    class="group transition-colors hover:bg-muted/30"
                                 >
-                                    <TableCell class="font-medium capitalize">
+                                    <TableCell class="px-0 font-medium capitalize">
                                         <div class="flex items-center gap-2">
                                             <RouteIcon
                                                 class="h-4 w-4 shrink-0 text-muted-foreground"
@@ -272,11 +321,11 @@ function forceDeleteRoute() {
                                         </div>
                                     </TableCell>
 
-                                    <TableCell class="text-muted-foreground">
+                                    <TableCell class="px-0 text-muted-foreground">
                                         {{ routeItem.gate?.gate_name ?? '—' }}
                                     </TableCell>
 
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <span
                                             :class="[
                                                 'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
@@ -302,31 +351,30 @@ function forceDeleteRoute() {
                                     </TableCell>
 
                                     <TableCell
-                                        class="text-sm text-muted-foreground"
+                                        class="px-0 text-sm text-muted-foreground"
                                     >
                                         {{ routeItem.deleted_at_human ?? '—' }}
                                     </TableCell>
 
-                                    <TableCell class="text-right">
+                                    <TableCell class="text-right px-0">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    variant="outline"
+                                                    class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                                                 >
                                                     <MoreHorizontal
                                                         class="h-4 w-4"
                                                     />
                                                     <span class="sr-only"
-                                                        >Open menu</span
+                                                        >Open actions</span
                                                     >
                                                 </Button>
                                             </DropdownMenuTrigger>
 
                                             <DropdownMenuContent
                                                 align="end"
-                                                class="w-56 rounded-xl border-slate-200 shadow-lg"
+                                                class="w-fit rounded-lg border-slate-200 shadow-lg"
                                             >
                                                 <DropdownMenuLabel
                                                     class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
@@ -337,30 +385,18 @@ function forceDeleteRoute() {
 
                                                 <DropdownMenuItem
                                                     v-if="canRestore"
-                                                    class="rounded-lg text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700"
+                                                    class="rounded-lg cursor-pointer hover:bg-slate-100"
                                                     @click="
                                                         openRestoreDialog(routeItem)
                                                     "
                                                 >
                                                     <ArchiveRestore
-                                                        class="mr-2 h-4 w-4"
+                                                        class="h-4 w-4"
                                                     />
                                                     Restore
-                                                    <ChevronRight
-                                                        class="ml-auto h-3.5 w-3.5 text-emerald-400"
-                                                    />
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-
-                                <TableRow v-if="props.routes.data.length === 0">
-                                    <TableCell
-                                        colspan="5"
-                                        class="py-10 text-center text-muted-foreground"
-                                    >
-                                        No archived routes found.
                                     </TableCell>
                                 </TableRow>
                             </TableBody>
@@ -381,10 +417,9 @@ function forceDeleteRoute() {
     </AppLayout>
 
     <AlertDialog v-if="canRestore" v-model:open="restoreOpen">
-        <AlertDialogContent>
+        <AlertDialogContent class="rounded-lg p-4">
             <AlertDialogHeader>
                 <AlertDialogTitle class="flex items-center gap-2">
-                    <ArchiveRestore class="h-5 w-5 text-emerald-600" />
                     Restore Route
                 </AlertDialogTitle>
                 <AlertDialogDescription>
@@ -396,60 +431,15 @@ function forceDeleteRoute() {
             </AlertDialogHeader>
 
             <AlertDialogFooter>
-                <AlertDialogCancel @click="closeRestoreDialog"
+                <AlertDialogCancel class="rounded-lg cursor-pointer hover:bg-slate-100" @click="closeRestoreDialog"
                     >Cancel</AlertDialogCancel
                 >
                 <AlertDialogAction
-                    class="bg-emerald-600 hover:bg-emerald-700 focus-visible:ring-emerald-500"
+                    class="rounded-lg border-0 text-white cursor-pointer bg-primary hover:bg-primary/90"
                     @click="restoreRoute"
                 >
+                    <ArchiveRestore class="h-4 w-4" />
                     Restore Route
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
-
-    <AlertDialog v-if="canForceDelete" v-model:open="deleteOpen">
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle class="flex items-center gap-2">
-                    <Trash2 class="h-5 w-5 text-destructive" />
-                    Delete Permanently
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                    This action
-                    <span class="font-semibold text-destructive"
-                        >cannot be undone</span
-                    >. Type
-                    <span class="font-mono font-semibold text-destructive"
-                        >delete</span
-                    >
-                    below to permanently remove
-                    <span class="font-medium text-foreground">
-                        {{ selectedRoute?.route_name ?? 'this route' }} </span
-                    >.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-
-            <div class="space-y-2 px-1">
-                <Label for="confirm_delete">Confirmation</Label>
-                <Input
-                    id="confirm_delete"
-                    v-model="confirmText"
-                    placeholder="Type delete to confirm"
-                />
-            </div>
-
-            <AlertDialogFooter>
-                <AlertDialogCancel @click="closeDeleteDialog"
-                    >Cancel</AlertDialogCancel
-                >
-                <AlertDialogAction
-                    class="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:pointer-events-none disabled:opacity-50"
-                    :disabled="!canConfirmForceDelete"
-                    @click="forceDeleteRoute"
-                >
-                    Delete Permanently
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>

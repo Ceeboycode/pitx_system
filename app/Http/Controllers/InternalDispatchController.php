@@ -16,6 +16,10 @@ class InternalDispatchController extends Controller
 
         $search = trim((string) $request->string('search'));
 
+        $allowedSortFields = ['company_name', 'company_code', 'status', 'dispatches_count'];
+        $sortBy  = in_array($request->input('sort_by'), $allowedSortFields, true) ? $request->input('sort_by') : 'company_name';
+        $sortDir = $request->input('sort_dir') === 'desc' ? 'desc' : 'asc';
+
         $companies = Company::query()
             ->select(['id', 'company_name', 'company_code', 'company_email', 'company_phone', 'status'])
             ->withCount('dispatches')
@@ -27,7 +31,7 @@ class InternalDispatchController extends Controller
                         ->orWhere('company_phone', 'like', "%{$search}%");
                 });
             })
-            ->orderBy('company_name')
+            ->orderBy($sortBy, $sortDir)
             ->paginate(10)
             ->withQueryString()
             ->through(fn (Company $company) => [
@@ -41,7 +45,7 @@ class InternalDispatchController extends Controller
             ]);
 
         return Inertia::render('Dispatches/Index', [
-            'filters'   => ['search' => $search],
+            'filters'   => ['search' => $search, 'sort_by' => $sortBy, 'sort_dir' => $sortDir],
             'companies' => $companies,
         ]);
     }
