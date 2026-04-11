@@ -87,7 +87,7 @@ class CompanyUserController extends Controller
                 'role'   => $role,
                 'status' => $status,
             ],
-            'roles'    => $this->getExternalRoles()->values(),
+            'roles'    => $this->getExternalRoles()->pluck('name')->values(),
             'statuses' => ['active', 'inactive', 'suspended'],
         ]);
     }
