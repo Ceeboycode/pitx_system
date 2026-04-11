@@ -2,6 +2,16 @@
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -41,6 +51,7 @@ import {
     Users,
 } from 'lucide-vue-next';
 
+import { ref } from 'vue';
 import { toast } from 'vue-sonner';
 
 type UserArchive = {
@@ -62,17 +73,25 @@ const props = defineProps<{
     filters: { search: string | null };
 }>();
 
-function handleRestore(user: UserArchive) {
-    if (!confirm(`Restore ${user.name}?`)) {
-        toast.info('Restore cancelled.');
-        return;
-    }
+const restoringUser = ref<UserArchive | null>(null);
+const restoreOpen = ref(false);
 
+function openRestoreDialog(user: UserArchive) {
+    restoringUser.value = user;
+    restoreOpen.value = true;
+}
+
+function confirmRestore() {
+    if (!restoringUser.value) return;
     router.patch(
-        restore({ user: user.id }).url,
+        restore({ user: restoringUser.value.id }).url,
         {},
         {
             preserveScroll: true,
+            onSuccess: () => {
+                restoringUser.value = null;
+                restoreOpen.value = false;
+            },
             onError: () => toast.error('Failed to restore user.'),
         },
     );
@@ -128,38 +147,38 @@ function handleRestore(user: UserArchive) {
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto rounded-lg border">
+                    <div class="overflow-x-auto">
                         <Table>
-                            <TableHeader>
-                                <TableRow class="bg-muted/40 hover:bg-muted/40">
+                            <TableHeader class="border-y border-slate-200">
+                                <TableRow class="gap-2">
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Username</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Name</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Email</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Archived At</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Archived By</TableHead
                                     >
                                     <TableHead
-                                        class="text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Actions</TableHead
                                     >
                                 </TableRow>
                             </TableHeader>
 
-                            <TableBody>
+                            <TableBody class="border-y border-slate-200">
                                 <TableRow
                                     v-if="users.data.length === 0"
                                     class="hover:bg-transparent"
@@ -198,36 +217,35 @@ function handleRestore(user: UserArchive) {
                                 <TableRow
                                     v-for="user in users.data"
                                     :key="user.id"
-                                    class="transition-colors hover:bg-muted/30"
+                                    class="group transition-colors hover:bg-muted/30"
                                 >
-                                    <TableCell class="font-medium">{{
+                                    <TableCell class="px-0 font-medium">{{
                                         user.username
                                     }}</TableCell>
-                                    <TableCell>{{ user.name }}</TableCell>
+                                    <TableCell class="px-0">{{ user.name }}</TableCell>
                                     <TableCell
-                                        class="text-sm text-muted-foreground"
+                                        class="px-0 text-sm text-muted-foreground"
                                         >{{ user.email }}</TableCell
                                     >
                                     <TableCell
-                                        class="text-sm text-muted-foreground"
+                                        class="px-0 text-sm text-muted-foreground"
                                         >{{
                                             user.deleted_at_human ?? '—'
                                         }}</TableCell
                                     >
                                     <TableCell
-                                        class="text-sm text-muted-foreground"
+                                        class="px-0 text-sm text-muted-foreground"
                                         >{{
                                             user.deleter?.name ?? '—'
                                         }}</TableCell
                                     >
 
-                                    <TableCell class="text-right">
+                                    <TableCell class="text-right px-0">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    variant="outline"
+                                                    class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                                                 >
                                                     <MoreHorizontal
                                                         class="h-4 w-4"
@@ -240,7 +258,7 @@ function handleRestore(user: UserArchive) {
 
                                             <DropdownMenuContent
                                                 align="end"
-                                                class="w-52 rounded-xl border-slate-200 shadow-lg"
+                                                class="w-fit rounded-lg border-slate-200 shadow-lg"
                                             >
                                                 <DropdownMenuLabel
                                                     class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
@@ -251,11 +269,11 @@ function handleRestore(user: UserArchive) {
                                                 <DropdownMenuSeparator />
 
                                                 <DropdownMenuItem
-                                                    class="rounded-lg text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700"
-                                                    @click="handleRestore(user)"
+                                                    class="rounded-lg cursor-pointer hover:bg-slate-100"
+                                                    @click="openRestoreDialog(user)"
                                                 >
                                                     <RotateCcw
-                                                        class="mr-2 h-4 w-4"
+                                                        class="h-4 w-4"
                                                     />
                                                     Restore User
                                                 </DropdownMenuItem>
@@ -278,5 +296,30 @@ function handleRestore(user: UserArchive) {
                 </CardContent>
             </Card>
         </div>
+
+        <AlertDialog v-model:open="restoreOpen">
+            <AlertDialogContent class="rounded-lg p-4">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Restore User</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Are you sure you want to restore
+                        <span class="font-semibold text-foreground">{{ restoringUser?.name ?? 'this user' }}</span>?
+                        They will be moved back to the active users list.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel class="rounded-lg cursor-pointer hover:bg-slate-100" @click="restoringUser = null">
+                        Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                        class="rounded-lg border-0 text-white cursor-pointer bg-primary hover:bg-primary/90"
+                        @click="confirmRestore"
+                    >
+                        <RotateCcw class="h-4 w-4" />
+                        Restore User
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </AppLayout>
 </template>

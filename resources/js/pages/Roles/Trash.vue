@@ -5,6 +5,16 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -100,17 +110,25 @@ function typeClass(type: Role['type']): string {
         : 'bg-violet-100 text-violet-700 border-violet-200';
 }
 
-function handleRestore(role: Role) {
-    if (!confirm(`Restore role ${role.name}?`)) {
-        toast.info('Restore cancelled.');
-        return;
-    }
+const restoringRole = ref<Role | null>(null);
+const restoreOpen = ref(false);
 
+function openRestoreDialog(role: Role) {
+    restoringRole.value = role;
+    restoreOpen.value = true;
+}
+
+function confirmRestore() {
+    if (!restoringRole.value) return;
     router.patch(
-        restore({ role: role.id }).url,
+        restore({ role: restoringRole.value.id }).url,
         {},
         {
             preserveScroll: true,
+            onSuccess: () => {
+                restoringRole.value = null;
+                restoreOpen.value = false;
+            },
             onError: () => toast.error('Failed to restore role.'),
         },
     );
@@ -163,38 +181,38 @@ function handleRestore(role: Role) {
                         </div>
                     </div>
                     
-                    <div class="overflow-x-auto rounded-lg border">
+                    <div class="overflow-x-auto">
                         <Table>
-                            <TableHeader>
-                                <TableRow class="bg-muted/40 hover:bg-muted/40">
+                            <TableHeader class="border-y border-slate-200">
+                                <TableRow class="gap-2">
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Name</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Type</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Permissions</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Archived At</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Archived By</TableHead
                                     >
                                     <TableHead
-                                        class="text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Actions</TableHead
                                     >
                                 </TableRow>
                             </TableHeader>
 
-                            <TableBody>
+                            <TableBody class="border-y border-slate-200">
                                 <TableRow
                                     v-if="!props.roles.data.length"
                                     class="hover:bg-transparent"
@@ -233,14 +251,14 @@ function handleRestore(role: Role) {
                                 <TableRow
                                     v-for="role in props.roles.data"
                                     :key="role.id"
-                                    class="transition-colors hover:bg-muted/30"
+                                    class="group transition-colors hover:bg-muted/30"
                                 >
                                     <TableCell
-                                        class="text-sm font-semibold capitalize"
+                                        class="px-0 text-sm font-semibold capitalize"
                                         >{{ role.name }}</TableCell
                                     >
 
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <Badge :class="typeClass(role.type)">
                                             {{
                                                 role.type === 'internal'
@@ -250,7 +268,7 @@ function handleRestore(role: Role) {
                                         </Badge>
                                     </TableCell>
 
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <span
                                             class="text-sm text-muted-foreground"
                                         >
@@ -267,25 +285,24 @@ function handleRestore(role: Role) {
                                     </TableCell>
 
                                     <TableCell
-                                        class="text-sm text-muted-foreground"
+                                        class="px-0 text-sm text-muted-foreground"
                                         >{{
                                             role.deleted_at_human ?? '—'
                                         }}</TableCell
                                     >
                                     <TableCell
-                                        class="text-sm text-muted-foreground"
+                                        class="px-0 text-sm text-muted-foreground"
                                         >{{
                                             role.deleter?.name ?? '—'
                                         }}</TableCell
                                     >
 
-                                    <TableCell class="text-right">
+                                    <TableCell class="text-right px-0">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    variant="outline"
+                                                    class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                                                 >
                                                     <MoreHorizontal
                                                         class="h-4 w-4"
@@ -298,7 +315,7 @@ function handleRestore(role: Role) {
 
                                             <DropdownMenuContent
                                                 align="end"
-                                                class="w-52 rounded-xl border-slate-200 shadow-lg"
+                                                class="w-fit rounded-lg border-slate-200 shadow-lg"
                                             >
                                                 <DropdownMenuLabel
                                                     class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
@@ -309,11 +326,11 @@ function handleRestore(role: Role) {
 
                                                 <DropdownMenuItem
                                                     v-if="canRestore"
-                                                    class="rounded-lg focus:bg-emerald-50 focus:text-emerald-700"
-                                                    @click="handleRestore(role)"
+                                                    class="rounded-lg cursor-pointer hover:bg-slate-100"
+                                                    @click="openRestoreDialog(role)"
                                                 >
                                                     <RotateCcw
-                                                        class="mr-2 h-4 w-4"
+                                                        class="h-4 w-4"
                                                     />
                                                     Restore
                                                 </DropdownMenuItem>
@@ -327,5 +344,30 @@ function handleRestore(role: Role) {
                 </CardContent>
             </Card>
         </div>
+
+        <AlertDialog v-model:open="restoreOpen">
+            <AlertDialogContent class="rounded-lg p-4">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Restore Role</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Are you sure you want to restore
+                        <span class="font-semibold text-foreground">{{ restoringRole?.name ?? 'this role' }}</span>?
+                        It will be moved back to the active roles list.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel class="rounded-lg cursor-pointer hover:bg-slate-100" @click="restoringRole = null">
+                        Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                        class="rounded-lg border-0 text-white cursor-pointer bg-primary hover:bg-primary/90"
+                        @click="confirmRestore"
+                    >
+                        <RotateCcw class="h-4 w-4" />
+                        Restore Role
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </AppLayout>
 </template>

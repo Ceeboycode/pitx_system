@@ -54,6 +54,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 
 import { can } from '@/lib/can';
@@ -96,7 +97,7 @@ type SortDir = 'asc' | 'desc';
 
 /* ── Props ───────────────────────────────────────────────────────── */
 const props = defineProps<{
-    roles: { data: Role[]; links: any[] };
+    roles: { data: Role[]; links: any[]; from: number | null; to: number | null; total: number };
     filters: {
         search?: string | null;
         type?: string | null;
@@ -341,12 +342,12 @@ function deleteRole() {
 
 
 
-                    <div class="overflow-x-auto rounded-lg border">
+                    <div class="overflow-x-auto">
                         <Table>
-                            <TableHeader>
-                                <TableRow>
+                            <TableHeader class="border-y border-slate-200">
+                                <TableRow class="gap-2">
                                     <TableHead
-                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('name')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -360,7 +361,7 @@ function deleteRole() {
                                     </TableHead>
 
                                     <TableHead
-                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('type')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -374,7 +375,7 @@ function deleteRole() {
                                     </TableHead>
 
                                     <TableHead
-                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('permissions_count')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -396,14 +397,14 @@ function deleteRole() {
                                     </TableHead>
 
                                     <TableHead
-                                        class="text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                     >
                                         Actions
                                     </TableHead>
                                 </TableRow>
                             </TableHeader>
 
-                            <TableBody>
+                            <TableBody class="border-y border-slate-200">
                                 <!-- Empty state -->
                                 <TableRow
                                     v-if="!props.roles.data.length"
@@ -456,17 +457,17 @@ function deleteRole() {
                                 <TableRow
                                     v-for="role in props.roles.data"
                                     :key="role.id"
-                                    class="transition-colors hover:bg-muted/30"
+                                    class="group transition-colors hover:bg-muted/30"
                                 >
                                     <!-- Name -->
                                     <TableCell
-                                        class="text-sm font-semibold capitalize"
+                                        class="text-sm font-semibold capitalize px-0"
                                     >
                                         {{ role.name }}
                                     </TableCell>
 
                                     <!-- Type -->
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <Badge :class="typeClass(role.type)">
                                             {{
                                                 role.type === 'internal'
@@ -477,7 +478,7 @@ function deleteRole() {
                                     </TableCell>
 
                                     <!-- Permissions -->
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <span
                                             v-if="!role.permissions?.length"
                                             class="text-sm text-muted-foreground"
@@ -539,15 +540,14 @@ function deleteRole() {
                                     </TableCell>
 
                                     <!-- Actions -->
-                                    <TableCell class="text-right">
+                                    <TableCell class="text-right px-0">
                                         <DropdownMenu
                                             v-if="canUpdate || canDelete"
                                         >
                                             <DropdownMenuTrigger as-child>
                                                 <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    variant="outline"
+                                                    class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                                                 >
                                                     <MoreHorizontal
                                                         class="h-4 w-4"
@@ -560,7 +560,7 @@ function deleteRole() {
 
                                             <DropdownMenuContent
                                                 align="end"
-                                                class="w-48 rounded-xl border-slate-200 shadow-lg"
+                                                class="w-fit rounded-lg border-slate-200 shadow-lg"
                                             >
                                                 <DropdownMenuLabel
                                                     class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
@@ -572,7 +572,7 @@ function deleteRole() {
                                                 <DropdownMenuItem
                                                     v-if="canUpdate"
                                                     as-child
-                                                    class="rounded-lg"
+                                                    class="rounded-lg cursor-pointer hover:bg-slate-100"
                                                 >
                                                     <Link
                                                         :href="
@@ -583,22 +583,19 @@ function deleteRole() {
                                                         class="flex items-center"
                                                     >
                                                         <Pencil
-                                                            class="mr-2 h-4 w-4"
+                                                            class="h-4 w-4"
                                                         />
                                                         Edit
-                                                        <ChevronRight
-                                                            class="ml-auto h-3.5 w-3."
-                                                        />
                                                     </Link>
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
                                                     v-if="canDelete"
-                                                    class="rounded-lg"
+                                                    class="rounded-lg cursor-pointer hover:bg-slate-100"
                                                     @click="openDelete(role)"
                                                 >
                                                     <ArchiveX
-                                                        class="mr-2 h-4 w-4"
+                                                        class="h-4 w-4"
                                                     />
                                                     Archive
                                                 </DropdownMenuItem>
@@ -609,39 +606,35 @@ function deleteRole() {
                             </TableBody>
                         </Table>
                     </div>
+
+                    <InertiaPagination
+                        v-if="roles.links?.length"
+                        :links="roles.links"
+                        :meta="{ from: roles.from, to: roles.to, total: roles.total }"
+                    />
                 </CardContent>
             </Card>
         </div>
 
         <!-- ── Delete dialog ──────────────────────────────────────── -->
         <AlertDialog v-if="canDelete" v-model:open="deleteOpen">
-            <AlertDialogContent class="rounded-2xl">
+            <AlertDialogContent class="rounded-lg p-4">
                 <AlertDialogHeader>
                     <AlertDialogTitle>Archive Role</AlertDialogTitle>
-                    <AlertDialogDescription class="space-y-3">
-                        <p>
-                            This action will archive
-                            <span class="font-semibold text-foreground">{{
-                                selectedRole?.name
-                            }}</span>
-                            and hide it from the active roles list.
-                        </p>
-                        <p class="text-sm text-muted-foreground">
-                            You can restore this role later from Archived Roles.
-                        </p>
+                    <AlertDialogDescription>
+                        Are you sure you want to archive
+                        <span class="font-semibold text-foreground">{{ selectedRole?.name }}</span>?
+                        It will be hidden from the active roles list and can be restored later from Archived Roles.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-
                 <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg"
-                        >Cancel</AlertDialogCancel
-                    >
+                    <AlertDialogCancel class="rounded-lg cursor-pointer hover:bg-slate-100">Cancel</AlertDialogCancel>
                     <AlertDialogAction
                         :disabled="processing"
-                        class="rounded-lg border-0 bg-rose-600 font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+                        class="rounded-lg border-0 text-white cursor-pointer bg-rose-600 hover:bg-rose-700 disabled:opacity-50"
                         @click="deleteRole"
                     >
-                        <ArchiveX class="mr-2 h-4 w-4" />
+                        <ArchiveX class="h-4 w-4" />
                         {{ processing ? 'Archiving…' : 'Archive Role' }}
                     </AlertDialogAction>
                 </AlertDialogFooter>

@@ -31,32 +31,33 @@ class DispatchChangeRequestController extends Controller
      */
     public function index(Request $request): Response|JsonResponse
     {
-        $user = auth()->user();
+        $user   = auth()->user();
+        $allowed = ['pending', 'approved', 'rejected', 'all'];
+        $status  = in_array($request->input('status'), $allowed, true)
+            ? $request->input('status')
+            : 'pending';
 
-        // Filter based on user type
-        if ($user->company_id) {
-            // Company users see their own requests
-            $requests = DispatchChangeRequest::whereHas('dispatch', function ($q) use ($user) {
+        $baseQuery = $user->company_id
+            ? DispatchChangeRequest::whereHas('dispatch', function ($q) use ($user) {
                 $q->where('company_id', $user->company_id);
             })
-            ->with(['dispatch', 'requestedBy.company', 'approvedBy'])
+            : DispatchChangeRequest::query();
+
+        // Status counts (before pagination, always across all statuses)
+        $allForCounts = (clone $baseQuery)->with([])->select('status');
+        $statusCounts = [
+            'pending'  => (clone $allForCounts)->where('status', 'pending')->count(),
+            'approved' => (clone $allForCounts)->where('status', 'approved')->count(),
+            'rejected' => (clone $allForCounts)->where('status', 'rejected')->count(),
+        ];
+
+        $changeRequests = $baseQuery
+            ->with(['dispatch.driver', 'dispatch.gate', 'requestedBy.company', 'approvedBy'])
+            ->when($status !== 'all', fn ($q) => $q->where('status', $status))
             ->latest()
-            ->get();
-        } else {
-            // Internal users see all requests
-            $requests = DispatchChangeRequest::with(['dispatch', 'requestedBy.company', 'approvedBy'])
-                ->latest()
-                ->get();
-        }
-
-        // If this is an API request, return JSON
-        if ($request->wantsJson()) {
-            return response()->json($requests);
-        }
-
-        // Otherwise, return Inertia response
-        return Inertia::render('DispatchChangeRequests/Index', [
-            'changeRequests' => $requests->map(fn (DispatchChangeRequest $req) => [
+            ->paginate(20)
+            ->withQueryString()
+            ->through(fn (DispatchChangeRequest $req) => [
                 'id' => $req->id,
                 'dispatch_id' => $req->dispatch_id,
                 'requested_by' => [
@@ -95,7 +96,17 @@ class DispatchChangeRequestController extends Controller
                     ] : null,
                     'bay_number' => $req->dispatch->bay_number,
                 ] : null,
-            ])->values(),
+            ]);
+
+        // If this is an API request, return JSON
+        if ($request->wantsJson()) {
+            return response()->json($changeRequests);
+        }
+
+        return Inertia::render('DispatchChangeRequests/Index', [
+            'changeRequests' => $changeRequests,
+            'statusCounts'   => $statusCounts,
+            'filters'        => ['status' => $status],
         ]);
     }
 

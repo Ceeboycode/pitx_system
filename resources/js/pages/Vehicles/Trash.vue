@@ -122,46 +122,46 @@ function humanize(text?: string | null) {
                             />
                         </div>
                     </div>
-                    <div class="overflow-x-auto rounded-lg border">
+                    <div class="overflow-x-auto">
                         <Table>
-                            <TableHeader>
-                                <TableRow class="bg-muted/40 hover:bg-muted/40">
+                            <TableHeader class="border-y border-slate-200">
+                                <TableRow class="gap-2">
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Company</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Route</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Vehicle Info</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Plate Number</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Cap.</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Archived At</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Archived By</TableHead
                                     >
                                     <TableHead
-                                        class="text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Actions</TableHead
                                     >
                                 </TableRow>
                             </TableHeader>
 
-                            <TableBody>
+                            <TableBody class="border-y border-slate-200">
                                 <!-- Empty state -->
                                 <TableRow
                                     v-if="vehicles.data.length === 0"
@@ -201,17 +201,17 @@ function humanize(text?: string | null) {
                                 <TableRow
                                     v-for="vehicle in vehicles.data"
                                     :key="vehicle.id"
-                                    class="transition-colors hover:bg-muted/30"
+                                    class="group transition-colors hover:bg-muted/30"
                                 >
                                     <!-- Company -->
-                                    <TableCell class="text-sm font-medium">
+                                    <TableCell class="px-0 text-sm font-medium">
                                         {{
                                             vehicle.company?.company_name || '—'
                                         }}
                                     </TableCell>
 
                                     <!-- Route -->
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <div
                                             v-if="vehicle.route?.route_name"
                                             class="flex items-center gap-1.5"
@@ -231,7 +231,7 @@ function humanize(text?: string | null) {
                                     </TableCell>
 
                                     <!-- Vehicle Info -->
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <div class="flex items-center gap-2">
                                             <div
                                                 class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-100"
@@ -263,7 +263,7 @@ function humanize(text?: string | null) {
                                     </TableCell>
 
                                     <!-- Plate Number -->
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <span
                                             class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold"
                                         >
@@ -273,33 +273,32 @@ function humanize(text?: string | null) {
 
                                     <!-- Capacity -->
                                     <TableCell
-                                        class="text-sm text-muted-foreground tabular-nums"
+                                        class="px-0 text-sm text-muted-foreground tabular-nums"
                                     >
                                         {{ vehicle.capacity || '—' }}
                                     </TableCell>
 
                                     <!-- Archived At -->
                                     <TableCell
-                                        class="text-sm text-muted-foreground"
+                                        class="px-0 text-sm text-muted-foreground"
                                     >
                                         {{ vehicle.deleted_at_human || '—' }}
                                     </TableCell>
 
                                     <!-- Archived By -->
                                     <TableCell
-                                        class="text-sm text-muted-foreground"
+                                        class="px-0 text-sm text-muted-foreground"
                                     >
                                         {{ vehicle.deleter?.name || '—' }}
                                     </TableCell>
 
                                     <!-- Actions -->
-                                    <TableCell class="text-right">
+                                    <TableCell class="text-right px-0">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    variant="outline"
+                                                    class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                                                 >
                                                     <MoreHorizontal
                                                         class="h-4 w-4"
@@ -312,7 +311,7 @@ function humanize(text?: string | null) {
 
                                             <DropdownMenuContent
                                                 align="end"
-                                                class="w-52 rounded-xl border-slate-200 shadow-lg"
+                                                class="w-fit rounded-lg border-slate-200 shadow-lg"
                                             >
                                                 <DropdownMenuLabel
                                                     class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
@@ -325,13 +324,13 @@ function humanize(text?: string | null) {
                                                 <DropdownMenuSeparator />
 
                                                 <DropdownMenuItem
-                                                    class="rounded-lg text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700"
+                                                    class="rounded-lg cursor-pointer hover:bg-slate-100"
                                                     @click="
                                                         openRestore(vehicle)
                                                     "
                                                 >
                                                     <RotateCcw
-                                                        class="mr-2 h-4 w-4"
+                                                        class="h-4 w-4"
                                                     />
                                                     Restore Vehicle
                                                 </DropdownMenuItem>

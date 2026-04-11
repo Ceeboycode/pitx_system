@@ -212,8 +212,8 @@ function statusDot(status: RouteRow['status']): string {
 
 function toggleStatusClass(status: RouteRow['status']): string {
     return status === 'active'
-        ? 'text-rose-600 focus:bg-rose-50 focus:text-rose-600'
-        : 'text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700';
+        ? 'text-foreground'
+        : 'text-foreground';
 }
 
 /* ── Archive dialog ──────────────────────────────────────────────── */
@@ -358,7 +358,7 @@ function confirmToggle() {
                                         >
                                             <Link :href="trash().url" class="flex items-center">
                                                 <Archive class="h-4 w-4" />
-                                                Archived
+                                                Archives
                                             </Link>
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
@@ -367,12 +367,12 @@ function confirmToggle() {
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto rounded-lg border">
+                    <div class="overflow-x-auto">
                         <Table>
-                            <TableHeader>
-                                <TableRow class="bg-muted/40 hover:bg-muted/40">
+                            <TableHeader class="border-y border-slate-200">
+                                <TableRow class="gap-2">
                                     <TableHead
-                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        class="px-0 cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
                                         @click="toggleSort('route_name')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -386,7 +386,7 @@ function confirmToggle() {
                                     </TableHead>
 
                                     <TableHead
-                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        class="px-0 cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
                                         @click="toggleSort('gate_name')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -400,7 +400,7 @@ function confirmToggle() {
                                     </TableHead>
 
                                     <TableHead
-                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        class="px-0 cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
                                         @click="toggleSort('status')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -414,7 +414,7 @@ function confirmToggle() {
                                     </TableHead>
 
                                     <TableHead
-                                        class="cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                                        class="px-0 cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
                                         @click="toggleSort('created_at')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -427,13 +427,13 @@ function confirmToggle() {
                                         </div>
                                     </TableHead>
 
-                                    <TableHead class="text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                                    <TableHead class="px-0 text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
                                         Actions
                                     </TableHead>
                                 </TableRow>
                             </TableHeader>
 
-                            <TableBody>
+                            <TableBody class="border-y border-slate-200">
                                 <TableRow v-if="props.routes.data.length === 0" class="hover:bg-transparent">
                                     <TableCell colspan="5" class="py-20 text-center">
                                         <div class="flex flex-col items-center gap-3">
@@ -463,13 +463,13 @@ function confirmToggle() {
                                 <TableRow
                                     v-for="routeItem in props.routes.data"
                                     :key="routeItem.id"
-                                    class="transition-colors hover:bg-muted/30"
+                                    class="group transition-colors hover:bg-muted/30"
                                 >
-                                    <TableCell class="text-sm font-semibold capitalize">
+                                    <TableCell class="text-sm font-semibold capitalize px-0">
                                         {{ routeItem.route_name }}
                                     </TableCell>
 
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <span
                                             v-if="routeItem.gate"
                                             class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold"
@@ -479,31 +479,30 @@ function confirmToggle() {
                                         <span v-else class="text-sm text-muted-foreground">—</span>
                                     </TableCell>
 
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <Badge :class="['gap-1.5', statusClass(routeItem.status)]">
                                             <span :class="['h-1.5 w-1.5 rounded-full', statusDot(routeItem.status)]" />
                                             {{ routeItem.status === 'active' ? 'Active' : 'Inactive' }}
                                         </Badge>
                                     </TableCell>
 
-                                    <TableCell class="text-sm text-muted-foreground">
+                                    <TableCell class="text-sm text-muted-foreground px-0">
                                         {{ routeItem.created_at_human ?? '—' }}
                                     </TableCell>
 
-                                    <TableCell class="text-right">
+                                    <TableCell class="text-right px-0">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    variant="outline"
+                                                    class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                                                 >
                                                     <MoreHorizontal class="h-4 w-4" />
                                                     <span class="sr-only">Open menu</span>
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent align="end" class="w-52 rounded-xl border-slate-200 shadow-lg">
+                                            <DropdownMenuContent align="end" class="w-fit rounded-lg border-slate-200 shadow-lg">
                                                 <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                                     {{ routeItem.route_name }}
                                                 </DropdownMenuLabel>
@@ -511,32 +510,32 @@ function confirmToggle() {
 
                                                 <DropdownMenuItem
                                                     as-child
-                                                    class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700"
+                                                    class="rounded-lg hover:bg-slate-100 cursor-pointer"
                                                 >
                                                     <Link :href="show(routeItem.id).url" class="flex items-center">
-                                                        <Eye class="mr-2 h-4 w-4" />
+                                                        <Eye class="h-4 w-4" />
                                                         View
-                                                        <ChevronRight class="ml-auto h-3.5 w-3.5 text-blue-400" />
+                                                        <!-- <ChevronRight class="ml-auto h-3.5 w-3.5 text-blue-400" /> -->
                                                     </Link>
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
                                                     v-if="canUpdate"
                                                     as-child
-                                                    class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700"
+                                                    class="rounded-lg hover:bg-slate-100 cursor-pointer"
                                                 >
                                                     <Link :href="edit(routeItem.id).url">
-                                                        <Pencil class="mr-2 h-4 w-4" />
+                                                        <Pencil class="h-4 w-4" />
                                                         Edit
                                                     </Link>
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
                                                     v-if="canToggle"
-                                                    :class="['rounded-lg', toggleStatusClass(routeItem.status)]"
+                                                    :class="['rounded-lg hover:bg-slate-100 cursor-pointer', toggleStatusClass(routeItem.status)]"
                                                     @click="openToggleDialog(routeItem)"
                                                 >
-                                                    <Power class="mr-2 h-4 w-4" />
+                                                    <Power class="h-4 w-4" />
                                                     {{ routeItem.status === 'active' ? 'Set Inactive' : 'Set Active' }}
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
@@ -561,7 +560,7 @@ function confirmToggle() {
 
         <!-- Toggle status confirmation -->
         <AlertDialog v-model:open="toggleOpen">
-            <AlertDialogContent class="rounded-2xl">
+            <AlertDialogContent class="rounded-lg p-4">
                 <AlertDialogHeader>
                     <AlertDialogTitle>
                         {{ togglingRoute?.status === 'active' ? 'Set Route Inactive' : 'Set Route Active' }}
@@ -570,25 +569,25 @@ function confirmToggle() {
                         Are you sure you want to set
                         <span class="font-semibold text-foreground">{{ togglingRoute?.route_name ?? 'this route' }}</span>
                         to
-                        <span class="font-semibold" :class="togglingRoute?.status === 'active' ? 'text-rose-600' : 'text-emerald-600'">
+                        <span class="font-semibold" :class="togglingRoute?.status === 'active' ? 'text-foreground' : 'text-foreground'">
                             {{ togglingRoute?.status === 'active' ? 'inactive' : 'active' }}
                         </span>?
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg" @click="togglingRoute = null">
+                    <AlertDialogCancel class="rounded-lg cursor-pointer hover:bg-slate-100" @click="togglingRoute = null">
                         Cancel
                     </AlertDialogCancel>
                     <AlertDialogAction
                         :class="[
-                            'rounded-lg border-0 text-white',
+                            'rounded-lg border-0 text-white cursor-pointer',
                             togglingRoute?.status === 'active'
                                 ? 'bg-rose-600 hover:bg-rose-700'
-                                : 'bg-emerald-600 hover:bg-emerald-700'
+                                : 'bg-primary'
                         ]"
                         @click="confirmToggle"
                     >
-                        <Power class="mr-2 h-4 w-4" />
+                        <Power class="h-4 w-4" />
                         {{ togglingRoute?.status === 'active' ? 'Set Inactive' : 'Set Active' }}
                     </AlertDialogAction>
                 </AlertDialogFooter>

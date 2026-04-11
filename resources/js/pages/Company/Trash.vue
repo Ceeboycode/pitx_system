@@ -126,19 +126,19 @@ function openForceDelete(company: Company) {
                             />
                         </div>
                     </div>
-                    <div class="overflow-x-auto rounded-lg border">
+                    <div class="overflow-x-auto">
                         <Table>
-                            <TableHeader>
-                                <TableRow class="bg-muted/40 hover:bg-muted/40">
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Company Name</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Code</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Archived At</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Archived By</TableHead>
-                                    <TableHead class="text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Actions</TableHead>
+                            <TableHeader class="border-y border-slate-200">
+                                <TableRow class="gap-2">
+                                    <TableHead class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Company Name</TableHead>
+                                    <TableHead class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Code</TableHead>
+                                    <TableHead class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Archived At</TableHead>
+                                    <TableHead class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Archived By</TableHead>
+                                    <TableHead class="px-0 text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
 
-                            <TableBody>
+                            <TableBody class="border-y border-slate-200">
                                 <!-- Empty state -->
                                 <TableRow v-if="companies.data.length === 0" class="hover:bg-transparent">
                                     <TableCell colspan="5" class="py-20 text-center">
@@ -157,45 +157,44 @@ function openForceDelete(company: Company) {
                                 <TableRow
                                     v-for="company in companies.data"
                                     :key="company.id"
-                                    class="transition-colors hover:bg-muted/30"
+                                    class="group transition-colors hover:bg-muted/30"
                                 >
                                     <!-- Company Name -->
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <p class="text-sm font-semibold capitalize">{{ company.company_name }}</p>
                                     </TableCell>
 
                                     <!-- Code -->
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <span class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold">
                                             {{ company.company_code }}
                                         </span>
                                     </TableCell>
 
                                     <!-- Archived At -->
-                                    <TableCell class="text-sm text-muted-foreground">
+                                    <TableCell class="px-0 text-sm text-muted-foreground">
                                         {{ company.deleted_at_human ?? '—' }}
                                     </TableCell>
 
                                     <!-- Archived By -->
-                                    <TableCell class="text-sm capitalize text-muted-foreground">
+                                    <TableCell class="px-0 text-sm capitalize text-muted-foreground">
                                         {{ company.deleter?.name ?? '—' }}
                                     </TableCell>
 
                                     <!-- Actions -->
-                                    <TableCell class="text-right">
+                                    <TableCell class="text-right px-0">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    variant="outline"
+                                                    class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                                                 >
                                                     <MoreHorizontal class="h-4 w-4" />
                                                     <span class="sr-only">Open actions</span>
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent align="end" class="w-52 rounded-xl border-slate-200 shadow-lg">
+                                            <DropdownMenuContent align="end" class="w-fit rounded-lg border-slate-200 shadow-lg">
                                                 <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                                     {{ company.company_name }}
                                                 </DropdownMenuLabel>
@@ -203,10 +202,10 @@ function openForceDelete(company: Company) {
                                                 <DropdownMenuSeparator />
 
                                                 <DropdownMenuItem
-                                                    class="rounded-lg text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700"
+                                                    class="rounded-lg cursor-pointer hover:bg-slate-100"
                                                     @click="openRestore(company)"
                                                 >
-                                                    <RotateCcw class="mr-2 h-4 w-4" />
+                                                    <RotateCcw class="h-4 w-4" />
                                                     Restore Company
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
@@ -234,11 +233,11 @@ function openForceDelete(company: Company) {
                 :company="selectedCompany"
             />
 
-            <ForceDeleteCompanyDialog
+            <!-- <ForceDeleteCompanyDialog
                 v-if="selectedCompany"
                 v-model:open="forceDeleteOpen"
                 :company="selectedCompany"
-            />
+            /> -->
         </div>
     </AppLayout>
 </template>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+
+import InertiaPagination from '@/components/InertiaPagination.vue';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -120,11 +122,16 @@ type SupportingDocument = {
 const props = defineProps<{
     requests: {
         data: ChangeRequest[];
+        links: { url: string | null; label: string; active: boolean }[];
+        from: number | null;
+        to: number | null;
+        total: number;
     };
+    filters: { status: string };
 }>();
 
 const selectedStatus = ref<'all' | 'pending' | 'approved' | 'rejected'>(
-    'pending',
+    (props.filters.status as 'all' | 'pending' | 'approved' | 'rejected') ?? 'pending',
 );
 
 const rejectModalOpen = ref(false);
@@ -142,6 +149,14 @@ const rejectForm = useForm({ rejection_reason: '' });
 const pending = computed(() =>
     props.requests.data.filter((item) => item.status === 'pending'),
 );
+
+watch(selectedStatus, (val) => {
+    router.get(
+        '/company-profile-change-requests',
+        { status: val },
+        { preserveScroll: true, preserveState: true, replace: true },
+    );
+});
 
 function badgeVariant(status: ChangeRequest['status']): 'success' | 'warning' | 'destructive' {
     if (status === 'approved') return 'success';
@@ -343,19 +358,19 @@ function canTakePreviewAction(): boolean {
                             </div>
                         </div>  
                     </div>
-                    <div class="overflow-x-auto rounded-lg border">
+                    <div class="overflow-x-auto">
                         <Table>
-                            <TableHeader>
-                                <TableRow class="bg-muted/40 hover:bg-muted/40">
-                                    <TableHead class="pl-6 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Company</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Requester</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Status</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Requested Changes</TableHead>
-                                    <TableHead class="pr-6 text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Action</TableHead>
+                            <TableHeader class="border-y border-slate-200">
+                                <TableRow class="gap-2">
+                                    <TableHead class="px-0 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Company</TableHead>
+                                    <TableHead class="px-0 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Requester</TableHead>
+                                    <TableHead class="px-0 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Status</TableHead>
+                                    <TableHead class="px-0 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Requested Changes</TableHead>
+                                    <TableHead class="px-0 text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Action</TableHead>
                                 </TableRow>
                             </TableHeader>
 
-                            <TableBody>
+                            <TableBody class="border-y border-slate-200">
                                 <!-- Empty state -->
                                 <TableRow v-if="requests.data.length === 0" class="hover:bg-transparent">
                                     <TableCell colspan="5" class="py-20 text-center">
@@ -375,10 +390,10 @@ function canTakePreviewAction(): boolean {
                                     v-for="item in requests.data"
                                     :key="item.id"
                                     :class="item.status === 'pending' ? 'border-l-2 border-l-blue-500' : ''"
-                                    class="transition-colors hover:bg-muted/30"
+                                    class="group transition-colors hover:bg-muted/30"
                                 >
                                     <!-- Company -->
-                                    <TableCell class="pl-6">
+                                    <TableCell class="px-0">
                                         <div class="flex items-center gap-2.5">
                                             <div>
                                                 <div class="text-sm font-semibold">{{ item.company.company_name }}</div>
@@ -390,13 +405,13 @@ function canTakePreviewAction(): boolean {
                                     </TableCell>
 
                                     <!-- Requester -->
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <div class="text-sm">{{ item.requester?.name ?? '—' }}</div>
                                         <div class="text-xs text-muted-foreground">{{ item.requester?.email ?? '' }}</div>
                                     </TableCell>
 
                                     <!-- Status -->
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <Badge :variant="badgeVariant(item.status)" class="capitalize">
                                             {{ item.status }}
                                         </Badge>
@@ -406,7 +421,7 @@ function canTakePreviewAction(): boolean {
                                     </TableCell>
 
                                     <!-- Changes -->
-                                    <TableCell class="max-w-sm">
+                                    <TableCell class="max-w-sm px-0">
                                         <div class="space-y-1.5 text-xs">
                                             <!-- Field changes -->
                                             <div
@@ -488,30 +503,30 @@ function canTakePreviewAction(): boolean {
                                     </TableCell>
 
                                     <!-- Actions -->
-                                    <TableCell class="pr-6 text-right">
+                                    <TableCell class="px-0 text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
-                                                <Button variant="ghost" size="icon" class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground">
+                                                <Button variant="outline" class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer">
                                                     <MoreHorizontal class="h-4 w-4" />
                                                 </Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" class="w-48 rounded-xl shadow-lg">
+                                            <DropdownMenuContent align="end" class="w-fit rounded-lg border-slate-200 shadow-lg">
 
                                                 <!-- Pending primary actions -->
                                                 <template v-if="item.status === 'pending' && !primaryPreviewDoc(item)">
                                                     <DropdownMenuItem
                                                         :disabled="approvingId === item.id"
-                                                        class="rounded-lg text-blue-600 focus:bg-blue-50 focus:text-blue-600"
+                                                        class="rounded-lg hover:bg-slate-100 cursor-pointer"
                                                         @click="approveRequest(item)"
                                                     >
-                                                        <CheckCircle2 class="mr-2 h-3.5 w-3.5" />
+                                                        <CheckCircle2 class="h-4 w-4" />
                                                         Approve
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
-                                                        class="rounded-lg text-red-600 focus:bg-red-50 focus:text-red-600"
+                                                        class="rounded-lg hover:bg-slate-100 cursor-pointer"
                                                         @click="openReject(item)"
                                                     >
-                                                        <XCircle class="mr-2 h-3.5 w-3.5" />
+                                                        <XCircle class="h-4 w-4" />
                                                         Reject
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
@@ -551,6 +566,12 @@ function canTakePreviewAction(): boolean {
                             </TableBody>
                         </Table>
                     </div>
+
+                    <InertiaPagination
+                        v-if="requests.links?.length"
+                        :links="requests.links"
+                        :meta="{ from: requests.from, to: requests.to, total: requests.total }"
+                    />
                 </CardContent>
             </Card>
         </div>

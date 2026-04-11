@@ -68,7 +68,9 @@ import {
     MoreHorizontal,
     Upload,
     X,
-    Ellipsis
+    Ellipsis,
+    Mail,
+    Phone,
 } from 'lucide-vue-next';
 
 import { computed, ref } from 'vue';
@@ -464,7 +466,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                                 <ClipboardList
                                                     class="h-4 w-4"
                                                 />
-                                                Profile Requests
+                                                Change Requests
                                             </Link>
                                         </DropdownMenuItem>
 
@@ -488,13 +490,13 @@ function hasVerifiedEmail(company: Company): boolean {
                     </div>
 
                     <!-- Table -->
-                    <div class="overflow-x-auto rounded-lg border">
+                    <div class="overflow-x-auto">
                         <Table>
-                            <TableHeader>
-                                <TableRow class="bg-muted/40 hover:bg-muted/40">
+                            <TableHeader class="border-y border-slate-200">
+                                <TableRow class="gap-2">
                                     <!-- Sortable: Company Name -->
                                     <TableHead
-                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('company_name')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -513,7 +515,7 @@ function hasVerifiedEmail(company: Company): boolean {
 
                                     <!-- Sortable: Code -->
                                     <TableHead
-                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('company_code')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -531,17 +533,17 @@ function hasVerifiedEmail(company: Company): boolean {
                                     </TableHead>
 
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Email</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Phone</TableHead
                                     >
 
                                     <!-- Sortable: Status -->
                                     <TableHead
-                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('status')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -556,7 +558,7 @@ function hasVerifiedEmail(company: Company): boolean {
 
                                     <!-- Sortable: Created -->
                                     <TableHead
-                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('created_at')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -572,13 +574,13 @@ function hasVerifiedEmail(company: Company): boolean {
                                     </TableHead>
 
                                     <TableHead
-                                        class="text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Actions</TableHead
                                     >
                                 </TableRow>
                             </TableHeader>
 
-                            <TableBody>
+                            <TableBody class="border-y border-slate-200">
                                 <!-- Empty state -->
                                 <TableRow
                                     v-if="props.companies.data.length === 0"
@@ -634,7 +636,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                     class="group transition-colors hover:bg-muted/30"
                                 >
                                     <!-- Company Name -->
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <p
                                             class="text-sm font-semibold capitalize"
                                         >
@@ -643,7 +645,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                     </TableCell>
 
                                     <!-- Code -->
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <span
                                             class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold"
                                         >
@@ -652,61 +654,39 @@ function hasVerifiedEmail(company: Company): boolean {
                                     </TableCell>
 
                                     <!-- Email -->
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <div class="space-y-1">
-                                            <p
+                                            <!-- <p
                                                 class="text-sm text-muted-foreground lowercase"
                                             >
                                                 {{
                                                     company.company_email ?? '—'
                                                 }}
-                                            </p>
-                                            <div
-                                                v-if="company.company_email"
-                                                class="flex items-center gap-1.5"
-                                            >
-                                                <Badge
-                                                    :class="
-                                                        hasVerifiedEmail(
-                                                            company,
-                                                        )
-                                                            ? 'gap-1 border-emerald-200 bg-emerald-100 text-[10px] text-emerald-700'
-                                                            : 'gap-1 border-0 bg-slate-100 text-[10px] text-slate-500'
-                                                    "
-                                                >
-                                                    <MailCheck
-                                                        v-if="
-                                                            hasVerifiedEmail(
-                                                                company,
-                                                            )
-                                                        "
-                                                        class="h-3 w-3"
-                                                    />
-                                                    <MailX
-                                                        v-else
-                                                        class="h-3 w-3"
-                                                    />
-                                                    {{
-                                                        hasVerifiedEmail(
-                                                            company,
-                                                        )
-                                                            ? 'Verified'
-                                                            : 'Not Verified'
-                                                    }}
-                                                </Badge>
+                                            </p> -->
+                                            <div class="flex items-center gap-1.5 text-muted-foreground">
+                                                <Mail class="h-3.5 w-3.5 shrink-0" />
+                                                <span class="truncate max-w-[180px]">
+                                                    {{ company.company_email || '—' }}
+                                                </span>
                                             </div>
                                         </div>
                                     </TableCell>
 
                                     <!-- Phone -->
                                     <TableCell
-                                        class="text-sm text-muted-foreground"
+                                        class="text-sm text-muted-foreground px-0"
                                     >
-                                        {{ company.company_phone ?? '—' }}
+                                        <!-- {{ company.company_phone ?? '—' }} -->
+                                        <div class="flex items-center gap-1.5 text-muted-foreground">
+                                            <Phone class="h-3.5 w-3.5 shrink-0" />
+                                            <span class="truncate max-w-[180px]">
+                                                {{ company.company_phone || '—' }}
+                                            </span>
+                                        </div>
                                     </TableCell>
 
                                     <!-- Status -->
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <Badge
                                             :class="[
                                                 'gap-1.5',
@@ -733,19 +713,18 @@ function hasVerifiedEmail(company: Company): boolean {
 
                                     <!-- Created -->
                                     <TableCell
-                                        class="text-sm text-muted-foreground"
+                                        class="text-sm text-muted-foreground px-0"
                                     >
                                         {{ company.created_at_human ?? '—' }}
                                     </TableCell>
 
                                     <!-- Actions -->
-                                    <TableCell class="text-right">
+                                    <TableCell class="text-right px-0">
                                         <DropdownMenu v-if="canViewCompany">
                                             <DropdownMenuTrigger as-child>
                                                 <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    variant="outline"
+                                                    class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                                                 >
                                                     <MoreHorizontal
                                                         class="h-4 w-4"
@@ -758,7 +737,7 @@ function hasVerifiedEmail(company: Company): boolean {
 
                                             <DropdownMenuContent
                                                 align="end"
-                                                class="w-52 rounded-xl border-slate-200 shadow-lg"
+                                                class="w-fit rounded-lg border-slate-200 shadow-lg"
                                             >
                                                 <DropdownMenuLabel
                                                     class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
@@ -769,7 +748,7 @@ function hasVerifiedEmail(company: Company): boolean {
 
                                                 <DropdownMenuItem
                                                     as-child
-                                                    class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700"
+                                                    class="rounded-lg cursor-pointer"
                                                 >
                                                     <Link
                                                         :href="
@@ -781,12 +760,12 @@ function hasVerifiedEmail(company: Company): boolean {
                                                         class="flex items-center"
                                                     >
                                                         <FileSearch
-                                                            class="mr-2 h-4 w-4"
+                                                            class="h-4 w-4"
                                                         />
                                                         Review Company
-                                                        <ChevronRight
+                                                        <!-- <ChevronRight
                                                             class="ml-auto h-3.5 w-3.5 text-blue-400"
-                                                        />
+                                                        /> -->
                                                     </Link>
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>

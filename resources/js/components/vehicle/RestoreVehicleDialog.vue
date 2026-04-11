@@ -42,18 +42,18 @@ function restore() {
 
 <template>
     <AlertDialog>
-        <AlertDialogTrigger as-child>
+        <!-- <AlertDialogTrigger as-child>
             <Button variant="outline" size="sm" class="cursor-pointer">
                 <RotateCcw class="mr-2 h-4 w-4" />
                 Restore
             </Button>
-        </AlertDialogTrigger>
+        </AlertDialogTrigger> -->
 
-        <AlertDialogContent>
+        <AlertDialogContent class="rounded-lg p-4">
             <AlertDialogHeader>
                 <AlertDialogTitle>Restore Vehicle</AlertDialogTitle>
 
-                <AlertDialogDescription class="space-y-2">
+                <AlertDialogDescription>
                     <span>You are about to restore this vehicle:</span>
 
                     <div class="rounded-md bg-muted p-3 text-sm">
@@ -75,7 +75,7 @@ function restore() {
 
             <AlertDialogFooter>
                 <AlertDialogCancel
-                    class="cursor-pointer"
+                    class="rounded-lg cursor-pointer hover:bg-slate-100"
                     :disabled="processing"
                 >
                     Cancel
@@ -84,9 +84,9 @@ function restore() {
                 <AlertDialogAction
                     :disabled="processing"
                     @click="restore"
-                    class="cursor-pointer"
+                    class="rounded-lg border-0 text-white cursor-pointer bg-primary hover:bg-primary/90"
                 >
-                    <RotateCcw class="mr-2 h-4 w-4" />
+                    <RotateCcw class="h-4 w-4" />
                     {{ processing ? 'Restoring...' : 'Yes, Restore Vehicle' }}
                 </AlertDialogAction>
             </AlertDialogFooter>

@@ -150,26 +150,26 @@ function restoreGate() {
                             />
                         </div>
                     </div>
-                    <div class="overflow-x-auto rounded-lg border">
+                    <div class="overflow-x-auto">
                         <Table>
-                            <TableHeader>
-                                <TableRow class="bg-muted/40 hover:bg-muted/40">
+                            <TableHeader class="border-y border-slate-200">
+                                <TableRow class="gap-2">
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Gate Name</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Archived At</TableHead
                                     >
                                     <TableHead
-                                        class="text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Actions</TableHead
                                     >
                                 </TableRow>
                             </TableHeader>
 
-                            <TableBody>
+                            <TableBody class="border-y border-slate-200">
                                 <!-- Empty state -->
                                 <TableRow
                                     v-if="props.gates.data.length === 0"
@@ -209,30 +209,29 @@ function restoreGate() {
                                 <TableRow
                                     v-for="gate in props.gates.data"
                                     :key="gate.id"
-                                    class="transition-colors hover:bg-muted/30"
+                                    class="group transition-colors hover:bg-muted/30"
                                 >
                                     <!-- Gate Name -->
                                     <TableCell
-                                        class="text-sm font-semibold capitalize"
+                                        class="px-0 text-sm font-semibold capitalize"
                                     >
                                         {{ gate.gate_name }}
                                     </TableCell>
 
                                     <!-- Archived At -->
                                     <TableCell
-                                        class="text-sm text-muted-foreground"
+                                        class="px-0 text-sm text-muted-foreground"
                                     >
                                         {{ gate.deleted_at_human ?? '—' }}
                                     </TableCell>
 
                                     <!-- Actions -->
-                                    <TableCell class="text-right">
+                                    <TableCell class="text-right px-0">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    variant="outline"
+                                                    class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                                                 >
                                                     <MoreHorizontal
                                                         class="h-4 w-4"
@@ -245,7 +244,7 @@ function restoreGate() {
 
                                             <DropdownMenuContent
                                                 align="end"
-                                                class="w-52 rounded-xl border-slate-200 shadow-lg"
+                                                class="w-fit rounded-lg border-slate-200 shadow-lg"
                                             >
                                                 <DropdownMenuLabel
                                                     class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
@@ -255,13 +254,13 @@ function restoreGate() {
                                                 <DropdownMenuSeparator />
 
                                                 <DropdownMenuItem
-                                                    class="rounded-lg text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700"
+                                                    class="rounded-lg cursor-pointer hover:bg-slate-100"
                                                     @click="
                                                         openRestoreDialog(gate)
                                                     "
                                                 >
                                                     <RotateCcw
-                                                        class="mr-2 h-4 w-4"
+                                                        class="h-4 w-4"
                                                     />
                                                     Restore Gate
                                                 </DropdownMenuItem>
@@ -287,7 +286,7 @@ function restoreGate() {
 
         <!-- ── Restore dialog ─────────────────────────────────────── -->
         <AlertDialog v-model:open="restoreOpen">
-            <AlertDialogContent class="rounded-2xl">
+            <AlertDialogContent class="rounded-lg p-4">
                 <AlertDialogHeader>
                     <AlertDialogTitle>Restore Gate</AlertDialogTitle>
                     <AlertDialogDescription>
@@ -300,16 +299,16 @@ function restoreGate() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel
-                        class="rounded-lg"
+                        class="rounded-lg cursor-pointer hover:bg-slate-100"
                         @click="closeRestoreDialog"
                         >Cancel</AlertDialogCancel
                     >
                     <AlertDialogAction
-                        class="rounded-lg border-0 bg-emerald-600 text-white hover:bg-emerald-700"
+                        class="rounded-lg border-0 text-white cursor-pointer bg-primary hover:bg-primary/90"
                         @click="restoreGate"
                     >
-                        <RotateCcw class="mr-2 h-4 w-4" />
-                        Restore
+                        <RotateCcw class="h-4 w-4" />
+                        Restore Gate
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

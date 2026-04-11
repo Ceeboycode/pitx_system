@@ -26,8 +26,14 @@ class CompanyProfileChangeRequestController extends Controller
     {
         Gate::authorize('viewAny', CompanyProfileChangeRequest::class);
 
+        $allowed = ['pending', 'approved', 'rejected', 'all'];
+        $status  = in_array($request->input('status'), $allowed, true)
+            ? $request->input('status')
+            : 'pending';
+
         $requests = CompanyProfileChangeRequest::query()
             ->with(['company:id,company_name,company_code,status', 'requester:id,name,email', 'approver:id,name'])
+            ->when($status !== 'all', fn ($q) => $q->where('status', $status))
             ->latest()
             ->paginate(15)
             ->withQueryString()
@@ -89,6 +95,7 @@ class CompanyProfileChangeRequestController extends Controller
 
         return Inertia::render('CompanyProfileChangeRequests/Index', [
             'requests' => $requests,
+            'filters'  => ['status' => $status],
         ]);
     }
 

@@ -6,6 +6,16 @@ import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 
 /* shadcn-vue */
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -82,7 +92,8 @@ import {
     Power,
     Users,
     X,
-    Ellipsis
+    Ellipsis,
+    Mail,
 } from 'lucide-vue-next';
 
 /* ======================================================
@@ -341,34 +352,49 @@ function isOwnAccount(user: User) {
 /* ======================================================
    Actions
 ====================================================== */
-function handleToggleStatus(user: User) {
-    const actionLabel = isActive(user) ? 'set inactive' : 'set active';
-    if (!confirm(`Are you sure you want to ${actionLabel} ${user.name}?`)) {
-        toast.info('Status update cancelled.');
-        return;
-    }
+const togglingUser = ref<User | null>(null);
+const toggleOpen = ref(false);
 
+function openToggleDialog(user: User) {
+    togglingUser.value = user;
+    toggleOpen.value = true;
+}
+
+function confirmToggle() {
+    if (!togglingUser.value) return;
     router.put(
-        toggleStatus(user.id).url,
+        toggleStatus(togglingUser.value.id).url,
         {},
         {
             preserveScroll: true,
+            onSuccess: () => {
+                togglingUser.value = null;
+                toggleOpen.value = false;
+            },
             onError: () => toast.error('Failed to update user status.'),
         },
     );
 }
 
-function handleResetPassword(user: User) {
-    if (!confirm(`Reset password for ${user.name}?`)) {
-        toast.info('Password reset cancelled.');
-        return;
-    }
+const resettingUser = ref<User | null>(null);
+const resetOpen = ref(false);
 
+function openResetDialog(user: User) {
+    resettingUser.value = user;
+    resetOpen.value = true;
+}
+
+function confirmResetPassword() {
+    if (!resettingUser.value) return;
     router.post(
-        resetPassword(user.id).url,
+        resetPassword(resettingUser.value.id).url,
         {},
         {
             preserveScroll: true,
+            onSuccess: () => {
+                resettingUser.value = null;
+                resetOpen.value = false;
+            },
             onError: () => toast.error('Failed to reset password.'),
         },
     );
@@ -590,12 +616,12 @@ function handleResetPassword(user: User) {
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto rounded-lg border">
+                    <div class="overflow-x-auto">
                         <Table>
-                            <TableHeader>
-                                <TableRow class="bg-muted/40 hover:bg-muted/40">
+                            <TableHeader class="border-y border-slate-200">
+                                <TableRow class="gap-2">
                                     <TableHead
-                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('username')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -611,7 +637,7 @@ function handleResetPassword(user: User) {
                                     </TableHead>
 
                                     <TableHead
-                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('name')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -625,7 +651,7 @@ function handleResetPassword(user: User) {
                                     </TableHead>
 
                                     <TableHead
-                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('email')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -639,13 +665,13 @@ function handleResetPassword(user: User) {
                                     </TableHead>
 
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                     >
                                         Verification
                                     </TableHead>
 
                                     <TableHead
-                                        class="cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('status')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -660,26 +686,26 @@ function handleResetPassword(user: User) {
 
                                     <TableHead
                                         v-if="showCompanyColumn"
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                     >
                                         Company
                                     </TableHead>
 
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                     >
                                         Roles
                                     </TableHead>
 
                                     <TableHead
-                                        class="text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                     >
                                         Actions
                                     </TableHead>
                                 </TableRow>
                             </TableHeader>
 
-                            <TableBody>
+                            <TableBody class="border-y border-slate-200">
                                 <TableRow
                                     v-if="filteredUsers.length === 0"
                                     class="hover:bg-transparent"
@@ -738,21 +764,27 @@ function handleResetPassword(user: User) {
                                     :key="user.id"
                                     class="group transition-colors hover:bg-muted/30"
                                 >
-                                    <TableCell class="font-medium">
+                                    <TableCell class="font-medium px-0">
                                         {{ user.username }}
                                     </TableCell>
 
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         {{ user.name }}
                                     </TableCell>
 
                                     <TableCell
-                                        class="text-sm text-muted-foreground"
+                                        class="text-sm text-muted-foreground px-0"
                                     >
-                                        {{ user.email }}
+                                        <!-- {{ user.email }} -->
+                                        <div class="flex items-center gap-1.5 text-muted-foreground">
+                                            <Mail class="h-3.5 w-3.5 shrink-0" />
+                                            <span class="truncate max-w-[180px]">
+                                                {{ user.email }}
+                                            </span>
+                                        </div>
                                     </TableCell>
 
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <Badge
                                             :class="
                                                 emailVerificationBadgeClass(
@@ -769,7 +801,7 @@ function handleResetPassword(user: User) {
                                         </Badge>
                                     </TableCell>
 
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <Badge
                                             :class="
                                                 statusBadgeClass(user.status)
@@ -782,7 +814,7 @@ function handleResetPassword(user: User) {
 
                                     <TableCell
                                         v-if="showCompanyColumn"
-                                        class="text-sm text-muted-foreground"
+                                        class="text-sm text-muted-foreground px-0"
                                     >
                                         {{
                                             visibleRoles(user).some(
@@ -794,7 +826,7 @@ function handleResetPassword(user: User) {
                                         }}
                                     </TableCell>
 
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <div
                                             class="flex flex-wrap gap-1 capitalize"
                                         >
@@ -820,13 +852,12 @@ function handleResetPassword(user: User) {
                                         </div>
                                     </TableCell>
 
-                                    <TableCell class="text-right">
+                                    <TableCell class="text-right px-0">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    variant="outline"
+                                                    class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                                                 >
                                                     <MoreHorizontal
                                                         class="h-4 w-4"
@@ -839,7 +870,7 @@ function handleResetPassword(user: User) {
 
                                             <DropdownMenuContent
                                                 align="end"
-                                                class="w-52 rounded-xl border-slate-200 shadow-lg"
+                                                class="w-fit rounded-lg border-slate-200 shadow-lg"
                                             >
                                                 <DropdownMenuLabel
                                                     class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
@@ -851,7 +882,7 @@ function handleResetPassword(user: User) {
 
                                                 <DropdownMenuItem
                                                     as-child
-                                                    class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700"
+                                                    class="rounded-lg hover:bg-slate-100 cursor-pointer"
                                                 >
                                                     <Link
                                                         :href="
@@ -860,12 +891,9 @@ function handleResetPassword(user: User) {
                                                         class="flex items-center"
                                                     >
                                                         <Eye
-                                                            class="mr-2 h-4 w-4"
+                                                            class="h-4 w-4"
                                                         />
                                                         View Profile
-                                                        <ChevronRight
-                                                            class="ml-auto h-3.5 w-3.5 text-blue-400"
-                                                        />
                                                     </Link>
                                                 </DropdownMenuItem>
 
@@ -880,15 +908,12 @@ function handleResetPassword(user: User) {
                                                         :href="
                                                             edit(user.id).url
                                                         "
-                                                        class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700"
+                                                        class="rounded-lg hover:bg-slate-100 cursor-pointer"
                                                     >
                                                         <Pencil
-                                                            class="mr-2 h-4 w-4"
+                                                            class="h-4 w-4"
                                                         />
                                                         Edit Details
-                                                        <ChevronRight
-                                                            class="ml-auto h-3.5 w-3.5 text-amber-400"
-                                                        />
                                                     </Link>
                                                 </DropdownMenuItem>
 
@@ -897,13 +922,14 @@ function handleResetPassword(user: User) {
                                                         canToggle &&
                                                         !isOwnAccount(user)
                                                     "
-                                                    class="rounded-lg text-rose-700 focus:bg-rose-50 focus:text-rose-700"
+                                                    class="rounded-lg hover:bg-slate-100 cursor-pointer"
                                                     @click="
-                                                        handleToggleStatus(user)
+                                                        // handleToggleStatus(user)
+                                                        openToggleDialog(user)
                                                     "
                                                 >
                                                     <Power
-                                                        class="mr-2 h-4 w-4"
+                                                        class="h-4 w-4"
                                                     />
                                                     {{
                                                         isActive(user)
@@ -917,15 +943,11 @@ function handleResetPassword(user: User) {
                                                         canResetPass &&
                                                         !isOwnAccount(user)
                                                     "
-                                                    class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700"
-                                                    @click="
-                                                        handleResetPassword(
-                                                            user,
-                                                        )
-                                                    "
+                                                    class="rounded-lg hover:bg-slate-100 cursor-pointer"
+                                                    @click="openResetDialog(user)"
                                                 >
                                                     <KeyRound
-                                                        class="mr-2 h-4 w-4"
+                                                        class="h-4 w-4"
                                                     />
                                                     Reset Password
                                                 </DropdownMenuItem>
@@ -957,5 +979,64 @@ function handleResetPassword(user: User) {
                 </CardContent>
             </Card>
         </div>
+
+        <AlertDialog v-model:open="toggleOpen">
+            <AlertDialogContent class="rounded-lg p-4">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>
+                        {{ togglingUser?.status === 'active' ? 'Set User Inactive' : 'Set User Active' }}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Are you sure you want to set
+                        <span class="font-semibold text-foreground">{{ togglingUser?.name ?? 'this user' }}</span>
+                        to
+                        <span class="font-semibold" :class="togglingUser?.status === 'active' ? 'text-foreground' : 'text-foreground'">
+                            {{ togglingUser?.status === 'active' ? 'inactive' : 'active' }}
+                        </span>?
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel class="rounded-lg cursor-pointer hover:bg-slate-100" @click="togglingUser = null">
+                        Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                        :class="[
+                            'rounded-lg border-0 text-white cursor-pointer',
+                            togglingUser?.status === 'active'
+                                ? 'bg-rose-600 hover:bg-rose-700'
+                                : 'bg-primary'
+                        ]"
+                        @click="confirmToggle"
+                    >
+                        <Power class="h-4 w-4" />
+                        {{ togglingUser?.status === 'active' ? 'Set Inactive' : 'Set Active' }}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog v-model:open="resetOpen">
+            <AlertDialogContent class="rounded-lg p-4">
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Reset Password</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Are you sure you want to reset the password for
+                        <span class="font-semibold text-foreground">{{ resettingUser?.name ?? 'this user' }}</span>?
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel class="rounded-lg cursor-pointer hover:bg-slate-100" @click="resettingUser = null">
+                        Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                        class="rounded-lg border-0 text-white cursor-pointer bg-primary hover:bg-primary/90"
+                        @click="confirmResetPassword"
+                    >
+                        <KeyRound class="h-4 w-4" />
+                        Reset Password
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </AppLayout>
 </template>

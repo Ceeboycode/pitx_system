@@ -2,10 +2,12 @@
 import {
     approve,
     reject,
+    index as changeRequestsIndex,
 } from '@/actions/App/Http/Controllers/DispatchChangeRequestController';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
+import InertiaPagination from '@/components/InertiaPagination.vue';
 import InputError from '@/components/InputError.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 
@@ -51,6 +53,11 @@ import {
     SelectValue,
     SelectItem
 } from '@/components/ui/select';
+import {
+    Popover,
+    PopoverTrigger,
+    PopoverContent,
+} from '@/components/ui/popover';
 
 import {
     CheckCircle2,
@@ -60,6 +67,8 @@ import {
     XCircle,
     Filter
 } from 'lucide-vue-next';
+
+type PaginationLink = { url: string | null; label: string; active: boolean };
 
 type DispatchChangeRequest = {
     id: number;
@@ -96,11 +105,19 @@ type DispatchChangeRequest = {
 import { type BreadcrumbItem } from '@/types';
 
 const props = defineProps<{
-    changeRequests?: DispatchChangeRequest[];
+    changeRequests: {
+        data: DispatchChangeRequest[];
+        links: PaginationLink[];
+        from: number | null;
+        to: number | null;
+        total: number;
+    };
+    statusCounts: { pending: number; approved: number; rejected: number };
+    filters: { status: string };
 }>();
 
 const selectedStatus = ref<'all' | 'pending' | 'approved' | 'rejected'>(
-    'pending',
+    (props.filters.status as 'all' | 'pending' | 'approved' | 'rejected') ?? 'pending',
 );
 const rejectModalOpen = ref(false);
 const selectedRequest = ref<DispatchChangeRequest | null>(null);
@@ -111,31 +128,17 @@ const rejectForm = useForm({
     rejection_reason: '',
 });
 
-const filteredRequests = computed(() => {
-    if (!props.changeRequests) return [];
+const pendingCount  = computed(() => props.statusCounts.pending);
+const approvedCount = computed(() => props.statusCounts.approved);
+const rejectedCount = computed(() => props.statusCounts.rejected);
 
-    return props.changeRequests.filter((req) => {
-        if (selectedStatus.value === 'all') return true;
-        return req.status === selectedStatus.value;
-    });
+watch(selectedStatus, (val) => {
+    router.get(
+        changeRequestsIndex().url,
+        { status: val },
+        { preserveScroll: true, preserveState: true, replace: true },
+    );
 });
-
-const pendingCount = computed(
-    () =>
-        props.changeRequests?.filter((r) => r.status === 'pending').length ?? 0,
-);
-
-const approvedCount = computed(
-    () =>
-        props.changeRequests?.filter((r) => r.status === 'approved').length ??
-        0,
-);
-
-const rejectedCount = computed(
-    () =>
-        props.changeRequests?.filter((r) => r.status === 'rejected').length ??
-        0,
-);
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Change Requests', href: '#' },
@@ -294,41 +297,41 @@ function statusIcon(status: string) {
                             </div>
                         </div>  
                     </div>
-                    <div class="overflow-x-auto rounded-lg border">
+                    <div class="overflow-x-auto">
                         <Table>
-                            <TableHeader>
+                            <TableHeader class="border-y border-slate-200">
                                 <TableRow
-                                    class="bg-muted/40 hover:bg-muted/40"
+                                    class="gap-2"
                                 >
                                     <TableHead
-                                        class="pl-6 font-semibold"
+                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Dispatch</TableHead
                                     >
-                                    <TableHead class="font-semibold"
+                                    <TableHead class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Requester</TableHead
                                     >
-                                    <TableHead class="font-semibold"
+                                    <TableHead class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Company</TableHead
                                     >
-                                    <TableHead class="font-semibold"
+                                    <TableHead class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Change</TableHead
                                     >
-                                    <TableHead class="font-semibold"
+                                    <TableHead class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Reason</TableHead
                                     >
-                                    <TableHead class="font-semibold"
+                                    <TableHead class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Status</TableHead
                                     >
                                     <TableHead
-                                        class="pr-6 text-right font-semibold"
+                                        class="px-0 text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Action</TableHead
                                     >
                                 </TableRow>
                             </TableHeader>
 
-                            <TableBody>
+                            <TableBody class="border-y border-slate-200">
                                 <TableRow
-                                    v-if="filteredRequests.length === 0"
+                                    v-if="changeRequests.data.length === 0"
                                 >
                                     <TableCell
                                         colspan="7"
@@ -358,13 +361,13 @@ function statusIcon(status: string) {
                                 </TableRow>
 
                                 <template
-                                    v-for="request in filteredRequests"
+                                    v-for="request in changeRequests.data"
                                     :key="request.id"
                                 >
                                     <TableRow
                                         class="group transition-colors hover:bg-muted/50"
                                     >
-                                        <TableCell class="pl-6">
+                                        <TableCell class="px-0">
                                             <div class="space-y-0.5">
                                                 <p
                                                     class="text-sm font-semibold"
@@ -393,7 +396,7 @@ function statusIcon(status: string) {
                                             </div>
                                         </TableCell>
 
-                                        <TableCell>
+                                        <TableCell class="px-0">
                                             <div class="space-y-0.5">
                                                 <p
                                                     class="text-sm font-medium"
@@ -417,7 +420,7 @@ function statusIcon(status: string) {
                                             </div>
                                         </TableCell>
 
-                                        <TableCell>
+                                        <TableCell class="px-0">
                                             <div class="space-y-0.5">
                                                 <p
                                                     class="text-sm font-medium"
@@ -436,7 +439,7 @@ function statusIcon(status: string) {
                                             </div>
                                         </TableCell>
 
-                                        <TableCell>
+                                        <TableCell class="px-0">
                                             <div class="space-y-0.5">
                                                 <p
                                                     class="text-sm font-medium"
@@ -468,7 +471,7 @@ function statusIcon(status: string) {
                                             </div>
                                         </TableCell>
 
-                                        <TableCell>
+                                        <TableCell class="px-0">
                                             <p
                                                 class="max-w-xs truncate text-sm"
                                                 :title="request.reason"
@@ -477,7 +480,7 @@ function statusIcon(status: string) {
                                             </p>
                                         </TableCell>
 
-                                        <TableCell>
+                                        <TableCell class="px-0">
                                             <Badge
                                                 :variant="
                                                     statusVariant(
@@ -490,7 +493,7 @@ function statusIcon(status: string) {
                                         </TableCell>
 
                                         <TableCell
-                                            class="pr-6 text-right"
+                                            class="px-0 text-right"
                                         >
                                             <DropdownMenu
                                                 v-if="
@@ -502,9 +505,8 @@ function statusIcon(status: string) {
                                                     as-child
                                                 >
                                                     <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        class="h-8 w-8"
+                                                        variant="outline"
+                                                        class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                                                     >
                                                         <MoreHorizontal
                                                             class="h-4 w-4"
@@ -518,7 +520,7 @@ function statusIcon(status: string) {
 
                                                 <DropdownMenuContent
                                                     align="end"
-                                                    class="w-44"
+                                                    class="w-fit rounded-lg border-slate-200 shadow-lg"
                                                 >
                                                     <DropdownMenuItem
                                                         as-child
@@ -631,10 +633,16 @@ function statusIcon(status: string) {
                             </TableBody>
                         </Table>
                     </div>
+
+                    <InertiaPagination
+                        v-if="changeRequests.links?.length"
+                        :links="changeRequests.links"
+                        :meta="{ from: changeRequests.from, to: changeRequests.to, total: changeRequests.total }"
+                    />
                 </CardContent>
             </Card>
         </div>
-        
+
 
         <!-- ============ -->
 

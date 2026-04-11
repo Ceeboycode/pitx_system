@@ -432,19 +432,19 @@ const archiveGate = () => {
                     </div>
 
                     <!-- Table -->
-                    <div class="overflow-x-auto rounded-lg border">
+                    <div class="overflow-x-auto">
                         <Table>
-                            <TableHeader>
-                                <TableRow class="bg-muted/40 hover:bg-muted/40">
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Gate Name</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Status</TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Bays</TableHead>
-                                    <!-- <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Created By</TableHead> -->
-                                    <TableHead class="text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Actions</TableHead>
+                            <TableHeader class="border-y border-slate-200">
+                                <TableRow class="gap-2">
+                                    <TableHead class="px-0 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Gate Name</TableHead>
+                                    <TableHead class="px-0 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Status</TableHead>
+                                    <TableHead class="px-0 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Bays</TableHead>
+                                    <!-- <TableHead class="px-0 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Created By</TableHead> -->
+                                    <TableHead class="px-0 text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
 
-                            <TableBody>
+                            <TableBody class="border-y border-slate-200">
                                 <TableRow v-if="props.gates.data.length === 0" class="hover:bg-transparent">
                                     <TableCell colspan="5" class="py-20 text-center">
                                         <div class="flex flex-col items-center gap-3">
@@ -474,46 +474,45 @@ const archiveGate = () => {
                                 <TableRow
                                     v-for="gate in props.gates.data"
                                     :key="gate.id"
-                                    class="transition-colors hover:bg-muted/30"
+                                    class="group transition-colors hover:bg-muted/30"
                                 >
-                                    <TableCell class="text-sm font-semibold capitalize">{{ gate.gate_name }}</TableCell>
+                                    <TableCell class="text-sm font-semibold capitalize px-0">{{ gate.gate_name }}</TableCell>
 
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <Badge :class="['gap-1.5', statusClass(gate.status)]">
                                             <span :class="['h-1.5 w-1.5 rounded-full', statusDot(gate.status)]" />
                                             {{ gate.status === 'active' ? 'Active' : 'Inactive' }}
                                         </Badge>
                                     </TableCell>
 
-                                    <TableCell class="text-sm tabular-nums text-muted-foreground">{{ gate.bays }}</TableCell>
+                                    <TableCell class="text-sm tabular-nums text-muted-foreground px-0">{{ gate.bays }}</TableCell>
 
                                     <!-- <TableCell class="text-sm text-muted-foreground">{{ gate.creator?.name ?? '—' }}</TableCell> -->
 
-                                    <TableCell class="text-right">
+                                    <TableCell class="text-right px-0">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
-                                                <Button variant="ghost" size="icon" class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground">
+                                                <Button variant="outline" class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer">
                                                     <MoreHorizontal class="h-4 w-4" />
                                                     <span class="sr-only">Open actions</span>
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent align="end" class="w-48 rounded-xl border-slate-200 shadow-lg">
+                                            <DropdownMenuContent align="end" class="w-fit rounded-lg border-slate-200 shadow-lg">
                                                 <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                                     {{ gate.gate_name }}
                                                 </DropdownMenuLabel>
                                                 <DropdownMenuSeparator />
 
-                                                <DropdownMenuItem as-child class="rounded-lg text-blue-700 focus:bg-blue-50 focus:text-blue-700">
+                                                <DropdownMenuItem as-child class="rounded-lg hover:bg-slate-100 cursor-pointer" @click="openShow(gate)">
                                                     <Link :href="show(gate.id).url" class="flex items-center">
-                                                        <Eye class="mr-2 h-4 w-4" />
+                                                        <Eye class="h-4 w-4" />
                                                         View
-                                                        <ChevronRight class="ml-auto h-3.5 w-3.5 text-blue-400" />
                                                     </Link>
                                                 </DropdownMenuItem>
 
-                                                <DropdownMenuItem class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700" @click="openEdit(gate)">
-                                                    <Pencil class="mr-2 h-4 w-4" />
+                                                <DropdownMenuItem class="rounded-lg hover:bg-slate-100 cursor-pointer" @click="openEdit(gate)">
+                                                    <Pencil class="h-4 w-4" />
                                                     Edit
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
@@ -534,7 +533,7 @@ const archiveGate = () => {
 
         <!-- ── Create dialog ──────────────────────────────────────── -->
         <Dialog v-model:open="createOpen">
-            <DialogContent class="rounded-2xl sm:max-w-md">
+            <DialogContent class="rounded-lg sm:max-w-md p-4">
                 <DialogHeader>
                     <DialogTitle>Add New Gate</DialogTitle>
                     <DialogDescription>Create a new gate with status and number of bays.</DialogDescription>
@@ -542,7 +541,7 @@ const archiveGate = () => {
                 <form class="space-y-4" @submit.prevent="createGate">
                     <div class="space-y-1.5">
                         <Label for="create_gate_name" class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Gate Name</Label>
-                        <Input id="create_gate_name" v-model="form.gate_name" list="gate-name-suggestions" placeholder="Type gate name or select Gate 1–20" class="rounded-lg border-slate-200 focus-visible:ring-blue-500" />
+                        <Input id="create_gate_name" v-model="form.gate_name" list="gate-name-suggestions" placeholder="Type gate name or select Gate 1–20" class="rounded-lg border-slate-200 hover:bg-slate-100 cursor-pointer" />
                         <datalist id="gate-name-suggestions">
                             <option v-for="opt in gateSuggestions" :key="opt" :value="opt" />
                         </datalist>
@@ -551,29 +550,29 @@ const archiveGate = () => {
                     <div class="space-y-1.5">
                         <Label for="create_status" class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Status</Label>
                         <Select v-model="form.status">
-                            <SelectTrigger id="create_status" class="w-full rounded-lg border-slate-200 focus:ring-blue-500">
+                            <SelectTrigger id="create_status" class="w-full rounded-lg border-slate-200 hover:bg-slate-100 cursor-pointer">
                                 <SelectValue placeholder="Select status" />
                             </SelectTrigger>
-                            <SelectContent class="rounded-xl">
-                                <SelectItem value="active" class="rounded-lg">Active</SelectItem>
-                                <SelectItem value="inactive" class="rounded-lg">Inactive</SelectItem>
+                            <SelectContent class="rounded-lg">
+                                <SelectItem value="active" class="rounded-lg hover:bg-slate-100 cursor-pointer">Active</SelectItem>
+                                <SelectItem value="inactive" class="rounded-lg hover:bg-slate-100 cursor-pointer">Inactive</SelectItem>
                             </SelectContent>
                         </Select>
                         <InputError :message="form.errors.status" />
                     </div>
                     <div class="space-y-1.5">
                         <Label for="create_bays" class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Bays</Label>
-                        <Input id="create_bays" v-model="form.bays" list="bay-suggestions" type="number" min="0" placeholder="Number of bays" class="rounded-lg border-slate-200 focus-visible:ring-blue-500" />
+                        <Input id="create_bays" v-model="form.bays" list="bay-suggestions" type="number" min="0" placeholder="Number of bays" class="rounded-lg border-slate-200 hover:bg-slate-100 cursor-pointer" />
                         <datalist id="bay-suggestions">
                             <option v-for="opt in baySuggestions" :key="opt" :value="opt" />
                         </datalist>
                         <InputError :message="form.errors.bays" />
                     </div>
                     <DialogFooter class="gap-2">
-                        <Button type="button" variant="outline" class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100" @click="createOpen = false">Cancel</Button>
-                        <Button type="submit" :disabled="form.processing" class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0 font-semibold disabled:opacity-60">
-                            <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
-                            <Save v-else class="mr-2 h-4 w-4" />
+                        <Button type="button" variant="outline" class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer" @click="createOpen = false">Cancel</Button>
+                        <Button type="submit" :disabled="form.processing" class="rounded-lg bg-primary cursor-pointer border-0 font-semibold disabled:opacity-60">
+                            <Loader2 v-if="form.processing" class="h-4 w-4 animate-spin" />
+                            <Save v-else class="h-4 w-4" />
                             {{ form.processing ? 'Saving…' : 'Save Gate' }}
                         </Button>
                     </DialogFooter>
@@ -583,7 +582,7 @@ const archiveGate = () => {
 
         <!-- ── Edit dialog ────────────────────────────────────────── -->
         <Dialog v-model:open="editOpen">
-            <DialogContent class="rounded-2xl sm:max-w-md">
+            <DialogContent class="rounded-lg sm:max-w-md p-4">
                 <DialogHeader>
                     <DialogTitle>Edit Gate</DialogTitle>
                     <DialogDescription>Update the gate details.</DialogDescription>
@@ -591,32 +590,32 @@ const archiveGate = () => {
                 <form class="space-y-4" @submit.prevent="editGate">
                     <div class="space-y-1.5">
                         <Label for="edit_gate_name" class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Gate Name</Label>
-                        <Input id="edit_gate_name" v-model="form.gate_name" list="gate-name-suggestions" placeholder="Type gate name or select Gate 1–20" class="rounded-lg border-slate-200 focus-visible:ring-blue-500" />
+                        <Input id="edit_gate_name" v-model="form.gate_name" list="gate-name-suggestions" placeholder="Type gate name or select Gate 1–20" class="rounded-lg border-slate-200 hover:bg-slate-100" />
                         <InputError :message="form.errors.gate_name" />
                     </div>
                     <div class="space-y-1.5">
                         <Label for="edit_status" class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Status</Label>
                         <Select v-model="form.status">
-                            <SelectTrigger id="edit_status" class="w-full rounded-lg border-slate-200 focus:ring-blue-500">
+                            <SelectTrigger id="edit_status" class="w-full rounded-lg border-slate-200 cursor-pointer hover:bg-slate-100">
                                 <SelectValue placeholder="Select status" />
                             </SelectTrigger>
-                            <SelectContent class="rounded-xl">
-                                <SelectItem value="active" class="rounded-lg">Active</SelectItem>
-                                <SelectItem value="inactive" class="rounded-lg">Inactive</SelectItem>
+                            <SelectContent class="rounded-lg">
+                                <SelectItem value="active" class="rounded-lg cursor-pointer hover:bg-slate-100">Active</SelectItem>
+                                <SelectItem value="inactive" class="rounded-lg cursor-pointer hover:bg-slate-100">Inactive</SelectItem>
                             </SelectContent>
                         </Select>
                         <InputError :message="form.errors.status" />
                     </div>
                     <div class="space-y-1.5">
                         <Label for="edit_bays" class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Bays</Label>
-                        <Input id="edit_bays" v-model="form.bays" list="bay-suggestions" type="number" min="0" placeholder="Number of bays" class="rounded-lg border-slate-200 focus-visible:ring-blue-500" />
+                        <Input id="edit_bays" v-model="form.bays" list="bay-suggestions" type="number" min="0" placeholder="Number of bays" class="rounded-lg border-slate-200 hover:bg-slate-100" />
                         <InputError :message="form.errors.bays" />
                     </div>
                     <DialogFooter class="gap-2">
-                        <Button type="button" variant="outline" class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100" @click="closeEdit">Cancel</Button>
-                        <Button type="submit" :disabled="form.processing" class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0 font-semibold disabled:opacity-60">
-                            <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
-                            <Save v-else class="mr-2 h-4 w-4" />
+                        <Button type="button" variant="outline" class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer" @click="closeEdit">Cancel</Button>
+                        <Button type="submit" :disabled="form.processing" class="rounded-lg cursor-pointer border-0 font-semibold disabled:opacity-60">
+                            <Loader2 v-if="form.processing" class="h-4 w-4 animate-spin" />
+                            <Save v-else class="h-4 w-4" />
                             {{ form.processing ? 'Saving…' : 'Save Changes' }}
                         </Button>
                     </DialogFooter>
@@ -625,7 +624,7 @@ const archiveGate = () => {
         </Dialog>
 
         <!-- ── Archive confirm dialog ─────────────────────────────── -->
-        <AlertDialog v-model:open="archiveOpen">
+        <!-- <AlertDialog v-model:open="archiveOpen">
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
                     <AlertDialogTitle>Archive Gate</AlertDialogTitle>
@@ -642,7 +641,7 @@ const archiveGate = () => {
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
-        </AlertDialog>
+        </AlertDialog> -->
 
     </AppLayout>
 </template>
