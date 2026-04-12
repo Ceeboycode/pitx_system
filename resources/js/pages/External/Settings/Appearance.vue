@@ -3,6 +3,7 @@ import { Head } from '@inertiajs/vue3';
 
 import AppearanceTabs from '@/components/AppearanceTabs.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import ExternalSettingsLayout from '@/layouts/external/SettingsLayout.vue';
 import ExternalLayout from '@/layouts/ExternalLayout.vue';
 </script>
@@ -10,17 +11,19 @@ import ExternalLayout from '@/layouts/ExternalLayout.vue';
 <template>
     <ExternalLayout>
         <Head title="Appearance settings" />
-
         <h1 class="sr-only">Appearance Settings</h1>
 
         <ExternalSettingsLayout>
-            <div class="space-y-6">
-                <HeadingSmall
-                    title="Appearance settings"
-                    description="Update your account's appearance settings"
-                />
-                <AppearanceTabs />
-            </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Appearance settings</CardTitle>
+                    <CardDescription>Update your account's appearance settings</CardDescription>
+                </CardHeader>
+
+                <CardContent>
+                    <AppearanceTabs />
+                </CardContent>
+            </Card>
         </ExternalSettingsLayout>
     </ExternalLayout>
 </template>
