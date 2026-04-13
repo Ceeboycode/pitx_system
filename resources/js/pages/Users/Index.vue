@@ -16,12 +16,10 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardHeader,
@@ -46,9 +44,7 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import {
     Table,
     TableBody,
@@ -82,18 +78,17 @@ import {
     ArrowDown,
     ArrowUp,
     ArrowUpDown,
-    ChevronRight,
+    Ellipsis,
     Eye,
     Filter,
     KeyRound,
+    Mail,
     MoreHorizontal,
     Pencil,
     Plus,
     Power,
     Users,
     X,
-    Ellipsis,
-    Mail,
 } from 'lucide-vue-next';
 
 /* ======================================================
@@ -200,16 +195,14 @@ const filteredUsers = computed(() => {
 
     // Role type filter
     if (roleFilter.value !== 'all') {
-        users = users.filter(user =>
-            user.roles?.some(role => role.type === roleFilter.value)
+        users = users.filter((user) =>
+            user.roles?.some((role) => role.type === roleFilter.value),
         );
     }
 
     // Status filter
     if (statusFilter.value !== 'all') {
-        users = users.filter(user =>
-            user.status === statusFilter.value
-        );
+        users = users.filter((user) => user.status === statusFilter.value);
     }
 
     return users;
@@ -247,7 +240,6 @@ function onStatusChange(val: string) {
     statusFilter.value = val;
     applyFilters();
 }
-
 
 function toggleSort(field: SortField) {
     if (sortBy.value === field) {
@@ -399,7 +391,6 @@ function confirmResetPassword() {
         },
     );
 }
-
 </script>
 
 <template>
@@ -414,9 +405,11 @@ function confirmResetPassword() {
                     <CardTitle class="flex items-center gap-2">
                         Users
                         <div class="ml-2 flex flex-1 items-center">
-                            <hr class="h-px w-full border border-rose-500 " />
-                            <div class="border-7 border-rose-500 rounded-xs">
-                                <div class="border-3 border-white rounded-xs"></div>
+                            <hr class="h-px w-full border border-rose-500" />
+                            <div class="rounded-xs border-7 border-rose-500">
+                                <div
+                                    class="rounded-xs border-3 border-white"
+                                ></div>
                             </div>
                         </div>
                     </CardTitle>
@@ -440,13 +433,18 @@ function confirmResetPassword() {
                                     'flash',
                                 ]"
                                 :debounce="350"
-                                class="shadow-sm rounded-lg "
+                                class="rounded-lg shadow-sm"
                             />
                         </div>
-                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-50/100">
+                        <div
+                            class="flex min-w-50/100 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                        >
                             <div class="flex flex-wrap items-center gap-2">
                                 <Popover>
-                                    <PopoverTrigger as-child class="cursor-pointer h-full w-fit rounded-lg border-slate-200 shadow-sm">
+                                    <PopoverTrigger
+                                        as-child
+                                        class="h-full w-fit cursor-pointer rounded-lg border-slate-200 shadow-sm"
+                                    >
                                         <Button
                                             variant="outline"
                                             class="rounded-lg border-slate-200 px-3 text-slate-600 shadow-sm hover:bg-slate-100"
@@ -472,24 +470,37 @@ function confirmResetPassword() {
                                                 </p>
                                                 <Select
                                                     :model-value="roleFilter"
-                                                    @update:model-value="onRoleChange"
+                                                    @update:model-value="
+                                                        onRoleChange
+                                                    "
                                                 >
                                                     <SelectTrigger
-                                                        class="cursor-pointer h-8 w-full rounded-lg border-slate-200 shadow-sm"
+                                                        class="h-8 w-full cursor-pointer rounded-lg border-slate-200 shadow-sm"
                                                     >
                                                         <SelectValue
                                                             placeholder="All Roles"
                                                             class="flex justify-start"
                                                         />
                                                     </SelectTrigger>
-                                                    <SelectContent class="rounded-lg shadow-lg">
-                                                        <SelectItem value="all" class="cursor-pointer text-sm">
+                                                    <SelectContent
+                                                        class="rounded-lg shadow-lg"
+                                                    >
+                                                        <SelectItem
+                                                            value="all"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             All Types
                                                         </SelectItem>
-                                                        <SelectItem value="internal" class="cursor-pointer text-sm">
+                                                        <SelectItem
+                                                            value="internal"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             Internal
                                                         </SelectItem>
-                                                        <SelectItem value="external" class="cursor-pointer text-sm">
+                                                        <SelectItem
+                                                            value="external"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             External
                                                         </SelectItem>
                                                     </SelectContent>
@@ -504,24 +515,37 @@ function confirmResetPassword() {
                                                 </p>
                                                 <Select
                                                     :model-value="statusFilter"
-                                                    @update:model-value="onStatusChange"
+                                                    @update:model-value="
+                                                        onStatusChange
+                                                    "
                                                 >
                                                     <SelectTrigger
-                                                        class="cursor-pointer h-8 w-full rounded-lg border-slate-200 shadow-sm"
+                                                        class="h-8 w-full cursor-pointer rounded-lg border-slate-200 shadow-sm"
                                                     >
                                                         <SelectValue
                                                             placeholder="All Statuses"
                                                             class="flex justify-start"
                                                         />
                                                     </SelectTrigger>
-                                                    <SelectContent class="rounded-lg shadow-lg">
-                                                        <SelectItem value="all" class="cursor-pointer text-sm">
+                                                    <SelectContent
+                                                        class="rounded-lg shadow-lg"
+                                                    >
+                                                        <SelectItem
+                                                            value="all"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             All Statuses
                                                         </SelectItem>
-                                                        <SelectItem value="active" class="cursor-pointer text-sm">
+                                                        <SelectItem
+                                                            value="active"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             Active
                                                         </SelectItem>
-                                                        <SelectItem value="inactive" class="cursor-pointer text-sm">
+                                                        <SelectItem
+                                                            value="inactive"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             Inactive
                                                         </SelectItem>
                                                     </SelectContent>
@@ -535,7 +559,9 @@ function confirmResetPassword() {
                                                     class="h-8 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
                                                     @click="clearFilters"
                                                 >
-                                                    <X class="mr-1 h-3.5 w-3.5" />
+                                                    <X
+                                                        class="mr-1 h-3.5 w-3.5"
+                                                    />
                                                     Clear filters
                                                 </Button>
                                             </div>
@@ -543,20 +569,17 @@ function confirmResetPassword() {
                                     </PopoverContent>
                                 </Popover>
                             </div>
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-auto">
-                                <DropdownMenu
-                                    v-if="
-                                        canCreate
-                                    "
-                                    class="w-fit"
-                                >
+                            <div
+                                class="flex min-w-auto flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                            >
+                                <DropdownMenu v-if="canCreate" class="w-fit">
                                     <DropdownMenuTrigger as-child class="m-0">
                                         <div
                                             class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm"
                                         >
                                             <Button
                                                 variant="ghost"
-                                                class="rounded-lg cursor-pointer group/segment border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10 gap-0"
+                                                class="group/segment cursor-pointer gap-0 rounded-lg border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10"
                                             >
                                                 <Ellipsis
                                                     class="h-4 w-4 shrink-0"
@@ -605,7 +628,7 @@ function confirmResetPassword() {
                             <!-- <Button
                                     v-if="canCreate"
                                     size="sm"
-                                    variant="blue"
+                                    variant="default"
                                     as-child
                                 >
                                     <Link :href="create().url" class="flex items-center gap-1.5">
@@ -621,7 +644,7 @@ function confirmResetPassword() {
                             <TableHeader class="border-y border-slate-200">
                                 <TableRow class="gap-2">
                                     <TableHead
-                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="cursor-pointer px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('username')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -637,7 +660,7 @@ function confirmResetPassword() {
                                     </TableHead>
 
                                     <TableHead
-                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="cursor-pointer px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('name')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -651,7 +674,7 @@ function confirmResetPassword() {
                                     </TableHead>
 
                                     <TableHead
-                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="cursor-pointer px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('email')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -671,7 +694,7 @@ function confirmResetPassword() {
                                     </TableHead>
 
                                     <TableHead
-                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="cursor-pointer px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('status')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -764,7 +787,7 @@ function confirmResetPassword() {
                                     :key="user.id"
                                     class="group transition-colors hover:bg-muted/30"
                                 >
-                                    <TableCell class="font-medium px-0">
+                                    <TableCell class="px-0 font-medium">
                                         {{ user.username }}
                                     </TableCell>
 
@@ -773,12 +796,18 @@ function confirmResetPassword() {
                                     </TableCell>
 
                                     <TableCell
-                                        class="text-sm text-muted-foreground px-0"
+                                        class="px-0 text-sm text-muted-foreground"
                                     >
                                         <!-- {{ user.email }} -->
-                                        <div class="flex items-center gap-1.5 text-muted-foreground">
-                                            <Mail class="h-3.5 w-3.5 shrink-0" />
-                                            <span class="truncate max-w-[180px]">
+                                        <div
+                                            class="flex items-center gap-1.5 text-muted-foreground"
+                                        >
+                                            <Mail
+                                                class="h-3.5 w-3.5 shrink-0"
+                                            />
+                                            <span
+                                                class="max-w-[180px] truncate"
+                                            >
                                                 {{ user.email }}
                                             </span>
                                         </div>
@@ -814,7 +843,7 @@ function confirmResetPassword() {
 
                                     <TableCell
                                         v-if="showCompanyColumn"
-                                        class="text-sm text-muted-foreground px-0"
+                                        class="px-0 text-sm text-muted-foreground"
                                     >
                                         {{
                                             visibleRoles(user).some(
@@ -852,12 +881,12 @@ function confirmResetPassword() {
                                         </div>
                                     </TableCell>
 
-                                    <TableCell class="text-right px-0">
+                                    <TableCell class="px-0 text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
                                                     variant="outline"
-                                                    class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+                                                    class="cursor-pointer rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                                                 >
                                                     <MoreHorizontal
                                                         class="h-4 w-4"
@@ -882,7 +911,7 @@ function confirmResetPassword() {
 
                                                 <DropdownMenuItem
                                                     as-child
-                                                    class="rounded-lg hover:bg-slate-100 cursor-pointer"
+                                                    class="cursor-pointer rounded-lg hover:bg-slate-100"
                                                 >
                                                     <Link
                                                         :href="
@@ -890,9 +919,7 @@ function confirmResetPassword() {
                                                         "
                                                         class="flex items-center"
                                                     >
-                                                        <Eye
-                                                            class="h-4 w-4"
-                                                        />
+                                                        <Eye class="h-4 w-4" />
                                                         View Profile
                                                     </Link>
                                                 </DropdownMenuItem>
@@ -908,7 +935,7 @@ function confirmResetPassword() {
                                                         :href="
                                                             edit(user.id).url
                                                         "
-                                                        class="rounded-lg hover:bg-slate-100 cursor-pointer"
+                                                        class="cursor-pointer rounded-lg hover:bg-slate-100"
                                                     >
                                                         <Pencil
                                                             class="h-4 w-4"
@@ -922,15 +949,13 @@ function confirmResetPassword() {
                                                         canToggle &&
                                                         !isOwnAccount(user)
                                                     "
-                                                    class="rounded-lg hover:bg-slate-100 cursor-pointer"
+                                                    class="cursor-pointer rounded-lg hover:bg-slate-100"
                                                     @click="
                                                         // handleToggleStatus(user)
                                                         openToggleDialog(user)
                                                     "
                                                 >
-                                                    <Power
-                                                        class="h-4 w-4"
-                                                    />
+                                                    <Power class="h-4 w-4" />
                                                     {{
                                                         isActive(user)
                                                             ? 'Set Inactive'
@@ -943,12 +968,12 @@ function confirmResetPassword() {
                                                         canResetPass &&
                                                         !isOwnAccount(user)
                                                     "
-                                                    class="rounded-lg hover:bg-slate-100 cursor-pointer"
-                                                    @click="openResetDialog(user)"
+                                                    class="cursor-pointer rounded-lg hover:bg-slate-100"
+                                                    @click="
+                                                        openResetDialog(user)
+                                                    "
                                                 >
-                                                    <KeyRound
-                                                        class="h-4 w-4"
-                                                    />
+                                                    <KeyRound class="h-4 w-4" />
                                                     Reset Password
                                                 </DropdownMenuItem>
 
@@ -984,32 +1009,56 @@ function confirmResetPassword() {
             <AlertDialogContent class="rounded-lg p-4">
                 <AlertDialogHeader>
                     <AlertDialogTitle>
-                        {{ togglingUser?.status === 'active' ? 'Set User Inactive' : 'Set User Active' }}
+                        {{
+                            togglingUser?.status === 'active'
+                                ? 'Set User Inactive'
+                                : 'Set User Active'
+                        }}
                     </AlertDialogTitle>
                     <AlertDialogDescription>
                         Are you sure you want to set
-                        <span class="font-semibold text-foreground">{{ togglingUser?.name ?? 'this user' }}</span>
+                        <span class="font-semibold text-foreground">{{
+                            togglingUser?.name ?? 'this user'
+                        }}</span>
                         to
-                        <span class="font-semibold" :class="togglingUser?.status === 'active' ? 'text-foreground' : 'text-foreground'">
-                            {{ togglingUser?.status === 'active' ? 'inactive' : 'active' }}
-                        </span>?
+                        <span
+                            class="font-semibold"
+                            :class="
+                                togglingUser?.status === 'active'
+                                    ? 'text-foreground'
+                                    : 'text-foreground'
+                            "
+                        >
+                            {{
+                                togglingUser?.status === 'active'
+                                    ? 'inactive'
+                                    : 'active'
+                            }} </span
+                        >?
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg cursor-pointer hover:bg-slate-100" @click="togglingUser = null">
+                    <AlertDialogCancel
+                        class="cursor-pointer rounded-lg hover:bg-slate-100"
+                        @click="togglingUser = null"
+                    >
                         Cancel
                     </AlertDialogCancel>
                     <AlertDialogAction
                         :class="[
-                            'rounded-lg border-0 text-white cursor-pointer',
+                            'cursor-pointer rounded-lg border-0 text-white',
                             togglingUser?.status === 'active'
                                 ? 'bg-rose-600 hover:bg-rose-700'
-                                : 'bg-primary'
+                                : 'bg-primary',
                         ]"
                         @click="confirmToggle"
                     >
                         <Power class="h-4 w-4" />
-                        {{ togglingUser?.status === 'active' ? 'Set Inactive' : 'Set Active' }}
+                        {{
+                            togglingUser?.status === 'active'
+                                ? 'Set Inactive'
+                                : 'Set Active'
+                        }}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
@@ -1021,15 +1070,21 @@ function confirmResetPassword() {
                     <AlertDialogTitle>Reset Password</AlertDialogTitle>
                     <AlertDialogDescription>
                         Are you sure you want to reset the password for
-                        <span class="font-semibold text-foreground">{{ resettingUser?.name ?? 'this user' }}</span>?
+                        <span class="font-semibold text-foreground">{{
+                            resettingUser?.name ?? 'this user'
+                        }}</span
+                        >?
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg cursor-pointer hover:bg-slate-100" @click="resettingUser = null">
+                    <AlertDialogCancel
+                        class="cursor-pointer rounded-lg hover:bg-slate-100"
+                        @click="resettingUser = null"
+                    >
                         Cancel
                     </AlertDialogCancel>
                     <AlertDialogAction
-                        class="rounded-lg border-0 text-white cursor-pointer bg-primary hover:bg-primary/90"
+                        class="cursor-pointer rounded-lg border-0 bg-primary text-white hover:bg-primary/90"
                         @click="confirmResetPassword"
                     >
                         <KeyRound class="h-4 w-4" />

@@ -59,16 +59,14 @@ import {
     ArrowUp,
     ArrowUpDown,
     Bus,
-    ChevronRight,
     Download,
     Ellipsis,
-    Loader2,
     FileSearch,
     FileText,
     Filter,
+    Loader2,
     MoreHorizontal,
     Power,
-    Route as RouteIcon,
     Upload,
     X,
 } from 'lucide-vue-next';
@@ -125,7 +123,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 /* ── Import / Export ─────────────────────────────────────────────── */
 
 const importOpen = ref(false);
-const exporting  = ref(false);
+const exporting = ref(false);
 
 function triggerExport() {
     exporting.value = true;
@@ -135,7 +133,9 @@ function triggerExport() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(() => { exporting.value = false; }, 2000);
+    setTimeout(() => {
+        exporting.value = false;
+    }, 2000);
 }
 
 function onImportDone() {
@@ -322,7 +322,7 @@ const toggleLabel = (status?: string | null) =>
           : 'Suspend';
 
 const canToggle = (vehicle: VehicleItem) =>
-    !['pending', 'for_verification', 'inactive'].includes(vehicle.status ?? '');
+    !['pending', 'for_verification'].includes(vehicle.status ?? '');
 
 /* ── Actions ─────────────────────────────────────────────────────── */
 
@@ -396,12 +396,8 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                     <CardTitle class="flex items-center gap-2">
                         Vehicles
                         <div class="ml-2 flex w-full items-center">
-                            <hr
-                                class="h-px w-full border border-rose-500"
-                            />
-                            <div
-                                class="rounded-xs border-7 border-rose-500"
-                            >
+                            <hr class="h-px w-full border border-rose-500" />
+                            <div class="rounded-xs border-7 border-rose-500">
                                 <div
                                     class="rounded-xs border-3 border-white"
                                 ></div>
@@ -427,10 +423,15 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                 class="rounded-lg shadow-sm"
                             />
                         </div>
-                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-50/100">
+                        <div
+                            class="flex min-w-50/100 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                        >
                             <div class="flex flex-wrap items-center gap-2">
                                 <Popover>
-                                    <PopoverTrigger as-child class="cursor-pointer h-full w-fit rounded-lg border-slate-200 shadow-sm">
+                                    <PopoverTrigger
+                                        as-child
+                                        class="h-full w-fit cursor-pointer rounded-lg border-slate-200 shadow-sm"
+                                    >
                                         <Button
                                             variant="outline"
                                             class="rounded-lg border-slate-200 px-3 text-slate-600 shadow-sm hover:bg-slate-100"
@@ -456,33 +457,55 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                 </p>
                                                 <Select
                                                     :model-value="statusFilter"
-                                                    @update:model-value="onStatusChange"
+                                                    @update:model-value="
+                                                        onStatusChange
+                                                    "
                                                 >
                                                     <SelectTrigger
-                                                        class="cursor-pointer h-8 w-full rounded-lg border-slate-200 shadow-sm"
+                                                        class="h-8 w-full cursor-pointer rounded-lg border-slate-200 shadow-sm"
                                                     >
                                                         <SelectValue
                                                             placeholder="All Statuses"
                                                             class="flex justify-start"
                                                         />
                                                     </SelectTrigger>
-                                                    <SelectContent class="rounded-lg shadow-lg">
-                                                        <SelectItem value="all" class="cursor-pointer text-sm">
+                                                    <SelectContent
+                                                        class="rounded-lg shadow-lg"
+                                                    >
+                                                        <SelectItem
+                                                            value="all"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             All Statuses
                                                         </SelectItem>
-                                                        <SelectItem value="active" class="cursor-pointer text-sm">
+                                                        <SelectItem
+                                                            value="active"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             Active
                                                         </SelectItem>
-                                                        <SelectItem value="suspended" class="cursor-pointer text-sm">
+                                                        <SelectItem
+                                                            value="suspended"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             Suspended
                                                         </SelectItem>
-                                                        <SelectItem value="for_verification" class="cursor-pointer text-sm">
+                                                        <SelectItem
+                                                            value="for_verification"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             For Verification
                                                         </SelectItem>
-                                                        <SelectItem value="pending" class="cursor-pointer text-sm">
+                                                        <SelectItem
+                                                            value="pending"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             Pending
                                                         </SelectItem>
-                                                        <SelectItem value="needs_revision" class="cursor-pointer text-sm">
+                                                        <SelectItem
+                                                            value="needs_revision"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             Needs Revision
                                                         </SelectItem>
                                                     </SelectContent>
@@ -496,34 +519,58 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     Vehicle Type
                                                 </p>
                                                 <Select
-                                                    :model-value="vehicleTypeFilter"
-                                                    @update:model-value="onVehicleTypeChange"
+                                                    :model-value="
+                                                        vehicleTypeFilter
+                                                    "
+                                                    @update:model-value="
+                                                        onVehicleTypeChange
+                                                    "
                                                 >
                                                     <SelectTrigger
-                                                        class="cursor-pointer h-8 w-full rounded-lg border-slate-200 shadow-sm"
+                                                        class="h-8 w-full cursor-pointer rounded-lg border-slate-200 shadow-sm"
                                                     >
                                                         <SelectValue
                                                             placeholder="All Types"
                                                             class="flex justify-start"
                                                         />
                                                     </SelectTrigger>
-                                                    <SelectContent class="rounded-lg shadow-lg">
-                                                        <SelectItem value="all" class="cursor-pointer text-sm">
+                                                    <SelectContent
+                                                        class="rounded-lg shadow-lg"
+                                                    >
+                                                        <SelectItem
+                                                            value="all"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             All Types
                                                         </SelectItem>
-                                                        <SelectItem value="bus" class="cursor-pointer text-sm">
+                                                        <SelectItem
+                                                            value="bus"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             Bus
                                                         </SelectItem>
-                                                        <SelectItem value="minibus" class="cursor-pointer text-sm">
+                                                        <SelectItem
+                                                            value="minibus"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             Minibus
                                                         </SelectItem>
-                                                        <SelectItem value="jeepney" class="cursor-pointer text-sm">
+                                                        <SelectItem
+                                                            value="jeepney"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             Jeepney
                                                         </SelectItem>
-                                                        <SelectItem value="van" class="cursor-pointer text-sm">
+                                                        <SelectItem
+                                                            value="van"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             Van
                                                         </SelectItem>
-                                                        <SelectItem value="uv_express" class="cursor-pointer text-sm">
+                                                        <SelectItem
+                                                            value="uv_express"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             UV Express
                                                         </SelectItem>
                                                     </SelectContent>
@@ -538,27 +585,38 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                 </p>
                                                 <Select
                                                     :model-value="routeFilter"
-                                                    @update:model-value="onRouteChange"
+                                                    @update:model-value="
+                                                        onRouteChange
+                                                    "
                                                 >
                                                     <SelectTrigger
-                                                        class="cursor-pointer h-8 w-full rounded-lg border-slate-200 shadow-sm"
+                                                        class="h-8 w-full cursor-pointer rounded-lg border-slate-200 shadow-sm"
                                                     >
                                                         <SelectValue
                                                             placeholder="All Routes"
                                                             class="flex justify-start"
                                                         />
                                                     </SelectTrigger>
-                                                    <SelectContent class="rounded-lg shadow-lg">
-                                                        <SelectItem value="all" class="cursor-pointer text-sm">
+                                                    <SelectContent
+                                                        class="rounded-lg shadow-lg"
+                                                    >
+                                                        <SelectItem
+                                                            value="all"
+                                                            class="cursor-pointer text-sm"
+                                                        >
                                                             All Routes
                                                         </SelectItem>
                                                         <SelectItem
                                                             v-for="route in props.routes"
                                                             :key="route.id"
-                                                            :value="String(route.id)"
+                                                            :value="
+                                                                String(route.id)
+                                                            "
                                                             class="cursor-pointer text-sm"
                                                         >
-                                                            {{ route.route_name }}
+                                                            {{
+                                                                route.route_name
+                                                            }}
                                                         </SelectItem>
                                                     </SelectContent>
                                                 </Select>
@@ -572,7 +630,9 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     class="h-8 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
                                                     @click="clearFilters"
                                                 >
-                                                    <X class="mr-1 h-3.5 w-3.5" />
+                                                    <X
+                                                        class="mr-1 h-3.5 w-3.5"
+                                                    />
                                                     Clear filters
                                                 </Button>
                                             </div>
@@ -608,12 +668,22 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                         :disabled="exporting"
                                         @click="triggerExport"
                                     >
-                                        <Loader2 v-if="exporting" class="h-4 w-4 shrink-0 animate-spin" />
-                                        <Download v-else class="h-4 w-4 shrink-0" />
+                                        <Loader2
+                                            v-if="exporting"
+                                            class="h-4 w-4 shrink-0 animate-spin"
+                                        />
+                                        <Download
+                                            v-else
+                                            class="h-4 w-4 shrink-0"
+                                        />
                                         <span
                                             class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-24 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-24 group-focus-visible/segment:opacity-100"
                                         >
-                                            {{ exporting ? 'Exporting…' : 'Export' }}
+                                            {{
+                                                exporting
+                                                    ? 'Exporting…'
+                                                    : 'Export'
+                                            }}
                                         </span>
                                     </Button>
                                 </div>
@@ -685,7 +755,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
 
                                     <!-- Sortable: Capacity -->
                                     <TableHead
-                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="cursor-pointer px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('capacity')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -702,7 +772,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
 
                                     <!-- Sortable: Status -->
                                     <TableHead
-                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                        class="cursor-pointer px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
                                         @click="toggleSort('status')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -800,7 +870,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                     class="group transition-colors hover:bg-muted/30"
                                 >
                                     <!-- Company -->
-                                    <TableCell class="text-sm font-medium px-0">
+                                    <TableCell class="px-0 text-sm font-medium">
                                         {{
                                             vehicle.company?.company_name || '—'
                                         }}
@@ -829,30 +899,27 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                     <!-- Vehicle Info -->
                                     <TableCell class="px-0">
                                         <!-- <div class="flex items-center gap-2"> -->
-                                            <!-- <div
+                                        <!-- <div
                                                 class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-100"
                                             >
                                                 <Bus
                                                     class="h-3.5 w-3.5 text-blue-700"
                                                 />
                                             </div> -->
-                                            <div>
-                                                <p class="text-sm font-medium">
-                                                    {{
-                                                        humanize(
-                                                            vehicle.vehicle_type,
-                                                        )
-                                                    }}
-                                                </p>
-                                                <p
-                                                    class="text-xs text-muted-foreground"
-                                                >
-                                                    {{
-                                                        vehicle.body_number ||
-                                                        '—'
-                                                    }}
-                                                </p>
-                                            </div>
+                                        <div>
+                                            <p class="text-sm font-medium">
+                                                {{
+                                                    humanize(
+                                                        vehicle.vehicle_type,
+                                                    )
+                                                }}
+                                            </p>
+                                            <p
+                                                class="text-xs text-muted-foreground"
+                                            >
+                                                {{ vehicle.body_number || '—' }}
+                                            </p>
+                                        </div>
                                         <!-- </div> -->
                                     </TableCell>
 
@@ -867,7 +934,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
 
                                     <!-- Capacity -->
                                     <TableCell
-                                        class="text-sm text-muted-foreground tabular-nums px-0"
+                                        class="px-0 text-sm text-muted-foreground tabular-nums"
                                     >
                                         {{ vehicle.capacity || '—' }}
                                     </TableCell>
@@ -905,7 +972,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
-                                                        class="h-7 rounded-lg border-slate-200 text-xs cursor-pointer hover:bg-slate-100 text-foreground"
+                                                        class="h-7 cursor-pointer rounded-lg border-slate-200 text-xs text-foreground hover:bg-slate-100"
                                                     >
                                                         <FileText
                                                             class="h-3.5 w-3.5"
@@ -935,12 +1002,12 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                     </TableCell>
 
                                     <!-- Actions -->
-                                    <TableCell class="text-right px-0">
+                                    <TableCell class="px-0 text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
                                                     variant="outline"
-                                                    class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+                                                    class="cursor-pointer rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                                                 >
                                                     <MoreHorizontal
                                                         class="h-4 w-4"
@@ -967,7 +1034,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
 
                                                 <DropdownMenuItem
                                                     as-child
-                                                    class="rounded-lg cursor-pointer hover:bg-slate-100"
+                                                    class="cursor-pointer rounded-lg hover:bg-slate-100"
                                                 >
                                                     <Link
                                                         :href="
@@ -991,13 +1058,15 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                 <DropdownMenuItem
                                                     v-if="
                                                         vehicle.status ===
-                                                        'active'
+                                                            'active' ||
+                                                        vehicle.status ===
+                                                            'inactive'
                                                     "
                                                     :disabled="
                                                         !canToggle(vehicle)
                                                     "
                                                     :class="[
-                                                        'rounded-lg cursor-pointer hover:bg-slate-100',
+                                                        'cursor-pointer rounded-lg hover:bg-slate-100',
                                                         canToggle(vehicle)
                                                             ? toggleStatusClass(
                                                                   vehicle.status,
@@ -1011,9 +1080,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                         )
                                                     "
                                                 >
-                                                    <Power
-                                                        class="h-4 w-4"
-                                                    />
+                                                    <Power class="h-4 w-4" />
                                                     Suspend
                                                 </DropdownMenuItem>
 
@@ -1026,7 +1093,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                         !canToggle(vehicle)
                                                     "
                                                     :class="[
-                                                        'rounded-lg cursor-pointer hover:bg-slate-100',
+                                                        'cursor-pointer rounded-lg hover:bg-slate-100',
                                                         canToggle(vehicle)
                                                             ? toggleStatusClass(
                                                                   vehicle.status,
@@ -1040,9 +1107,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                         )
                                                     "
                                                 >
-                                                    <Power
-                                                        class="h-4 w-4"
-                                                    />
+                                                    <Power class="h-4 w-4" />
                                                     Unsuspend
                                                 </DropdownMenuItem>
 
@@ -1052,9 +1117,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     disabled
                                                     class="rounded-lg text-slate-300"
                                                 >
-                                                    <Power
-                                                        class="h-4 w-4"
-                                                    />
+                                                    <Power class="h-4 w-4" />
                                                     {{
                                                         toggleLabel(
                                                             vehicle.status,

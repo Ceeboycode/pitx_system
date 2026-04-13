@@ -279,7 +279,6 @@ function openDeleteDialog(employee: EmployeeUser) {
     <ExternalLayout :company="company" :user="user">
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
-
                 <!-- ── Page header ───────────────────────────── -->
                 <div
                     class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
@@ -300,14 +299,14 @@ function openDeleteDialog(employee: EmployeeUser) {
                             Manage drivers and dispatchers for
                             <span class="font-medium text-slate-700">{{
                                 company.company_name
-                            }}</span>.
+                            }}</span
+                            >.
                         </p>
                     </div>
 
                     <Button
                         v-if="canCreateEmployee"
                         as-child
-                        variant="blue"
                         class="shrink-0 self-start"
                     >
                         <Link href="/employee-users/create">
@@ -444,9 +443,16 @@ function openDeleteDialog(employee: EmployeeUser) {
                                         router.get(
                                             '/employee-users',
                                             {
-                                                search: props.filters?.search || undefined,
-                                                role: value === 'all' ? undefined : value,
-                                                status: props.filters?.status || undefined,
+                                                search:
+                                                    props.filters?.search ||
+                                                    undefined,
+                                                role:
+                                                    value === 'all'
+                                                        ? undefined
+                                                        : value,
+                                                status:
+                                                    props.filters?.status ||
+                                                    undefined,
                                             },
                                             {
                                                 preserveState: true,
@@ -462,7 +468,9 @@ function openDeleteDialog(employee: EmployeeUser) {
                                     <SelectValue placeholder="All roles" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">All Roles</SelectItem>
+                                    <SelectItem value="all"
+                                        >All Roles</SelectItem
+                                    >
                                     <SelectItem
                                         v-for="role in props.roles"
                                         :key="role"
@@ -481,9 +489,16 @@ function openDeleteDialog(employee: EmployeeUser) {
                                         router.get(
                                             '/employee-users',
                                             {
-                                                search: props.filters?.search || undefined,
-                                                role: props.filters?.role || undefined,
-                                                status: value === 'all' ? undefined : value,
+                                                search:
+                                                    props.filters?.search ||
+                                                    undefined,
+                                                role:
+                                                    props.filters?.role ||
+                                                    undefined,
+                                                status:
+                                                    value === 'all'
+                                                        ? undefined
+                                                        : value,
                                             },
                                             {
                                                 preserveState: true,
@@ -499,7 +514,9 @@ function openDeleteDialog(employee: EmployeeUser) {
                                     <SelectValue placeholder="All statuses" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">All Statuses</SelectItem>
+                                    <SelectItem value="all"
+                                        >All Statuses</SelectItem
+                                    >
                                     <SelectItem
                                         v-for="status in props.statuses"
                                         :key="status"
@@ -586,7 +603,8 @@ function openDeleteDialog(employee: EmployeeUser) {
                                                 <p
                                                     class="mt-0.5 text-xs text-slate-400"
                                                 >
-                                                    Try adjusting your search or filters.
+                                                    Try adjusting your search or
+                                                    filters.
                                                 </p>
                                             </div>
                                         </div>
@@ -749,7 +767,6 @@ function openDeleteDialog(employee: EmployeeUser) {
                         />
                     </div>
                 </Card>
-
             </div>
         </div>
     </ExternalLayout>

@@ -106,7 +106,7 @@ defineProps<{
 
                         <Button
                             type="submit"
-                            variant="blue"
+                            variant="default"
                             :disabled="processing"
                         >
                             <Spinner v-if="processing" />

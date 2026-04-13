@@ -334,7 +334,7 @@ function statusDot(status?: string | null) {
                                     </Link>
                                 </Button>
 
-                                <Button as-child variant="blue">
+                                <Button as-child>
                                     <Link
                                         :href="
                                             CompanyVehicleController.show(
@@ -585,10 +585,11 @@ function statusDot(status?: string | null) {
                                             <p
                                                 class="mt-0.5 text-xs text-slate-400"
                                             >
-                                                Only expired documents
-                                                (including their issue/expiry
-                                                dates) can be updated; all other
-                                                details are locked.
+                                                Only invalid or expired
+                                                documents (including their
+                                                issue/expiry dates) can be
+                                                updated; all other details are
+                                                locked.
                                             </p>
                                         </div>
                                         <div class="flex items-center gap-2">
@@ -596,9 +597,7 @@ function statusDot(status?: string | null) {
                                                 class="text-xs font-semibold text-slate-400 tabular-nums"
                                             >
                                                 {{ uploadedDocumentsCount }} /
-                                                {{
-                                                    requiredDocumentsCount
-                                                }}
+                                                {{ requiredDocumentsCount }}
                                                 ready
                                             </span>
                                             <Button
@@ -728,9 +727,9 @@ function statusDot(status?: string | null) {
                                             <p
                                                 class="mt-0.5 text-xs text-slate-500"
                                             >
-                                                Replace only expired documents
-                                                so your resubmission can move
-                                                back to pending review.
+                                                Replace invalid or expired
+                                                documents so your resubmission
+                                                can move back to pending review.
                                             </p>
                                         </div>
                                     </div>

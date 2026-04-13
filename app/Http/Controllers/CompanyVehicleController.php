@@ -491,13 +491,14 @@ class CompanyVehicleController extends Controller
                     ]);
                 }
 
+                $isInvalid = $existingDocument->status === 'invalid';
                 $isExpiredByStatus = $existingDocument->status === 'expired';
                 $isExpiredByDate = $existingDocument->expires_at !== null
                     && $existingDocument->expires_at->toDateString() < now()->toDateString();
 
-                if (! $isExpiredByStatus && ! $isExpiredByDate) {
+                if (! $isInvalid && ! $isExpiredByStatus && ! $isExpiredByDate) {
                     throw ValidationException::withMessages([
-                        "documents.{$index}.file" => 'Only expired documents can be reuploaded.',
+                        "documents.{$index}.file" => 'Only invalid or expired documents can be reuploaded.',
                     ]);
                 }
 
@@ -531,7 +532,7 @@ class CompanyVehicleController extends Controller
 
             if (empty($resubmittedDocumentLabels)) {
                 throw ValidationException::withMessages([
-                    'documents' => 'Upload at least one expired document to resubmit.',
+                    'documents' => 'Upload at least one invalid or expired document to resubmit.',
                 ]);
             }
 
@@ -546,7 +547,7 @@ class CompanyVehicleController extends Controller
                 'chassis_number' => $validated['chassis_number'],
                 'make_model'     => $validated['make_model'],
                 'status'         => 'pending',
-                'remarks'        => 'Pending review: resubmitted expired documents - ' . collect($resubmittedDocumentLabels)->unique()->implode(', '),
+                'remarks'        => 'Pending review: resubmitted invalid/expired documents - ' . collect($resubmittedDocumentLabels)->unique()->implode(', '),
                 'updated_by'     => $user->id,
             ]);
 

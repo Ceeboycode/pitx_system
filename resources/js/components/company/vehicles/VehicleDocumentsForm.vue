@@ -34,7 +34,7 @@ function fileName(document: VehicleDocumentItem) {
 
 function canReupload(status?: string | null) {
     if (!status) return true;
-    return status === 'expired';
+    return status === 'expired' || status === 'invalid';
 }
 
 function isPhotoDocument(documentType: string) {
@@ -63,7 +63,7 @@ function showExpiresAt(documentType: string) {
 
 function isEditableDate(status?: string | null) {
     if (!status) return true;
-    return status === 'expired';
+    return status === 'expired' || status === 'invalid';
 }
 </script>
 
@@ -138,8 +138,8 @@ function isEditableDate(status?: string | null) {
                         v-if="document.status && !canReupload(document.status)"
                         class="text-xs text-muted-foreground"
                     >
-                        Reupload (and date edits) are only allowed for expired
-                        documents.
+                        Reupload (and date edits) are only allowed for invalid
+                        or expired documents.
                     </p>
                     <InputError :message="errors[`documents.${index}.file`]" />
                 </div>

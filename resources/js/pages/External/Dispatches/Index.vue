@@ -802,11 +802,7 @@ watch(confirmDepartOpen, (open) => {
                         </p>
                     </div>
 
-                    <Button
-                        v-if="canCreateDispatch"
-                        @click="openCreateDialog"
-                        variant="blue"
-                    >
+                    <Button v-if="canCreateDispatch" @click="openCreateDialog">
                         <Plus class="h-4 w-4" />
                         Add Dispatch
                     </Button>
@@ -913,11 +909,17 @@ watch(confirmDepartOpen, (open) => {
                         <CardTitle class="flex items-center gap-2">
                             <!-- <p class="block overflow-hidden text-ellipsis">Dispatches</p> -->
                             <!-- Dispatch Records -->
-                             Dispatches
+                            Dispatches
                             <div class="ml-2 flex flex-col items-center">
-                                <hr class="h-px w-full border border-rose-500" />
-                                <div class="rounded-xs border-7 border-rose-500">
-                                    <div class="rounded-xs border-3 border-white"></div>
+                                <hr
+                                    class="h-px w-full border border-rose-500"
+                                />
+                                <div
+                                    class="rounded-xs border-7 border-rose-500"
+                                >
+                                    <div
+                                        class="rounded-xs border-3 border-white"
+                                    ></div>
                                 </div>
                             </div>
                         </CardTitle>
@@ -1969,7 +1971,6 @@ watch(confirmDepartOpen, (open) => {
                         >
                         <Button
                             type="submit"
-                            variant="blue"
                             :disabled="
                                 form.processing ||
                                 selectedVehicleRouteGateInactive
@@ -2066,10 +2067,7 @@ watch(confirmDepartOpen, (open) => {
                 </div>
 
                 <DialogFooter>
-                    <Button
-                        variant="outline"
-                        class="w-full"
-                        @click="remarksViewOpen = false"
+                    <Button class="w-full" @click="remarksViewOpen = false"
                         >Close</Button
                     >
                 </DialogFooter>
@@ -2135,11 +2133,7 @@ watch(confirmDepartOpen, (open) => {
                             :disabled="departForm.processing"
                             >Cancel</AlertDialogCancel
                         >
-                        <Button
-                            type="submit"
-                            :disabled="departForm.processing"
-                            variant="blue"
-                        >
+                        <Button type="submit" :disabled="departForm.processing">
                             {{
                                 departForm.processing
                                     ? 'Saving…'
@@ -2489,7 +2483,6 @@ watch(confirmDepartOpen, (open) => {
                         </Button>
                         <Button
                             type="submit"
-                            class="bg-slate-800 text-white hover:bg-slate-900"
                             :disabled="
                                 changeRequestForm.processing ||
                                 driverValidationWarning !== null ||

@@ -246,24 +246,28 @@ function isDocumentExpired(doc: VehicleDocument) {
     return new Date(doc.expires_at) < new Date();
 }
 
-function hasExpiredDocuments(vehicle: Vehicle) {
-    return vehicle.documents?.some((doc) => isDocumentExpired(doc)) ?? false;
+function needsResubmission(doc: VehicleDocument) {
+    return doc.status === 'invalid' || isDocumentExpired(doc);
+}
+
+function hasDocumentsNeedingResubmission(vehicle: Vehicle) {
+    return vehicle.documents?.some((doc) => needsResubmission(doc)) ?? false;
 }
 
 function businessCanToggle(vehicle: Vehicle) {
     if (isSuspended(vehicle.status)) return false;
     if (!vehicle.documents?.length) return false;
-    if (hasExpiredDocuments(vehicle)) return false;
+    if (hasDocumentsNeedingResubmission(vehicle)) return false;
     return !vehicle.documents.some(
         (doc) => doc.status === 'pending' || doc.status === 'rejected',
     );
 }
 
-function canEditExpiredDocuments(vehicle: Vehicle) {
+function canEditDocumentsForResubmission(vehicle: Vehicle) {
     return (
         canUpdate &&
         !isSuspended(vehicle.status) &&
-        hasExpiredDocuments(vehicle)
+        hasDocumentsNeedingResubmission(vehicle)
     );
 }
 
@@ -292,11 +296,11 @@ function vehicleActionNote(vehicle: Vehicle) {
     ) {
         return 'Documents must be approved before changing status.';
     }
-    if (hasExpiredDocuments(vehicle)) {
-        return 'Resubmit expired documents before activation.';
+    if (hasDocumentsNeedingResubmission(vehicle)) {
+        return 'Resubmit invalid or expired documents before activation.';
     }
-    if (!hasExpiredDocuments(vehicle))
-        return 'No expired documents available for resubmission.';
+    if (!hasDocumentsNeedingResubmission(vehicle))
+        return 'No invalid or expired documents available for resubmission.';
     return '';
 }
 
@@ -527,7 +531,9 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
 
                                 <!-- Edit -->
                                 <DropdownMenuItem
-                                    v-if="canEditExpiredDocuments(vehicle)"
+                                    v-if="
+                                        canEditDocumentsForResubmission(vehicle)
+                                    "
                                     as-child
                                     class="rounded-lg text-slate-700 focus:bg-amber-50 focus:text-amber-700"
                                 >
@@ -539,7 +545,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                         "
                                     >
                                         <Pencil class="mr-2 h-4 w-4" />
-                                        Resubmit Expired Documents
+                                        Resubmit Invalid/Expired Documents
                                     </Link>
                                 </DropdownMenuItem>
 
@@ -550,7 +556,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                     class="rounded-lg text-slate-300"
                                 >
                                     <Pencil class="mr-2 h-4 w-4" />
-                                    Resubmit Expired Documents
+                                    Resubmit Invalid/Expired Documents
                                 </DropdownMenuItem>
 
                                 <DropdownMenuSeparator
