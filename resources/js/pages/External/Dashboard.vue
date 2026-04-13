@@ -319,7 +319,7 @@ const documentChartData = computed(() => {
                             </Button>
 
                             <Button as-child variant="blue">
-                                <Link href="/company/profile">
+                                <Link href="/profile">
                                     <Building2 class="mr-2 h-4 w-4" />
                                     Company Profile
                                 </Link>

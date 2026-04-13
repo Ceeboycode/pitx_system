@@ -221,7 +221,7 @@ function actionDot(action: string): string {
 
                         <!-- Action filter -->
                         <Select :model-value="actionFilter" @update:model-value="onActionChange">
-                            <SelectTrigger class="h-9 rounded-lg border-slate-200 text-sm">
+                            <SelectTrigger class="h-9 rounded-lg border-slate-200 text-sm cursor-pointer">
                                 <SelectValue placeholder="All actions" />
                             </SelectTrigger>
                             <SelectContent class="rounded-xl">
@@ -238,10 +238,10 @@ function actionDot(action: string): string {
 
                         <!-- Entity filter -->
                         <Select :model-value="entityTypeFilter" @update:model-value="onEntityTypeChange">
-                            <SelectTrigger class="h-9 rounded-lg border-slate-200 text-sm">
-                                <SelectValue placeholder="All entities" />
-                            </SelectTrigger>
-                            <SelectContent class="rounded-xl">
+                                <SelectTrigger class="h-9 rounded-lg border-slate-200 text-sm cursor-pointer">
+                                    <SelectValue placeholder="All entities" />
+                                </SelectTrigger>
+                            <SelectContent class="rounded-xl cursor-pointer">
                                 <SelectItem value="all">All entities</SelectItem>
                                 <SelectItem
                                     v-for="entity in entityTypes"
@@ -402,7 +402,7 @@ function actionDot(action: string): string {
                                                 <Button
                                                     size="icon"
                                                     variant="outline"
-                                                    class="h-8 w-8 rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                                    class="h-8 w-8 rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
                                                 >
                                                     <FileSearch class="h-3.5 w-3.5" />
                                                 </Button>

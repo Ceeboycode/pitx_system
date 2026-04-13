@@ -45,7 +45,11 @@ class CompanyVehicleController extends Controller
         $user    = $request->user();
         $company = $user->company;
 
-        $vehicles = Vehicle::query()
+        $allowedSortBy  = ['capacity', 'created_at'];
+        $sortBy         = in_array($request->sort_by, $allowedSortBy, true) ? $request->sort_by : null;
+        $sortDir        = $request->sort_dir === 'desc' ? 'desc' : 'asc';
+
+        $query = Vehicle::query()
             ->where('company_id', $company->id)
             ->select([
                 'id',
@@ -65,10 +69,27 @@ class CompanyVehicleController extends Controller
                 'route:id,route_name',
                 'documents:id,vehicle_id,document_type,status,expires_at',
             ])
-            ->search($request->search)
-            ->latest()
-            ->paginate(10)
-            ->withQueryString();
+            ->search($request->search);
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('vehicle_type')) {
+            $query->where('vehicle_type', $request->vehicle_type);
+        }
+
+        if ($request->filled('route_id')) {
+            $query->where('route_id', $request->route_id);
+        }
+
+        if ($sortBy) {
+            $query->orderBy($sortBy, $sortDir);
+        } else {
+            $query->latest();
+        }
+
+        $vehicles = $query->paginate(10)->withQueryString();
 
         $this->syncExpiredDocumentsForCollection($vehicles->getCollection(), $user->id);
 
@@ -95,7 +116,12 @@ class CompanyVehicleController extends Controller
             ],
             'vehicles' => $vehicles,
             'filters'  => [
-                'search' => $request->search,
+                'search'       => $request->search,
+                'status'       => $request->status,
+                'vehicle_type' => $request->vehicle_type,
+                'route_id'     => $request->route_id,
+                'sort_by'      => $sortBy,
+                'sort_dir'     => $sortDir,
             ],
             'routes' => $routes,
         ]);

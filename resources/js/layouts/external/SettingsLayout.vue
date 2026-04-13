@@ -42,7 +42,9 @@ const { urlIsActive } = useActiveUrl();
                         variant="ghost"
                         :class="[
                             'w-full justify-start',
-                            { 'bg-muted': urlIsActive(item.href) },
+                            urlIsActive(item.href)
+                                ? 'bg-blue-50 text-blue-700 hover:bg-blue-50 hover:text-blue-700'
+                                : 'text-muted-foreground',
                         ]"
                         as-child
                     >
@@ -55,8 +57,8 @@ const { urlIsActive } = useActiveUrl();
 
             <Separator class="my-6 lg:hidden" />
 
-            <div class="flex-1 md:max-w-2xl">
-                <section class="max-w-xl space-y-12">
+            <div class="flex-1">
+                <section class="max-w-2xl space-y-12 pt-16 pl-30">
                     <slot />
                 </section>
             </div>

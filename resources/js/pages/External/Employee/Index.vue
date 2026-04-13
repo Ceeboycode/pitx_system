@@ -9,6 +9,13 @@ import { can } from '@/lib/can';
 
 import { Button } from '@/components/ui/button';
 import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -16,6 +23,13 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import {
     Table,
     TableBody,
@@ -141,14 +155,14 @@ function roleIconBg(employee: EmployeeUser) {
     const role = roleName(employee).toLowerCase();
     if (role === 'driver') return 'bg-sky-100';
     if (role === 'dispatcher') return 'bg-violet-100';
-    return 'bg-blue-100';
+    return 'bg-slate-100';
 }
 
 function roleIconColor(employee: EmployeeUser) {
     const role = roleName(employee).toLowerCase();
     if (role === 'driver') return 'text-sky-700';
     if (role === 'dispatcher') return 'text-violet-700';
-    return 'text-blue-700';
+    return 'text-slate-600';
 }
 
 function statusClass(status?: string | null) {
@@ -203,13 +217,6 @@ const dialogState = reactive({
 /* ======================================================
    Methods
 ====================================================== */
-function toggleStatusClass(status?: string | null) {
-    if (status === 'active') {
-        return 'text-amber-700 focus:bg-amber-50 focus:text-amber-700';
-    }
-    return 'text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700';
-}
-
 function toggleStatusLabel(status?: string | null) {
     return status === 'active' ? 'Deactivate' : 'Activate';
 }
@@ -272,6 +279,7 @@ function openDeleteDialog(employee: EmployeeUser) {
     <ExternalLayout :company="company" :user="user">
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
+
                 <!-- ── Page header ───────────────────────────── -->
                 <div
                     class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
@@ -289,14 +297,18 @@ function openDeleteDialog(employee: EmployeeUser) {
                             Employee Accounts
                         </h1>
                         <p class="text-sm text-slate-500">
-                            Manage drivers and dispatchers for your company.
+                            Manage drivers and dispatchers for
+                            <span class="font-medium text-slate-700">{{
+                                company.company_name
+                            }}</span>.
                         </p>
                     </div>
 
                     <Button
                         v-if="canCreateEmployee"
                         as-child
-                        class="shrink-0 gap-2 self-start rounded-lg border-0 bg-blue-700 text-sm font-semibold text-white shadow-sm hover:bg-blue-800"
+                        variant="blue"
+                        class="shrink-0 self-start"
                     >
                         <Link href="/employee-users/create">
                             <Plus class="h-4 w-4" />
@@ -315,15 +327,14 @@ function openDeleteDialog(employee: EmployeeUser) {
                             <p
                                 class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
                             >
-                                Total
+                                Total Employees
                             </p>
                             <div
-                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-700"
+                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-700"
                             >
                                 <Users class="h-4 w-4 text-white" />
                             </div>
                         </div>
-
                         <p
                             class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
                         >
@@ -347,7 +358,6 @@ function openDeleteDialog(employee: EmployeeUser) {
                                 <TruckIcon class="h-4 w-4 text-white" />
                             </div>
                         </div>
-
                         <p
                             class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
                         >
@@ -371,7 +381,6 @@ function openDeleteDialog(employee: EmployeeUser) {
                                 <Radio class="h-4 w-4 text-white" />
                             </div>
                         </div>
-
                         <p
                             class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
                         >
@@ -395,7 +404,6 @@ function openDeleteDialog(employee: EmployeeUser) {
                                 <Power class="h-4 w-4 text-white" />
                             </div>
                         </div>
-
                         <p
                             class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
                         >
@@ -405,30 +413,106 @@ function openDeleteDialog(employee: EmployeeUser) {
                 </div>
 
                 <!-- ── Table card ─────────────────────────────── -->
-                <div
-                    class="rounded-xl border border-slate-200 bg-white shadow-sm"
-                >
-                    <div
-                        class="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                        <div>
-                            <h2 class="text-base font-semibold text-slate-800">
-                                Employee List
-                            </h2>
-                            <p class="mt-0.5 text-xs text-slate-400">
-                                Search by name, username, email, or phone.
-                            </p>
-                        </div>
-                        <div class="sm:w-72">
-                            <SearchInput
-                                route="/employee-users"
-                                :initial-value="filters.search"
-                                placeholder="Search employees…"
-                                :only="['users', 'filters']"
-                            />
-                        </div>
-                    </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Employee List</CardTitle>
+                        <CardDescription class="mt-1">
+                            Search by name, username, email, or phone number.
+                        </CardDescription>
+                    </CardHeader>
 
+                    <CardContent>
+                        <div
+                            class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
+                        >
+                            <!-- Search -->
+                            <div class="w-full sm:w-72">
+                                <SearchInput
+                                    route="/employee-users"
+                                    :initial-value="filters.search"
+                                    placeholder="Search employees…"
+                                    :only="['users', 'filters']"
+                                    class="rounded-lg shadow-sm"
+                                />
+                            </div>
+
+                            <!-- Role filter -->
+                            <Select
+                                :model-value="props.filters?.role ?? 'all'"
+                                @update:model-value="
+                                    (value) => {
+                                        router.get(
+                                            '/employee-users',
+                                            {
+                                                search: props.filters?.search || undefined,
+                                                role: value === 'all' ? undefined : value,
+                                                status: props.filters?.status || undefined,
+                                            },
+                                            {
+                                                preserveState: true,
+                                                preserveScroll: true,
+                                                replace: true,
+                                                only: ['users', 'filters'],
+                                            },
+                                        );
+                                    }
+                                "
+                            >
+                                <SelectTrigger class="w-full sm:w-36">
+                                    <SelectValue placeholder="All roles" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Roles</SelectItem>
+                                    <SelectItem
+                                        v-for="role in props.roles"
+                                        :key="role"
+                                        :value="role"
+                                    >
+                                        {{ humanize(role) }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            <!-- Status filter -->
+                            <Select
+                                :model-value="props.filters?.status ?? 'all'"
+                                @update:model-value="
+                                    (value) => {
+                                        router.get(
+                                            '/employee-users',
+                                            {
+                                                search: props.filters?.search || undefined,
+                                                role: props.filters?.role || undefined,
+                                                status: value === 'all' ? undefined : value,
+                                            },
+                                            {
+                                                preserveState: true,
+                                                preserveScroll: true,
+                                                replace: true,
+                                                only: ['users', 'filters'],
+                                            },
+                                        );
+                                    }
+                                "
+                            >
+                                <SelectTrigger class="w-full sm:w-36">
+                                    <SelectValue placeholder="All statuses" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Statuses</SelectItem>
+                                    <SelectItem
+                                        v-for="status in props.statuses"
+                                        :key="status"
+                                        :value="status"
+                                    >
+                                        {{ humanize(status) }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </CardContent>
+
+                    <!-- Table -->
                     <div class="overflow-x-auto">
                         <Table>
                             <TableHeader>
@@ -438,12 +522,12 @@ function openDeleteDialog(employee: EmployeeUser) {
                                     <TableHead
                                         class="pl-5 text-[11px] font-bold tracking-widest text-slate-400 uppercase"
                                     >
-                                        Username
+                                        Employee
                                     </TableHead>
                                     <TableHead
                                         class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
                                     >
-                                        Employee
+                                        Username
                                     </TableHead>
                                     <TableHead
                                         class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
@@ -502,7 +586,7 @@ function openDeleteDialog(employee: EmployeeUser) {
                                                 <p
                                                     class="mt-0.5 text-xs text-slate-400"
                                                 >
-                                                    Try adjusting your search.
+                                                    Try adjusting your search or filters.
                                                 </p>
                                             </div>
                                         </div>
@@ -512,19 +596,10 @@ function openDeleteDialog(employee: EmployeeUser) {
                                 <TableRow
                                     v-for="employee in users.data"
                                     :key="employee.id"
-                                    class="border-slate-100 transition-colors hover:bg-slate-50/80"
+                                    class="group border-slate-100 transition-colors hover:bg-slate-50/80"
                                 >
-                                    <!-- Username -->
+                                    <!-- Employee info (moved first, more prominent) -->
                                     <TableCell class="pl-5">
-                                        <span
-                                            class="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold tracking-wide text-slate-700"
-                                        >
-                                            {{ employee.username }}
-                                        </span>
-                                    </TableCell>
-
-                                    <!-- Employee info -->
-                                    <TableCell>
                                         <div class="flex items-center gap-2.5">
                                             <img
                                                 v-if="employee.avatar"
@@ -555,6 +630,15 @@ function openDeleteDialog(employee: EmployeeUser) {
                                                 </p>
                                             </div>
                                         </div>
+                                    </TableCell>
+
+                                    <!-- Username -->
+                                    <TableCell>
+                                        <span
+                                            class="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold tracking-wide text-slate-700"
+                                        >
+                                            {{ employee.username }}
+                                        </span>
                                     </TableCell>
 
                                     <!-- Role -->
@@ -606,7 +690,7 @@ function openDeleteDialog(employee: EmployeeUser) {
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    class="h-8 w-8 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                                                    class="h-8 w-8 rounded-lg text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-slate-100 hover:text-slate-700"
                                                 >
                                                     <MoreHorizontal
                                                         class="h-4 w-4"
@@ -616,7 +700,7 @@ function openDeleteDialog(employee: EmployeeUser) {
 
                                             <DropdownMenuContent
                                                 align="end"
-                                                class="w-56 rounded-xl border-slate-200 shadow-lg"
+                                                class="w-52 rounded-xl border-slate-200 shadow-lg"
                                             >
                                                 <DropdownMenuLabel
                                                     class="text-xs font-semibold tracking-widest text-slate-400 uppercase"
@@ -630,10 +714,11 @@ function openDeleteDialog(employee: EmployeeUser) {
 
                                                 <DropdownMenuItem
                                                     as-child
-                                                    class="rounded-lg text-slate-700 focus:bg-blue-50 focus:text-blue-700"
+                                                    class="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900"
                                                 >
                                                     <Link
                                                         :href="`/employee-users/${employee.id}`"
+                                                        class="flex items-center"
                                                     >
                                                         <Eye
                                                             class="mr-2 h-4 w-4"
@@ -651,7 +736,7 @@ function openDeleteDialog(employee: EmployeeUser) {
 
                     <!-- Pagination -->
                     <div
-                        v-if="users.last_page > 1"
+                        v-if="users.last_page > 1 || users.total > 0"
                         class="border-t border-slate-100 px-5 py-3"
                     >
                         <InertiaPagination
@@ -663,7 +748,8 @@ function openDeleteDialog(employee: EmployeeUser) {
                             }"
                         />
                     </div>
-                </div>
+                </Card>
+
             </div>
         </div>
     </ExternalLayout>
