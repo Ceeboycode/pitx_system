@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
-    CardDescription,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
@@ -21,18 +20,18 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 
 import {
     Archive,
     ArrowLeft,
     CheckCircle2,
     Clock3,
+    DoorOpen,
     MapPinned,
-    Milestone,
     Pencil,
     Route as RouteIcon,
-    User2,
+    Ruler,
+    ArchiveX,
 } from 'lucide-vue-next';
 
 import { edit, index } from '@/actions/App/Http/Controllers/RouteController';
@@ -336,580 +335,301 @@ onBeforeUnmount(() => {
     <Head :title="route.route_name" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
-        >
-            <div
-                class="flex h-14 items-center justify-between gap-4 px-4 sm:px-6"
-            >
-                <div class="flex min-w-0 items-center gap-3">
-                    <div
-                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground"
-                    >
-                        <RouteIcon class="h-4 w-4" />
-                    </div>
+        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
 
-                    <div class="min-w-0">
+            <!-- Header card -->
+            <Card>
+                <CardHeader class="py-0">
+                    <div class="flex items-center gap-4">
                         <div
-                            class="flex items-center gap-2 text-sm font-semibold"
+                            class="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border-2 bg-primary shadow-sm flex items-center justify-center"
                         >
-                            <span class="truncate">{{ route.route_name }}</span>
-                            <span
-                                v-if="route.destination_name"
-                                class="hidden shrink-0 text-muted-foreground sm:inline"
+                            <RouteIcon class="h-10 w-10 text-primary-foreground" />
+                        </div>
+
+                        <div class="gap-2 w-full">
+                            <div class="flex flex-row gap-2 pb-2 w-full items-center">
+                                <h1 class="text-2xl leading-tight font-bold tracking-tight">
+                                    {{ route.route_name }}
+                                </h1>
+                                <div class="ml-2 flex flex-1 items-center">
+                                    <hr class="h-px w-full border border-rose-500" />
+                                    <div class="border-7 border-rose-500 rounded-xs">
+                                        <div class="border-3 border-white rounded-xs"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-between">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <Badge class="border-0 bg-muted font-mono text-muted-foreground">
+                                        {{ route.origin_name }} → {{ route.destination_name }}
+                                    </Badge>
+                                    <Badge v-if="route.gate" class="border-0 bg-slate-100 text-slate-600">
+                                        {{ route.gate.gate_name }}
+                                    </Badge>
+                                </div>
+                                <div class="flex shrink-0 items-center gap-2">
+                                    <Button
+                                        as-child
+                                        variant="outline"
+                                        class="rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                                    >
+                                        <Link :href="index().url">
+                                            <ArrowLeft class="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                    <Button
+                                        as-child
+                                        variant="outline"
+                                        class="group/segment rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 gap-0 cursor-pointer"
+                                    >
+                                        <Link :href="edit(route.id).url">
+                                            <Pencil class="h-4 w-4 shrink-0" />
+                                            <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-24 group-hover/segment:opacity-100">
+                                                Edit Route
+                                            </span>
+                                        </Link>
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        class="group/segment rounded-lg bg-card border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 gap-0 cursor-pointer"
+                                        @click="openArchiveDialog"
+                                    >
+                                        <Archive class="h-4 w-4 shrink-0" />
+                                        <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-32 group-hover/segment:opacity-100">
+                                            Archive Route
+                                        </span>
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </CardHeader>
+            </Card>
+
+            <div class="grid items-start gap-4 xl:grid-cols-[1fr_380px]">
+
+                <!-- Map card -->
+                <Card class="py-6">
+                    <CardHeader class="flex items-center justify-between">
+                        <CardTitle class="text-base">Map Workspace</CardTitle>
+                    </CardHeader>
+
+                    <CardContent class="p-6 grid divide-y gap-y-2 border-t border-slate-100">
+                        <div class="relative">
+                            <div
+                                ref="mapEl"
+                                class="h-[500px] w-full overflow-hidden rounded-lg border sm:h-[620px]"
+                            />
+                            <div
+                                class="pointer-events-none absolute inset-x-3 top-3 z-10 sm:right-auto sm:left-3 sm:w-[420px]"
                             >
-                                → {{ route.destination_name }}
+                                <div
+                                    class="pointer-events-auto rounded-lg border bg-background/95 p-4 shadow-lg backdrop-blur"
+                                >
+                                    <div class="mb-2">
+                                        <p class="text-sm font-semibold">Destination</p>
+                                        <p class="text-xs text-muted-foreground">
+                                            Saved destination for this route.
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="flex items-center gap-2 rounded-lg border border-primary bg-primary/10 p-4"
+                                    >
+                                        <MapPinned class="h-4 w-4 shrink-0 text-primary" />
+                                        <span class="min-w-0 truncate text-sm font-medium text-primary">
+                                            {{ route.destination_name }}
+                                        </span>
+                                        <CheckCircle2 class="ml-auto h-4 w-4 shrink-0 text-primary" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-muted-foreground">
+                            <span class="flex items-center gap-1.5">
+                                <span class="inline-block h-2 w-2 rounded-full bg-green-600" />
+                                Origin
+                            </span>
+                            <span class="flex items-center gap-1.5">
+                                <span class="inline-block h-2 w-2 rounded-full bg-red-600" />
+                                Destination
+                            </span>
+                            <span class="flex items-center gap-1.5">
+                                <span class="inline-block h-2 w-2 rounded-full bg-yellow-500" />
+                                Bus stops
+                            </span>
+                            <span class="flex items-center gap-1.5">
+                                <span class="inline-block h-2 w-2 rounded-full bg-violet-500" />
+                                Landmark stops
                             </span>
                         </div>
-                        <p class="truncate text-xs text-muted-foreground">
-                            Fixed origin:
-                            <span class="font-medium text-foreground">{{
-                                route.origin_name
-                            }}</span>
-                        </p>
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
 
-                <div class="flex shrink-0 items-center gap-2">
-                    <div class="hidden items-center gap-1.5 sm:flex">
-                        <span class="h-2 w-2 rounded-full bg-green-500" />
-                        <span class="text-xs text-muted-foreground">{{
-                            routeHealthText
-                        }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+                <!-- Stops card (scrollable, capped at map height) -->
+                <Card class="py-6">
+                    <CardHeader class="flex items-center justify-between">
+                        <CardTitle class="text-base">Stops</CardTitle>
+                    </CardHeader>
 
-        <div class="p-4 sm:p-6">
-            <div class="mb-4">
-                <Button
-                    as-child
-                    type="button"
-                    variant="outline"
-                    class="rounded-lg"
-                >
-                    <Link :href="index().url">
-                        <ArrowLeft class="mr-2 h-4 w-4" />
-                        Back to Routes
-                    </Link>
-                </Button>
-            </div>
+                    <CardContent class="overflow-y-auto p-6 border-t border-slate-100 max-h-[575px] sm:max-h-[695px]">
+                        <div v-if="sortedStops.length" class="relative">
+                            <div class="absolute top-6 bottom-6 left-[18px] w-px bg-slate-200" />
 
-            <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div
-                    class="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm"
-                >
-                    <div
-                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600"
-                    >
-                        <MapPinned class="h-4 w-4" />
-                    </div>
-                    <div class="min-w-0">
-                        <p
-                            class="text-[11px] font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Destination
-                        </p>
-                        <p class="truncate text-sm font-semibold">
-                            {{ route.destination_name || '—' }}
-                        </p>
-                    </div>
-                </div>
-
-                <div
-                    class="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm"
-                >
-                    <div
-                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600"
-                    >
-                        <Milestone class="h-4 w-4" />
-                    </div>
-                    <div class="min-w-0">
-                        <p
-                            class="text-[11px] font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Distance
-                        </p>
-                        <p class="text-sm font-semibold">
-                            {{
-                                route.distance_meters
-                                    ? fmtDistance(route.distance_meters)
-                                    : '—'
-                            }}
-                        </p>
-                    </div>
-                </div>
-
-                <div
-                    class="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm"
-                >
-                    <div
-                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600"
-                    >
-                        <Clock3 class="h-4 w-4" />
-                    </div>
-                    <div class="min-w-0">
-                        <p
-                            class="text-[11px] font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Duration
-                        </p>
-                        <p class="text-sm font-semibold">
-                            {{
-                                route.duration_seconds
-                                    ? fmtDuration(route.duration_seconds)
-                                    : '—'
-                            }}
-                        </p>
-                    </div>
-                </div>
-
-                <div
-                    class="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm"
-                >
-                    <div
-                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-600"
-                    >
-                        <RouteIcon class="h-4 w-4" />
-                    </div>
-                    <div class="min-w-0">
-                        <p
-                            class="text-[11px] font-medium tracking-wide text-muted-foreground uppercase"
-                        >
-                            Total Stops
-                        </p>
-                        <p class="text-sm font-semibold">{{ totalStops }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid gap-6 xl:grid-cols-[1fr_380px]">
-                <div class="space-y-5">
-                    <Card class="overflow-hidden rounded-2xl">
-                        <CardHeader class="pb-3">
-                            <div
-                                class="flex items-center justify-between gap-3"
-                            >
-                                <div>
-                                    <CardTitle class="text-base"
-                                        >Map Workspace</CardTitle
-                                    >
-                                    <CardDescription class="text-xs">
-                                        Inspect the saved route path and stop
-                                        locations.
-                                    </CardDescription>
-                                </div>
-
-                                <Badge
-                                    variant="secondary"
-                                    class="shrink-0 text-xs"
-                                >
-                                    View only
-                                </Badge>
-                            </div>
-                        </CardHeader>
-
-                        <CardContent class="space-y-3 pt-0">
-                            <div class="relative">
+                            <div class="space-y-1">
                                 <div
-                                    ref="mapEl"
-                                    class="h-[500px] w-full overflow-hidden rounded-xl border sm:h-[620px]"
-                                />
-
-                                <div
-                                    class="pointer-events-none absolute inset-x-3 top-3 z-10 sm:right-auto sm:left-3 sm:w-[420px]"
+                                    v-for="(stop, index) in sortedStops"
+                                    :key="stop.id"
+                                    class="group flex items-start gap-3 rounded-lg p-2 transition-colors hover:bg-muted"
                                 >
                                     <div
-                                        class="pointer-events-auto rounded-2xl border bg-background/95 p-3 shadow-lg backdrop-blur"
+                                        :class="[
+                                            'relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white ring-2 ring-background',
+                                            stop.stop_type === 'origin'
+                                                ? 'bg-green-600'
+                                                : stop.stop_type === 'destination'
+                                                  ? 'bg-red-600'
+                                                  : stop.stop_type === 'landmark'
+                                                    ? 'bg-violet-500'
+                                                    : 'bg-amber-500',
+                                        ]"
                                     >
-                                        <div class="mb-2">
-                                            <p class="text-sm font-semibold">
-                                                Destination
-                                            </p>
-                                            <p
-                                                class="text-xs text-muted-foreground"
-                                            >
-                                                Saved destination for this
-                                                route.
-                                            </p>
-                                        </div>
+                                        {{ index + 1 }}
+                                    </div>
 
-                                        <div
-                                            class="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2"
-                                        >
-                                            <MapPinned
-                                                class="h-3.5 w-3.5 shrink-0 text-red-600"
-                                            />
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                            <p class="truncate max-h-[1.25rem] text-sm leading-tight font-medium transition-[max-height] duration-300 ease-in-out group-hover:max-h-20 group-hover:whitespace-normal">
+                                                {{ stop.stop_name }}
+                                            </p>
                                             <span
-                                                class="min-w-0 truncate text-sm font-medium text-red-800"
+                                                :class="[
+                                                    'inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-medium',
+                                                    stopTypeBadgeClass(stop.stop_type),
+                                                ]"
                                             >
-                                                {{ route.destination_name }}
+                                                {{ stopTypeLabel(stop.stop_type) }}
                                             </span>
-                                            <CheckCircle2
-                                                class="ml-auto h-3.5 w-3.5 shrink-0 text-red-500"
-                                            />
                                         </div>
+                                        <p class="truncate max-h-[1rem] text-[11px] text-muted-foreground transition-[max-height] duration-300 ease-in-out group-hover:max-h-12 group-hover:whitespace-normal">
+                                            {{ stop.address || 'No address' }}
+                                        </p>
+                                        <p class="text-[10px] text-muted-foreground">
+                                            {{ Number(stop.latitude).toFixed(5) }},
+                                            {{ Number(stop.longitude).toFixed(5) }}
+                                        </p>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div
-                                class="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-muted-foreground"
-                            >
-                                <span class="flex items-center gap-1.5">
-                                    <span
-                                        class="inline-block h-2 w-2 rounded-full bg-green-600"
-                                    />
-                                    Origin
-                                </span>
-                                <span class="flex items-center gap-1.5">
-                                    <span
-                                        class="inline-block h-2 w-2 rounded-full bg-red-600"
-                                    />
-                                    Destination
-                                </span>
-                                <span class="flex items-center gap-1.5">
-                                    <span
-                                        class="inline-block h-2 w-2 rounded-full bg-yellow-500"
-                                    />
-                                    Bus stops
-                                </span>
-                                <span class="flex items-center gap-1.5">
-                                    <span
-                                        class="inline-block h-2 w-2 rounded-full bg-violet-500"
-                                    />
-                                    Landmark stops
-                                </span>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card class="rounded-2xl">
-                        <CardHeader class="pb-2">
-                            <div
-                                class="flex items-center justify-between gap-2"
-                            >
-                                <div>
-                                    <CardTitle
-                                        class="text-sm font-semibold tracking-wide text-muted-foreground uppercase"
-                                    >
-                                        Stops Preview
-                                    </CardTitle>
-                                    <CardDescription class="text-xs">
-                                        Ordered stop sequence for this route.
-                                    </CardDescription>
-                                </div>
-                                <Badge variant="secondary" class="text-xs">
-                                    {{ totalStops }}
-                                </Badge>
-                            </div>
-                        </CardHeader>
-
-                        <CardContent class="pt-0">
-                            <div v-if="sortedStops.length" class="relative">
-                                <div
-                                    class="absolute top-6 bottom-6 left-[18px] w-px bg-border"
-                                />
-
-                                <div class="space-y-1">
-                                    <div
-                                        v-for="(stop, index) in sortedStops"
-                                        :key="stop.id"
-                                        class="relative flex items-start gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-muted/40"
-                                    >
-                                        <div
-                                            :class="[
-                                                'relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white ring-2 ring-background',
-                                                stop.stop_type === 'origin'
-                                                    ? 'bg-green-600'
-                                                    : stop.stop_type ===
-                                                        'destination'
-                                                      ? 'bg-red-600'
-                                                      : stop.stop_type ===
-                                                          'landmark'
-                                                        ? 'bg-violet-500'
-                                                        : 'bg-amber-500',
-                                            ]"
-                                        >
-                                            {{ index + 1 }}
-                                        </div>
-
-                                        <div class="min-w-0 flex-1 pt-0.5">
-                                            <div
-                                                class="flex items-center gap-2"
-                                            >
-                                                <p
-                                                    class="truncate text-sm leading-tight font-medium"
-                                                >
-                                                    {{ stop.stop_name }}
-                                                </p>
-                                                <span
-                                                    :class="[
-                                                        'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium',
-                                                        stopTypeBadgeClass(
-                                                            stop.stop_type,
-                                                        ),
-                                                    ]"
-                                                >
-                                                    {{
-                                                        stopTypeLabel(
-                                                            stop.stop_type,
-                                                        )
-                                                    }}
-                                                </span>
-                                            </div>
-
-                                            <p
-                                                class="truncate text-[11px] text-muted-foreground"
-                                            >
-                                                {{
-                                                    stop.address || 'No address'
-                                                }}
-                                            </p>
-                                            <p
-                                                class="text-[10px] text-muted-foreground"
-                                            >
-                                                {{
-                                                    Number(
-                                                        stop.latitude,
-                                                    ).toFixed(5)
-                                                }},
-                                                {{
-                                                    Number(
-                                                        stop.longitude,
-                                                    ).toFixed(5)
-                                                }}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div
-                                v-else
-                                class="rounded-xl border border-dashed px-4 py-6 text-center text-xs text-muted-foreground"
-                            >
-                                No stops available for this route.
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <div class="space-y-5">
-                    <Card class="rounded-2xl">
-                        <CardHeader class="pb-2">
-                            <CardTitle
-                                class="text-sm font-semibold tracking-wide text-muted-foreground uppercase"
-                            >
-                                Route Summary
-                            </CardTitle>
-                        </CardHeader>
-
-                        <CardContent class="space-y-0 pt-0">
-                            <div class="flex items-center gap-3 border-b py-3">
-                                <span
-                                    class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-600 text-[10px] font-bold text-white"
-                                >
-                                    A
-                                </span>
-                                <div class="min-w-0">
-                                    <p
-                                        class="text-[10px] tracking-wide text-muted-foreground uppercase"
-                                    >
-                                        Origin
-                                    </p>
-                                    <p class="truncate text-sm font-medium">
-                                        {{
-                                            startStop?.stop_name ??
-                                            route.origin_name
-                                        }}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="flex items-center gap-3 border-b py-3">
-                                <span
-                                    class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white"
-                                >
-                                    B
-                                </span>
-                                <div class="min-w-0">
-                                    <p
-                                        class="text-[10px] tracking-wide text-muted-foreground uppercase"
-                                    >
-                                        Destination
-                                    </p>
-                                    <p class="truncate text-sm font-medium">
-                                        {{
-                                            endStop?.stop_name ??
-                                            route.destination_name
-                                        }}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-x-3 gap-y-0">
-                                <div class="border-r border-b py-3 pr-3">
-                                    <p
-                                        class="text-[10px] tracking-wide text-muted-foreground uppercase"
-                                    >
-                                        Distance
-                                    </p>
-                                    <p class="text-sm font-semibold">
-                                        {{
-                                            route.distance_meters
-                                                ? fmtDistance(
-                                                      route.distance_meters,
-                                                  )
-                                                : '—'
-                                        }}
-                                    </p>
-                                </div>
-                                <div class="border-b py-3 pl-3">
-                                    <p
-                                        class="text-[10px] tracking-wide text-muted-foreground uppercase"
-                                    >
-                                        Duration
-                                    </p>
-                                    <p class="text-sm font-semibold">
-                                        {{
-                                            route.duration_seconds
-                                                ? fmtDuration(
-                                                      route.duration_seconds,
-                                                  )
-                                                : '—'
-                                        }}
-                                    </p>
-                                </div>
-                                <div class="border-r border-b py-3 pr-3">
-                                    <p
-                                        class="text-[10px] tracking-wide text-muted-foreground uppercase"
-                                    >
-                                        Stops
-                                    </p>
-                                    <p class="text-sm font-semibold">
-                                        {{ totalStops }}
-                                    </p>
-                                </div>
-                                <div class="border-b py-3 pl-3">
-                                    <p
-                                        class="text-[10px] tracking-wide text-muted-foreground uppercase"
-                                    >
-                                        Gate
-                                    </p>
-                                    <p class="text-sm font-semibold">
-                                        {{ route.gate?.gate_name ?? '—' }}
-                                    </p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card class="rounded-2xl">
-                        <CardHeader>
-                            <CardTitle>Activity</CardTitle>
-                            <CardDescription>
-                                Creation and update history.
-                            </CardDescription>
-                        </CardHeader>
-
-                        <CardContent class="space-y-4 text-sm">
-                            <div class="rounded-xl border p-4">
-                                <div
-                                    class="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                                >
-                                    <User2 class="h-3.5 w-3.5" />
-                                    Created By
-                                </div>
-                                <p class="mt-1 font-semibold">
-                                    {{ route.creator?.name ?? '—' }}
-                                </p>
-                                <p class="mt-1 text-xs text-muted-foreground">
-                                    {{ route.created_at_human ?? '—' }}
-                                </p>
-                            </div>
-
-                            <div class="rounded-xl border p-4">
-                                <div
-                                    class="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                                >
-                                    <User2 class="h-3.5 w-3.5" />
-                                    Last Updated By
-                                </div>
-                                <p class="mt-1 font-semibold">
-                                    {{ route.updater?.name ?? '—' }}
-                                </p>
-                                <p class="mt-1 text-xs text-muted-foreground">
-                                    {{ route.updated_at_human ?? '—' }}
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <div class="rounded-2xl border bg-card p-4 shadow-sm">
-                        <div class="space-y-4">
-                            <div>
-                                <p class="text-sm font-semibold">
-                                    Quick Actions
-                                </p>
-                                <p class="text-xs text-muted-foreground">
-                                    Go back to the route list or edit this
-                                    route.
-                                </p>
-                            </div>
-
-                            <Separator />
-
-                            <div class="grid gap-2 sm:grid-cols-2">
-                                <Button
-                                    as-child
-                                    class="w-full"
-                                    variant="outline"
-                                >
-                                    <Link :href="edit(route.id).url">
-                                        <Pencil class="mr-2 h-4 w-4" />
-                                        Edit Route
-                                    </Link>
-                                </Button>
-
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    class="w-full cursor-pointer border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                                    @click="openArchiveDialog"
-                                >
-                                    <Archive class="mr-2 h-4 w-4" />
-                                    Archive
-                                </Button>
                             </div>
                         </div>
-                    </div>
-                </div>
+
+                        <div
+                            v-else
+                            class="rounded-xl border border-dashed px-4 py-6 text-center text-xs text-muted-foreground"
+                        >
+                            No stops available for this route.
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
+            <!-- Bottom row: route summary | activity -->
+            <div class="grid gap-4 xl:grid-cols-2">
+
+                <!-- Route Summary -->
+                <Card class="py-6">
+                    <CardHeader>
+                        <CardTitle>Route Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent class="px-6 grid divide-y gap-y-2 pt-2 border-t border-slate-100">
+                        <div class="py-2">
+                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">Origin</span>
+                            <span class="text-sm font-semibold truncate block">{{ startStop?.stop_name ?? route.origin_name }}</span>
+                        </div>
+                        <div class="py-2">
+                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">Destination</span>
+                            <span class="text-sm font-semibold truncate block">{{ endStop?.stop_name ?? route.destination_name }}</span>
+                        </div>
+                        <div class="py-2">
+                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">Stops</span>
+                            <span class="rounded bg-muted px-2 py-0.5 font-mono text-sm font-semibold tabular-nums">{{ totalStops }}</span>
+                        </div>
+                        <div class="py-2">
+                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">Distance</span>
+                            <div class="items-center flex">
+                                <div class="h-full mr-4">
+                                    <Ruler class="h-4 w-4 inline-block text-primary" />
+                                </div>
+                                <span class="text-sm font-semibold">{{ route.distance_meters ? fmtDistance(route.distance_meters) : '—' }}</span>
+                            </div>
+                        </div>
+                        <div class="py-2">
+                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">Duration</span>
+                            <div class="items-center flex">
+                                <div class="h-full mr-4">
+                                    <Clock3 class="h-4 w-4 inline-block text-primary" />
+                                </div>
+                                <span class="text-sm font-semibold">{{ route.duration_seconds ? fmtDuration(route.duration_seconds) : '—' }}</span>
+                            </div>
+                        </div>
+                        <div class="py-2">
+                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">Gate</span>
+                            <div class="items-center flex">
+                                <div class="h-full mr-4">
+                                    <DoorOpen class="h-4 w-4 inline-block text-primary" />
+                                </div>
+                                <span class="text-sm font-semibold">{{ route.gate?.gate_name ?? '—' }}</span>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <!-- Activity -->
+                <Card class="py-6">
+                    <CardHeader>
+                        <CardTitle>Activity</CardTitle>
+                    </CardHeader>
+                    <CardContent class="px-6 grid divide-y gap-y-2 pt-2 border-t border-slate-100">
+                        <div class="py-2">
+                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">Created</span>
+                            <span class="text-sm">{{ route.created_at_human ?? '—' }}</span>
+                            <span v-if="route.creator" class="text-xs text-muted-foreground block">
+                                by <span class="font-medium text-foreground">{{ route.creator.name }}</span>
+                            </span>
+                        </div>
+                        <div class="py-2">
+                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">Last Updated</span>
+                            <span class="text-sm">{{ route.updated_at_human ?? '—' }}</span>
+                            <span v-if="route.updater" class="text-xs text-muted-foreground block">
+                                by <span class="font-medium text-foreground">{{ route.updater.name }}</span>
+                            </span>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <!-- Archive dialog -->
             <Dialog :open="archiveOpen" @update:open="archiveOpen = $event">
-                <DialogContent class="sm:max-w-md">
+                <DialogContent class="sm:max-w-md p-4">
                     <DialogHeader>
                         <DialogTitle>Archive Route</DialogTitle>
                         <DialogDescription>
                             Are you sure you want to archive
-                            <span class="font-semibold text-foreground">{{
-                                route.route_name
-                            }}</span
-                            >? This action will remove it from active records.
+                            <span class="font-semibold text-foreground">{{ route.route_name }}</span>?
+                            This action will remove it from active records.
                         </DialogDescription>
                     </DialogHeader>
-
                     <DialogFooter class="gap-2 sm:justify-end">
-                        <Button variant="outline" @click="archiveOpen = false">
+                        <Button class="cursor-pointer hover:bg-slate-100" variant="outline" @click="archiveOpen = false">
                             Cancel
                         </Button>
-
                         <Button
-                            class="bg-rose-600 text-white hover:bg-rose-700"
+                            class="bg-destructive text-destructive-foreground cursor-pointer hover:bg-destructive/90"
                             @click="archiveRoute"
+
                         >
+                            <ArchiveX class="h-4 w-4" />
                             Archive
                         </Button>
                     </DialogFooter>

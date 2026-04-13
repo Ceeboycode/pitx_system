@@ -8,6 +8,21 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, usePage } from '@inertiajs/vue3';
 import { computed, nextTick, ref, watch } from 'vue';
@@ -20,6 +35,7 @@ import {
     Bug,
     BusFront,
     IdCard,
+    MoreHorizontal,
     Paperclip,
     SendHorizontal,
     Wrench,
@@ -139,7 +155,7 @@ const internalOnly = ref(false);
 const pendingFiles = ref<File[]>([]);
 let activeRequest = 0;
 
-const selectedAssigneeId = ref<string>('');
+const selectedAssigneeId = ref<string>('unassigned');
 const attachmentInput = ref<HTMLInputElement | null>(null);
 const messagePane = ref<HTMLElement | null>(null);
 
@@ -225,6 +241,12 @@ function isVideoAttachment(attachment: AttachmentSummary) {
     return attachment.mime_type?.startsWith('video/') ?? false;
 }
 
+function autoResizeTextarea(event: Event) {
+    const textarea = event.target as HTMLTextAreaElement;
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+}
+
 async function scrollMessagesToBottom() {
     await nextTick();
 
@@ -253,7 +275,7 @@ function upsertThreadSummary(thread: ThreadDetail | null) {
 async function loadThread(threadId: number | string | null) {
     if (!threadId) {
         selectedThread.value = null;
-        selectedAssigneeId.value = '';
+        selectedAssigneeId.value = 'unassigned';
         threadError.value = null;
         return;
     }
@@ -283,12 +305,12 @@ async function loadThread(threadId: number | string | null) {
         upsertThreadSummary(selectedThread.value);
         selectedAssigneeId.value = selectedThread.value?.assigned_to?.id
             ? String(selectedThread.value.assigned_to.id)
-            : '';
+            : 'unassigned';
         void scrollMessagesToBottom();
     } catch (error) {
         if (requestId !== activeRequest) return;
         selectedThread.value = null;
-        selectedAssigneeId.value = '';
+        selectedAssigneeId.value = 'unassigned';
         threadError.value =
             error instanceof Error
                 ? error.message
@@ -328,9 +350,9 @@ async function saveAssignment() {
                 'X-Requested-With': 'XMLHttpRequest',
             },
             body: JSON.stringify({
-                assigned_to_user_id: selectedAssigneeId.value
-                    ? Number(selectedAssigneeId.value)
-                    : null,
+                assigned_to_user_id: selectedAssigneeId.value === 'unassigned' 
+                    ? null 
+                    : (selectedAssigneeId.value ? Number(selectedAssigneeId.value) : null),
             }),
         });
 
@@ -519,7 +541,7 @@ watch(
         <div
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
-            <Card class="mx-5 p-0">
+            <Card class="p-0 max-h-[85vh]">
                 <!-- <Card class="mx-5"> -->
                 <div
                     class="grid h-auto grid-cols-1 lg:grid-cols-[22rem_minmax(0,1fr)]"
@@ -549,7 +571,7 @@ watch(
                                 />
                             </div>
 
-                            <div class="min-h-0 flex-1 overflow-y-auto">
+                            <div class="min-h-0 flex-1 overflow-y-auto max-h-[60vh]">
                                 <div
                                     v-if="threadList.length === 0"
                                     class="px-4 py-10 text-center text-sm text-muted-foreground"
@@ -745,78 +767,100 @@ watch(
                             </div>
 
                             <div class="inline">
-                                <div
-                                    class="grid gap-3 text-xs text-muted-foreground lg:grid-cols-[minmax(0,1fr)_18rem]"
-                                >
-                                    <div class="space-y-2">
-                                        <label
-                                            v-if="canAssignThreads"
-                                            class="flex flex-col gap-1"
+                                <DropdownMenu v-if="canAssignThreads">
+                                    <DropdownMenuTrigger as-child>
+                                        <Button
+                                            variant="outline"
+                                            class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                                         >
-                                            <div class="flex gap-2">
-                                                <select
-                                                    v-model="selectedAssigneeId"
-                                                    class="h-9 flex-1 rounded-md border bg-background px-3 text-sm"
-                                                >
-                                                    <option value="">
+                                            <MoreHorizontal class="h-4 w-4" />
+                                            <span class="sr-only">Open actions</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+
+                                    <DropdownMenuContent
+                                        align="end"
+                                        class="w-fit rounded-lg border-slate-200 shadow-lg"
+                                    >
+                                        <DropdownMenuLabel
+                                            class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                        >
+                                            {{ selectedThread?.subject || 'Report Actions' }}
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+
+                                        <div class="p-2">
+                                            <label class="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                Assign to
+                                            </label>
+                                            <Select
+                                                v-model="selectedAssigneeId"
+                                                class="mt-1"
+                                            >
+                                                <SelectTrigger class="h-8 w-full">
+                                                    <SelectValue placeholder="Select assignee…" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="unassigned">
                                                         Unassigned
-                                                    </option>
-                                                    <option
+                                                    </SelectItem>
+                                                    <SelectItem
                                                         v-for="assignee in assignees"
                                                         :key="assignee.id"
-                                                        :value="
-                                                            String(assignee.id)
-                                                        "
+                                                        :value="String(assignee.id)"
                                                     >
                                                         {{ assignee.name }}
-                                                    </option>
-                                                </select>
-                                                <Button
-                                                    size="sm"
-                                                    :disabled="
-                                                        isSavingAssignment
-                                                    "
-                                                    @click="saveAssignment"
-                                                >
-                                                    Assign
-                                                </Button>
-                                                <!-- TODO: display these buttons as a dropdown actions icon button isntead of having them all out like that -->
-                                                <Button
-                                                    v-if="selectedThread"
-                                                    size="sm"
-                                                    variant="outline"
-                                                    :disabled="isTogglingState"
-                                                    @click="toggleThreadState"
-                                                >
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <Button
+                                                size="sm"
+                                                class="mt-2 w-full"
+                                                :disabled="isSavingAssignment"
+                                                @click="saveAssignment"
+                                            >
+                                                {{ isSavingAssignment ? 'Assigning…' : 'Assign' }}
+                                            </Button>
+                                        </div>
+
+                                        <DropdownMenuSeparator />
+
+                                        <DropdownMenuItem
+                                            v-if="selectedThread"
+                                            class="cursor-pointer rounded-lg"
+                                            :disabled="isTogglingState"
+                                            @click="toggleThreadState"
+                                        >   
+                                            <Button variant="outline" class="w-full cursor-pointer hover:bg-slate-100">
+                                                <span class="flex items-center">
                                                     {{
                                                         selectedThread.is_closed
                                                             ? 'Reopen'
                                                             : 'Close'
                                                     }}
                                                     Report
-                                                </Button>
-                                                <Button
-                                                    class="lg:hidden"
-                                                    size="sm"
-                                                    variant="outline"
-                                                    @click="
-                                                        isThreadListOpen = true
-                                                    "
-                                                >
-                                                    Reports
-                                                </Button>
-                                            </div>
-                                        </label>
+                                                </span>
+                                            </Button>
+                                        </DropdownMenuItem>
 
-                                        <p v-else>
-                                            Assigned to:
-                                            {{
-                                                selectedThread?.assigned_to
-                                                    ?.name || 'Unassigned'
-                                            }}
-                                        </p>
-                                    </div>
-                                </div>
+                                        <DropdownMenuItem
+                                            class="lg:hidden cursor-pointer rounded-lg"
+                                            @click="isThreadListOpen = true"
+                                        >
+                                            <span class="flex items-center">
+                                                Reports
+                                            </span>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                <p v-else class="text-sm text-muted-foreground">
+                                    Assigned to:
+                                    {{
+                                        selectedThread?.assigned_to
+                                            ?.name || 'Unassigned'
+                                    }}
+                                </p>
 
                                 <p
                                     v-if="actionError"
@@ -843,12 +887,12 @@ watch(
 
                         <div
                             v-else-if="selectedThread"
-                            class="flex min-h-0 flex-1 flex-col"
+                            class="flex min-h-0 flex-1 flex-col items-between"
                         >
 
                             <div
                                 ref="messagePane"
-                                class="min-h-0 flex-1 overflow-y-auto p-4"
+                                class="min-h-0 flex-auto overflow-y-auto p-4 max-h-[50vh] space-y-6"
                             >
                                 <div
                                     v-if="
@@ -984,32 +1028,28 @@ watch(
 
                             <div
                                 v-if="!selectedThreadIsClosed"
-                                class="border-t p-4"
+                                class="border-t p-4 flex-1"
                             >
-                                <div class="space-y-3">
-                                    <div
-                                        class="flex items-end justify-between gap-2"
-                                    >
+                                <div class="py-2">
+                                    <div class="flex gap-2">
                                         <textarea
                                             v-model="draftMessage"
-                                            class="min-h-fit w-full rounded-md border bg-background px-3 py-2 text-sm"
+                                            class="min-h-fit w-full rounded-md border bg-background px-3 py-2 text-sm resize-none"
                                             placeholder="Write a reply or internal note..."
+                                            rows="1"
+                                            @input="autoResizeTextarea"
                                         />
-                                        <Button :disabled="isSendingMessage" @click="attachmentInput?.click()">
-                                            <Paperclip class="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            @click="sendMessage"
-                                        >
-                                            <SendHorizontal class="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                    <div
-                                        class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
-                                    >
-                                        <div class="flex flex-col gap-3">
+                                        <div class="flex flex-col gap-2">
+                                            <Button :disabled="isSendingMessage" @click="attachmentInput?.click()">
+                                                <Paperclip class="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                @click="sendMessage"
+                                            >
+                                                <SendHorizontal class="h-4 w-4" />
+                                            </Button>
                                             <label
-                                                class="flex items-center gap-2 text-sm"
+                                                class="flex items-center gap-2 text-sm whitespace-nowrap"
                                             >
                                                 <input
                                                     v-model="internalOnly"
@@ -1018,28 +1058,28 @@ watch(
                                                 />
                                                 Post as internal note
                                             </label>
-                                            <div class="flex flex-col gap-2">
-                                                <input
-                                                    ref="attachmentInput"
-                                                    type="file"
-                                                    accept="image/*,video/*"
-                                                    multiple
-                                                    class="hidden"
-                                                    @change="onFilesSelected"
-                                                />
-                                                <p
-                                                    v-if="
-                                                        pendingFiles.length > 0
-                                                    "
-                                                    class="text-xs text-muted-foreground"
-                                                >
-                                                    {{
-                                                        pendingFiles.length
-                                                    }}
-                                                    file(s) selected
-                                                </p>
-                                            </div>
                                         </div>
+                                    </div>
+                                    <div class="flex flex-col gap-2">
+                                        <input
+                                            ref="attachmentInput"
+                                            type="file"
+                                            accept="image/*,video/*"
+                                            multiple
+                                            class="hidden"
+                                            @change="onFilesSelected"
+                                        />
+                                        <p
+                                            v-if="
+                                                pendingFiles.length > 0
+                                            "
+                                            class="text-xs text-muted-foreground"
+                                        >
+                                            {{
+                                                pendingFiles.length
+                                            }}
+                                            file(s) selected
+                                        </p>
                                     </div>
                                 </div>
                             </div>

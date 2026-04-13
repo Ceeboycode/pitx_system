@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class InternalDispatchController extends Controller
 {
@@ -285,6 +286,120 @@ class InternalDispatchController extends Controller
                 'defaultCenter' => ['lng' => 120.9842, 'lat' => 14.5995],
                 'defaultZoom'   => 11,
             ],
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | EXPORT
+    |
+    | GET /dispatches/{dispatch}/export
+    |
+    | Streams a CSV of all dispatches for a company matching the current
+    | filters (date, status, search). Exports all rows — not paginated.
+    |--------------------------------------------------------------------------
+    */
+    public function export(Request $request, int $dispatch): StreamedResponse
+    {
+        Gate::authorize('dispatches.view');
+
+        $selectedDate = trim((string) $request->string('date'));
+        $search       = trim((string) $request->string('search'));
+        $status       = trim((string) $request->string('status', 'all'));
+
+        $allowedStatuses = ['all', 'arrived', 'departed'];
+        if (! in_array($status, $allowedStatuses, true)) {
+            $status = 'all';
+        }
+
+        $company = Company::select(['id', 'company_name'])->findOrFail($dispatch);
+
+        $dispatches = $company->dispatches()
+            ->with([
+                'vehicle:id,route_id,plate_number,vehicle_type,make_model',
+                'vehicle.route:id,route_name,origin_name,destination_name',
+                'gate:id,gate_name',
+                'dispatcher:id,name',
+                'driver:id,name',
+            ])
+            ->when($selectedDate, fn ($q) => $q->whereDate('dispatched_at', $selectedDate))
+            ->when($status !== 'all', fn ($q) => $q->where('status', $status))
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('plate_number', 'like', "%{$search}%")
+                        ->orWhere('remarks', 'like', "%{$search}%")
+                        ->orWhere('bay_number', 'like', "%{$search}%")
+                        ->orWhereHas('vehicle', fn ($v) =>
+                            $v->where('plate_number', 'like', "%{$search}%")
+                                ->orWhere('vehicle_type', 'like', "%{$search}%")
+                                ->orWhere('make_model', 'like', "%{$search}%")
+                        )
+                        ->orWhereHas('vehicle.route', fn ($r) =>
+                            $r->where('route_name', 'like', "%{$search}%")
+                                ->orWhere('origin_name', 'like', "%{$search}%")
+                                ->orWhere('destination_name', 'like', "%{$search}%")
+                        )
+                        ->orWhereHas('gate', fn ($g) =>
+                            $g->where('gate_name', 'like', "%{$search}%")
+                        )
+                        ->orWhereHas('dispatcher', fn ($d) =>
+                            $d->where('name', 'like', "%{$search}%")
+                        )
+                        ->orWhereHas('driver', fn ($d) =>
+                            $d->where('name', 'like', "%{$search}%")
+                        );
+                });
+            })
+            ->latest('dispatched_at')
+            ->latest('id')
+            ->get();
+
+        $label = collect([
+            $company->company_name,
+            $selectedDate ?: null,
+            ($status !== 'all') ? $status : null,
+        ])->filter()->map(fn ($s) => str_replace(' ', '-', $s))->implode('_');
+
+        $filename = 'dispatches_' . $label . '_' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () use ($dispatches) {
+            $out = fopen('php://output', 'w');
+
+            fwrite($out, "\xEF\xBB\xBF");
+
+            fputcsv($out, [
+                'ID', 'Plate Number', 'Vehicle Type', 'Make / Model',
+                'Route', 'Bay', 'PAX', 'Status',
+                'Driver', 'Dispatcher', 'Gate',
+                'Arrived At', 'Departed At', 'Dispatched At', 'Remarks',
+            ]);
+
+            foreach ($dispatches as $d) {
+                $route = $d->vehicle?->route;
+                fputcsv($out, [
+                    $d->id,
+                    $d->vehicle?->plate_number ?? $d->plate_number ?? '',
+                    $d->vehicle?->vehicle_type ?? '',
+                    $d->vehicle?->make_model   ?? '',
+                    $route
+                        ? trim(($route->origin_name ?? '') . ' to ' . ($route->destination_name ?? ''))
+                        : '',
+                    $d->bay_number  ?? '',
+                    $d->pax_count   ?? '',
+                    $d->status      ?? '',
+                    $d->driver?->name     ?? '',
+                    $d->dispatcher?->name ?? '',
+                    $d->gate?->gate_name  ?? '',
+                    $d->arrived_at?->timezone('Asia/Manila')->format('M d, Y h:i A')   ?? '',
+                    $d->departed_at?->timezone('Asia/Manila')->format('M d, Y h:i A')  ?? '',
+                    $d->dispatched_at?->timezone('Asia/Manila')->format('M d, Y h:i A') ?? '',
+                    $d->remarks ?? '',
+                ]);
+            }
+
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
 }

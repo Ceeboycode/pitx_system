@@ -67,7 +67,7 @@ watch(
           <CollapsibleTrigger as-child class="mx-auto px-auto w-full">
             <SidebarMenuButton
               :tooltip="item.title"
-              class="flex w-full items-center gap-2"
+              class="flex w-full items-center gap-2 cursor-pointer"
             >
               <component v-if="item.icon" :is="item.icon"/>
               <span>{{ item.title }}</span>

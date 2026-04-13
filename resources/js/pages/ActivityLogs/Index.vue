@@ -1,10 +1,12 @@
 <script setup lang="ts">
 // TODO: BAKIT AUDIT LOGS T_T
+import { CalendarDate } from '@internationalized/date';
 import { myActivity } from '@/actions/App/Http/Controllers/AuditLogController';
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import {
     Card,
     CardAction,
@@ -46,6 +48,8 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 import {
+    Calendar,
+    Eye,
     FileSearch,
     Filter,
     History,
@@ -114,6 +118,47 @@ const actionFilter = ref<string>(props.filters.action ?? 'all');
 const entityTypeFilter = ref<string>(props.filters.entity_type ?? 'all');
 const dateFrom = ref<string>(props.filters.date_from ?? '');
 const dateTo = ref<string>(props.filters.date_to ?? '');
+
+const popoverFromOpen = ref(false);
+const popoverToOpen = ref(false);
+
+function parseDateString(str: string): CalendarDate | undefined {
+    if (!str) return undefined;
+    const [year, month, day] = str.split('-').map(Number);
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return undefined;
+    return new CalendarDate(year, month, day);
+}
+
+function formatDateDisplay(str: string): string {
+    if (!str) return '';
+    const d = new Date(str + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+const calendarDateFrom = ref<CalendarDate | undefined>(
+    parseDateString(props.filters.date_from ?? ''),
+);
+const calendarDateTo = ref<CalendarDate | undefined>(
+    parseDateString(props.filters.date_to ?? ''),
+);
+
+function onCalendarFromChange(val: CalendarDate | undefined) {
+    calendarDateFrom.value = val;
+    dateFrom.value = val
+        ? `${val.year}-${String(val.month).padStart(2, '0')}-${String(val.day).padStart(2, '0')}`
+        : '';
+    popoverFromOpen.value = false;
+    applyFilters();
+}
+
+function onCalendarToChange(val: CalendarDate | undefined) {
+    calendarDateTo.value = val;
+    dateTo.value = val
+        ? `${val.year}-${String(val.month).padStart(2, '0')}-${String(val.day).padStart(2, '0')}`
+        : '';
+    popoverToOpen.value = false;
+    applyFilters();
+}
 
 const hasActiveFilters = computed(
     () =>
@@ -223,7 +268,7 @@ function actionBadgeClass(action: string): string {
                 <CardHeader>
                     <CardTitle class="flex items-center gap-2">
                         Activity Logs
-                        <div class="ml-2 flex w-full items-center">
+                        <div class="ml-2 flex flex-1 w-full items-center">
                             <hr
                                 class="h-px w-full border border-rose-500"
                             />
@@ -361,59 +406,120 @@ function actionBadgeClass(action: string): string {
                                         </div>
                                     </PopoverContent>
                                 </Popover>
-                                <!-- TODO: ayusin yung order n icon and text, gap, and yung color? pati yung date popover pagandahin -->
-                                <Input
-                                    v-model="dateFrom"
-                                    type="date"
-                                    class="cursor-pointer h-full w-fit py-2 rounded-lg border-slate-200 shadow-sm"
-                                    @change="applyFilters()"
-                                />
-                                <Input
-                                    v-model="dateTo"
-                                    type="date"
-                                    class="cursor-pointer h-full w-fit py-2 rounded-lg border-slate-200 shadow-sm"
-                                    @change="applyFilters()"
-                                />
+                                <Popover v-model:open="popoverFromOpen">
+                                    <PopoverTrigger as-child class="h-full">
+                                        <Button
+                                            variant="outline"
+                                            class="rounded-lg border-slate-200 px-3 text-slate-600 shadow-sm hover:bg-slate-100 gap-2"
+                                        >
+                                            <Calendar class="h-4 w-4 shrink-0" />
+                                            <span class="text-sm">
+                                                {{ dateFrom ? formatDateDisplay(dateFrom) : 'From date' }}
+                                            </span>
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                        align="start"
+                                        class="w-auto rounded-lg border-slate-200 shadow-lg"
+                                    >
+                                        <p class="mb-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                                            From Date
+                                        </p>
+                                        <CalendarPicker
+                                            v-model="calendarDateFrom"
+                                            @update:model-value="onCalendarFromChange"
+                                            class="px-0 pb-0"
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                                <Popover v-model:open="popoverToOpen">
+                                    <PopoverTrigger as-child class="h-full">
+                                        <Button
+                                            variant="outline"
+                                            class="rounded-lg border-slate-200 px-3 text-slate-600 shadow-sm hover:bg-slate-100 gap-2"
+                                        >
+                                            <Calendar class="h-4 w-4 shrink-0" />
+                                            <span class="text-sm">
+                                                {{ dateTo ? formatDateDisplay(dateTo) : 'To date' }}
+                                            </span>
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                        align="start"
+                                        class="w-auto rounded-lg border-slate-200 shadow-lg"
+                                    >
+                                        <p class="mb-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                                            To Date
+                                        </p>
+                                        <CalendarPicker
+                                            v-model="calendarDateTo"
+                                            @update:model-value="onCalendarToChange"
+                                            class="px-0 pb-0"
+                                        />
+                                    </PopoverContent>
+                                </Popover>
                             </div>
                         </div>
                     </div>
-                    <!-- =============================================== -->
-                    <div class="overflow-x-auto rounded-xl border">
+                    <div class="overflow-x-auto">
                         <Table>
-                            <TableHeader>
+                            <TableHeader class="border-y border-slate-200">
                                 <TableRow>
-                                    <TableHead>Action</TableHead>
-                                    <TableHead>Entity</TableHead>
-                                    <TableHead>Changes</TableHead>
-                                    <TableHead>Timestamp</TableHead>
-                                    <TableHead class="w-30 text-right"
+                                    <TableHead class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Action</TableHead>
+                                    <TableHead class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Entity</TableHead>
+                                    <TableHead class="px-0 w-56 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Changes</TableHead>
+                                    <TableHead class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Timestamp</TableHead>
+                                    <TableHead class="px-0 w-30 text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
                                         >Details</TableHead
                                     >
                                 </TableRow>
                             </TableHeader>
 
-                            <TableBody>
+                            <TableBody class="border-y border-slate-200">
                                 <TableRow
                                     v-if="auditLogs.data.length === 0"
                                     class="hover:bg-transparent"
                                 >
                                     <TableCell
                                         colspan="5"
-                                        class="py-14 text-center"
+                                        class="py-20 text-center"
                                     >
                                         <div
-                                            class="flex flex-col items-center gap-2 text-muted-foreground"
+                                            class="flex flex-col items-center gap-3"
                                         >
-                                            <FileSearch class="h-6 w-6" />
-                                            <p
-                                                class="text-sm font-medium text-foreground"
+                                            <div
+                                                class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted"
                                             >
-                                                No activity logs found
-                                            </p>
-                                            <p class="text-xs">
-                                                Try adjusting filters or check
-                                                activity later.
-                                            </p>
+                                                <History
+                                                    class="h-6 w-6 text-muted-foreground/40"
+                                                />
+                                            </div>
+                                            <div>
+                                                <p
+                                                    class="text-sm font-semibold text-foreground"
+                                                >
+                                                    No activity logs found
+                                                </p>
+                                                <p
+                                                    class="mt-0.5 text-xs text-muted-foreground"
+                                                >
+                                                    {{
+                                                        hasActiveFilters
+                                                            ? 'Try adjusting your filters or search.'
+                                                            : 'Try adjusting your search.'
+                                                    }}
+                                                </p>
+                                            </div>
+                                            <Button
+                                                v-if="hasActiveFilters"
+                                                size="sm"
+                                                variant="outline"
+                                                class="mt-1 h-8 rounded-lg text-xs"
+                                                @click="clearFilters"
+                                            >
+                                                <X class="mr-1.5 h-3.5 w-3.5" />
+                                                Clear filters
+                                            </Button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -421,8 +527,9 @@ function actionBadgeClass(action: string): string {
                                 <TableRow
                                     v-for="log in auditLogs.data"
                                     :key="log.id"
+                                    class="group transition-colors hover:bg-muted/30"
                                 >
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <Badge
                                             :class="
                                                 actionBadgeClass(log.action)
@@ -432,7 +539,7 @@ function actionBadgeClass(action: string): string {
                                         </Badge>
                                     </TableCell>
 
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <div class="text-sm font-medium">
                                             {{ log.entity_label }}
                                         </div>
@@ -443,7 +550,7 @@ function actionBadgeClass(action: string): string {
                                         </div>
                                     </TableCell>
 
-                                    <TableCell>
+                                    <TableCell class="px-0 w-56 max-w-56">
                                         <div class="space-y-1">
                                             <div
                                                 v-for="change in log.changes.slice(
@@ -451,7 +558,7 @@ function actionBadgeClass(action: string): string {
                                                     2,
                                                 )"
                                                 :key="`${log.id}-${change.field}`"
-                                                class="text-xs text-muted-foreground"
+                                                class="text-xs text-muted-foreground break-words whitespace-normal"
                                             >
                                                 <span
                                                     class="font-medium text-foreground"
@@ -472,25 +579,26 @@ function actionBadgeClass(action: string): string {
                                         </div>
                                     </TableCell>
 
-                                    <TableCell>
+                                    <TableCell class="px-0">
                                         <div class="text-sm">
                                             {{ log.created_at_human ?? '—' }}
                                         </div>
                                         <div
-                                            class="text-xs text-muted-foreground uppercase"
+                                            class="text-xs text-muted-foreground"
                                         >
-                                            {{ log.request_method ?? 'N/A' }}
+                                            {{ log.created_at ?? '—' }}
                                         </div>
                                     </TableCell>
 
-                                    <TableCell class="text-right">
+                                    <TableCell class="text-right px-0">
                                         <Dialog>
                                             <DialogTrigger as-child>
                                                 <Button
-                                                    size="sm"
                                                     variant="outline"
-                                                    >View</Button
+                                                    class="cursor-pointer hover:bg-slate-100"
                                                 >
+                                                    <Eye class="h-4 w-4" />
+                                                </Button>
                                             </DialogTrigger>
 
                                             <DialogContent class="max-w-2xl">

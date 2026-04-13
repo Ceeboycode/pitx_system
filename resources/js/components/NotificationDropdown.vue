@@ -13,6 +13,8 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
+import { Tooltip } from '@/components/ui/tooltip';
+
 import NotificationController from '@/actions/App/Http/Controllers/NotificationController'
 
 type NotificationItem = {
@@ -60,14 +62,14 @@ const markAllAsRead = () => {
             <Button
                 variant="outline"
                 size="icon"
-                class="relative h-9 w-9 shrink-0 rounded-full"
+                class="relative h-9 w-9 shrink-0 rounded-full cursor-pointer hover:bg-primary hover:text-primary-foreground data-[state=open]:bg-primary data-[state=open]:text-primary-foreground"
             >
                 <Bell class="h-4 w-4" />
                 <span class="sr-only">Open notifications</span>
 
                 <Badge
                     v-if="notifications.unread_count > 0"
-                    class="absolute -right-1 -top-1 h-5 min-w-5 rounded-full px-1 text-[10px]"
+                    class="absolute -right-1 -top-1 h-4 w-4 rounded-full px-1 text-[10px]"
                 >
                     {{ notifications.unread_count > 99 ? '99+' : notifications.unread_count }}
                 </Badge>
@@ -82,9 +84,8 @@ const markAllAsRead = () => {
 
                 <Button
                     v-if="notifications.unread_count > 0"
-                    variant="ghost"
-                    size="sm"
-                    class="h-8 px-2 text-xs"
+                    variant="outline"
+                    class="h-8 px-2 text-xs cursor-pointer hover:bg-slate-100 rounded-lg"
                     @click="markAllAsRead"
                 >
                     Mark all as read
@@ -104,11 +105,45 @@ const markAllAsRead = () => {
                 v-else
                 class="max-h-[420px] space-y-2 overflow-y-auto p-2"
             >
-                <button
+                <Tooltip
+                    content="'Mark as read'"
+                    placement="top"
+                >
+                    <button
+                        v-for="item in notifications.items"
+                        :key="item.id"
+                        type="button"
+                        class="w-full rounded-lg border p-3 text-left transition hover:bg-slate-100 cursor-pointer"
+                        @click="markAsRead(item.id)"
+                    >
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate text-sm font-semibold">
+                                    {{ item.title }}
+                                </p>
+                                <p class="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                                    {{ item.message }}
+                                </p>
+                                <p class="mt-2 text-xs text-muted-foreground">
+                                    {{ item.created_at }}
+                                </p>
+                            </div>
+
+                            <Badge
+                                v-if="!item.read_at"
+                                variant="default"
+                                class="shrink-0"
+                            >
+                                New
+                            </Badge>
+                        </div>
+                    </button>
+                </Tooltip>
+                <!-- <button
                     v-for="item in notifications.items"
                     :key="item.id"
                     type="button"
-                    class="w-full rounded-lg border p-3 text-left transition hover:bg-muted"
+                    class="w-full rounded-lg border p-3 text-left transition hover:bg-slate-100 cursor-pointer"
                     @click="markAsRead(item.id)"
                 >
                     <div class="flex items-start justify-between gap-3">
@@ -132,7 +167,7 @@ const markAllAsRead = () => {
                             New
                         </Badge>
                     </div>
-                </button>
+                </button> -->
             </div>
         </DropdownMenuContent>
     </DropdownMenu>

@@ -4,6 +4,7 @@ import { index, update } from '@/routes/roles';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import {
+    ArrowLeft,
     CheckSquare,
     ChevronDown,
     ChevronRight,
@@ -20,10 +21,8 @@ import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
-    CardDescription,
     CardFooter,
     CardHeader,
-    CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,7 +33,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 /* ======================================================
@@ -231,28 +229,62 @@ function submit() {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-            <Card class="mx-5">
-                <CardHeader>
-                    <CardTitle class="flex items-center gap-2">
-                        <Shield class="h-5 w-5" />
-                        Edit Role
-                        <Badge variant="outline" class="ml-1 font-normal capitalize">
-                            {{ props.role.type }}
-                        </Badge>
-                    </CardTitle>
-                    <CardDescription>
-                        Update role name, type, and assigned permissions.
-                    </CardDescription>
+            <Card class="">
+                <CardHeader class="py-0">
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border-2 bg-primary shadow-sm flex items-center justify-center"
+                        >
+                            <Shield class="h-10 w-10 text-white" />
+                        </div>
+
+                        <div class="gap-2 w-full">
+                            <div class="flex flex-row gap-2 pb-2 w-full items-center">
+                                <h1 class="text-2xl leading-tight font-bold tracking-tight">
+                                    {{ role.name }}
+                                </h1>
+                                <div class="ml-2 flex flex-1 items-center">
+                                    <hr class="h-px w-full border border-rose-500" />
+                                    <div class="border-7 border-rose-500 rounded-xs">
+                                        <div class="border-3 border-white rounded-xs"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-between">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <Badge
+                                        :class="[
+                                            'border capitalize',
+                                            role.type === 'internal'
+                                                ? 'border-blue-200 bg-blue-100 text-blue-700'
+                                                : 'border-amber-200 bg-amber-100 text-amber-700',
+                                        ]"
+                                    >
+                                        {{ role.type }}
+                                    </Badge>
+                                </div>
+                                <div class="flex shrink-0 items-center gap-2">
+                                    <Button
+                                        as-child
+                                        variant="outline"
+                                        class="rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                                    >
+                                        <Link :href="index().url">
+                                            <ArrowLeft class="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </CardHeader>
 
-                <Separator />
-
-                <CardContent class="space-y-8 pt-6">
+                <CardContent class="space-y-8 pt-6 border-t border-slate-100">
                     <!-- ── Role details ───────────────────────────── -->
                     <div class="grid gap-6 sm:grid-cols-2">
                         <div class="space-y-2">
                             <Label for="name" class="flex items-center gap-1.5">
-                                <KeyRound class="h-3.5 w-3.5 text-muted-foreground" />
+                                <!-- <KeyRound class="h-3.5 w-3.5 text-muted-foreground" /> -->
                                 Role name
                             </Label>
                             <Input
@@ -265,7 +297,7 @@ function submit() {
 
                         <div class="space-y-2">
                             <Label for="type" class="flex items-center gap-1.5">
-                                <Users class="h-3.5 w-3.5 text-muted-foreground" />
+                                <!-- <Users class="h-3.5 w-3.5 text-muted-foreground" /> -->
                                 Role type
                             </Label>
                             <Select v-model="form.type">
@@ -301,12 +333,12 @@ function submit() {
                             <label class="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors hover:bg-muted">
                                 <input
                                     type="checkbox"
-                                    class="h-4 w-4 rounded border accent-primary"
+                                    class="h-4 w-4 cursor-pointer rounded border accent-primary"
                                     :checked="allChecked"
                                     :indeterminate="someChecked"
                                     @change="toggleAll(($event.target as HTMLInputElement).checked)"
                                 />
-                                <CheckSquare class="h-3.5 w-3.5 text-muted-foreground" />
+                                <!-- <CheckSquare class="h-3.5 w-3.5 text-muted-foreground" /> -->
                                 <span>Select all</span>
                             </label>
                         </div>
@@ -318,7 +350,7 @@ function submit() {
                             <TabsList class="mb-4 w-full">
                                 <TabsTrigger
                                     value="internal"
-                                    class="flex flex-1 items-center gap-2"
+                                    class="flex flex-1 cursor-pointer items-center gap-2"
                                 >
                                     Internal
                                     <Badge
@@ -332,7 +364,7 @@ function submit() {
 
                                 <TabsTrigger
                                     value="external"
-                                    class="flex flex-1 items-center gap-2"
+                                    class="flex flex-1 cursor-pointer items-center gap-2"
                                 >
                                     External
                                     <Badge
@@ -362,13 +394,13 @@ function submit() {
                                     <!-- Module header -->
                                     <button
                                         type="button"
-                                        class="flex w-full items-center justify-between gap-3 bg-muted/40 px-4 py-3 transition-colors hover:bg-muted/70"
+                                        class="flex w-full cursor-pointer items-center justify-between gap-3 bg-muted/40 px-4 py-3 transition-colors hover:bg-muted/70"
                                         @click="toggleCollapse(moduleKey)"
                                     >
                                         <div class="flex items-center gap-3">
                                             <input
                                                 type="checkbox"
-                                                class="h-4 w-4 rounded border accent-primary"
+                                                class="h-4 w-4 cursor-pointer rounded border accent-primary"
                                                 :checked="moduleChecked(moduleKey)"
                                                 :indeterminate="moduleSomeChecked(moduleKey)"
                                                 @click.stop
@@ -412,7 +444,7 @@ function submit() {
                                         >
                                             <input
                                                 type="checkbox"
-                                                class="mt-0.5 h-4 w-4 rounded border accent-primary"
+                                                class="mt-0.5 h-4 w-4 cursor-pointer rounded border accent-primary"
                                                 :checked="form.permissions.includes(p.id)"
                                                 @change="togglePermission(p.id, ($event.target as HTMLInputElement).checked)"
                                             />
@@ -445,13 +477,13 @@ function submit() {
                                 >
                                     <button
                                         type="button"
-                                        class="flex w-full items-center justify-between gap-3 bg-muted/40 px-4 py-3 transition-colors hover:bg-muted/70"
+                                        class="flex w-full cursor-pointer items-center justify-between gap-3 bg-muted/40 px-4 py-3 transition-colors hover:bg-muted/70"
                                         @click="toggleCollapse(moduleKey)"
                                     >
                                         <div class="flex items-center gap-3">
                                             <input
                                                 type="checkbox"
-                                                class="h-4 w-4 rounded border accent-primary"
+                                                class="h-4 w-4 cursor-pointer rounded border accent-primary"
                                                 :checked="moduleChecked(moduleKey)"
                                                 :indeterminate="moduleSomeChecked(moduleKey)"
                                                 @click.stop
@@ -494,7 +526,7 @@ function submit() {
                                         >
                                             <input
                                                 type="checkbox"
-                                                class="mt-0.5 h-4 w-4 rounded border accent-primary"
+                                                class="mt-0.5 h-4 w-4 cursor-pointer rounded border accent-primary"
                                                 :checked="form.permissions.includes(p.id)"
                                                 @change="togglePermission(p.id, ($event.target as HTMLInputElement).checked)"
                                             />
@@ -514,15 +546,13 @@ function submit() {
                     </div>
                 </CardContent>
 
-                <Separator />
-
-                <CardFooter class="flex flex-wrap justify-end gap-2 pt-4">
-                    <Button variant="outline" as-child>
+                <CardFooter class="flex flex-wrap justify-end gap-2 border-t border-slate-100">
+                    <Button variant="outline" as-child class="cursor-pointer">
                         <Link :href="index().url">Cancel</Link>
                     </Button>
 
-                    <Button :disabled="form.processing" @click="submit" variant="blue">
-                        <Save class="mr-2 h-4 w-4" />
+                    <Button :disabled="form.processing" @click="submit" variant="outline" class="cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg hover:text-primary-foreground">
+                        <Save class="h-4 w-4" />
                         {{ form.processing ? 'Saving...' : 'Save Changes' }}
                     </Button>
                 </CardFooter>

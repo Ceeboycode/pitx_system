@@ -62,13 +62,21 @@ import {
     CheckCircle2,
     CircleHelp,
     Download,
+    Ellipsis,
     Eye,
+    File,
     FileText,
+    ListChecks,
+    Mail,
     Map,
+    MapPin,
+    MessageSquareText,
     MoreHorizontal,
+    Phone,
     RotateCcw,
     Route as RouteIcon,
     Truck,
+    X,
     XCircle,
 } from 'lucide-vue-next';
 
@@ -344,6 +352,48 @@ function statusVariant(
     }
 }
 
+function statusClass(status?: string | null): string {
+    switch (status) {
+        case 'verified':
+        case 'active':
+        case 'complete':
+            return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        case 'pending':
+        case 'draft':
+        case 'for_verification':
+        case 'partial':
+            return 'bg-amber-100 text-amber-700 border-amber-200';
+        case 'invalid':
+        case 'expired':
+        case 'needs_revision':
+        case 'none':
+            return 'bg-rose-100 text-rose-600 border-rose-200';
+        default:
+            return 'bg-slate-100 text-slate-500 border-0';
+    }
+}
+
+function statusDot(status?: string | null): string {
+    switch (status) {
+        case 'verified':
+        case 'active':
+        case 'complete':
+            return 'bg-emerald-500';
+        case 'pending':
+        case 'draft':
+        case 'for_verification':
+        case 'partial':
+            return 'bg-amber-500';
+        case 'invalid':
+        case 'expired':
+        case 'needs_revision':
+        case 'none':
+            return 'bg-rose-500';
+        default:
+            return 'bg-slate-400';
+    }
+}
+
 function fileUrl(doc: VehicleDocument) {
     return doc.file_url ?? '';
 }
@@ -584,838 +634,577 @@ function submitInvalidate() {
         },
     );
 }
+
+const selectMode = ref(false);
+const selectedDocIds = ref<number[]>([]);
+
+function toggleSelectMode() {
+    selectMode.value = !selectMode.value;
+    if (!selectMode.value) selectedDocIds.value = [];
+}
+
+function setDoc(id: number, checked: boolean) {
+    const idx = selectedDocIds.value.indexOf(id);
+    if (checked && idx === -1) selectedDocIds.value = [...selectedDocIds.value, id];
+    else if (!checked && idx !== -1) selectedDocIds.value = selectedDocIds.value.filter((x) => x !== id);
+}
+
+const allSelected = computed(
+    () => docs.value.length > 0 && selectedDocIds.value.length === docs.value.length,
+);
+
+function selectAll() {
+    if (allSelected.value) {
+        selectedDocIds.value = [];
+    } else {
+        selectedDocIds.value = docs.value.map((d) => d.id);
+    }
+}
+
+function downloadSelected() {
+    if (selectedDocIds.value.length === 0) return;
+    for (const id of selectedDocIds.value) {
+        const doc = docs.value.find((d) => d.id === id);
+        if (!doc || !fileUrl(doc)) continue;
+        const a = document.createElement('a');
+        a.href = fileUrl(doc);
+        a.setAttribute('download', doc.file_name ?? '');
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+    selectMode.value = false;
+    selectedDocIds.value = [];
+}
 </script>
 
 <template>
     <Head :title="vehicle.plate_number || `Vehicle #${vehicle.id}`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80"
-        >
-            <div
-                class="flex min-h-16 items-center justify-between gap-4 px-4 py-3 sm:px-6"
-            >
-                <div class="flex min-w-0 items-center gap-3">
-                    <div
-                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground"
-                    >
-                        <Truck class="h-5 w-5" />
-                    </div>
-
-                    <div class="min-w-0">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <h1
-                                class="truncate text-base font-semibold sm:text-lg"
-                            >
-                                {{
-                                    vehicle.plate_number ||
-                                    `Vehicle #${vehicle.id}`
-                                }}
-                            </h1>
-                            <Badge
-                                :variant="statusVariant(vehicle.status)"
-                                class="text-[10px]"
-                            >
-                                {{ humanize(vehicle.status) }}
-                            </Badge>
-                        </div>
-
-                        <p class="truncate text-sm text-muted-foreground">
-                            {{ company?.company_name ?? 'No company assigned' }}
-                        </p>
-                    </div>
-                </div>
-
-                <div class="flex shrink-0 items-center gap-2">
-                    <Button variant="outline" size="sm" as-child>
-                        <Link :href="VEHICLES_INDEX_URL">
-                            <ArrowLeft class="mr-1.5 h-4 w-4" />
-                            Back
-                        </Link>
-                    </Button>
-
-                    <Button
-                        v-if="canArchiveVehicle"
-                        variant="outline"
-                        size="sm"
-                        class="rounded-lg border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                        @click="archiveOpen = true"
-                    >
-                        <Archive class="mr-2 h-4 w-4" />
-                        Archive
-                    </Button>
-                </div>
-            </div>
-        </div>
-
-        <div class="space-y-5 p-4 sm:p-6">
-            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div class="rounded-xl border bg-card p-4">
-                    <p class="text-xs text-muted-foreground">
-                        Documents Verified
-                    </p>
-                    <p class="mt-1 text-lg font-semibold">
-                        {{ verifiedCount }}/{{ docs.length }}
-                    </p>
-                    <p class="text-xs text-muted-foreground">
-                        {{ docsCompletionRate }}% completion
-                    </p>
-                </div>
-                <div class="rounded-xl border bg-card p-4">
-                    <p class="text-xs text-muted-foreground">Needs Attention</p>
-                    <p class="mt-1 text-lg font-semibold">
-                        {{ actionRequiredCount }}
-                    </p>
-                    <p class="text-xs text-muted-foreground">
-                        Pending, invalid, or expired docs
-                    </p>
-                </div>
-                <div class="rounded-xl border bg-card p-4">
-                    <p class="text-xs text-muted-foreground">Route Stops</p>
-                    <p class="mt-1 text-lg font-semibold">
-                        {{ sortedStops.length }}
-                    </p>
-                    <p class="text-xs text-muted-foreground">
-                        {{
-                            route
-                                ? 'Assigned route available'
-                                : 'No route assigned'
-                        }}
-                    </p>
-                </div>
-                <div class="rounded-xl border bg-card p-4">
-                    <p class="text-xs text-muted-foreground">Last Updated</p>
-                    <p class="mt-1 text-sm font-semibold">
-                        {{ formatDateTime(vehicle.updated_at) }}
-                    </p>
-                    <p class="text-xs text-muted-foreground">
-                        Created {{ formatDate(vehicle.created_at) }}
-                    </p>
-                </div>
-            </div>
-
-            <div class="grid gap-4 xl:grid-cols-[2fr_1fr]">
-                <Card>
-                    <CardHeader>
-                        <CardTitle class="text-base"
-                            >Vehicle Snapshot</CardTitle
-                        >
-                    </CardHeader>
-                    <CardContent
-                        class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-                    >
+        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+            <Card class="">
+                <CardHeader class="py-0">
+                    <div class="flex items-center gap-4">
                         <div
-                            v-for="item in vehicleMeta"
-                            :key="item.label"
-                            class="rounded-lg border bg-muted/20 p-3"
+                            class="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border-2 bg-white shadow-sm"
                         >
-                            <p
-                                class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
-                            >
-                                {{ item.label }}
-                            </p>
-                            <p class="mt-1 text-sm font-medium text-foreground">
-                                {{ item.value }}
-                            </p>
-                            <p
-                                v-if="item.helper"
-                                class="mt-0.5 text-xs text-muted-foreground"
-                            >
-                                {{ item.helper }}
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader class="pb-2">
-                        <CardTitle class="text-base"
-                            >Operational State</CardTitle
-                        >
-                    </CardHeader>
-                    <CardContent class="space-y-3">
-                        <div class="flex items-center gap-2">
-                            <Badge :variant="statusVariant(vehicle.status)">
-                                {{ humanize(vehicle.status) }}
-                            </Badge>
-                            <span class="text-xs text-muted-foreground">
-                                {{ formatDateTime(vehicle.updated_at) }}
-                            </span>
-                        </div>
-                        <div class="rounded-lg border p-3">
-                            <p
-                                class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
-                            >
-                                Documents
-                            </p>
-                            <div class="mt-2 flex flex-wrap gap-2 text-sm">
-                                <Badge variant="outline"
-                                    >{{ verifiedCount }} verified</Badge
-                                >
-                                <Badge v-if="pendingCount" variant="secondary"
-                                    >{{ pendingCount }} pending</Badge
-                                >
-                                <Badge v-if="invalidCount" variant="destructive"
-                                    >{{ invalidCount }} invalid</Badge
-                                >
-                                <Badge v-if="expiredCount" variant="destructive"
-                                    >{{ expiredCount }} expired</Badge
-                                >
+                            <div class="flex h-full w-full items-center justify-center">
+                                <Truck class="h-10 w-10 text-primary" />
                             </div>
-                            <p class="mt-1 text-xs text-muted-foreground">
-                                {{
-                                    docHealthSummary ||
-                                    'No documents uploaded yet.'
-                                }}
-                            </p>
                         </div>
 
-                        <div class="rounded-lg border p-3">
-                            <p
-                                class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
-                            >
-                                Remarks
-                            </p>
-                            <p
-                                class="mt-1 text-sm text-foreground"
-                                v-if="vehicle.remarks"
-                            >
-                                {{ vehicle.remarks }}
-                            </p>
-                            <p v-else class="text-sm text-muted-foreground">
-                                —
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-                <div class="space-y-5">
-                    <div class="grid gap-4 lg:grid-cols-2">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle class="text-base"
-                                    >Vehicle Details</CardTitle
-                                >
-                            </CardHeader>
-
-                            <CardContent class="grid gap-4 sm:grid-cols-2">
-                                <div>
-                                    <Label>Vehicle Type</Label>
-                                    <p class="mt-1 text-sm">
-                                        {{ humanize(vehicle.vehicle_type) }}
-                                    </p>
+                        <div class="gap-2 w-full">
+                            <div class="flex flex-row gap-2 pb-2 w-full items-center">
+                                <h1 class="text-2xl leading-tight font-bold tracking-tight">
+                                    {{ vehicle.plate_number || `Vehicle #${vehicle.id}` }}
+                                </h1>
+                                <div class="ml-2 flex flex-1 items-center">
+                                    <hr class="h-px w-full border border-rose-500" />
+                                    <div class="border-7 border-rose-500 rounded-xs">
+                                        <div class="border-3 border-white rounded-xs"></div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <Label>Plate Number</Label>
-                                    <p class="mt-1 text-sm">
-                                        {{ vehicle.plate_number ?? '—' }}
-                                    </p>
-                                </div>
-                                <div>
-                                    <Label>Body Number</Label>
-                                    <p class="mt-1 text-sm">
-                                        {{ vehicle.body_number ?? '—' }}
-                                    </p>
-                                </div>
-                                <div>
-                                    <Label>Capacity</Label>
-                                    <p class="mt-1 text-sm">
-                                        {{ vehicle.capacity ?? '—' }}
-                                    </p>
-                                </div>
-                                <div>
-                                    <Label>Color</Label>
-                                    <p class="mt-1 text-sm">
-                                        {{ vehicle.color ?? '—' }}
-                                    </p>
-                                </div>
-                                <div>
-                                    <Label>Make / Model</Label>
-                                    <p class="mt-1 text-sm">
-                                        {{ vehicle.make_model ?? '—' }}
-                                    </p>
-                                </div>
-                                <div>
-                                    <Label>Engine Number</Label>
-                                    <p class="mt-1 text-sm break-all">
-                                        {{ vehicle.engine_number ?? '—' }}
-                                    </p>
-                                </div>
-                                <div>
-                                    <Label>Chassis Number</Label>
-                                    <p class="mt-1 text-sm break-all">
-                                        {{ vehicle.chassis_number ?? '—' }}
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle class="text-base"
-                                    >Company Details</CardTitle
-                                >
-                            </CardHeader>
-
-                            <CardContent class="space-y-4">
-                                <div>
-                                    <Label>Company Name</Label>
-                                    <p class="mt-1 text-sm font-medium">
-                                        {{ company?.company_name ?? '—' }}
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <Label>Company Code</Label>
-                                    <p class="mt-1 text-sm">
+                            </div>
+                            <div class="flex justify-between">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <Badge class="border-0 bg-muted font-mono text-foreground">
+                                        {{ vehicle.vehicle_type ? humanize(vehicle.vehicle_type) : '—' }}
+                                    </Badge>
+                                    <Badge :class="['', statusClass(vehicle.status)]">
+                                        <span
+                                            :class="[
+                                                'h-2 w-2 rounded-full',
+                                                statusDot(vehicle.status),
+                                            ]"
+                                        />
+                                        {{ humanize(vehicle.status) }}
+                                    </Badge>
+                                    <Badge class="border-0 bg-slate-100 text-slate-600">
                                         {{ company?.company_code ?? '—' }}
-                                    </p>
+                                    </Badge>
                                 </div>
+                                <div class="flex items-start justify-between gap-4">
+                                    <div class="flex shrink-0 items-center gap-2">
+                                        <Button
+                                            as-child
+                                            variant="outline"
+                                            class="rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                                        >
+                                            <Link :href="VEHICLES_INDEX_URL">
+                                                <ArrowLeft class="h-4 w-4" />
+                                            </Link>
+                                        </Button>
 
-                                <div>
-                                    <Label>Email</Label>
-                                    <p class="mt-1 text-sm">
-                                        {{ company?.company_email ?? '—' }}
-                                    </p>
+                                        <Button
+                                            v-if="canArchiveVehicle"
+                                            variant="outline"
+                                            class="group/segment rounded-lg bg-card border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 gap-0 cursor-pointer"
+                                            @click="archiveOpen = true"
+                                        >
+                                            <Archive class="h-4 w-4 shrink-0" />
+                                            <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-32 group-hover/segment:opacity-100">
+                                                Archive Vehicle
+                                            </span>
+                                        </Button>
+                                    </div>
                                 </div>
-
-                                <div>
-                                    <Label>Phone</Label>
-                                    <p class="mt-1 text-sm">
-                                        {{ company?.company_phone ?? '—' }}
-                                    </p>
-                                </div>
-
-                                <div v-if="company?.company_address">
-                                    <Label>Address</Label>
-                                    <p class="mt-1 text-sm">
-                                        {{ company.company_address }}
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
                     </div>
+                </CardHeader>
+            </Card>
 
-                    <Card v-if="route">
-                        <CardHeader>
-                            <div
-                                class="flex flex-wrap items-center justify-between gap-3"
-                            >
-                                <div>
-                                    <CardTitle class="text-base"
-                                        >Route Overview</CardTitle
-                                    >
-                                    <p class="text-sm text-muted-foreground">
-                                        {{ sortedStops.length }} stops
-                                        configured. Open the map or stops list
-                                        for a clearer route view.
-                                    </p>
+            <div class="grid gap-4 lg:grid-cols-3 h-fit">
+                <div class="grid gap-4 col-span-1 h-fit">
+                    <Card class="py-6">
+                        <CardHeader class="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Vehicle Details</CardTitle>
+                            </div>
+                        </CardHeader>
+                        <CardContent class="px-6 grid divide-y gap-y-2 pt-4 border-t border-slate-100">
+                            <div class="py-2">
+                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                                    Plate Number
+                                </span>
+                                <span class="text-sm">{{ vehicle.plate_number ?? '—' }}</span>
+                            </div>
+                            <div class="py-2">
+                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                                    Vehicle Type
+                                </span>
+                                <span class="text-sm">{{ humanize(vehicle.vehicle_type) }}</span>
+                            </div>
+                            <div class="py-2">
+                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                                    Body Number
+                                </span>
+                                <span class="text-sm">{{ vehicle.body_number ?? '—' }}</span>
+                            </div>
+                            <div class="py-2">
+                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                                    Capacity
+                                </span>
+                                <span class="text-sm">{{ vehicle.capacity ?? '—' }}</span>
+                            </div>
+                            <div class="py-2">
+                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                                    Color
+                                </span>
+                                <span class="text-sm">{{ vehicle.color ?? '—' }}</span>
+                            </div>
+                            <div class="py-2">
+                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                                    Make / Model
+                                </span>
+                                <span class="text-sm">{{ vehicle.make_model ?? '—' }}</span>
+                            </div>
+                            <div class="py-2">
+                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                                    Engine Number
+                                </span>
+                                <span class="text-sm break-all">{{ vehicle.engine_number ?? '—' }}</span>
+                            </div>
+                            <div class="py-2">
+                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                                    Chassis Number
+                                </span>
+                                <span class="text-sm break-all">{{ vehicle.chassis_number ?? '—' }}</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card class="py-6">
+                        <CardHeader class="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Company Details</CardTitle>
+                            </div>
+                        </CardHeader>
+                        <CardContent class="px-6 grid divide-y gap-y-2 pt-2 border-t border-slate-100">
+                            <div class="py-2">
+                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                                    Company Name
+                                </span>
+                                <span class="text-sm">{{ company?.company_name ?? '—' }}</span>
+                            </div>
+                            <div class="py-2">
+                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                                    Company Code
+                                </span>
+                                <span class="font-mono text-sm">{{ company?.company_code ?? '—' }}</span>
+                            </div>
+                            <div class="grid gap-y-2 pt-2">
+                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                                    Contacts
+                                </span>
+                                <div class="items-center flex">
+                                    <div class="h-full mr-4">
+                                        <Mail class="h-4 w-4 inline-block text-primary" />
+                                    </div>
+                                    <a
+                                        v-if="company?.company_email"
+                                        :href="`mailto:${company.company_email}`"
+                                        class="text-sm hover:underline underline-offset-2"
+                                    >{{ company.company_email }}</a>
+                                    <span v-else class="text-sm">—</span>
                                 </div>
+                                <div class="items-center flex">
+                                    <div class="h-full mr-4">
+                                        <Phone class="h-4 w-4 inline-block text-primary" />
+                                    </div>
+                                    <a
+                                        v-if="company?.company_phone"
+                                        :href="`tel:${company.company_phone}`"
+                                        class="text-sm hover:underline underline-offset-2"
+                                    >{{ company.company_phone }}</a>
+                                    <span v-else class="text-sm">—</span>
+                                </div>
+                                <div class="items-center flex">
+                                    <div class="h-full mr-4">
+                                        <MapPin class="h-4 w-4 inline-block text-primary" />
+                                    </div>
+                                    <span class="text-sm">{{ company?.company_address ?? '—' }}</span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
 
-                                <div class="flex flex-wrap gap-2">
-                                    <Button
-                                        v-if="canViewVehicle"
-                                        variant="outline"
-                                        size="sm"
-                                        @click="mapDialogOpen = true"
-                                    >
-                                        <Map class="mr-1.5 h-4 w-4" />
-                                        Open Map
-                                    </Button>
-
-                                    <Button
-                                        v-if="canViewVehicle"
-                                        variant="outline"
-                                        size="sm"
-                                        @click="stopsDialogOpen = true"
-                                    >
-                                        <RouteIcon class="mr-1.5 h-4 w-4" />
-                                        View Stops
-                                    </Button>
+                <div class="grid gap-4 col-span-2 h-fit">
+                    <Card class="py-6">
+                        <CardHeader class="">
+                            <div class="items-center flex justify-between">
+                                <div>
+                                    <CardTitle>Route Overview</CardTitle>
                                 </div>
                             </div>
                         </CardHeader>
-
-                        <CardContent
-                            class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
-                        >
-                            <div class="rounded-lg border p-4">
-                                <p class="text-xs text-muted-foreground">
-                                    Route
-                                </p>
-                                <p class="mt-1 text-sm font-medium">
-                                    {{ route.route_name }}
-                                </p>
+                        <CardContent class="px-6 grid flex-col gap-4 pt-4 border-t border-slate-100">
+                            <div class="flex flex-wrap gap-2 col-span-2 w-full">
+                                <Button
+                                    v-if="canViewVehicle"
+                                    variant="outline"
+                                    size="sm"
+                                    class="flex items-center gap-1"
+                                    @click="mapDialogOpen = true"
+                                >
+                                    <Map class="h-4 w-4" />
+                                    Open Map
+                                </Button>
+                                <Button
+                                    v-if="canViewVehicle"
+                                    variant="outline"
+                                    size="sm"
+                                    class="flex items-center gap-1"
+                                    @click="stopsDialogOpen = true"
+                                >
+                                    <RouteIcon class="-4 w-4" />
+                                    View Stops
+                                </Button>
                             </div>
-
-                            <div class="rounded-lg border p-4">
-                                <p class="text-xs text-muted-foreground">
-                                    Gate
-                                </p>
-                                <p class="mt-1 text-sm font-medium">
-                                    {{ route.gate?.gate_name ?? '—' }}
-                                </p>
+                            <div class="rounded-lg border p-4 col-span-1">
+                                <p class="text-xs text-muted-foreground">Route</p>
+                                <p class="mt-1 text-sm font-medium">{{ route.route_name }}</p>
                             </div>
-
-                            <div class="rounded-lg border p-4">
-                                <p class="text-xs text-muted-foreground">
-                                    Distance
-                                </p>
-                                <p class="mt-1 text-sm font-medium">
-                                    {{ fmtDistance(route.distance_meters) }}
-                                </p>
+                            <div class="rounded-lg border p-4 col-span-1">
+                                <p class="text-xs text-muted-foreground">Gate</p>
+                                <p class="mt-1 text-sm font-medium">{{ route.gate?.gate_name ?? '—' }}</p>
                             </div>
-
-                            <div class="rounded-lg border p-4">
-                                <p class="text-xs text-muted-foreground">
-                                    Duration
-                                </p>
-                                <p class="mt-1 text-sm font-medium">
-                                    {{ fmtDuration(route.duration_seconds) }}
-                                </p>
+                            <div class="rounded-lg border p-4 col-span-1">
+                                <p class="text-xs text-muted-foreground">Distance</p>
+                                <p class="mt-1 text-sm font-medium">{{ fmtDistance(route.distance_meters) }}</p>
                             </div>
-
-                            <div class="rounded-lg border p-4 sm:col-span-2">
-                                <p class="text-xs text-muted-foreground">
-                                    Origin
-                                </p>
-                                <p class="mt-1 text-sm font-medium">
-                                    {{ route.origin_name }}
-                                </p>
+                            <div class="rounded-lg border p-4 col-span-1">
+                                <p class="text-xs text-muted-foreground">Duration</p>
+                                <p class="mt-1 text-sm font-medium">{{ fmtDuration(route.duration_seconds) }}</p>
                             </div>
-
-                            <div class="rounded-lg border p-4 sm:col-span-2">
-                                <p class="text-xs text-muted-foreground">
-                                    Destination
-                                </p>
-                                <p class="mt-1 text-sm font-medium">
-                                    {{ route.destination_name }}
-                                </p>
+                            <div class="rounded-lg border p-4 col-span-1">
+                                <p class="text-xs text-muted-foreground">Origin</p>
+                                <p class="mt-1 text-sm font-medium">{{ route.origin_name }}</p>
+                            </div>
+                            <div class="rounded-lg border p-4 col-span-1">
+                                <p class="text-xs text-muted-foreground">Destination</p>
+                                <p class="mt-1 text-sm font-medium">{{ route.destination_name }}</p>
                             </div>
                         </CardContent>
                     </Card>
 
                     <Card>
-                        <CardHeader>
-                            <div
-                                class="flex flex-wrap items-center justify-between gap-3"
-                            >
-                                <div>
-                                    <CardTitle class="text-base"
-                                        >Documents</CardTitle
-                                    >
-                                    <p class="text-sm text-muted-foreground">
-                                        Review every document and update its
-                                        status.
-                                    </p>
-                                </div>
-
-                                <div class="flex flex-wrap gap-2">
-                                    <Badge variant="outline">
-                                        {{ verifiedCount }}/{{
-                                            docs.length
-                                        }}
-                                        verified
-                                    </Badge>
-                                    <Badge
-                                        v-if="actionRequiredCount > 0"
-                                        variant="secondary"
-                                    >
-                                        {{ actionRequiredCount }} need action
-                                    </Badge>
-                                    <Badge
-                                        v-if="expiredCount > 0"
-                                        variant="destructive"
-                                    >
-                                        {{ expiredCount }} expired
-                                    </Badge>
-                                </div>
+                        <CardHeader class="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Documents</CardTitle>
+                                <p class="text-sm text-muted-foreground">
+                                    Review every document and update its status.
+                                </p>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <Badge :class="statusClass('verified')">{{ verifiedCount }}/{{ docs.length }} verified</Badge>
+                                <Badge v-if="actionRequiredCount > 0" :class="statusClass('pending')">{{ actionRequiredCount }} need action</Badge>
+                                <Badge v-if="expiredCount > 0" :class="statusClass('expired')">{{ expiredCount }} expired</Badge>
                             </div>
                         </CardHeader>
 
-                        <CardContent class="p-0">
-                            <div class="overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead class="w-[28%] pl-6"
-                                                >Document</TableHead
-                                            >
-                                            <TableHead class="w-[14%]"
-                                                >Status</TableHead
-                                            >
-                                            <TableHead class="w-[20%]"
-                                                >Dates</TableHead
-                                            >
-                                            <TableHead class="w-[30%]"
-                                                >File</TableHead
-                                            >
-                                            <TableHead
-                                                class="w-[8%] pr-4 text-right"
-                                                >Actions</TableHead
-                                            >
-                                        </TableRow>
-                                    </TableHeader>
+                        <CardContent class="border-t border-slate-100">
+                            <!-- Empty state -->
+                            <div
+                                v-if="docs.length === 0"
+                                class="flex flex-col items-center gap-3 py-20 text-center"
+                            >
+                                <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+                                    <FileText class="h-6 w-6 text-muted-foreground/40" />
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold">No documents uploaded yet.</p>
+                                    <p class="mt-0.5 text-xs text-muted-foreground">
+                                        Documents submitted by the company will appear here.
+                                    </p>
+                                </div>
+                            </div>
 
-                                    <TableBody>
-                                        <TableRow
-                                            v-for="doc in docs"
-                                            :key="doc.id"
+                            <!-- Document rows -->
+                            <div v-else>
+                                <div class="flex justify-between py-4">
+                                    <div class="flex gap-2">
+                                        <Button
+                                            variant="outline"
+                                            class="group/segment shrink-0 rounded-lg cursor-pointer gap-0 hover:bg-slate-100 text-slate-600"
+                                            @click="toggleSelectMode"
                                         >
-                                            <TableCell class="pl-6">
-                                                <div class="space-y-1">
-                                                    <p class="font-medium">
-                                                        {{
-                                                            requiredLabel(
-                                                                doc.document_type,
-                                                            )
-                                                        }}
-                                                    </p>
-                                                    <p
-                                                        v-if="doc.remarks"
-                                                        class="max-w-60 truncate text-xs text-muted-foreground"
-                                                    >
-                                                        {{ doc.remarks }}
-                                                    </p>
-                                                </div>
-                                            </TableCell>
+                                            <X v-if="selectMode" class="h-4 w-4 shrink-0" />
+                                            <ListChecks v-else class="h-4 w-4 shrink-0" />
+                                            <span v-if="!selectMode" class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-16 group-hover/segment:opacity-100">
+                                                Select
+                                            </span>
+                                        </Button>
+                                        <Transition
+                                            enter-active-class="transition-all duration-200"
+                                            enter-from-class="opacity-0 scale-95"
+                                            enter-to-class="opacity-100 scale-100"
+                                            leave-active-class="transition-all duration-150"
+                                            leave-from-class="opacity-100 scale-100"
+                                            leave-to-class="opacity-0 scale-95"
+                                        >
+                                            <Button
+                                                v-if="selectMode"
+                                                variant="outline"
+                                                class="shrink-0 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer"
+                                                @click="selectAll"
+                                            >
+                                                {{ allSelected ? 'Deselect All' : 'Select All' }}
+                                            </Button>
+                                        </Transition>
+                                    </div>
+                                    <Button
+                                        v-if="docs.length > 0"
+                                        variant="outline"
+                                        class="group/segment shrink-0 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer gap-0"
+                                        :disabled="selectMode && selectedDocIds.length === 0"
+                                        @click="selectMode ? downloadSelected() : undefined"
+                                    >
+                                        <Download class="h-4 w-4 shrink-0" />
+                                        <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-48 group-hover/segment:opacity-100">
+                                            {{ selectMode ? `Download Selected (${selectedDocIds.length})` : 'Download All' }}
+                                        </span>
+                                    </Button>
+                                </div>
+                                <div class="divide-y divide-slate-100">
+                                    <div
+                                        v-for="doc in docs"
+                                        :key="doc.id"
+                                        class="grid grid-cols-[auto_1fr_auto] py-2 transition-colors"
+                                        :class="!selectMode ? 'group/row' : ''"
+                                    >
+                                        <!-- Checkbox (select mode) -->
+                                        <div
+                                            class="flex items-start pt-1 overflow-hidden transition-all duration-300"
+                                            :class="selectMode ? 'w-5 opacity-100 me-2' : 'w-0 opacity-0'"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                class="h-4 w-4 cursor-pointer rounded-lg accent-primary"
+                                                :checked="selectedDocIds.includes(doc.id)"
+                                                @change="setDoc(doc.id, ($event.target as HTMLInputElement).checked)"
+                                            />
+                                        </div>
 
-                                            <TableCell>
-                                                <div class="space-y-1.5">
-                                                    <div
-                                                        class="flex flex-wrap gap-1.5"
-                                                    >
-                                                        <Badge
-                                                            :variant="
-                                                                statusVariant(
-                                                                    doc.status,
-                                                                )
-                                                            "
-                                                        >
-                                                            {{
-                                                                humanize(
-                                                                    doc.status,
-                                                                )
-                                                            }}
-                                                        </Badge>
-                                                        <Badge
-                                                            v-if="
-                                                                isExpired(
-                                                                    doc.expires_at,
-                                                                )
-                                                            "
-                                                            variant="destructive"
-                                                        >
-                                                            Expired
-                                                        </Badge>
+                                        <!-- Left: doc info -->
+                                        <div class="min-w-0">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <p class="text-sm font-semibold text-foreground">
+                                                    {{ requiredLabel(doc.document_type) }}
+                                                </p>
+                                                <Badge :class="['gap-1.5', statusClass(doc.status)]">
+                                                    <span :class="['h-1.5 w-1.5 rounded-full', statusDot(doc.status)]" />
+                                                    {{ humanize(doc.status) }}
+                                                </Badge>
+                                                <Badge
+                                                    v-if="isExpired(doc.expires_at) && doc.status !== 'expired'"
+                                                    class="gap-1.5 border-rose-200 bg-rose-100 text-rose-600"
+                                                >
+                                                    <span class="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                                                    Expired
+                                                </Badge>
+                                            </div>
+
+                                            <div>
+                                                <button
+                                                    v-if="canPreview(doc)"
+                                                    class="cursor-pointer flex items-center gap-2 text-sm text-muted-foreground underline-offset-2 hover:underline"
+                                                    :title="doc.file_name ?? ''"
+                                                    @click="openPreview(doc)"
+                                                >
+                                                    <File class="h-4 w-4 shrink-0" />
+                                                    <span class="truncate">{{ doc.file_name ?? '—' }}</span>
+                                                </button>
+                                                <span v-else class="text-sm text-muted-foreground">{{ doc.file_name ?? '—' }}</span>
+                                            </div>
+
+                                            <div class="overflow-hidden max-h-0 opacity-0 group-hover/row:max-h-96 group-hover/row:opacity-100 transition-all delay-200 duration-300 flex-col">
+                                                <div class="flex flex-row items-center gap-x-10 text-xs text-muted-foreground">
+                                                    <div class="flex flex-col w-40 gap-y-1">
+                                                        <span v-if="doc.issued_at">
+                                                            Issued: <span class="font-medium text-foreground">{{ formatDate(doc.issued_at) }}</span>
+                                                        </span>
+                                                        <span v-if="doc.expires_at">
+                                                            Expires:
+                                                            <span :class="['font-medium', isExpired(doc.expires_at) ? 'text-rose-600' : 'text-foreground']">
+                                                                {{ formatDate(doc.expires_at) }}
+                                                            </span>
+                                                        </span>
+                                                        <span class="text-muted-foreground">{{ formatBytes(doc.file_size) }}</span>
                                                     </div>
+                                                </div>
 
-                                                    <p
-                                                        v-if="
-                                                            doc.status ===
-                                                            'pending'
-                                                        "
-                                                        class="text-xs text-muted-foreground"
-                                                    >
-                                                        Waiting for review.
-                                                    </p>
-
-                                                    <p
-                                                        v-else-if="
-                                                            doc.status ===
-                                                            'invalid'
-                                                        "
-                                                        class="text-xs text-destructive"
-                                                    >
-                                                        Needs correction before
-                                                        approval.
-                                                    </p>
-
-                                                    <Popover
-                                                        v-if="
-                                                            doc.status ===
-                                                                'invalid' &&
-                                                            doc.remarks
-                                                        "
-                                                    >
-                                                        <PopoverTrigger
-                                                            as-child
-                                                        >
+                                                <div v-if="doc.remarks" class="pt-2">
+                                                    <Popover>
+                                                        <PopoverTrigger as-child>
                                                             <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                class="h-auto px-0 py-0 text-xs text-destructive hover:bg-transparent"
+                                                                variant="outline"
+                                                                class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
                                                             >
-                                                                <CircleHelp
-                                                                    class="mr-1 h-3.5 w-3.5"
-                                                                />
-                                                                Why invalid?
+                                                                <MessageSquareText class="h-4 w-4" />
+                                                                View Remarks
                                                             </Button>
                                                         </PopoverTrigger>
                                                         <PopoverContent
                                                             align="start"
-                                                            class="max-w-72 text-xs"
+                                                            class="w-80 rounded-lg border-slate-200 bg-white shadow-lg"
                                                         >
-                                                            <p
-                                                                class="font-medium text-foreground"
-                                                            >
-                                                                Invalid reason
-                                                            </p>
-                                                            <p
-                                                                class="mt-1 whitespace-pre-wrap text-muted-foreground"
-                                                            >
-                                                                {{
-                                                                    doc.remarks
-                                                                }}
-                                                            </p>
+                                                            <div>
+                                                                <p class="text-sm font-semibold pb-2">Remarks</p>
+                                                                <p class="text-sm whitespace-pre-wrap text-muted-foreground">{{ doc.remarks }}</p>
+                                                            </div>
                                                         </PopoverContent>
                                                     </Popover>
                                                 </div>
-                                            </TableCell>
+                                            </div>
+                                        </div>
 
-                                            <TableCell
-                                                class="text-xs text-muted-foreground"
-                                            >
-                                                <div>
-                                                    Issued:
-                                                    {{
-                                                        formatDate(
-                                                            doc.issued_at,
-                                                        )
-                                                    }}
-                                                </div>
-                                                <div>
-                                                    Expires:
-                                                    {{
-                                                        formatDate(
-                                                            doc.expires_at,
-                                                        )
-                                                    }}
-                                                </div>
-                                            </TableCell>
-
-                                            <TableCell class="max-w-0">
-                                                <div class="space-y-1">
-                                                    <button
+                                        <!-- Right: actions dropdown -->
+                                        <div class="flex items-start">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger as-child>
+                                                    <Button
+                                                        variant="outline"
+                                                        class="rounded-lg border text-muted-foreground hover:bg-slate-100 hover:text-foreground cursor-pointer"
+                                                        :disabled="actionForm.processing"
+                                                    >
+                                                        <MoreHorizontal class="h-4 w-4" />
+                                                        <span class="sr-only">Actions</span>
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" class="w-fit rounded-xl border-slate-200 shadow-lg">
+                                                    <DropdownMenuLabel class="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                                                        {{ requiredLabel(doc.document_type) }}
+                                                    </DropdownMenuLabel>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem
                                                         v-if="canPreview(doc)"
-                                                        class="flex w-full items-center gap-1.5 text-left text-sm text-primary hover:underline"
-                                                        @click="
-                                                            openPreview(doc)
-                                                        "
+                                                        class="rounded-lg cursor-pointer hover:bg-slate-100"
+                                                        @click="openPreview(doc)"
                                                     >
-                                                        <Eye
-                                                            class="h-3.5 w-3.5 shrink-0"
-                                                        />
-                                                        <span
-                                                            class="min-w-0 flex-1 truncate"
-                                                        >
-                                                            {{
-                                                                doc.file_name ??
-                                                                '—'
-                                                            }}
-                                                        </span>
-                                                    </button>
-                                                    <span
+                                                        <Eye class="h-4 w-4" /> Preview
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
                                                         v-else
-                                                        class="block truncate text-sm text-muted-foreground"
-                                                        :title="
-                                                            doc.file_name ?? '—'
-                                                        "
+                                                        class="cursor-not-allowed rounded-lg text-slate-500 opacity-50 focus:bg-slate-50 focus:text-slate-500"
+                                                        disabled
                                                     >
-                                                        {{
-                                                            doc.file_name ?? '—'
-                                                        }}
-                                                    </span>
-                                                    <p
-                                                        class="text-xs text-muted-foreground"
+                                                        <Eye class="mr-2 h-4 w-4" /> No preview available
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        v-if="canVerifyVehicleDocument && doc.status !== 'verified'"
+                                                        class="rounded-lg cursor-pointer hover:bg-slate-100"
+                                                        @click="openConfirm('verify', doc)"
                                                     >
-                                                        {{
-                                                            formatBytes(
-                                                                doc.file_size,
-                                                            )
-                                                        }}
-                                                    </p>
-                                                    <p
-                                                        v-if="!fileUrl(doc)"
-                                                        class="text-xs text-destructive"
+                                                        <CheckCircle2 class="h-4 w-4" /> Verify
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        v-if="canUnverifyVehicleDocument && doc.status === 'verified'"
+                                                        class="rounded-lg cursor-pointer hover:bg-slate-100"
+                                                        @click="openConfirm('unverify', doc)"
                                                     >
-                                                        File link is
-                                                        unavailable.
-                                                    </p>
-                                                </div>
-                                            </TableCell>
-
-                                            <TableCell class="pr-4 text-right">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger
+                                                        <RotateCcw class="h-4 w-4" /> Move to Pending
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        v-if="canInvalidateVehicleDocument"
+                                                        class="rounded-lg cursor-pointer text-rose-600 hover:bg-rose-50 focus:text-rose-600"
+                                                        @click="openInvalidate(doc)"
+                                                    >
+                                                        <XCircle class="h-4 w-4" /> Mark Invalid
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        v-if="fileUrl(doc)"
+                                                        class="rounded-lg cursor-pointer hover:bg-slate-100"
                                                         as-child
                                                     >
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            class="h-8 w-8 p-0"
-                                                        >
-                                                            <MoreHorizontal
-                                                                class="h-4 w-4"
-                                                            />
-                                                            <span
-                                                                class="sr-only"
-                                                                >Open
-                                                                actions</span
-                                                            >
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-
-                                                    <DropdownMenuContent
-                                                        align="end"
-                                                        class="w-52"
-                                                    >
-                                                        <DropdownMenuLabel
-                                                            >Actions</DropdownMenuLabel
-                                                        >
-                                                        <DropdownMenuSeparator />
-
-                                                        <DropdownMenuItem
-                                                            v-if="
-                                                                canPreview(doc)
-                                                            "
-                                                            @click="
-                                                                openPreview(doc)
-                                                            "
-                                                        >
-                                                            <Eye
-                                                                class="mr-2 h-4 w-4"
-                                                            />
-                                                            Review Document
-                                                        </DropdownMenuItem>
-
-                                                        <DropdownMenuItem
-                                                            v-if="fileUrl(doc)"
-                                                            as-child
-                                                        >
-                                                            <a
-                                                                :href="
-                                                                    fileUrl(doc)
-                                                                "
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                download
-                                                            >
-                                                                <Download
-                                                                    class="mr-2 h-4 w-4"
-                                                                />
-                                                                Download
-                                                            </a>
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </TableCell>
-                                        </TableRow>
-
-                                        <TableRow v-if="docs.length === 0">
-                                            <TableCell
-                                                colspan="5"
-                                                class="py-10 text-center text-muted-foreground"
-                                            >
-                                                No documents uploaded yet.
-                                            </TableCell>
-                                        </TableRow>
-                                    </TableBody>
-                                </Table>
+                                                        <a :href="fileUrl(doc)" target="_blank" rel="noopener noreferrer" download>
+                                                            <Download class="h-4 w-4" /> Download
+                                                        </a>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
-                </div>
 
-                <div class="space-y-5">
-                    <Card>
+                    <Card class="py-6">
                         <CardHeader>
-                            <CardTitle class="text-base"
-                                >Quick Summary</CardTitle
-                            >
+                            <CardTitle class="text-base">Quick Summary</CardTitle>
                         </CardHeader>
-
-                        <CardContent class="space-y-4">
+                        <CardContent class="border-t border-slate-100 space-y-4 pt-4">
                             <div class="rounded-lg border p-4">
-                                <p class="text-xs text-muted-foreground">
-                                    Vehicle Status
-                                </p>
+                                <p class="text-xs text-muted-foreground">Vehicle Status</p>
                                 <div class="mt-2">
-                                    <Badge
-                                        :variant="statusVariant(vehicle.status)"
-                                    >
-                                        {{ humanize(vehicle.status) }}
-                                    </Badge>
+                                    <Badge :class="statusClass(vehicle.status)">{{ humanize(vehicle.status) }}</Badge>
                                 </div>
                             </div>
-
                             <div class="rounded-lg border p-4">
-                                <p class="text-xs text-muted-foreground">
-                                    Document Health
-                                </p>
+                                <p class="text-xs text-muted-foreground">Document Health</p>
                                 <div class="mt-2 flex flex-wrap gap-2">
-                                    <Badge variant="outline"
-                                        >{{ verifiedCount }} verified</Badge
-                                    >
-                                    <Badge
-                                        v-if="pendingCount > 0"
-                                        variant="secondary"
-                                    >
-                                        {{ pendingCount }} pending
-                                    </Badge>
-                                    <Badge
-                                        v-if="invalidCount > 0"
-                                        variant="destructive"
-                                    >
-                                        {{ invalidCount }} invalid
-                                    </Badge>
-                                    <Badge
-                                        v-if="expiredCount > 0"
-                                        variant="destructive"
-                                    >
-                                        {{ expiredCount }} expired
-                                    </Badge>
+                                    <Badge :class="statusClass('verified')">{{ verifiedCount }} verified</Badge>
+                                    <Badge v-if="pendingCount > 0" :class="statusClass('pending')">{{ pendingCount }} pending</Badge>
+                                    <Badge v-if="invalidCount > 0" :class="statusClass('invalid')">{{ invalidCount }} invalid</Badge>
+                                    <Badge v-if="expiredCount > 0" :class="statusClass('expired')">{{ expiredCount }} expired</Badge>
                                 </div>
                             </div>
-
-                            <div
-                                class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1"
-                            >
+                            <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
                                 <div class="rounded-lg border p-4">
-                                    <p class="text-xs text-muted-foreground">
-                                        Verification Rate
-                                    </p>
-                                    <p class="mt-1 text-lg font-semibold">
-                                        {{ docsCompletionRate }}%
-                                    </p>
+                                    <p class="text-xs text-muted-foreground">Verification Rate</p>
+                                    <p class="mt-1 text-lg font-semibold">{{ docsCompletionRate }}%</p>
                                 </div>
-
                                 <div class="rounded-lg border p-4">
-                                    <p class="text-xs text-muted-foreground">
-                                        Assigned Company
-                                    </p>
-                                    <p class="mt-1 text-sm font-semibold">
-                                        {{
-                                            company?.company_name ??
-                                            'No company'
-                                        }}
-                                    </p>
+                                    <p class="text-xs text-muted-foreground">Assigned Company</p>
+                                    <p class="mt-1 text-sm font-semibold">{{ company?.company_name ?? 'No company' }}</p>
                                 </div>
-
                                 <div class="rounded-lg border p-4">
-                                    <p class="text-xs text-muted-foreground">
-                                        Last Updated By
-                                    </p>
-                                    <p class="mt-1 text-sm font-semibold">
-                                        {{
-                                            vehicle.updater?.name ??
-                                            vehicle.creator?.name ??
-                                            'System'
-                                        }}
-                                    </p>
+                                    <p class="text-xs text-muted-foreground">Last Updated By</p>
+                                    <p class="mt-1 text-sm font-semibold">{{ vehicle.updater?.name ?? vehicle.creator?.name ?? 'System' }}</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -1500,11 +1289,12 @@ function submitInvalidate() {
 
         <Dialog v-model:open="previewOpen">
             <DialogContent
-                class="flex max-h-[90vh] max-w-4xl flex-col gap-0 overflow-hidden p-0"
+                class="flex max-h-[90vh] w-full flex-col gap-0 rounded-lg py-4 px-6"
+                className="[&>button:last-child]:hidden"
             >
-                <DialogHeader class="shrink-0 border-b px-6 py-4">
-                    <div class="flex items-start justify-between gap-4">
-                        <div class="min-w-0">
+                <DialogHeader class="shrink-0">
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="min-w-0 space-y-1">
                             <DialogTitle class="truncate text-base">
                                 {{
                                     previewDoc?.file_name ??
@@ -1512,53 +1302,41 @@ function submitInvalidate() {
                                 }}
                             </DialogTitle>
                             <DialogDescription
-                                class="mt-1 flex flex-wrap items-center gap-2 text-xs"
+                                class="flex flex-wrap items-center gap-2"
                             >
-                                <Badge
-                                    :variant="statusVariant(previewDoc?.status)"
-                                >
-                                    {{ humanize(previewDoc?.status) }}
-                                </Badge>
-                                <span>{{
+                                <span class="text-xs text-muted-foreground">{{
                                     humanize(previewDoc?.document_type)
                                 }}</span>
-                                <span v-if="previewDoc?.expires_at">
-                                    · Expires
-                                    {{ formatDate(previewDoc.expires_at) }}
-                                </span>
+                                <Badge
+                                    :class="[
+                                        'gap-1.5',
+                                        statusClass(previewDoc?.status),
+                                    ]"
+                                >
+                                    <span
+                                        :class="[
+                                            'h-1.5 w-1.5 rounded-full',
+                                            statusDot(previewDoc?.status),
+                                        ]"
+                                    />
+                                    {{ humanize(previewDoc?.status) }}
+                                </Badge>
                             </DialogDescription>
                         </div>
-
-                        <Button
-                            v-if="previewDoc"
-                            variant="outline"
-                            size="sm"
-                            as-child
-                        >
-                            <a
-                                :href="fileUrl(previewDoc)"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                download
-                            >
-                                <Download class="mr-1.5 h-4 w-4" />
-                                Download
-                            </a>
-                        </Button>
                     </div>
                 </DialogHeader>
 
-                <div class="relative flex-1 overflow-auto bg-muted/30">
+                <div class="relative flex-1 overflow-auto py-4">
                     <div
                         v-if="previewDoc && isImage(previewDoc)"
-                        class="flex min-h-[50vh] items-center justify-center p-6"
+                        class="flex min-h-[50vh] items-center justify-center"
                     >
                         <img
                             :src="fileUrl(previewDoc)"
                             :alt="
                                 previewDoc.file_name ?? previewDoc.document_type
                             "
-                            class="max-h-[70vh] max-w-full rounded-lg object-contain shadow-md"
+                            class="max-h-[70vh] max-w-full rounded-lg object-contain"
                             @error="
                                 (e) => ((e.target as HTMLImageElement).src = '')
                             "
@@ -1577,20 +1355,19 @@ function submitInvalidate() {
                         />
                         <div
                             v-else
-                            class="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground"
+                            class="flex h-full flex-col items-center justify-center"
                         >
                             <FileText class="h-12 w-12 opacity-30" />
                             <p class="text-sm">
-                                Cannot preview this PDF inline.
+                                Your browser cannot preview this PDF inline.
                             </p>
-                            <Button as-child variant="secondary" size="sm">
+                            <Button as-child variant="outline" class="rounded-lg">
                                 <a
                                     :href="fileUrl(previewDoc)"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                 >
-                                    <Eye class="mr-1.5 h-4 w-4" />
-                                    Open in new tab
+                                    <Eye class="mr-2 h-4 w-4" />Open in new tab
                                 </a>
                             </Button>
                         </div>
@@ -1604,53 +1381,71 @@ function submitInvalidate() {
                     </div>
                 </div>
 
-                <DialogFooter class="shrink-0 border-t px-6 py-3">
-                    <div class="flex flex-1 flex-wrap items-center gap-2">
+                <DialogFooter
+                    v-if="previewDoc"
+                    class="shrink-0 flex flex-row items-center"
+                >
+                    <p class="flex-1 text-xs text-muted-foreground">
+                        Issued: {{ formatDate(previewDoc?.issued_at ?? null) }}<br>
+                        Expires: {{ formatDate(previewDoc?.expires_at ?? null) }}
+                    </p>
+                    <div class="flex flex-1 flex-row gap-x-2 justify-end">
+                        <Popover>
+                            <PopoverTrigger as-child>
+                                <Button
+                                    variant="outline"
+                                    class="rounded-lg cursor-pointer hover:bg-slate-100"
+                                >
+                                    <Ellipsis class="h-4 w-4" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                                align="end"
+                                class="w-fit rounded-lg border-slate-200 shadow-lg p-0 gap-2"
+                            >
+                                <div
+                                    v-if="canVerifyVehicleDocument && previewDoc.status !== 'verified'"
+                                    class="cursor-pointer flex items-center gap-2 rounded-lg px-4 py-2 text-sm hover:bg-slate-100"
+                                    @click="openConfirmFromPreview('verify')"
+                                >
+                                    <CheckCircle2 class="h-4 w-4" />
+                                    Verify
+                                </div>
+                                <div
+                                    v-if="canUnverifyVehicleDocument && previewDoc.status === 'verified'"
+                                    class="cursor-pointer flex items-center gap-2 rounded-lg px-4 py-2 text-sm hover:bg-slate-100"
+                                    @click="openConfirmFromPreview('unverify')"
+                                >
+                                    <RotateCcw class="h-4 w-4" />
+                                    Move to Pending
+                                </div>
+                                <div
+                                    v-if="canInvalidateVehicleDocument"
+                                    class="cursor-pointer flex items-center gap-2 rounded-lg px-4 py-2 text-sm hover:bg-slate-100"
+                                    @click="openInvalidateFromPreview"
+                                >
+                                    <XCircle class="h-4 w-4" />
+                                    Mark Invalid
+                                </div>
+                                <a
+                                    v-if="fileUrl(previewDoc)"
+                                    :href="fileUrl(previewDoc)"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    download
+                                    class="cursor-pointer flex items-center gap-2 rounded-lg px-4 py-2 text-sm hover:bg-slate-100"
+                                >
+                                    <Download class="h-4 w-4" />
+                                    Download
+                                </a>
+                            </PopoverContent>
+                        </Popover>
                         <Button
-                            v-if="
-                                previewDoc &&
-                                previewDoc.status !== 'verified' &&
-                                canVerifyVehicleDocument
-                            "
-                            size="sm"
-                            class="bg-emerald-600 text-white hover:bg-emerald-700"
-                            :disabled="actionForm.processing"
-                            @click="openConfirmFromPreview('verify')"
-                        >
-                            <CheckCircle2 class="mr-1.5 h-4 w-4" />
-                            Verify
-                        </Button>
-
-                        <Button
-                            v-if="
-                                previewDoc &&
-                                previewDoc.status === 'verified' &&
-                                canUnverifyVehicleDocument
-                            "
                             variant="outline"
-                            size="sm"
-                            :disabled="actionForm.processing"
-                            @click="openConfirmFromPreview('unverify')"
-                        >
-                            <RotateCcw class="mr-1.5 h-4 w-4" />
-                            Move to Pending
-                        </Button>
-
-                        <Button
-                            v-if="previewDoc && canInvalidateVehicleDocument"
-                            variant="destructive"
-                            size="sm"
-                            :disabled="invalidateForm.processing"
-                            @click="openInvalidateFromPreview"
-                        >
-                            <XCircle class="mr-1.5 h-4 w-4" />
-                            Mark Invalid
-                        </Button>
+                            class="rounded-lg cursor-pointer hover:bg-slate-100"
+                            @click="closePreview"
+                        >Close</Button>
                     </div>
-
-                    <Button variant="outline" size="sm" @click="closePreview">
-                        Close
-                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

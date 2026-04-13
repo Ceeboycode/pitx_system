@@ -64,6 +64,7 @@ import {
     Clock,
     Download,
     Filter,
+    Loader2,
     Hash,
     LogIn,
     LogOut,
@@ -403,59 +404,59 @@ function statusColor(s: string | null | undefined): string {
     }
 }
 
+function statusBadgeClass(s: string | null | undefined): string {
+    switch (s) {
+        case 'departed':
+            return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        case 'verified':
+        case 'active':
+            return 'bg-blue-100 text-blue-700 border-blue-200';
+        case 'arrived':
+            return 'bg-amber-100 text-amber-700 border-amber-200';
+        default:
+            return 'bg-slate-100 text-slate-500 border-0';
+    }
+}
+
+function statusBadgeDot(s: string | null | undefined): string {
+    switch (s) {
+        case 'departed':
+            return 'bg-emerald-500';
+        case 'verified':
+        case 'active':
+            return 'bg-blue-500';
+        case 'arrived':
+            return 'bg-amber-500';
+        default:
+            return 'bg-slate-400';
+    }
+}
+
 function prettyStatus(s: string | null | undefined) {
     return String(s ?? 'Unknown')
         .replace(/_/g, ' ')
         .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+const exporting = ref(false);
+
 function exportCsv() {
-    const headers = [
-        'ID', 'Plate', 'Body No.', 'Route', 'Bay', 'PAX',
-        'Status', 'Driver', 'Dispatcher', 'Gate',
-        'Arrived At', 'Departed At', 'Dispatched At', 'Remarks',
-    ];
+    exporting.value = true;
 
-    const escape = (v: string | number | null | undefined) => {
-        const s = String(v ?? '');
-        return s.includes(',') || s.includes('"') || s.includes('\n')
-            ? `"${s.replace(/"/g, '""')}"`
-            : s;
-    };
+    const params = new URLSearchParams();
+    if (selectedDate.value) params.set('date', selectedDate.value.toString());
+    if (selectedStatus.value && selectedStatus.value !== 'all') params.set('status', selectedStatus.value);
+    if (props.filters?.search) params.set('search', props.filters.search);
 
-    const rows = props.dispatches.data.map((d) => [
-        d.id,
-        d.vehicle?.plate_number ?? d.plate_number ?? '',
-        d.vehicle?.body_number ?? '',
-        d.vehicle?.route
-            ? `${d.vehicle.route.origin_name ?? ''} → ${d.vehicle.route.destination_name ?? ''}`
-            : '',
-        d.bay_number ?? '',
-        d.pax_count ?? '',
-        prettyStatus(d.status),
-        d.driver?.name ?? '',
-        d.dispatcher?.name ?? '',
-        d.gate?.gate_name ?? '',
-        d.arrived_at ?? '',
-        d.departed_at ?? '',
-        d.dispatched_at ?? '',
-        d.remarks ?? '',
-    ].map(escape).join(','));
-
-    const label = [
-        props.company.company_name,
-        props.filters?.date ?? 'all-dates',
-        selectedStatus.value !== 'all' ? selectedStatus.value : null,
-    ].filter(Boolean).join('_').replace(/\s+/g, '-');
-
-    const csv = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
+    const qs = params.toString();
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `dispatches_${label}.csv`;
+    a.href = `/dispatches/${props.company.id}/export${qs ? '?' + qs : ''}`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+
+    setTimeout(() => { exporting.value = false; }, 2000);
 }
 </script>
 
@@ -464,86 +465,74 @@ function exportCsv() {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <TooltipProvider>
-            <div class="flex flex-col gap-5 p-4 sm:p-6">
-                <div
-                    class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                    <div class="flex items-center gap-3">
-                        <div class="relative shrink-0">
-                            <div
-                                class="flex size-12 items-center justify-center overflow-hidden rounded-xl border bg-muted"
-                            >
+            <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                <Card>
+                    <CardHeader class="py-0">
+                        <div class="flex items-center gap-4">
+                            <div class="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border-2 bg-white shadow-sm">
                                 <img
                                     v-if="company.company_logo"
                                     :src="company.company_logo"
                                     :alt="company.company_name"
-                                    class="size-full object-cover"
+                                    class="h-full w-full object-cover"
                                 />
-                                <Building2
+                                <div
                                     v-else
-                                    class="size-5 text-muted-foreground"
-                                />
+                                    class="flex h-full w-full items-center justify-center bg-primary/10"
+                                >
+                                    <Building2 class="h-10 w-10 text-primary" />
+                                </div>
                             </div>
-                            <span
-                                class="absolute -top-0.5 -right-0.5 size-3 rounded-full border-2 border-background"
-                                :class="
-                                    company.status === 'active'
-                                        ? 'bg-emerald-500'
-                                        : 'bg-muted-foreground'
-                                "
-                            />
-                        </div>
 
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <h1
-                                    class="text-lg font-semibold tracking-tight"
-                                >
-                                    {{ company.company_name }}
-                                </h1>
-                                <Badge variant="outline" class="text-xs">{{
-                                    prettyStatus(company.status)
-                                }}</Badge>
-                            </div>
-                            <div
-                                class="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground"
-                            >
-                                <span
-                                    v-if="company.company_code"
-                                    class="flex items-center gap-1"
-                                    ><Hash class="size-3" />{{
-                                        company.company_code
-                                    }}</span
-                                >
-                                <span
-                                    v-if="company.company_email"
-                                    class="flex items-center gap-1"
-                                    ><Mail class="size-3" />{{
-                                        company.company_email
-                                    }}</span
-                                >
-                                <span
-                                    v-if="company.company_phone"
-                                    class="flex items-center gap-1"
-                                    ><Phone class="size-3" />{{
-                                        company.company_phone
-                                    }}</span
-                                >
+                            <div class="gap-2 w-full">
+                                <div class="flex flex-row gap-2 pb-2 w-full items-center">
+                                    <h1 class="text-2xl leading-tight font-bold tracking-tight">
+                                        {{ company.company_name }}
+                                    </h1>
+                                    <div class="ml-2 flex flex-1 items-center">
+                                        <hr class="h-px w-full border border-rose-500" />
+                                        <div class="border-7 border-rose-500 rounded-xs">
+                                            <div class="border-3 border-white rounded-xs"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <Badge class="border-0 bg-muted font-mono text-foreground">
+                                            {{ company.company_code ?? '—' }}
+                                        </Badge>
+                                        <Badge :class="['', statusBadgeClass(company.status)]">
+                                            <span :class="['h-2 w-2 rounded-full', statusBadgeDot(company.status)]" />
+                                            {{ prettyStatus(company.status) }}
+                                        </Badge>
+                                    </div>
+                                    <div class="flex shrink-0 items-center gap-2">
+                                        <Button
+                                            as-child
+                                            variant="outline"
+                                            class="rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                                        >
+                                            <Link :href="InternalDispatchController.index().url">
+                                                <ArrowLeft class="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                                    <span v-if="company.company_code" class="flex items-center gap-1">
+                                        <Hash class="size-3" />{{ company.company_code }}
+                                    </span>
+                                    <span v-if="company.company_email" class="flex items-center gap-1">
+                                        <Mail class="size-3" />{{ company.company_email }}
+                                    </span>
+                                    <span v-if="company.company_phone" class="flex items-center gap-1">
+                                        <Phone class="size-3" />{{ company.company_phone }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        as-child
-                        class="w-full sm:w-auto"
-                    >
-                        <Link :href="InternalDispatchController.index().url">
-                            <ArrowLeft class="size-3.5" />Back to companies
-                        </Link>
-                    </Button>
-                </div>
+                    </CardHeader>
+                </Card>
 
                 <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
                     <Card>
@@ -637,7 +626,15 @@ function exportCsv() {
                             class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
                         >
                             <div>
-                                <CardTitle>Dispatch Records</CardTitle>
+                                <CardTitle class="flex items-center gap-2">
+                                    Dispatch Records
+                                    <div class="ml-2 flex flex-1 items-center">
+                                        <hr class="h-px w-full border border-rose-500" />
+                                        <div class="border-7 border-rose-500 rounded-xs">
+                                            <div class="border-3 border-white rounded-xs"></div>
+                                        </div>
+                                    </div>
+                                </CardTitle>
                                 <CardDescription>
                                     {{
                                         filteredTotal.toLocaleString()
@@ -721,22 +718,14 @@ function exportCsv() {
                                 :model-value="selectedStatus"
                                 @update:model-value="applyStatus"
                             >
-                                <SelectTrigger class="w-full sm:w-40">
-                                    <SlidersHorizontal
-                                        class="size-3.5 text-muted-foreground"
-                                    />
-                                    <SelectValue placeholder="Status" />
+                                <SelectTrigger class="cursor-pointer h-8 w-full sm:w-fit rounded-lg border-slate-200 shadow-sm">
+                                    <Filter class="h-3.5 w-3.5 text-slate-600" />
+                                    <SelectValue placeholder="All Statuses" class="justify-start flex" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all"
-                                        >All statuses</SelectItem
-                                    >
-                                    <SelectItem value="arrived"
-                                        >Arrived</SelectItem
-                                    >
-                                    <SelectItem value="departed"
-                                        >Departed</SelectItem
-                                    >
+                                <SelectContent class="rounded-lg shadow-lg">
+                                    <SelectItem value="all" class="cursor-pointer text-sm">All Statuses</SelectItem>
+                                    <SelectItem value="arrived" class="cursor-pointer text-sm">Arrived</SelectItem>
+                                    <SelectItem value="departed" class="cursor-pointer text-sm">Departed</SelectItem>
                                 </SelectContent>
                             </Select>
 
@@ -786,15 +775,20 @@ function exportCsv() {
                                 </PopoverContent>
                             </Popover>
 
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                class="ml-auto w-full gap-1.5 sm:w-auto"
-                                :disabled="dispatches.data.length === 0"
-                                @click="exportCsv"
-                            >
-                                <Download class="size-3.5" />Export CSV
-                            </Button>
+                            <div class="ml-auto inline-flex rounded-lg border border-slate-200 bg-white shadow-sm">
+                                <Button
+                                    variant="ghost"
+                                    class="cursor-pointer group/segment rounded-lg border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10 gap-0"
+                                    :disabled="exporting"
+                                    @click="exportCsv"
+                                >
+                                    <Loader2 v-if="exporting" class="h-4 w-4 shrink-0 animate-spin" />
+                                    <Download v-else class="h-4 w-4 shrink-0" />
+                                    <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-24 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-24 group-focus-visible/segment:opacity-100">
+                                        {{ exporting ? 'Exporting…' : 'Export CSV' }}
+                                    </span>
+                                </Button>
+                            </div>
 
                             <Badge
                                 v-if="hasActiveFilters"
@@ -1090,21 +1084,15 @@ function exportCsv() {
                     <CardContent class="hidden p-0 lg:block">
                         <div class="overflow-x-auto">
                             <Table>
-                                <TableHeader>
-                                    <TableRow
-                                        class="bg-muted/30 hover:bg-muted/30"
-                                    >
-                                        <TableHead class="pl-5"
-                                            >Vehicle</TableHead
-                                        >
-                                        <TableHead>Route</TableHead>
-                                        <TableHead>Gate / Bay</TableHead>
-                                        <TableHead>Personnel</TableHead>
-                                        <TableHead>Timeline</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead class="pr-5"
-                                            >Remarks</TableHead
-                                        >
+                                <TableHeader class="border-y border-slate-200">
+                                    <TableRow class="gap-2">
+                                        <TableHead class="pl-5 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Vehicle</TableHead>
+                                        <TableHead class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Route</TableHead>
+                                        <TableHead class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Gate / Bay</TableHead>
+                                        <TableHead class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Personnel</TableHead>
+                                        <TableHead class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Timeline</TableHead>
+                                        <TableHead class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Status</TableHead>
+                                        <TableHead class="pr-5 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Remarks</TableHead>
                                     </TableRow>
                                 </TableHeader>
 
@@ -1338,18 +1326,10 @@ function exportCsv() {
                                         </TableCell>
 
                                         <TableCell class="py-3">
-                                            <span
-                                                class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium"
-                                                :class="
-                                                    statusColor(dispatch.status)
-                                                "
-                                            >
-                                                {{
-                                                    prettyStatus(
-                                                        dispatch.status,
-                                                    )
-                                                }}
-                                            </span>
+                                            <Badge :class="['gap-1.5', statusBadgeClass(dispatch.status)]">
+                                                <span :class="['h-1.5 w-1.5 rounded-full', statusBadgeDot(dispatch.status)]" />
+                                                {{ prettyStatus(dispatch.status) }}
+                                            </Badge>
                                         </TableCell>
 
                                         <TableCell class="max-w-48 py-3 pr-5">
@@ -1377,12 +1357,8 @@ function exportCsv() {
                                             <div
                                                 class="flex flex-col items-center gap-3"
                                             >
-                                                <div
-                                                    class="rounded-xl border-2 border-dashed bg-muted/30 p-4"
-                                                >
-                                                    <ClipboardList
-                                                        class="size-7 text-muted-foreground/50"
-                                                    />
+                                                <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+                                                    <ClipboardList class="h-6 w-6 text-muted-foreground/40" />
                                                 </div>
                                                 <div>
                                                     <p
@@ -1447,12 +1423,10 @@ function exportCsv() {
                                             }}</span
                                         >
                                     </div>
-                                    <span
-                                        class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium"
-                                        :class="statusColor(dispatch.status)"
-                                    >
+                                    <Badge :class="['gap-1.5', statusBadgeClass(dispatch.status)]">
+                                        <span :class="['h-1.5 w-1.5 rounded-full', statusBadgeDot(dispatch.status)]" />
                                         {{ prettyStatus(dispatch.status) }}
-                                    </span>
+                                    </Badge>
                                 </div>
 
                                 <div class="space-y-3 p-3">
@@ -1637,12 +1611,8 @@ function exportCsv() {
                             v-else
                             class="flex flex-col items-center gap-3 py-14 text-center"
                         >
-                            <div
-                                class="rounded-xl border-2 border-dashed bg-muted/30 p-5"
-                            >
-                                <Search
-                                    class="size-7 text-muted-foreground/50"
-                                />
+                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+                                <Search class="h-6 w-6 text-muted-foreground/40" />
                             </div>
                             <div>
                                 <p class="text-sm font-medium">

@@ -3,22 +3,21 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { index, update } from '@/routes/users';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { Save } from 'lucide-vue-next';
+import { ArrowLeft, Save } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
     Card,
     CardContent,
-    CardDescription,
     CardFooter,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 
 type Role = {
     id: number;
@@ -100,6 +99,22 @@ watch(
     { immediate: true },
 );
 
+function initials(name: string) {
+    const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
+    return parts.map((part) => part.charAt(0).toUpperCase()).join('') || 'U';
+}
+
+function typeBadgeClass(type: string | null) {
+    switch (type) {
+        case 'internal':
+            return 'border-blue-200 bg-blue-100 text-blue-700';
+        case 'external':
+            return 'border-amber-200 bg-amber-100 text-amber-700';
+        default:
+            return 'border-border bg-muted text-muted-foreground';
+    }
+}
+
 function submit() {
     form
         .transform((data) => ({
@@ -120,17 +135,57 @@ function submit() {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-1 flex-col gap-4 p-4">
-            <Card class="mx-5">
-                <CardHeader>
-                    <CardTitle>Edit User</CardTitle>
-                    <CardDescription>
-                        Update the user details. Username changes only when the selected role type or company changes.
-                    </CardDescription>
+            <Card>
+                <CardHeader class="py-0">
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border-2 shadow-sm"
+                        >
+                            <div class="flex h-full w-full items-center justify-center bg-primary">
+                                <span class="text-2xl font-bold text-primary-foreground">
+                                    {{ initials(user.name) }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="gap-2 w-full">
+                            <div class="flex flex-row gap-2 pb-2 w-full items-center">
+                                <h1 class="text-2xl leading-tight font-bold tracking-tight">
+                                    {{ user.name }}
+                                </h1>
+                                <div class="ml-2 flex flex-1 items-center">
+                                    <hr class="h-px w-full border border-rose-500" />
+                                    <div class="border-7 border-rose-500 rounded-xs">
+                                        <div class="border-3 border-white rounded-xs"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-between">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <Badge class="border-0 bg-muted font-mono text-foreground">
+                                        {{ user.username ?? 'No username' }}
+                                    </Badge>
+                                    <Badge :class="['border capitalize', typeBadgeClass(user.type)]">
+                                        {{ user.type }}
+                                    </Badge>
+                                </div>
+                                <div class="flex shrink-0 items-center gap-2">
+                                    <Button
+                                        as-child
+                                        variant="outline"
+                                        class="rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                                    >
+                                        <Link :href="index().url">
+                                            <ArrowLeft class="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </CardHeader>
 
-                <Separator />
-
-                <CardContent class="space-y-6 pt-6">
+                <CardContent class="space-y-6 pt-6 border-t border-slate-100">
                     <div class="space-y-2">
                         <Label>Current Username</Label>
                         <div class="rounded-md border bg-muted/40 px-3 py-2 text-sm">
@@ -256,15 +311,13 @@ function submit() {
                     </div>
                 </CardContent>
 
-                <Separator />
-
-                <CardFooter class="flex justify-end gap-2">
+                <CardFooter class="flex justify-end gap-2 border-t border-slate-100">
                     <Button variant="outline" as-child>
                         <Link :href="index().url">Cancel</Link>
                     </Button>
 
                     <Button :disabled="form.processing" @click="submit">
-                        <Save class="mr-2 h-4 w-4" />
+                        <Save class="h-4 w-4" />
                         {{ form.processing ? 'Saving...' : 'Save changes' }}
                     </Button>
                 </CardFooter>

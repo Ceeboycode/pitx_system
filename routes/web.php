@@ -26,6 +26,7 @@ use App\Http\Controllers\RouteStopController;
 use App\Http\Controllers\Settings\PasswordController as UserSettingsPasswordController;
 use App\Http\Controllers\Settings\ProfileController as UserSettingsProfileController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VehicleBackupController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VehicleTypeController;
 use Illuminate\Support\Facades\Route;
@@ -405,6 +406,12 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
     Route::delete('routes/{route}/force-delete', [RouteController::class, 'forceDelete'])->withTrashed()->name('routes.forceDelete');
     Route::patch('routes/{route}/toggle-status', [RouteController::class, 'toggleStatus'])->name('routes.toggleStatus');
 
+    Route::get('vehicles/export', [VehicleBackupController::class, 'export'])
+        ->name('vehicles.export');
+
+    Route::post('vehicles/import', [VehicleBackupController::class, 'import'])
+        ->name('vehicles.import');
+
     Route::resource('vehicles', VehicleController::class);
 
     Route::patch('vehicles/{vehicle}/documents/{document}/verify', [VehicleController::class, 'verifyDocument'])
@@ -422,6 +429,9 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
     Route::get('vehicles-trash', [VehicleController::class, 'trash'])->name('vehicles.trash');
     Route::post('vehicles/{vehicle}/restore', [VehicleController::class, 'restore'])->withTrashed()->name('vehicles.restore');
     Route::delete('vehicles/{vehicle}/force-delete', [VehicleController::class, 'forceDelete'])->withTrashed()->name('vehicles.forceDelete');
+
+    Route::get('dispatches/{dispatch}/export', [InternalDispatchController::class, 'export'])
+        ->name('dispatches.export');
 
     Route::resource('dispatches', InternalDispatchController::class);
 

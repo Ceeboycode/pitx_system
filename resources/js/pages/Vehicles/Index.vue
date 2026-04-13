@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
+import ImportVehicleDialog from '@/components/vehicle/ImportVehicleDialog.vue';
 
 import {
     AlertDialog,
@@ -61,6 +62,7 @@ import {
     ChevronRight,
     Download,
     Ellipsis,
+    Loader2,
     FileSearch,
     FileText,
     Filter,
@@ -119,6 +121,26 @@ const props = defineProps<{
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Vehicles', href: index().url },
 ];
+
+/* ── Import / Export ─────────────────────────────────────────────── */
+
+const importOpen = ref(false);
+const exporting  = ref(false);
+
+function triggerExport() {
+    exporting.value = true;
+    const a = document.createElement('a');
+    a.href = '/vehicles/export';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => { exporting.value = false; }, 2000);
+}
+
+function onImportDone() {
+    router.reload({ only: ['vehicles'] });
+}
 
 /* ── Dialog state ────────────────────────────────────────────────── */
 
@@ -567,6 +589,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                     <Button
                                         variant="ghost"
                                         class="group/segment cursor-pointer gap-0 rounded-l-lg rounded-r-none border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10"
+                                        @click="importOpen = true"
                                     >
                                         <Upload class="h-4 w-4 shrink-0" />
                                         <span
@@ -582,12 +605,15 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                     <Button
                                         variant="ghost"
                                         class="group/segment cursor-pointer gap-0 rounded-l-none rounded-r-lg px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10"
+                                        :disabled="exporting"
+                                        @click="triggerExport"
                                     >
-                                        <Download class="h-4 w-4 shrink-0" />
+                                        <Loader2 v-if="exporting" class="h-4 w-4 shrink-0 animate-spin" />
+                                        <Download v-else class="h-4 w-4 shrink-0" />
                                         <span
                                             class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-24 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-24 group-focus-visible/segment:opacity-100"
                                         >
-                                            Export
+                                            {{ exporting ? 'Exporting…' : 'Export' }}
                                         </span>
                                     </Button>
                                 </div>
@@ -879,10 +905,10 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
-                                                        class="h-7 rounded-lg border-slate-200 text-xs text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                                        class="h-7 rounded-lg border-slate-200 text-xs cursor-pointer hover:bg-slate-100 text-foreground"
                                                     >
                                                         <FileText
-                                                            class="mr-1.5 h-3.5 w-3.5"
+                                                            class="h-3.5 w-3.5"
                                                         />
                                                         View
                                                     </Button>
@@ -893,13 +919,13 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     {{ vehicle.remarks }}
                                                 </PopoverContent>
                                             </Popover>
-                                            <Badge
+                                            <!-- <Badge
                                                 v-if="vehicle.remarks"
                                                 variant="secondary"
                                                 class="rounded-full bg-slate-100 text-[11px] font-semibold text-slate-700"
                                             >
                                                 Has remarks
-                                            </Badge>
+                                            </Badge> -->
                                             <span
                                                 v-else
                                                 class="text-xs text-muted-foreground"
@@ -1157,5 +1183,8 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+
+        <!-- Import dialog -->
+        <ImportVehicleDialog v-model:open="importOpen" @done="onImportDone" />
     </AppLayout>
 </template>

@@ -3,11 +3,8 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import {
     Card,
-    CardAction,
     CardContent,
-    CardDescription,
     CardHeader,
-    CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,6 +22,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { create, index, store } from '@/routes/users';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ArrowLeft, UserPlus } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
 type Company = {
@@ -114,27 +112,52 @@ const requiredMark = '*';
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-1 items-start justify-center p-4">
-            <Card class="w-full max-w-5xl">
-                <CardHeader>
-                    <CardTitle>Create User</CardTitle>
-                    <CardDescription>
-                        Add a new user account and assign access. Default password is
-                        <span class="font-medium">pitx@123</span>. New users are created
-                        as <span class="font-medium">active</span>. Fields marked with
-                        <span class="font-medium text-red-500">
-                            {{ requiredMark }}
-                        </span>
-                        are required.
-                    </CardDescription>
+            <Card class="w-full">
+                <CardHeader class="py-0">
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border-2 bg-primary shadow-sm flex items-center justify-center"
+                        >
+                            <UserPlus class="h-10 w-10 text-white" />
+                        </div>
 
-                    <CardAction>
-                        <Button variant="link" size="sm" as-child>
-                            <Link :href="index().url">Back to Users</Link>
-                        </Button>
-                    </CardAction>
+                        <div class="gap-2 w-full">
+                            <div class="flex flex-row gap-2 pb-2 w-full items-center">
+                                <h1 class="text-2xl leading-tight font-bold tracking-tight">
+                                    Create User
+                                </h1>
+                                <div class="ml-2 flex flex-1 items-center">
+                                    <hr class="h-px w-full border border-rose-500" />
+                                    <div class="border-7 border-rose-500 rounded-xs">
+                                        <div class="border-3 border-white rounded-xs"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-start">
+                                <p class="text-sm text-muted-foreground">
+                                    Add a new user account and assign access. Default password is
+                                    <span class="font-medium text-foreground">pitx@123</span>. New users are created
+                                    as <span class="font-medium text-foreground">active</span>. Fields marked with
+                                    <span class="font-medium text-red-500">{{ requiredMark }}</span>
+                                    are required.
+                                </p>
+                                <div class="flex shrink-0 items-center gap-2 ml-4">
+                                    <Button
+                                        as-child
+                                        variant="outline"
+                                        class="rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                                    >
+                                        <Link :href="index().url">
+                                            <ArrowLeft class="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </CardHeader>
 
-                <CardContent>
+                <CardContent class="border-t border-slate-100">
                     <form class="space-y-8" @submit.prevent="submit">
                         <div class="space-y-4">
                             <div class="space-y-1">
@@ -333,7 +356,8 @@ const requiredMark = '*';
                                 <Link :href="index().url">Cancel</Link>
                             </Button>
 
-                            <Button type="submit" variant="blue" :disabled="form.processing">
+                            <Button type="submit" variant="outline" :disabled="form.processing" class="rounded-lg bg-primary text-primary-foreground hover:text-primary-foreground hover:bg-primary/90 cursor-pointer">
+                                <UserPlus class="h-4 w-4" />
                                 {{ form.processing ? 'Creating...' : 'Create User' }}
                             </Button>
                         </div>
