@@ -337,37 +337,37 @@ function hasVerifiedEmail(company: Company): boolean {
                                     @update:model-value="onStatusChange"
                                 >
                                     <SelectTrigger
-                                        class="cursor-pointer h-8 w-fit rounded-lg border-slate-200 shadow-sm"
+                                        class="h-9 w-fit cursor-pointer rounded-full border-0 bg-custom-bg px-3 text-custom-shadow shadow-none transition-all hover:-translate-y-0.5 hover:bg-custom-secondary/20 hover:shadow-md dark:bg-custom-bg-light dark:shadow-none dark:hover:bg-custom-secondary/20 dark:hover:inset-shadow-sm dark:hover:inset-shadow-white/5"
                                     >
-                                        <Filter class="h-3.5 w-3.5 text-slate-600" />
+                                        <Filter class="h-3.5 w-3.5" />
                                         <SelectValue placeholder="All Statuses" class="justify-start flex"/>
                                     </SelectTrigger>
-                                    <SelectContent class="rounded-lg shadow-lg">
-                                        <SelectItem value="all" class="cursor-pointer text-sm"
+                                    <SelectContent class="rounded-md shadow-lg">
+                                        <SelectItem value="all" class="cursor-pointer text-sm hover:bg-custom-secondary/20"
                                             >All Statuses</SelectItem
                                         >
-                                        <SelectItem value="draft" class="cursor-pointer text-sm"
+                                        <SelectItem value="draft" class="cursor-pointer text-sm hover:bg-custom-secondary/20"
                                             >Draft</SelectItem
                                         >
                                         <SelectItem
                                             value="docs_completed"
-                                            class="cursor-pointer text-sm"
+                                            class="cursor-pointer text-sm hover:bg-custom-secondary/20"
                                             >Docs Completed</SelectItem
                                         >
                                         <SelectItem
                                             value="for_verification"
-                                            class="cursor-pointer text-sm"
+                                            class="cursor-pointer text-sm hover:bg-custom-secondary/20"
                                             >For Verification</SelectItem
                                         >
-                                        <SelectItem value="verified" class="cursor-pointer text-sm"
+                                        <SelectItem value="verified" class="cursor-pointer text-sm hover:bg-custom-secondary/20"
                                             >Verified</SelectItem
                                         >
                                         <SelectItem
                                             value="needs_revision"
-                                            class="cursor-pointer text-sm"
+                                            class="cursor-pointer text-sm hover:bg-custom-secondary/20"
                                             >Needs Revision</SelectItem
                                         >
-                                        <SelectItem value="rejected" class="cursor-pointer text-sm"
+                                        <SelectItem value="rejected" class="cursor-pointer text-sm hover:bg-custom-secondary/20"
                                             >Rejected</SelectItem
                                         >
                                     </SelectContent>
@@ -375,29 +375,29 @@ function hasVerifiedEmail(company: Company): boolean {
                             </div>
                             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-auto">
                                 <div
-                                    class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm"
+                                    class="inline-flex gap-2"
                                 >
                                     <Button
-                                        variant="ghost"
-                                        class="cursor-pointer group/segment rounded-r-none rounded-l-lg border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10 gap-0"
+                                        variant="float-primary"
+                                        size="icon-text"
                                         @click="importOpen = true"
                                     >
                                         <Download
                                             class="h-4 w-4 shrink-0"
                                         />
                                         <span
-                                            class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-20 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-20 group-focus-visible/segment:opacity-100"
+                                            class="hidden lg:inline"
                                         >
                                             Import
                                         </span>
                                     </Button>
                                     <div
                                         aria-hidden="true"
-                                        class="w-px shrink-0 self-stretch bg-slate-200"
+                                        class="hidden"
                                     />
                                     <Button
-                                        variant="ghost"
-                                        class="cursor-pointer group/segment rounded-r-lg rounded-l-none px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10 gap-0"
+                                        variant="float"
+                                        size="icon-text"
                                         :disabled="exporting"
                                         @click="triggerExport"
                                     >
@@ -410,7 +410,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                             class="h-4 w-4 shrink-0"
                                         />
                                         <span
-                                            class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-24 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-24 group-focus-visible/segment:opacity-100"
+                                            class="hidden lg:inline"
                                         >
                                             {{
                                                 exporting
@@ -428,40 +428,34 @@ function hasVerifiedEmail(company: Company): boolean {
                                     class="w-fit"
                                 >
                                     <DropdownMenuTrigger as-child class="m-0">
-                                        <div
-                                            class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm"
-                                        >
+                                        <div class="inline-flex">
                                             <Button
-                                                variant="ghost"
-                                                class="rounded-lg cursor-pointer group/segment border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10 gap-0"
+                                                variant="float"
+                                                size="icon"
+                                                aria-label="Open company actions"
                                             >
                                                 <Ellipsis
                                                     class="h-4 w-4 shrink-0"
                                                 />
-                                                <span
-                                                    class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-20 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-20 group-focus-visible/segment:opacity-100"
-                                                >
-                                                    Actions
-                                                </span>
                                             </Button>
                                         </div>
                                     </DropdownMenuTrigger>
 
                                     <DropdownMenuContent
                                         align="end"
-                                        class="w-fit rounded-lg shadow-lg"
+                                        class="w-fit rounded-md shadow-lg"
                                     >
                                         <DropdownMenuItem
                                             v-if="canViewProfileChangeRequests"
                                             as-child
-                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
+                                            class="cursor-pointer rounded-md text-custom-shadow transition-all hover:bg-custom-secondary/20 focus:bg-custom-secondary/20"
                                         >
                                             <Link
                                                 :href="
                                                     companyProfileChangeRequestsIndex()
                                                         .url
                                                 "
-                                                class="flex items-center"
+                                                class="flex items-center gap-2 px-2 py-1.5"
                                             >
                                                 <ClipboardList
                                                     class="h-4 w-4"
@@ -473,11 +467,11 @@ function hasVerifiedEmail(company: Company): boolean {
                                         <DropdownMenuItem
                                             v-if="canViewArchived"
                                             as-child
-                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
+                                            class="cursor-pointer rounded-md text-custom-shadow transition-all hover:bg-custom-secondary/20 focus:bg-custom-secondary/20"
                                         >
                                             <Link
                                                 :href="trash().url"
-                                                class="flex items-center"
+                                                class="flex items-center gap-2 px-2 py-1.5"
                                             >
                                                 <Archive class="h-4 w-4" />
                                                 Archives
@@ -723,8 +717,8 @@ function hasVerifiedEmail(company: Company): boolean {
                                         <DropdownMenu v-if="canViewCompany">
                                             <DropdownMenuTrigger as-child>
                                                 <Button
-                                                    variant="outline"
-                                                    class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+                                                    variant="float"
+                                                    size="icon"
                                                 >
                                                     <MoreHorizontal
                                                         class="h-4 w-4"
@@ -737,7 +731,7 @@ function hasVerifiedEmail(company: Company): boolean {
 
                                             <DropdownMenuContent
                                                 align="end"
-                                                class="w-fit rounded-lg border-slate-200 shadow-lg"
+                                                class="w-fit rounded-md shadow-lg"
                                             >
                                                 <DropdownMenuLabel
                                                     class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
@@ -748,7 +742,7 @@ function hasVerifiedEmail(company: Company): boolean {
 
                                                 <DropdownMenuItem
                                                     as-child
-                                                    class="rounded-lg cursor-pointer"
+                                                    class="cursor-pointer rounded-md text-custom-shadow transition-all hover:bg-custom-secondary/20 focus:bg-custom-secondary/20"
                                                 >
                                                     <Link
                                                         :href="
@@ -757,7 +751,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                                                     company.id,
                                                             }).url
                                                         "
-                                                        class="flex items-center"
+                                                        class="flex items-center gap-2 px-2 py-1.5"
                                                     >
                                                         <FileSearch
                                                             class="h-4 w-4"

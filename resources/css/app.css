@@ -9,7 +9,7 @@
 
 @theme inline {
     --font-sans:
-        Instrument Sans, ui-sans-serif, system-ui, sans-serif,
+        Raleway, ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
 
@@ -18,6 +18,17 @@
     --radius-sm: calc(var(--radius) - 4px);
 
     --color-brandred: var(--pitxred);
+    --color-custom-bg-light: var(--custom-bg-light);
+    --color-custom-bg: var(--custom-bg);
+    --color-custom-bg-dark: var(--custom-bg-dark);
+    --color-custom-shadow: var(--custom-shadow);
+    --color-custom-body: var(--custom-body);
+    --color-custom-h1: var(--custom-h1);
+    --color-custom-primary: var(--custom-primary);
+    /* --color-custom-primary-2: var(--custom-primary-2); */
+    --color-custom-secondary: var(--custom-secondary);
+    --color-custom-accent-1: var(--custom-accent-1);
+    --color-custom-accent-2: var(--custom-accent-2);
 
     --color-background: var(--background);
     --color-foreground: var(--foreground);
@@ -55,14 +66,14 @@
     --color-chart-4: var(--chart-4);
     --color-chart-5: var(--chart-5);
 
-    --color-sidebar: var(--sidebar-background);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-ring: var(--sidebar-ring);
+    /* --color-sidebar: var(--sidebar-background); */
+    /* --color-sidebar-foreground: var(--sidebar-foreground); */
+    /* --color-sidebar-primary: var(--sidebar-primary); */
+    /* --color-sidebar-primary-foreground: var(--sidebar-primary-foreground); */
+    /* --color-sidebar-accent: var(--sidebar-accent); */
+    /* --color-sidebar-accent-foreground: var(--sidebar-accent-foreground); */
+    /* --color-sidebar-border: var(--sidebar-border); */
+    /* --color-sidebar-ring: var(--sidebar-ring); */
 }
 
 /*
@@ -87,7 +98,7 @@
     body,
     html {
         --font-sans:
-            'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+            Raleway, ui-sans-serif, system-ui, sans-serif,
             'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
             'Noto Color Emoji';
     }
@@ -119,17 +130,29 @@
     --chart-3: hsl(197 37% 24%);
     --chart-4: hsl(43 74% 66%);
     --chart-5: hsl(27 87% 67%);
-    --radius: 0.5rem;
-    --sidebar-background: oklch(96.8% 0.007 247.896);
+    --radius: 1rem;
+    /* --sidebar-background: oklch(96.8% 0.007 247.896);
     --sidebar-foreground: oklch(20.8% 0.042 265.755);
     --sidebar-primary: hsl(222.857, 48.276%, 11.373%);
     --sidebar-primary-foreground: hsl(225, 62%, 36%);
     --sidebar-accent: oklch(86.9% 0.022 252.894);
     --sidebar-accent-foreground: hsl(225, 62%, 36%);
     --sidebar-border: oklch(92.9% 0.013 255.508);
-    --sidebar-ring: hsl(0, 0%, 100%);
-    --sidebar: oklch(86.9% 0.022 252.894);
+    --sidebar-ring: hsl(0, 0%, 100%); */
+    /* --sidebar: oklch(86.9% 0.022 252.894); */
     --pitxred:  hsl(7, 84, 54);
+    --custom-bg-light: oklch(100% 0 0);
+    --custom-bg: oklch(96.5% 0.002 316);
+    --custom-bg-dark: oklch(90.5% 0.003 318);
+    /* oklch(96.8% 0.007 247.896); */
+    --custom-shadow: oklch(44% 0.01 250);
+    --custom-body: oklch(37% 0.015 250);
+    --custom-h1: oklch(23% 0.02 250);
+    --custom-primary: oklch(38.027% 0.1387 258.045);
+    /* --custom-primary-2: oklch(38.027% 0.1387 258.045); */
+    --custom-secondary: oklch(56% 0.08 250);
+    --custom-accent-1: oklch(17% 0.05 250);
+    --custom-accent-2: oklch(37% 0.015 250);
 }
 
 .dark {
@@ -157,17 +180,27 @@
     --chart-3: hsl(30 80% 55%);
     --chart-4: hsl(280 65% 60%);
     --chart-5: hsl(340 75% 55%);
-    --sidebar-background: oklch(20.8% 0.042 265.755);
+    /* --sidebar-background: oklch(20.8% 0.042 265.755);
     --sidebar-foreground: oklch(98.4% 0.003 247.858);
     --sidebar-primary: hsl(360, 100%, 100%);
     --sidebar-primary-foreground: hsl(0 0% 100%);
     --sidebar-accent: oklch(27.9% 0.041 260.031);
     --sidebar-accent-foreground: hsl(225, 67%, 73%);
     --sidebar-border: oklch(27.9% 0.041 260.031);
-    --sidebar-ring: hsl(225, 62%, 36%);
-    --sidebar: hsl(240 5.9% 10%);
+    --sidebar-ring: hsl(225, 62%, 36%); */
+    /* --sidebar: hsl(240 5.9% 10%); */
     --pitxred:  hsl(7, 84, 54);
-
+    --custom-bg-light: oklch(26% 0.005 285);
+    --custom-bg: oklch(20% 0.005 285);
+    --custom-bg-dark: oklch(16% 0.005 285);
+    --custom-shadow: oklch(80% 0.01 265);
+    --custom-body: oklch(85% 0.008 260);
+    --custom-h1: oklch(90% 0.01 260);
+    --custom-primary: oklch(66% 0.08 250);
+    /* --custom-primary-2: oklch(38.027% 0.1387 258.045); */
+    --custom-secondary: oklch(58% 0.08 245);
+    --custom-accent-1: rgb(199, 206, 216);
+    --custom-accent-2: oklch(71% 0.008 260);
 
 }
 

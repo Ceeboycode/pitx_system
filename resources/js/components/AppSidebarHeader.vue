@@ -17,17 +17,20 @@ withDefaults(
 
 <template>
     <header
-        class="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border/70 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4"
+        class="sticky top-0 z-30 shrink-0 bg-custom-bg-light dark:bg-custom-bg"
     >
-        <div class="flex items-center gap-2">
-            <SidebarTrigger class="-ml-1"/>
-            <template v-if="breadcrumbs && breadcrumbs.length > 0">
-                <Breadcrumbs :breadcrumbs="breadcrumbs" />
-            </template>
-        </div>
-        <div class="flex items-center gap-2">
-            <!-- <MessagingPanel /> -->
-            <NotificationDropdown/>
+        <div class="flex items-center justify-between gap-2 px-6 pb-3 pt-6 lg:px-0">
+            <div class="flex min-w-0 items-center gap-2">
+                <SidebarTrigger class="h-9 w-9 rounded-full bg-custom-bg text-custom-shadow hover:bg-custom-secondary/20 dark:bg-custom-bg-light dark:hover:bg-custom-secondary/20" />
+                <template v-if="breadcrumbs && breadcrumbs.length > 0">
+                    <Breadcrumbs :breadcrumbs="breadcrumbs" />
+                </template>
+            </div>
+
+            <div class="flex items-center gap-2 sm:gap-3">
+                <MessagingPanel />
+                <NotificationDropdown />
+            </div>
         </div>
     </header>
 </template>

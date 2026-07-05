@@ -185,7 +185,7 @@ function goBack() {
     <Popover :open="open" @update:open="onOpenChange">
         <PopoverTrigger as-child>
             <Button
-                variant="outline"
+                variant="float"
                 size="icon"
                 class="relative h-9 w-9 shrink-0 rounded-full"
             >
@@ -194,15 +194,15 @@ function goBack() {
             </Button>
         </PopoverTrigger>
 
-        <PopoverContent align="end" class="w-[380px] p-0">
+        <PopoverContent align="end" class="w-[380px] rounded-md border border-custom-bg-dark bg-custom-bg-light p-0 shadow-md dark:border-custom-bg-light dark:bg-custom-bg">
             <!-- Thread list -->
             <template v-if="view === 'list'">
-                <div class="flex items-center justify-between border-b px-4 py-3">
-                    <p class="text-sm font-semibold">Messages</p>
+                <div class="flex items-center justify-between px-4 py-3">
+                    <p class="text-sm font-semibold text-custom-shadow">Messages</p>
                     <Button
                         variant="ghost"
                         size="sm"
-                        class="h-8 gap-1.5 px-2 text-xs"
+                        class="h-8 gap-1.5 rounded-full px-2 text-xs text-custom-shadow hover:bg-custom-secondary/20"
                         @click="view = 'new'; createError = ''"
                     >
                         <Plus class="h-3.5 w-3.5" />
@@ -212,7 +212,7 @@ function goBack() {
 
                 <div
                     v-if="isLoadingThreads"
-                    class="px-4 py-8 text-center text-sm text-muted-foreground"
+                    class="px-4 py-8 text-center text-sm text-custom-shadow/80"
                 >
                     Loading...
                 </div>
@@ -226,17 +226,17 @@ function goBack() {
 
                 <div
                     v-else-if="threads.length === 0"
-                    class="px-4 py-8 text-center text-sm text-muted-foreground"
+                    class="px-4 py-8 text-center text-sm text-custom-shadow/80"
                 >
                     No conversations yet.
                 </div>
 
-                <div v-else class="max-h-[420px] divide-y overflow-y-auto">
+                <div v-else class="max-h-[420px] space-y-2 overflow-y-auto p-2">
                     <button
                         v-for="thread in threads"
                         :key="thread.id"
                         type="button"
-                        class="w-full px-4 py-3 text-left transition hover:bg-muted"
+                        class="w-full rounded-md px-3 py-2 text-left text-custom-shadow transition hover:bg-custom-secondary/20"
                         @click="openThread(thread)"
                     >
                         <div class="flex items-start justify-between gap-2">
@@ -251,7 +251,7 @@ function goBack() {
                                 Closed
                             </Badge>
                         </div>
-                        <p class="mt-0.5 text-xs text-muted-foreground">
+                        <p class="mt-0.5 text-xs text-custom-shadow/80">
                             {{ thread.last_message_at_human ?? thread.created_at_human }}
                             &middot;
                             {{ thread.messages_count }}
@@ -263,7 +263,7 @@ function goBack() {
 
             <!-- Thread detail -->
             <template v-else-if="view === 'detail' && selectedThread">
-                <div class="flex items-center gap-2 border-b px-3 py-3">
+                <div class="flex items-center gap-2 px-3 py-3">
                     <Button
                         variant="ghost"
                         size="icon"
@@ -319,7 +319,7 @@ function goBack() {
                     </template>
                 </div>
 
-                <div v-if="!selectedThread.is_closed" class="border-t p-3">
+                <div v-if="!selectedThread.is_closed" class="p-3">
                     <p v-if="sendError" class="mb-2 text-xs text-destructive">
                         {{ sendError }}
                     </p>
@@ -345,7 +345,7 @@ function goBack() {
 
             <!-- New thread form -->
             <template v-else-if="view === 'new'">
-                <div class="flex items-center gap-2 border-b px-3 py-3">
+                <div class="flex items-center gap-2 px-3 py-3">
                     <Button
                         variant="ghost"
                         size="icon"
