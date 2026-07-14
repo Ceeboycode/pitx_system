@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { destroy, index } from '@/routes/vehicles';
 import type { BreadcrumbItem } from '@/types';

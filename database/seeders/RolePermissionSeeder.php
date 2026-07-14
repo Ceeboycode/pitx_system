@@ -60,10 +60,10 @@ class RolePermissionSeeder extends Seeder
             ->where('type', 'internal')
             ->firstOrFail();
 
-        $it = Role::query()
-            ->where('name', 'it')
-            ->where('type', 'internal')
-            ->firstOrFail();
+        // $it = Role::query()
+        //     ->where('name', 'it')
+        //     ->where('type', 'internal')
+        //     ->firstOrFail();
 
         $terminalManager = Role::query()
             ->where('name', 'terminal manager')

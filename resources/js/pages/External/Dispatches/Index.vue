@@ -5,6 +5,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import InputError from '@/components/InputError.vue';
 import SearchInput from '@/components/SearchInput.vue';
+import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import ExternalLayout from '@/layouts/ExternalLayout.vue';
 import { can } from '@/lib/can';
 
@@ -70,26 +71,24 @@ import {
 } from '@/components/ui/table';
 
 import {
-    ArrowUpRight,
-    Building2,
-    Bus,
-    CalendarClock,
-    CalendarDays,
-    CheckCircle2,
-    Clock3,
-    FileText,
-    Fingerprint,
-    LogOut,
-    MoreHorizontal,
-    Pencil,
-    Plus,
-    Send,
-    TrendingUp,
-    UserRound,
-    Users,
-    X,
-    XCircle,
-} from 'lucide-vue-next';
+    RiAddLine as Plus,
+    RiArrowRightUpLine as ArrowUpRight,
+    RiBus2Line as Bus,
+    RiCalendarLine as CalendarDays,
+    RiCheckboxCircleLine as CheckCircle2,
+    RiCloseCircleLine as XCircle,
+    RiCloseLine as X,
+    RiFileTextLine as FileText,
+    RiFilter2Line,
+    RiFingerprintLine as Fingerprint,
+    RiGroupLine as Users,
+    RiLogoutBoxLine as LogOut,
+    RiMore2Line as MoreHorizontal,
+    RiPencilLine as Pencil,
+    RiSendPlaneLine as Send,
+    RiTimeLine as Clock3,
+    RiUserLine as UserRound,
+} from 'vue-remix-icons';
 
 import {
     CalendarDate,
@@ -235,6 +234,8 @@ const selectedDate = ref<CalendarDate | undefined>(
     parseDateFilter(props.filters?.date),
 );
 const calendarOpen = ref(false);
+const filterOpen = ref(false);
+const statusFilter = ref<string>(props.filters?.status ?? 'all');
 
 onMounted(() => {
     if (!selectedDate.value && !props.filters?.date) {
@@ -251,19 +252,22 @@ const selectedDateLabel = computed(() => {
     return df.format(selectedDate.value.toDate(localTz));
 });
 
-function applyDateFilter(date: CalendarDate | undefined) {
-    selectedDate.value = date;
-    calendarOpen.value = false;
+const activeFilterCount = computed(
+    () => Number(statusFilter.value !== 'all') + Number(!!selectedDate.value),
+);
+
+const hasActiveFilters = computed(() => activeFilterCount.value > 0);
+
+function applyFilters() {
+    filterOpen.value = false;
     router.get(
         DispatchController.index().url,
         {
             search: props.filters?.search || undefined,
             status:
-                !props.filters?.status || props.filters.status === 'all'
-                    ? undefined
-                    : props.filters.status,
-            date: date
-                ? `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`
+                statusFilter.value === 'all' ? undefined : statusFilter.value,
+            date: selectedDate.value
+                ? `${selectedDate.value.year}-${String(selectedDate.value.month).padStart(2, '0')}-${String(selectedDate.value.day).padStart(2, '0')}`
                 : undefined,
         },
         {
@@ -275,14 +279,27 @@ function applyDateFilter(date: CalendarDate | undefined) {
     );
 }
 
+function applyDateFilter(date: CalendarDate | undefined) {
+    selectedDate.value = date;
+    calendarOpen.value = false;
+    applyFilters();
+}
+
 function clearDateFilter() {
-    applyDateFilter(undefined);
+    selectedDate.value = undefined;
+    applyFilters();
 }
 function setToday() {
-    applyDateFilter(today(localTz));
+    selectedDate.value = today(localTz);
 }
 function setYesterday() {
-    applyDateFilter(today(localTz).subtract({ days: 1 }));
+    selectedDate.value = today(localTz).subtract({ days: 1 });
+}
+
+function clearFilters() {
+    statusFilter.value = 'all';
+    selectedDate.value = undefined;
+    applyFilters();
 }
 
 /* ======================================================
@@ -775,397 +792,217 @@ watch(confirmDepartOpen, (open) => {
     <Head title="Dispatches" />
 
     <ExternalLayout :company="company">
-        <div class="min-h-screen bg-slate-50/60">
-            <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
-                <!-- ── Page header ───────────────────────────── -->
-                <div
-                    class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-                >
-                    <div class="space-y-1">
-                        <div
-                            class="flex items-center gap-2 text-xs font-semibold tracking-widest text-slate-400 uppercase"
+        <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
+            <CardHeader class="flex flex-row gap-2">
+                <div class="flex flex-col">
+                    <CardTitle class="flex items-center gap-2">
+                        <span class="font-semibold">Dispatches</span>
+                    </CardTitle>
+                    <CardDescription>
+                        Arrival time is automatically recorded on dispatch
+                        creation.
+                    </CardDescription>
+                </div>
+                <div class="flex flex-1 items-center justify-end gap-2">
+                    <Button
+                        v-if="
+                            props.changeRequests &&
+                            props.changeRequests.length > 0
+                        "
+                        variant="header-actions"
+                        size="icon-text"
+                        class="relative rounded-full"
+                        @click="changeRequestStatusOpen = true"
+                    >
+                        <FileText class="h-3.5 w-3.5" />
+                        <span class="hidden lg:flex">Change Requests</span>
+                        <span
+                            class="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white"
                         >
-                            <Building2 class="h-3.5 w-3.5" />
-                            {{ company.company_code ?? company.company_name }}
-                        </div>
-                        <h1
-                            class="text-2xl font-bold tracking-tight text-slate-900"
-                        >
-                            Dispatching Module
-                        </h1>
-                        <p class="text-sm text-slate-500">
-                            Manage and monitor vehicle dispatches for
-                            <span class="font-medium text-slate-700">{{
-                                company.company_name
-                            }}</span
-                            >.
-                        </p>
-                    </div>
+                            {{ props.changeRequests.length }}
+                        </span>
+                    </Button>
 
-                    <Button v-if="canCreateDispatch" @click="openCreateDialog">
-                        <Plus class="h-4 w-4" />
-                        Add Dispatch
+                    <Button
+                        v-if="canCreateDispatch"
+                        variant="float-primary"
+                        @click="openCreateDialog"
+                    >
+                        <Plus class="h-4 w-4 shrink-0" />
+                        <span>Add Dispatch</span>
                     </Button>
                 </div>
+            </CardHeader>
 
-                <!-- ── Stats ─────────────────────────────────── -->
-                <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
-                    <!-- Total -->
-                    <div
-                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
-                    >
-                        <div class="flex items-start justify-between">
-                            <p
-                                class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                            >
-                                Total Dispatches
-                            </p>
-                            <div
-                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-700"
-                            >
-                                <CalendarClock class="h-4 w-4 text-white" />
-                            </div>
-                        </div>
-                        <p
-                            class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
-                        >
-                            {{ dispatches.total }}
-                        </p>
+            <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
+                    <div class="w-full">
+                        <SearchInput
+                            :route="DispatchController.index().url"
+                            :initial-value="props.filters?.search ?? ''"
+                            placeholder="Search plate, remarks..."
+                            :only="['dispatches', 'filters']"
+                        />
                     </div>
 
-                    <!-- On-site -->
-                    <div
-                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
-                    >
-                        <div class="flex items-start justify-between">
-                            <p
-                                class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                            >
-                                On-site
-                            </p>
-                            <div
-                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600"
-                            >
-                                <Clock3 class="h-4 w-4 text-white" />
-                            </div>
-                        </div>
-                        <p
-                            class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
-                        >
-                            {{ arrivedCount }}
-                        </p>
-                    </div>
+                    <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
+                        <Popover v-model:open="filterOpen">
+                            <PopoverTrigger as-child>
+                                <Button
+                                    variant="header-actions"
+                                    size="icon-text"
+                                    class="rounded-full"
+                                    :class="
+                                        activeFilterCount > 0
+                                            ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light'
+                                            : ''
+                                    "
+                                >
+                                    <RiFilter2Line class="h-3.5 w-3.5" />
+                                    <span class="hidden lg:flex">
+                                        {{
+                                            activeFilterCount > 0
+                                                ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
+                                                : 'Filter'
+                                        }}
+                                    </span>
+                                </Button>
+                            </PopoverTrigger>
 
-                    <!-- Departed -->
-                    <div
-                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
-                    >
-                        <div class="flex items-start justify-between">
-                            <p
-                                class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                            >
-                                Departed
-                            </p>
-                            <div
-                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-700"
-                            >
-                                <LogOut class="h-4 w-4 text-white" />
-                            </div>
-                        </div>
-                        <p
-                            class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
-                        >
-                            {{ departedCount }}
-                        </p>
-                    </div>
+                            <PopoverContent align="end">
+                                <div class="grid gap-y-2">
+                                    <div class="space-y-2">
+                                        <p class="text-sm text-custom-shadow/80">Status</p>
+                                        <Select
+                                            :model-value="statusFilter"
+                                            @update:model-value="(value) => statusFilter = value != null ? String(value) : 'all'"
+                                        >
+                                            <SelectTrigger class="w-full">
+                                                <SelectValue placeholder="All statuses" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all" class="cursor-pointer">All Statuses</SelectItem>
+                                                <SelectItem value="arrived" class="cursor-pointer">Arrived</SelectItem>
+                                                <SelectItem value="departed" class="cursor-pointer">Departed</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
 
-                    <!-- Passengers -->
-                    <div
-                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
-                    >
-                        <div class="flex items-start justify-between">
-                            <p
-                                class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                            >
-                                Passengers
-                            </p>
-                            <div
-                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600"
-                            >
-                                <TrendingUp class="h-4 w-4 text-white" />
-                            </div>
-                        </div>
-                        <p
-                            class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
-                        >
-                            {{ totalPax }}
-                        </p>
+                                    <div class="space-y-2">
+                                        <p class="text-sm text-custom-shadow/80">Date</p>
+                                        <div class="flex gap-1.5">
+                                            <Button
+                                                size="sm"
+                                                variant="header-actions"
+                                                class="h-7 flex-1 rounded-full text-xs"
+                                                :class="selectedDateLabel === 'Today' ? 'bg-custom-secondary/20' : ''"
+                                                @click="setToday"
+                                            >
+                                                Today
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="header-actions"
+                                                class="h-7 flex-1 rounded-full text-xs"
+                                                :class="selectedDateLabel === 'Yesterday' ? 'bg-custom-secondary/20' : ''"
+                                                @click="setYesterday"
+                                            >
+                                                Yesterday
+                                            </Button>
+                                        </div>
+
+                                        <Calendar
+                                            :model-value="selectedDate"
+                                            :max-value="today(localTz)"
+                                            initial-focus
+                                            @update:model-value="(d) => selectedDate = d as CalendarDate | undefined"
+                                        />
+                                    </div>
+
+                                    <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                                    <div class="flex w-full flex-row items-center justify-between">
+                                        <Button
+                                            v-if="hasActiveFilters"
+                                            size="sm"
+                                            variant="destructive"
+                                            @click="clearFilters"
+                                        >
+                                            Clear
+                                        </Button>
+
+                                        <div class="ml-auto flex items-center gap-2">
+                                            <Button
+                                                variant="ghost-outline"
+                                                size="sm"
+                                                @click="filterOpen = false"
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="float-primary"
+                                                @click="applyFilters"
+                                            >
+                                                Apply
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
                     </div>
                 </div>
 
-                <!-- ── Table card ─────────────────────────────── -->
-                <Card>
-                    <CardHeader>
-                        <CardTitle class="flex items-center gap-2">
-                            <!-- <p class="block overflow-hidden text-ellipsis">Dispatches</p> -->
-                            <!-- Dispatch Records -->
-                            Dispatches
-                            <div class="ml-2 flex flex-col items-center">
-                                <hr
-                                    class="h-px w-full border border-rose-500"
-                                />
-                                <div
-                                    class="rounded-xs border-7 border-rose-500"
-                                >
-                                    <div
-                                        class="rounded-xs border-3 border-white"
-                                    ></div>
-                                </div>
-                            </div>
-                        </CardTitle>
-                        <CardDescription class="mt-1">
-                            Arrival time is automatically recorded on dispatch
-                            creation.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div
-                            class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
-                        >
-                            <!-- Change Requests badge button -->
-                            <Button
-                                v-if="
-                                    props.changeRequests &&
-                                    props.changeRequests.length > 0
-                                "
-                                variant="outline"
-                                size="sm"
-                                class="relative gap-1.5 rounded-lg border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                                @click="changeRequestStatusOpen = true"
-                            >
-                                <FileText class="h-3.5 w-3.5" />
-                                Change Requests
-                                <span
-                                    class="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white"
-                                >
-                                    {{ props.changeRequests.length }}
-                                </span>
-                            </Button>
-
-                            <!-- Search -->
-                            <div class="w-full sm:w-72">
-                                <SearchInput
-                                    :route="DispatchController.index().url"
-                                    :initial-value="props.filters?.search ?? ''"
-                                    placeholder="Search plate, remarks…"
-                                    :only="['dispatches', 'filters']"
-                                    class="rounded-lg shadow-sm"
-                                />
-                            </div>
-
-                            <!-- Status filter -->
-                            <Select
-                                :model-value="props.filters?.status ?? 'all'"
-                                @update:model-value="
-                                    (value) => {
-                                        router.get(
-                                            DispatchController.index().url,
-                                            {
-                                                search:
-                                                    props.filters?.search ||
-                                                    undefined,
-                                                status:
-                                                    value === 'all'
-                                                        ? undefined
-                                                        : value,
-                                                date:
-                                                    props.filters?.date ||
-                                                    undefined,
-                                            },
-                                            {
-                                                preserveState: true,
-                                                preserveScroll: true,
-                                                replace: true,
-                                                only: ['dispatches', 'filters'],
-                                            },
-                                        );
-                                    }
-                                "
-                            >
-                                <SelectTrigger class="w-full sm:w-36">
-                                    <SelectValue placeholder="All statuses" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all"
-                                        >All Statuses</SelectItem
-                                    >
-                                    <SelectItem value="arrived"
-                                        >Arrived</SelectItem
-                                    >
-                                    <SelectItem value="departed"
-                                        >Departed</SelectItem
-                                    >
-                                </SelectContent>
-                            </Select>
-
-                            <!-- Date picker -->
-                            <Popover v-model:open="calendarOpen">
-                                <PopoverTrigger as-child>
-                                    <Button
-                                        variant="outline"
-                                        class="w-full justify-start gap-2 rounded-lg border-slate-200 sm:w-44"
-                                        :class="
-                                            selectedDate
-                                                ? 'border-slate-400 bg-slate-50 text-slate-800'
-                                                : 'text-slate-400'
-                                        "
-                                    >
-                                        <CalendarDays
-                                            class="h-4 w-4 shrink-0"
-                                        />
-                                        <span class="truncate text-sm">
-                                            {{
-                                                selectedDateLabel ??
-                                                'Pick a date'
-                                            }}
-                                        </span>
-                                        <span
-                                            v-if="selectedDate"
-                                            class="ml-auto flex h-4 w-4 shrink-0 items-center justify-center rounded-full hover:bg-slate-200"
-                                            @click.stop="clearDateFilter"
-                                        >
-                                            <X class="h-3 w-3" />
-                                        </span>
-                                    </Button>
-                                </PopoverTrigger>
-
-                                <PopoverContent class="w-auto p-0" align="end">
-                                    <div class="border-b px-3 py-2.5">
-                                        <p
-                                            class="text-xs font-semibold tracking-widest text-slate-400 uppercase"
-                                        >
-                                            Filter by Date
-                                        </p>
-                                    </div>
-                                    <div
-                                        class="flex gap-1.5 border-b px-3 py-2"
-                                    >
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            class="h-7 flex-1 text-xs"
-                                            :class="
-                                                selectedDateLabel === 'Today'
-                                                    ? 'border-slate-700 bg-slate-100 text-slate-800'
-                                                    : ''
-                                            "
-                                            @click="setToday"
-                                            >Today</Button
-                                        >
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            class="h-7 flex-1 text-xs"
-                                            :class="
-                                                selectedDateLabel ===
-                                                'Yesterday'
-                                                    ? 'border-slate-700 bg-slate-100 text-slate-800'
-                                                    : ''
-                                            "
-                                            @click="setYesterday"
-                                            >Yesterday</Button
-                                        >
-                                        <Button
-                                            v-if="selectedDate"
-                                            size="sm"
-                                            variant="ghost"
-                                            class="h-7 flex-1 text-xs text-slate-400"
-                                            @click="clearDateFilter"
-                                            >Clear</Button
-                                        >
-                                    </div>
-                                    <Calendar
-                                        :model-value="selectedDate"
-                                        :max-value="today(localTz)"
-                                        initial-focus
-                                        @update:model-value="
-                                            (d) =>
-                                                applyDateFilter(
-                                                    d as
-                                                        | CalendarDate
-                                                        | undefined,
-                                                )
-                                        "
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-                    </CardContent>
-
-                    <!-- Active date chip -->
-                    <div
-                        v-if="selectedDate"
-                        class="border-b border-slate-100 px-5 py-2.5"
-                    >
-                        <div
-                            class="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600"
-                        >
-                            <CalendarDays class="h-3 w-3" />
-                            Showing dispatches for {{ selectedDateLabel }}
-                            <button
-                                class="ml-1 rounded-full p-0.5 hover:bg-slate-200"
-                                @click="clearDateFilter"
-                            >
-                                <X class="h-2.5 w-2.5" />
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Table -->
-                    <div class="overflow-x-auto">
+                <!-- Table -->
+                <Card
+                    :class="[
+                        'flex min-h-0 max-h-fit flex-1 flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
+                        dispatches.data.length === 0 ? 'border-dashed' : 'border-solid',
+                    ]"
+                >
+                    <div class="no-scrollbar min-h-0 flex-1 overflow-auto">
                         <Table>
-                            <TableHeader>
-                                <TableRow
-                                    class="border-slate-100 bg-slate-50/70 hover:bg-slate-50/70"
-                                >
+                            <TableHeader v-if="dispatches.data.length > 0" class="border-b border-custom-bg-dark dark:border-custom-bg-light">
+                                <TableRow>
                                     <TableHead
-                                        class="pl-5 text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        class="pl-5 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Vehicle</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Driver</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Gate / Bay</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Pax</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Status</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Arrived</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Departed</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Dispatcher</TableHead
                                     >
                                     <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Remarks</TableHead
                                     >
                                     <TableHead
-                                        class="pr-5 text-right text-[11px] font-bold tracking-widest text-slate-400 uppercase"
+                                        class="pr-5 text-right text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Actions</TableHead
                                     >
                                 </TableRow>
@@ -1184,13 +1021,12 @@ watch(confirmDepartOpen, (open) => {
                                         <div
                                             class="flex flex-col items-center gap-3"
                                         >
-                                            <div
-                                                class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100"
-                                            >
-                                                <CalendarDays
-                                                    class="h-6 w-6 text-slate-400"
-                                                />
-                                            </div>
+                                            <img
+                                                :src="emptyRafikiUrl"
+                                                alt=""
+                                                class="w-32 object-contain opacity-90"
+                                                aria-hidden="true"
+                                            />
                                             <div>
                                                 <p
                                                     class="text-sm font-semibold text-slate-600"
@@ -1218,7 +1054,7 @@ watch(confirmDepartOpen, (open) => {
                                 <TableRow
                                     v-for="dispatch in dispatches.data"
                                     :key="dispatch.id"
-                                    class="group border-slate-100 transition-colors hover:bg-slate-50/80"
+                                    class="group border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light"
                                     :class="
                                         dispatch.status === 'departed'
                                             ? 'opacity-60'
@@ -1373,9 +1209,9 @@ watch(confirmDepartOpen, (open) => {
                                     <TableCell>
                                         <Button
                                             v-if="dispatch.remarks"
-                                            variant="outline"
+                                            variant="header-actions"
                                             size="sm"
-                                            class="h-7 rounded-lg border-slate-200 text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-800"
+                                            class="h-7 rounded-full text-xs"
                                             @click="openRemarksDialog(dispatch)"
                                         >
                                             <FileText
@@ -1395,9 +1231,8 @@ watch(confirmDepartOpen, (open) => {
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    class="h-8 w-8 rounded-lg text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-slate-100 hover:text-slate-700"
+                                                    variant="table-more"
+                                                    size="icon-more"
                                                 >
                                                     <MoreHorizontal
                                                         class="h-4 w-4"
@@ -1407,10 +1242,10 @@ watch(confirmDepartOpen, (open) => {
 
                                             <DropdownMenuContent
                                                 align="end"
-                                                class="w-52 rounded-xl border-slate-200 shadow-lg"
+                                                class="w-fit rounded-lg shadow-lg"
                                             >
                                                 <DropdownMenuLabel
-                                                    class="text-xs font-semibold tracking-widest text-slate-400 uppercase"
+                                                    class="text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                                 >
                                                     Actions
                                                 </DropdownMenuLabel>
@@ -1521,24 +1356,24 @@ watch(confirmDepartOpen, (open) => {
                             </TableBody>
                         </Table>
                     </div>
+                    </Card>
 
-                    <!-- Pagination -->
-                    <div
-                        v-if="dispatches.last_page > 1 || dispatches.total > 0"
-                        class="border-t border-slate-100 px-5 py-3"
-                    >
-                        <InertiaPagination
-                            :links="dispatches.links"
-                            :meta="{
-                                from: dispatches.from,
-                                to: dispatches.to,
-                                total: dispatches.total,
-                            }"
-                        />
-                    </div>
-                </Card>
-            </div>
-        </div>
+                <!-- Pagination -->
+                <div
+                    v-if="dispatches.last_page > 1 || dispatches.total > 0"
+                    class="border-t border-custom-bg-dark px-5 py-3 dark:border-custom-bg-light"
+                >
+                    <InertiaPagination
+                        :links="dispatches.links"
+                        :meta="{
+                            from: dispatches.from,
+                            to: dispatches.to,
+                            total: dispatches.total,
+                        }"
+                    />
+                </div>
+            </CardContent>
+        </Card>
 
         <!-- ══════════════════════════════════════════════
              DIALOGS

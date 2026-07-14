@@ -15,6 +15,7 @@ class Gate extends Model
         'gate_name',
         'status',
         'bays',
+        'location',
         'created_by',
         'updated_by',
     ];

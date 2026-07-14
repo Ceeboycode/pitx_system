@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, reactive } from 'vue';
+import { computed, reactive, ref } from 'vue';
 
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
+import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import ExternalLayout from '@/layouts/ExternalLayout.vue';
 import { can } from '@/lib/can';
 
@@ -24,6 +25,11 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -31,24 +37,11 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-
-import {
-    Building2,
-    Eye,
-    MoreHorizontal,
-    Plus,
-    Power,
-    Radio,
-    TruckIcon,
-    Users,
-} from 'lucide-vue-next';
+    RiAddLine as Plus,
+    RiEyeLine as Eye,
+    RiFilter2Line,
+    RiMore2Line as MoreHorizontal,
+} from 'vue-remix-icons';
 
 /* ======================================================
    Types
@@ -119,6 +112,9 @@ const props = defineProps<{
 }>();
 
 const canCreateEmployee = can('external_users.create');
+const roleFilter = ref<string>(props.filters?.role ?? 'all');
+const statusFilter = ref<string>(props.filters?.status ?? 'all');
+const filterOpen = ref(false);
 
 /* ======================================================
    Helpers
@@ -183,26 +179,16 @@ function statusDot(status?: string | null) {
     return 'bg-slate-400';
 }
 
-/* ======================================================
-   Computed stats
-====================================================== */
-const totalEmployees = computed(() => props.users.total ?? 0);
-
-const totalDrivers = computed(
-    () =>
-        props.users.data.filter((e) => roleName(e).toLowerCase() === 'driver')
-            .length,
+const activeFilterCount = computed(
+    () => Number(roleFilter.value !== 'all') + Number(statusFilter.value !== 'all'),
 );
 
-const totalDispatchers = computed(
-    () =>
-        props.users.data.filter(
-            (e) => roleName(e).toLowerCase() === 'dispatcher',
-        ).length,
-);
+const hasActiveFilters = computed(() => activeFilterCount.value > 0);
 
-const activeCount = computed(
-    () => props.users.data.filter((e) => e.status === 'active').length,
+const employeeRoles = computed(() =>
+    props.roles.filter(
+        (role) => !['commuter', 'commuters'].includes(role.toLowerCase()),
+    ),
 );
 
 /* ======================================================
@@ -219,6 +205,31 @@ const dialogState = reactive({
 ====================================================== */
 function toggleStatusLabel(status?: string | null) {
     return status === 'active' ? 'Deactivate' : 'Activate';
+}
+
+function applyFilters() {
+    filterOpen.value = false;
+    router.get(
+        '/employee-users',
+        {
+            search: props.filters?.search || undefined,
+            role: roleFilter.value === 'all' ? undefined : roleFilter.value,
+            status:
+                statusFilter.value === 'all' ? undefined : statusFilter.value,
+        },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ['users', 'filters'],
+        },
+    );
+}
+
+function clearFilters() {
+    roleFilter.value = 'all';
+    statusFilter.value = 'all';
+    applyFilters();
 }
 
 function openStatusDialog(employee: EmployeeUser) {
@@ -277,348 +288,183 @@ function openDeleteDialog(employee: EmployeeUser) {
     <Head title="Employee Accounts" />
 
     <ExternalLayout :company="company" :user="user">
-        <div class="min-h-screen bg-slate-50/60">
-            <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
-                <!-- ── Page header ───────────────────────────── -->
-                <div
-                    class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-                >
-                    <div class="space-y-1">
-                        <div
-                            class="flex items-center gap-2 text-xs font-semibold tracking-widest text-slate-400 uppercase"
-                        >
-                            <Building2 class="h-3.5 w-3.5" />
-                            {{ company.company_code ?? company.company_name }}
-                        </div>
-                        <h1
-                            class="text-2xl font-bold tracking-tight text-slate-900"
-                        >
-                            Employee Accounts
-                        </h1>
-                        <p class="text-sm text-slate-500">
-                            Manage drivers and dispatchers for
-                            <span class="font-medium text-slate-700">{{
-                                company.company_name
-                            }}</span
-                            >.
-                        </p>
-                    </div>
+        <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
+            <CardHeader class="flex flex-row gap-2">
+                <div class="flex flex-col">
+                    <CardTitle class="flex items-center gap-2">
+                        <span class="font-semibold">Employee Accounts</span>
+                    </CardTitle>
+                    <CardDescription>
+                        Search by name, username, email, or phone number.
+                    </CardDescription>
+                </div>
 
+                <div class="flex flex-1 items-center justify-end gap-2">
                     <Button
                         v-if="canCreateEmployee"
                         as-child
-                        class="shrink-0 self-start"
+                        variant="float-primary"
                     >
                         <Link href="/employee-users/create">
-                            <Plus class="h-4 w-4" />
-                            Add Employee
+                            <Plus class="h-4 w-4 shrink-0" />
+                            <span>Add Employee</span>
                         </Link>
                     </Button>
                 </div>
+            </CardHeader>
 
-                <!-- ── Stats ─────────────────────────────────── -->
-                <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
-                    <!-- Total -->
-                    <div
-                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
-                    >
-                        <div class="flex items-start justify-between">
-                            <p
-                                class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                            >
-                                Total Employees
-                            </p>
-                            <div
-                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-700"
-                            >
-                                <Users class="h-4 w-4 text-white" />
-                            </div>
-                        </div>
-                        <p
-                            class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
-                        >
-                            {{ totalEmployees }}
-                        </p>
-                    </div>
-
-                    <!-- Drivers -->
-                    <div
-                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
-                    >
-                        <div class="flex items-start justify-between">
-                            <p
-                                class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                            >
-                                Drivers
-                            </p>
-                            <div
-                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-600"
-                            >
-                                <TruckIcon class="h-4 w-4 text-white" />
-                            </div>
-                        </div>
-                        <p
-                            class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
-                        >
-                            {{ totalDrivers }}
-                        </p>
-                    </div>
-
-                    <!-- Dispatchers -->
-                    <div
-                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
-                    >
-                        <div class="flex items-start justify-between">
-                            <p
-                                class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                            >
-                                Dispatchers
-                            </p>
-                            <div
-                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600"
-                            >
-                                <Radio class="h-4 w-4 text-white" />
-                            </div>
-                        </div>
-                        <p
-                            class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
-                        >
-                            {{ totalDispatchers }}
-                        </p>
-                    </div>
-
-                    <!-- Active -->
-                    <div
-                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
-                    >
-                        <div class="flex items-start justify-between">
-                            <p
-                                class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                            >
-                                Active
-                            </p>
-                            <div
-                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600"
-                            >
-                                <Power class="h-4 w-4 text-white" />
-                            </div>
-                        </div>
-                        <p
-                            class="mt-3 text-3xl font-bold text-slate-900 tabular-nums"
-                        >
-                            {{ activeCount }}
-                        </p>
-                    </div>
-                </div>
-
-                <!-- ── Table card ─────────────────────────────── -->
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Employee List</CardTitle>
-                        <CardDescription class="mt-1">
-                            Search by name, username, email, or phone number.
-                        </CardDescription>
-                    </CardHeader>
-
-                    <CardContent>
+                    <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
                         <div
-                            class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
+                            class="flex flex-row gap-2 lg:items-center lg:justify-between"
                         >
                             <!-- Search -->
-                            <div class="w-full sm:w-72">
+                            <div class="w-full">
                                 <SearchInput
                                     route="/employee-users"
                                     :initial-value="filters.search"
                                     placeholder="Search employees…"
                                     :only="['users', 'filters']"
-                                    class="rounded-lg shadow-sm"
                                 />
                             </div>
 
-                            <!-- Role filter -->
-                            <Select
-                                :model-value="props.filters?.role ?? 'all'"
-                                @update:model-value="
-                                    (value) => {
-                                        router.get(
-                                            '/employee-users',
-                                            {
-                                                search:
-                                                    props.filters?.search ||
-                                                    undefined,
-                                                role:
-                                                    value === 'all'
-                                                        ? undefined
-                                                        : value,
-                                                status:
-                                                    props.filters?.status ||
-                                                    undefined,
-                                            },
-                                            {
-                                                preserveState: true,
-                                                preserveScroll: true,
-                                                replace: true,
-                                                only: ['users', 'filters'],
-                                            },
-                                        );
-                                    }
-                                "
-                            >
-                                <SelectTrigger class="w-full sm:w-36">
-                                    <SelectValue placeholder="All roles" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all"
-                                        >All Roles</SelectItem
-                                    >
-                                    <SelectItem
-                                        v-for="role in props.roles"
-                                        :key="role"
-                                        :value="role"
-                                    >
-                                        {{ humanize(role) }}
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-
-                            <!-- Status filter -->
-                            <Select
-                                :model-value="props.filters?.status ?? 'all'"
-                                @update:model-value="
-                                    (value) => {
-                                        router.get(
-                                            '/employee-users',
-                                            {
-                                                search:
-                                                    props.filters?.search ||
-                                                    undefined,
-                                                role:
-                                                    props.filters?.role ||
-                                                    undefined,
-                                                status:
-                                                    value === 'all'
-                                                        ? undefined
-                                                        : value,
-                                            },
-                                            {
-                                                preserveState: true,
-                                                preserveScroll: true,
-                                                replace: true,
-                                                only: ['users', 'filters'],
-                                            },
-                                        );
-                                    }
-                                "
-                            >
-                                <SelectTrigger class="w-full sm:w-36">
-                                    <SelectValue placeholder="All statuses" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all"
-                                        >All Statuses</SelectItem
-                                    >
-                                    <SelectItem
-                                        v-for="status in props.statuses"
-                                        :key="status"
-                                        :value="status"
-                                    >
-                                        {{ humanize(status) }}
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </CardContent>
-
-                    <!-- Table -->
-                    <div class="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow
-                                    class="border-slate-100 bg-slate-50/70 hover:bg-slate-50/70"
-                                >
-                                    <TableHead
-                                        class="pl-5 text-[11px] font-bold tracking-widest text-slate-400 uppercase"
-                                    >
-                                        Employee
-                                    </TableHead>
-                                    <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
-                                    >
-                                        Username
-                                    </TableHead>
-                                    <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
-                                    >
-                                        Role
-                                    </TableHead>
-                                    <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
-                                    >
-                                        Status
-                                    </TableHead>
-                                    <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
-                                    >
-                                        Phone
-                                    </TableHead>
-                                    <TableHead
-                                        class="text-[11px] font-bold tracking-widest text-slate-400 uppercase"
-                                    >
-                                        Created
-                                    </TableHead>
-                                    <TableHead
-                                        class="pr-5 text-right text-[11px] font-bold tracking-widest text-slate-400 uppercase"
-                                    >
-                                        Actions
-                                    </TableHead>
-                                </TableRow>
-                            </TableHeader>
-
-                            <TableBody>
-                                <!-- Empty state -->
-                                <TableRow
-                                    v-if="users.data.length === 0"
-                                    class="hover:bg-transparent"
-                                >
-                                    <TableCell
-                                        colspan="7"
-                                        class="py-20 text-center"
-                                    >
-                                        <div
-                                            class="flex flex-col items-center gap-3"
+                            <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
+                                <Popover v-model:open="filterOpen">
+                                    <PopoverTrigger as-child>
+                                        <Button
+                                            variant="header-actions"
+                                            size="icon-text"
+                                            class="rounded-full"
+                                            :class="
+                                                activeFilterCount > 0
+                                                    ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light'
+                                                    : ''
+                                            "
                                         >
-                                            <div
-                                                class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100"
-                                            >
-                                                <Users
-                                                    class="h-6 w-6 text-slate-400"
-                                                />
+                                            <RiFilter2Line class="h-3.5 w-3.5" />
+                                            <span class="hidden lg:flex">
+                                                {{
+                                                    activeFilterCount > 0
+                                                        ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
+                                                        : 'Filter'
+                                                }}
+                                            </span>
+                                        </Button>
+                                    </PopoverTrigger>
+
+                                    <PopoverContent align="end">
+                                        <div class="grid gap-y-2">
+                                            <div class="space-y-2">
+                                                <p class="text-sm text-custom-shadow/80">Role</p>
+                                                <Select
+                                                    :model-value="roleFilter"
+                                                    @update:model-value="(value) => roleFilter = value != null ? String(value) : 'all'"
+                                                >
+                                                    <SelectTrigger class="w-full">
+                                                        <SelectValue placeholder="All roles" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all" class="cursor-pointer">All Roles</SelectItem>
+                                                        <SelectItem
+                                                            v-for="role in employeeRoles"
+                                                            :key="role"
+                                                            :value="role"
+                                                            class="cursor-pointer"
+                                                        >
+                                                            {{ humanize(role) }}
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
-                                            <div>
-                                                <p
-                                                    class="text-sm font-semibold text-slate-600"
+
+                                            <div class="space-y-2">
+                                                <p class="text-sm text-custom-shadow/80">Status</p>
+                                                <Select
+                                                    :model-value="statusFilter"
+                                                    @update:model-value="(value) => statusFilter = value != null ? String(value) : 'all'"
                                                 >
-                                                    No employees found
-                                                </p>
-                                                <p
-                                                    class="mt-0.5 text-xs text-slate-400"
+                                                    <SelectTrigger class="w-full">
+                                                        <SelectValue placeholder="All statuses" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all" class="cursor-pointer">All Statuses</SelectItem>
+                                                        <SelectItem
+                                                            v-for="status in props.statuses"
+                                                            :key="status"
+                                                            :value="status"
+                                                            class="cursor-pointer"
+                                                        >
+                                                            {{ humanize(status) }}
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                                            <div class="flex w-full flex-row items-center justify-between">
+                                                <Button
+                                                    v-if="hasActiveFilters"
+                                                    size="sm"
+                                                    variant="destructive"
+                                                    @click="clearFilters"
                                                 >
-                                                    Try adjusting your search or
-                                                    filters.
-                                                </p>
+                                                    Clear
+                                                </Button>
+
+                                                <div class="ml-auto flex items-center gap-2">
+                                                    <Button
+                                                        variant="ghost-outline"
+                                                        size="sm"
+                                                        @click="filterOpen = false"
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="float-primary"
+                                                        @click="applyFilters"
+                                                    >
+                                                        Apply
+                                                    </Button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </TableCell>
-                                </TableRow>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        </div>
+                    <Card
+                        :class="[
+                            'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
+                            users.data.length === 0 ? 'border-dashed' : 'border-solid',
+                        ]"
+                    >
+                    <div v-if="users.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+                        <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
+                            <div class="grid grid-cols-7 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
+                                <div class="col-span-1 flex h-10 items-center justify-start px-0 pl-5 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Employee</div>
+                                <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Username</div>
+                                <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Role</div>
+                                <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Status</div>
+                                <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Phone</div>
+                                <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Created</div>
+                                <div class="col-span-1 flex h-10 items-center justify-end px-0 pr-5 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Actions</div>
+                            </div>
+                        </div>
 
-                                <TableRow
-                                    v-for="employee in users.data"
-                                    :key="employee.id"
-                                    class="group border-slate-100 transition-colors hover:bg-slate-50/80"
+                        <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+                            <template
+                                v-for="(employee, index) in users.data"
+                                :key="employee.id"
+                            >
+                                <div
+                                    :class="[
+                                        'grid grid-cols-7 items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                        index === users.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                    ]"
                                 >
                                     <!-- Employee info (moved first, more prominent) -->
-                                    <TableCell class="pl-5">
-                                        <div class="flex items-center gap-2.5">
+                                    <div class="col-span-1 flex items-center justify-start gap-2.5 py-1.5 pl-5">
                                             <img
                                                 v-if="employee.avatar"
                                                 :src="employee.avatar"
@@ -635,32 +481,31 @@ function openDeleteDialog(employee: EmployeeUser) {
                                             >
                                                 {{ employee.name.charAt(0) }}
                                             </div>
-                                            <div>
+                                             <div class="min-w-0">
                                                 <p
-                                                    class="text-sm font-semibold text-slate-800"
+                                                    class="truncate text-sm font-semibold text-custom-shadow"
                                                 >
                                                     {{ employee.name }}
                                                 </p>
                                                 <p
-                                                    class="text-xs text-slate-400"
+                                                    class="truncate text-xs text-custom-shadow/60"
                                                 >
                                                     {{ employee.email || '—' }}
                                                 </p>
                                             </div>
-                                        </div>
-                                    </TableCell>
+                                    </div>
 
                                     <!-- Username -->
-                                    <TableCell>
+                                    <div class="col-span-1 flex justify-start py-1.5">
                                         <span
                                             class="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold tracking-wide text-slate-700"
                                         >
                                             {{ employee.username }}
                                         </span>
-                                    </TableCell>
+                                    </div>
 
                                     <!-- Role -->
-                                    <TableCell>
+                                    <div class="col-span-1 flex justify-start py-1.5">
                                         <span
                                             :class="[
                                                 'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium',
@@ -669,10 +514,10 @@ function openDeleteDialog(employee: EmployeeUser) {
                                         >
                                             {{ humanize(roleName(employee)) }}
                                         </span>
-                                    </TableCell>
+                                    </div>
 
                                     <!-- Status -->
-                                    <TableCell>
+                                    <div class="col-span-1 flex justify-start py-1.5">
                                         <span
                                             :class="[
                                                 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
@@ -687,28 +532,25 @@ function openDeleteDialog(employee: EmployeeUser) {
                                             />
                                             {{ humanize(employee.status) }}
                                         </span>
-                                    </TableCell>
+                                    </div>
 
                                     <!-- Phone -->
-                                    <TableCell
-                                        class="text-sm text-slate-500 tabular-nums"
-                                    >
+                                    <div class="col-span-1 flex justify-start py-1.5 text-sm tabular-nums text-custom-shadow/70">
                                         {{ employee.phone_number || '—' }}
-                                    </TableCell>
+                                    </div>
 
                                     <!-- Created -->
-                                    <TableCell class="text-sm text-slate-400">
+                                    <div class="col-span-1 flex justify-start py-1.5 text-sm text-custom-shadow/60">
                                         {{ formatDate(employee.created_at) }}
-                                    </TableCell>
+                                    </div>
 
                                     <!-- Actions -->
-                                    <TableCell class="pr-5 text-right">
+                                    <div class="col-span-1 flex justify-end py-1.5 pr-5 text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    class="h-8 w-8 rounded-lg text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-slate-100 hover:text-slate-700"
+                                                    variant="table-more"
+                                                    size="icon-more"
                                                 >
                                                     <MoreHorizontal
                                                         class="h-4 w-4"
@@ -718,10 +560,10 @@ function openDeleteDialog(employee: EmployeeUser) {
 
                                             <DropdownMenuContent
                                                 align="end"
-                                                class="w-52 rounded-xl border-slate-200 shadow-lg"
+                                                class="w-fit rounded-lg shadow-lg"
                                             >
                                                 <DropdownMenuLabel
-                                                    class="text-xs font-semibold tracking-widest text-slate-400 uppercase"
+                                                    class="text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                                 >
                                                     Actions
                                                 </DropdownMenuLabel>
@@ -746,16 +588,34 @@ function openDeleteDialog(employee: EmployeeUser) {
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
                     </div>
+
+                    <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                        <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                            <img
+                                :src="emptyRafikiUrl"
+                                alt=""
+                                class="w-1/3 object-contain opacity-90"
+                                aria-hidden="true"
+                            />
+                            <div class="space-y-1">
+                                <p class="text-custom-shadow text-base font-semibold">No employees found</p>
+                                <p class="text-custom-shadow/80 text-sm">
+                                    {{ activeFilterCount > 0 ? 'Try adjusting or clearing your filters.' : 'Try adjusting your search or add a new employee.' }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    </Card>
 
                     <!-- Pagination -->
                     <div
                         v-if="users.last_page > 1 || users.total > 0"
-                        class="border-t border-slate-100 px-5 py-3"
+                        class="border-t border-custom-bg-dark px-5 py-3 dark:border-custom-bg-light"
                     >
                         <InertiaPagination
                             :links="users.links"
@@ -766,8 +626,7 @@ function openDeleteDialog(employee: EmployeeUser) {
                             }"
                         />
                     </div>
-                </Card>
-            </div>
-        </div>
+            </CardContent>
+        </Card>
     </ExternalLayout>
 </template>

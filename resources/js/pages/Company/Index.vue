@@ -1,16 +1,16 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import CreateCompanyDialog from '@/components/company/CreateCompanyDialog.vue';
 import EditCompanyDialog from '@/components/company/EditCompanyDialog.vue';
 import ImportCompanyDialog from '@/components/company/ImportCompanyDialog.vue';
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
+import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import { can } from '@/lib/can';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardHeader,
@@ -25,26 +25,17 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index as companyProfileChangeRequestsIndex } from '@/routes/company-profile-change-requests';
 import { index, show, trash } from '@/routes/companies';
@@ -52,30 +43,22 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 
 import {
-    Archive,
-    ArrowDown,
-    ArrowUp,
-    ArrowUpDown,
-    Building2,
-    ChevronRight,
-    ClipboardList,
-    Download,
-    FileSearch,
-    Filter,
-    Loader2,
-    MailCheck,
-    MailX,
-    MoreHorizontal,
-    Upload,
-    X,
-    Ellipsis,
-    Mail,
-    Phone,
-} from 'lucide-vue-next';
+    RiArchive2Line,
+    RiArrowDownSLine,
+    RiArrowUpDownLine,
+    RiArrowUpSLine,
+    RiClipboardLine,
+    RiDownloadLine,
+    RiFileSearchLine,
+    RiFilter2Line,
+    RiLoaderLine,
+    RiMailLine,
+    RiMore2Line,
+    RiPhoneLine,
+    RiUploadLine,
+} from 'vue-remix-icons';
 
 import { computed, ref } from 'vue';
-
-/* ── Types ──────────────────────────────────────────────────────── */
 
 type CompanyStatus =
     | 'draft'
@@ -105,13 +88,9 @@ type Company = {
     created_at_human?: string | null;
 };
 
-/* ── Breadcrumbs ─────────────────────────────────────────────────── */
-
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Companies', href: index().url },
 ];
-
-/* ── Props ───────────────────────────────────────────────────────── */
 
 const props = defineProps<{
     companies: {
@@ -129,13 +108,9 @@ const props = defineProps<{
     };
 }>();
 
-/* ── Permissions ─────────────────────────────────────────────────── */
-
 const canViewArchived = computed(() => can('companies.viewAny'));
 const canViewCompany = computed(() => can('companies.view'));
 const canViewProfileChangeRequests = computed(() => can('companies.viewAny'));
-
-/* ── Dialog state ────────────────────────────────────────────────── */
 
 const createOpen = ref(false);
 const editOpen = ref(false);
@@ -146,8 +121,6 @@ function openEdit(company: Company) {
     selectedCompany.value = company;
     editOpen.value = true;
 }
-
-/* ── Export ──────────────────────────────────────────────────────── */
 
 const exporting = ref(false);
 
@@ -168,17 +141,22 @@ function onImportDone() {
     router.reload({ only: ['companies'] });
 }
 
-/* ── Filter & Sort state ─────────────────────────────────────────── */
-
 const statusFilter = ref<string>(props.filters.status ?? 'all');
 const sortBy = ref<SortField>(props.filters.sort_by ?? null);
 const sortDir = ref<SortDir>(props.filters.sort_dir ?? 'asc');
+const filterOpen = ref(false);
 
 const hasActiveFilters = computed(
     () =>
         (statusFilter.value && statusFilter.value !== 'all') ||
         sortBy.value !== null,
 );
+
+const activeFilterCount = computed(() => {
+    let count = 0;
+    if (statusFilter.value && statusFilter.value !== 'all') count++;
+    return count;
+});
 
 function applyFilters(overrides: Record<string, string | null> = {}) {
     router.get(
@@ -197,11 +175,12 @@ function applyFilters(overrides: Record<string, string | null> = {}) {
             only: ['companies', 'filters', 'flash'],
         },
     );
+
+    filterOpen.value = false;
 }
 
 function onStatusChange(val: string) {
     statusFilter.value = val;
-    applyFilters();
 }
 
 function toggleSort(field: SortField) {
@@ -225,17 +204,15 @@ function clearFilters() {
     });
 }
 
-/* ── Sort icon helper ────────────────────────────────────────────── */
-
 function sortIcon(field: SortField) {
-    if (sortBy.value !== field) return ArrowUpDown;
-    return sortDir.value === 'asc' ? ArrowUp : ArrowDown;
+    if (sortBy.value !== field) return RiArrowUpDownLine;
+    return sortDir.value === 'asc' ? RiArrowUpSLine : RiArrowDownSLine;
 }
 
 function sortIconClass(field: SortField) {
     return sortBy.value === field
-        ? 'text-blue-600'
-        : 'text-muted-foreground/40';
+        ? 'text-custom-primary'
+        : 'text-custom-shadow/40';
 }
 
 /* ── Status helpers ──────────────────────────────────────────────── */
@@ -296,479 +273,381 @@ function hasVerifiedEmail(company: Company): boolean {
     <Head title="Companies" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
-        >
-            <Card>
-                <CardHeader>
-                    <CardTitle class="flex items-center gap-2">
-                        Companies
-                        <div class="ml-2 flex flex-1 items-center">
-                            <hr class="h-px w-full border border-rose-500 " />
-                            <div class="border-7 border-rose-500 rounded-xs">
-                                <div class="border-3 border-white rounded-xs"></div>
-                            </div>
+        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+            <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
+                <CardHeader class="flex flex-row gap-2">
+                    <div class="flex flex-col">
+                        <CardTitle class="flex items-center gap-2">
+                            <span class="font-semibold">Companies</span>
+                        </CardTitle>
+                        <CardDescription>
+                            Manage company records, review submissions, and monitor verification status.
+                        </CardDescription>
+                    </div>
+                    <div class="flex flex-1 justify-end gap-2">
+                        <div class="lg:flex items-center gap-2 sm:justify-end">
+                            <!-- <Button
+                                variant="float-primary"
+                                class="hidden lg:flex"
+                                @click="importOpen = true"
+                            >
+                                <RiDownloadLine class="h-4 w-4 shrink-0" />
+                                <span>Import</span>
+                            </Button> -->
+
+                            <!-- <Button
+                                variant="float"
+                                class="hidden lg:flex"
+                                :disabled="exporting"
+                                @click="triggerExport"
+                            >
+                                <RiLoaderLine
+                                    v-if="exporting"
+                                    class="h-4 w-4 shrink-0 animate-spin"
+                                />
+                                <RiUploadLine
+                                    v-else
+                                    class="h-4 w-4 shrink-0"
+                                />
+                                <span>{{ exporting ? 'Exporting...' : 'Export' }}</span>
+                            </Button> -->
+
+                            <DropdownMenu
+                                v-if="canViewProfileChangeRequests || canViewArchived"
+                                class="w-fit"
+                            >
+                                <DropdownMenuTrigger as-child class="m-0">
+                                    <div class="inline-flex">
+                                        <Button
+                                            variant="header-actions"
+                                            class="text-custom-shadow"
+                                            size="icon"
+                                            aria-label="Open company actions"
+                                        >
+                                            <RiMore2Line class="h-4 w-4 shrink-0" />
+                                        </Button>
+                                    </div>
+                                </DropdownMenuTrigger>
+
+                                <DropdownMenuContent align="end" class="w-fit">
+                                    <DropdownMenuItem
+                                        as-child
+                                        class="cursor-pointer lg:hidden"
+                                        @click="importOpen = true"
+                                    >
+                                        <button type="button" class="flex w-full items-center">
+                                            <RiDownloadLine class="h-4 w-4" />
+                                            Import
+                                        </button>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        as-child
+                                        class="cursor-pointer lg:hidden"
+                                        @click="triggerExport"
+                                    >
+                                        <button type="button" class="flex w-full items-center">
+                                            <RiUploadLine class="h-4 w-4" />
+                                            Export
+                                        </button>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        v-if="canViewProfileChangeRequests"
+                                        as-child
+                                        class="cursor-pointer"
+                                    >
+                                        <Link
+                                            :href="companyProfileChangeRequestsIndex().url"
+                                            class="flex items-center"
+                                        >
+                                            <RiClipboardLine class="h-4 w-4" />
+                                            Change Requests
+                                        </Link>
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuItem
+                                        v-if="canViewArchived"
+                                        as-child
+                                        class="cursor-pointer"
+                                    >
+                                        <Link :href="trash().url" class="flex items-center">
+                                            <RiArchive2Line class="h-4 w-4" />
+                                            Archives
+                                        </Link>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
-                    </CardTitle>
-                    <CardDescription class="mt-1">
-                        Manage company records, review submissions, and
-                        monitor verification status.
-                    </CardDescription>
+                    </div>
                 </CardHeader>
 
-                <CardContent class="space-y-4">
-                    <div
-                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                        <div class="w-50/100">
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                    <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
+                        <div class="w-full">
                             <SearchInput
                                 :route="index().url"
                                 :initial-value="props.filters.search"
                                 placeholder="Search companies…"
                                 :only="['companies', 'filters', 'flash']"
                                 :debounce="350"
-                                class="shadow-sm rounded-lg "
                             />
                         </div>
-                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-50/100">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <Select
-                                    :model-value="statusFilter"
-                                    @update:model-value="onStatusChange"
-                                >
-                                    <SelectTrigger
-                                        class="h-9 w-fit cursor-pointer rounded-full border-0 bg-custom-bg px-3 text-custom-shadow shadow-none transition-all hover:-translate-y-0.5 hover:bg-custom-secondary/20 hover:shadow-md dark:bg-custom-bg-light dark:shadow-none dark:hover:bg-custom-secondary/20 dark:hover:inset-shadow-sm dark:hover:inset-shadow-white/5"
-                                    >
-                                        <Filter class="h-3.5 w-3.5" />
-                                        <SelectValue placeholder="All Statuses" class="justify-start flex"/>
-                                    </SelectTrigger>
-                                    <SelectContent class="rounded-md shadow-lg">
-                                        <SelectItem value="all" class="cursor-pointer text-sm hover:bg-custom-secondary/20"
-                                            >All Statuses</SelectItem
-                                        >
-                                        <SelectItem value="draft" class="cursor-pointer text-sm hover:bg-custom-secondary/20"
-                                            >Draft</SelectItem
-                                        >
-                                        <SelectItem
-                                            value="docs_completed"
-                                            class="cursor-pointer text-sm hover:bg-custom-secondary/20"
-                                            >Docs Completed</SelectItem
-                                        >
-                                        <SelectItem
-                                            value="for_verification"
-                                            class="cursor-pointer text-sm hover:bg-custom-secondary/20"
-                                            >For Verification</SelectItem
-                                        >
-                                        <SelectItem value="verified" class="cursor-pointer text-sm hover:bg-custom-secondary/20"
-                                            >Verified</SelectItem
-                                        >
-                                        <SelectItem
-                                            value="needs_revision"
-                                            class="cursor-pointer text-sm hover:bg-custom-secondary/20"
-                                            >Needs Revision</SelectItem
-                                        >
-                                        <SelectItem value="rejected" class="cursor-pointer text-sm hover:bg-custom-secondary/20"
-                                            >Rejected</SelectItem
-                                        >
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-auto">
-                                <div
-                                    class="inline-flex gap-2"
-                                >
+
+                        <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
+                            <Popover v-model:open="filterOpen">
+                                <PopoverTrigger as-child>
                                     <Button
-                                        variant="float-primary"
+                                        variant="header-actions"
                                         size="icon-text"
-                                        @click="importOpen = true"
+                                        class="rounded-full"
+                                        :class="
+                                            activeFilterCount > 0
+                                                ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-300 dark:hover:text-custom-shadow'
+                                                : ''
+                                        "
                                     >
-                                        <Download
-                                            class="h-4 w-4 shrink-0"
-                                        />
-                                        <span
-                                            class="hidden lg:inline"
-                                        >
-                                            Import
-                                        </span>
-                                    </Button>
-                                    <div
-                                        aria-hidden="true"
-                                        class="hidden"
-                                    />
-                                    <Button
-                                        variant="float"
-                                        size="icon-text"
-                                        :disabled="exporting"
-                                        @click="triggerExport"
-                                    >
-                                        <Loader2
-                                            v-if="exporting"
-                                            class="h-4 w-4 shrink-0 animate-spin"
-                                        />
-                                        <Upload
-                                            v-else
-                                            class="h-4 w-4 shrink-0"
-                                        />
-                                        <span
-                                            class="hidden lg:inline"
-                                        >
+                                        <RiFilter2Line class="h-3.5 w-3.5" />
+                                        <span class="hidden lg:flex">
                                             {{
-                                                exporting
-                                                    ? 'Exporting…'
-                                                    : 'Export'
+                                                activeFilterCount > 0
+                                                    ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
+                                                    : 'Filter'
                                             }}
                                         </span>
                                     </Button>
-                                </div>
-                                <DropdownMenu
-                                    v-if="
-                                        canViewProfileChangeRequests ||
-                                        canViewArchived
-                                    "
-                                    class="w-fit"
-                                >
-                                    <DropdownMenuTrigger as-child class="m-0">
-                                        <div class="inline-flex">
-                                            <Button
-                                                variant="float"
-                                                size="icon"
-                                                aria-label="Open company actions"
+                                </PopoverTrigger>
+
+                                <PopoverContent align="end">
+                                    <div class="grid gap-y-2">
+                                        <div class="space-y-2">
+                                            <p class="text-sm text-custom-shadow/80">
+                                                Status
+                                            </p>
+                                            <Select
+                                                :model-value="statusFilter"
+                                                @update:model-value="onStatusChange"
                                             >
-                                                <Ellipsis
-                                                    class="h-4 w-4 shrink-0"
-                                                />
-                                            </Button>
+                                                <SelectTrigger class="w-full">
+                                                    <SelectValue placeholder="Any status" class="flex justify-start" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all" class="cursor-pointer">Any status</SelectItem>
+                                                    <SelectItem value="draft" class="cursor-pointer">Draft</SelectItem>
+                                                    <SelectItem value="docs_completed" class="cursor-pointer">Docs Completed</SelectItem>
+                                                    <SelectItem value="for_verification" class="cursor-pointer">For Verification</SelectItem>
+                                                    <SelectItem value="verified" class="cursor-pointer">Verified</SelectItem>
+                                                    <SelectItem value="needs_revision" class="cursor-pointer">Needs Revision</SelectItem>
+                                                    <SelectItem value="rejected" class="cursor-pointer">Rejected</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                         </div>
-                                    </DropdownMenuTrigger>
 
-                                    <DropdownMenuContent
-                                        align="end"
-                                        class="w-fit rounded-md shadow-lg"
-                                    >
-                                        <DropdownMenuItem
-                                            v-if="canViewProfileChangeRequests"
-                                            as-child
-                                            class="cursor-pointer rounded-md text-custom-shadow transition-all hover:bg-custom-secondary/20 focus:bg-custom-secondary/20"
-                                        >
-                                            <Link
-                                                :href="
-                                                    companyProfileChangeRequestsIndex()
-                                                        .url
-                                                "
-                                                class="flex items-center gap-2 px-2 py-1.5"
-                                            >
-                                                <ClipboardList
-                                                    class="h-4 w-4"
-                                                />
-                                                Change Requests
-                                            </Link>
-                                        </DropdownMenuItem>
+                                        <hr class="my-1 h-px border-0 bg-custom-bg-dark">
 
-                                        <DropdownMenuItem
-                                            v-if="canViewArchived"
-                                            as-child
-                                            class="cursor-pointer rounded-md text-custom-shadow transition-all hover:bg-custom-secondary/20 focus:bg-custom-secondary/20"
-                                        >
-                                            <Link
-                                                :href="trash().url"
-                                                class="flex items-center gap-2 px-2 py-1.5"
-                                            >
-                                                <Archive class="h-4 w-4" />
-                                                Archives
-                                            </Link>
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Table -->
-                    <div class="overflow-x-auto">
-                        <Table>
-                            <TableHeader class="border-y border-slate-200">
-                                <TableRow class="gap-2">
-                                    <!-- Sortable: Company Name -->
-                                    <TableHead
-                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
-                                        @click="toggleSort('company_name')"
-                                    >
-                                        <div class="flex items-center gap-1.5">
-                                            Company Name
-                                            <component
-                                                :is="sortIcon('company_name')"
-                                                class="h-3.5 w-3.5"
-                                                :class="
-                                                    sortIconClass(
-                                                        'company_name',
-                                                    )
-                                                "
-                                            />
-                                        </div>
-                                    </TableHead>
-
-                                    <!-- Sortable: Code -->
-                                    <TableHead
-                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
-                                        @click="toggleSort('company_code')"
-                                    >
-                                        <div class="flex items-center gap-1.5">
-                                            Code
-                                            <component
-                                                :is="sortIcon('company_code')"
-                                                class="h-3.5 w-3.5"
-                                                :class="
-                                                    sortIconClass(
-                                                        'company_code',
-                                                    )
-                                                "
-                                            />
-                                        </div>
-                                    </TableHead>
-
-                                    <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Email</TableHead
-                                    >
-                                    <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Phone</TableHead
-                                    >
-
-                                    <!-- Sortable: Status -->
-                                    <TableHead
-                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
-                                        @click="toggleSort('status')"
-                                    >
-                                        <div class="flex items-center gap-1.5">
-                                            Status
-                                            <component
-                                                :is="sortIcon('status')"
-                                                class="h-3.5 w-3.5"
-                                                :class="sortIconClass('status')"
-                                            />
-                                        </div>
-                                    </TableHead>
-
-                                    <!-- Sortable: Created -->
-                                    <TableHead
-                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
-                                        @click="toggleSort('created_at')"
-                                    >
-                                        <div class="flex items-center gap-1.5">
-                                            Created
-                                            <component
-                                                :is="sortIcon('created_at')"
-                                                class="h-3.5 w-3.5"
-                                                :class="
-                                                    sortIconClass('created_at')
-                                                "
-                                            />
-                                        </div>
-                                    </TableHead>
-
-                                    <TableHead
-                                        class="px-0 text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Actions</TableHead
-                                    >
-                                </TableRow>
-                            </TableHeader>
-
-                            <TableBody class="border-y border-slate-200">
-                                <!-- Empty state -->
-                                <TableRow
-                                    v-if="props.companies.data.length === 0"
-                                    class="hover:bg-transparent"
-                                >
-                                    <TableCell
-                                        colspan="7"
-                                        class="py-20 text-center"
-                                    >
-                                        <div
-                                            class="flex flex-col items-center gap-3"
-                                        >
-                                            <div
-                                                class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted"
-                                            >
-                                                <Building2
-                                                    class="h-6 w-6 text-muted-foreground/40"
-                                                />
-                                            </div>
-                                            <div>
-                                                <p
-                                                    class="text-sm font-semibold text-foreground"
-                                                >
-                                                    No companies found
-                                                </p>
-                                                <p
-                                                    class="mt-0.5 text-xs text-muted-foreground"
-                                                >
-                                                    {{
-                                                        hasActiveFilters
-                                                            ? 'Try adjusting your filters or search.'
-                                                            : 'Try adjusting your search.'
-                                                    }}
-                                                </p>
-                                            </div>
+                                        <div class="flex w-full flex-row items-center justify-between">
                                             <Button
                                                 v-if="hasActiveFilters"
                                                 size="sm"
-                                                variant="outline"
-                                                class="mt-1 h-8 rounded-lg text-xs"
+                                                variant="destructive"
                                                 @click="clearFilters"
                                             >
-                                                <X class="mr-1.5 h-3.5 w-3.5" />
-                                                Clear filters
+                                                Clear
                                             </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
 
-                                <TableRow
-                                    v-for="company in props.companies.data"
-                                    :key="company.id"
-                                    class="group transition-colors hover:bg-muted/30"
-                                >
-                                    <!-- Company Name -->
-                                    <TableCell class="px-0">
-                                        <p
-                                            class="text-sm font-semibold capitalize"
-                                        >
-                                            {{ company.company_name }}
-                                        </p>
-                                    </TableCell>
-
-                                    <!-- Code -->
-                                    <TableCell class="px-0">
-                                        <span
-                                            class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold"
-                                        >
-                                            {{ company.company_code }}
-                                        </span>
-                                    </TableCell>
-
-                                    <!-- Email -->
-                                    <TableCell class="px-0">
-                                        <div class="space-y-1">
-                                            <!-- <p
-                                                class="text-sm text-muted-foreground lowercase"
-                                            >
-                                                {{
-                                                    company.company_email ?? '—'
-                                                }}
-                                            </p> -->
-                                            <div class="flex items-center gap-1.5 text-muted-foreground">
-                                                <Mail class="h-3.5 w-3.5 shrink-0" />
-                                                <span class="truncate max-w-[180px]">
-                                                    {{ company.company_email || '—' }}
-                                                </span>
+                                            <div class="ml-auto flex items-center gap-2">
+                                                <Button
+                                                    variant="ghost-outline"
+                                                    size="sm"
+                                                    @click="filterOpen = false"
+                                                >
+                                                    Cancel
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="float-primary"
+                                                    @click="applyFilters"
+                                                >
+                                                    Apply
+                                                </Button>
                                             </div>
                                         </div>
-                                    </TableCell>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    </div>
 
-                                    <!-- Phone -->
-                                    <TableCell
-                                        class="text-sm text-muted-foreground px-0"
+                    <Card
+                        :class="[
+                            'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
+                            props.companies.data.length === 0 ? 'border-dashed' : 'border-solid',
+                        ]"
+                    >
+                        <div v-if="props.companies.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+                            <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
+                                <div class="grid grid-cols-7 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
+                                    <button
+                                        type="button"
+                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 pl-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        @click="toggleSort('company_name')"
                                     >
-                                        <!-- {{ company.company_phone ?? '—' }} -->
-                                        <div class="flex items-center gap-1.5 text-muted-foreground">
-                                            <Phone class="h-3.5 w-3.5 shrink-0" />
-                                            <span class="truncate max-w-[180px]">
-                                                {{ company.company_phone || '—' }}
-                                            </span>
-                                        </div>
-                                    </TableCell>
+                                        Name
+                                        <component
+                                            :is="sortIcon('company_name')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('company_name')"
+                                        />
+                                    </button>
 
-                                    <!-- Status -->
-                                    <TableCell class="px-0">
-                                        <Badge
-                                            :class="[
-                                                'gap-1.5',
-                                                statusClass(
-                                                    company.status ?? null,
-                                                ),
-                                            ]"
-                                        >
-                                            <span
-                                                :class="[
-                                                    'h-1.5 w-1.5 rounded-full',
-                                                    statusDot(
-                                                        company.status ?? null,
-                                                    ),
-                                                ]"
-                                            />
-                                            {{
-                                                humanizeStatus(
-                                                    company.status ?? null,
-                                                )
-                                            }}
+                                    <button
+                                        type="button"
+                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        @click="toggleSort('company_code')"
+                                    >
+                                        Code
+                                        <component
+                                            :is="sortIcon('company_code')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('company_code')"
+                                        />
+                                    </button>
+
+                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
+                                        Email
+                                    </div>
+                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
+                                        Phone
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        @click="toggleSort('status')"
+                                    >
+                                        Status
+                                        <component
+                                            :is="sortIcon('status')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('status')"
+                                        />
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        @click="toggleSort('created_at')"
+                                    >
+                                        Created
+                                        <component
+                                            :is="sortIcon('created_at')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('created_at')"
+                                        />
+                                    </button>
+
+                                    <div class="col-span-1 flex h-10 items-center justify-end px-0 pr-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
+                                        Actions
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+                                <div
+                                    v-for="(company, rowIndex) in props.companies.data"
+                                    :key="company.id"
+                                    :class="[
+                                        'grid grid-cols-7 items-center border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                        rowIndex === props.companies.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                    ]"
+                                >
+                                    <div class="col-span-1 flex min-w-0 justify-start py-1.5 pl-3 font-semibold capitalize">
+                                        <span class="truncate">{{ company.company_name }}</span>
+                                    </div>
+
+                                    <div class="col-span-1 flex justify-start py-1.5">
+                                        <span class="rounded bg-custom-bg px-2 py-0.5 font-mono text-xs font-semibold text-custom-shadow dark:bg-custom-bg-light">
+                                            {{ company.company_code }}
+                                        </span>
+                                    </div>
+
+                                    <div class="col-span-1 flex min-w-0 items-center gap-1.5 py-1.5 text-sm text-custom-shadow/80">
+                                        <RiMailLine class="h-3.5 w-3.5 shrink-0" />
+                                        <span class="truncate">
+                                            {{ company.company_email || '—' }}
+                                        </span>
+                                    </div>
+
+                                    <div class="col-span-1 flex min-w-0 items-center gap-1.5 py-1.5 text-sm text-custom-shadow/80">
+                                        <RiPhoneLine class="h-3.5 w-3.5 shrink-0" />
+                                        <span class="truncate">
+                                            {{ company.company_phone || '—' }}
+                                        </span>
+                                    </div>
+
+                                    <div class="col-span-1 flex justify-start py-1.5">
+                                        <Badge :class="['gap-1.5', statusClass(company.status ?? null)]">
+                                            <span :class="['h-1.5 w-1.5 rounded-full', statusDot(company.status ?? null)]" />
+                                            {{ humanizeStatus(company.status ?? null) }}
                                         </Badge>
-                                    </TableCell>
+                                    </div>
 
-                                    <!-- Created -->
-                                    <TableCell
-                                        class="text-sm text-muted-foreground px-0"
-                                    >
+                                    <div class="col-span-1 flex justify-start py-1.5 text-sm text-custom-shadow/80">
                                         {{ company.created_at_human ?? '—' }}
-                                    </TableCell>
+                                    </div>
 
-                                    <!-- Actions -->
-                                    <TableCell class="text-right px-0">
+                                    <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right">
                                         <DropdownMenu v-if="canViewCompany">
                                             <DropdownMenuTrigger as-child>
                                                 <Button
-                                                    variant="float"
-                                                    size="icon"
+                                                    variant="table-more"
+                                                    size="icon-more"
                                                 >
-                                                    <MoreHorizontal
-                                                        class="h-4 w-4"
-                                                    />
-                                                    <span class="sr-only"
-                                                        >Open actions</span
-                                                    >
+                                                    <RiMore2Line class="h-4 w-4" />
+                                                    <span class="sr-only">Open actions</span>
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent
-                                                align="end"
-                                                class="w-fit rounded-md shadow-lg"
-                                            >
-                                                <DropdownMenuLabel
-                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-                                                >
+                                            <DropdownMenuContent align="end" class="w-fit rounded-md shadow-lg">
+                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
                                                     {{ company.company_name }}
                                                 </DropdownMenuLabel>
                                                 <DropdownMenuSeparator />
 
                                                 <DropdownMenuItem
                                                     as-child
-                                                    class="cursor-pointer rounded-md text-custom-shadow transition-all hover:bg-custom-secondary/20 focus:bg-custom-secondary/20"
+                                                    class="cursor-pointer rounded-md"
                                                 >
                                                     <Link
-                                                        :href="
-                                                            show({
-                                                                company:
-                                                                    company.id,
-                                                            }).url
-                                                        "
-                                                        class="flex items-center gap-2 px-2 py-1.5"
+                                                        :href="show({ company: company.id }).url"
+                                                        class="flex items-center"
                                                     >
-                                                        <FileSearch
-                                                            class="h-4 w-4"
-                                                        />
+                                                        <RiFileSearchLine class="h-4 w-4" />
                                                         Review Company
-                                                        <!-- <ChevronRight
-                                                            class="ml-auto h-3.5 w-3.5 text-blue-400"
-                                                        /> -->
                                                     </Link>
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
-                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                            <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                                <img
+                                    :src="emptyRafikiUrl"
+                                    alt=""
+                                    class="w-1/3 object-contain opacity-90"
+                                    aria-hidden="true"
+                                />
+                                <div class="space-y-1">
+                                    <p class="text-custom-shadow text-base font-semibold">No companies found</p>
+                                    <p class="text-custom-shadow/80 text-sm">
+                                        {{ hasActiveFilters ? 'Try adjusting or clearing your filters.' : 'Try adjusting your search.' }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
 
                     <InertiaPagination
                         :links="props.companies.links"

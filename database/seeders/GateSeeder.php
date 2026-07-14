@@ -3,53 +3,36 @@
 namespace Database\Seeders;
 
 use App\Models\Gate;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class GateSeeder extends Seeder
 {
     public function run(): void
     {
-        // Gate::factory(3)->create();
-        $gate1 = Gate::updateOrCreate(
-            [
-                'gate_name' => 'Gate 1',
-                'bays' => '22',
-                'status' => true,
-                'created_by' => 1,
-                'updated_by' => 1,
-            ]
-        );
+        $gates = [
+            ['gate_name' => 'Gate 1', 'bays' => 22, 'location' => 'Ground Floor boarding concourse'],
+            ['gate_name' => 'Gate 2', 'bays' => 18, 'location' => 'Ground Floor boarding concourse'],
+            ['gate_name' => 'Gate 3', 'bays' => 15, 'location' => 'Ground Floor boarding concourse'],
+            ['gate_name' => 'Gate 4', 'bays' => 20, 'location' => 'Ground Floor boarding concourse'],
+            ['gate_name' => 'Gate 5', 'bays' => 16, 'location' => 'Second Floor bus boarding area'],
+            ['gate_name' => 'Gate 6', 'bays' => 16, 'location' => 'Second Floor bus boarding area'],
+            ['gate_name' => 'Gate 7', 'bays' => 14, 'location' => 'Second Floor bus boarding area'],
+            ['gate_name' => 'Gate 8', 'bays' => 14, 'location' => 'Second Floor bus boarding area'],
+            ['gate_name' => 'Gate 9', 'bays' => 12, 'location' => 'Third Floor transport level'],
+            ['gate_name' => 'Gate 10', 'bays' => 12, 'location' => 'Third Floor transport level'],
+        ];
 
-        $gate2 = Gate::updateOrCreate(
-            [
-                'gate_name' => 'Gate 2',
-                'bays' => '18',
-                'status' => true,
-                'created_by' => 1,
-                'updated_by' => 1,
-            ]
-        );
-
-        $gate3 = Gate::updateOrCreate(
-            [
-                'gate_name' => 'Gate 3',
-                'bays' => '15',
-                'status' => true,
-                'created_by' => 1,
-                'updated_by' => 1,
-            ]
-        );
-
-        $gate4 = Gate::updateOrCreate(
-            [
-                'gate_name' => 'Gate 4',
-                'bays' => '20',
-                'status' => true,
-                'created_by' => 1,
-                'updated_by' => 1,
-            ]
-        );
-
+        foreach ($gates as $gate) {
+            Gate::updateOrCreate(
+                ['gate_name' => $gate['gate_name']],
+                [
+                    'bays' => $gate['bays'],
+                    'location' => $gate['location'],
+                    'status' => 'active',
+                    'created_by' => 1,
+                    'updated_by' => 1,
+                ],
+            );
+        }
     }
 }

@@ -3,12 +3,12 @@ import { CalendarDate } from '@internationalized/date';
 import { index } from '@/actions/App/Http/Controllers/AuditLogController';
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
+import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardHeader,
@@ -22,7 +22,6 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import {
     Select,
     SelectContent,
@@ -49,10 +48,7 @@ import { Head, router } from '@inertiajs/vue3';
 import {
     Calendar,
     Eye,
-    FileSearch,
     Filter,
-    ShieldCheck,
-    SlidersHorizontal,
     X,
 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
@@ -299,35 +295,21 @@ function actionBadgeClass(action: string): string {
     <Head title="Audit Logs" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
-        >
-            <Card>
-                <CardHeader>
+        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+            <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
+                <CardHeader class="flex flex-row gap-2">
+                    <div class="flex flex-col">
                     <CardTitle class="flex items-center gap-2">
-                        Audit Logs
-                        <div class="ml-2 flex flex-1 w-full items-center">
-                            <hr
-                                class="h-px w-full border border-rose-500"
-                            />
-                            <div
-                                class="rounded-xs border-7 border-rose-500"
-                            >
-                                <div
-                                    class="rounded-xs border-3 border-white"
-                                ></div>
-                            </div>
-                        </div>
+                        <span class="font-semibold">Audit Logs</span>
                     </CardTitle>
-                    <CardDescription class="mt-1">
+                    <CardDescription>
                         Track internal actions, approvals, and authentication events.
                     </CardDescription>
+                    </div>
                 </CardHeader>
-                <CardContent class="space-y-4">
-                    <div
-                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                        <div class="w-50/100">
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                    <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
+                        <div class="w-full">
                             <SearchInput
                                 :route="index().url"
                                 :initial-value="filters.search"
@@ -340,16 +322,21 @@ function actionBadgeClass(action: string): string {
                                     'flash',
                                 ]"
                                 :debounce="350"
-                                class="rounded-lg shadow-sm"
                             />
                         </div>
-                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-50/100">
+                        <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
                             <div class="flex flex-row items-center gap-2">
                                 <Popover>
-                                    <PopoverTrigger as-child class="cursor-pointer h-full w-fit rounded-lg border-slate-200 shadow-sm">
+                                    <PopoverTrigger as-child>
                                         <Button
-                                            variant="outline"
-                                            class="rounded-lg border-slate-200 px-3 text-slate-600 shadow-sm hover:bg-slate-100"
+                                            variant="header-actions"
+                                            size="icon-text"
+                                            class="rounded-full"
+                                            :class="
+                                                hasCategoryFilters
+                                                    ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-300 dark:hover:text-custom-shadow'
+                                                    : ''
+                                            "
                                         >
                                             <Filter class="h-3.5 w-3.5" />
                                             {{
@@ -361,12 +348,11 @@ function actionBadgeClass(action: string): string {
                                     </PopoverTrigger>
                                     <PopoverContent
                                         align="start"
-                                        class="w-80 rounded-lg border-slate-200 p-4 shadow-lg"
                                     >
-                                        <div class="grid gap-y-4">
+                                        <div class="grid gap-y-2">
                                             <div class="space-y-2">
                                                 <p
-                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                                    class="text-sm text-custom-shadow/80"
                                                 >
                                                     Action
                                                 </p>
@@ -375,14 +361,14 @@ function actionBadgeClass(action: string): string {
                                                     @update:model-value="onActionChange"
                                                 >
                                                     <SelectTrigger
-                                                        class="cursor-pointer h-8 w-full rounded-lg border-slate-200 shadow-sm"
+                                                        class="w-full"
                                                     >
                                                         <SelectValue
                                                             placeholder="All Actions"
                                                             class="flex justify-start"
                                                         />
                                                     </SelectTrigger>
-                                                    <SelectContent class="rounded-lg shadow-lg">
+                                                    <SelectContent>
                                                         <SelectItem value="all" class="cursor-pointer text-sm">
                                                             All Actions
                                                         </SelectItem>
@@ -399,7 +385,7 @@ function actionBadgeClass(action: string): string {
 
                                             <div class="space-y-2">
                                                 <p
-                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                                    class="text-sm text-custom-shadow/80"
                                                 >
                                                     User
                                                 </p>
@@ -408,14 +394,14 @@ function actionBadgeClass(action: string): string {
                                                     @update:model-value="onUserChange"
                                                 >
                                                     <SelectTrigger
-                                                        class="cursor-pointer h-8 w-full rounded-lg border-slate-200 shadow-sm"
+                                                        class="w-full"
                                                     >
                                                         <SelectValue
                                                             placeholder="All Users"
                                                             class="flex justify-start"
                                                         />
                                                     </SelectTrigger>
-                                                    <SelectContent class="rounded-lg shadow-lg">
+                                                    <SelectContent>
                                                         <SelectItem value="all" class="cursor-pointer text-sm">
                                                             All Users
                                                         </SelectItem>
@@ -423,7 +409,7 @@ function actionBadgeClass(action: string): string {
                                                             v-for="user in users"
                                                             :key="user.id"
                                                             :value="String(user.id)"
-                                                            class="cursor-pointer text-sm">
+                                                            class="cursor-pointer text-sm"
                                                         >
                                                             {{ user.name }}
                                                         </SelectItem>
@@ -433,7 +419,7 @@ function actionBadgeClass(action: string): string {
 
                                             <div class="space-y-2">
                                                 <p
-                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                                    class="text-sm text-custom-shadow/80"
                                                 >
                                                     Entity Type
                                                 </p>
@@ -442,14 +428,14 @@ function actionBadgeClass(action: string): string {
                                                     @update:model-value="onEntityTypeChange"
                                                 >
                                                     <SelectTrigger
-                                                        class="cursor-pointer h-8 w-full rounded-lg border-slate-200 shadow-sm"
+                                                        class="w-full"
                                                     >
                                                         <SelectValue
                                                             placeholder="All Types"
                                                             class="flex justify-start"
                                                         />
                                                     </SelectTrigger>
-                                                    <SelectContent class="rounded-lg shadow-lg">
+                                                    <SelectContent>
                                                         <SelectItem value="all" class="cursor-pointer text-sm">
                                                             All Entities
                                                         </SelectItem>
@@ -467,8 +453,7 @@ function actionBadgeClass(action: string): string {
                                                 <Button
                                                     v-if="hasCategoryFilters"
                                                     size="sm"
-                                                    variant="ghost"
-                                                    class="h-8 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
+                                                    variant="destructive"
                                                     @click="clearFilters"
                                                 >
                                                     <X class="mr-1 h-3.5 w-3.5" />
@@ -481,8 +466,9 @@ function actionBadgeClass(action: string): string {
                                 <Popover v-model:open="popoverFromOpen">
                                     <PopoverTrigger as-child class="h-full">
                                         <Button
-                                            variant="outline"
-                                            class="rounded-lg border-slate-200 px-3 text-slate-600 shadow-sm hover:bg-slate-100 gap-2"
+                                            variant="header-actions"
+                                            size="icon-text"
+                                            class="rounded-full gap-2"
                                         >
                                             <Calendar class="h-4 w-4 shrink-0" />
                                             <span class="text-sm">
@@ -492,7 +478,6 @@ function actionBadgeClass(action: string): string {
                                     </PopoverTrigger>
                                     <PopoverContent
                                         align="start"
-                                        class="w-auto rounded-lg border-slate-200 shadow-lg"
                                     >
                                         <p class="mb-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
                                             From Date
@@ -507,8 +492,9 @@ function actionBadgeClass(action: string): string {
                                 <Popover v-model:open="popoverToOpen">
                                     <PopoverTrigger as-child class="h-full">
                                         <Button
-                                            variant="outline"
-                                            class="rounded-lg border-slate-200 px-3 text-slate-600 shadow-sm hover:bg-slate-100 gap-2"
+                                            variant="header-actions"
+                                            size="icon-text"
+                                            class="rounded-full gap-2"
                                         >
                                             <Calendar class="h-4 w-4 shrink-0" />
                                             <span class="text-sm">
@@ -518,7 +504,6 @@ function actionBadgeClass(action: string): string {
                                     </PopoverTrigger>
                                     <PopoverContent
                                         align="start"
-                                        class="w-auto rounded-lg border-slate-200 shadow-lg"
                                     >
                                         <p class="mb-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
                                             To Date
@@ -533,22 +518,31 @@ function actionBadgeClass(action: string): string {
                             </div>
                         </div>
                     </div>
-                    <div class="overflow-x-auto">
+                    <Card
+                        :class="[
+                            'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
+                            auditLogs.data.length === 0 ? 'border-dashed' : 'border-solid',
+                        ]"
+                    >
+                    <div class="no-scrollbar min-h-0 flex-1 overflow-auto">
                         <Table>
-                            <TableHeader class="border-y border-slate-200">
+                            <TableHeader
+                                v-if="auditLogs.data.length > 0"
+                                class="border-b border-custom-bg-dark dark:border-custom-bg-light"
+                            >
                                 <TableRow>
-                                    <TableHead class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">User</TableHead>
-                                    <TableHead class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Action</TableHead>
-                                    <TableHead class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Entity</TableHead>
-                                    <TableHead class="px-0 w-56 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Changes</TableHead>
-                                    <TableHead class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Timestamp</TableHead>
-                                    <TableHead class="px-0 w-30 text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                    <TableHead class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase">User</TableHead>
+                                    <TableHead class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase">Action</TableHead>
+                                    <TableHead class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase">Entity</TableHead>
+                                    <TableHead class="px-0 w-56 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase">Changes</TableHead>
+                                    <TableHead class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase">Timestamp</TableHead>
+                                    <TableHead class="px-0 w-30 text-right text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Details</TableHead
                                     >
                                 </TableRow>
                             </TableHeader>
 
-                            <TableBody class="border-y border-slate-200">
+                            <TableBody>
                                 <TableRow
                                     v-if="auditLogs.data.length === 0"
                                     class="hover:bg-transparent"
@@ -560,13 +554,12 @@ function actionBadgeClass(action: string): string {
                                         <div
                                             class="flex flex-col items-center gap-3"
                                         >
-                                            <div
-                                                class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted"
-                                            >
-                                                <ShieldCheck
-                                                    class="h-6 w-6 text-muted-foreground/40"
-                                                />
-                                            </div>
+                                            <img
+                                                :src="emptyRafikiUrl"
+                                                alt=""
+                                                class="w-32 object-contain opacity-90"
+                                                aria-hidden="true"
+                                            />
                                             <div>
                                                 <p
                                                     class="text-sm font-semibold text-foreground"
@@ -586,8 +579,7 @@ function actionBadgeClass(action: string): string {
                                             <Button
                                                 v-if="hasActiveFilters"
                                                 size="sm"
-                                                variant="outline"
-                                                class="mt-1 h-8 rounded-lg text-xs"
+                                                variant="destructive"
                                                 @click="clearFilters"
                                             >
                                                 <X class="mr-1.5 h-3.5 w-3.5" />
@@ -600,7 +592,7 @@ function actionBadgeClass(action: string): string {
                                 <TableRow
                                     v-for="log in auditLogs.data"
                                     :key="log.id"
-                                    class="group transition-colors hover:bg-muted/30"
+                                    class="group border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light"
                                 >
                                     <TableCell class="px-0">
                                         <div class="text-sm font-medium">
@@ -678,8 +670,8 @@ function actionBadgeClass(action: string): string {
                                         <Dialog>
                                             <DialogTrigger as-child>
                                                 <Button
-                                                    variant="outline"
-                                                    class="cursor-pointer hover:bg-slate-100"
+                                                    variant="table-more"
+                                                    size="icon-more"
                                                 >
                                                     <Eye class="h-4 w-4" />
                                                 </Button>
@@ -825,6 +817,7 @@ function actionBadgeClass(action: string): string {
                             </TableBody>
                         </Table>
                     </div>
+                    </Card>
 
                     <InertiaPagination
                         :links="auditLogs.links"

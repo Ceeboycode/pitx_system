@@ -22,10 +22,12 @@
         {{-- Inline style to set the HTML background color based on our theme in app.css --}}
         <style>
             html {
+                /* TODO: make this match bg-custom-bg-light */
                 background-color: oklch(1 0 0);
             }
 
             html.dark {
+                /* TODO: make this match bg-custom-bg-dark */
                 background-color: oklch(0.145 0 0);
             }
         </style>

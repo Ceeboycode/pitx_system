@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { can } from '@/lib/can';
 import { destroy, index } from '@/routes/gates';

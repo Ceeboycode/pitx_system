@@ -44,7 +44,7 @@ import {
     RiRoadMapLine,
     RiSettings5Line,
     RiSunLine,
-    RiUser3Line,
+    RiLogoutBoxLine
 } from 'vue-remix-icons';
 import PitxLogo from './assets/PITX.png';
 
@@ -87,8 +87,8 @@ const mainNavItems: NavItem[] = [
         ],
     },
     {
-        id: 'gates_routes',
-        title: 'Gates & Routes',
+        id: 'terminal-management',
+        title: 'Terminal Management',
         href: '#',
         icon: RiBuildingLine,
         items: [
@@ -104,14 +104,6 @@ const mainNavItems: NavItem[] = [
                 href: routesIndex().url,
                 permission: 'routes.viewAny',
             },
-        ],
-    },
-    {
-        id: 'company_vehicle',
-        title: 'Companies & Vehicles',
-        href: '#',
-        icon: RiBus2Line,
-        items: [
             {
                 id: 'companies',
                 title: 'Companies',
@@ -120,15 +112,15 @@ const mainNavItems: NavItem[] = [
             },
             {
                 id: 'vehicles',
-                title: 'Vehicles',
+                title: 'Vehicle Units',
                 href: vehiclesIndex().url,
                 permission: 'vehicles.viewAny',
             },
         ],
     },
     {
-        id: 'dispatches',
-        title: 'Dispatches',
+        id: 'terminal-operations',
+        title: 'Terminal Operations',
         href: '#',
         icon: RiRoadMapLine,
         items: [
@@ -160,10 +152,10 @@ const mainNavItems: NavItem[] = [
         ],
     },
     {
-        id: 'accounts',
-        title: 'Accounts',
+        id: 'system-management',
+        title: 'System Management',
         href: '#',
-        icon: RiUser3Line,
+        icon: RiComputerLine,
         items: [
             {
                 id: 'users',
@@ -177,14 +169,6 @@ const mainNavItems: NavItem[] = [
                 href: rolesIndex().url,
                 permission: 'roles.viewAny',
             },
-        ],
-    },
-    {
-        id: 'system',
-        title: 'System',
-        href: '#',
-        icon: RiComputerLine,
-        items: [
             {
                 id: 'audit-logs',
                 title: 'Audit Logs',
@@ -224,7 +208,7 @@ const footerNavItems: NavFooterItem[] = [
 const page = usePage();
 const user = computed(() => page.props.auth.user);
 const { getInitials } = useInitials();
-const { state, isMobile, openMobile, setOpenMobile } = useSidebar();
+const { state, isMobile, openMobile, setOpen, setOpenMobile } = useSidebar();
 const { resolvedAppearance, updateAppearance } = useAppearance();
 const expandedItems = ref<Set<string>>(new Set());
 const sidebarWidth = 72;
@@ -282,9 +266,38 @@ function toggleExpanded(item: NavItem) {
     expandedItems.value = nextExpanded;
 }
 
+function shouldExpandFromCollapsed() {
+    return isCollapsed.value && !isMobile.value;
+}
+
+function shouldUseParentButton(item: NavItem) {
+    return shouldExpandFromCollapsed() || (item.items.length > 1 && !isCollapsed.value);
+}
+
 function handleParentClick(item: NavItem) {
+    if (shouldExpandFromCollapsed()) {
+        setOpen(true);
+
+        if (item.items.length > 1) {
+            const nextExpanded = new Set(expandedItems.value);
+            nextExpanded.add(item.id);
+            expandedItems.value = nextExpanded;
+        }
+
+        return;
+    }
+
     if (item.items.length > 1 && !isCollapsed.value) {
         toggleExpanded(item);
+        return;
+    }
+
+    closeMobileSidebar();
+}
+
+function handleFooterClick() {
+    if (shouldExpandFromCollapsed()) {
+        setOpen(true);
         return;
     }
 
@@ -345,7 +358,7 @@ function handleLogout() {
             </Link>
 
             <div class="flex min-h-0 flex-1 flex-col justify-between gap-3">
-                <div class="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden">
+                <div class="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden no-scrollbar">
                     <span
                         :class="cn(
                             'px-3 pb-1 text-xs text-custom-shadow',
@@ -361,12 +374,12 @@ function handleLogout() {
                             :key="item.id"
                         >
                             <component
-                                :is="item.items.length > 1 && !isCollapsed ? 'button' : Link"
-                                :href="item.items.length > 1 && !isCollapsed ? undefined : item.items[0]?.href"
+                                :is="shouldUseParentButton(item) ? 'button' : Link"
+                                :href="shouldUseParentButton(item) ? undefined : item.items[0]?.href"
                                 :title="item.title"
-                                :type="item.items.length > 1 && !isCollapsed ? 'button' : undefined"
+                                :type="shouldUseParentButton(item) ? 'button' : undefined"
                                 :class="cn(
-                                    'flex min-h-10 w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-custom-shadow transition-colors hover:bg-custom-secondary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:hover:bg-custom-secondary/20',
+                                    'flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-custom-shadow transition-colors hover:bg-custom-secondary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:hover:bg-custom-secondary/20',
                                     isCollapsed && 'mx-auto size-10 justify-center rounded-full p-0 lg:gap-0',
                                     isItemActive(item) && 'bg-custom-secondary/10 dark:bg-custom-secondary/20',
                                 )"
@@ -407,7 +420,7 @@ function handleLogout() {
                                         :class="cn(
                                             'flex items-center rounded-md px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
                                             isHrefActive(subItem.href)
-                                                ? 'bg-custom-primary text-custom-bg-light'
+                                                ? 'bg-custom-primary text-custom-bg-light dark:text-custom-shadow'
                                                 : 'text-custom-shadow hover:bg-custom-secondary/10 dark:hover:bg-custom-secondary/20',
                                         )"
                                         @click="closeMobileSidebar"
@@ -435,7 +448,7 @@ function handleLogout() {
                         variant="default"
                         size="icon"
                         :class="cn(
-                            'min-h-10 w-full justify-start rounded-md px-3 py-2 text-custom-shadow transition-colors hover:bg-custom-secondary/10 dark:hover:bg-custom-secondary/20',
+                            'min-h-10 w-full cursor-pointer justify-start rounded-md px-3 py-2 text-custom-shadow transition-colors hover:bg-custom-secondary/10 dark:hover:bg-custom-secondary/20',
                             isCollapsed && 'mx-auto size-10 justify-center rounded-full p-0',
                         )"
                         @click="toggleTheme"
@@ -448,23 +461,25 @@ function handleLogout() {
                     </Button>
 
                     <nav class="flex flex-col gap-0 overflow-hidden">
-                        <Link
+                        <component
+                            :is="shouldExpandFromCollapsed() ? 'button' : Link"
                             v-for="item in footerNavItems"
                             :key="item.title"
-                            :href="item.href"
+                            :href="shouldExpandFromCollapsed() ? undefined : item.href"
                             :title="item.title"
+                            :type="shouldExpandFromCollapsed() ? 'button' : undefined"
                             :class="cn(
-                                'flex min-h-10 w-full items-center rounded-md px-3 py-2 text-sm text-custom-shadow transition-colors hover:bg-custom-secondary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:hover:bg-custom-secondary/20',
+                                'flex min-h-10 w-full cursor-pointer items-center rounded-md px-3 py-2 text-sm text-custom-shadow transition-colors hover:bg-custom-secondary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:hover:bg-custom-secondary/20',
                                 isCollapsed ? 'mx-auto size-10 justify-center rounded-full p-0 lg:gap-0' : 'gap-2',
-                                isHrefActive(item.href) && 'bg-custom-secondary/10 text-custom-primary',
+                                isHrefActive(item.href) && 'bg-custom-secondary/10 text-custom-primary dark:text-custom-shadow',
                             )"
-                            @click="closeMobileSidebar"
+                            @click="handleFooterClick"
                         >
                             <component :is="item.icon" class="size-4 shrink-0" />
                             <span :class="cn('truncate pl-1', isCollapsed && 'hidden')">
                                 {{ item.title }}
                             </span>
-                        </Link>
+                        </component>
                     </nav>
                 </div>
 
@@ -473,7 +488,7 @@ function handleLogout() {
                         <Button
                             variant="float"
                             :class="cn(
-                                'group min-h-fit items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 shadow-none transition-colors hover:border-custom-secondary/10 hover:bg-custom-secondary/20 focus-visible:ring-2 focus-visible:ring-ring/50 dark:border-custom-bg-light dark:bg-custom-bg-light',
+                                'group min-h-fit items-center rounded-3xl border border-custom-bg-dark bg-custom-bg px-3 py-2 shadow-none transition-colors transition-all duration-300 hover:border-custom-secondary/10 hover:bg-custom-secondary/20 focus-visible:ring-2 focus-visible:ring-ring/50 dark:border-custom-bg-light dark:bg-custom-bg-light',
                                 isCollapsed ? 'mx-auto size-12 justify-center rounded-full p-1' : 'gap-3',
                             )"
                         >
@@ -483,7 +498,7 @@ function handleLogout() {
                                     :src="user.avatar"
                                     :alt="user.name"
                                 />
-                                <AvatarFallback class="bg-custom-primary/20 text-sm font-semibold text-custom-primary">
+                                <AvatarFallback class="bg-custom-primary/20 dark:bg-custom-primary dark:text-custom-shadow text-sm font-semibold text-custom-primary">
                                     {{ getInitials(user.name) }}
                                 </AvatarFallback>
                             </Avatar>
@@ -502,17 +517,17 @@ function handleLogout() {
                         :side="isMobile ? 'bottom' : isCollapsed ? 'left' : 'top'"
                         class="mb-2"
                     >
-                        <DropdownMenuItem as-child class="rounded-md hover:bg-custom-secondary/20">
+                        <DropdownMenuItem as-child class="rounded-md hover:bg-custom-secondary/10 hover:text-custom-shadow">
                             <Link
                                 :href="editProfile()"
-                                class="flex cursor-pointer flex-row items-center gap-3 px-3 py-2"
+                                class="flex cursor-pointer flex-row items-center gap-3 px-3 py-2 text-custom-shadow"
                                 @click="closeMobileSidebar"
                             >
-                                <RiSettings5Line class="size-4" />
+                                <RiSettings5Line class="size-4 text-custom-shadow" />
                                 <span>Settings</span>
                             </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem as-child class="cursor-pointer rounded-md hover:bg-destructive/10">
+                        <DropdownMenuItem as-child class="cursor-pointer rounded-md hover:bg-destructive/10 hover:text-destructive">
                             <Link
                                 href="/logout"
                                 method="post"
@@ -521,6 +536,7 @@ function handleLogout() {
                                 data-test="logout-button"
                                 @click="handleLogout"
                             >
+                                <RiLogoutBoxLine class="size-4 hover:text-destructive" />
                                 <span>Log out</span>
                             </Link>
                         </DropdownMenuItem>

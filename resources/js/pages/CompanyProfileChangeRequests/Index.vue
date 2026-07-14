@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
@@ -306,7 +306,7 @@ function canTakePreviewAction(): boolean {
                          <!-- TODO: make the text straight, not wrapped -->
                         Change Requests
                         <span class="ml-2 flex flex-1 items-center">
-                            <hr class="h-px w-full border border-rose-500 " />
+                            <hr class="h-px w-full border border-rose-500" />
                             <div class="border-7 border-rose-500 rounded-xs">
                                 <div class="border-3 border-white rounded-xs"></div>
                             </div>

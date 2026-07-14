@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Gate\GateStoreRequest;
 use App\Http\Requests\Gate\GateUpdateRequest;
+use App\Models\Dispatch;
 use App\Models\Gate as GateModel;
 use App\Notifications\External\GateStatusChangedNotification;
 use App\Services\Gate\GateService;
@@ -24,8 +25,20 @@ class GateController extends Controller
     Gate::authorize('viewAny', GateModel::class);
 
     $gates = GateModel::query()
-        ->select('id', 'gate_name', 'status', 'bays', 'created_by')
-        ->with('creator:id,name')
+        ->select('id', 'gate_name', 'status', 'bays', 'location', 'created_by')
+        ->with([
+            'creator:id,name',
+            'routes:id,gate_id,route_name,status',
+            'dispatches' => fn ($query) => $query
+                ->select('id', 'company_id', 'vehicle_id', 'gate_id', 'plate_number', 'bay_number', 'status')
+                ->where('status', '!=', Dispatch::STATUS_DEPARTED)
+                ->with([
+                    'company:id,company_name',
+                    'vehicle:id,company_id,plate_number,body_number',
+                    'vehicle.company:id,company_name',
+                ])
+                ->latest('updated_at'),
+        ])
 
         // ✅ Search
         ->when($request->search, fn ($q, $s) =>
@@ -44,7 +57,8 @@ class GateController extends Controller
 
         ->latest()
         ->paginate(10)
-        ->withQueryString();
+        ->withQueryString()
+        ->through(fn (GateModel $gate) => $this->gateIndexPayload($gate));
 
     return Inertia::render('Gates/Index', [
         'gates' => $gates,
@@ -53,6 +67,78 @@ class GateController extends Controller
         'filters' => $request->only('search', 'status', 'bays'),
     ]);
 }
+
+    private function gateIndexPayload(GateModel $gate): array
+    {
+        $occupiedByBay = collect();
+
+        foreach ($gate->dispatches as $dispatch) {
+            $bayNumber = $this->bayNumberFromDispatch($dispatch->bay_number);
+
+            if ($bayNumber !== null && ! $occupiedByBay->has($bayNumber)) {
+                $occupiedByBay->put($bayNumber, $dispatch);
+            }
+        }
+
+        $bayStatuses = [];
+
+        for ($bayNumber = 1; $bayNumber <= (int) $gate->bays; $bayNumber++) {
+            $dispatch = $occupiedByBay->get($bayNumber);
+            $vehicle = $dispatch?->vehicle;
+            $company = $vehicle?->company ?? $dispatch?->company;
+
+            $bayStatuses[] = [
+                'bay_number' => $bayNumber,
+                'status' => $dispatch ? 'occupied' : 'empty',
+                'vehicle' => $dispatch ? [
+                    'plate_number' => $vehicle?->plate_number ?? $dispatch->plate_number,
+                    'body_number' => $vehicle?->body_number,
+                ] : null,
+                'company' => $dispatch ? [
+                    'company_name' => $company?->company_name ?? 'Unknown company',
+                ] : null,
+            ];
+        }
+
+        return [
+            'id' => $gate->id,
+            'gate_name' => $gate->gate_name,
+            'status' => $gate->status,
+            'bays' => $gate->bays,
+            'creator' => $gate->creator ? [
+                'id' => $gate->creator->id,
+                'name' => $gate->creator->name,
+            ] : null,
+            'location' => [
+                'label' => $gate->location ?? 'Location not configured',
+                'is_placeholder' => $gate->location === null,
+            ],
+            'picture_url' => null,
+            'assigned_routes' => $gate->routes
+                ->map(fn ($route) => [
+                    'id' => $route->id,
+                    'route_name' => $route->route_name,
+                    'status' => $route->status instanceof \BackedEnum
+                        ? $route->status->value
+                        : (string) $route->status,
+                ])
+                ->values(),
+            'bay_statuses' => $bayStatuses,
+        ];
+    }
+
+    private function bayNumberFromDispatch(?string $bayNumber): ?int
+    {
+        if ($bayNumber === null || $bayNumber === '') {
+            return null;
+        }
+
+        if (preg_match('/\d+/', $bayNumber, $matches) !== 1) {
+            return null;
+        }
+
+        return (int) $matches[0];
+    }
 
     public function show(GateModel $gate)
     {

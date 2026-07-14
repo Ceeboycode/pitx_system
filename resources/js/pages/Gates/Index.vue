@@ -2,6 +2,7 @@
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import InputError from '@/components/InputError.vue';
 import SearchInput from '@/components/SearchInput.vue';
+import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -52,14 +53,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 
 import AppLayout from '@/layouts/AppLayout.vue';
 import { destroy, index, show, store, trash, update } from '@/routes/gates';
@@ -67,33 +60,60 @@ import { type BreadcrumbItem, type User } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 
 import {
-    Archive,
-    ChevronRight,
     Eye,
-    Filter,
     Loader2,
-    MoreHorizontal,
     Pencil,
-    Plus,
     Save,
-    X,
 } from 'lucide-vue-next';
+
+import {
+    RiArchive2Line,
+    RiArrowRightSLine,
+    RiEyeLine,
+    RiFilter2Line,
+    RiLoaderLine,
+    RiMore2Line,
+    RiEditLine,
+    RiAddLine,
+    RiSaveLine,
+    RiCloseLine,
+    RiImageAddLine,
+    RiExternalLinkLine,
+} from 'vue-remix-icons';
 
 import { computed, ref } from 'vue';
 
-/* ── Types ──────────────────────────────────────────────────────── */
 interface Gate {
     id: number;
     gate_name: string;
     status: 'active' | 'inactive';
     bays: number;
     creator: User | null;
+    location: {
+        label: string;
+        is_placeholder: boolean;
+    };
+    picture_url: string | null;
+    assigned_routes: {
+        id: number;
+        route_name: string;
+        status: string;
+    }[];
+    bay_statuses: {
+        bay_number: number;
+        status: 'empty' | 'occupied';
+        vehicle: {
+            plate_number: string | null;
+            body_number: string | null;
+        } | null;
+        company: {
+            company_name: string;
+        } | null;
+    }[];
 }
 
-/* ── Breadcrumbs ─────────────────────────────────────────────────── */
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Gates', href: index().url }];
 
-/* ── Props ───────────────────────────────────────────────────────── */
 const props = withDefaults(
     defineProps<{
         gates: {
@@ -112,11 +132,9 @@ const props = withDefaults(
     { filters: () => ({ search: null, status: null, bays: null }) },
 );
 
-/* ── Suggestions ─────────────────────────────────────────────────── */
 const gateSuggestions = Array.from({ length: 20 }, (_, i) => `Gate ${i + 1}`);
 const baySuggestions  = Array.from({ length: 20 }, (_, i) => String(i + 1));
 
-/* ── Filter state ────────────────────────────────────────────────── */
 const filterStatus = ref<string>(
     props.filters?.status ? String(props.filters.status) : 'all'
 );
@@ -166,7 +184,6 @@ function clearFilters() {
     filterOpen.value = false;
 }
 
-/* ── Form + Dialog state ─────────────────────────────────────────── */
 const form = useForm({
     gate_name: '',
     status: 'active' as 'active' | 'inactive',
@@ -177,8 +194,8 @@ const createOpen   = ref(false);
 const editOpen     = ref(false);
 const archiveOpen  = ref(false);
 const selectedGate = ref<Gate | null>(null);
+const previewedGate = ref<Gate | null>(null);
 
-/* ── Status helpers ──────────────────────────────────────────────── */
 function statusClass(status: Gate['status']): string {
     return status === 'active'
         ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
@@ -189,7 +206,6 @@ function statusDot(status: Gate['status']): string {
     return status === 'active' ? 'bg-emerald-500' : 'bg-slate-400';
 }
 
-/* ── Actions ─────────────────────────────────────────────────────── */
 function openEdit(gate: Gate) {
     selectedGate.value = gate;
     form.gate_name     = gate.gate_name;
@@ -205,6 +221,10 @@ function closeEdit() {
     form.gate_name = '';
     form.status    = 'active';
     form.bays      = '';
+}
+
+function openPreview(gate: Gate) {
+    previewedGate.value = gate;
 }
 
 function openArchive(gate: Gate) {
@@ -249,252 +269,245 @@ const archiveGate = () => {
     <Head title="Gates" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-            <Card>
-                <CardHeader>
-                    <CardTitle class="flex items-center gap-2">
-                        Gates
-                        <div class="ml-2 flex flex-1 items-center">
-                            <hr class="h-px w-full border border-rose-500" />
-                            <div class="rounded-xs border-7 border-rose-500">
-                                <div class="rounded-xs border-3 border-white"></div>
+        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
+            <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
+                <CardHeader class="flex flex-row gap-2">
+                    <div class="flex flex-col">
+                        <CardTitle class="flex items-center gap-2">
+                            <span class="font-semibold">Gates</span>
+                        </CardTitle>
+                        <CardDescription class="">List of all gates in the system.</CardDescription>
+                    </div>
+                    <div class="flex flex-1 gap-2 justify-end">
+                        <!-- move this in the app topbar -->
+                        <!-- <div class="ml-2 flex flex-1 items-center">
+                            <hr class="h-px w-full border border-custom-primary" />
+                            cant decide which one looks better -->
+                            <!-- <div class="border-12 border-custom-primary">
+                                <div class="border-6 border-custom-bg-light dark:border-custom-bg"></div>
                             </div>
+                            <div class="border-7 border-custom-primary">
+                                <div class="border-3 border-custom-bg-light dark:border-custom-bg"></div>
+                            </div>
+                        </div> -->
+                        <div class="lg:flex items-center gap-2 sm:justify-end">
+                            <Button
+                                variant="float-primary"
+                                @click="createOpen = true"
+                                class="hidden lg:flex"
+                            >
+                                <RiAddLine class="h-4 w-4 shrink-0" />
+                                <span>Add Gate</span>
+                            </Button>
+                            <DropdownMenu class="w-fit">
+                                <DropdownMenuTrigger as-child class="m-0">
+                                    <div class="inline-flex">
+                                        <Button
+                                            variant="header-actions"
+                                            class="text-custom-shadow"
+                                            size="icon"
+                                        >
+                                            <RiMore2Line class="h-4 w-4 shrink-0" />
+                                        </Button>
+                                    </div>
+                                </DropdownMenuTrigger>
+
+                                <DropdownMenuContent align="end" class="w-fit">
+                                    <DropdownMenuItem
+                                        as-child
+                                        class="cursor-pointer lg:hidden"
+                                    >
+                                        <Link :href="trash().url" class="flex items-center">
+                                            <RiAddLine class="h-4 w-4 hover:text-custom-bg-light" />
+                                            Add Gate
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        as-child
+                                        class="cursor-pointer"
+                                    >
+                                        <Link :href="trash().url" class="flex items-center">
+                                            <RiArchive2Line class="h-4 w-4 hover:text-custom-bg-light" />
+                                            Archives
+                                        </Link>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
-                    </CardTitle>
-                    <CardDescription class="mt-1">List of all gates in the system.</CardDescription>
+                    </div>
                 </CardHeader>
 
-                <CardContent class="space-y-4">
-
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-
-                        <!-- Search + Filter button -->
-                        <div class="w-50/100">
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                    <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
+                        <div class="w-full">
                             <SearchInput
                                 :route="index().url"
                                 :initial-value="props.filters?.search"
                                 placeholder="Search gates…"
                                 :only="['gates', 'filters']"
                                 :debounce="350"
-                                class="rounded-lg shadow-sm"
                             />
                         </div>
 
-                        <div class="flex min-w-50/100 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <Popover v-model:open="filterOpen">
-                                    <PopoverTrigger
-                                        as-child
-                                        class="cursor-pointer h-full w-fit rounded-lg border-slate-200 shadow-sm"
+                        <div class="w-fit flex gap-2 flex-row lg:items-center lg:justify-between">
+                            <Popover v-model:open="filterOpen">
+                                <PopoverTrigger
+                                    as-child
+                                >
+                                    <Button
+                                        variant="header-actions"
+                                        size="icon-text"
+                                        class="rounded-full "
+                                        :class="
+                                            activeFilterCount > 0
+                                                ? ' bg-custom-secondary/20 hover:text-custom-bg-light hover:bg-custom-secondary/80 transition-all duration-300'
+                                                : ''
+                                        "
                                     >
-                                        <Button
-                                            variant="outline"
-                                            class="rounded-lg border-slate-200 px-3 text-slate-600 shadow-sm hover:bg-slate-100"
-                                            :class="
-                                                activeFilterCount > 0
-                                                    ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100'
-                                                    : ''
-                                            "
-                                        >
-                                            <Filter class="h-3.5 w-3.5" />
+                                        <RiFilter2Line class="h-3.5 w-3.5" />
+                                        <span class="hidden lg:flex">
                                             {{
                                                 activeFilterCount > 0
-                                                    ? 'Filters Active'
-                                                    : 'Filters'
+                                                    ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
+                                                    : 'Filter'
                                             }}
-                                        </Button>
-                                    </PopoverTrigger>
+                                        </span>
+                                    </Button>
+                                </PopoverTrigger>
 
-                                    <PopoverContent
-                                        align="start"
-                                        class="w-80 rounded-lg border-slate-200 p-4 shadow-lg"
-                                    >
-                                        <div class="grid gap-y-4">
-                                            <div class="space-y-2">
-                                                <p class="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-                                                    Status
-                                                </p>
-                                                <Select v-model="filterStatus">
-                                                    <SelectTrigger class="h-8 w-full rounded-lg border-slate-200 shadow-sm focus:ring-blue-500">
-                                                        <SelectValue placeholder="Any status" class="flex justify-start" />
-                                                    </SelectTrigger>
-                                                    <SelectContent class="rounded-lg shadow-lg">
-                                                        <SelectItem value="all" class="cursor-pointer text-sm">
-                                                            Any status
-                                                        </SelectItem>
-                                                        <SelectItem value="active" class="cursor-pointer text-sm">
-                                                            Active
-                                                        </SelectItem>
-                                                        <SelectItem value="inactive" class="cursor-pointer text-sm">
-                                                            Inactive
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-
-                                            <div class="space-y-2">
-                                                <Label class="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-                                                    Number of Bays
-                                                </Label>
-                                                <Input
-                                                    v-model="filterBays"
-                                                    type="number"
-                                                    min="0"
-                                                    placeholder="e.g. 5"
-                                                    class="h-8 rounded-lg border-slate-200 shadow-sm focus-visible:ring-blue-500"
-                                                />
-                                            </div>
-
-                                            <div class="flex items-center justify-between gap-2">
-                                                <Button
-                                                    v-if="activeFilterCount > 0"
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    class="h-8 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
-                                                    @click="clearFilters"
-                                                >
-                                                    <X class="mr-1 h-3.5 w-3.5" />
-                                                    Clear filters
-                                                </Button>
-
-                                                <div class="ml-auto flex items-center gap-2">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        class="h-8 rounded-lg border-slate-200 px-3 text-xs text-slate-600 hover:bg-slate-100"
-                                                        @click="filterOpen = false"
-                                                    >
-                                                        Cancel
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        class="h-8 rounded-lg border-0 bg-blue-700 px-3 text-xs text-white hover:bg-blue-800"
-                                                        @click="applyFilters"
-                                                    >
-                                                        Apply
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
-
-                                <Badge
-                                    v-if="activeFilterCount > 0"
-                                    class="gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-50"
+                                <PopoverContent
+                                    align="end"
                                 >
-                                    <Filter class="h-3 w-3" />
-                                    {{ activeFilterCount }}
-                                    {{ activeFilterCount === 1 ? 'filter' : 'filters' }}
-                                    active
-                                </Badge>
-                            </div>
-
-                            <div class="flex items-center gap-2 sm:justify-end">
-                                <DropdownMenu class="w-fit">
-                                    <DropdownMenuTrigger as-child class="m-0">
-                                        <div class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm">
-                                            <Button
-                                                variant="ghost"
-                                                class="group/segment cursor-pointer gap-0 rounded-lg border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10"
-                                            >
-                                                <MoreHorizontal class="h-4 w-4 shrink-0" />
-                                                <span
-                                                    class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-20 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-20 group-focus-visible/segment:opacity-100"
-                                                >
-                                                    Actions
-                                                </span>
-                                            </Button>
+                                    <div class="grid gap-y-2">
+                                        <div class="space-y-2">
+                                            <p class="text-sm text-custom-shadow/80">
+                                                Status
+                                            </p>
+                                            <Select v-model="filterStatus">
+                                                <SelectTrigger class="w-full">
+                                                    <SelectValue placeholder="Any status" class="flex justify-start" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all" class="cursor-pointer">
+                                                        Any status
+                                                    </SelectItem>
+                                                    <SelectItem value="active" class="cursor-pointer">
+                                                        Active
+                                                    </SelectItem>
+                                                    <SelectItem value="inactive" class="cursor-pointer">
+                                                        Inactive
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                         </div>
-                                    </DropdownMenuTrigger>
 
-                                    <DropdownMenuContent align="end" class="w-fit rounded-lg shadow-lg">
-                                        <DropdownMenuItem
-                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
-                                            @click="createOpen = true"
-                                        >
-                                            <Plus class="h-4 w-4" />
-                                            New Gate
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                            as-child
-                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
-                                        >
-                                            <Link :href="trash().url" class="flex items-center">
-                                                <Archive class="h-4 w-4" />
-                                                Archives
-                                            </Link>
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
+                                        <div class="space-y-2">
+                                            <p class="text-sm text-custom-shadow/80">
+                                                No. of Bays
+                                            </p>
+                                            <Input
+                                                v-model="filterBays"
+                                                type="number"
+                                                min="0"
+                                                placeholder="e.g. 5"
+                                                class="bg-custom-bg"
+                                            />
+                                        </div>
+
+                                        <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                                        <div class="w-full justify-between items-center flex flex-row">
+                                            <Button
+                                                v-if="activeFilterCount > 0"
+                                                size="sm"
+                                                variant="destructive"
+                                                class=""
+                                                @click="clearFilters"
+                                            >
+                                                Clear
+                                            </Button>
+
+                                            <div class="flex ml-auto items-center gap-2">
+                                                <Button
+                                                    variant="ghost-outline"
+                                                    size="sm"
+                                                    class=""
+                                                    @click="filterOpen = false"
+                                                >
+                                                    Cancel
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="float-primary"
+                                                    @click="applyFilters"
+                                                >
+                                                    Apply
+                                                </Button>
+                                            </div>
+                                        </div>  
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
                         </div>
                     </div>
 
-                    <!-- Table -->
-                    <div class="overflow-x-auto">
-                        <Table>
-                            <TableHeader class="border-y border-slate-200">
-                                <TableRow class="gap-2">
-                                    <TableHead class="px-0 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Gate Name</TableHead>
-                                    <TableHead class="px-0 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Status</TableHead>
-                                    <TableHead class="px-0 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Bays</TableHead>
-                                    <!-- <TableHead class="px-0 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Created By</TableHead> -->
-                                    <TableHead class="px-0 text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
+                    <Card
+                        :class="[
+                            'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark dark:border-custom-bg-light py-0 shadow-none dark:inset-shadow-none',
+                            props.gates.data.length === 0 ? 'border-dashed' : 'border-solid',
+                        ]"
+                    >
+                        <div v-if="props.gates.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+                            <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
+                                <div class="grid grid-cols-4 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
+                                    <div class="col-span-1 flex h-10 font-semibold items-center justify-start px-0 pl-3 text-left text-xs uppercase tracking-widest text-custom-shadow/80">Name</div>
+                                    <div class="col-span-1 flex h-10 font-semibold items-center justify-start px-0 text-left text-xs uppercase tracking-widest text-custom-shadow/80">Status</div>
+                                    <div class="col-span-1 flex h-10 font-semibold items-center justify-start px-0 text-left text-xs uppercase tracking-widest text-custom-shadow/80">Bays</div>
+                                    <!-- <TableHead class="uppercase tracking-widest">Created By</TableHead> -->
+                                    <div class="col-span-1 flex h-10 font-semibold items-center justify-end px-0 pr-3 text-left text-xs uppercase tracking-widest text-custom-shadow/80">Actions</div>
+                                </div>
+                                <!-- <TableRow class="border-b-0 hover:bg-transparent">
+                                    <TableHead colspan="5" class="h-auto p-0">
+                                        <hr class="mx-3 border-0 border-t border-custom-bg-dark" />
+                                    </TableHead>
+                                </TableRow> -->
+                            </div>
 
-                            <TableBody class="border-y border-slate-200">
-                                <TableRow v-if="props.gates.data.length === 0" class="hover:bg-transparent">
-                                    <TableCell colspan="5" class="py-20 text-center">
-                                        <div class="flex flex-col items-center gap-3">
-                                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-                                                <Archive class="h-6 w-6 text-muted-foreground/40" />
-                                            </div>
-                                            <div>
-                                                <p class="text-sm font-semibold text-foreground">No gates found</p>
-                                                <p class="mt-0.5 text-xs text-muted-foreground">
-                                                    {{ activeFilterCount > 0 ? 'Try adjusting or clearing your filters.' : 'Try adjusting your search or add a new gate.' }}
-                                                </p>
-                                            </div>
-                                            <Button
-                                                v-if="activeFilterCount > 0"
-                                                variant="outline"
-                                                size="sm"
-                                                class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
-                                                @click="clearFilters"
-                                            >
-                                                <X class="mr-2 h-3.5 w-3.5" />
-                                                Clear filters
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-
-                                <TableRow
-                                    v-for="gate in props.gates.data"
+                            <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+                                <template
+                                    v-for="(gate, index) in props.gates.data"
                                     :key="gate.id"
-                                    class="group transition-colors hover:bg-muted/30"
                                 >
-                                    <TableCell class="text-sm font-semibold capitalize px-0">{{ gate.gate_name }}</TableCell>
+                                <div
+                                    :class="[
+                                        'text-custom-shadow/80 grid grid-cols-4 border-b border-custom-bg-dark dark:border-custom-bg-light transition-colors cursor-pointer hover:bg-custom-secondary/10 hover:text-custom-shadow items-center',
+                                        index === props.gates.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                        previewedGate?.id === gate.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
+                                    ]"
+                                    @click="openPreview(gate)"
+                                >
+                                    <div class="col-span-1 flex justify-start py-1.5 pl-3 font-semibold capitalize">{{ gate.gate_name }}</div>
 
-                                    <TableCell class="px-0">
+                                    <div class="col-span-1 flex justify-start py-1.5">
                                         <Badge :class="['gap-1.5', statusClass(gate.status)]">
                                             <span :class="['h-1.5 w-1.5 rounded-full', statusDot(gate.status)]" />
                                             {{ gate.status === 'active' ? 'Active' : 'Inactive' }}
                                         </Badge>
-                                    </TableCell>
+                                    </div>
 
-                                    <TableCell class="text-sm tabular-nums text-muted-foreground px-0">{{ gate.bays }}</TableCell>
+                                    <div class="col-span-1 flex justify-start py-1.5 tabular-nums">{{ gate.bays }}</div>
 
                                     <!-- <TableCell class="text-sm text-muted-foreground">{{ gate.creator?.name ?? '—' }}</TableCell> -->
 
-                                    <TableCell class="text-right px-0">
+                                    <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right" @click.stop>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
-                                                <Button variant="outline" class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer">
-                                                    <MoreHorizontal class="h-4 w-4" />
-                                                    <span class="sr-only">Open actions</span>
+                                                <Button
+                                                    variant="table-more"
+                                                    size="icon-more"
+                                                    class=""
+                                                >
+                                                    <RiMore2Line class="h-4 w-4" />
                                                 </Button>
                                             </DropdownMenuTrigger>
 
@@ -504,7 +517,15 @@ const archiveGate = () => {
                                                 </DropdownMenuLabel>
                                                 <DropdownMenuSeparator />
 
-                                                <DropdownMenuItem as-child class="rounded-lg hover:bg-slate-100 cursor-pointer" @click="openShow(gate)">
+                                                <DropdownMenuItem
+                                                    class="hidden rounded-lg hover:bg-slate-100 cursor-pointer lg:flex"
+                                                    @click="openPreview(gate)"
+                                                >
+                                                    <Eye class="h-4 w-4" />
+                                                    View
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuItem as-child class="rounded-lg hover:bg-slate-100 cursor-pointer lg:hidden">
                                                     <Link :href="show(gate.id).url" class="flex items-center">
                                                         <Eye class="h-4 w-4" />
                                                         View
@@ -517,16 +538,219 @@ const archiveGate = () => {
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
+                                    </div>
+                                </div>
+
+                                <!-- <TableRow
+                                    v-if="index < props.gates.data.length - 1"
+                                    class="border-b-0 hover:bg-transparent"
+                                >
+                                    <TableCell colspan="5" class="py-0">
+                                        <hr class="mx-3 border-0 border-t border-custom-bg-dark" />
                                     </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
-                    </div>
+                                </TableRow> -->
+                                </template>
+                            </div>
+                        </div>
+
+                        <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                            <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                                <img
+                                    :src="emptyRafikiUrl"
+                                    alt=""
+                                    class="w-1/3 object-contain opacity-90"
+                                    aria-hidden="true"
+                                />
+                                <div class="space-y-1">
+                                    <p class="text-custom-shadow text-base font-semibold">No gates found</p>
+                                    <p class="text-custom-shadow/80 text-sm">
+                                        {{ activeFilterCount > 0 ? 'Try adjusting or clearing your filters.' : 'Try adjusting your search or add a new gate.' }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
 
                     <InertiaPagination
                         :links="props.gates.links"
                         :meta="{ from: props.gates.from, to: props.gates.to, total: props.gates.total }"
                     />
+                </CardContent>
+            </Card>
+
+            <Card
+                class="hidden min-h-0 lg:flex lg:h-full lg:w-100"
+            >
+                <CardHeader
+                    v-if="previewedGate"
+                    class="flex flex-row items-start justify-between gap-3"
+                >
+                    <div class="min-w-0">
+                        <CardTitle class="truncate capitalize">
+                            {{ previewedGate.gate_name }}
+                        </CardTitle>
+                        <CardDescription>Preview</CardDescription>
+                    </div>
+                    <Button
+                        variant="header-actions"
+                        size="icon"
+                        class="h-8 w-8 shrink-0 rounded-full"
+                        @click="previewedGate = null"
+                    >
+                        <RiCloseLine class="h-4 w-4" />
+                    </Button>
+                </CardHeader>
+
+                <CardContent
+                    v-if="previewedGate"
+                    class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto py-2"
+                >
+                    <div class="flex aspect-4/3 items-center justify-center overflow-hidden rounded-md border border-dashed border-custom-bg-dark dark:border-none bg-custom-bg dark:bg-custom-bg-dark text-custom-shadow/70">
+                        <img
+                            v-if="previewedGate.picture_url"
+                            :src="previewedGate.picture_url"
+                            :alt="`${previewedGate.gate_name} photo`"
+                            class="h-full w-full object-cover"
+                        />
+                        <div v-else class="flex flex-col items-center gap-1 text-center">
+                            <RiImageAddLine class="h-6 w-6" />
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 pt-2">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm text-custom-shadow font-semibold">Status</span>
+                            <Badge :class="['gap-1.5', statusClass(previewedGate.status)]">
+                                <span :class="['h-1.5 w-1.5 rounded-full', statusDot(previewedGate.status)]" />
+                                {{ previewedGate.status === 'active' ? 'Active' : 'Inactive' }}
+                            </Badge>
+                        </div>
+
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm text-custom-shadow font-semibold">Location</span>
+                            <span class="text-right text-sm">
+                                {{ previewedGate.location.label }}
+                            </span>
+                        </div>
+
+                        <!-- <div class="flex items-center justify-between gap-3 border-b border-custom-bg-dark pb-3">
+                            <span class="text-sm text-custom-shadow/70">Created By</span>
+                            <span class="truncate text-sm font-medium">{{ previewedGate.creator?.name ?? 'Not recorded' }}</span>
+                        </div> -->
+
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <p class="text-sm font-semibold text-custom-shadow">Bay Status</p>
+                                <span class="text-sm text-custom-shadow">
+                                    {{ previewedGate.bay_statuses.filter((bay) => bay.status === 'occupied').length }} occupied out of {{ previewedGate.bays }}
+                                </span>
+                            </div>
+
+                            <!-- <div
+                                v-if="previewedGate.bay_statuses.length > 0"
+                                class="space-y-2"
+                            >
+                                <div
+                                    v-for="bay in previewedGate.bay_statuses"
+                                    :key="bay.bay_number"
+                                    class="rounded-md bg-custom-bg px-3 py-2"
+                                >
+                                    <div class="flex items-center justify-between gap-3">
+                                        <span class="text-sm font-medium">Bay {{ bay.bay_number }}</span>
+                                        <Badge
+                                            :class="bay.status === 'occupied'
+                                                ? 'bg-custom-secondary/20 text-custom-shadow'
+                                                : 'bg-emerald-100 text-emerald-700'"
+                                        >
+                                            {{ bay.status === 'occupied' ? 'Occupied' : 'Empty' }}
+                                        </Badge>
+                                    </div>
+                                    <p
+                                        v-if="bay.status === 'occupied'"
+                                        class="mt-1 text-xs text-custom-shadow/70"
+                                    >
+                                        {{ bay.vehicle?.plate_number ?? 'Unknown unit' }}
+                                        <span v-if="bay.vehicle?.body_number">/ Body #{{ bay.vehicle.body_number }}</span>
+                                        - {{ bay.company?.company_name ?? 'Unknown company' }}
+                                    </p>
+                                </div>
+                            </div>
+                            <p
+                                v-else
+                                class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70"
+                            >
+                                No bays configured.
+                            </p> -->
+                        </div>
+
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <p class="text-sm font-semibold text-custom-shadow">Assigned Routes</p>
+                                <span class="text-sm text-custom-shadow">
+                                    {{ previewedGate.assigned_routes.length }}
+                                </span>
+                            </div>
+                            <!-- TODO: redesign the routes list, i dont like it, and the image part too -->
+
+                            <div
+                                v-if="previewedGate.assigned_routes.length > 0"
+                                class="space-y-2"
+                            >
+                                <div
+                                    v-for="route in previewedGate.assigned_routes"
+                                    :key="route.id"
+                                    class="flex items-center justify-between gap-3 rounded-md bg-custom-bg dark:bg-custom-bg-dark px-3 py-2"
+                                >
+                                    <span class="truncate text-sm font-medium">{{ route.route_name }}</span>
+                                    <span class="shrink-0 text-xs capitalize text-custom-shadow/70">{{ route.status }}</span>
+                                </div>
+                            </div>
+                            <p
+                                v-else
+                                class="rounded-md bg-custom-bg dark:bg-custom-bg-dark px-3 py-2 text-sm text-custom-shadow/70"
+                            >
+                                No routes assigned.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- <hr class="border-custom-bg-dark dark:border-custom-bg-light my-4"> -->
+                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                    <div class="flex items-center justify-between gap-2">
+                        <Button
+                            variant="ghost-outline"
+                            size="icon-text"
+                            @click="openEdit(previewedGate)"
+                        >
+                            <RiEditLine class="h-4 w-4" />
+                            Edit
+                        </Button>
+                        <Button
+                            as-child
+                            variant="float-primary"
+                            size="icon"
+                        >
+                            <Link :href="show(previewedGate.id).url">
+                                <RiExternalLinkLine class="h-4 w-4" />
+                            </Link>
+                        </Button>
+                    </div>
+                </CardContent>
+
+                <CardContent
+                    v-else
+                    class="flex min-h-0 flex-1 items-center justify-center"
+                >
+                    <div class="max-w-60 text-center space-y-1">
+                        <!-- <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-custom-bg text-custom-shadow/70">
+                            <RiEyeLine class="h-6 w-6" />
+                        </div> -->
+                        <p class="text-custom-shadow text-base font-semibold">No gate selected</p>
+                        <p class="text-custom-shadow/80 text-sm">
+                            Click on a gate to preview.
+                        </p>
+                    </div>
                 </CardContent>
             </Card>
         </div>

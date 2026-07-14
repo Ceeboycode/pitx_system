@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { create, destroy, edit, index, trash } from '@/routes/roles';
 import { type BreadcrumbItem } from '@/types';
@@ -224,7 +224,7 @@ function deleteRole() {
                     <CardTitle class="flex items-center gap-2">
                         Roles
                         <div class="ml-2 flex flex-1 items-center">
-                            <hr class="h-px w-full border border-rose-500 " />
+                            <hr class="h-px w-full border border-rose-500" />
                             <div class="border-7 border-rose-500 rounded-xs">
                                 <div class="border-3 border-white rounded-xs"></div>
                             </div>

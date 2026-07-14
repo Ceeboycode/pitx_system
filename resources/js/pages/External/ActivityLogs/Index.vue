@@ -2,6 +2,7 @@
 import { externalMyActivity } from '@/actions/App/Http/Controllers/AuditLogController';
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
+import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,15 +41,15 @@ import {
 import ExternalLayout from '@/layouts/ExternalLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import {
-    ArrowRight,
-    CalendarDays,
-    FileSearch,
-    Filter,
-    History,
-    ShieldCheck,
-    SlidersHorizontal,
-    X,
-} from 'lucide-vue-next';
+    RiArrowRightLine as ArrowRight,
+    RiCalendarLine as CalendarDays,
+    RiCloseLine as X,
+    RiEqualizerLine as SlidersHorizontal,
+    RiFilterLine as Filter,
+    RiHistoryLine as History,
+    RiSearchEyeLine as FileSearch,
+    RiShieldCheckLine as ShieldCheck,
+} from 'vue-remix-icons';
 import { computed, ref } from 'vue';
 
 interface ChangeLine {
@@ -184,8 +185,8 @@ function actionDot(action: string): string {
     <Head title="My Activity Logs" />
 
     <ExternalLayout>
-        <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-            <Card>
+        <div class="mx-auto flex h-full min-h-0 max-w-7xl flex-col space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+            <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader>
                     <div>
                         <CardTitle class="flex items-center gap-2 text-xl">
@@ -205,7 +206,7 @@ function actionDot(action: string): string {
                     </CardAction>
                 </CardHeader>
 
-                <CardContent class="space-y-4">
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
 
                     <!-- Filters row -->
                     <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
@@ -299,23 +300,29 @@ function actionDot(action: string): string {
                     </div>
 
                     <!-- Table -->
-                    <div class="overflow-x-auto rounded-lg border border-slate-200">
+                    <Card
+                        :class="[
+                            'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
+                            auditLogs.data.length === 0 ? 'border-dashed' : 'border-solid',
+                        ]"
+                    >
+                    <div class="no-scrollbar min-h-0 flex-1 overflow-auto">
                         <Table>
-                            <TableHeader>
-                                <TableRow class="bg-slate-50/80 hover:bg-slate-50/80">
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                            <TableHeader v-if="auditLogs.data.length > 0" class="border-b border-custom-bg-dark dark:border-custom-bg-light">
+                                <TableRow>
+                                    <TableHead class="text-[11px] font-semibold uppercase tracking-widest text-custom-shadow/80">
                                         Action
                                     </TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                                    <TableHead class="text-[11px] font-semibold uppercase tracking-widest text-custom-shadow/80">
                                         Entity
                                     </TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                                    <TableHead class="text-[11px] font-semibold uppercase tracking-widest text-custom-shadow/80">
                                         Summary
                                     </TableHead>
-                                    <TableHead class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                                    <TableHead class="text-[11px] font-semibold uppercase tracking-widest text-custom-shadow/80">
                                         When
                                     </TableHead>
-                                    <TableHead class="text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                                    <TableHead class="text-right text-[11px] font-semibold uppercase tracking-widest text-custom-shadow/80">
                                         Details
                                     </TableHead>
                                 </TableRow>
@@ -326,9 +333,12 @@ function actionDot(action: string): string {
                                 <TableRow v-if="auditLogs.data.length === 0" class="hover:bg-transparent">
                                     <TableCell colspan="5" class="py-20 text-center">
                                         <div class="flex flex-col items-center gap-3">
-                                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
-                                                <FileSearch class="h-6 w-6 text-slate-400" />
-                                            </div>
+                                            <img
+                                                :src="emptyRafikiUrl"
+                                                alt=""
+                                                class="w-32 object-contain opacity-90"
+                                                aria-hidden="true"
+                                            />
                                             <div>
                                                 <p class="text-sm font-semibold text-foreground">No activity found</p>
                                                 <p class="mt-0.5 text-xs text-muted-foreground">
@@ -337,9 +347,8 @@ function actionDot(action: string): string {
                                             </div>
                                             <Button
                                                 v-if="hasActiveFilters"
-                                                variant="outline"
+                                                variant="destructive"
                                                 size="sm"
-                                                class="rounded-lg text-xs"
                                                 @click="clearFilters"
                                             >
                                                 <X class="mr-1.5 h-3.5 w-3.5" />
@@ -352,7 +361,7 @@ function actionDot(action: string): string {
                                 <TableRow
                                     v-for="log in auditLogs.data"
                                     :key="log.id"
-                                    class="transition-colors hover:bg-slate-50/60"
+                                    class="border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light"
                                 >
                                     <!-- Action badge -->
                                     <TableCell>
@@ -401,8 +410,8 @@ function actionDot(action: string): string {
                                             <DialogTrigger as-child>
                                                 <Button
                                                     size="icon"
-                                                    variant="outline"
-                                                    class="h-8 w-8 rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
+                                                    variant="table-more"
+                                                    class="h-8 w-8 cursor-pointer"
                                                 >
                                                     <FileSearch class="h-3.5 w-3.5" />
                                                 </Button>
@@ -483,6 +492,7 @@ function actionDot(action: string): string {
                             </TableBody>
                         </Table>
                     </div>
+                    </Card>
 
                     <InertiaPagination
                         :links="auditLogs.links"

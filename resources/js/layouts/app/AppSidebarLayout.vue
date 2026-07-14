@@ -21,11 +21,11 @@ const isOpen = usePage().props.sidebarOpen;
         <AppSidebar />
         <div
             data-slot="sidebar-inset"
-            class="relative flex min-h-screen w-full flex-1 flex-col overflow-x-hidden bg-custom-bg-light dark:bg-custom-bg lg:pb-6 lg:pr-6"
+            class="relative flex h-screen min-h-0 w-full flex-1 flex-col overflow-x-hidden bg-custom-bg-light dark:bg-custom-bg lg:pb-6 lg:pr-6"
         >
             <AppSidebarHeader :breadcrumbs="breadcrumbs" />
-            <main class="flex-1 bg-custom-bg p-6 shadow-sm inset-shadow-sm dark:bg-custom-bg-dark dark:shadow-white/5 dark:inset-shadow-none lg:rounded-xl">
-                <div class="mx-auto min-h-full w-full max-w-7xl">
+            <main class="flex min-h-0 flex-1 flex-col bg-custom-bg p-6 shadow-sm inset-shadow-sm dark:bg-custom-bg-dark dark:shadow-white/5 dark:inset-shadow-none lg:rounded-3xl">
+                <div class="mx-auto flex min-h-0 w-full flex-1 flex-col">
                     <slot />
                 </div>
             </main>

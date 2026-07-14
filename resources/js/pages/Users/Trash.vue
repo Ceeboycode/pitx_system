@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 
@@ -121,7 +121,7 @@ function confirmRestore() {
                         </Button>
                         Archives
                         <span class="ml-2 flex flex-1 items-center">
-                            <hr class="h-px w-full border border-rose-500 " />
+                            <hr class="h-px w-full border border-rose-500" />
                             <div class="border-7 border-rose-500 rounded-xs">
                                 <div class="border-3 border-white rounded-xs"></div>
                             </div>

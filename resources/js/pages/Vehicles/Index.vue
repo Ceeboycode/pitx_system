@@ -2,6 +2,7 @@
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import ImportVehicleDialog from '@/components/vehicle/ImportVehicleDialog.vue';
+import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 
 import {
     AlertDialog,
@@ -42,34 +43,23 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
-    Archive,
-    ArrowDown,
-    ArrowUp,
-    ArrowUpDown,
-    Bus,
-    Download,
-    Ellipsis,
-    FileSearch,
-    FileText,
-    Filter,
-    Loader2,
-    MoreHorizontal,
-    Power,
-    Upload,
-    X,
-} from 'lucide-vue-next';
+    RiArchive2Line,
+    RiArrowDownSLine,
+    RiArrowUpDownLine,
+    RiArrowUpSLine,
+    RiDownloadLine,
+    RiFileSearchLine,
+    RiFileTextLine,
+    RiFilter2Line,
+    RiLoaderLine,
+    RiMore2Line,
+    RiShutDownLine,
+    RiUploadLine,
+} from 'vue-remix-icons';
 import { computed, ref } from 'vue';
 
 import { destroy, index, show, trash } from '@/routes/vehicles';
@@ -158,6 +148,7 @@ const vehicleTypeFilter = ref<string>(props.filters.vehicle_type ?? 'all');
 const routeFilter = ref<string>(props.filters.route_id ?? 'all');
 const sortBy = ref<SortField>(props.filters.sort_by ?? null);
 const sortDir = ref<SortDir>(props.filters.sort_dir ?? 'asc');
+const filterOpen = ref(false);
 
 const hasActiveFilters = computed(
     () =>
@@ -173,6 +164,14 @@ const hasCategoryFilters = computed(
         (vehicleTypeFilter.value && vehicleTypeFilter.value !== 'all') ||
         (routeFilter.value && routeFilter.value !== 'all'),
 );
+
+const activeFilterCount = computed(() => {
+    let count = 0;
+    if (statusFilter.value && statusFilter.value !== 'all') count++;
+    if (vehicleTypeFilter.value && vehicleTypeFilter.value !== 'all') count++;
+    if (routeFilter.value && routeFilter.value !== 'all') count++;
+    return count;
+});
 
 function applyFilters(
     overrides: Record<string, string | null | undefined> = {},
@@ -199,21 +198,20 @@ function applyFilters(
             only: ['vehicles', 'filters', 'flash'],
         },
     );
+
+    filterOpen.value = false;
 }
 
 function onStatusChange(val: string) {
     statusFilter.value = val;
-    applyFilters();
 }
 
 function onVehicleTypeChange(val: string) {
     vehicleTypeFilter.value = val;
-    applyFilters();
 }
 
 function onRouteChange(val: string) {
     routeFilter.value = val;
-    applyFilters();
 }
 
 function toggleSort(field: SortField) {
@@ -244,14 +242,14 @@ function clearFilters() {
 /* ── Sort icon helpers ───────────────────────────────────────────── */
 
 function sortIcon(field: SortField) {
-    if (sortBy.value !== field) return ArrowUpDown;
-    return sortDir.value === 'asc' ? ArrowUp : ArrowDown;
+    if (sortBy.value !== field) return RiArrowUpDownLine;
+    return sortDir.value === 'asc' ? RiArrowUpSLine : RiArrowDownSLine;
 }
 
 function sortIconClass(field: SortField) {
     return sortBy.value === field
-        ? 'text-blue-600'
-        : 'text-muted-foreground/40';
+        ? 'text-custom-primary'
+        : 'text-custom-shadow/40';
 }
 
 /* ── Helpers ─────────────────────────────────────────────────────── */
@@ -388,71 +386,130 @@ const archiveVehicle = (vehicle: VehicleItem) => {
     <Head title="Vehicles" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
-        >
-            <Card>
-                <CardHeader>
-                    <CardTitle class="flex items-center gap-2">
-                        Vehicles
-                        <div class="ml-2 flex w-full items-center">
-                            <hr class="h-px w-full border border-rose-500" />
-                            <div class="rounded-xs border-7 border-rose-500">
-                                <div
-                                    class="rounded-xs border-3 border-white"
-                                ></div>
-                            </div>
+        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+            <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
+                <CardHeader class="flex flex-row gap-2">
+                    <div class="flex flex-col">
+                        <CardTitle class="flex items-center gap-2">
+                            <span class="font-semibold">Vehicles</span>
+                        </CardTitle>
+                        <CardDescription>List of all vehicles in the system.</CardDescription>
+                    </div>
+                    <div class="flex flex-1 justify-end gap-2">
+                        <div class="lg:flex items-center gap-2 sm:justify-end">
+                            <Button
+                                variant="float-primary"
+                                class="hidden lg:flex"
+                                @click="importOpen = true"
+                            >
+                                <RiUploadLine class="h-4 w-4 shrink-0" />
+                                <span>Import</span>
+                            </Button>
+
+                            <Button
+                                variant="float"
+                                class="hidden lg:flex"
+                                :disabled="exporting"
+                                @click="triggerExport"
+                            >
+                                <RiLoaderLine
+                                    v-if="exporting"
+                                    class="h-4 w-4 shrink-0 animate-spin"
+                                />
+                                <RiDownloadLine
+                                    v-else
+                                    class="h-4 w-4 shrink-0"
+                                />
+                                <span>{{ exporting ? 'Exporting...' : 'Export' }}</span>
+                            </Button>
+
+                            <DropdownMenu class="w-fit">
+                                <DropdownMenuTrigger as-child class="m-0">
+                                    <div class="inline-flex">
+                                        <Button
+                                            variant="header-actions"
+                                            class="text-custom-shadow"
+                                            size="icon"
+                                            aria-label="Open vehicle actions"
+                                        >
+                                            <RiMore2Line class="h-4 w-4 shrink-0" />
+                                        </Button>
+                                    </div>
+                                </DropdownMenuTrigger>
+
+                                <DropdownMenuContent align="end" class="w-fit">
+                                    <DropdownMenuItem
+                                        as-child
+                                        class="cursor-pointer lg:hidden"
+                                        @click="importOpen = true"
+                                    >
+                                        <button type="button" class="flex w-full items-center">
+                                            <RiUploadLine class="h-4 w-4" />
+                                            Import
+                                        </button>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        as-child
+                                        class="cursor-pointer lg:hidden"
+                                        @click="triggerExport"
+                                    >
+                                        <button type="button" class="flex w-full items-center">
+                                            <RiDownloadLine class="h-4 w-4" />
+                                            Export
+                                        </button>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem as-child class="cursor-pointer">
+                                        <Link :href="trash().url" class="flex items-center">
+                                            <RiArchive2Line class="h-4 w-4" />
+                                            Archives
+                                        </Link>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
-                    </CardTitle>
-                    <CardDescription class="mt-1">
-                        List of all vehicles in the system.
-                    </CardDescription>
+                    </div>
                 </CardHeader>
 
-                <CardContent class="space-y-4">
-                    <div
-                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                        <div class="w-50/100">
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                    <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
+                        <div class="w-full">
                             <SearchInput
                                 :route="index().url"
                                 :initial-value="filters.search"
                                 placeholder="Search vehicles…"
                                 :only="['vehicles', 'filters', 'flash']"
                                 :debounce="350"
-                                class="rounded-lg shadow-sm"
                             />
                         </div>
-                        <div
-                            class="flex min-w-50/100 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                        >
-                            <div class="flex flex-wrap items-center gap-2">
-                                <Popover>
-                                    <PopoverTrigger
-                                        as-child
-                                        class="h-full w-fit cursor-pointer rounded-lg border-slate-200 shadow-sm"
+
+                        <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
+                            <Popover v-model:open="filterOpen">
+                                <PopoverTrigger as-child>
+                                    <Button
+                                        variant="header-actions"
+                                        size="icon-text"
+                                        class="rounded-full"
+                                        :class="
+                                            activeFilterCount > 0
+                                                ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-300 dark:hover:text-custom-shadow'
+                                                : ''
+                                        "
                                     >
-                                        <Button
-                                            variant="outline"
-                                            class="rounded-lg border-slate-200 px-3 text-slate-600 shadow-sm hover:bg-slate-100"
-                                        >
-                                            <Filter class="h-3.5 w-3.5" />
+                                        <RiFilter2Line class="h-3.5 w-3.5" />
+                                        <span class="hidden lg:flex">
                                             {{
-                                                hasCategoryFilters
-                                                    ? 'Filters Active'
-                                                    : 'Filters'
+                                                activeFilterCount > 0
+                                                    ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
+                                                    : 'Filter'
                                             }}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                        align="start"
-                                        class="w-80 rounded-lg border-slate-200 p-4 shadow-lg"
-                                    >
-                                        <div class="grid gap-y-4">
+                                        </span>
+                                    </Button>
+                                </PopoverTrigger>
+
+                                <PopoverContent align="start">
+                                    <div class="grid gap-y-2">
                                             <div class="space-y-2">
-                                                <p
-                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-                                                >
+                                                <p class="text-sm text-custom-shadow/80">
                                                     Status
                                                 </p>
                                                 <Select
@@ -462,7 +519,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     "
                                                 >
                                                     <SelectTrigger
-                                                        class="h-8 w-full cursor-pointer rounded-lg border-slate-200 shadow-sm"
+                                                        class="w-full"
                                                     >
                                                         <SelectValue
                                                             placeholder="All Statuses"
@@ -470,7 +527,6 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                         />
                                                     </SelectTrigger>
                                                     <SelectContent
-                                                        class="rounded-lg shadow-lg"
                                                     >
                                                         <SelectItem
                                                             value="all"
@@ -513,9 +569,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                             </div>
 
                                             <div class="space-y-2">
-                                                <p
-                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-                                                >
+                                                <p class="text-sm text-custom-shadow/80">
                                                     Vehicle Type
                                                 </p>
                                                 <Select
@@ -527,7 +581,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     "
                                                 >
                                                     <SelectTrigger
-                                                        class="h-8 w-full cursor-pointer rounded-lg border-slate-200 shadow-sm"
+                                                        class="w-full"
                                                     >
                                                         <SelectValue
                                                             placeholder="All Types"
@@ -535,7 +589,6 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                         />
                                                     </SelectTrigger>
                                                     <SelectContent
-                                                        class="rounded-lg shadow-lg"
                                                     >
                                                         <SelectItem
                                                             value="all"
@@ -578,9 +631,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                             </div>
 
                                             <div class="space-y-2">
-                                                <p
-                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-                                                >
+                                                <p class="text-sm text-custom-shadow/80">
                                                     Route
                                                 </p>
                                                 <Select
@@ -590,7 +641,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     "
                                                 >
                                                     <SelectTrigger
-                                                        class="h-8 w-full cursor-pointer rounded-lg border-slate-200 shadow-sm"
+                                                        class="w-full"
                                                     >
                                                         <SelectValue
                                                             placeholder="All Routes"
@@ -598,7 +649,6 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                         />
                                                     </SelectTrigger>
                                                     <SelectContent
-                                                        class="rounded-lg shadow-lg"
                                                     >
                                                         <SelectItem
                                                             value="all"
@@ -622,515 +672,230 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                 </Select>
                                             </div>
 
-                                            <div class="flex justify-end">
+                                            <hr class="my-1 h-px border-0 bg-custom-bg-dark">
+
+                                            <div class="flex w-full flex-row items-center justify-between">
                                                 <Button
-                                                    v-if="hasCategoryFilters"
+                                                    v-if="hasActiveFilters"
                                                     size="sm"
-                                                    variant="ghost"
-                                                    class="h-8 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
+                                                    variant="destructive"
                                                     @click="clearFilters"
                                                 >
-                                                    <X
-                                                        class="mr-1 h-3.5 w-3.5"
-                                                    />
-                                                    Clear filters
+                                                    Clear
                                                 </Button>
+
+                                                <div class="ml-auto flex items-center gap-2">
+                                                    <Button
+                                                        variant="ghost-outline"
+                                                        size="sm"
+                                                        @click="filterOpen = false"
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="float-primary"
+                                                        @click="applyFilters"
+                                                    >
+                                                        Apply
+                                                    </Button>
+                                                </div>
                                             </div>
                                         </div>
                                     </PopoverContent>
                                 </Popover>
-                            </div>
-                            <div
-                                class="flex min-w-50/100 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end"
-                            >
-                                <div
-                                    class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm"
-                                >
-                                    <Button
-                                        variant="ghost"
-                                        class="group/segment cursor-pointer gap-0 rounded-l-lg rounded-r-none border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10"
-                                        @click="importOpen = true"
-                                    >
-                                        <Upload class="h-4 w-4 shrink-0" />
-                                        <span
-                                            class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-20 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-20 group-focus-visible/segment:opacity-100"
-                                        >
-                                            Import
-                                        </span>
-                                    </Button>
-                                    <div
-                                        aria-hidden="true"
-                                        class="w-px shrink-0 self-stretch bg-slate-200"
-                                    />
-                                    <Button
-                                        variant="ghost"
-                                        class="group/segment cursor-pointer gap-0 rounded-l-none rounded-r-lg px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10"
-                                        :disabled="exporting"
-                                        @click="triggerExport"
-                                    >
-                                        <Loader2
-                                            v-if="exporting"
-                                            class="h-4 w-4 shrink-0 animate-spin"
-                                        />
-                                        <Download
-                                            v-else
-                                            class="h-4 w-4 shrink-0"
-                                        />
-                                        <span
-                                            class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-24 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-24 group-focus-visible/segment:opacity-100"
-                                        >
-                                            {{
-                                                exporting
-                                                    ? 'Exporting…'
-                                                    : 'Export'
-                                            }}
-                                        </span>
-                                    </Button>
-                                </div>
-
-                                <DropdownMenu class="w-fit">
-                                    <DropdownMenuTrigger as-child class="m-0">
-                                        <div
-                                            class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm"
-                                        >
-                                            <Button
-                                                variant="ghost"
-                                                class="group/segment cursor-pointer gap-0 rounded-lg border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10"
-                                            >
-                                                <Ellipsis
-                                                    class="h-4 w-4 shrink-0"
-                                                />
-                                                <span
-                                                    class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-20 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-20 group-focus-visible/segment:opacity-100"
-                                                >
-                                                    Actions
-                                                </span>
-                                            </Button>
-                                        </div>
-                                    </DropdownMenuTrigger>
-
-                                    <DropdownMenuContent
-                                        align="end"
-                                        class="w-fit rounded-lg shadow-lg"
-                                    >
-                                        <DropdownMenuItem
-                                            as-child
-                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
-                                        >
-                                            <Link
-                                                :href="trash().url"
-                                                class="flex items-center"
-                                            >
-                                                <Archive class="h-4 w-4" />
-                                                Archives
-                                            </Link>
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
                         </div>
                     </div>
 
-                    <!-- Table -->
-                    <div class="overflow-x-auto">
-                        <Table>
-                            <TableHeader class="border-y border-slate-200">
-                                <TableRow class="gap-2">
-                                    <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Company</TableHead
-                                    >
-                                    <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Route</TableHead
-                                    >
-                                    <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Vehicle Info</TableHead
-                                    >
-                                    <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Plate Number</TableHead
-                                    >
+                    <Card
+                        :class="[
+                            'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
+                            vehicles.data.length === 0 ? 'border-dashed' : 'border-solid',
+                        ]"
+                    >
+                        <div v-if="vehicles.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+                            <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
+                                <div class="grid grid-cols-8 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
+                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 pl-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Company</div>
+                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Route</div>
+                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Vehicle</div>
+                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Plate</div>
 
-                                    <!-- Sortable: Capacity -->
-                                    <TableHead
-                                        class="cursor-pointer px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                    <button
+                                        type="button"
+                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('capacity')"
                                     >
-                                        <div class="flex items-center gap-1.5">
-                                            Cap.
-                                            <component
-                                                :is="sortIcon('capacity')"
-                                                class="h-3.5 w-3.5"
-                                                :class="
-                                                    sortIconClass('capacity')
-                                                "
-                                            />
-                                        </div>
-                                    </TableHead>
+                                        Cap.
+                                        <component
+                                            :is="sortIcon('capacity')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('capacity')"
+                                        />
+                                    </button>
 
-                                    <!-- Sortable: Status -->
-                                    <TableHead
-                                        class="cursor-pointer px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                    <button
+                                        type="button"
+                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('status')"
                                     >
-                                        <div class="flex items-center gap-1.5">
-                                            Status
-                                            <component
-                                                :is="sortIcon('status')"
-                                                class="h-3.5 w-3.5"
-                                                :class="sortIconClass('status')"
-                                            />
-                                        </div>
-                                    </TableHead>
+                                        Status
+                                        <component
+                                            :is="sortIcon('status')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('status')"
+                                        />
+                                    </button>
 
-                                    <!-- Sortable: Created -->
-                                    <!-- <TableHead
-                                        class="px-0 cursor-pointer text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
-                                        @click="toggleSort('created_at')"
-                                    >
-                                        <div class="flex items-center gap-1.5">
-                                            Created
-                                            <component
-                                                :is="sortIcon('created_at')"
-                                                class="h-3.5 w-3.5"
-                                                :class="
-                                                    sortIconClass('created_at')
-                                                "
-                                            />
-                                        </div>
-                                    </TableHead> -->
+                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Remarks</div>
+                                    <div class="col-span-1 flex h-10 items-center justify-end px-0 pr-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Actions</div>
+                                </div>
+                            </div>
 
-                                    <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Remarks</TableHead
-                                    >
-
-                                    <TableHead
-                                        class="px-0 text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Actions</TableHead
-                                    >
-                                </TableRow>
-                            </TableHeader>
-
-                            <TableBody class="border-y border-slate-200">
-                                <!-- Empty state -->
-                                <TableRow
-                                    v-if="vehicles.data.length === 0"
-                                    class="hover:bg-transparent"
-                                >
-                                    <TableCell
-                                        colspan="9"
-                                        class="py-20 text-center"
-                                    >
-                                        <div
-                                            class="flex flex-col items-center gap-3"
-                                        >
-                                            <div
-                                                class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted"
-                                            >
-                                                <Bus
-                                                    class="h-6 w-6 text-muted-foreground/40"
-                                                />
-                                            </div>
-                                            <div>
-                                                <p
-                                                    class="text-sm font-semibold text-foreground"
-                                                >
-                                                    No vehicles found
-                                                </p>
-                                                <p
-                                                    class="mt-0.5 text-xs text-muted-foreground"
-                                                >
-                                                    {{
-                                                        hasActiveFilters
-                                                            ? 'Try adjusting your filters or search.'
-                                                            : 'Try adjusting your search.'
-                                                    }}
-                                                </p>
-                                            </div>
-                                            <Button
-                                                v-if="hasActiveFilters"
-                                                size="sm"
-                                                variant="outline"
-                                                class="mt-1 h-8 rounded-lg text-xs"
-                                                @click="clearFilters"
-                                            >
-                                                <X class="mr-1.5 h-3.5 w-3.5" />
-                                                Clear filters
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-
-                                <TableRow
-                                    v-for="vehicle in vehicles.data"
+                            <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+                                <div
+                                    v-for="(vehicle, rowIndex) in vehicles.data"
                                     :key="vehicle.id"
-                                    class="group transition-colors hover:bg-muted/30"
+                                    :class="[
+                                        'grid grid-cols-8 items-center border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                        rowIndex === vehicles.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                    ]"
                                 >
-                                    <!-- Company -->
-                                    <TableCell class="px-0 text-sm font-medium">
-                                        {{
-                                            vehicle.company?.company_name || '—'
-                                        }}
-                                    </TableCell>
+                                    <div class="col-span-1 flex min-w-0 justify-start py-1.5 pl-3 text-sm font-medium">
+                                        <span class="truncate">{{ vehicle.company?.company_name || '—' }}</span>
+                                    </div>
 
-                                    <!-- Route -->
-                                    <TableCell class="px-0">
-                                        <div
-                                            v-if="vehicle.route?.route_name"
-                                            class="flex items-center gap-1.5"
-                                        >
-                                            <!-- <RouteIcon
-                                                class="h-3.5 w-3.5 shrink-0 text-sky-600"
-                                            /> -->
-                                            <span class="text-sm">{{
-                                                vehicle.route.route_name
-                                            }}</span>
-                                        </div>
-                                        <span
-                                            v-else
-                                            class="text-sm text-muted-foreground"
-                                            >—</span
-                                        >
-                                    </TableCell>
+                                    <div class="col-span-1 flex min-w-0 justify-start py-1.5 text-sm">
+                                        <span class="truncate">{{ vehicle.route?.route_name || '—' }}</span>
+                                    </div>
 
-                                    <!-- Vehicle Info -->
-                                    <TableCell class="px-0">
-                                        <!-- <div class="flex items-center gap-2"> -->
-                                        <!-- <div
-                                                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-100"
-                                            >
-                                                <Bus
-                                                    class="h-3.5 w-3.5 text-blue-700"
-                                                />
-                                            </div> -->
-                                        <div>
-                                            <p class="text-sm font-medium">
-                                                {{
-                                                    humanize(
-                                                        vehicle.vehicle_type,
-                                                    )
-                                                }}
-                                            </p>
-                                            <p
-                                                class="text-xs text-muted-foreground"
-                                            >
-                                                {{ vehicle.body_number || '—' }}
-                                            </p>
-                                        </div>
-                                        <!-- </div> -->
-                                    </TableCell>
+                                    <div class="col-span-1 flex min-w-0 flex-col justify-center py-1.5">
+                                        <p class="truncate text-sm font-medium">{{ humanize(vehicle.vehicle_type) }}</p>
+                                        <p class="truncate text-xs text-custom-shadow/70">{{ vehicle.body_number || '—' }}</p>
+                                    </div>
 
-                                    <!-- Plate Number -->
-                                    <TableCell class="px-0">
-                                        <span
-                                            class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold"
-                                        >
+                                    <div class="col-span-1 flex justify-start py-1.5">
+                                        <span class="rounded bg-custom-bg px-2 py-0.5 font-mono text-xs font-semibold text-custom-shadow dark:bg-custom-bg-light">
                                             {{ vehicle.plate_number || '—' }}
                                         </span>
-                                    </TableCell>
+                                    </div>
 
-                                    <!-- Capacity -->
-                                    <TableCell
-                                        class="px-0 text-sm text-muted-foreground tabular-nums"
-                                    >
+                                    <div class="col-span-1 flex justify-start py-1.5 text-sm tabular-nums text-custom-shadow/80">
                                         {{ vehicle.capacity || '—' }}
-                                    </TableCell>
+                                    </div>
 
-                                    <!-- Status -->
-                                    <TableCell class="px-0">
-                                        <Badge
-                                            :class="[
-                                                'gap-1.5',
-                                                statusClass(vehicle.status),
-                                            ]"
-                                        >
-                                            <span
-                                                :class="[
-                                                    'h-1.5 w-1.5 rounded-full',
-                                                    statusDot(vehicle.status),
-                                                ]"
-                                            />
+                                    <div class="col-span-1 flex justify-start py-1.5">
+                                        <Badge :class="['gap-1.5', statusClass(vehicle.status)]">
+                                            <span :class="['h-1.5 w-1.5 rounded-full', statusDot(vehicle.status)]" />
                                             {{ humanize(vehicle.status) }}
                                         </Badge>
-                                    </TableCell>
+                                    </div>
 
-                                    <!-- Created -->
-                                    <!-- <TableCell
-                                        class="text-sm text-muted-foreground px-0"
-                                    >
-                                        {{ formatDate(vehicle.created_at) }}
-                                    </TableCell> -->
-
-                                    <!-- Remarks -->
-                                    <TableCell class="px-0">
-                                        <div class="flex items-center gap-2">
-                                            <Popover v-if="vehicle.remarks">
-                                                <PopoverTrigger as-child>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        class="h-7 cursor-pointer rounded-lg border-slate-200 text-xs text-foreground hover:bg-slate-100"
-                                                    >
-                                                        <FileText
-                                                            class="h-3.5 w-3.5"
-                                                        />
-                                                        View
-                                                    </Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent
-                                                    class="w-64 rounded-xl border-slate-200 p-3 text-sm text-slate-700 shadow-lg"
+                                    <div class="col-span-1 flex justify-start py-1.5">
+                                        <Popover v-if="vehicle.remarks">
+                                            <PopoverTrigger as-child>
+                                                <Button
+                                                    variant="ghost-outline"
+                                                    size="sm"
+                                                    class="h-7 px-2 text-xs"
                                                 >
-                                                    {{ vehicle.remarks }}
-                                                </PopoverContent>
-                                            </Popover>
-                                            <!-- <Badge
-                                                v-if="vehicle.remarks"
-                                                variant="secondary"
-                                                class="rounded-full bg-slate-100 text-[11px] font-semibold text-slate-700"
-                                            >
-                                                Has remarks
-                                            </Badge> -->
-                                            <span
-                                                v-else
-                                                class="text-xs text-muted-foreground"
-                                                >&mdash;</span
-                                            >
-                                        </div>
-                                    </TableCell>
+                                                    <RiFileTextLine class="h-3.5 w-3.5" />
+                                                    View
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent class="w-64 p-3 text-sm text-custom-shadow">
+                                                {{ vehicle.remarks }}
+                                            </PopoverContent>
+                                        </Popover>
+                                        <span v-else class="text-xs text-custom-shadow/70">—</span>
+                                    </div>
 
-                                    <!-- Actions -->
-                                    <TableCell class="px-0 text-right">
+                                    <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
-                                                    variant="outline"
-                                                    class="cursor-pointer rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    variant="table-more"
+                                                    size="icon-more"
                                                 >
-                                                    <MoreHorizontal
-                                                        class="h-4 w-4"
-                                                    />
-                                                    <span class="sr-only"
-                                                        >Open actions</span
-                                                    >
+                                                    <RiMore2Line class="h-4 w-4" />
+                                                    <span class="sr-only">Open actions</span>
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent
-                                                align="end"
-                                                class="w-fit rounded-lg border-slate-200 shadow-lg"
-                                            >
-                                                <DropdownMenuLabel
-                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-                                                >
-                                                    {{
-                                                        vehicle.plate_number ||
-                                                        'Vehicle'
-                                                    }}
+                                            <DropdownMenuContent align="end" class="w-fit rounded-lg shadow-lg">
+                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
+                                                    {{ vehicle.plate_number || 'Vehicle' }}
                                                 </DropdownMenuLabel>
                                                 <DropdownMenuSeparator />
 
-                                                <DropdownMenuItem
-                                                    as-child
-                                                    class="cursor-pointer rounded-lg hover:bg-slate-100"
-                                                >
+                                                <DropdownMenuItem as-child class="cursor-pointer rounded-lg">
                                                     <Link
-                                                        :href="
-                                                            show({
-                                                                vehicle:
-                                                                    vehicle.id,
-                                                            }).url
-                                                        "
+                                                        :href="show({ vehicle: vehicle.id }).url"
                                                         class="flex items-center"
                                                     >
-                                                        <FileSearch
-                                                            class="h-4 w-4"
-                                                        />
+                                                        <RiFileSearchLine class="h-4 w-4" />
                                                         Review
-                                                        <!-- <ChevronRight
-                                                            class="ml-auto h-3.5 w-3.5 text-blue-400"
-                                                        /> -->
                                                     </Link>
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
-                                                    v-if="
-                                                        vehicle.status ===
-                                                            'active' ||
-                                                        vehicle.status ===
-                                                            'inactive'
-                                                    "
-                                                    :disabled="
-                                                        !canToggle(vehicle)
-                                                    "
+                                                    v-if="vehicle.status === 'active' || vehicle.status === 'inactive'"
+                                                    :disabled="!canToggle(vehicle)"
                                                     :class="[
-                                                        'cursor-pointer rounded-lg hover:bg-slate-100',
-                                                        canToggle(vehicle)
-                                                            ? toggleStatusClass(
-                                                                  vehicle.status,
-                                                              )
-                                                            : 'text-slate-300',
+                                                        'cursor-pointer rounded-lg',
+                                                        canToggle(vehicle) ? toggleStatusClass(vehicle.status) : 'text-slate-300',
                                                     ]"
-                                                    @click="
-                                                        canToggle(vehicle) &&
-                                                        openSuspendDialog(
-                                                            vehicle,
-                                                        )
-                                                    "
+                                                    @click="canToggle(vehicle) && openSuspendDialog(vehicle)"
                                                 >
-                                                    <Power class="h-4 w-4" />
+                                                    <RiShutDownLine class="h-4 w-4" />
                                                     Suspend
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
-                                                    v-else-if="
-                                                        vehicle.status ===
-                                                        'suspended'
-                                                    "
-                                                    :disabled="
-                                                        !canToggle(vehicle)
-                                                    "
+                                                    v-else-if="vehicle.status === 'suspended'"
+                                                    :disabled="!canToggle(vehicle)"
                                                     :class="[
-                                                        'cursor-pointer rounded-lg hover:bg-slate-100',
-                                                        canToggle(vehicle)
-                                                            ? toggleStatusClass(
-                                                                  vehicle.status,
-                                                              )
-                                                            : 'text-slate-300',
+                                                        'cursor-pointer rounded-lg',
+                                                        canToggle(vehicle) ? toggleStatusClass(vehicle.status) : 'text-slate-300',
                                                     ]"
-                                                    @click="
-                                                        canToggle(vehicle) &&
-                                                        openActivateDialog(
-                                                            vehicle,
-                                                        )
-                                                    "
+                                                    @click="canToggle(vehicle) && openActivateDialog(vehicle)"
                                                 >
-                                                    <Power class="h-4 w-4" />
+                                                    <RiShutDownLine class="h-4 w-4" />
                                                     Unsuspend
                                                 </DropdownMenuItem>
 
-                                                <!-- Disabled toggle placeholder for other statuses -->
                                                 <DropdownMenuItem
                                                     v-else
                                                     disabled
                                                     class="rounded-lg text-slate-300"
                                                 >
-                                                    <Power class="h-4 w-4" />
-                                                    {{
-                                                        toggleLabel(
-                                                            vehicle.status,
-                                                        )
-                                                    }}
+                                                    <RiShutDownLine class="h-4 w-4" />
+                                                    {{ toggleLabel(vehicle.status) }}
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
-                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                            <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                                <img
+                                    :src="emptyRafikiUrl"
+                                    alt=""
+                                    class="w-1/3 object-contain opacity-90"
+                                    aria-hidden="true"
+                                />
+                                <div class="space-y-1">
+                                    <p class="text-custom-shadow text-base font-semibold">No vehicles found</p>
+                                    <p class="text-custom-shadow/80 text-sm">
+                                        {{ hasActiveFilters ? 'Try adjusting or clearing your filters.' : 'Try adjusting your search.' }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
 
                     <InertiaPagination
                         :links="vehicles.links"

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {
     approve,
     index as changeRequestsIndex,
@@ -9,6 +9,7 @@ import { ref, watch } from 'vue';
 
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import InputError from '@/components/InputError.vue';
+import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import AppLayout from '@/layouts/AppLayout.vue';
 
 import { Badge } from '@/components/ui/badge';
@@ -242,50 +243,36 @@ function statusIcon(status: string) {
     <Head title="Change Requests" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
-        >
-            <Card>
-                <CardHeader>
+        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+            <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
+                <CardHeader class="flex flex-row gap-2">
+                    <div class="flex flex-col">
                     <CardTitle class="flex items-center gap-2">
-                        <!-- <span>Change Requests</span> -->
-                        <!-- TODO: make the text straight, not wrapped -->
-                        Change Requests
-                        <span class="ml-2 flex flex-1 items-center">
-                            <hr class="h-px w-full border border-rose-500" />
-                            <div class="rounded-xs border-7 border-rose-500">
-                                <div
-                                    class="rounded-xs border-3 border-white"
-                                ></div>
-                            </div>
-                        </span>
+                        <span class="font-semibold">Change Requests</span>
                     </CardTitle>
-                    <CardDescription class="mt-1">
+                    <CardDescription>
                         Review and approve or reject change requests from
                         companies.
                     </CardDescription>
+                    </div>
                 </CardHeader>
-                <CardContent class="space-y-4">
-                    <div
-                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                        <div
-                            class="flex min-w-50/100 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                        >
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                    <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
+                        <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
                             <div class="flex flex-wrap items-center gap-2">
                                 <Select v-model="selectedStatus">
                                     <SelectTrigger
-                                        class="h-8 w-fit cursor-pointer rounded-lg border-slate-200 shadow-sm"
+                                        class="h-9 w-fit cursor-pointer rounded-full border-custom-bg-dark shadow-none dark:border-custom-bg-light"
                                     >
                                         <Filter
-                                            class="h-3.5 w-3.5 text-slate-600"
+                                            class="h-3.5 w-3.5 text-custom-shadow/80"
                                         />
                                         <SelectValue
                                             placeholder="All Statuses"
                                             class="flex justify-start"
                                         />
                                     </SelectTrigger>
-                                    <SelectContent class="rounded-lg shadow-lg">
+                                    <SelectContent>
                                         <SelectItem
                                             key="all"
                                             value="all"
@@ -315,42 +302,51 @@ function statusIcon(status: string) {
                             </div>
                         </div>
                     </div>
-                    <div class="overflow-x-auto">
+                    <Card
+                        :class="[
+                            'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
+                            changeRequests.data.length === 0 ? 'border-dashed' : 'border-solid',
+                        ]"
+                    >
+                    <div class="no-scrollbar min-h-0 flex-1 overflow-auto">
                         <Table>
-                            <TableHeader class="border-y border-slate-200">
+                            <TableHeader
+                                v-if="changeRequests.data.length > 0"
+                                class="border-b border-custom-bg-dark dark:border-custom-bg-light"
+                            >
                                 <TableRow class="gap-2">
                                     <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Dispatch</TableHead
                                     >
                                     <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Requester</TableHead
                                     >
                                     <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Company</TableHead
                                     >
                                     <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Change</TableHead
                                     >
                                     <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Reason</TableHead
                                     >
                                     <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Status</TableHead
                                     >
                                     <TableHead
-                                        class="px-0 text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="px-0 text-right text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Action</TableHead
                                     >
                                 </TableRow>
                             </TableHeader>
 
-                            <TableBody class="border-y border-slate-200">
+                            <TableBody>
                                 <TableRow
                                     v-if="changeRequests.data.length === 0"
                                 >
@@ -359,9 +355,14 @@ function statusIcon(status: string) {
                                         class="py-20 text-center"
                                     >
                                         <div
-                                            class="flex flex-col items-center gap-2 text-muted-foreground"
+                                            class="flex flex-col items-center gap-2 text-custom-shadow/80"
                                         >
-                                            <Eye class="h-8 w-8 opacity-30" />
+                                                <img
+                                                    :src="emptyRafikiUrl"
+                                                    alt=""
+                                                    class="w-32 object-contain opacity-90"
+                                                    aria-hidden="true"
+                                                />
                                             <p class="text-sm font-medium">
                                                 No change requests found
                                             </p>
@@ -381,7 +382,7 @@ function statusIcon(status: string) {
                                     :key="request.id"
                                 >
                                     <TableRow
-                                        class="group transition-colors hover:bg-muted/50"
+                                        class="group border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light"
                                     >
                                         <TableCell class="px-0">
                                             <div class="space-y-0.5">
@@ -501,8 +502,8 @@ function statusIcon(status: string) {
                                             >
                                                 <DropdownMenuTrigger as-child>
                                                     <Button
-                                                        variant="outline"
-                                                        class="cursor-pointer rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                        variant="table-more"
+                                                        size="icon-more"
                                                     >
                                                         <MoreHorizontal
                                                             class="h-4 w-4"
@@ -515,11 +516,11 @@ function statusIcon(status: string) {
 
                                                 <DropdownMenuContent
                                                     align="end"
-                                                    class="w-fit rounded-lg border-slate-200 shadow-lg"
+                                                    class="w-fit rounded-lg shadow-lg"
                                                 >
                                                     <DropdownMenuItem
                                                         as-child
-                                                        class="cursor-pointer text-emerald-600 focus:text-emerald-600"
+                                                        class="cursor-pointer rounded-lg text-emerald-600 focus:text-emerald-600"
                                                         @click="
                                                             openApproveModal(
                                                                 request,
@@ -548,7 +549,7 @@ function statusIcon(status: string) {
                                                     <DropdownMenuSeparator />
 
                                                     <DropdownMenuItem
-                                                        class="cursor-pointer text-red-600 focus:text-red-600"
+                                                        class="cursor-pointer rounded-lg text-red-600 focus:text-red-600"
                                                         @click="
                                                             openRejectModal(
                                                                 request,
@@ -626,6 +627,7 @@ function statusIcon(status: string) {
                             </TableBody>
                         </Table>
                     </div>
+                    </Card>
 
                     <InertiaPagination
                         v-if="changeRequests.links?.length"

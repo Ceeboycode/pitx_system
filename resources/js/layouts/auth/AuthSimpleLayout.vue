@@ -10,7 +10,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="relative flex min-h-svh flex-col items-center justify-center gap-6 bg-[#f5f4f2] p-6 md:p-10 overflow-hidden">
+  <div class="relative flex min-h-svh flex-col items-center justify-center gap-6 bg-custom-bg dark:bg-custom-bg-dark p-6 md:p-10 overflow-hidden">
 
     <svg
       class="pointer-events-none absolute inset-0 h-full w-full"
@@ -94,16 +94,15 @@ defineProps<{
     <div class="relative z-10 w-full max-w-sm">
       <div class="flex flex-col gap-8">
         <div class="flex flex-col items-center gap-4">
-          <Link :href="home()" class="flex flex-col items-center gap-2 font-medium">
+          <Link :href="home()" class="flex flex-col items-center gap-2 font-semibold">
             <div class="mb-1 flex h-12 w-12 items-center justify-center rounded-md">
               <img :src="PitxLogo" alt="PITX Logo" class="max-h-12 max-w-xs object-contain"/>
             </div>
-            <span class="sr-only">{{ title }}</span>
           </Link>
-          <div class="space-y-2 text-center">
-            <h1 class="text-xl font-medium">{{ title }}</h1>
-            <p class="text-center text-sm text-muted-foreground"> {{ description }}</p>
-          </div>
+          <!-- <div class="space-y-2 text-center">
+            <h1 class="text-xl font-semibold text-custom-shadow">{{ title }}</h1>
+            <p class="text-center text-sm text-custom-shadow/80"> {{ description }}</p>
+          </div> -->
         </div>
         <slot />
       </div>

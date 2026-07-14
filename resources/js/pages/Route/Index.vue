@@ -1,6 +1,7 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
+import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 
 import {
     AlertDialog,
@@ -30,20 +31,17 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 
 import AppLayout from '@/layouts/AppLayout.vue';
 import {
@@ -60,20 +58,17 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { can } from '@/lib/can';
 
 import {
-    Archive,
-    ArrowDown,
-    ArrowUp,
-    ArrowUpDown,
-    ChevronRight,
-    Eye,
-    Filter,
-    MoreHorizontal,
-    Pencil,
-    Plus,
-    Power,
-    Route as RouteIcon,
-    X,
-} from 'lucide-vue-next';
+    RiAddLine,
+    RiArchive2Line,
+    RiArrowDownSLine,
+    RiArrowUpDownLine,
+    RiArrowUpSLine,
+    RiEditLine,
+    RiEyeLine,
+    RiFilter2Line,
+    RiMore2Line,
+    RiShutDownLine,
+} from 'vue-remix-icons';
 
 import { computed, ref } from 'vue';
 
@@ -138,11 +133,18 @@ const breadcrumbs: BreadcrumbItem[] = [
 const statusFilter = ref<string>(props.filters.status ?? 'all');
 const sortBy = ref<SortField>(props.filters.sort_by ?? null);
 const sortDir = ref<SortDir>(props.filters.sort_dir ?? 'asc');
+const filterOpen = ref(false);
 
 const hasActiveFilters = computed(() =>
     (statusFilter.value && statusFilter.value !== 'all') ||
     sortBy.value !== null
 );
+
+const activeFilterCount = computed(() => {
+    let count = 0;
+    if (statusFilter.value && statusFilter.value !== 'all') count++;
+    return count;
+});
 
 function applyFilters(overrides: Record<string, string | undefined> = {}) {
     router.get(
@@ -160,11 +162,12 @@ function applyFilters(overrides: Record<string, string | undefined> = {}) {
             only: ['routes', 'filters', 'flash'],
         },
     );
+
+    filterOpen.value = false;
 }
 
 function onStatusChange(val: string) {
     statusFilter.value = val;
-    applyFilters();
 }
 
 function toggleSort(field: SortField) {
@@ -191,12 +194,12 @@ function clearFilters() {
 }
 
 function sortIcon(field: SortField) {
-    if (sortBy.value !== field) return ArrowUpDown;
-    return sortDir.value === 'asc' ? ArrowUp : ArrowDown;
+    if (sortBy.value !== field) return RiArrowUpDownLine;
+    return sortDir.value === 'asc' ? RiArrowUpSLine : RiArrowDownSLine;
 }
 
 function sortIconClass(field: SortField) {
-    return sortBy.value === field ? 'text-blue-600' : 'text-muted-foreground/40';
+    return sortBy.value === field ? 'text-custom-primary' : 'text-custom-shadow/40';
 }
 
 /* ── Status helpers ──────────────────────────────────────────────── */
@@ -266,285 +269,339 @@ function confirmToggle() {
     <Head title="Routes" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-            <Card>
-                <CardHeader>
-                    <CardTitle class="flex items-center gap-2">
-                        Routes
-                        <div class="ml-2 flex flex-1 items-center">
-                            <hr class="h-px w-full border border-rose-500" />
-                            <div class="rounded-xs border-7 border-rose-500">
-                                <div class="rounded-xs border-3 border-white"></div>
-                            </div>
+        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+            <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
+                <CardHeader class="flex flex-row gap-2">
+                    <div class="flex flex-col">
+                        <CardTitle class="flex items-center gap-2">
+                            <span class="font-semibold">Routes</span>
+                        </CardTitle>
+                        <CardDescription>Manage and view all available routes in the system.</CardDescription>
+                    </div>
+                    <div class="flex flex-1 justify-end gap-2">
+                        <div class="lg:flex items-center gap-2 sm:justify-end">
+                            <Button
+                                v-if="canCreate"
+                                as-child
+                                variant="float-primary"
+                                class="hidden lg:flex"
+                            >
+                                <Link :href="create().url">
+                                    <RiAddLine class="h-4 w-4 shrink-0" />
+                                    <span>Add Route</span>
+                                </Link>
+                            </Button>
+
+                            <DropdownMenu class="w-fit">
+                                <DropdownMenuTrigger as-child class="m-0">
+                                    <div class="inline-flex">
+                                        <Button
+                                            variant="header-actions"
+                                            class="text-custom-shadow"
+                                            size="icon"
+                                        >
+                                            <RiMore2Line class="h-4 w-4 shrink-0" />
+                                        </Button>
+                                    </div>
+                                </DropdownMenuTrigger>
+
+                                <DropdownMenuContent align="end" class="w-fit">
+                                    <DropdownMenuItem
+                                        v-if="canCreate"
+                                        as-child
+                                        class="cursor-pointer lg:hidden"
+                                    >
+                                        <Link :href="create().url" class="flex items-center">
+                                            <RiAddLine class="h-4 w-4" />
+                                            Add Route
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        v-if="canViewTrash"
+                                        as-child
+                                        class="cursor-pointer"
+                                    >
+                                        <Link :href="trash().url" class="flex items-center">
+                                            <RiArchive2Line class="h-4 w-4" />
+                                            Archives
+                                        </Link>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
-                    </CardTitle>
-                    <CardDescription class="mt-1">
-                        Manage and view all available routes in the system.
-                    </CardDescription>
+                    </div>
                 </CardHeader>
 
-                <CardContent class="space-y-4">
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="w-50/100">
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                    <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
+                        <div class="w-full">
                             <SearchInput
                                 :route="index().url"
                                 :initial-value="props.filters.search"
                                 placeholder="Search routes…"
                                 :only="['routes', 'filters', 'flash']"
                                 :debounce="350"
-                                class="rounded-lg shadow-sm"
                             />
                         </div>
-                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-w-50/100">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <Select
-                                    :model-value="statusFilter"
-                                    @update:model-value="onStatusChange"
-                                >
-                                    <SelectTrigger
-                                        class="cursor-pointer h-8 w-fit rounded-lg border-slate-200 shadow-sm"
+
+                        <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
+                            <Popover v-model:open="filterOpen">
+                                <PopoverTrigger as-child>
+                                    <Button
+                                        variant="header-actions"
+                                        size="icon-text"
+                                        class="rounded-full"
+                                        :class="
+                                            activeFilterCount > 0
+                                                ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-300 dark:hover:text-custom-shadow'
+                                                : ''
+                                        "
                                     >
-                                        <Filter class="h-3.5 w-3.5 text-slate-600" />
-                                        <SelectValue placeholder="All Statuses" class="justify-start flex"/>
-                                    </SelectTrigger>
-                                    <SelectContent class="rounded-lg shadow-lg">
-                                        <SelectItem value="all" class="cursor-pointer text-sm"
-                                            >All Statuses</SelectItem
-                                        >
-                                        <SelectItem value="active" class="cursor-pointer text-sm"
-                                            >Active</SelectItem
-                                        >
-                                        <SelectItem
-                                            value="inactive"
-                                            class="cursor-pointer text-sm"
-                                            >Inactive</SelectItem
-                                        >
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div class="flex items-center gap-2 sm:justify-end">
-                                <DropdownMenu class="w-fit">
-                                    <DropdownMenuTrigger as-child class="m-0">
-                                        <div class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm">
-                                            <Button
-                                                variant="ghost"
-                                                class="group/segment cursor-pointer gap-0 rounded-lg border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10"
+                                        <RiFilter2Line class="h-3.5 w-3.5" />
+                                        <span class="hidden lg:flex">
+                                            {{
+                                                activeFilterCount > 0
+                                                    ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
+                                                    : 'Filter'
+                                            }}
+                                        </span>
+                                    </Button>
+                                </PopoverTrigger>
+
+                                <PopoverContent align="end">
+                                    <div class="grid gap-y-2">
+                                        <div class="space-y-2">
+                                            <p class="text-sm text-custom-shadow/80">
+                                                Status
+                                            </p>
+                                            <Select
+                                                :model-value="statusFilter"
+                                                @update:model-value="onStatusChange"
                                             >
-                                                <MoreHorizontal class="h-4 w-4 shrink-0" />
-                                                <span
-                                                    class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-20 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-20 group-focus-visible/segment:opacity-100"
-                                                >
-                                                    Actions
-                                                </span>
-                                            </Button>
+                                                <SelectTrigger class="w-full">
+                                                    <SelectValue placeholder="Any status" class="flex justify-start" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all" class="cursor-pointer">
+                                                        Any status
+                                                    </SelectItem>
+                                                    <SelectItem value="active" class="cursor-pointer">
+                                                        Active
+                                                    </SelectItem>
+                                                    <SelectItem value="inactive" class="cursor-pointer">
+                                                        Inactive
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                         </div>
-                                    </DropdownMenuTrigger>
 
-                                    <DropdownMenuContent align="end" class="w-fit rounded-lg shadow-lg">
-                                        <DropdownMenuItem
-                                            v-if="canCreate"
-                                            as-child
-                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
-                                        >
-                                            <Link :href="create().url" class="flex items-center">
-                                                <Plus class="h-4 w-4" />
-                                                Create Route
-                                            </Link>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                            v-if="canViewTrash"
-                                            as-child
-                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
-                                        >
-                                            <Link :href="trash().url" class="flex items-center">
-                                                <Archive class="h-4 w-4" />
-                                                Archives
-                                            </Link>
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        </div>
-                    </div>
+                                        <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
 
-                    <div class="overflow-x-auto">
-                        <Table>
-                            <TableHeader class="border-y border-slate-200">
-                                <TableRow class="gap-2">
-                                    <TableHead
-                                        class="px-0 cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
-                                        @click="toggleSort('route_name')"
-                                    >
-                                        <div class="flex items-center gap-1.5">
-                                            Route Name
-                                            <component
-                                                :is="sortIcon('route_name')"
-                                                class="h-3.5 w-3.5"
-                                                :class="sortIconClass('route_name')"
-                                            />
-                                        </div>
-                                    </TableHead>
-
-                                    <TableHead
-                                        class="px-0 cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
-                                        @click="toggleSort('gate_name')"
-                                    >
-                                        <div class="flex items-center gap-1.5">
-                                            Gate
-                                            <component
-                                                :is="sortIcon('gate_name')"
-                                                class="h-3.5 w-3.5"
-                                                :class="sortIconClass('gate_name')"
-                                            />
-                                        </div>
-                                    </TableHead>
-
-                                    <TableHead
-                                        class="px-0 cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
-                                        @click="toggleSort('status')"
-                                    >
-                                        <div class="flex items-center gap-1.5">
-                                            Status
-                                            <component
-                                                :is="sortIcon('status')"
-                                                class="h-3.5 w-3.5"
-                                                :class="sortIconClass('status')"
-                                            />
-                                        </div>
-                                    </TableHead>
-
-                                    <TableHead
-                                        class="px-0 cursor-pointer select-none text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground"
-                                        @click="toggleSort('created_at')"
-                                    >
-                                        <div class="flex items-center gap-1.5">
-                                            Created
-                                            <component
-                                                :is="sortIcon('created_at')"
-                                                class="h-3.5 w-3.5"
-                                                :class="sortIconClass('created_at')"
-                                            />
-                                        </div>
-                                    </TableHead>
-
-                                    <TableHead class="px-0 text-right text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                                        Actions
-                                    </TableHead>
-                                </TableRow>
-                            </TableHeader>
-
-                            <TableBody class="border-y border-slate-200">
-                                <TableRow v-if="props.routes.data.length === 0" class="hover:bg-transparent">
-                                    <TableCell colspan="5" class="py-20 text-center">
-                                        <div class="flex flex-col items-center gap-3">
-                                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-                                                <RouteIcon class="h-6 w-6 text-muted-foreground/40" />
-                                            </div>
-                                            <div>
-                                                <p class="text-sm font-semibold text-foreground">No routes found</p>
-                                                <p class="mt-0.5 text-xs text-muted-foreground">
-                                                    {{ hasActiveFilters ? 'Try adjusting your filters or search.' : 'Try adjusting your search.' }}
-                                                </p>
-                                            </div>
+                                        <div class="flex w-full flex-row items-center justify-between">
                                             <Button
                                                 v-if="hasActiveFilters"
                                                 size="sm"
-                                                variant="outline"
-                                                class="mt-1 h-8 rounded-lg text-xs"
+                                                variant="destructive"
                                                 @click="clearFilters"
                                             >
-                                                <X class="mr-1.5 h-3.5 w-3.5" />
-                                                Clear filters
+                                                Clear
                                             </Button>
+
+                                            <div class="ml-auto flex items-center gap-2">
+                                                <Button
+                                                    variant="ghost-outline"
+                                                    size="sm"
+                                                    @click="filterOpen = false"
+                                                >
+                                                    Cancel
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="float-primary"
+                                                    @click="applyFilters"
+                                                >
+                                                    Apply
+                                                </Button>
+                                            </div>
                                         </div>
-                                    </TableCell>
-                                </TableRow>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    </div>
 
-                                <TableRow
-                                    v-for="routeItem in props.routes.data"
+                    <Card
+                        :class="[
+                            'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
+                            props.routes.data.length === 0 ? 'border-dashed' : 'border-solid',
+                        ]"
+                    >
+                        <div v-if="props.routes.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+                            <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
+                                <div class="grid grid-cols-5 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
+                                    <button
+                                        type="button"
+                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 pl-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        @click="toggleSort('route_name')"
+                                    >
+                                        Name
+                                        <component
+                                            :is="sortIcon('route_name')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('route_name')"
+                                        />
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        @click="toggleSort('gate_name')"
+                                    >
+                                        Gate
+                                        <component
+                                            :is="sortIcon('gate_name')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('gate_name')"
+                                        />
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        @click="toggleSort('status')"
+                                    >
+                                        Status
+                                        <component
+                                            :is="sortIcon('status')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('status')"
+                                        />
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        @click="toggleSort('created_at')"
+                                    >
+                                        Created
+                                        <component
+                                            :is="sortIcon('created_at')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('created_at')"
+                                        />
+                                    </button>
+
+                                    <div class="col-span-1 flex h-10 items-center justify-end px-0 pr-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
+                                        Actions
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+                                <div
+                                    v-for="(routeItem, index) in props.routes.data"
                                     :key="routeItem.id"
-                                    class="group transition-colors hover:bg-muted/30"
+                                    :class="[
+                                        'grid grid-cols-5 items-center border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                        index === props.routes.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                    ]"
                                 >
-                                    <TableCell class="text-sm font-semibold capitalize px-0">
+                                    <div class="col-span-1 flex justify-start py-1.5 pl-3 font-semibold capitalize">
                                         {{ routeItem.route_name }}
-                                    </TableCell>
+                                    </div>
 
-                                    <TableCell class="px-0">
+                                    <div class="col-span-1 flex justify-start py-1.5">
                                         <span
                                             v-if="routeItem.gate"
-                                            class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-semibold"
+                                            class="rounded bg-custom-bg px-2 py-0.5 font-mono text-xs font-semibold text-custom-shadow dark:bg-custom-bg-light"
                                         >
                                             {{ routeItem.gate.gate_name }}
                                         </span>
-                                        <span v-else class="text-sm text-muted-foreground">—</span>
-                                    </TableCell>
+                                        <span v-else class="text-sm text-custom-shadow/70">—</span>
+                                    </div>
 
-                                    <TableCell class="px-0">
+                                    <div class="col-span-1 flex justify-start py-1.5">
                                         <Badge :class="['gap-1.5', statusClass(routeItem.status)]">
                                             <span :class="['h-1.5 w-1.5 rounded-full', statusDot(routeItem.status)]" />
                                             {{ routeItem.status === 'active' ? 'Active' : 'Inactive' }}
                                         </Badge>
-                                    </TableCell>
+                                    </div>
 
-                                    <TableCell class="text-sm text-muted-foreground px-0">
+                                    <div class="col-span-1 flex justify-start py-1.5 text-sm text-custom-shadow/80">
                                         {{ routeItem.created_at_human ?? '—' }}
-                                    </TableCell>
+                                    </div>
 
-                                    <TableCell class="text-right px-0">
+                                    <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
-                                                    variant="outline"
-                                                    class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+                                                    variant="table-more"
+                                                    size="icon-more"
                                                 >
-                                                    <MoreHorizontal class="h-4 w-4" />
+                                                    <RiMore2Line class="h-4 w-4" />
                                                     <span class="sr-only">Open menu</span>
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent align="end" class="w-fit rounded-lg border-slate-200 shadow-lg">
-                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                            <DropdownMenuContent align="end" class="w-fit rounded-lg shadow-lg">
+                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
                                                     {{ routeItem.route_name }}
                                                 </DropdownMenuLabel>
                                                 <DropdownMenuSeparator />
 
                                                 <DropdownMenuItem
                                                     as-child
-                                                    class="rounded-lg hover:bg-slate-100 cursor-pointer"
+                                                    class="cursor-pointer rounded-lg"
                                                 >
                                                     <Link :href="show(routeItem.id).url" class="flex items-center">
-                                                        <Eye class="h-4 w-4" />
+                                                        <RiEyeLine class="h-4 w-4" />
                                                         View
-                                                        <!-- <ChevronRight class="ml-auto h-3.5 w-3.5 text-blue-400" /> -->
                                                     </Link>
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
                                                     v-if="canUpdate"
                                                     as-child
-                                                    class="rounded-lg hover:bg-slate-100 cursor-pointer"
+                                                    class="cursor-pointer rounded-lg"
                                                 >
                                                     <Link :href="edit(routeItem.id).url">
-                                                        <Pencil class="h-4 w-4" />
+                                                        <RiEditLine class="h-4 w-4" />
                                                         Edit
                                                     </Link>
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
                                                     v-if="canToggle"
-                                                    :class="['rounded-lg hover:bg-slate-100 cursor-pointer', toggleStatusClass(routeItem.status)]"
+                                                    :class="['cursor-pointer rounded-lg', toggleStatusClass(routeItem.status)]"
                                                     @click="openToggleDialog(routeItem)"
                                                 >
-                                                    <Power class="h-4 w-4" />
+                                                    <RiShutDownLine class="h-4 w-4" />
                                                     {{ routeItem.status === 'active' ? 'Set Inactive' : 'Set Active' }}
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
-                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                            <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                                <img
+                                    :src="emptyRafikiUrl"
+                                    alt=""
+                                    class="w-1/3 object-contain opacity-90"
+                                    aria-hidden="true"
+                                />
+                                <div class="space-y-1">
+                                    <p class="text-custom-shadow text-base font-semibold">No routes found</p>
+                                    <p class="text-custom-shadow/80 text-sm">
+                                        {{ hasActiveFilters ? 'Try adjusting or clearing your filters.' : 'Try adjusting your search or add a new route.' }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
 
                     <InertiaPagination
                         :links="props.routes.links"
@@ -587,7 +644,7 @@ function confirmToggle() {
                         ]"
                         @click="confirmToggle"
                     >
-                        <Power class="h-4 w-4" />
+                        <RiShutDownLine class="h-4 w-4" />
                         {{ togglingRoute?.status === 'active' ? 'Set Inactive' : 'Set Active' }}
                     </AlertDialogAction>
                 </AlertDialogFooter>

@@ -25,6 +25,7 @@ defineProps<{
     canResetPassword: boolean;
 }>();
 </script>
+<!-- REDESIGN THIS FILE -->
 
 <template>
     <AuthBase
@@ -34,15 +35,15 @@ defineProps<{
         <Head title="Log in" />
 
         <Card class="mx-auto w-full max-w-md">
-            <CardHeader className="flex items-center justify-center relative">
-                <Link
+            <CardHeader className="flex items-center justify-center relative mb-8">
+                <!-- <Link
                     href="/"
-                    className="absolute left-4 text-gray-500 hover:text-gray-700"
+                    className="absolute left-4"
                 >
-                    <ArrowLeft className="h-5 w-5" />
-                </Link>
+                    <Ri className="h-5 w-5" />
+                </Link> -->
 
-                <CardTitle>Welcome back</CardTitle>
+                <CardTitle>Welcome back, friend!</CardTitle>
             </CardHeader>
 
             <CardContent>
@@ -57,7 +58,7 @@ defineProps<{
                     v-bind="store.form()"
                     :reset-on-success="['password']"
                     v-slot="{ errors, processing }"
-                    class="flex flex-col gap-6"
+                    class="flex flex-col gap-4"
                 >
                     <div class="grid gap-6">
                         <div class="grid gap-2">
@@ -80,7 +81,7 @@ defineProps<{
                                 <TextLink
                                     v-if="canResetPassword"
                                     :href="request()"
-                                    class="text-xs font-medium"
+                                    class="text-sm font-medium"
                                 >
                                     Forgot password?
                                 </TextLink>
@@ -98,7 +99,7 @@ defineProps<{
 
                         <Label
                             for="remember"
-                            class="flex items-center space-x-3 text-sm"
+                            class="flex items-center space-x-1 text-sm"
                         >
                             <Checkbox id="remember" name="remember" />
                             <span>Remember this device</span>
@@ -106,7 +107,7 @@ defineProps<{
 
                         <Button
                             type="submit"
-                            variant="default"
+                            variant="float-primary"
                             :disabled="processing"
                         >
                             <Spinner v-if="processing" />
@@ -116,7 +117,7 @@ defineProps<{
                 </Form>
             </CardContent>
 
-            <CardFooter class="flex justify-center text-sm">
+            <CardFooter class="flex justify-center text-sm mt-4">
                 Need access?
                 <TextLink href="/contact" class="ml-1 font-medium">
                     Contact Admin

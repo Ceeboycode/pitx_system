@@ -1,9 +1,10 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /* ======================================================
    Shared UI
 ====================================================== */
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
+import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 
 /* shadcn-vue */
 import {
@@ -45,15 +46,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-
 /* ======================================================
    Layout, Routing & Inertia
 ====================================================== */
@@ -74,22 +66,20 @@ import { Head, Link, router } from '@inertiajs/vue3';
    Icons
 ====================================================== */
 import {
-    Archive,
-    ArrowDown,
-    ArrowUp,
-    ArrowUpDown,
-    Ellipsis,
-    Eye,
-    Filter,
-    KeyRound,
-    Mail,
-    MoreHorizontal,
-    Pencil,
-    Plus,
-    Power,
-    Users,
-    X,
-} from 'lucide-vue-next';
+    RiAddLine,
+    RiArchive2Line,
+    RiArrowDownSLine,
+    RiArrowUpDownLine,
+    RiArrowUpSLine,
+    RiCloseLine,
+    RiEyeLine,
+    RiFilter2Line,
+    RiKey2Line,
+    RiMailLine,
+    RiMore2Line,
+    RiPencilLine,
+    RiShutDownLine,
+} from 'vue-remix-icons';
 
 /* ======================================================
    Vue Core
@@ -189,6 +179,13 @@ const hasCategoryFilters = computed(
         (roleFilter.value && roleFilter.value !== 'all') ||
         (statusFilter.value && statusFilter.value !== 'all'),
 );
+
+const activeFilterCount = computed(() => {
+    let count = 0;
+    if (roleFilter.value && roleFilter.value !== 'all') count++;
+    if (statusFilter.value && statusFilter.value !== 'all') count++;
+    return count;
+});
 
 const filteredUsers = computed(() => {
     let users = props.users.data;
@@ -309,14 +306,14 @@ function emailVerificationLabel(emailVerifiedAt: string | null) {
    Sort icon helpers
 ====================================================== */
 function sortIcon(field: SortField) {
-    if (sortBy.value !== field) return ArrowUpDown;
-    return sortDir.value === 'asc' ? ArrowUp : ArrowDown;
+    if (sortBy.value !== field) return RiArrowUpDownLine;
+    return sortDir.value === 'asc' ? RiArrowUpSLine : RiArrowDownSLine;
 }
 
 function sortIconClass(field: SortField) {
     return sortBy.value === field
-        ? 'text-blue-600'
-        : 'text-muted-foreground/40';
+        ? 'text-custom-primary'
+        : 'text-custom-shadow/40';
 }
 
 /* ======================================================
@@ -397,31 +394,21 @@ function confirmResetPassword() {
     <Head title="Users" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
-        >
-            <Card>
-                <CardHeader>
+        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+            <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
+                <CardHeader class="flex flex-row gap-2">
+                    <div class="flex flex-col">
                     <CardTitle class="flex items-center gap-2">
-                        Users
-                        <div class="ml-2 flex flex-1 items-center">
-                            <hr class="h-px w-full border border-rose-500" />
-                            <div class="rounded-xs border-7 border-rose-500">
-                                <div
-                                    class="rounded-xs border-3 border-white"
-                                ></div>
-                            </div>
-                        </div>
+                        <span class="font-semibold">Users</span>
                     </CardTitle>
-                    <CardDescription class="mt-1">
+                    <CardDescription>
                         Manage users, assign roles, and control access.
                     </CardDescription>
+                    </div>
                 </CardHeader>
-                <CardContent class="space-y-4">
-                    <div
-                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                        <div class="w-50/100">
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                    <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
+                        <div class="w-full">
                             <SearchInput
                                 :route="`${index().url}?type=${roleFilter !== 'all' ? roleFilter : ''}&status=${statusFilter !== 'all' ? statusFilter : ''}&sort_by=${sortBy ?? ''}&sort_dir=${sortBy ? sortDir : ''}`"
                                 :initial-value="props.filters.search"
@@ -433,38 +420,41 @@ function confirmResetPassword() {
                                     'flash',
                                 ]"
                                 :debounce="350"
-                                class="rounded-lg shadow-sm"
                             />
                         </div>
                         <div
-                            class="flex min-w-50/100 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                            class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between"
                         >
                             <div class="flex flex-wrap items-center gap-2">
                                 <Popover>
                                     <PopoverTrigger
                                         as-child
-                                        class="h-full w-fit cursor-pointer rounded-lg border-slate-200 shadow-sm"
                                     >
                                         <Button
-                                            variant="outline"
-                                            class="rounded-lg border-slate-200 px-3 text-slate-600 shadow-sm hover:bg-slate-100"
+                                            variant="header-actions"
+                                            size="icon-text"
+                                            class="rounded-full"
+                                            :class="
+                                                activeFilterCount > 0
+                                                    ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-300 dark:hover:text-custom-shadow'
+                                                    : ''
+                                            "
                                         >
-                                            <Filter class="h-3.5 w-3.5" />
-                                            {{
-                                                hasCategoryFilters
-                                                    ? 'Filters Active'
-                                                    : 'Filters'
-                                            }}
+                                            <RiFilter2Line class="h-3.5 w-3.5" />
+                                            <span class="hidden lg:flex">
+                                                {{
+                                                    activeFilterCount > 0
+                                                        ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
+                                                        : 'Filter'
+                                                }}
+                                            </span>
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent
-                                        align="start"
-                                        class="w-80 rounded-lg border-slate-200 p-4 shadow-lg"
-                                    >
-                                        <div class="grid gap-y-4">
+                                    <PopoverContent align="end">
+                                        <div class="grid gap-y-2">
                                             <div class="space-y-2">
                                                 <p
-                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                                    class="text-sm text-custom-shadow/80"
                                                 >
                                                     Type
                                                 </p>
@@ -475,16 +465,14 @@ function confirmResetPassword() {
                                                     "
                                                 >
                                                     <SelectTrigger
-                                                        class="h-8 w-full cursor-pointer rounded-lg border-slate-200 shadow-sm"
+                                                        class="w-full"
                                                     >
                                                         <SelectValue
                                                             placeholder="All Roles"
                                                             class="flex justify-start"
                                                         />
                                                     </SelectTrigger>
-                                                    <SelectContent
-                                                        class="rounded-lg shadow-lg"
-                                                    >
+                                                    <SelectContent>
                                                         <SelectItem
                                                             value="all"
                                                             class="cursor-pointer text-sm"
@@ -509,7 +497,7 @@ function confirmResetPassword() {
 
                                             <div class="space-y-2">
                                                 <p
-                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                                    class="text-sm text-custom-shadow/80"
                                                 >
                                                     Status
                                                 </p>
@@ -520,16 +508,14 @@ function confirmResetPassword() {
                                                     "
                                                 >
                                                     <SelectTrigger
-                                                        class="h-8 w-full cursor-pointer rounded-lg border-slate-200 shadow-sm"
+                                                        class="w-full"
                                                     >
                                                         <SelectValue
                                                             placeholder="All Statuses"
                                                             class="flex justify-start"
                                                         />
                                                     </SelectTrigger>
-                                                    <SelectContent
-                                                        class="rounded-lg shadow-lg"
-                                                    >
+                                                    <SelectContent>
                                                         <SelectItem
                                                             value="all"
                                                             class="cursor-pointer text-sm"
@@ -551,18 +537,16 @@ function confirmResetPassword() {
                                                     </SelectContent>
                                                 </Select>
                                             </div>
-                                            <div class="flex justify-end">
+                                            <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                                            <div class="flex w-full flex-row items-center justify-between">
                                                 <Button
-                                                    v-if="hasCategoryFilters"
+                                                    v-if="activeFilterCount > 0"
                                                     size="sm"
-                                                    variant="ghost"
-                                                    class="h-8 rounded-lg px-2 text-xs text-muted-foreground hover:text-rose-600"
+                                                    variant="destructive"
                                                     @click="clearFilters"
                                                 >
-                                                    <X
-                                                        class="mr-1 h-3.5 w-3.5"
-                                                    />
-                                                    Clear filters
+                                                    Clear
                                                 </Button>
                                             </div>
                                         </div>
@@ -572,53 +556,61 @@ function confirmResetPassword() {
                             <div
                                 class="flex min-w-auto flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
                             >
-                                <DropdownMenu v-if="canCreate" class="w-fit">
+                                <Button
+                                    v-if="canCreate"
+                                    variant="float-primary"
+                                    class="hidden lg:flex"
+                                    as-child
+                                >
+                                    <Link :href="create().url" class="flex items-center">
+                                        <RiAddLine class="h-4 w-4 shrink-0" />
+                                        <span>Add User</span>
+                                    </Link>
+                                </Button>
+
+                                <DropdownMenu v-if="canCreate || canViewTrash" class="w-fit">
                                     <DropdownMenuTrigger as-child class="m-0">
-                                        <div
-                                            class="inline-flex rounded-lg border border-slate-200 bg-white shadow-sm"
-                                        >
+                                        <div class="inline-flex">
                                             <Button
-                                                variant="ghost"
-                                                class="group/segment cursor-pointer gap-0 rounded-lg border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10"
+                                                variant="header-actions"
+                                                class="text-custom-shadow"
+                                                size="icon"
+                                                aria-label="Open user actions"
                                             >
-                                                <Ellipsis
+                                                <RiMore2Line
                                                     class="h-4 w-4 shrink-0"
                                                 />
-                                                <span
-                                                    class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-20 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-20 group-focus-visible/segment:opacity-100"
-                                                >
-                                                    Actions
-                                                </span>
                                             </Button>
                                         </div>
                                     </DropdownMenuTrigger>
 
                                     <DropdownMenuContent
                                         align="end"
-                                        class="w-fit rounded-lg shadow-lg"
+                                        class="w-fit"
                                     >
                                         <DropdownMenuItem
-                                            v-if="canCreate || canViewTrash"
+                                            v-if="canCreate"
                                             as-child
-                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
+                                            class="cursor-pointer lg:hidden"
                                         >
                                             <Link
                                                 :href="create().url"
                                                 class="flex items-center"
                                             >
-                                                <Plus class="h-4 w-4" />
-                                                Create User
+                                                <RiAddLine class="h-4 w-4" />
+                                                Add User
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
+                                            v-if="canViewTrash"
                                             as-child
-                                            class="cursor-pointer rounded-lg text-slate-700 focus:bg-slate-100 focus:text-slate-900"
+                                            class="cursor-pointer"
                                         >
                                             <Link
                                                 :href="trash().url"
                                                 class="flex items-center"
                                             >
-                                                <Archive class="h-4 w-4" />
+                                                <RiArchive2Line class="h-4 w-4" />
                                                 Archives
                                             </Link>
                                         </DropdownMenuItem>
@@ -632,188 +624,132 @@ function confirmResetPassword() {
                                     as-child
                                 >
                                     <Link :href="create().url" class="flex items-center gap-1.5">
-                                        <Plus class="h-4 w-4" />
+                                        <RiAddLine class="h-4 w-4" />
                                         New User
                                     </Link>
                                 </Button> -->
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto">
-                        <Table>
-                            <TableHeader class="border-y border-slate-200">
-                                <TableRow class="gap-2">
-                                    <TableHead
-                                        class="cursor-pointer px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                    <Card
+                        :class="[
+                            'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
+                            filteredUsers.length === 0 ? 'border-dashed' : 'border-solid',
+                        ]"
+                    >
+                        <div v-if="filteredUsers.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+                            <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
+                                <div
+                                    :class="[
+                                        'grid gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light',
+                                        showCompanyColumn ? 'grid-cols-8' : 'grid-cols-7',
+                                    ]"
+                                >
+                                    <button
+                                        type="button"
+                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 pl-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('username')"
                                     >
-                                        <div class="flex items-center gap-1.5">
-                                            Username
-                                            <component
-                                                :is="sortIcon('username')"
-                                                class="h-3.5 w-3.5"
-                                                :class="
-                                                    sortIconClass('username')
-                                                "
-                                            />
-                                        </div>
-                                    </TableHead>
+                                        Username
+                                        <component
+                                            :is="sortIcon('username')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('username')"
+                                        />
+                                    </button>
 
-                                    <TableHead
-                                        class="cursor-pointer px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                    <button
+                                        type="button"
+                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('name')"
                                     >
-                                        <div class="flex items-center gap-1.5">
-                                            Name
-                                            <component
-                                                :is="sortIcon('name')"
-                                                class="h-3.5 w-3.5"
-                                                :class="sortIconClass('name')"
-                                            />
-                                        </div>
-                                    </TableHead>
+                                        Name
+                                        <component
+                                            :is="sortIcon('name')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('name')"
+                                        />
+                                    </button>
 
-                                    <TableHead
-                                        class="cursor-pointer px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                    <button
+                                        type="button"
+                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('email')"
                                     >
-                                        <div class="flex items-center gap-1.5">
-                                            Email
-                                            <component
-                                                :is="sortIcon('email')"
-                                                class="h-3.5 w-3.5"
-                                                :class="sortIconClass('email')"
-                                            />
-                                        </div>
-                                    </TableHead>
+                                        Email
+                                        <component
+                                            :is="sortIcon('email')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('email')"
+                                        />
+                                    </button>
 
-                                    <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                    >
+                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
                                         Verification
-                                    </TableHead>
+                                    </div>
 
-                                    <TableHead
-                                        class="cursor-pointer px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase select-none hover:text-foreground"
+                                    <button
+                                        type="button"
+                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('status')"
                                     >
-                                        <div class="flex items-center gap-1.5">
-                                            Status
-                                            <component
-                                                :is="sortIcon('status')"
-                                                class="h-3.5 w-3.5"
-                                                :class="sortIconClass('status')"
-                                            />
-                                        </div>
-                                    </TableHead>
+                                        Status
+                                        <component
+                                            :is="sortIcon('status')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('status')"
+                                        />
+                                    </button>
 
-                                    <TableHead
+                                    <div
                                         v-if="showCompanyColumn"
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
+                                        class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80"
                                     >
                                         Company
-                                    </TableHead>
+                                    </div>
 
-                                    <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                    >
+                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
                                         Roles
-                                    </TableHead>
+                                    </div>
 
-                                    <TableHead
-                                        class="px-0 text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                    >
+                                    <div class="col-span-1 flex h-10 items-center justify-end px-0 pr-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
                                         Actions
-                                    </TableHead>
-                                </TableRow>
-                            </TableHeader>
+                                    </div>
+                                </div>
+                            </div>
 
-                            <TableBody class="border-y border-slate-200">
-                                <TableRow
-                                    v-if="filteredUsers.length === 0"
-                                    class="hover:bg-transparent"
-                                >
-                                    <TableCell
-                                        :colspan="showCompanyColumn ? 8 : 7"
-                                        class="py-20 text-center"
-                                    >
-                                        <div
-                                            class="flex flex-col items-center gap-3"
-                                        >
-                                            <div
-                                                class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted"
-                                            >
-                                                <Users
-                                                    class="h-6 w-6 text-muted-foreground/40"
-                                                />
-                                            </div>
-                                            <div>
-                                                <p
-                                                    class="text-sm font-semibold text-foreground"
-                                                >
-                                                    No users found
-                                                </p>
-                                                <p
-                                                    class="mt-0.5 text-xs text-muted-foreground"
-                                                >
-                                                    {{
-                                                        hasActiveFilters
-                                                            ? 'Try adjusting your filters or search.'
-                                                            : 'Try adjusting your search.'
-                                                    }}
-                                                </p>
-                                            </div>
-                                            <Button
-                                                v-if="hasActiveFilters"
-                                                size="sm"
-                                                variant="outline"
-                                                class="mt-1 h-8 rounded-lg text-xs"
-                                                @click="clearFilters"
-                                            >
-                                                <X class="mr-1.5 h-3.5 w-3.5" />
-                                                Clear filters
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-
-                                <!-- <TableRow
-                                    v-for="user in props.users.data"
+                            <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+                                <div
+                                    v-for="(user, index) in filteredUsers"
                                     :key="user.id"
-                                    class="group transition-colors hover:bg-muted/30"
-                                > -->
-                                <TableRow
-                                    v-for="user in filteredUsers"
-                                    :key="user.id"
-                                    class="group transition-colors hover:bg-muted/30"
+                                    :class="[
+                                        'grid items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                        showCompanyColumn ? 'grid-cols-8' : 'grid-cols-7',
+                                        index === filteredUsers.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                    ]"
                                 >
-                                    <TableCell class="px-0 font-medium">
-                                        {{ user.username }}
-                                    </TableCell>
+                                    <div class="col-span-1 flex min-w-0 justify-start py-1.5 pl-3 font-medium">
+                                        <span class="truncate">{{ user.username }}</span>
+                                    </div>
 
-                                    <TableCell class="px-0">
-                                        {{ user.name }}
-                                    </TableCell>
+                                    <div class="col-span-1 flex min-w-0 justify-start py-1.5">
+                                        <span class="truncate">{{ user.name }}</span>
+                                    </div>
 
-                                    <TableCell
-                                        class="px-0 text-sm text-muted-foreground"
-                                    >
-                                        <!-- {{ user.email }} -->
-                                        <div
-                                            class="flex items-center gap-1.5 text-muted-foreground"
-                                        >
-                                            <Mail
+                                    <div class="col-span-1 flex min-w-0 justify-start py-1.5 text-sm">
+                                        <div class="flex min-w-0 items-center gap-1.5 text-custom-shadow/70">
+                                            <RiMailLine
                                                 class="h-3.5 w-3.5 shrink-0"
                                             />
                                             <span
-                                                class="max-w-[180px] truncate"
+                                                class="min-w-0 truncate"
                                             >
                                                 {{ user.email }}
                                             </span>
                                         </div>
-                                    </TableCell>
+                                    </div>
 
-                                    <TableCell class="px-0">
+                                    <div class="col-span-1 flex justify-start py-1.5">
                                         <Badge
                                             :class="
                                                 emailVerificationBadgeClass(
@@ -828,9 +764,9 @@ function confirmResetPassword() {
                                                 )
                                             }}
                                         </Badge>
-                                    </TableCell>
+                                    </div>
 
-                                    <TableCell class="px-0">
+                                    <div class="col-span-1 flex justify-start py-1.5">
                                         <Badge
                                             :class="
                                                 statusBadgeClass(user.status)
@@ -839,23 +775,25 @@ function confirmResetPassword() {
                                         >
                                             {{ user.status }}
                                         </Badge>
-                                    </TableCell>
+                                    </div>
 
-                                    <TableCell
+                                    <div
                                         v-if="showCompanyColumn"
-                                        class="px-0 text-sm text-muted-foreground"
+                                        class="col-span-1 flex min-w-0 justify-start py-1.5 text-sm text-custom-shadow/70"
                                     >
-                                        {{
-                                            visibleRoles(user).some(
-                                                (r) => r.type === 'external',
-                                            )
-                                                ? (user.company?.company_name ??
-                                                  '-')
-                                                : '-'
-                                        }}
-                                    </TableCell>
+                                        <span class="truncate">
+                                            {{
+                                                visibleRoles(user).some(
+                                                    (r) => r.type === 'external',
+                                                )
+                                                    ? (user.company?.company_name ??
+                                                      '-')
+                                                    : '-'
+                                            }}
+                                        </span>
+                                    </div>
 
-                                    <TableCell class="px-0">
+                                    <div class="col-span-1 flex min-w-0 justify-start py-1.5">
                                         <div
                                             class="flex flex-wrap gap-1 capitalize"
                                         >
@@ -874,21 +812,21 @@ function confirmResetPassword() {
                                                     visibleRoles(user)
                                                         .length === 0
                                                 "
-                                                class="text-sm text-muted-foreground"
+                                                class="text-sm text-custom-shadow/70"
                                             >
                                                 -
                                             </span>
                                         </div>
-                                    </TableCell>
+                                    </div>
 
-                                    <TableCell class="px-0 text-right">
+                                    <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
-                                                    variant="outline"
-                                                    class="cursor-pointer rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    variant="table-more"
+                                                    size="icon-more"
                                                 >
-                                                    <MoreHorizontal
+                                                    <RiMore2Line
                                                         class="h-4 w-4"
                                                     />
                                                     <span class="sr-only"
@@ -919,7 +857,7 @@ function confirmResetPassword() {
                                                         "
                                                         class="flex items-center"
                                                     >
-                                                        <Eye class="h-4 w-4" />
+                                                        <RiEyeLine class="h-4 w-4" />
                                                         View Profile
                                                     </Link>
                                                 </DropdownMenuItem>
@@ -937,7 +875,7 @@ function confirmResetPassword() {
                                                         "
                                                         class="cursor-pointer rounded-lg hover:bg-slate-100"
                                                     >
-                                                        <Pencil
+                                                        <RiPencilLine
                                                             class="h-4 w-4"
                                                         />
                                                         Edit Details
@@ -955,7 +893,7 @@ function confirmResetPassword() {
                                                         openToggleDialog(user)
                                                     "
                                                 >
-                                                    <Power class="h-4 w-4" />
+                                                    <RiShutDownLine class="h-4 w-4" />
                                                     {{
                                                         isActive(user)
                                                             ? 'Set Inactive'
@@ -973,7 +911,7 @@ function confirmResetPassword() {
                                                         openResetDialog(user)
                                                     "
                                                 >
-                                                    <KeyRound class="h-4 w-4" />
+                                                    <RiKey2Line class="h-4 w-4" />
                                                     Reset Password
                                                 </DropdownMenuItem>
 
@@ -987,11 +925,37 @@ function confirmResetPassword() {
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
-                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                            <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                                <img
+                                    :src="emptyRafikiUrl"
+                                    alt=""
+                                    class="w-1/3 object-contain opacity-90"
+                                    aria-hidden="true"
+                                />
+                                <div class="space-y-1">
+                                    <p class="text-custom-shadow text-base font-semibold">No users found</p>
+                                    <p class="text-custom-shadow/80 text-sm">
+                                        {{ hasActiveFilters ? 'Try adjusting your filters or search.' : 'Try adjusting your search.' }}
+                                    </p>
+                                </div>
+                                <Button
+                                    v-if="hasActiveFilters"
+                                    size="sm"
+                                    variant="destructive"
+                                    @click="clearFilters"
+                                >
+                                    <RiCloseLine class="mr-1.5 h-3.5 w-3.5" />
+                                    Clear filters
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
 
                     <InertiaPagination
                         :links="props.users.links"
@@ -1053,7 +1017,7 @@ function confirmResetPassword() {
                         ]"
                         @click="confirmToggle"
                     >
-                        <Power class="h-4 w-4" />
+                        <RiShutDownLine class="h-4 w-4" />
                         {{
                             togglingUser?.status === 'active'
                                 ? 'Set Inactive'
@@ -1087,7 +1051,7 @@ function confirmResetPassword() {
                         class="cursor-pointer rounded-lg border-0 bg-primary text-white hover:bg-primary/90"
                         @click="confirmResetPassword"
                     >
-                        <KeyRound class="h-4 w-4" />
+                        <RiKey2Line class="h-4 w-4" />
                         Reset Password
                     </AlertDialogAction>
                 </AlertDialogFooter>
