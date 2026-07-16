@@ -150,11 +150,11 @@ function initials(name: string) {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
 
-            <!-- Header card -->
+            
             <Card>
                 <CardHeader class="py-0">
                     <div class="flex items-center gap-4">
-                        <!-- Avatar / initials box -->
+                        
                         <div
                             class="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border-2 shadow-sm"
                         >
@@ -253,7 +253,7 @@ function initials(name: string) {
                 </CardHeader>
             </Card>
 
-            <!-- User Details card -->
+            
             <Card class="py-6">
                 <CardHeader>
                     <CardTitle>User Details</CardTitle>
@@ -337,7 +337,7 @@ function initials(name: string) {
                 </CardContent>
             </Card>
 
-            <!-- Internal type section -->
+            
             <Card v-if="user.type === 'internal'" class="py-6">
                 <CardHeader>
                     <CardTitle>Internal Roles</CardTitle>
@@ -362,7 +362,7 @@ function initials(name: string) {
                 </CardContent>
             </Card>
 
-            <!-- External type section -->
+            
             <Card v-else-if="user.type === 'external' && user.company" class="py-6">
                 <CardHeader>
                     <CardTitle>Company</CardTitle>
@@ -385,8 +385,8 @@ function initials(name: string) {
                 </CardContent>
             </Card>
 
-            <!-- No type fallback -->
-            <!-- <Card v-else class="py-6">
+            
+            <!-- CODE: <Card v-else class="py-6">
                 <CardHeader>
                     <CardTitle>User Details</CardTitle>
                 </CardHeader>
@@ -397,7 +397,7 @@ function initials(name: string) {
                 </CardContent>
             </Card> -->
 
-            <!-- Archive dialog -->
+            
             <Dialog :open="archiveOpen" @update:open="archiveOpen = $event">
                 <DialogContent class="sm:max-w-md p-4">
                     <DialogHeader>

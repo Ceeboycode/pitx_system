@@ -93,12 +93,11 @@ class RolePermissionSeeder extends Seeder
         $superAdmin->syncPermissions($allPermissions);
         $admin->syncPermissions($internalPermissions);
 
-        $it->syncPermissions($itPermissions);
+        // $it->syncPermissions($itPermissions);
         $terminalManager->syncPermissions($terminalManagerPermissions);
 
         $operator->syncPermissions($externalPermissions);
 
-        // No permissions yet unless you want them too
         $dispatcher->syncPermissions([]);
         $driver->syncPermissions([]);
         $commuter->syncPermissions([]);

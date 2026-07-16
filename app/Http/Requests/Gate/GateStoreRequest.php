@@ -30,6 +30,8 @@ class GateStoreRequest extends FormRequest
             ],
             'status' => ['required', Rule::in(['active', 'inactive'])],
             'bays' => ['required', 'integer', 'min:0'],
+            'location' => ['required', 'string', 'max:255'],
+            'picture' => ['nullable', 'image', 'mimes:jpeg,png,webp', 'max:5120'],
         ];
     }
 }

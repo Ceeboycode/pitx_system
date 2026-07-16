@@ -172,6 +172,8 @@ class RouteController extends Controller
         Gate::authorize('viewTrash', Route::class);
 
         $search = request('search');
+        $status = request('status');
+        $gate = request('gate');
 
         $routes = Route::onlyTrashed()
             ->select('id', 'route_name', 'gate_id', 'status', 'deleted_at')
@@ -185,13 +187,18 @@ class RouteController extends Controller
                         );
                 });
             })
+            ->when($status, fn ($query, $status) => $query->where('status', $status))
+            ->when($gate, fn ($query, $gate) => $query->whereHas(
+                'gate',
+                fn ($gateQuery) => $gateQuery->where('gate_name', 'like', "%{$gate}%"),
+            ))
             ->latest('deleted_at')
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Route/Trash', [
             'routes' => $routes,
-            'filters' => ['search' => $search],
+            'filters' => compact('search', 'status', 'gate'),
         ]);
     }
 

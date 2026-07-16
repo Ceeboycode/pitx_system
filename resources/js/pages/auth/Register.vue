@@ -11,10 +11,12 @@ import { store } from '@/routes/register';
 import { Form, Head } from '@inertiajs/vue3';
 </script>
 
+<!-- TODO: clean this file up, or delete, cos it seems that this isnt really in use -->
+
 <template>
     <AuthBase
         title="Create an account"
-        description="Enter your details below to create your account"
+        description=""
     >
         <Head title="Register" />
 

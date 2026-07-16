@@ -19,6 +19,8 @@ import {
   type PSGCItem,
 } from '@/lib/psgc'
 
+import { Separator } from '@/components/ui/separator';
+
 type Codes = {
   regionCode: string
   provinceCode: string
@@ -62,7 +64,7 @@ const barangayCode = ref(props.codes?.barangayCode ?? '')
 
 const street = ref('')
 
-// selected labels (for composing final address string)
+// LABEL: selected labels (for composing final address string)
 const selectedRegion = computed(() => regions.value.find(r => r.code === regionCode.value)?.name ?? '')
 const selectedProvince = computed(() => provinces.value.find(p => p.code === provinceCode.value)?.name ?? '')
 const selectedCity = computed(() => cities.value.find(c => c.code === cityMunCode.value)?.name ?? '')
@@ -168,7 +170,6 @@ watch(cityMunCode, async () => loadBarangays())
 onMounted(async () => {
   await loadRegions()
 
-  // If codes were provided (edit mode), try to cascade-load
   if (regionCode.value) await loadProvinces()
   if (provinceCode.value) await loadCities()
   if (cityMunCode.value) await loadBarangays()
@@ -176,15 +177,18 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="space-y-3">
-    <Label class="text-sm">{{ label }}</Label>
+  <div class="space-y-2">
+    <div class="flex items-center gap-3 py-2">
+        <p class="font-semibold text-custom-accent-3 text-base">Address</p>
+        <Separator class="flex-1" />
+    </div>
 
-    <div class="grid gap-3 sm:grid-cols-2">
-      <div class="space-y-1.5">
-        <Label class="text-xs text-muted-foreground">Region</Label>
+    <div class="grid gap-2 sm:grid-cols-2">
+      <div class="space-y-1">
+        <Label>Region</Label>
         <Select v-model="regionCode">
-          <SelectTrigger>
-            <SelectValue :placeholder="loading.regions ? 'Loading…' : 'Select region…'" />
+          <SelectTrigger class="w-full">
+            <SelectValue :placeholder="loading.regions ? 'Loading...' : 'Select region...'" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem v-for="r in regions" :key="r.code" :value="r.code">
@@ -194,11 +198,11 @@ onMounted(async () => {
         </Select>
       </div>
 
-      <div class="space-y-1.5">
-        <Label class="text-xs text-muted-foreground">Province</Label>
+      <div class="space-y-1">
+        <Label>Province</Label>
         <Select v-model="provinceCode" :disabled="!regionCode">
-          <SelectTrigger>
-            <SelectValue :placeholder="!regionCode ? 'Select region first…' : (loading.provinces ? 'Loading…' : 'Select province…')" />
+          <SelectTrigger class="w-full">
+            <SelectValue :placeholder="!regionCode ? 'Select region first...' : (loading.provinces ? 'Loading...' : 'Select province...')" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem v-for="p in provinces" :key="p.code" :value="p.code">
@@ -208,11 +212,11 @@ onMounted(async () => {
         </Select>
       </div>
 
-      <div class="space-y-1.5">
-        <Label class="text-xs text-muted-foreground">City / Municipality</Label>
+      <div class="space-y-1">
+        <Label>City / Municipality</Label>
         <Select v-model="cityMunCode" :disabled="!provinceCode">
-          <SelectTrigger>
-            <SelectValue :placeholder="!provinceCode ? 'Select province first…' : (loading.cities ? 'Loading…' : 'Select city/municipality…')" />
+          <SelectTrigger class="w-full">
+            <SelectValue :placeholder="!provinceCode ? 'Select province first...' : (loading.cities ? 'Loading...' : 'Select city/municipality...')" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem v-for="c in cities" :key="c.code" :value="c.code">
@@ -222,11 +226,11 @@ onMounted(async () => {
         </Select>
       </div>
 
-      <div class="space-y-1.5">
-        <Label class="text-xs text-muted-foreground">Barangay</Label>
+      <div class="space-y-1">
+        <Label>Barangay</Label>
         <Select v-model="barangayCode" :disabled="!cityMunCode">
-          <SelectTrigger>
-            <SelectValue :placeholder="!cityMunCode ? 'Select city first…' : (loading.barangays ? 'Loading…' : 'Select barangay…')" />
+          <SelectTrigger class="w-full">
+            <SelectValue :placeholder="!cityMunCode ? 'Select city first...' : (loading.barangays ? 'Loading...' : 'Select barangay...')" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem v-for="b in barangays" :key="b.code" :value="b.code">
@@ -237,15 +241,15 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div class="space-y-1.5">
-      <Label class="text-xs text-muted-foreground">{{ streetLabel }}</Label>
-      <Input v-model="street" placeholder="House/Unit No., Street, Building…" />
+    <div class="space-y-1">
+      <Label>{{ streetLabel }}</Label>
+      <Input v-model="street" placeholder="House/Unit No., Street, Building..." />
     </div>
 
-    <div class="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
+    <!-- CODE: <div class="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
       <div class="font-medium text-foreground">Preview</div>
       <div class="mt-1">{{ composedAddress || '—' }}</div>
-    </div>
+    </div> -->
 
     <p v-if="error" class="text-xs text-destructive">{{ error }}</p>
   </div>

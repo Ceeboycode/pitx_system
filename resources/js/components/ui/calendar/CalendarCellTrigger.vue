@@ -20,15 +20,11 @@ const forwardedProps = useForwardProps(delegatedProps)
     data-slot="calendar-cell-trigger"
     :class="cn(
       buttonVariants({ variant: 'ghost' }),
-      'size-8 p-0 font-normal aria-selected:opacity-100 cursor-default',
-      '[&[data-today]:not([data-selected])]:bg-accent [&[data-today]:not([data-selected])]:text-accent-foreground',
-      // Selected
-      'data-[selected]:bg-primary data-[selected]:text-primary-foreground data-[selected]:opacity-100 [&[data-selected]:hover]:bg-primary data-[selected]:hover:text-primary-foreground data-[selected]:focus:bg-primary data-[selected]:focus:text-primary-foreground',
-      // Disabled
+      'size-8 cursor-pointer p-0 font-normal hover:bg-custom-accent-3 hover:text-custom-shadow aria-selected:opacity-100',
+      '[&[data-today]:not([data-selected])]:border [&[data-today]:not([data-selected])]:border-custom-primary [&[data-today]:not([data-selected])]:bg-transparent [&[data-today]:not([data-selected])]:text-custom-shadow',
+      'data-[selected]:bg-custom-primary data-[selected]:text-white data-[selected]:opacity-100 [&[data-selected]:hover]:bg-custom-accent-3 data-[selected]:hover:text-custom-shadow data-[selected]:focus:bg-custom-primary data-[selected]:focus:text-white',
       'data-[disabled]:text-muted-foreground data-[disabled]:opacity-50',
-      // Unavailable
       'data-[unavailable]:text-destructive-foreground data-[unavailable]:line-through',
-      // Outside months
       'data-[outside-view]:text-muted-foreground',
       props.class,
     )"

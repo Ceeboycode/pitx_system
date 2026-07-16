@@ -1,20 +1,16 @@
-﻿<script setup lang="ts">
-/* ======================================================
-   Layout, Routing & Inertia
-====================================================== */
+<script setup lang="ts">
+
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
-/* ======================================================
-   Shared UI
-====================================================== */
+
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 
-/* shadcn-vue */
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,13 +25,10 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-/* ======================================================
-   Icons
-====================================================== */
+
 import {
     RiArrowDownSLine,
     RiArrowUpDownLine,
@@ -48,14 +41,10 @@ import {
     RiPhoneLine,
 } from 'vue-remix-icons';
 
-/* ======================================================
-   Routing (Wayfinder)
-====================================================== */
+
 import InternalDispatchController from '@/actions/App/Http/Controllers/InternalDispatchController';
 
-/* ======================================================
-   Types
-====================================================== */
+
 type CompanyItem = {
     id: number;
     company_name: string;
@@ -82,9 +71,7 @@ type PaginatedCompanies = {
     total: number;
 };
 
-/* ======================================================
-   Props
-====================================================== */
+
 const props = defineProps<{
     filters: {
         search: string;
@@ -124,16 +111,12 @@ function sortIconClass(field: SortField) {
     return sortBy.value === field ? 'text-custom-primary' : 'text-custom-shadow/40';
 }
 
-/* ======================================================
-   Breadcrumbs
-====================================================== */
+
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dispatches', href: InternalDispatchController.index().url },
 ];
 
-/* ======================================================
-   Helpers
-====================================================== */
+
 function prettyStatus(value: string | null | undefined) {
     return String(value ?? 'unknown')
         .replace(/_/g, ' ')
@@ -320,16 +303,14 @@ function statusDot(status: string | null | undefined): string {
                                                     size="icon-more"
                                                 >
                                                     <RiMore2Line class="h-4 w-4" />
-                                                    <span class="sr-only">Open actions</span>
+                                                    
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent align="end" class="w-fit rounded-lg shadow-lg">
-                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
+                                            <DropdownMenuContent align="end" class="">
+                                                <DropdownMenuLabel>
                                                     {{ company.company_name }}
                                                 </DropdownMenuLabel>
-                                                <DropdownMenuSeparator />
-
                                                 <DropdownMenuItem
                                                     as-child
                                                     class="cursor-pointer rounded-lg"

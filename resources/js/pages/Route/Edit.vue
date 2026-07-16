@@ -50,9 +50,7 @@ import type { BreadcrumbItem } from '@/types';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Types
-───────────────────────────────────────────────────────────────────────────── */
+
 
 type Gate = {
     id: number;
@@ -118,9 +116,7 @@ type RouteModel = {
     stops: RouteStop[];
 };
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Props
-───────────────────────────────────────────────────────────────────────────── */
+
 
 const props = defineProps<{
     route: RouteModel;
@@ -137,18 +133,14 @@ const props = defineProps<{
 
 mapboxgl.accessToken = props.mapConfig.mapboxToken;
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Breadcrumbs
-───────────────────────────────────────────────────────────────────────────── */
+
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Routes', href: index().url },
     { title: props.route.route_name, href: edit(props.route.id).url },
 ];
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Refs
-───────────────────────────────────────────────────────────────────────────── */
+
 
 const mapEl = ref<HTMLElement | null>(null);
 const map = ref<mapboxgl.Map | null>(null);
@@ -187,9 +179,7 @@ const showAlternatives = ref(false);
 
 const waypoints = ref<Waypoint[]>([]);
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Existing stops
-───────────────────────────────────────────────────────────────────────────── */
+
 
 const existingIntermediateStops: StopItem[] = props.route.stops
     .filter((stop) => stop.stop_type !== 'origin' && stop.stop_type !== 'destination')
@@ -204,9 +194,7 @@ const existingIntermediateStops: StopItem[] = props.route.stops
         stop_order: stop.stop_order,
     }));
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Origin
-───────────────────────────────────────────────────────────────────────────── */
+
 
 const origin = {
     name: props.mapConfig.pitx.name,
@@ -231,9 +219,7 @@ const form = useForm({
 
 let originMarker: mapboxgl.Marker | null = null;
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Computed
-───────────────────────────────────────────────────────────────────────────── */
+
 
 const hasDestination = computed(
     () => form.destination_lat !== null && form.destination_lng !== null,
@@ -269,9 +255,7 @@ const routeHealthStatus = computed<'idle' | 'loading' | 'ready'>(() => {
     return 'ready';
 });
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Watchers
-───────────────────────────────────────────────────────────────────────────── */
+
 
 watch(
     () => defaultRouteName.value,
@@ -317,9 +301,7 @@ watch(stopQuery, async (value) => {
     }
 });
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Helpers
-───────────────────────────────────────────────────────────────────────────── */
+
 
 function onRouteNameInput(value: string | number) {
     routeNameTouched.value = true;
@@ -565,9 +547,7 @@ function fitMap() {
     });
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Map init
-───────────────────────────────────────────────────────────────────────────── */
+
 
 function initMap() {
     if (!mapEl.value) return;
@@ -738,7 +718,6 @@ function initMap() {
                 applySelectedRoute(0);
                 fitMap();
             } catch {
-                // ignore invalid geometry
             }
         } else if (hasDestination.value) {
             redrawRoute();
@@ -748,15 +727,13 @@ function initMap() {
     });
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Geocoding
-───────────────────────────────────────────────────────────────────────────── */
+
 
 async function searchPlaces(query: string): Promise<SearchSuggestion[]> {
     if (!query.trim()) return [];
 
     const url = new URL(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json`,
+        `https:
     );
 
     url.searchParams.set('access_token', mapboxgl.accessToken);
@@ -845,7 +822,7 @@ async function searchPlacesAlongRoute(query: string): Promise<SearchSuggestion[]
 
 async function reversePlace(lng: number, lat: number) {
     const url = new URL(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json`,
+        `https:
     );
 
     url.searchParams.set('access_token', mapboxgl.accessToken);
@@ -859,9 +836,7 @@ async function reversePlace(lng: number, lat: number) {
     return data.features?.[0] ?? null;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Destination
-───────────────────────────────────────────────────────────────────────────── */
+
 
 async function setDestinationFromSuggestion(item: SearchSuggestion) {
     const destinationChanged =
@@ -941,9 +916,7 @@ async function setDestinationFromCoordinates(lng: number, lat: number) {
     });
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Detour waypoints
-───────────────────────────────────────────────────────────────────────────── */
+
 
 async function addDetourWaypoint(lng: number, lat: number) {
     const insertIndex = findInsertIndex(lng, lat);
@@ -1006,9 +979,7 @@ function removeAllWaypoints() {
     redrawRoute();
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Alternative routes
-───────────────────────────────────────────────────────────────────────────── */
+
 
 function selectAlternativeRoute(index: number) {
     applySelectedRoute(index);
@@ -1040,9 +1011,7 @@ function clearAlternativeRouteLayers() {
     }
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Stops
-───────────────────────────────────────────────────────────────────────────── */
+
 
 async function addStopFromSuggestion(
     item: SearchSuggestion,
@@ -1093,9 +1062,7 @@ async function addStopFromSuggestion(
     await redrawRoute();
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Auto tools
-───────────────────────────────────────────────────────────────────────────── */
+
 
 async function autoGenerateStops() {
     if (routeCoordinates.value.length < 2) return;
@@ -1236,9 +1203,7 @@ async function addLandmarkAsStop(item: SearchSuggestion) {
     );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Markers
-───────────────────────────────────────────────────────────────────────────── */
+
 
 function renderStopMarkers() {
     clearStopMarkers();
@@ -1299,9 +1264,7 @@ function clearRouteLine() {
     src?.setData(emptyFeatureCollection());
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Route fetch & draw
-───────────────────────────────────────────────────────────────────────────── */
+
 
 async function redrawRoute() {
     if (
@@ -1327,7 +1290,7 @@ async function redrawRoute() {
     ];
 
     const url = new URL(
-        `https://api.mapbox.com/directions/v5/mapbox/driving/${allCoords.join(';')}`,
+        `https:
     );
 
     url.searchParams.set('geometries', 'geojson');
@@ -1369,9 +1332,7 @@ async function redrawRoute() {
     fitMap();
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Drag reorder
-───────────────────────────────────────────────────────────────────────────── */
+
 
 function onDragStart(index: number) {
     draggedStopIndex.value = index;
@@ -1415,9 +1376,7 @@ function removeStop(index: number) {
     redrawRoute();
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Misc
-───────────────────────────────────────────────────────────────────────────── */
+
 
 function clearDestination() {
     form.destination_name = '';
@@ -1523,7 +1482,7 @@ onBeforeUnmount(() => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
 
-            <!-- Header card -->
+            
             <Card>
                 <CardHeader class="py-0">
                     <div class="flex items-center gap-4">
@@ -1548,7 +1507,7 @@ onBeforeUnmount(() => {
                             <div class="flex justify-between">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <Badge class="border-0 bg-muted font-mono text-muted-foreground">
-                                        {{ form.origin_name }} → {{ form.destination_name || '…' }}
+                                        {{ form.origin_name }} → {{ form.destination_name || '...' }}
                                     </Badge>
                                     <Badge v-if="selectedGate" class="border-0 bg-slate-100 text-slate-600">
                                         {{ selectedGate.gate_name }}
@@ -1601,7 +1560,7 @@ onBeforeUnmount(() => {
                             <span class="rounded bg-muted px-2 py-0.5 font-mono text-sm font-semibold tabular-nums">{{ totalVisibleStops }}</span>
                         </div>
                         <div class="py-2">
-                            <!-- <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">Distance</span> -->
+                            <!-- CODE: <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">Distance</span> -->
                             <div class="items-center flex">
                                 <div class="h-full mr-4">
                                     <Ruler class="h-4 w-4 inline-block text-primary" />
@@ -1668,7 +1627,7 @@ onBeforeUnmount(() => {
 
                             <Select v-model="form.gate_id">
                                 <SelectTrigger id="gate_id_sidebar" class="h-10">
-                                    <SelectValue placeholder="Select a gate…" />
+                                    <SelectValue placeholder="Select a gate..." />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem
@@ -1693,9 +1652,9 @@ onBeforeUnmount(() => {
                                 @click="submit"
                             >
                                 <Save class="h-4 w-4" />
-                                {{ form.processing ? 'Saving Changes…' : 'Save Changes' }}
+                                {{ form.processing ? 'Saving Changes...' : 'Save Changes' }}
                             </Button>
-                        <!-- </div> -->
+                        
 
                         <p
                             v-if="!routeReady"
@@ -1712,7 +1671,7 @@ onBeforeUnmount(() => {
 
             </div>
 
-            <!-- Top row: map | stops -->
+            
             <div class="grid items-start gap-4 xl:grid-cols-[1fr_380px]">
                 <div class="space-y-4">
                     <Card class="py-6">
@@ -2058,7 +2017,7 @@ onBeforeUnmount(() => {
                         <CardHeader class="flex items-center justify-between">
                             <div>
                                 <CardTitle class="text-base">Add Stop</CardTitle>
-                                <!-- <CardDescription class="text-xs">
+                                <!-- CODE: <CardDescription class="text-xs">
                                     Search stops within 500 m of the active route, or auto-generate by interval.
                                 </CardDescription> -->
                             </div>
@@ -2137,7 +2096,7 @@ onBeforeUnmount(() => {
                                         :disabled="loadingAutoGenerate || routeCoordinates.length < 2"
                                         @click="autoGenerateStops"
                                     >
-                                        {{ loadingAutoGenerate ? 'Generating…' : 'Generate' }}
+                                        {{ loadingAutoGenerate ? 'Generating...' : 'Generate' }}
                                     </Button>
                                 </div>
 

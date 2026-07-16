@@ -365,7 +365,7 @@ const documentChartData = computed(() => {
                 </CardContent>
             </Card>
 
-            <!-- ── KPI Cards ── -->
+            
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <Card
                     v-for="item in primaryKpis"
@@ -412,7 +412,7 @@ const documentChartData = computed(() => {
                             </div>
                         </div>
                     </CardContent>
-                    <!-- Bottom accent line -->
+                    
                     <div
                         class="absolute right-0 bottom-0 left-0 h-0.5"
                         :class="
@@ -424,7 +424,7 @@ const documentChartData = computed(() => {
                 </Card>
             </div>
 
-            <!-- ── Alert Banner ── -->
+            
             <div
                 v-if="hasAlerts"
                 class="flex flex-col gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4 lg:flex-row lg:items-center lg:justify-between"
@@ -481,9 +481,9 @@ const documentChartData = computed(() => {
                 </div>
             </div>
 
-            <!-- ── Main Grid: Operations + Compliance ── -->
+            
             <div class="grid gap-5 xl:grid-cols-3">
-                <!-- Operations Performance -->
+                
                 <Card class="xl:col-span-2">
                     <CardHeader class="pb-2">
                         <div class="flex items-center gap-2">
@@ -505,7 +505,7 @@ const documentChartData = computed(() => {
                     </CardHeader>
 
                     <CardContent class="space-y-5">
-                        <!-- Progress metrics -->
+                        
                         <div class="space-y-4">
                             <div class="space-y-1.5">
                                 <div
@@ -617,7 +617,7 @@ const documentChartData = computed(() => {
 
                         <Separator />
 
-                        <!-- Summary counters -->
+                        
                         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                             <div
                                 class="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 text-center"
@@ -670,7 +670,7 @@ const documentChartData = computed(() => {
                     </CardContent>
                 </Card>
 
-                <!-- Compliance Snapshot -->
+                
                 <Card>
                     <CardHeader class="pb-2">
                         <div class="flex items-center gap-2">
@@ -691,7 +691,7 @@ const documentChartData = computed(() => {
                     </CardHeader>
 
                     <CardContent class="space-y-4">
-                        <!-- Donut chart -->
+                        
                         <div class="flex justify-center py-2">
                             <div class="relative h-36 w-36">
                                 <svg
@@ -732,7 +732,7 @@ const documentChartData = computed(() => {
                             </div>
                         </div>
 
-                        <!-- Legend -->
+                        
                         <div class="space-y-2">
                             <div
                                 v-for="segment in documentChartData.segments"
@@ -771,9 +771,9 @@ const documentChartData = computed(() => {
                 </Card>
             </div>
 
-            <!-- ── Bottom Grid: Dispatches + Sidebar ── -->
+            
             <div class="grid gap-5 xl:grid-cols-3">
-                <!-- Recent Dispatch Activity -->
+                
                 <Card class="xl:col-span-2">
                     <CardHeader class="pb-3">
                         <div class="flex items-center justify-between">
@@ -905,7 +905,7 @@ const documentChartData = computed(() => {
                                     </p>
                                 </div>
 
-                                <!-- Meta row -->
+                                
                                 <div
                                     class="mt-3 flex flex-wrap gap-3 border-t border-slate-100 pt-3"
                                 >
@@ -968,9 +968,9 @@ const documentChartData = computed(() => {
                     </CardContent>
                 </Card>
 
-                <!-- Sidebar -->
+                
                 <div class="space-y-5">
-                    <!-- Fleet Status -->
+                    
                     <Card>
                         <CardHeader class="pb-2">
                             <div class="flex items-center gap-2">
@@ -1070,7 +1070,7 @@ const documentChartData = computed(() => {
                         </CardContent>
                     </Card>
 
-                    <!-- Route Summary -->
+                    
                     <Card>
                         <CardHeader class="pb-2">
                             <div class="flex items-center justify-between">

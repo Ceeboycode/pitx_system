@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { CalendarDate } from '@internationalized/date';
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3'
-import AuthBase from '@/layouts/AuthLayout.vue';
 
-import { Badge } from '@/components/ui/badge';
+import AuthLayout from '@/layouts/AuthLayout.vue';
+
 import { Button } from '@/components/ui/button';
+import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import {
     Card,
     CardContent,
@@ -16,6 +18,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -25,6 +32,8 @@ import {
 import { Separator } from '@/components/ui/separator';
 
 import AddressSelectPH from '@/components/AddressSelectPH.vue';
+import InputError from '@/components/InputError.vue';
+import RegistrationStatus from '@/pages/RegistrationStatus.vue';
 
 import {
     resendStep1Otp,
@@ -37,40 +46,66 @@ import {
 } from '@/actions/App/Http/Controllers/CompanyRegistration';
 
 import {
-    Building2,
-    CheckCircle2,
-    FileText,
-    ImagePlus,
-    Loader2,
-    Mail,
-    RefreshCcw,
-    ShieldCheck,
-    X,
-} from 'lucide-vue-next';
+    RiArrowLeftSLine,
+    RiCheckboxCircleFill,
+    RiCheckLine,
+    RiCloseLine,
+    RiEyeLine,
+    RiEyeOffLine,
+    RiLoaderLine,
+    RiImageAddLine,
+    RiCalendarLine,
+} from 'vue-remix-icons';
 
-/*
-|--------------------------------------------------------------------------
-| Sub-step model
-|--------------------------------------------------------------------------
-*/
-type SubStep = 1 | 1.5 | 2 | 2.5 | 3;
+import AuthenticationRaifikiUrl from '@/components/assets/Authentication-rafiki.svg';
 
-const currentStep = ref<SubStep>(1);
-const totalSteps  = 3;
 
-const visualStep = computed((): 1 | 2 | 3 => {
+type DocRow = {
+    id: number;
+    doc_type: string;
+    status: string;
+    original_name?: string | null;
+    remarks?: string | null;
+    expires_at?: string | null;
+};
+
+const props = defineProps<{
+    company?: {
+        id: number;
+        company_name: string;
+        company_code?: string | null;
+        company_email?: string;
+        status: string;
+        documents?: DocRow[];
+    };
+    meta?: {
+        title: string;
+        description: string;
+        icon: string;
+        color: string;
+    };
+}>();
+
+type SubStep = 1 | 1.5 | 2 | 2.5 | 3 | 4;
+
+const currentStep = ref<SubStep>(props.company ? 4 : 1);
+const showPassword = ref(false);
+const showPasswordConfirmation = ref(false);
+
+const visualStep = computed((): 1 | 2 | 3 | 4 => {
     if (currentStep.value < 2)  return 1;
     if (currentStep.value < 3)  return 2;
-    return 3;
+    if (currentStep.value < 4) return 3;
+    return 4;
 });
 
 const stepMeta = [
-    { number: 1, title: 'Account',   description: 'Your personal login details' },
-    { number: 2, title: 'Company',   description: 'Business information' },
-    { number: 3, title: 'Documents', description: 'Upload required files' },
+    { number: 1, title: 'Operator Profile', description: 'Register and verify your operator account details.',},
+    { number: 2, title: 'Company Profile', description: 'Enter and verify company details.',},
+    { number: 3, title: 'Documents', description: 'Provide required registration documentation for verification.',},
+    { number: 4, title: 'Status', description: 'Track the review status of your company registration.',},
 ];
 
-// ─── Step 1 form ──────────────────────────────────────────────────────────────
 const step1 = useForm({
     name:                  '',
     email:                 '',
@@ -79,12 +114,10 @@ const step1 = useForm({
     password_confirmation: '',
 });
 
-// ─── Account OTP ──────────────────────────────────────────────────────────────
 const otpAccount       = useForm({ otp: '' });
 const resendAccount    = useForm({});
 const resentAccountMsg = ref('');
 
-// ─── Step 2 form ──────────────────────────────────────────────────────────────
 const step2 = useForm({
     company_name:                       '',
     company_email:                      '',
@@ -96,11 +129,9 @@ const step2 = useForm({
     authorized_representative_position: '',
     authorized_representative_contact:  '',
 
-    // ── Logo (optional) ──
     logo: null as File | null,
 });
 
-// ─── Logo preview ─────────────────────────────────────────────────────────────
 const logoPreview    = ref<string | null>(null);
 const logoInputRef   = ref<HTMLInputElement | null>(null);
 
@@ -122,7 +153,6 @@ function removeLogo() {
     if (logoInputRef.value) logoInputRef.value.value = '';
 }
 
-// ─── Step 2 address / position helpers ───────────────────────────────────────
 const addressCodes = ref({ regionCode: '', provinceCode: '', cityMunCode: '', barangayCode: '' });
 
 const positionOptions = [
@@ -142,12 +172,10 @@ watch(positionChoice, (val) => {
     }
 });
 
-// ─── Company OTP ──────────────────────────────────────────────────────────────
 const otpCompany       = useForm({ otp: '' });
 const resendCompany    = useForm({});
 const resentCompanyMsg = ref('');
 
-// ─── Step 3 form ──────────────────────────────────────────────────────────────
 const step3 = useForm({
     documents: {
         AUTHORIZATION_LETTER: { file: null as File | null, issued_at: '', expires_at: '' },
@@ -158,7 +186,6 @@ const step3 = useForm({
     } as Record<string, { file: File | null; issued_at: string; expires_at: string }>,
 });
 
-// ─── Derived ──────────────────────────────────────────────────────────────────
 const isCorporate = computed(() => step2.business_type === 'corporate');
 const isSole      = computed(() => step2.business_type === 'sole_proprietorship');
 
@@ -187,7 +214,6 @@ const requiredDocs = computed<{ key: string; label: string; required: boolean }[
     ];
 });
 
-// ─── Navigation ───────────────────────────────────────────────────────────────
 function submitStep1() {
     step1.submit(storeStep1(), {
         onSuccess: () => { resentAccountMsg.value = ''; currentStep.value = 1.5; },
@@ -202,7 +228,7 @@ function submitAccountOtp() {
 
 function submitStep2() {
     step2.submit(storeStep2(), {
-        forceFormData: true,   // required for file upload
+        forceFormData: true,   
         onSuccess: () => { resentCompanyMsg.value = ''; currentStep.value = 2.5; },
     });
 }
@@ -214,7 +240,26 @@ function submitCompanyOtp() {
 }
 
 function submitStep3() {
-    step3.submit(storeStep3(), { forceFormData: true });
+    step3.submit(storeStep3(), {
+        forceFormData: true,
+        onError: (errors) => {
+            console.log('[Company Registration] Document submission failed.', {
+                validationErrors: errors,
+                documents: Object.fromEntries(
+                    Object.entries(step3.documents).map(([type, document]) => [
+                        type,
+                        {
+                            fileName: document.file?.name ?? null,
+                            fileType: document.file?.type ?? null,
+                            fileSize: document.file?.size ?? null,
+                            issuedAt: document.issued_at,
+                            expiresAt: document.expires_at,
+                        },
+                    ]),
+                ),
+            });
+        },
+    });
 }
 
 function doResendAccount() {
@@ -227,7 +272,7 @@ function doResendAccount() {
 function doResendCompany() {
     resentCompanyMsg.value = '';
     resendCompany.submit(resendStep2Otp(), {
-        onSuccess: () => { resentCompanyMsg.value = 'A new code was sent to your company email.'; otpCompany.reset(); },
+        onSuccess: () => { resentCompanyMsg.value = 'A new code was sent to the company email.'; otpCompany.reset(); },
     });
 }
 
@@ -264,335 +309,396 @@ function handleFile(docKey: string, event: Event) {
 function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): string | undefined {
     return (step3.errors as Record<string, string>)[`documents.${docKey}.${field}`];
 }
+
+const openDatePicker = ref<string | null>(null);
+
+function parseCalendarDate(value: string): CalendarDate | undefined {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
+    const [year, month, day] = value.split('-').map(Number);
+    try {
+        return new CalendarDate(year, month, day);
+    } catch {
+        return undefined;
+    }
+}
+
+function selectDocumentDate(
+    docKey: string,
+    field: 'issued_at' | 'expires_at',
+    value: CalendarDate | undefined,
+) {
+    step3.documents[docKey][field] = value
+        ? `${value.year}-${String(value.month).padStart(2, '0')}-${String(value.day).padStart(2, '0')}`
+        : '';
+    openDatePicker.value = null;
+}
 </script>
 
 <template>
-    
-    <Head title="Company Registration" />
-
-    <!-- Subtle blue-tinted background, close to original bg-muted/40 -->
-    <div class="flex min-h-screen items-center justify-center bg-blue-50/60 p-4">
-        <div class="w-full max-w-2xl space-y-6">
-
-            <!-- ── Step progress indicator ───────────────────────────────── -->
-            <div class="flex items-center">
-                <template v-for="(step, idx) in stepMeta" :key="step.number">
+    <AuthLayout
+        title="Company Registration"
+        description=""
+    >
+        <Head :title="currentStep === 4 ? 'Registration Status' : 'Company Registration'" />
+        <Card class="mx-auto max-w-3xl flex flex-row">
+            <div class="flex h-full w-1/2 flex-col gap-y-2 px-6 text-sm">
+                <div class="pb-2">
+                    <CardTitle class="">
+                        <span>Registration</span>
+                    </CardTitle>
+                </div>
+                <div
+                    v-for="(step, idx) in stepMeta"
+                    :key="step.number"
+                    class="relative"
+                >
                     <button
                         type="button"
-                        class="flex flex-col items-center gap-1.5"
-                        :disabled="step.number > visualStep"
-                        @click="step.number < visualStep && (currentStep = (step.number as SubStep))"
+                        class="flex flex-col items-start text-left"
+                        :disabled="company ? step.number !== 4 : step.number > visualStep"
+                        @click="!company && step.number < visualStep && (currentStep = (step.number as SubStep))"
                     >
-                        <div
-                            class="flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all"
-                            :class="{
-                                'border-blue-800 bg-blue-800 text-white scale-110 shadow-[0_0_0_3px_rgba(27,63,122,0.20)]':
-                                    visualStep === step.number,
-                                'cursor-pointer border-green-600 bg-green-600 text-white':
-                                    step.number < visualStep,
-                                'border-border bg-muted text-muted-foreground':
-                                    step.number > visualStep,
-                            }"
-                        >
-                            <svg v-if="step.number < visualStep" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                            <span v-else>{{ step.number }}</span>
+                        <div class="flex items-center gap-2">
+                            <div
+                                class="flex h-8 w-8 items-center justify-center border-[8px] text-sm transition-all"
+                                :class="{
+                                    'scale-100 border-custom-primary bg-transparent font-semibold':
+                                        visualStep === step.number,
+                                    'cursor-pointer border-custom-primary bg-transparent font-semibold':
+                                        step.number < visualStep,
+                                    'border-custom-primary/40 bg-transparent font-semibold':
+                                        step.number > visualStep,
+                                }"
+                            >
+                                <RiCheckLine v-if="step.number < visualStep" class="h-4 w-4 text-custom-shadow"/>
+                                <span v-else
+                                    class="w-full text-center"
+                                    :class="{
+                                        'text-custom-shadow font-semibold': (visualStep === step.number || step.number < visualStep),
+                                        'text-custom-shadow/80 font-normal': step.number > visualStep,
+                                    }"
+                                >{{ step.number }}</span>
+                            </div>
+                            <span
+                                class="inline"
+                                :class="{
+                                    'text-custom-shadow font-semibold': (visualStep === step.number || step.number < visualStep),
+                                    'text-custom-shadow/80': step.number > visualStep,
+                                }"
+                            >
+                                {{ step.title }}
+                            </span>
                         </div>
                         <span
-                            class="hidden text-xs font-medium sm:block"
-                            :class="{
-                                'text-foreground':      visualStep === step.number,
-                                'text-green-600':       step.number < visualStep,
-                                'text-muted-foreground': step.number > visualStep,
-                            }"
+                            v-if="visualStep === step.number"
+                            class="ml-10 mt-2 text-xs text-custom-shadow"
                         >
-                            {{ step.title }}
+                            {{ step.description }}
                         </span>
                     </button>
                     <div
                         v-if="idx < stepMeta.length - 1"
-                        class="mx-3 h-px flex-1 transition-colors"
-                        :class="step.number < visualStep ? 'bg-green-500/50' : 'bg-border'"
+                        class="absolute top-8 -bottom-2 left-4 w-[2px] -translate-x-1/2 transition-colors"
+                        :class="step.number < visualStep ? 'bg-custom-accent-2' : 'bg-custom-bg-dark dark:bg-custom-bg-light'"
                     />
-                </template>
+                </div>
             </div>
-
-            <!-- ── Wizard card ────────────────────────────────────────────── -->
-            <Card class="overflow-hidden">
-                <CardHeader
-                    class="relative -mt-6 overflow-hidden rounded-none bg-[#1B3F7A] pb-5 pt-6"
-                    
-                >
-                    <!-- Subtle decorative orb -->
-                    <div class="pointer-events-none absolute -right-8 -top-8 h-36 w-36 rounded-full bg-red-600 opacity-[0.15]" />
-
-                    <div class="relative z-10 flex items-center gap-2">
-                        <Badge class="border-white/20 bg-white/10 text-white/70 text-xs">
-                            Step {{ visualStep }} of {{ totalSteps }}
-                        </Badge>
-                        <Badge
-                            v-if="currentStep === 1.5 || currentStep === 2.5"
-                            class="gap-1 text-xs border-red-400/30 bg-red-600/20 text-red-200"
-                        >
-                            <Mail class="h-3 w-3" />
-                            Email Verification
-                        </Badge>
-                    </div>
-
-                    <CardTitle class="relative z-10 mt-1 text-xl text-white">
+            <Separator orientation="vertical" class="h-auto! self-stretch"/>
+            <div class="h-full px-6 w-full">
+                <div class="pb-2">
+                    <CardTitle class="">
                         <template v-if="currentStep === 1.5">Verify Account Email</template>
                         <template v-else-if="currentStep === 2.5">Verify Company Email</template>
                         <template v-else>{{ stepMeta[visualStep - 1].title }}</template>
                     </CardTitle>
+                </div>
 
-                    <CardDescription class="relative z-10 text-white/60">
-                        <template v-if="currentStep === 1.5">
-                            We sent a 6-digit code to <strong class="font-semibold text-white/90">{{ step1.email }}</strong>
-                        </template>
-                        <template v-else-if="currentStep === 2.5">
-                            We sent a 6-digit code to <strong class="font-semibold text-white/90">{{ step2.company_email }}</strong>
-                        </template>
-                        <template v-else>
-                            {{ stepMeta[visualStep - 1].description }}
-                        </template>
-                    </CardDescription>
-                </CardHeader>
-
-
-                <CardContent class="pt-6">
-
-                    <!-- ══ STEP 1 – Account Details ══════════════════════════ -->
-                    <div v-if="currentStep === 1" class="space-y-4">
-                        <div class="grid gap-4 sm:grid-cols-2">
-                            <div class="space-y-1.5">
+                <div class="text-sm py-2">
+                    <!-- LABEL: ══ STEP 1 – Account Details ══════════════════════════ -->
+                    <div v-if="currentStep === 1" class="flex flex-col gap-y-2">
+                        <div class="grid gap-2 sm:grid-cols-2">
+                            <!-- TODO: might need to separate the full name into first name, middle name, and last name -->
+                            <div class="space-y-1">
                                 <Label for="s1_name">Full Name</Label>
-                                <Input id="s1_name" v-model="step1.name" placeholder="Juan dela Cruz" autocomplete="name"
-                                       class="focus-visible:ring-blue-800 focus-visible:border-blue-800" />
-                                <p v-if="step1.errors.name" class="text-xs text-red-600">{{ step1.errors.name }}</p>
+                                <Input id="s1_name" v-model="step1.name" placeholder="Juan Dela Cruz" autocomplete="name" class="bg-custom-bg dark:bg-custom-bg-dark"/>
+                                <InputError :message="step1.errors.name" />
                             </div>
-                            <div class="space-y-1.5">
-                                <Label for="s1_email">Email Address</Label>
-                                <Input id="s1_email" type="email" v-model="step1.email" placeholder="juan@example.com" autocomplete="email"
-                                       class="focus-visible:ring-blue-800 focus-visible:border-blue-800" />
-                                <p v-if="step1.errors.email" class="text-xs text-red-600">{{ step1.errors.email }}</p>
+                            <div class="space-y-1">
+                                <Label for="s1_email">Email</Label>
+                                <Input id="s1_email" type="email" v-model="step1.email" placeholder="juan.delacruz@example.com" autocomplete="email" class="bg-custom-bg dark:bg-custom-bg-dark"/>
+                                <InputError :message="step1.errors.email" />
                             </div>
                         </div>
 
-                        <div class="space-y-1.5">
-                            <Label for="s1_phone">Mobile / Phone</Label>
-                            <Input id="s1_phone" v-model="step1.phone" placeholder="+63 9XX XXX XXXX" autocomplete="tel"
-                                   class="focus-visible:ring-blue-800 focus-visible:border-blue-800" />
-                            <p v-if="step1.errors.phone" class="text-xs text-red-600">{{ step1.errors.phone }}</p>
+                        <!-- TODO: add the philipino code number thingy i used in flutter app that automatically validates this -->
+                        <div class="grid gap-2 sm:grid-cols-2">
+                            <div class="space-y-1">
+                                <Label for="s1_phone">Phone</Label>
+                                <Input id="s1_phone" v-model="step1.phone" placeholder="+63 9XX XXX XXXX" autocomplete="tel" class="bg-custom-bg dark:bg-custom-bg-dark"/>
+                                <InputError :message="step1.errors.phone" />
+                            </div>
                         </div>
 
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div class="space-y-1.5">
                                 <Label for="s1_pw">Password</Label>
-                                <Input id="s1_pw" type="password" v-model="step1.password" placeholder="Min. 8 characters" autocomplete="new-password"
-                                       class="focus-visible:ring-blue-800 focus-visible:border-blue-800" />
-                                <p v-if="step1.errors.password" class="text-xs text-red-600">{{ step1.errors.password }}</p>
+                                <div class="relative">
+                                    <Input
+                                        id="s1_pw"
+                                        v-model="step1.password"
+                                        :type="showPassword ? 'text' : 'password'"
+                                        placeholder="••••••••"
+                                        autocomplete="new-password"
+                                         class="bg-custom-bg dark:bg-custom-bg-dark pr-10"
+                                    />
+                                    <button
+                                        type="button"
+                                        aria-label="Hold to show password"
+                                        class="absolute inset-y-0 right-0 flex items-center px-3 text-custom-shadow/60"
+                                        @pointerdown.prevent="showPassword = true"
+                                        @pointerup="showPassword = false"
+                                        @pointerleave="showPassword = false"
+                                        @pointercancel="showPassword = false"
+                                    >
+                                        <RiEyeOffLine v-if="showPassword" class="h-4 w-4" />
+                                        <RiEyeLine v-else class="h-4 w-4" />
+                                    </button>
+                                </div>
+                                <InputError :message="step1.errors.password" />
                             </div>
+                            <!-- TODO: add password creation instructions at the bottom, styled like inputerror component -->
                             <div class="space-y-1.5">
                                 <Label for="s1_pwc">Confirm Password</Label>
-                                <Input id="s1_pwc" type="password" v-model="step1.password_confirmation" placeholder="Repeat password" autocomplete="new-password"
-                                       class="focus-visible:ring-blue-800 focus-visible:border-blue-800" />
-                                <p v-if="step1.errors.password_confirmation" class="text-xs text-red-600">{{ step1.errors.password_confirmation }}</p>
+                                <div class="relative">
+                                    <Input
+                                        id="s1_pwc"
+                                        v-model="step1.password_confirmation"
+                                        :type="showPasswordConfirmation ? 'text' : 'password'"
+                                        placeholder="••••••••"
+                                        autocomplete="new-password"
+                                         class="bg-custom-bg dark:bg-custom-bg-dark pr-10"
+                                    />
+                                    <button
+                                        type="button"
+                                        aria-label="Hold to show password confirmation"
+                                        class="absolute inset-y-0 right-0 flex items-center px-3 text-custom-shadow/60"
+                                        @pointerdown.prevent="showPasswordConfirmation = true"
+                                        @pointerup="showPasswordConfirmation = false"
+                                        @pointerleave="showPasswordConfirmation = false"
+                                        @pointercancel="showPasswordConfirmation = false"
+                                    >
+                                        <RiEyeOffLine v-if="showPasswordConfirmation" class="h-4 w-4" />
+                                        <RiEyeLine v-else class="h-4 w-4" />
+                                    </button>
+                                </div>
+                                <InputError :message="step1.errors.password_confirmation" />
                             </div>
                         </div>
                     </div>
 
-                    <!-- ══ STEP 1.5 – Account Email OTP ══════════════════════ -->
-                    <div v-else-if="currentStep === 1.5" class="space-y-6">
-                        <div class="flex flex-col items-center gap-3 rounded-xl border bg-blue-50 px-6 py-8 text-center">
-                            <div class="flex h-14 w-14 items-center justify-center rounded-full bg-blue-800/10 ring-4 ring-blue-800/10">
-                                <Mail class="h-7 w-7 text-blue-800" />
-                            </div>
-                            <p class="text-sm text-muted-foreground max-w-xs">
+                    <!-- LABEL: ══ STEP 1.5 – Account Email OTP ══════════════════════ -->
+                    <div v-else-if="currentStep === 1.5" class="space-y-2">
+                        <div class="flex flex-col items-center text-custom-shadow rounded-md border border-dashed border-custom-bg-dark dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5 p-6 text-center">
+                            
+                            <img
+                                :src="AuthenticationRaifikiUrl"
+                                alt=""
+                                class="w-1/3 object-contain opacity-90"
+                                aria-hidden="true"
+                            />
+                            <p class="text-custom-shadow mb-2">
                                 Enter the 6-digit code we sent to
-                                <span class="font-semibold text-foreground">{{ step1.email }}</span>.
-                                It expires in 10 minutes.
+                                <span class="font-semibold text-custom-accent-3">{{ step1.email }}</span>.
+                                The code expires in 10 minutes.
                             </p>
                         </div>
 
-                        <div class="space-y-1.5">
+                        <div class="space-y-0">
                             <Label for="otp_acc" class="sr-only">Verification Code</Label>
                             <Input
                                 id="otp_acc"
                                 v-model="otpAccount.otp"
                                 inputmode="numeric"
                                 maxlength="6"
-                                placeholder="0  0  0  0  0  0"
-                                class="h-14 text-center text-3xl font-mono tracking-[.6em] placeholder:text-muted-foreground/40 focus-visible:ring-blue-800 focus-visible:border-blue-800"
+                                placeholder="000000"
+                                class="h-14 text-center text-2xl font-mono tracking-widest placeholder:text-custom-shadow/80"
                                 :disabled="otpAccount.processing"
                                 @input="onOtpInput('account')"
                             />
-                            <p v-if="otpAccount.errors.otp" class="text-center text-xs text-red-600">{{ otpAccount.errors.otp }}</p>
+                            <InputError :message="otpAccount.errors.otp" class="text-center" />
                         </div>
 
-                        <div v-if="resentAccountMsg" class="flex items-center justify-center gap-1.5 text-xs text-blue-800 font-medium">
-                            <CheckCircle2 class="h-3.5 w-3.5" />
-                            {{ resentAccountMsg }}
+                        <div
+                            v-if="resentAccountMsg"
+                            class="mt-2 flex w-full flex-row items-start gap-x-2 rounded-md border-2 border-info/50 bg-info/20 p-3 text-info"
+                        >
+                            <RiCheckboxCircleFill class="mt-0.5 h-4 w-4 shrink-0" />
+                            <p class="text-sm">
+                                {{ resentAccountMsg }}
+                            </p>
                         </div>
 
-                        <div class="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-                            Didn't receive it?
+                        <div class="flex flex-row gap-x-1 justify-center text-xs py-3">
+                            <span>
+                                Didn't receive it?
+                            </span>
                             <button
                                 type="button"
-                                class="inline-flex items-center gap-1 font-medium text-red-600 underline-offset-2 hover:underline disabled:opacity-50"
+                                class="cursor-pointer text-xs text-custom-accent-3 font-semibold disabled:opacity-50 hover:underline hover:underline-offset-2 transition-colors duration-300 ease-out"
                                 :disabled="resendAccount.processing"
                                 @click="doResendAccount"
                             >
-                                <RefreshCcw class="h-3 w-3" :class="resendAccount.processing ? 'animate-spin' : ''" />
                                 Resend code
                             </button>
                         </div>
                     </div>
 
-                    <!-- ══ STEP 2 – Company Details ══════════════════════════ -->
-                    <div v-else-if="currentStep === 2" class="space-y-4">
+                    <!-- LABEL: ══ STEP 2 – Company Details ══════════════════════════ -->
+                    <div v-else-if="currentStep === 2" class="flex flex-col gap-y-2">
 
-                        <!-- ── Company Logo upload ── -->
+                        
                         <div class="space-y-2">
                             <Label>
-                                Company Logo
-                                <span class="ml-1 font-normal text-muted-foreground">(optional)</span>
+                                Logo
+                                <span class="text-custom-shadow/80">(optional)</span>
                             </Label>
 
-                            <div class="flex items-center gap-4">
-                                <!-- Preview box -->
+                            <div class="flex items-center gap-3 rounded-md border border-dashed border-custom-bg-dark p-3 dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5">
+                                
                                 <div
-                                    class="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-muted transition-colors"
-                                    :class="logoPreview ? 'border-blue-800/40' : 'border-dashed border-muted-foreground/30'"
+                                    role="button"
+                                    tabindex="0"
+                                    :aria-label="logoPreview ? 'Change logo' : 'Upload logo'"
+                                    class="group relative h-24 w-24 shrink-0 cursor-pointer overflow-hidden rounded-md border transition-colors"
+                                    :class="logoPreview ? 'border-none' : 'border-dashed border-custom-bg-dark dark:border-custom-bg-light'"
+                                    @click="logoInputRef?.click()"
+                                    @keydown.enter.prevent="logoInputRef?.click()"
+                                    @keydown.space.prevent="logoInputRef?.click()"
                                 >
                                     <img
                                         v-if="logoPreview"
                                         :src="logoPreview"
                                         alt="Logo preview"
-                                        class="h-full w-full object-cover"
+                                        class="h-full w-full object-cover transition duration-200 group-hover:brightness-30"
                                     />
                                     <div
-                                        v-else
-                                        class="flex h-full w-full flex-col items-center justify-center gap-1 text-muted-foreground"
+                                        v-if="logoPreview"
+                                        class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
                                     >
-                                        <Building2 class="h-6 w-6" />
-                                        <span class="text-[10px]">No logo</span>
+                                        <RiImageAddLine class="h-7 w-7 text-custom-shadow" />
+                                    </div>
+                                    <div
+                                        v-else
+                                        class="flex h-full w-full flex-col items-center justify-center"
+                                    >
+                                        <RiImageAddLine class="h-6 w-6 text-custom-shadow/80" />
                                     </div>
 
-                                    <!-- Remove button -->
-                                    <button
+                                    
+                                    <Button
                                         v-if="logoPreview"
                                         type="button"
-                                        @click="removeLogo"
-                                        class="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white shadow hover:bg-red-700 transition-colors"
+                                        aria-label="Remove logo"
+                                        @click.stop="removeLogo"
+                                        class="absolute right-1 top-1 z-10 flex h-6 w-6 items-center border rounded-full cursor-pointer border-custom-shadow/50 text-custom-shadow hover:bg-destructive/20 hover:border-destructive hover:text-destructive transition-all duration-300"
                                     >
-                                        <X class="h-3 w-3" />
-                                    </button>
+                                        <RiCloseLine class="h-4 w-4" />
+                                    </Button>
                                 </div>
 
-                                <!-- Upload trigger -->
-                                <div class="space-y-1.5">
-                                    <label
-                                        for="logo-upload"
-                                        class="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-muted"
-                                    >
-                                        <ImagePlus class="h-4 w-4" />
-                                        {{ logoPreview ? 'Change logo' : 'Upload logo' }}
-                                        <input
-                                            id="logo-upload"
-                                            ref="logoInputRef"
-                                            type="file"
-                                            accept="image/jpeg,image/png,image/webp"
-                                            class="sr-only"
-                                            @change="handleLogoChange"
-                                        />
-                                    </label>
-                                    <p class="text-xs text-muted-foreground leading-relaxed">
-                                        JPG, PNG or WebP · max 2 MB<br />
-                                        Recommended: square, 200 × 200 px+
+                                
+                                <div class="space-y-1">
+                                    <p class="text-sm text-custom-shadow/80">
+                                        <span class="font-semibold">File format: </span>.jpg, .png or .webp<br />
+                                        <span class="font-semibold">Max. file size: </span>2 MB<br />
+                                        <span class="font-semibold">Recommended: </span>square, 200×200 px+
                                     </p>
+                                    <input
+                                        id="logo-upload"
+                                        ref="logoInputRef"
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp"
+                                        class="sr-only"
+                                        @change="handleLogoChange"
+                                    />
                                 </div>
                             </div>
 
-                            <p v-if="step2.errors.logo" class="text-xs text-red-600">
-                                {{ step2.errors.logo }}
-                            </p>
+                            <InputError :message="step2.errors.logo" />
                         </div>
 
-                        <Separator />
-
-                        <!-- ── Company core fields ── -->
-                        <div class="grid gap-4 sm:grid-cols-2">
-                            <div class="space-y-1.5">
-                                <Label for="s2_cname">Company Name</Label>
-                                <Input id="s2_cname" v-model="step2.company_name" placeholder="Acme Corp."
-                                       class="focus-visible:ring-blue-800 focus-visible:border-blue-800" />
-                                <p v-if="step2.errors.company_name" class="text-xs text-red-600">{{ step2.errors.company_name }}</p>
+                        
+                        <div class="grid gap-2 sm:grid-cols-2">
+                            <div class="space-y-1">
+                                <Label for="s2_cname">Name</Label>
+                                <Input id="s2_cname" v-model="step2.company_name" class="bg-custom-bg dark:bg-custom-bg-dark"/>
+                                <InputError :message="step2.errors.company_name"/>
                             </div>
-                            <div class="space-y-1.5">
-                                <Label for="s2_cemail">Company Email</Label>
-                                <Input id="s2_cemail" type="email" v-model="step2.company_email" placeholder="info@acme.com"
-                                       class="focus-visible:ring-blue-800 focus-visible:border-blue-800" />
-                                <p v-if="step2.errors.company_email" class="text-xs text-red-600">{{ step2.errors.company_email }}</p>
+                            <div class="space-y-1">
+                                <Label for="s2_cemail">Email</Label>
+                                <Input id="s2_cemail" type="email" v-model="step2.company_email" autocomplete="email" class="bg-custom-bg dark:bg-custom-bg-dark"/>
+                                <InputError :message="step2.errors.company_email" />
                             </div>
                         </div>
 
-                        <div class="grid gap-4 sm:grid-cols-2">
-                            <div class="space-y-1.5">
-                                <Label for="s2_cphone">Company Phone</Label>
-                                <Input id="s2_cphone" v-model="step2.company_phone" placeholder="+63 2 XXXX XXXX"
-                                       class="focus-visible:ring-blue-800 focus-visible:border-blue-800" />
-                                <p v-if="step2.errors.company_phone" class="text-xs text-red-600">{{ step2.errors.company_phone }}</p>
+                        <div class="grid gap-2 sm:grid-cols-2">
+                            <div class="space-y-1">
+                                <Label for="s2_cphone">Phone</Label>
+                                <Input id="s2_cphone" v-model="step2.company_phone" autocomplete="tel" placeholder="+63 9XX XXX XXXX" class="bg-custom-bg dark:bg-custom-bg-dark"/>
+                                <InputError :message="step2.errors.company_phone" />
                             </div>
-                            <div class="space-y-1.5">
+                            <div class="space-y-1">
                                 <Label for="s2_btype">Business Type</Label>
                                 <Select v-model="step2.business_type">
-                                    <SelectTrigger id="s2_btype" class="focus:ring-blue-800 focus:border-blue-800">
-                                        <SelectValue placeholder="Select type…" />
+                                    <SelectTrigger id="s2_btype" class="w-full">
+                                        <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="corporate">Corporate</SelectItem>
                                         <SelectItem value="sole_proprietorship">Sole Proprietorship</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <p v-if="step2.errors.business_type" class="text-xs text-red-600">{{ step2.errors.business_type }}</p>
+                                <InputError :message="step2.errors.business_type" />
                             </div>
                         </div>
 
-                        <AddressSelectPH
-                            v-model:address="step2.company_address"
-                            v-model:codes="addressCodes"
-                            label="Company Address"
-                            street-label="Street / Building / Unit"
-                        />
-                        <p v-if="step2.errors.company_address" class="text-xs text-red-600">{{ step2.errors.company_address }}</p>
+                        <div class="space-y-1">
+                            <AddressSelectPH
+                                v-model:address="step2.company_address"
+                                v-model:codes="addressCodes"
+                                label="Address"
+                                street-label="Street / Building / Unit"
+                            />
+                            <!-- TODO: see how the sapcing for the input error will look like -->
+                            <InputError :message="step2.errors.company_address" />
+                        </div>
 
-                        <div v-if="step2.business_type" class="space-y-1.5">
+                        <div v-if="step2.business_type" class="space-y-1">
                             <Label for="s2_regno">
                                 {{ isCorporate ? 'SEC Registration Number' : 'DTI Registration Number' }}
                             </Label>
-                            <Input id="s2_regno" v-model="step2.registration_number" placeholder="Enter registration number"
-                                   class="focus-visible:ring-blue-800 focus-visible:border-blue-800" />
-                            <p v-if="step2.errors.registration_number" class="text-xs text-red-600">{{ step2.errors.registration_number }}</p>
+                            <Input id="s2_regno" v-model="step2.registration_number" class="bg-custom-bg dark:bg-custom-bg-dark"/>
+                            <InputError :message="step2.errors.registration_number" />
                         </div>
 
                         <template v-if="step2.business_type">
-                            <Separator />
-                            <p class="text-sm font-medium">Authorized Representative</p>
+                            <div class="flex items-center gap-3 py-2">
+                                <p class="font-semibold text-custom-accent-3 text-base">Authorized Representative</p>
+                                <Separator class="flex-1" />
+                            </div>
 
-                            <div class="grid gap-4 sm:grid-cols-2">
-                                <div class="space-y-1.5">
+                            <div class="grid gap-2 sm:grid-cols-2">
+                                <div class="space-y-1">
                                     <Label for="s2_rname">Full Name</Label>
-                                    <Input id="s2_rname" v-model="step2.authorized_representative_name" placeholder="Representative name"
-                                           class="focus-visible:ring-blue-800 focus-visible:border-blue-800" />
-                                    <p v-if="step2.errors.authorized_representative_name" class="text-xs text-red-600">{{ step2.errors.authorized_representative_name }}</p>
+                                    <Input id="s2_rname" v-model="step2.authorized_representative_name" autocomplete="name" class="bg-custom-bg dark:bg-custom-bg-dark"/>
+                                    <InputError :message="step2.errors.authorized_representative_name" />
                                 </div>
 
-                                <div class="space-y-1.5">
+                                <div class="space-y-1">
                                     <Label for="s2_rpos">Position</Label>
                                     <Select v-model="positionChoice">
-                                        <SelectTrigger id="s2_rpos" class="focus:ring-blue-800 focus:border-blue-800">
-                                            <SelectValue placeholder="Select position…" />
+                                        <SelectTrigger id="s2_rpos" class="w-full">
+                                            <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem v-for="p in positionOptions" :key="p" :value="p">{{ p }}</SelectItem>
@@ -601,218 +707,281 @@ function docError(docKey: string, field: 'file' | 'issued_at' | 'expires_at'): s
                                     </Select>
                                     <Input
                                         v-if="positionChoice === 'other'"
-                                        class="mt-2 focus-visible:ring-blue-800 focus-visible:border-blue-800"
+                                         class="bg-custom-bg dark:bg-custom-bg-dark mt-2"
                                         v-model="step2.authorized_representative_position"
-                                        placeholder="Type position…"
                                     />
-                                    <p v-if="step2.errors.authorized_representative_position" class="text-xs text-red-600">{{ step2.errors.authorized_representative_position }}</p>
+                                    <InputError :message="step2.errors.authorized_representative_position" />
                                 </div>
                             </div>
 
-                            <div class="space-y-1.5">
-                                <Label for="s2_rcont">Contact Number</Label>
-                                <Input id="s2_rcont" v-model="step2.authorized_representative_contact" placeholder="+63 9XX XXX XXXX"
-                                       class="focus-visible:ring-blue-800 focus-visible:border-blue-800" />
-                                <p v-if="step2.errors.authorized_representative_contact" class="text-xs text-red-600">{{ step2.errors.authorized_representative_contact }}</p>
+                            <div class="grid gap-2 sm:grid-cols-2">
+                                <div class="space-y-1">
+                                    <Label for="s2_rcont">Phone</Label>
+                                    <Input id="s2_rcont" v-model="step2.authorized_representative_contact" autocomplete="tel" class="bg-custom-bg dark:bg-custom-bg-dark"/>
+                                    <InputError :message="step2.errors.authorized_representative_contact" />
+                                </div>
                             </div>
                         </template>
                     </div>
 
-                    <!-- ══ STEP 2.5 – Company Email OTP ══════════════════════ -->
-                    <div v-else-if="currentStep === 2.5" class="space-y-6">
-                        <div class="flex flex-col items-center gap-3 rounded-xl border bg-blue-50 px-6 py-8 text-center">
-                            <div class="flex h-14 w-14 items-center justify-center rounded-full bg-blue-800/10 ring-4 ring-blue-800/10">
-                                <ShieldCheck class="h-7 w-7 text-blue-800" />
-                            </div>
-                            <p class="max-w-xs text-sm text-muted-foreground">
-                                Enter the 6-digit code sent to
-                                <span class="font-semibold text-foreground">{{ step2.company_email }}</span>.
-                                It expires in 10 minutes.
+                    <!-- LABEL: ══ STEP 2.5 – Company Email OTP ══════════════════════ -->
+                    <div v-else-if="currentStep === 2.5" class="space-y-2">
+                        <div class="flex flex-col items-center rounded-md border border-dashed border-custom-bg-dark p-6 text-center text-custom-shadow dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5">
+                            <img
+                                :src="AuthenticationRaifikiUrl"
+                                alt=""
+                                class="w-1/3 object-contain opacity-90"
+                                aria-hidden="true"
+                            />
+                            <p class="mb-2 text-custom-shadow">
+                                Enter the 6-digit code we sent to
+                                <span class="font-semibold text-custom-accent-3">{{ step2.company_email }}</span>.
+                                The code expires in 10 minutes.
                             </p>
                         </div>
 
-                        <div class="space-y-1.5">
+                        <div class="space-y-0">
                             <Label for="otp_comp" class="sr-only">Verification Code</Label>
                             <Input
                                 id="otp_comp"
                                 v-model="otpCompany.otp"
                                 inputmode="numeric"
                                 maxlength="6"
-                                placeholder="0  0  0  0  0  0"
-                                class="h-14 text-center text-3xl font-mono tracking-[.6em] placeholder:text-muted-foreground/40 focus-visible:ring-blue-800 focus-visible:border-blue-800"
+                                placeholder="000000"
+                                class="h-14 text-center font-mono text-2xl tracking-widest placeholder:text-custom-shadow/80"
                                 :disabled="otpCompany.processing"
                                 @input="onOtpInput('company')"
                             />
-                            <p v-if="otpCompany.errors.otp" class="text-center text-xs text-red-600">{{ otpCompany.errors.otp }}</p>
+                            <InputError :message="otpCompany.errors.otp" class="text-center" />
                         </div>
 
-                        <div v-if="resentCompanyMsg" class="flex items-center justify-center gap-1.5 text-xs text-blue-800 font-medium">
-                            <CheckCircle2 class="h-3.5 w-3.5" />
-                            {{ resentCompanyMsg }}
+                        <div
+                            v-if="resentCompanyMsg"
+                            class="mt-2 flex w-full flex-row items-start gap-x-2 rounded-md border-2 border-info/50 bg-info/20 p-3 text-info"
+                        >
+                            <RiCheckboxCircleFill class="mt-0.5 h-4 w-4 shrink-0" />
+                            <p class="text-sm">
+                                {{ resentCompanyMsg }}
+                            </p>
                         </div>
 
-                        <div class="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-                            Didn't receive it?
+                        <div class="flex flex-row justify-center gap-x-1 py-3 text-xs">
+                            <span>
+                                Didn't receive it?
+                            </span>
                             <button
                                 type="button"
-                                class="inline-flex items-center gap-1 font-medium text-red-600 underline-offset-2 hover:underline disabled:opacity-50"
+                                class="cursor-pointer text-xs font-semibold text-custom-accent-3 transition-colors duration-300 ease-out hover:underline hover:underline-offset-2 disabled:opacity-50"
                                 :disabled="resendCompany.processing"
                                 @click="doResendCompany"
                             >
-                                <RefreshCcw class="h-3 w-3" :class="resendCompany.processing ? 'animate-spin' : ''" />
                                 Resend code
                             </button>
                         </div>
                     </div>
 
-                    <!-- ══ STEP 3 – Documents ════════════════════════════════ -->
-                    <div v-else-if="currentStep === 3" class="space-y-5">
-                        <div
-                            v-if="step2.business_type"
-                            class="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900"
-                        >
-                            <svg class="h-4 w-4 shrink-0 text-blue-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <circle cx="12" cy="12" r="10"/><path stroke-linecap="round" d="M12 8v4m0 4h.01"/>
-                            </svg>
-                            Showing required documents for
-                            <Badge class="bg-blue-800 text-white text-xs capitalize border-0">
-                                {{ step2.business_type.replace('_', ' ') }}
-                            </Badge>
-                        </div>
-
-                        <div class="space-y-3">
-                            <div
-                                v-for="doc in requiredDocs"
+                    <!-- LABEL: ══ STEP 3 – Documents ════════════════════════════════ -->
+                    <div v-else-if="currentStep === 3" class="flex flex-col gap-y-2">
+                        <div class="space-y-2">
+                            <template
+                                v-for="(doc, index) in requiredDocs"
                                 :key="doc.key"
-                                class="space-y-3 rounded-lg border-2 p-4 transition-colors"
-                                :class="step3.documents[doc.key].file
-                                    ? 'border-blue-800/30 bg-blue-50/60'
-                                    : 'border-border'"
                             >
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-2">
-                                        <FileText
-                                            class="h-4 w-4 shrink-0 transition-colors"
-                                            :class="step3.documents[doc.key].file ? 'text-blue-800' : 'text-muted-foreground'"
-                                        />
-                                        <span class="text-sm font-medium">{{ doc.label }}</span>
-                                        <Badge
-                                            v-if="doc.required"
-                                            class="px-1.5 py-0 text-[10px] bg-red-50 text-red-600 border-red-200"
-                                        >
-                                            Required
-                                        </Badge>
-                                        <Badge v-else variant="outline" class="px-1.5 py-0 text-[10px]">Optional</Badge>
-                                    </div>
-                                    <!-- Uploaded check -->
-                                    <div
-                                        v-if="step3.documents[doc.key].file"
-                                        class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-800"
-                                    >
-                                        <svg class="h-3 w-3 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                                        </svg>
-                                    </div>
-                                </div>
-
-                                <div class="space-y-1">
-                                    <Input
-                                        :id="doc.key"
-                                        type="file"
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                        class="cursor-pointer text-sm"
-                                        @change="handleFile(doc.key, $event)"
-                                    />
-                                    <p v-if="step3.documents[doc.key].file" class="truncate text-xs text-blue-800 font-medium">
-                                        ✓ {{ step3.documents[doc.key].file?.name }}
+                                <div
+                                    class="flex items-center gap-2"
+                                    :class="index === 0 ? 'pb-2' : 'py-2'"
+                                >
+                                    <p class="shrink-0 text-base font-semibold text-custom-accent-3">
+                                        {{ doc.label }}
+                                        <span v-if="doc.required" class="text-destructive">
+                                            *
+                                        </span>
+                                        <span v-else class="text-xs text-custom-shadow/80">
+                                            (optional)
+                                        </span>
                                     </p>
-                                    <p v-if="docError(doc.key, 'file')" class="text-xs text-red-600">{{ docError(doc.key, 'file') }}</p>
+                                    <Separator class="flex-1" />
                                 </div>
 
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div class="space-y-1">
-                                        <Label :for="`${doc.key}_iss`" class="text-xs text-muted-foreground">Issued At</Label>
-                                        <Input :id="`${doc.key}_iss`" type="date" v-model="step3.documents[doc.key].issued_at"
-                                               class="h-8 text-sm focus-visible:ring-blue-800 focus-visible:border-blue-800" />
-                                        <p v-if="docError(doc.key, 'issued_at')" class="text-xs text-red-600">{{ docError(doc.key, 'issued_at') }}</p>
+                                <div class="grid gap-2 sm:grid-cols-2">
+                                    <div class="space-y-1 sm:col-span-2">
+                                        <Label :for="doc.key">Document</Label>
+                                        <Input
+                                            :id="doc.key"
+                                            type="file"
+                                            accept=".pdf,.jpg,.jpeg,.png"
+                                            class="
+                                                cursor-pointer p-0 pr-3
+                                                file:mr-3 file:h-full file:cursor-pointer
+                                                file:border-0 file:border-r
+                                                file:border-custom-bg-dark
+                                                file:bg-custom-bg-dark file:px-3
+                                                file:text-sm file:text-custom-shadow
+                                                hover:file:bg-custom-secondary/20
+                                            "
+                                            @change="handleFile(doc.key, $event)"
+                                        />
+                                        <InputError :message="docError(doc.key, 'file')" />
                                     </div>
                                     <div class="space-y-1">
-                                        <Label :for="`${doc.key}_exp`" class="text-xs text-muted-foreground">Expires At</Label>
-                                        <Input :id="`${doc.key}_exp`" type="date" v-model="step3.documents[doc.key].expires_at"
-                                               class="h-8 text-sm focus-visible:ring-blue-800 focus-visible:border-blue-800" />
-                                        <p v-if="docError(doc.key, 'expires_at')" class="text-xs text-red-600">{{ docError(doc.key, 'expires_at') }}</p>
+                                        <Label :for="`${doc.key}_iss`">Issue Date</Label>
+                                        <Popover
+                                            :open="openDatePicker === `${doc.key}_issued_at`"
+                                            @update:open="(open) => openDatePicker = open ? `${doc.key}_issued_at` : null"
+                                        >
+                                            <div class="flex">
+                                                <Input
+                                                    :id="`${doc.key}_iss`"
+                                                    v-model="step3.documents[doc.key].issued_at"
+                                                    type="text"
+                                                    inputmode="numeric"
+                                                    maxlength="10"
+                                                    placeholder="YYYY-MM-DD"
+                                                    class="rounded-r-none"
+                                                />
+                                                <PopoverTrigger as-child>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="icon"
+                                                        class="shrink-0 rounded-l-none border-0 bg-custom-bg hover:bg-custom-secondary/20 dark:bg-custom-bg-dark border border-custom-bg-dark dark:border-none dark:shadow-sm dark:shadow-white/5"
+                                                        aria-label="Choose issue date"
+                                                    >
+                                                        <RiCalendarLine class="h-4 w-4" />
+                                                    </Button>
+                                                </PopoverTrigger>
+                                            </div>
+                                            <PopoverContent align="start" class="w-auto p-0">
+                                                <CalendarPicker
+                                                    :model-value="parseCalendarDate(step3.documents[doc.key].issued_at)"
+                                                    initial-focus
+                                                    @update:model-value="(value) => selectDocumentDate(doc.key, 'issued_at', value as CalendarDate | undefined)"
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                        <InputError :message="docError(doc.key, 'issued_at')" />
+                                    </div>
+                                    <div class="space-y-1">
+                                        <Label :for="`${doc.key}_exp`">Expiration Date</Label>
+                                        <Popover
+                                            :open="openDatePicker === `${doc.key}_expires_at`"
+                                            @update:open="(open) => openDatePicker = open ? `${doc.key}_expires_at` : null"
+                                        >
+                                            <div class="flex">
+                                                <Input
+                                                    :id="`${doc.key}_exp`"
+                                                    v-model="step3.documents[doc.key].expires_at"
+                                                    type="text"
+                                                    inputmode="numeric"
+                                                    maxlength="10"
+                                                    placeholder="YYYY-MM-DD"
+                                                    class="rounded-r-none"
+                                                />
+                                                <PopoverTrigger as-child>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="icon"
+                                                        class="shrink-0 rounded-l-none border-0 bg-custom-bg hover:bg-custom-secondary/20 dark:bg-custom-bg-dark border border-custom-bg-dark dark:border-none dark:shadow-sm dark:shadow-white/5"
+                                                        aria-label="Choose expiration date"
+                                                    >
+                                                        <RiCalendarLine class="h-4 w-4" />
+                                                    </Button>
+                                                </PopoverTrigger>
+                                            </div>
+                                            <PopoverContent align="start" class="w-auto p-0">
+                                                <CalendarPicker
+                                                    :model-value="parseCalendarDate(step3.documents[doc.key].expires_at)"
+                                                    initial-focus
+                                                    @update:model-value="(value) => selectDocumentDate(doc.key, 'expires_at', value as CalendarDate | undefined)"
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                        <InputError :message="docError(doc.key, 'expires_at')" />
                                     </div>
                                 </div>
-                            </div>
+                            </template>
                         </div>
                     </div>
 
-                </CardContent>
+                    <RegistrationStatus
+                        v-else-if="currentStep === 4 && company && meta"
+                        :company="company"
+                        :meta="meta"
+                        embedded
+                    />
+                </div>
 
-                <!-- ── Footer ─────────────────────────────────────────────── -->
-                <Separator />
-                <div class="flex items-center justify-between p-6">
-                    <Button type="button" variant="outline" @click="goBack" class="cursor-pointer">
-                        Back
+                <Separator v-if="currentStep !== 4" class="flex-1 my-2" />
+
+                <div v-if="currentStep !== 4" class="w-full flex flex-row justify-end items-center gap-x-2 pt-2">
+                    <!-- TODO: hide this button when the user is on the first step. -->
+                    <Button type="button" variant="ghost-outline" size="icon-text" @click="goBack" class="cursor-pointer">
+                        <RiArrowLeftSLine class="h-4 w-4 text-custom-shadow"/>
+                        <span class="hidden lg:block">Back</span>
                     </Button>
 
                     <Button
                         v-if="currentStep === 1"
                         type="button"
-                        class="cursor-pointer bg-blue-600 text-white hover:bg-blue-700 border-0 shadow-sm"
+                        variant="float-primary"
+                        size="icon-text"
                         :disabled="step1.processing"
                         @click="submitStep1"
                     >
-                        <Loader2 v-if="step1.processing" class="mr-2 h-4 w-4 animate-spin" />
-                        {{ step1.processing ? 'Sending code…' : 'Continue' }}
+                        <RiLoaderLine v-if="step1.processing" class="h-4 w-4 animate-spin" />
+                        {{ step1.processing ? 'Validating...' : 'Continue' }}
                     </Button>
 
                     <Button
                         v-else-if="currentStep === 1.5"
                         type="button"
-                        class="cursor-pointer bg-blue-600 text-white hover:bg-blue-700 border-0 shadow-sm"
+                        variant="float-primary"
+                        size="icon-text"
                         :disabled="otpAccount.processing || otpAccount.otp.length < 6"
                         @click="submitAccountOtp"
                     >
-                        <Loader2 v-if="otpAccount.processing" class="mr-2 h-4 w-4 animate-spin" />
-                        {{ otpAccount.processing ? 'Verifying…' : 'Verify & Continue' }}
+                        <RiLoaderLine v-if="otpAccount.processing" class="h-4 w-4 animate-spin" />
+                        {{ otpAccount.processing ? 'Verifying...' : 'Verify' }}
                     </Button>
 
                     <Button
                         v-else-if="currentStep === 2"
                         type="button"
-                        class="cursor-pointer bg-blue-600 text-white hover:bg-blue-700 border-0 shadow-sm"
+                        variant="float-primary"
+                        size="icon-text"
                         :disabled="step2.processing"
                         @click="submitStep2"
                     >
-                        <Loader2 v-if="step2.processing" class="mr-2 h-4 w-4 animate-spin" />
-                        {{ step2.processing ? 'Sending code…' : 'Continue' }}
+                        <RiLoaderLine v-if="step2.processing" class="h-4 w-4 animate-spin" />
+                        {{ step2.processing ? 'Validating...' : 'Continue' }}
                     </Button>
 
                     <Button
                         v-else-if="currentStep === 2.5"
                         type="button"
-                        class="cursor-pointer bg-blue-600 text-white hover:bg-blue-700 border-0 shadow-sm"
+                        variant="float-primary"
+                        size="icon-text"
                         :disabled="otpCompany.processing || otpCompany.otp.length < 6"
                         @click="submitCompanyOtp"
                     >
-                        <Loader2 v-if="otpCompany.processing" class="mr-2 h-4 w-4 animate-spin" />
-                        {{ otpCompany.processing ? 'Verifying…' : 'Verify & Continue' }}
+                        <RiLoaderLine v-if="otpCompany.processing" class="h-4 w-4 animate-spin" />
+                        {{ otpCompany.processing ? 'Verifying...' : 'Verify' }}
                     </Button>
 
                     <Button
                         v-else-if="currentStep === 3"
                         type="button"
-                        class="cursor-pointer bg-blue-600 text-white hover:bg-blue-700 border-0 shadow-sm"
+                        variant="float-primary"
+                        size="icon-text"
                         :disabled="step3.processing"
                         @click="submitStep3"
                     >
-                        <Loader2 v-if="step3.processing" class="mr-2 h-4 w-4 animate-spin" />
-                        {{ step3.processing ? 'Submitting…' : 'Submit Application' }}
+                        <RiLoaderLine v-if="step3.processing" class="h-4 w-4 animate-spin" />
+                        {{ step3.processing ? 'Submitting...' : 'Submit' }}
                     </Button>
                 </div>
-            </Card>
-
-        </div>
-    </div>
+            </div>
+        </Card>
+    </AuthLayout>
 </template>

@@ -40,9 +40,7 @@ import type { BreadcrumbItem } from '@/types';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Types
-───────────────────────────────────────────────────────────────────────────── */
+
 
 type Gate = {
     id: number;
@@ -84,9 +82,7 @@ type RouteModel = {
     updated_at_human: string | null;
 };
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Props
-───────────────────────────────────────────────────────────────────────────── */
+
 
 const props = defineProps<{
     route: RouteModel;
@@ -97,26 +93,20 @@ const props = defineProps<{
 
 mapboxgl.accessToken = props.mapConfig.mapboxToken;
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Breadcrumbs
-───────────────────────────────────────────────────────────────────────────── */
+
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Routes', href: index().url },
     { title: props.route.route_name, href: '#' },
 ];
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Refs
-───────────────────────────────────────────────────────────────────────────── */
+
 
 const mapEl = ref<HTMLElement | null>(null);
 const map = ref<mapboxgl.Map | null>(null);
 const archiveOpen = ref(false);
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Computed
-───────────────────────────────────────────────────────────────────────────── */
+
 
 const sortedStops = computed(() =>
     [...props.route.stops].sort((a, b) => a.stop_order - b.stop_order),
@@ -147,9 +137,7 @@ const endStop = computed(() => {
     );
 });
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Helpers
-───────────────────────────────────────────────────────────────────────────── */
+
 
 function fmtDistance(m: number) {
     if (!m) return '—';
@@ -226,9 +214,7 @@ function archiveRoute() {
     });
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Map
-───────────────────────────────────────────────────────────────────────────── */
+
 
 function initMap() {
     if (!mapEl.value) return;
@@ -277,7 +263,6 @@ function initMap() {
                     },
                 });
             } catch {
-                // ignore invalid geometry
             }
         }
 
@@ -337,7 +322,7 @@ onBeforeUnmount(() => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
 
-            <!-- Header card -->
+            
             <Card>
                 <CardHeader class="py-0">
                     <div class="flex items-center gap-4">
@@ -409,7 +394,7 @@ onBeforeUnmount(() => {
 
             <div class="grid items-start gap-4 xl:grid-cols-[1fr_380px]">
 
-                <!-- Map card -->
+                
                 <Card class="py-6">
                     <CardHeader class="flex items-center justify-between">
                         <CardTitle class="text-base">Map Workspace</CardTitle>
@@ -467,7 +452,7 @@ onBeforeUnmount(() => {
                     </CardContent>
                 </Card>
 
-                <!-- Stops card (scrollable, capped at map height) -->
+                
                 <Card class="py-6">
                     <CardHeader class="flex items-center justify-between">
                         <CardTitle class="text-base">Stops</CardTitle>
@@ -534,10 +519,10 @@ onBeforeUnmount(() => {
                 </Card>
             </div>
 
-            <!-- Bottom row: route summary | activity -->
+            
             <div class="grid gap-4 xl:grid-cols-2">
 
-                <!-- Route Summary -->
+                
                 <Card class="py-6">
                     <CardHeader>
                         <CardTitle>Route Summary</CardTitle>
@@ -585,7 +570,7 @@ onBeforeUnmount(() => {
                     </CardContent>
                 </Card>
 
-                <!-- Activity -->
+                
                 <Card class="py-6">
                     <CardHeader>
                         <CardTitle>Activity</CardTitle>
@@ -609,7 +594,7 @@ onBeforeUnmount(() => {
                 </Card>
             </div>
 
-            <!-- Archive dialog -->
+            
             <Dialog :open="archiveOpen" @update:open="archiveOpen = $event">
                 <DialogContent class="sm:max-w-md p-4">
                     <DialogHeader>

@@ -8,7 +8,7 @@ const props = withDefaults(defineProps<{
   hideIcon?: boolean
   nameKey?: string
   verticalAlign?: "bottom" | "top"
-  // payload?: any[]
+  
   class?: HTMLAttributes["class"]
 }>(), {
   verticalAlign: "bottom",

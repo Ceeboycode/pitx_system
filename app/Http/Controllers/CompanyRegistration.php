@@ -71,9 +71,9 @@ class CompanyRegistration extends Controller
             'password_confirmation' => ['required', 'string'],
         ], [
             'name.regex' => 'Name may only contain letters, spaces, apostrophes, periods, and hyphens.',
-            'email.email' => 'Please enter a valid email address (e.g., name@example.com).',
-            'email.unique' => 'This email address is already in use. Try signing in or use a different email.',
-            'phone.regex' => 'Phone number must be a valid PH mobile number (09XXXXXXXXX or +639XXXXXXXXX).',
+            'email.email' => 'Please enter a valid email address.',
+            'email.unique' => 'This email address is already registered. Try signing in or use a different email.',
+            'phone.regex' => 'Phone number must be a valid PH mobile number.',
             'phone.unique' => 'This phone number is already registered.',
             'password.confirmed' => 'Password confirmation does not match.',
             'password.min' => 'Password must be at least 8 characters.',
@@ -507,6 +507,7 @@ class CompanyRegistration extends Controller
         }
 
         $meta = [
+            // TODO: add support button in company-registration and registration/status
             'draft' => [
                 'title' => 'Registration Incomplete',
                 'description' => 'Your registration was not completed. Please contact support.',
@@ -515,13 +516,13 @@ class CompanyRegistration extends Controller
             ],
             'for_verification' => [
                 'title' => 'Under Review',
-                'description' => 'Your documents have been submitted and are currently under review. Verification typically takes 2–3 business days. We’ll notify you once the process is complete.',
+                'description' => 'Your documents are under review. Verification typically takes 2–3 business days. We’ll notify you once the process is complete.',
                 'icon' => 'clock',
                 'color' => 'warning',
             ],
             'needs_revision' => [
                 'title' => 'Action Required',
-                'description' => 'One or more documents are invalid or expired. Please review the details below and resubmit the required files.',
+                'description' => 'One or more documents are invalid or expired. Please review the details below and resubmit.',
                 'icon' => 'warning',
                 'color' => 'destructive',
             ],
@@ -533,7 +534,7 @@ class CompanyRegistration extends Controller
             ],
         ];
 
-        return Inertia::render('RegistrationStatus', [
+        return Inertia::render('CompanyRegistration', [
             'company' => [
                 'id' => $company->id,
                 'company_name' => $company->company_name,

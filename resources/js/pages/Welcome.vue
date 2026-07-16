@@ -60,7 +60,7 @@ const features = [
     <Head title="PITX | Centralized Transport System" />
 
     <div class="flex min-h-screen flex-col bg-[#f4f5f7] text-[#1a1a2e]">
-        <!-- HEADER -->
+        
         <header class="sticky top-0 z-50 border-b border-gray-200 bg-white/90 shadow-sm backdrop-blur-md">
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
                 <div class="flex items-center gap-3">
@@ -94,7 +94,7 @@ const features = [
             </div>
         </header>
 
-        <!-- HERO -->
+        
         <section class="relative overflow-hidden">
             <div class="absolute inset-0 z-0">
                 <img
@@ -111,20 +111,20 @@ const features = [
             <div class="relative z-10 mx-auto max-w-7xl px-6 py-24 md:py-36">
                 <div class="mx-auto max-w-3xl space-y-8">
 
-                    <!-- Headline -->
+                    
                     <h1 class="text-5xl font-extrabold leading-[1.1] tracking-tight text-white md:text-7xl">
                         Centralized<br />
                         Terminal<br />
                         <span class="text-[#e74c3c]">Operations.</span>
                     </h1>
 
-                    <!-- Description -->
+                    
                     <p class="max-w-xl text-base leading-relaxed text-white/70 md:text-lg">
                         A integrated system for PITX administrators, dispatchers, and operators to manage
                         gates, routes, and vehicle dispatch in real time — from one powerful platform.
                     </p>
 
-                    <!-- CTAs -->
+                    
                     <div class="flex flex-wrap gap-3 pt-2">
                         <Button
                             size="lg"
@@ -150,7 +150,7 @@ const features = [
             </div>
         </section>
 
-        <!-- STATS -->
+        
         <section class="bg-[#1a3a6b]">
             <div class="mx-auto max-w-7xl px-6 py-12">
                 <div class="grid grid-cols-3 divide-x divide-white/10 text-center">
@@ -170,7 +170,7 @@ const features = [
             </div>
         </section>
 
-        <!-- FEATURES -->
+        
 <section id="features" class="mx-auto max-w-7xl px-6 py-16 pt-20">
     <div class="mb-10 text-center">
         <p class="mb-2 text-xs font-bold uppercase tracking-widest text-[#c0392b]">Core Capabilities</p>
@@ -227,7 +227,7 @@ const features = [
     </div>
 </section>
 
-<!-- CTA -->
+
 <section class="mx-auto max-w-7xl px-6 pb-16">
     <Card class="relative overflow-hidden rounded-2xl border-0 bg-gradient-to-r from-[#1a3a6b] to-[#0d1b2a] px-6 py-10 text-center shadow-xl sm:px-8 sm:py-12">
         <div class="absolute right-0 top-0 h-64 w-64 -translate-y-1/2 translate-x-1/4 rounded-full bg-[#c0392b]/20 blur-3xl"></div>
@@ -262,7 +262,7 @@ const features = [
     </Card>
 </section>
 
-        <!-- FOOTER -->
+        
         <footer class="border-t border-gray-200 bg-white">
             <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-6 py-6 sm:flex-row">
                 <div class="flex items-center gap-2">

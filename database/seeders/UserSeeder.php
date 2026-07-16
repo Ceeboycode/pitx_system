@@ -76,10 +76,10 @@ class UserSeeder extends Seeder
         // $terminalManager->syncRoles(['terminal manager']);
 
         $terminalManager1 = User::query()->updateOrCreate(
-            ['username' => 'johnc_01'], //palitan?
+            ['username' => '2026-0003'],
             [
-                'name' => 'John Carter',
-                'email' => 'john.carter@gmail.com',
+                'name' => 'Terminal Manager 1',
+                'email' => 'terminalmanager1@gmail.com',
                 'phone_number' => '+639171234567',
                 'status' => 'active',
                 'email_verified_at' => now(),
@@ -91,10 +91,10 @@ class UserSeeder extends Seeder
         $terminalManager1->syncRoles(['terminal manager']);
 
         $terminalManager2 = User::query()->updateOrCreate(
-            ['username' => 'marial_22'],
+            ['username' => '2026-0004'],
             [
-                'name' => 'Maria Lopez',
-                'email' => 'maria.lopez@gmail.com',
+                'name' => 'Terminal Manager 2',
+                'email' => 'terminalmanager2@gmail.com',
                 'phone_number' => '+639182345678',
                 'status' => 'active',
                 'email_verified_at' => now(),
@@ -104,51 +104,6 @@ class UserSeeder extends Seeder
             ]
         );
         $terminalManager2->syncRoles(['terminal manager']);
-
-        $terminalManager3 = User::query()->updateOrCreate(
-            ['username' => 'danreyes'],
-            [
-                'name' => 'Daniel Reyes',
-                'email' => 'daniel.reyes@gmail.com',
-                'phone_number' => '+639193456789',
-                'status' => 'active',
-                'email_verified_at' => now(),
-                'password' => Hash::make('admin123'),
-                'must_change_password' => false,
-                'company_id' => null,
-            ]
-        );
-        $terminalManager3->syncRoles(['terminal manager']);
-
-        $terminalManager4 = User::query()->updateOrCreate(
-            ['username' => 'angelac_dev'],
-            [
-                'name' => 'Angela Cruz',
-                'email' => 'angela.cruz@gmail.com',
-                'phone_number' => '+639204567890',
-                'status' => 'active',
-                'email_verified_at' => now(),
-                'password' => Hash::make('admin123'),
-                'must_change_password' => false,
-                'company_id' => null,
-            ]
-        );
-        $terminalManager4->syncRoles(['terminal manager']);
-
-        $terminalManager5 = User::query()->updateOrCreate(
-            ['username' => 'kevins99'],
-            [
-                'name' => 'Kevin Santos',
-                'email' => 'kevin.santos@gmail.com',
-                'phone_number' => '+639215678901',
-                'status' => 'active',
-                'email_verified_at' => now(),
-                'password' => Hash::make('admin123'),
-                'must_change_password' => false,
-                'company_id' => null,
-            ]
-        );
-        $terminalManager5->syncRoles(['terminal manager']);
 
         $commuter1 = User::query()->updateOrCreate(
             ['username' => 'janrey_u'],

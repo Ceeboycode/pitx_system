@@ -21,7 +21,6 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -43,9 +42,7 @@ import {
     RiMore2Line as MoreHorizontal,
 } from 'vue-remix-icons';
 
-/* ======================================================
-   Types
-====================================================== */
+
 type Company = {
     id: number;
     company_name: string;
@@ -95,9 +92,7 @@ type PaginatedUsers = {
     links: PaginationLink[];
 };
 
-/* ======================================================
-   Props
-====================================================== */
+
 const props = defineProps<{
     company: Company;
     user: AuthUser;
@@ -116,9 +111,7 @@ const roleFilter = ref<string>(props.filters?.role ?? 'all');
 const statusFilter = ref<string>(props.filters?.status ?? 'all');
 const filterOpen = ref(false);
 
-/* ======================================================
-   Helpers
-====================================================== */
+
 function humanize(value?: string | null) {
     if (!value) return '—';
     return value
@@ -191,18 +184,14 @@ const employeeRoles = computed(() =>
     ),
 );
 
-/* ======================================================
-   State
-====================================================== */
+
 const dialogState = reactive({
     statusDialog: null as EmployeeUser | null,
     resetPasswordDialog: null as EmployeeUser | null,
     deleteDialog: null as EmployeeUser | null,
 });
 
-/* ======================================================
-   Methods
-====================================================== */
+
 function toggleStatusLabel(status?: string | null) {
     return status === 'active' ? 'Deactivate' : 'Activate';
 }
@@ -317,12 +306,12 @@ function openDeleteDialog(employee: EmployeeUser) {
                         <div
                             class="flex flex-row gap-2 lg:items-center lg:justify-between"
                         >
-                            <!-- Search -->
+                            
                             <div class="w-full">
                                 <SearchInput
                                     route="/employee-users"
                                     :initial-value="filters.search"
-                                    placeholder="Search employees…"
+                                    placeholder="Search employees..."
                                     :only="['users', 'filters']"
                                 />
                             </div>
@@ -353,7 +342,7 @@ function openDeleteDialog(employee: EmployeeUser) {
 
                                     <PopoverContent align="end">
                                         <div class="grid gap-y-2">
-                                            <div class="space-y-2">
+                                            <div class="flex flex-col gap-y-1">
                                                 <p class="text-sm text-custom-shadow/80">Role</p>
                                                 <Select
                                                     :model-value="roleFilter"
@@ -376,7 +365,7 @@ function openDeleteDialog(employee: EmployeeUser) {
                                                 </Select>
                                             </div>
 
-                                            <div class="space-y-2">
+                                            <div class="flex flex-col gap-y-1">
                                                 <p class="text-sm text-custom-shadow/80">Status</p>
                                                 <Select
                                                     :model-value="statusFilter"
@@ -463,7 +452,7 @@ function openDeleteDialog(employee: EmployeeUser) {
                                         index === users.data.length - 1 ? 'rounded-b-md border-b-0' : '',
                                     ]"
                                 >
-                                    <!-- Employee info (moved first, more prominent) -->
+                                    
                                     <div class="col-span-1 flex items-center justify-start gap-2.5 py-1.5 pl-5">
                                             <img
                                                 v-if="employee.avatar"
@@ -495,7 +484,7 @@ function openDeleteDialog(employee: EmployeeUser) {
                                             </div>
                                     </div>
 
-                                    <!-- Username -->
+                                    
                                     <div class="col-span-1 flex justify-start py-1.5">
                                         <span
                                             class="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold tracking-wide text-slate-700"
@@ -504,7 +493,7 @@ function openDeleteDialog(employee: EmployeeUser) {
                                         </span>
                                     </div>
 
-                                    <!-- Role -->
+                                    
                                     <div class="col-span-1 flex justify-start py-1.5">
                                         <span
                                             :class="[
@@ -516,7 +505,7 @@ function openDeleteDialog(employee: EmployeeUser) {
                                         </span>
                                     </div>
 
-                                    <!-- Status -->
+                                    
                                     <div class="col-span-1 flex justify-start py-1.5">
                                         <span
                                             :class="[
@@ -534,17 +523,17 @@ function openDeleteDialog(employee: EmployeeUser) {
                                         </span>
                                     </div>
 
-                                    <!-- Phone -->
+                                    
                                     <div class="col-span-1 flex justify-start py-1.5 text-sm tabular-nums text-custom-shadow/70">
                                         {{ employee.phone_number || '—' }}
                                     </div>
 
-                                    <!-- Created -->
+                                    
                                     <div class="col-span-1 flex justify-start py-1.5 text-sm text-custom-shadow/60">
                                         {{ formatDate(employee.created_at) }}
                                     </div>
 
-                                    <!-- Actions -->
+                                    
                                     <div class="col-span-1 flex justify-end py-1.5 pr-5 text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
@@ -558,19 +547,10 @@ function openDeleteDialog(employee: EmployeeUser) {
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent
-                                                align="end"
-                                                class="w-fit rounded-lg shadow-lg"
-                                            >
-                                                <DropdownMenuLabel
-                                                    class="text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                                >
+                                            <DropdownMenuContent align="end" class="">
+                                                <DropdownMenuLabel>
                                                     Actions
                                                 </DropdownMenuLabel>
-
-                                                <DropdownMenuSeparator
-                                                    class="bg-slate-100"
-                                                />
 
                                                 <DropdownMenuItem
                                                     as-child
@@ -612,7 +592,7 @@ function openDeleteDialog(employee: EmployeeUser) {
                     </div>
                     </Card>
 
-                    <!-- Pagination -->
+                    
                     <div
                         v-if="users.last_page > 1 || users.total > 0"
                         class="border-t border-custom-bg-dark px-5 py-3 dark:border-custom-bg-light"

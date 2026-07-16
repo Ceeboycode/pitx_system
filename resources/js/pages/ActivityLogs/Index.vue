@@ -47,11 +47,11 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 import {
-    Calendar,
-    Eye,
-    Filter,
-    X,
-} from 'lucide-vue-next';
+    RiCalendarLine as Calendar,
+    RiCloseLine as X,
+    RiEyeLine as Eye,
+    RiFilter2Line as Filter,
+} from 'vue-remix-icons';
 import { computed, ref } from 'vue';
 
 interface ChangeLine {
@@ -275,7 +275,7 @@ function actionBadgeClass(action: string): string {
                             <SearchInput
                                 :route="myActivity().url"
                                 :initial-value="filters.search"
-                                placeholder="Search my activity…"
+                                placeholder="Search my activity..."
                                 :only="[
                                     'auditLogs',
                                     'filters',
@@ -312,7 +312,7 @@ function actionBadgeClass(action: string): string {
                                         align="start"
                                     >
                                         <div class="grid gap-y-2">
-                                            <div class="space-y-2">
+                                            <div class="flex flex-col gap-y-1">
                                                 <p
                                                     class="text-sm text-custom-shadow/80"
                                                 >
@@ -345,7 +345,7 @@ function actionBadgeClass(action: string): string {
                                                 </Select>
                                             </div>
 
-                                            <div class="space-y-2">
+                                            <div class="flex flex-col gap-y-1">
                                                 <p
                                                     class="text-sm text-custom-shadow/80"
                                                 >

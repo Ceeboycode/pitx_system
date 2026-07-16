@@ -65,7 +65,7 @@ const markAllAsRead = () => {
                 class="relative h-9 w-9 shrink-0 rounded-full"
             >
                 <Bell class="h-4 w-4" />
-                <span class="sr-only">Open notifications</span>
+                
 
                 <Badge
                     v-if="notifications.unread_count > 0"
@@ -139,7 +139,7 @@ const markAllAsRead = () => {
                         </div>
                     </button>
                 </Tooltip>
-                <!-- <button
+                <!-- CODE: <button
                     v-for="item in notifications.items"
                     :key="item.id"
                     type="button"

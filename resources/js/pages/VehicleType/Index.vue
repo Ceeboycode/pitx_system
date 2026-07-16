@@ -32,7 +32,7 @@ import { index, show } from '@/routes/vehicle-types';
 
 import { Head, Link } from '@inertiajs/vue3';
 
-import { Edit, Eye, Plus, Trash2, Upload, Download } from 'lucide-vue-next';
+import { RiAddLine, RiDeleteBinLine, RiEditLine, RiEyeLine } from 'vue-remix-icons';
 
 import { type BreadcrumbItem } from '@/types';
 
@@ -85,7 +85,7 @@ function openDelete(vehicle_type: VehicleType) {
 
                     <CardAction>
                         <Button size="sm" @click="createOpen = true">
-                            <Plus class="mr-2 h-4 w-4" />
+                            <RiAddLine class="mr-2 h-4 w-4" />
                             New Vehicle Type
                         </Button>
                     </CardAction>
@@ -107,7 +107,7 @@ function openDelete(vehicle_type: VehicleType) {
                     </div>
 
                     <Table>
-                        <!-- <TableCaption> List of vehicle types. </TableCaption> -->
+                        <!-- CODE: <TableCaption> List of vehicle types. </TableCaption> -->
 
                         <TableHeader>
                             <TableRow>
@@ -151,18 +151,18 @@ function openDelete(vehicle_type: VehicleType) {
                                                 }).url
                                             "
                                         >
-                                            <Eye class="mr-2 h-4 w-4" />
+                                            <RiEyeLine class="mr-2 h-4 w-4" />
                                             View
                                         </Link>
                                     </Button>
 
-                                    <!-- Edit -->
+                                    
                                     <Button
                                         size="sm"
                                         variant="default"
                                         @click="openEdit(vehicle)"
                                     >
-                                        <Edit class="mr-2 h-4 w-4" />
+                                        <RiEditLine class="mr-2 h-4 w-4" />
                                         Edit
                                     </Button>
 
@@ -171,7 +171,7 @@ function openDelete(vehicle_type: VehicleType) {
                                         variant="destructive"
                                         @click="openDelete(vehicle)"
                                     >
-                                        <Trash2 class="mr-2 h-4 w-4" />
+                                        <RiDeleteBinLine class="mr-2 h-4 w-4" />
                                         Delete
                                     </Button>
                                 </TableCell>

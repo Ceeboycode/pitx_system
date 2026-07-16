@@ -14,16 +14,6 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -36,7 +26,6 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -53,29 +42,21 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import Separator from '@/components/ui/separator/Separator.vue'
 
 import AppLayout from '@/layouts/AppLayout.vue';
-import { destroy, index, show, store, trash, update } from '@/routes/gates';
+import { index, show, store, trash, update } from '@/routes/gates';
 import { type BreadcrumbItem, type User } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 
 import {
-    Eye,
-    Loader2,
-    Pencil,
-    Save,
-} from 'lucide-vue-next';
-
-import {
     RiArchive2Line,
-    RiArrowRightSLine,
-    RiEyeLine,
     RiFilter2Line,
     RiLoaderLine,
     RiMore2Line,
     RiEditLine,
     RiAddLine,
-    RiSaveLine,
+    RiShutDownLine,
     RiCloseLine,
     RiImageAddLine,
     RiExternalLinkLine,
@@ -94,6 +75,7 @@ interface Gate {
         is_placeholder: boolean;
     };
     picture_url: string | null;
+    picture_path: string | null;
     assigned_routes: {
         id: number;
         route_name: string;
@@ -134,6 +116,23 @@ const props = withDefaults(
 
 const gateSuggestions = Array.from({ length: 20 }, (_, i) => `Gate ${i + 1}`);
 const baySuggestions  = Array.from({ length: 20 }, (_, i) => String(i + 1));
+const createGateSuggestionsOpen = ref(false);
+const editGateSuggestionsOpen = ref(false);
+const createBaySuggestionsOpen = ref(false);
+const editBaySuggestionsOpen = ref(false);
+const pictureInputRef = ref<HTMLInputElement | null>(null);
+
+const filteredGateSuggestions = computed(() => {
+    const query = form.gate_name.trim().toLowerCase();
+    return gateSuggestions.filter((suggestion) =>
+        suggestion.toLowerCase().includes(query),
+    );
+});
+
+const filteredBaySuggestions = computed(() => {
+    const query = String(form.bays).trim();
+    return baySuggestions.filter((suggestion) => suggestion.includes(query));
+});
 
 const filterStatus = ref<string>(
     props.filters?.status ? String(props.filters.status) : 'all'
@@ -188,13 +187,38 @@ const form = useForm({
     gate_name: '',
     status: 'active' as 'active' | 'inactive',
     bays: '' as number | string,
+    location: '',
+    picture: null as File | null,
 });
+const picturePreview = ref<string | null>(null);
+
+function selectPicture(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0] ?? null;
+    form.picture = file;
+    if (picturePreview.value?.startsWith('blob:')) URL.revokeObjectURL(picturePreview.value);
+    picturePreview.value = file ? URL.createObjectURL(file) : selectedGate.value?.picture_url ?? null;
+}
+
+function removePicture() {
+    if (picturePreview.value?.startsWith('blob:')) URL.revokeObjectURL(picturePreview.value);
+    picturePreview.value = null;
+    form.picture = null;
+    if (pictureInputRef.value) pictureInputRef.value.value = '';
+}
+
+function resetGateForm() {
+    if (picturePreview.value?.startsWith('blob:')) URL.revokeObjectURL(picturePreview.value);
+    picturePreview.value = null;
+    form.reset();
+    form.clearErrors();
+}
 
 const createOpen   = ref(false);
 const editOpen     = ref(false);
-const archiveOpen  = ref(false);
 const selectedGate = ref<Gate | null>(null);
 const previewedGate = ref<Gate | null>(null);
+const toggleOpen = ref(false);
+const togglingGate = ref<Gate | null>(null);
 
 function statusClass(status: Gate['status']): string {
     return status === 'active'
@@ -211,58 +235,61 @@ function openEdit(gate: Gate) {
     form.gate_name     = gate.gate_name;
     form.status        = gate.status;
     form.bays          = gate.bays;
+    form.location      = gate.location.is_placeholder ? '' : gate.location.label;
+    form.picture       = null;
+    picturePreview.value = gate.picture_url;
     editOpen.value     = true;
 }
 
 function closeEdit() {
     editOpen.value     = false;
     selectedGate.value = null;
-    form.reset();
-    form.gate_name = '';
-    form.status    = 'active';
-    form.bays      = '';
+    resetGateForm();
 }
 
 function openPreview(gate: Gate) {
     previewedGate.value = gate;
 }
 
-function openArchive(gate: Gate) {
-    selectedGate.value = gate;
-    archiveOpen.value  = true;
+function openToggleDialog(gate: Gate) {
+    togglingGate.value = gate;
+    toggleOpen.value = true;
+}
+
+function confirmToggle() {
+    if (!togglingGate.value) return;
+
+    router.patch(`/gates/${togglingGate.value.id}/toggle-status`, {}, {
+        preserveScroll: true,
+        onFinish: () => {
+            togglingGate.value = null;
+            toggleOpen.value = false;
+        },
+    });
 }
 
 const createGate = () => {
+    form.transform((data) => data);
     form.post(store().url, {
+        forceFormData: true,
         preserveScroll: true,
         onSuccess: () => {
             createOpen.value = false;
-            form.reset();
-            form.gate_name = '';
-            form.status    = 'active';
-            form.bays      = '';
+            resetGateForm();
         },
     });
 };
 
 const editGate = () => {
     if (!selectedGate.value) return;
-    form.put(update(selectedGate.value.id).url, {
+    form.transform((data) => ({ ...data, _method: 'put' })).post(update(selectedGate.value.id).url, {
+        forceFormData: true,
         preserveScroll: true,
         onSuccess: () => closeEdit(),
+        onFinish: () => form.transform((data) => data),
     });
 };
 
-const archiveGate = () => {
-    if (!selectedGate.value) return;
-    router.delete(destroy(selectedGate.value.id).url, {
-        preserveScroll: true,
-        onSuccess: () => {
-            archiveOpen.value  = false;
-            selectedGate.value = null;
-        },
-    });
-};
 </script>
 
 <template>
@@ -279,11 +306,11 @@ const archiveGate = () => {
                         <CardDescription class="">List of all gates in the system.</CardDescription>
                     </div>
                     <div class="flex flex-1 gap-2 justify-end">
-                        <!-- move this in the app topbar -->
-                        <!-- <div class="ml-2 flex flex-1 items-center">
+                        <!-- TODO: move this in the app topbar -->
+                        <!-- CODE: <div class="ml-2 flex flex-1 items-center">
                             <hr class="h-px w-full border border-custom-primary" />
                             cant decide which one looks better -->
-                            <!-- <div class="border-12 border-custom-primary">
+                            <!-- CODE: <div class="border-12 border-custom-primary">
                                 <div class="border-6 border-custom-bg-light dark:border-custom-bg"></div>
                             </div>
                             <div class="border-7 border-custom-primary">
@@ -317,17 +344,21 @@ const archiveGate = () => {
                                         as-child
                                         class="cursor-pointer lg:hidden"
                                     >
-                                        <Link :href="trash().url" class="flex items-center">
+                                        <button
+                                            type="button"
+                                            class="flex items-center"
+                                            @click="createOpen = true"
+                                        >
                                             <RiAddLine class="h-4 w-4 hover:text-custom-bg-light" />
                                             Add Gate
-                                        </Link>
+                                        </button>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         as-child
-                                        class="cursor-pointer"
+                                        class="cursor-pointer group"
                                     >
                                         <Link :href="trash().url" class="flex items-center">
-                                            <RiArchive2Line class="h-4 w-4 hover:text-custom-bg-light" />
+                                            <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-300" />
                                             Archives
                                         </Link>
                                     </DropdownMenuItem>
@@ -343,7 +374,7 @@ const archiveGate = () => {
                             <SearchInput
                                 :route="index().url"
                                 :initial-value="props.filters?.search"
-                                placeholder="Search gates…"
+                                placeholder="Search gates..."
                                 :only="['gates', 'filters']"
                                 :debounce="350"
                             />
@@ -379,7 +410,7 @@ const archiveGate = () => {
                                     align="end"
                                 >
                                     <div class="grid gap-y-2">
-                                        <div class="space-y-2">
+                                        <div class="flex flex-col gap-y-1">
                                             <p class="text-sm text-custom-shadow/80">
                                                 Status
                                             </p>
@@ -401,7 +432,7 @@ const archiveGate = () => {
                                             </Select>
                                         </div>
 
-                                        <div class="space-y-2">
+                                        <div class="flex flex-col gap-y-1">
                                             <p class="text-sm text-custom-shadow/80">
                                                 No. of Bays
                                             </p>
@@ -463,10 +494,10 @@ const archiveGate = () => {
                                     <div class="col-span-1 flex h-10 font-semibold items-center justify-start px-0 pl-3 text-left text-xs uppercase tracking-widest text-custom-shadow/80">Name</div>
                                     <div class="col-span-1 flex h-10 font-semibold items-center justify-start px-0 text-left text-xs uppercase tracking-widest text-custom-shadow/80">Status</div>
                                     <div class="col-span-1 flex h-10 font-semibold items-center justify-start px-0 text-left text-xs uppercase tracking-widest text-custom-shadow/80">Bays</div>
-                                    <!-- <TableHead class="uppercase tracking-widest">Created By</TableHead> -->
+                                    <!-- CODE: <TableHead class="uppercase tracking-widest">Created By</TableHead> -->
                                     <div class="col-span-1 flex h-10 font-semibold items-center justify-end px-0 pr-3 text-left text-xs uppercase tracking-widest text-custom-shadow/80">Actions</div>
                                 </div>
-                                <!-- <TableRow class="border-b-0 hover:bg-transparent">
+                                <!-- CODE: <TableRow class="border-b-0 hover:bg-transparent">
                                     <TableHead colspan="5" class="h-auto p-0">
                                         <hr class="mx-3 border-0 border-t border-custom-bg-dark" />
                                     </TableHead>
@@ -497,7 +528,7 @@ const archiveGate = () => {
 
                                     <div class="col-span-1 flex justify-start py-1.5 tabular-nums">{{ gate.bays }}</div>
 
-                                    <!-- <TableCell class="text-sm text-muted-foreground">{{ gate.creator?.name ?? '—' }}</TableCell> -->
+                                    <!-- CODE: <TableCell class="text-sm text-muted-foreground">{{ gate.creator?.name ?? '—' }}</TableCell> -->
 
                                     <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right" @click.stop>
                                         <DropdownMenu>
@@ -511,37 +542,43 @@ const archiveGate = () => {
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent align="end" class="w-fit rounded-lg border-slate-200 shadow-lg">
-                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                            <DropdownMenuContent align="end" class="">
+                                                <DropdownMenuLabel>
                                                     {{ gate.gate_name }}
                                                 </DropdownMenuLabel>
-                                                <DropdownMenuSeparator />
 
                                                 <DropdownMenuItem
-                                                    class="hidden rounded-lg hover:bg-slate-100 cursor-pointer lg:flex"
+                                                    class="group hidden"
                                                     @click="openPreview(gate)"
                                                 >
-                                                    <Eye class="h-4 w-4" />
+                                                    <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-bg transition-all duration-300" />
                                                     View
                                                 </DropdownMenuItem>
 
-                                                <DropdownMenuItem as-child class="rounded-lg hover:bg-slate-100 cursor-pointer lg:hidden">
+                                                <DropdownMenuItem as-child class="group lg:hidden">
                                                     <Link :href="show(gate.id).url" class="flex items-center">
-                                                        <Eye class="h-4 w-4" />
+                                                        <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-bg transition-all duration-300" />
                                                         View
                                                     </Link>
                                                 </DropdownMenuItem>
 
-                                                <DropdownMenuItem class="rounded-lg hover:bg-slate-100 cursor-pointer" @click="openEdit(gate)">
-                                                    <Pencil class="h-4 w-4" />
+                                                <DropdownMenuItem class="group" @click="openEdit(gate)">
+                                                    <RiEditLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-300" />
                                                     Edit
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuItem class="group" @click="openToggleDialog(gate)">
+                                                    <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                    <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">
+                                                        {{ gate.status === 'active' ? 'Set as Inactive' : 'Set as Active' }}
+                                                    </span>
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
                                 </div>
 
-                                <!-- <TableRow
+                                <!-- CODE: <TableRow
                                     v-if="index < props.gates.data.length - 1"
                                     class="border-b-0 hover:bg-transparent"
                                 >
@@ -633,7 +670,7 @@ const archiveGate = () => {
                             </span>
                         </div>
 
-                        <!-- <div class="flex items-center justify-between gap-3 border-b border-custom-bg-dark pb-3">
+                        <!-- CODE: <div class="flex items-center justify-between gap-3 border-b border-custom-bg-dark pb-3">
                             <span class="text-sm text-custom-shadow/70">Created By</span>
                             <span class="truncate text-sm font-medium">{{ previewedGate.creator?.name ?? 'Not recorded' }}</span>
                         </div> -->
@@ -646,7 +683,7 @@ const archiveGate = () => {
                                 </span>
                             </div>
 
-                            <!-- <div
+                            <!-- CODE: <div
                                 v-if="previewedGate.bay_statuses.length > 0"
                                 class="space-y-2"
                             >
@@ -714,7 +751,7 @@ const archiveGate = () => {
                         </div>
                     </div>
 
-                    <!-- <hr class="border-custom-bg-dark dark:border-custom-bg-light my-4"> -->
+                    <!-- CODE: <hr class="border-custom-bg-dark dark:border-custom-bg-light my-4"> -->
                     <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
 
                     <div class="flex items-center justify-between gap-2">
@@ -743,7 +780,7 @@ const archiveGate = () => {
                     class="flex min-h-0 flex-1 items-center justify-center"
                 >
                     <div class="max-w-60 text-center space-y-1">
-                        <!-- <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-custom-bg text-custom-shadow/70">
+                        <!-- CODE: <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-custom-bg text-custom-shadow/70">
                             <RiEyeLine class="h-6 w-6" />
                         </div> -->
                         <p class="text-custom-shadow text-base font-semibold">No gate selected</p>
@@ -755,100 +792,247 @@ const archiveGate = () => {
             </Card>
         </div>
 
-        <!-- ── Create dialog ──────────────────────────────────────── -->
+        
         <Dialog v-model:open="createOpen">
-            <DialogContent class="rounded-lg sm:max-w-md p-4">
+            <DialogContent class="">
                 <DialogHeader>
-                    <DialogTitle>Add New Gate</DialogTitle>
-                    <DialogDescription>Create a new gate with status and number of bays.</DialogDescription>
+                    <DialogTitle>Add Gate</DialogTitle>
+                    <!-- CODE: <DialogDescription>Provide the details below.</DialogDescription> -->
                 </DialogHeader>
-                <form class="space-y-4" @submit.prevent="createGate">
-                    <div class="space-y-1.5">
-                        <Label for="create_gate_name" class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Gate Name</Label>
-                        <Input id="create_gate_name" v-model="form.gate_name" list="gate-name-suggestions" placeholder="Type gate name or select Gate 1–20" class="rounded-lg border-slate-200 hover:bg-slate-100 cursor-pointer" />
-                        <datalist id="gate-name-suggestions">
-                            <option v-for="opt in gateSuggestions" :key="opt" :value="opt" />
-                        </datalist>
+                <form class="flex flex-col gap-y-2 px-6" @submit.prevent="createGate">
+                    <div class="relative space-y-1">
+                        <Label for="create_gate_name">Gate Name</Label>
+                        <Input
+                            id="create_gate_name"
+                            v-model="form.gate_name"
+                            placeholder="Select or type a gate name"
+                            autocomplete="off"
+                            @focus="createGateSuggestionsOpen = true"
+                            @blur="createGateSuggestionsOpen = false"
+                        />
+                        <div
+                            v-if="createGateSuggestionsOpen && filteredGateSuggestions.length"
+                            class="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-custom-bg-dark bg-custom-bg-light p-1 text-custom-shadow shadow-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden dark:border-custom-bg-light dark:bg-custom-bg dark:shadow-none dark:inset-shadow-sm dark:inset-shadow-white/5"
+                        >
+                            <button
+                                v-for="opt in filteredGateSuggestions"
+                                :key="opt"
+                                type="button"
+                                class="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-custom-bg dark:hover:bg-custom-bg-light"
+                                @mousedown.prevent="form.gate_name = opt; createGateSuggestionsOpen = false"
+                            >
+                                {{ opt }}
+                            </button>
+                        </div>
                         <InputError :message="form.errors.gate_name" />
                     </div>
-                    <div class="space-y-1.5">
-                        <Label for="create_status" class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Status</Label>
+                    <div class="space-y-1">
+                        <Label for="create_status">Status</Label>
                         <Select v-model="form.status">
-                            <SelectTrigger id="create_status" class="w-full rounded-lg border-slate-200 hover:bg-slate-100 cursor-pointer">
+                            <SelectTrigger id="create_status" class="w-full">
                                 <SelectValue placeholder="Select status" />
                             </SelectTrigger>
-                            <SelectContent class="rounded-lg">
-                                <SelectItem value="active" class="rounded-lg hover:bg-slate-100 cursor-pointer">Active</SelectItem>
-                                <SelectItem value="inactive" class="rounded-lg hover:bg-slate-100 cursor-pointer">Inactive</SelectItem>
+                            <SelectContent>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="inactive">Inactive</SelectItem>
                             </SelectContent>
                         </Select>
                         <InputError :message="form.errors.status" />
                     </div>
-                    <div class="space-y-1.5">
-                        <Label for="create_bays" class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Bays</Label>
-                        <Input id="create_bays" v-model="form.bays" list="bay-suggestions" type="number" min="0" placeholder="Number of bays" class="rounded-lg border-slate-200 hover:bg-slate-100 cursor-pointer" />
-                        <datalist id="bay-suggestions">
-                            <option v-for="opt in baySuggestions" :key="opt" :value="opt" />
-                        </datalist>
+                    <div class="relative space-y-1">
+                        <Label for="create_bays">Bays</Label>
+                        <Input
+                            id="create_bays"
+                            v-model="form.bays"
+                            inputmode="numeric"
+                            placeholder="Number of bays"
+                            autocomplete="off"
+                            @focus="createBaySuggestionsOpen = true"
+                            @blur="createBaySuggestionsOpen = false"
+                        />
+                        <div
+                            v-if="createBaySuggestionsOpen && filteredBaySuggestions.length"
+                            class="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-custom-bg-dark bg-custom-bg-light p-1 text-custom-shadow shadow-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden dark:border-custom-bg-light dark:bg-custom-bg dark:shadow-none dark:inset-shadow-sm dark:inset-shadow-white/5"
+                        >
+                            <button
+                                v-for="opt in filteredBaySuggestions"
+                                :key="opt"
+                                type="button"
+                                class="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-custom-bg dark:hover:bg-custom-bg-light"
+                                @mousedown.prevent="form.bays = opt; createBaySuggestionsOpen = false"
+                            >
+                                    {{ opt }}
+                            </button>
+                        </div>
                         <InputError :message="form.errors.bays" />
                     </div>
+                    <div class="space-y-1">
+                        <Label for="create_location">Location</Label>
+                        <Input id="create_location" v-model="form.location" placeholder="e.g. Ground Floor boarding concourse" />
+                        <InputError :message="form.errors.location" />
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="create_picture">Gate Picture</Label>
+                        <div class="flex items-center gap-3 rounded-md border border-dashed border-custom-bg-dark p-3 dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5">
+                            <div role="button" tabindex="0" :aria-label="picturePreview ? 'Change gate picture' : 'Upload gate picture'" class="group relative h-24 w-24 shrink-0 cursor-pointer overflow-hidden rounded-md border transition-colors" :class="picturePreview ? 'border-none' : 'border-dashed border-custom-bg-dark dark:border-custom-bg-light'" @click="pictureInputRef?.click()" @keydown.enter.prevent="pictureInputRef?.click()" @keydown.space.prevent="pictureInputRef?.click()">
+                                <img v-if="picturePreview" :src="picturePreview" alt="Gate picture preview" class="h-full w-full object-cover transition duration-200 group-hover:brightness-30" />
+                                <div v-if="picturePreview" class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"><RiImageAddLine class="h-7 w-7 text-custom-shadow" /></div>
+                                <div v-else class="flex h-full w-full items-center justify-center"><RiImageAddLine class="h-6 w-6 text-custom-shadow/80" /></div>
+                                <Button v-if="picturePreview" type="button" aria-label="Remove gate picture" class="absolute right-1 top-1 z-10 flex h-6 w-6 cursor-pointer items-center rounded-full border border-custom-shadow/50 text-custom-shadow transition-all duration-300 hover:border-destructive hover:bg-destructive/20 hover:text-destructive" @click.stop="removePicture"><RiCloseLine class="h-4 w-4" /></Button>
+                            </div>
+                            <div class="space-y-1">
+                                <p class="text-sm text-custom-shadow/80"><span class="font-semibold">File format: </span>.jpg, .png or .webp<br /><span class="font-semibold">Max. file size: </span>2 MB<br /><span class="font-semibold">Recommended: </span>landscape image</p>
+                                <input id="create_picture" ref="pictureInputRef" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" @change="selectPicture" />
+                            </div>
+                        </div>
+                        <InputError :message="form.errors.picture" />
+                    </div>
+
+                    <Separator/>
                     <DialogFooter class="gap-2">
-                        <Button type="button" variant="outline" class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer" @click="createOpen = false">Cancel</Button>
-                        <Button type="submit" :disabled="form.processing" class="rounded-lg bg-primary cursor-pointer border-0 font-semibold disabled:opacity-60">
-                            <Loader2 v-if="form.processing" class="h-4 w-4 animate-spin" />
-                            <Save v-else class="h-4 w-4" />
-                            {{ form.processing ? 'Saving…' : 'Save Gate' }}
+                        <Button variant="ghost-outline" @click="createOpen = false">Cancel</Button>
+                        <Button type="submit" variant="float-primary" :disabled="form.processing">
+                            <RiLoaderLine v-if="form.processing" class="h-4 w-4 animate-spin" />
+                            <!-- CODE: <Save v-else class="h-4 w-4" /> -->
+                            {{ form.processing ? 'Adding...' : 'Add' }}
                         </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>
 
-        <!-- ── Edit dialog ────────────────────────────────────────── -->
+        
         <Dialog v-model:open="editOpen">
-            <DialogContent class="rounded-lg sm:max-w-md p-4">
+            <DialogContent class="">
                 <DialogHeader>
                     <DialogTitle>Edit Gate</DialogTitle>
-                    <DialogDescription>Update the gate details.</DialogDescription>
                 </DialogHeader>
-                <form class="space-y-4" @submit.prevent="editGate">
-                    <div class="space-y-1.5">
-                        <Label for="edit_gate_name" class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Gate Name</Label>
-                        <Input id="edit_gate_name" v-model="form.gate_name" list="gate-name-suggestions" placeholder="Type gate name or select Gate 1–20" class="rounded-lg border-slate-200 hover:bg-slate-100" />
+                <form class="flex flex-col gap-y-2 px-6" @submit.prevent="editGate">
+                    <div class="relative space-y-1">
+                        <Label for="edit_gate_name">Gate Name</Label>
+                        <Input
+                            id="edit_gate_name"
+                            v-model="form.gate_name"
+                            placeholder="Select or type a gate name"
+                            autocomplete="off"
+                            @focus="editGateSuggestionsOpen = true"
+                            @blur="editGateSuggestionsOpen = false"
+                        />
+                        <div
+                            v-if="editGateSuggestionsOpen && filteredGateSuggestions.length"
+                            class="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-custom-bg-dark bg-custom-bg-light p-1 text-custom-shadow shadow-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden dark:border-custom-bg-light dark:bg-custom-bg dark:shadow-none dark:inset-shadow-sm dark:inset-shadow-white/5"
+                        >
+                            <button
+                                v-for="opt in filteredGateSuggestions"
+                                :key="opt"
+                                type="button"
+                                class="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-custom-bg dark:hover:bg-custom-bg-light"
+                                @mousedown.prevent="form.gate_name = opt; editGateSuggestionsOpen = false"
+                            >
+                                {{ opt }}
+                            </button>
+                        </div>
                         <InputError :message="form.errors.gate_name" />
                     </div>
-                    <div class="space-y-1.5">
-                        <Label for="edit_status" class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Status</Label>
+                    <div class="space-y-1">
+                        <Label for="edit_status">Status</Label>
                         <Select v-model="form.status">
-                            <SelectTrigger id="edit_status" class="w-full rounded-lg border-slate-200 cursor-pointer hover:bg-slate-100">
+                            <SelectTrigger id="edit_status" class="w-full">
                                 <SelectValue placeholder="Select status" />
                             </SelectTrigger>
-                            <SelectContent class="rounded-lg">
-                                <SelectItem value="active" class="rounded-lg cursor-pointer hover:bg-slate-100">Active</SelectItem>
-                                <SelectItem value="inactive" class="rounded-lg cursor-pointer hover:bg-slate-100">Inactive</SelectItem>
+                            <SelectContent>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="inactive">Inactive</SelectItem>
                             </SelectContent>
                         </Select>
                         <InputError :message="form.errors.status" />
                     </div>
-                    <div class="space-y-1.5">
-                        <Label for="edit_bays" class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Bays</Label>
-                        <Input id="edit_bays" v-model="form.bays" list="bay-suggestions" type="number" min="0" placeholder="Number of bays" class="rounded-lg border-slate-200 hover:bg-slate-100" />
+                    <div class="relative space-y-1">
+                        <Label for="edit_bays">Bays</Label>
+                        <Input
+                            id="edit_bays"
+                            v-model="form.bays"
+                            inputmode="numeric"
+                            placeholder="Number of bays"
+                            autocomplete="off"
+                            @focus="editBaySuggestionsOpen = true"
+                            @blur="editBaySuggestionsOpen = false"
+                        />
+                        <div
+                            v-if="editBaySuggestionsOpen && filteredBaySuggestions.length"
+                            class="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-custom-bg-dark bg-custom-bg-light p-1 text-custom-shadow shadow-md [scrollbar-width:none] [&::-webkit-scrollbar]:hidden dark:border-custom-bg-light dark:bg-custom-bg dark:shadow-none dark:inset-shadow-sm dark:inset-shadow-white/5"
+                        >
+                            <button
+                                v-for="opt in filteredBaySuggestions"
+                                :key="opt"
+                                type="button"
+                                class="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-custom-bg dark:hover:bg-custom-bg-light"
+                                @mousedown.prevent="form.bays = opt; editBaySuggestionsOpen = false"
+                            >
+                                {{ opt }}
+                            </button>
+                        </div>
                         <InputError :message="form.errors.bays" />
                     </div>
+                    <div class="space-y-1">
+                        <Label for="edit_location">Location</Label>
+                        <Input id="edit_location" v-model="form.location" placeholder="e.g. Ground Floor boarding concourse" />
+                        <InputError :message="form.errors.location" />
+                    </div>
+                    <div class="space-y-1">
+                        <Label for="edit_picture">Gate Picture</Label>
+                        <div class="flex items-center gap-3 rounded-md border border-dashed border-custom-bg-dark p-3 dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5">
+                            <div role="button" tabindex="0" :aria-label="picturePreview ? 'Change gate picture' : 'Upload gate picture'" class="group relative h-24 w-24 shrink-0 cursor-pointer overflow-hidden rounded-md border transition-colors" :class="picturePreview ? 'border-none' : 'border-dashed border-custom-bg-dark dark:border-custom-bg-light'" @click="pictureInputRef?.click()" @keydown.enter.prevent="pictureInputRef?.click()" @keydown.space.prevent="pictureInputRef?.click()">
+                                <img v-if="picturePreview" :src="picturePreview" alt="Gate picture preview" class="h-full w-full object-cover transition duration-200 group-hover:brightness-30" />
+                                <div v-if="picturePreview" class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"><RiImageAddLine class="h-7 w-7 text-custom-shadow" /></div>
+                                <div v-else class="flex h-full w-full items-center justify-center"><RiImageAddLine class="h-6 w-6 text-custom-shadow/80" /></div>
+                                <Button v-if="picturePreview" type="button" aria-label="Remove gate picture" class="absolute right-1 top-1 z-10 flex h-6 w-6 cursor-pointer items-center rounded-full border border-custom-shadow/50 text-custom-shadow transition-all duration-300 hover:border-destructive hover:bg-destructive/20 hover:text-destructive" @click.stop="removePicture"><RiCloseLine class="h-4 w-4" /></Button>
+                            </div>
+                            <div class="space-y-1">
+                                <p class="text-sm text-custom-shadow/80"><span class="font-semibold">File format: </span>.jpg, .png or .webp<br /><span class="font-semibold">Max. file size: </span>2 MB<br /><span class="font-semibold">Recommended: </span>landscape image</p>
+                                <input id="edit_picture" ref="pictureInputRef" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" @change="selectPicture" />
+                            </div>
+                        </div>
+                        <InputError :message="form.errors.picture" />
+                    </div>
+
+                    <Separator/>
                     <DialogFooter class="gap-2">
-                        <Button type="button" variant="outline" class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer" @click="closeEdit">Cancel</Button>
-                        <Button type="submit" :disabled="form.processing" class="rounded-lg cursor-pointer border-0 font-semibold disabled:opacity-60">
-                            <Loader2 v-if="form.processing" class="h-4 w-4 animate-spin" />
-                            <Save v-else class="h-4 w-4" />
-                            {{ form.processing ? 'Saving…' : 'Save Changes' }}
+                        <Button type="button" variant="ghost-outline" @click="closeEdit">Cancel</Button>
+                        <Button type="submit" variant="float-primary" :disabled="form.processing">
+                            <RiLoaderLine v-if="form.processing" class="h-4 w-4 animate-spin" />
+                            <!-- CODE: <Save v-else class="h-4 w-4" /> -->
+                            {{ form.processing ? 'Saving...' : 'Save Changes' }}
                         </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>
 
-        <!-- ── Archive confirm dialog ─────────────────────────────── -->
-        <!-- <AlertDialog v-model:open="archiveOpen">
+        <Dialog v-model:open="toggleOpen">
+            <DialogContent class="px-6">
+                <DialogHeader class="px-0">
+                    <DialogTitle>
+                        {{ togglingGate?.status === 'active' ? 'Set Gate Inactive' : 'Set Gate Active' }}
+                    </DialogTitle>
+                    <DialogDescription class="mt-4">
+                        Are you sure you want to set
+                        <span class="font-semibold">{{ togglingGate?.gate_name ?? 'this gate' }}</span>
+                        as {{ togglingGate?.status === 'active' ? 'inactive' : 'active' }}?
+                    </DialogDescription>
+                </DialogHeader>
+                <Separator class="mb-4" />
+                <DialogFooter class="gap-2 sm:justify-end">
+                    <Button variant="ghost-outline" @click="toggleOpen = false; togglingGate = null">Cancel</Button>
+                    <Button :variant="togglingGate?.status === 'active' ? 'destructive' : 'float-primary'" @click="confirmToggle">
+                        <RiShutDownLine class="h-4 w-4" />
+                        {{ togglingGate?.status === 'active' ? 'Set Inactive' : 'Set Active' }}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <!-- CODE: <AlertDialog v-model:open="archiveOpen">
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
                     <AlertDialogTitle>Archive Gate</AlertDialogTitle>

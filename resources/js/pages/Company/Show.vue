@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import ArchiveCompanyDialog from '@/components/company/ArchiveCompanyDialog.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
@@ -102,7 +102,7 @@ import {
     X,
 } from 'lucide-vue-next';
 
-/* ── Types ──────────────────────────────────────────────────────── */
+
 
 type UserMini = { id?: number; name: string };
 
@@ -122,7 +122,7 @@ type CompanyDocument = {
     verified_at?: string | null;
 };
 
-/* ── Props ───────────────────────────────────────────────────────── */
+
 
 const props = defineProps<{
     company: {
@@ -151,11 +151,11 @@ const props = defineProps<{
 const company = computed(() => props.company);
 const docs = computed(() => props.company.documents ?? []);
 
-/* ── Permissions ─────────────────────────────────────────────────── */
+
 
 const canArchiveCompany = computed(() => can('companies.archive'));
 
-/* ── Logo helpers ────────────────────────────────────────────────── */
+
 
 const logoError = ref(false);
 const showLogo = computed(() => !!company.value.logo_url && !logoError.value);
@@ -168,18 +168,18 @@ const companyInitials = computed(
             .toUpperCase() || '??',
 );
 
-/* ── Breadcrumbs ─────────────────────────────────────────────────── */
+
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Companies', href: index().url },
     { title: 'Company Details', href: show({ company: company.value.id }).url },
 ];
 
-/* ── Archive dialog ──────────────────────────────────────────────── */
+
 
 const archiveOpen = ref(false);
 
-/* ── Helpers ─────────────────────────────────────────────────────── */
+
 
 function formatDate(date?: string | null) {
     if (!date) return '—';
@@ -254,7 +254,7 @@ function statusDot(status?: string | null): string {
     }
 }
 
-/* ── Download verified ZIP ───────────────────────────────────────── */
+
 
 function downloadVerifiedZip() {
     const { url } = downloadBulk({ company: company.value.id });
@@ -332,7 +332,7 @@ function selectAll() {
     }
 }
 
-/* ── File preview helpers ────────────────────────────────────────── */
+
 
 function fileUrl(doc: CompanyDocument): string {
     if (!doc.file_path) return '';
@@ -358,7 +358,7 @@ function canPreview(doc: CompanyDocument): boolean {
     return isImage(doc) || isPdf(doc);
 }
 
-/* ── Preview dialog ──────────────────────────────────────────────── */
+
 
 const previewOpen = ref(false);
 const previewDoc = ref<CompanyDocument | null>(null);
@@ -371,14 +371,13 @@ function openPreview(doc: CompanyDocument) {
 }
 function closePreview() {
     previewOpen.value = false;
-    // previewDoc.value = null;
 }
 
-/* ── Action form ─────────────────────────────────────────────────── */
+
 
 const actionForm = useForm({});
 
-/* ── Confirm dialog ──────────────────────────────────────────────── */
+
 
 type ConfirmAction = 'verify' | 'unverify' | 'delete' | 'download';
 const confirmOpen = ref(false);
@@ -457,7 +456,7 @@ function runConfirmedAction() {
     });
 }
 
-/* ── Reject dialog ───────────────────────────────────────────────── */
+
 
 const remarkPresets = [
     {
@@ -519,18 +518,13 @@ function togglePreset(value: RemarkPresetValue) {
     const isSelected = selectedPresets.value.includes(value);
 
     if (isSelected) {
-        // Remove from selection
         selectedPresets.value = selectedPresets.value.filter((v) => v !== value);
-        // Surgically remove only that preset's line from the textarea,
-        // even if the user appended text after the preset sentence
         const lines = rejectForm.remarks
             .split('\n')
             .filter((line) => !line.startsWith(preset.text));
         rejectForm.remarks = lines.join('\n').trim();
     } else {
-        // Add to selection
         selectedPresets.value = [...selectedPresets.value, value];
-        // Append to whatever is already in the textarea
         const current = rejectForm.remarks.trim();
         rejectForm.remarks = current ? current + '\n' + preset.text : preset.text;
     }
@@ -598,7 +592,7 @@ const flaggedDocs = computed(
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
         <!-- TODO: make the background a gradient, the bottom color the theme colro for cards, and the top color the 'average' color of the company logo. if the company logo is null, use the theme primary color instead -->
-            <!-- <Card class="bg-linear-to-r from-primary via-card-background to-card-background border-none"> -->
+            <!-- CODE: <Card class="bg-linear-to-r from-primary via-card-background to-card-background border-none"> -->
             <Card class="">
                 <CardHeader class="py-0">
                     <div class="flex items-center gap-4">
@@ -689,7 +683,7 @@ const flaggedDocs = computed(
                             </div>
                         </div>
 
-                        <!-- <div class="ml-2 flex flex-1 items-center">
+                        <!-- CODE: <div class="ml-2 flex flex-1 items-center">
                             <hr class="h-px w-full border border-rose-500" />
                             <div class="border-7 border-rose-500 rounded-xs">
                                 <div class="border-3 border-white rounded-xs"></div>
@@ -828,7 +822,7 @@ const flaggedDocs = computed(
                         </CardContent>
                     </Card>
                 </div>
-            <!-- ── Documents card ─────────────────────────────── -->
+            
                 <div class="grid gap-4 col-span-2 h-fit">
                     <Card>
                         <CardHeader class="flex items-center justify-between">
@@ -840,7 +834,7 @@ const flaggedDocs = computed(
                         </CardHeader>
 
                         <CardContent class="border-t border-slate-100">
-                            <!-- Empty state -->
+                            
                             <div
                                 v-if="docs.length === 0"
                                 class="flex flex-col items-center gap-3 py-20 text-center"
@@ -863,7 +857,7 @@ const flaggedDocs = computed(
                                 </div>
                             </div>
 
-                            <!-- Document rows -->
+                            
                             <div v-else>
                                 <div class="flex justify-between py-4">
                                     <div class="flex gap-2">
@@ -916,7 +910,7 @@ const flaggedDocs = computed(
                                         class="grid grid-cols-[auto_1fr_auto] py-2 transition-colors"
                                         :class="!selectMode ? 'group/row' : ''"
                                     >
-                                        <!-- Checkbox (select mode) -->
+                                        
                                         <div
                                             class="flex items-start pt-1 overflow-hidden transition-all duration-300"
                                             :class="selectMode ? 'w-5 opacity-100 me-2' : 'w-0 opacity-0'"
@@ -929,7 +923,7 @@ const flaggedDocs = computed(
                                             />
                                         </div>
 
-                                        <!-- Left: doc info -->
+                                        
                                         <div class="min-w-0">
                                             <div
                                                 class="flex flex-wrap items-center gap-2"
@@ -1084,7 +1078,7 @@ const flaggedDocs = computed(
                                             </div>
                                         </div>
 
-                                        <!-- Right: actions dropdown -->
+                                        
                                         <div class="flex items-start">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger as-child>
@@ -1099,9 +1093,7 @@ const flaggedDocs = computed(
                                                         <MoreHorizontal
                                                             class="h-4 w-4"
                                                         />
-                                                        <span class="sr-only"
-                                                            >Actions</span
-                                                        >
+                                                        
                                                     </Button>
                                                 </DropdownMenuTrigger>
 
@@ -1157,14 +1149,14 @@ const flaggedDocs = computed(
             </div>
         </div>
 
-        <!-- ── Archive dialog ─────────────────────────────────────── -->
+        
         <ArchiveCompanyDialog
             v-if="canArchiveCompany"
             v-model:open="archiveOpen"
             :company="company""
         />
 
-        <!-- ── File Preview Dialog ────────────────────────────────── -->
+        
         <Dialog v-model:open="previewOpen">
             <DialogContent
                 class="flex max-h-[90vh] w-full flex-col gap-0 rounded-lg py-4 px-6"
@@ -1342,7 +1334,7 @@ const flaggedDocs = computed(
             </DialogContent>
         </Dialog>
 
-        <!-- ── Reject dialog ──────────────────────────────────────── -->
+        
         <Dialog v-model:open="rejectOpen">
             <DialogContent class="overflow-y-auto rounded-lg sm:max-w-lg">
                 <DialogHeader>
@@ -1352,7 +1344,7 @@ const flaggedDocs = computed(
                     </DialogDescription>
                 </DialogHeader>
                 <div class="space-y-4">
-                    <!-- Stackable checkboxes -->
+                    
                     <div>
                         <p
                             class="mb-2.5 text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
@@ -1419,7 +1411,7 @@ const flaggedDocs = computed(
                         </Label>
                         <Textarea
                             v-model="rejectForm.remarks"
-                            placeholder="Select reasons above or write your own…"
+                            placeholder="Select reasons above or write your own..."
                             class="min-h-25 rounded-lg text-sm"
                         />
                         <InputError
@@ -1447,7 +1439,7 @@ const flaggedDocs = computed(
                     >
                         {{
                             rejectForm.processing
-                                ? 'Invalidating…'
+                                ? 'Invalidating...'
                                 : 'Mark as Invalid'
                         }}
                     </Button>
@@ -1455,7 +1447,7 @@ const flaggedDocs = computed(
             </DialogContent>
         </Dialog>
 
-        <!-- ── Row action confirm dialog ─────────────────────────── -->
+        
         <AlertDialog v-model:open="confirmOpen">
             <AlertDialogContent class="rounded-lg p-4">
                 <AlertDialogHeader>
@@ -1478,13 +1470,13 @@ const flaggedDocs = computed(
                         :disabled="actionForm.processing"
                         @click="runConfirmedAction"
                     >
-                        {{ actionForm.processing ? 'Processing…' : 'Continue' }}
+                        {{ actionForm.processing ? 'Processing...' : 'Continue' }}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
 
-        <!-- ── Bulk Download Confirm ──────────────────────────────── -->
+        
         <AlertDialog v-model:open="bulkConfirmOpen">
             <AlertDialogContent class="rounded-lg p-4">
                 <AlertDialogHeader>

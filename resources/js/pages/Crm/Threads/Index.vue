@@ -32,14 +32,14 @@ import { type BreadcrumbItem } from '@/types';
 import { fetchWithAuth } from '@/utils/fetchWithAuth';
 
 import {
-    Bug,
-    BusFront,
-    IdCard,
-    MoreHorizontal,
-    Paperclip,
-    SendHorizontal,
-    Wrench,
-} from 'lucide-vue-next';
+    RiAttachment2 as Paperclip,
+    RiBugLine as Bug,
+    RiBus2Line as BusFront,
+    RiIdCardLine as IdCard,
+    RiMore2Line as MoreHorizontal,
+    RiSendPlane2Line as SendHorizontal,
+    RiToolsLine as Wrench,
+} from 'vue-remix-icons';
 
 type UserSummary = {
     id: number;
@@ -300,7 +300,6 @@ async function loadThread(threadId: number | string | null) {
 
         selectedThread.value = data?.data ?? null;
 
-        // print('loaded thread', selectedThread.value);
         
         upsertThreadSummary(selectedThread.value);
         selectedAssigneeId.value = selectedThread.value?.assigned_to?.id
@@ -542,7 +541,7 @@ watch(
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
             <Card class="p-0 max-h-[85vh]">
-                <!-- <Card class="mx-5"> -->
+                <!-- CODE: <Card class="mx-5"> -->
                 <div
                     class="grid h-auto grid-cols-1 lg:grid-cols-[22rem_minmax(0,1fr)]"
                 >
@@ -664,7 +663,7 @@ watch(
                                                 {{ statusLabel(thread).text }}
                                             </span>
                                             <span class="truncate">
-                                                <!-- {{ categoryLabel(thread.category) }} -->
+                                                <!-- CODE: {{ categoryLabel(thread.category) }} -->
                                                 <span
                                                     v-if="
                                                         thread.assigned_to?.name
@@ -774,7 +773,7 @@ watch(
                                             class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                                         >
                                             <MoreHorizontal class="h-4 w-4" />
-                                            <span class="sr-only">Open actions</span>
+                                            
                                         </Button>
                                     </DropdownMenuTrigger>
 
@@ -798,7 +797,7 @@ watch(
                                                 class="mt-1"
                                             >
                                                 <SelectTrigger class="h-8 w-full">
-                                                    <SelectValue placeholder="Select assignee…" />
+                                                    <SelectValue placeholder="Select assignee..." />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="unassigned">
@@ -819,7 +818,7 @@ watch(
                                                 :disabled="isSavingAssignment"
                                                 @click="saveAssignment"
                                             >
-                                                {{ isSavingAssignment ? 'Assigning…' : 'Assign' }}
+                                                {{ isSavingAssignment ? 'Assigning...' : 'Assign' }}
                                             </Button>
                                         </div>
 
@@ -909,8 +908,8 @@ watch(
                                             'justify-end': message.sender?.id === currentUserId,
                                         }"
                                     >
-                                        <!-- <div> {{ message.sender }} </div> -->
-                                        <!-- <div> {{  }} </div> -->
+                                        <!-- CODE: <div> {{ message.sender }} </div> -->
+                                        <!-- CODE: <div> {{  }} </div> -->
 
                                         <div>
                                             <p
@@ -939,7 +938,7 @@ watch(
                                                     <p class="whitespace-pre-wrap text-sm">
                                                         {{ message.body || 'No content' }}
                                                     </p>
-                                                <!-- <p
+                                                CODE: <p
                                                     v-if="message.is_internal"
                                                     class="mt-2 text-[11px] font-medium text-blue-700"
                                                 >

@@ -190,12 +190,12 @@ function goBack() {
                 class="relative h-9 w-9 shrink-0 rounded-full"
             >
                 <MessageSquare class="h-4 w-4" />
-                <span class="sr-only">Open messages</span>
+                
             </Button>
         </PopoverTrigger>
 
         <PopoverContent align="end" class="w-[380px] rounded-md border border-custom-bg-dark bg-custom-bg-light p-0 shadow-md dark:border-custom-bg-light dark:bg-custom-bg">
-            <!-- Thread list -->
+            
             <template v-if="view === 'list'">
                 <div class="flex items-center justify-between px-4 py-3">
                     <p class="text-sm font-semibold text-custom-shadow">Messages</p>
@@ -261,7 +261,7 @@ function goBack() {
                 </div>
             </template>
 
-            <!-- Thread detail -->
+            
             <template v-else-if="view === 'detail' && selectedThread">
                 <div class="flex items-center gap-2 px-3 py-3">
                     <Button
@@ -343,7 +343,7 @@ function goBack() {
                 </div>
             </template>
 
-            <!-- New thread form -->
+            
             <template v-else-if="view === 'new'">
                 <div class="flex items-center gap-2 px-3 py-3">
                     <Button

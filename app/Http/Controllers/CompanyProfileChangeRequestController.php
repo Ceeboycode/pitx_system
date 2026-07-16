@@ -33,6 +33,17 @@ class CompanyProfileChangeRequestController extends Controller
 
         $requests = CompanyProfileChangeRequest::query()
             ->with(['company:id,company_name,company_code,status', 'requester:id,name,email', 'approver:id,name'])
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = (string) $request->string('search');
+                $query->where(function ($nested) use ($search) {
+                    $nested->whereHas('company', fn ($company) => $company
+                        ->where('company_name', 'like', "%{$search}%")
+                        ->orWhere('company_code', 'like', "%{$search}%"))
+                        ->orWhereHas('requester', fn ($requester) => $requester
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%"));
+                });
+            })
             ->when($status !== 'all', fn ($q) => $q->where('status', $status))
             ->latest()
             ->paginate(15)
@@ -95,7 +106,7 @@ class CompanyProfileChangeRequestController extends Controller
 
         return Inertia::render('CompanyProfileChangeRequests/Index', [
             'requests' => $requests,
-            'filters'  => ['status' => $status],
+            'filters'  => ['status' => $status, 'search' => $request->input('search')],
         ]);
     }
 

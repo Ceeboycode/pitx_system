@@ -50,9 +50,7 @@ import { index, store } from '@/actions/App/Http/Controllers/RouteController';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Types
-───────────────────────────────────────────────────────────────────────────── */
+
 
 type Gate = {
     id: number;
@@ -97,9 +95,7 @@ type RouteSnapshot = {
     coordinates: [number, number][];
 };
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Props
-───────────────────────────────────────────────────────────────────────────── */
+
 
 const props = defineProps<{
     gates: Gate[];
@@ -115,9 +111,7 @@ const props = defineProps<{
 
 mapboxgl.accessToken = props.mapConfig.mapboxToken;
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Refs
-───────────────────────────────────────────────────────────────────────────── */
+
 
 const mapEl = ref<HTMLElement | null>(null);
 const map = ref<mapboxgl.Map | null>(null);
@@ -157,9 +151,7 @@ const originalPrimaryRoute = ref<RouteSnapshot | null>(null);
 
 const waypoints = ref<Waypoint[]>([]);
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Origin
-───────────────────────────────────────────────────────────────────────────── */
+
 
 const origin = {
     name: props.mapConfig.pitx.name,
@@ -184,9 +176,7 @@ const form = useForm({
 
 let originMarker: mapboxgl.Marker | null = null;
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Computed
-───────────────────────────────────────────────────────────────────────────── */
+
 
 const hasDestination = computed(
     () => form.destination_lat !== null && form.destination_lng !== null,
@@ -220,9 +210,7 @@ const routeHealthStatus = computed<'idle' | 'loading' | 'ready'>(() => {
     return 'ready';
 });
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Watchers
-───────────────────────────────────────────────────────────────────────────── */
+
 
 watch(
     () => defaultRouteName.value,
@@ -268,9 +256,7 @@ watch(stopQuery, async (value) => {
     }
 });
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Helpers
-───────────────────────────────────────────────────────────────────────────── */
+
 
 function onRouteNameInput(value: string | number) {
     routeNameTouched.value = true;
@@ -432,9 +418,7 @@ function refreshAlternativeRouteLayers() {
     }
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Map init
-───────────────────────────────────────────────────────────────────────────── */
+
 
 function initMap() {
     if (!mapEl.value) return;
@@ -552,15 +536,13 @@ function initMap() {
     });
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Geocoding
-───────────────────────────────────────────────────────────────────────────── */
+
 
 async function searchPlaces(query: string): Promise<SearchSuggestion[]> {
     if (!query.trim()) return [];
 
     const url = new URL(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json`,
+        `https:
     );
 
     url.searchParams.set('access_token', mapboxgl.accessToken);
@@ -648,7 +630,7 @@ async function searchPlacesAlongRoute(query: string): Promise<SearchSuggestion[]
 
 async function reversePlace(lng: number, lat: number) {
     const url = new URL(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json`,
+        `https:
     );
 
     url.searchParams.set('access_token', mapboxgl.accessToken);
@@ -662,9 +644,7 @@ async function reversePlace(lng: number, lat: number) {
     return data.features?.[0] ?? null;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Destination
-───────────────────────────────────────────────────────────────────────────── */
+
 
 async function setDestinationFromSuggestion(item: SearchSuggestion) {
     form.destination_name = item.name;
@@ -719,9 +699,7 @@ async function setDestinationFromCoordinates(lng: number, lat: number) {
     });
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Detour waypoints
-───────────────────────────────────────────────────────────────────────────── */
+
 
 async function addDetourWaypoint(lng: number, lat: number) {
     const insertIndex = findInsertIndex(lng, lat);
@@ -822,9 +800,7 @@ function removeAllWaypoints() {
     redrawRoute();
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Alternative routes
-───────────────────────────────────────────────────────────────────────────── */
+
 
 function selectAlternativeRoute(index: number) {
     if (!map.value) return;
@@ -872,9 +848,7 @@ function clearAlternativeRouteLayers() {
     selectedRouteIndex.value = 0;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Stops
-───────────────────────────────────────────────────────────────────────────── */
+
 
 async function addStopFromSuggestion(item: SearchSuggestion) {
     const alreadyExists = form.stops.some(
@@ -928,9 +902,7 @@ async function addStopFromSuggestion(item: SearchSuggestion) {
     await redrawRoute();
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Auto tools
-───────────────────────────────────────────────────────────────────────────── */
+
 
 async function autoGenerateStops() {
     if (routeCoordinates.value.length < 2) return;
@@ -1037,9 +1009,7 @@ async function addLandmarkAsStop(item: SearchSuggestion) {
     );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Markers
-───────────────────────────────────────────────────────────────────────────── */
+
 
 function renderStopMarkers() {
     clearStopMarkers();
@@ -1102,9 +1072,7 @@ function clearRouteLine() {
     });
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Route fetch & draw
-───────────────────────────────────────────────────────────────────────────── */
+
 
 async function redrawRoute() {
     if (
@@ -1132,7 +1100,7 @@ async function redrawRoute() {
     ];
 
     const url = new URL(
-        `https://api.mapbox.com/directions/v5/mapbox/driving/${allCoords.join(';')}`,
+        `https:
     );
 
     url.searchParams.set('geometries', 'geojson');
@@ -1227,9 +1195,7 @@ function fitMap() {
     });
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Drag reorder
-───────────────────────────────────────────────────────────────────────────── */
+
 
 function onDragStart(index: number) {
     draggedStopIndex.value = index;
@@ -1264,9 +1230,7 @@ function onDragEnd() {
     dragOverIndex.value = null;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Misc
-───────────────────────────────────────────────────────────────────────────── */
+
 
 function removeStop(index: number) {
     form.stops.splice(index, 1);
@@ -1395,7 +1359,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                         <div class="gap-2 w-full">
                             <div class="flex flex-row gap-2 pb-2 w-full items-center">
                                 <h1 class="text-2xl leading-tight font-bold tracking-tight">
-                                    <!-- {{ route.route_name }} -->
+                                    <!-- CODE: {{ route.route_name }} -->
                                     Create Route
                                 </h1>
                                 <div class="ml-2 flex flex-1 items-center">
@@ -1499,7 +1463,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
                             <Select v-model="form.gate_id">
                                 <SelectTrigger id="gate_id_sidebar" class="h-10">
-                                    <SelectValue placeholder="Select a gate…" />
+                                    <SelectValue placeholder="Select a gate..." />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem
@@ -1524,9 +1488,9 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 @click="submit"
                             >
                                 <Save class="h-4 w-4" />
-                                {{ form.processing ? 'Saving Changes…' : 'Save Changes' }}
+                                {{ form.processing ? 'Saving Changes...' : 'Save Changes' }}
                             </Button>
-                        <!-- </div> -->
+                        
 
                         <p
                             v-if="!routeReady"
@@ -1541,7 +1505,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                     </CardContent>
                 </Card>
             </div>
-        <!-- </div> -->
+        
 
             <div class="grid items-start gap-4 xl:grid-cols-[1fr_380px]">
                 <div class="space-y-4">
@@ -1966,7 +1930,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                         :disabled="loadingAutoGenerate || routeCoordinates.length < 2"
                                         @click="autoGenerateStops"
                                     >
-                                        {{ loadingAutoGenerate ? 'Generating…' : 'Generate' }}
+                                        {{ loadingAutoGenerate ? 'Generating...' : 'Generate' }}
                                     </Button>
                                 </div>
 

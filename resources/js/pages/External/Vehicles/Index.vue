@@ -7,16 +7,6 @@ import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import ExternalLayout from '@/layouts/ExternalLayout.vue';
 
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -30,9 +20,17 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import {
     Popover,
     PopoverContent,
@@ -45,31 +43,22 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 import CompanyVehicleController from '@/actions/App/Http/Controllers/CompanyVehicleController';
 import {
-    RiAddLine as Plus,
-    RiArrowDownLine as ArrowDown,
-    RiArrowUpLine as ArrowUp,
-    RiBuildingLine as Building2,
-    RiBus2Line as Bus,
-    RiCheckboxCircleLine as CheckCircle2,
-    RiCloseLine as X,
-    RiEyeLine as Eye,
-    RiFileTextLine as FileText,
+    RiAddLine,
+    RiArrowDownLine,
+    RiArrowUpLine,
+    RiBus2Line,
+    RiCloseLine,
+    RiExternalLinkLine,
+    RiFileCheckLine,
+    RiFileTextLine,
     RiFilter2Line,
-    RiMore2Line as MoreHorizontal,
-    RiPencilLine as Pencil,
-    RiRouteLine as RouteIcon,
-    RiShutDownLine as Power,
+    RiMore2Line,
+    RiEditLine,
+    RiShutDownLine,
     RiSortAsc,
 } from 'vue-remix-icons';
 
@@ -79,9 +68,9 @@ const canCreate = can('external_vehicles.create');
 const canUpdate = can('external_vehicles.update');
 const canToggle = can('external_vehicles.toggleStatus');
 
-/* ======================================================
-   Types
-====================================================== */
+const previewedVehicle = ref<VehicleItem | null>(null);
+
+
 type Company = {
     id: number;
     company_name: string;
@@ -144,10 +133,7 @@ type PaginatedVehicles = {
     links: PaginationLink[];
 };
 
-/* ======================================================
-   Props
-   Note: sort_by type no longer includes 'status'
-====================================================== */
+
 const props = defineProps<{
     company: Company;
     user: User;
@@ -163,9 +149,7 @@ const props = defineProps<{
     routes: { id: number; route_name: string }[];
 }>();
 
-/* ======================================================
-   Helpers
-====================================================== */
+
 function humanize(value?: string | null) {
     if (!value) return '—';
     return value
@@ -173,18 +157,11 @@ function humanize(value?: string | null) {
         .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function formatDate(value?: string | null) {
-    if (!value) return '—';
-    return new Date(value).toLocaleDateString('en-PH', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
+function openPreview(vehicle: VehicleItem) {
+    previewedVehicle.value = vehicle;
 }
 
-/* ======================================================
-   Badge helpers
-====================================================== */
+
 function vehicleStatusClass(status?: string | null) {
     if (status === 'active')
         return 'bg-emerald-100 text-emerald-700 border-emerald-200';
@@ -241,9 +218,7 @@ function needsResubmission(doc?: VehicleDocument) {
     return doc.status === 'invalid' || isDocExpired(doc);
 }
 
-/* ======================================================
-   Business logic guards
-====================================================== */
+
 function isSuspended(status?: string | null) {
     return status === 'suspended';
 }
@@ -286,12 +261,6 @@ function toggleLabel(status?: string | null) {
     return status === 'active' ? 'Set Inactive' : 'Set Active';
 }
 
-function toggleStatusClass(status?: string | null) {
-    return status === 'active'
-        ? 'text-rose-600 focus:text-rose-600 focus:bg-rose-50'
-        : 'text-emerald-700 focus:text-emerald-700 focus:bg-emerald-50';
-}
-
 function firstBlockingReason(vehicle: VehicleItem) {
     if (isSuspended(vehicle.status))
         return 'Suspended vehicles cannot change status.';
@@ -314,9 +283,7 @@ function vehicleActionNote(vehicle: VehicleItem) {
     return firstBlockingReason(vehicle);
 }
 
-/* ======================================================
-   Computed stats
-====================================================== */
+
 const totalVehicles = computed(() => props.vehicles.total ?? 0);
 
 const activeVehicles = computed(
@@ -327,11 +294,7 @@ const withRouteCount = computed(
     () => props.vehicles.data.filter((v) => v.route).length,
 );
 
-/* ======================================================
-   Filters & sorting
-   SortField: 'status' intentionally removed — only
-   'capacity' and 'created_at' are valid sort fields.
-====================================================== */
+
 type SortField = 'capacity' | 'created_at' | null;
 type SortDir = 'asc' | 'desc';
 
@@ -341,7 +304,7 @@ const routeFilter = ref<string>(props.filters.route_id ?? 'all');
 const filterOpen = ref(false);
 const sortOpen = ref(false);
 
-// Guard against a stale 'status' sort_by coming back from the server
+
 const sortBy = ref<SortField>(
     props.filters.sort_by === 'capacity' ||
         props.filters.sort_by === 'created_at'
@@ -397,22 +360,22 @@ function applyFilters(
     );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 function onStatusChange(val: any) {
     statusFilter.value = val != null ? String(val) : 'all';
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 function onVehicleTypeChange(val: any) {
     vehicleTypeFilter.value = val != null ? String(val) : 'all';
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 function onRouteChange(val: any) {
     routeFilter.value = val != null ? String(val) : 'all';
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 function onSortChange(val: any) {
     const str = val != null ? String(val) : 'none';
     sortBy.value = str === 'none' ? null : (str as SortField);
@@ -455,52 +418,44 @@ function clearSort() {
     });
 }
 
-/* ======================================================
-   Toggle status dialogs
-====================================================== */
-const inactiveDialog = reactive({
+
+const statusDialog = reactive({
     open: false,
     vehicle: null as VehicleItem | null,
     remarks: '',
 });
 
-const activateDialog = reactive({
-    open: false,
-    vehicle: null as VehicleItem | null,
-});
-
-const inactiveDialogOpen = computed({
-    get: () => inactiveDialog.open,
+const statusDialogOpen = computed({
+    get: () => statusDialog.open,
     set: (val) => {
-        inactiveDialog.open = val;
+        statusDialog.open = val;
+        if (!val) {
+            statusDialog.vehicle = null;
+            statusDialog.remarks = '';
+        }
     },
 });
 
-const activateDialogOpen = computed({
-    get: () => activateDialog.open,
-    set: (val) => {
-        activateDialog.open = val;
-    },
-});
+const isInactivating = computed(() => statusDialog.vehicle?.status === 'active');
 
 function openDeactivate(vehicle: VehicleItem) {
     if (!canToggleVehicle(vehicle) || vehicle.status !== 'active') return;
-    inactiveDialog.vehicle = vehicle;
-    inactiveDialog.remarks = '';
-    inactiveDialog.open = true;
+    statusDialog.vehicle = vehicle;
+    statusDialog.remarks = '';
+    statusDialog.open = true;
 }
 
-function submitDeactivate() {
-    if (!inactiveDialog.vehicle) return;
+function submitStatusChange() {
+    if (!statusDialog.vehicle) return;
+    const isInactivating = statusDialog.vehicle.status === 'active';
+    if (isInactivating && !statusDialog.remarks.trim()) return;
     router.patch(
-        CompanyVehicleController.toggleStatus(inactiveDialog.vehicle.id).url,
-        { remarks: inactiveDialog.remarks },
+        CompanyVehicleController.toggleStatus(statusDialog.vehicle.id).url,
+        isInactivating ? { remarks: statusDialog.remarks } : {},
         {
             preserveScroll: true,
             onSuccess: () => {
-                inactiveDialog.open = false;
-                inactiveDialog.vehicle = null;
-                inactiveDialog.remarks = '';
+                statusDialogOpen.value = false;
             },
         },
     );
@@ -508,23 +463,9 @@ function submitDeactivate() {
 
 function openActivate(vehicle: VehicleItem) {
     if (!canToggleVehicle(vehicle) || vehicle.status !== 'inactive') return;
-    activateDialog.vehicle = vehicle;
-    activateDialog.open = true;
-}
-
-function confirmActivate() {
-    if (!activateDialog.vehicle) return;
-    router.patch(
-        CompanyVehicleController.toggleStatus(activateDialog.vehicle.id).url,
-        {},
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                activateDialog.open = false;
-                activateDialog.vehicle = null;
-            },
-        },
-    );
+    statusDialog.vehicle = vehicle;
+    statusDialog.remarks = '';
+    statusDialog.open = true;
 }
 </script>
 
@@ -532,773 +473,635 @@ function confirmActivate() {
     <Head title="Registered Vehicles" />
 
     <ExternalLayout :company="company" :user="user">
-
-        <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
-            <CardHeader class="flex flex-row gap-2">
-                <div class="flex flex-col">
-                    <CardTitle class="flex items-center gap-2">
-                        <span class="font-semibold">Vehicle List</span>
-                    </CardTitle>
-                    <CardDescription>
-                        Search by plate number, vehicle type, body number,
-                        or model.
-                    </CardDescription>
-                </div>
-                <div class="flex flex-1 justify-end">
-                    <Button
-                        v-if="canCreate"
-                        as-child
-                        variant="float-primary"
-                        class="shrink-0"
-                    >
-                        <Link :href="CompanyVehicleController.create().url">
-                            <Plus class="h-4 w-4 shrink-0" />
-                            <span>Register Vehicle</span>
-                        </Link>
-                    </Button>
-                </div>
-            </CardHeader>
-
-            <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
-                <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
-                    <div class="w-full">
-                        <SearchInput
-                            :route="
-                                CompanyVehicleController.index().url
-                            "
-                            :initial-value="filters.search"
-                            placeholder="Search vehicles…"
-                            :only="['vehicles', 'filters', 'flash']"
-                        />
+        <div class="flex min-h-0 min-w-0 flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
+            <Card class="flex min-h-0 min-w-0 flex-1 flex-col lg:h-full">
+                <CardHeader class="flex flex-row gap-2">
+                    <div class="flex flex-col">
+                        <CardTitle class="flex items-center gap-2">
+                            <span class="font-semibold">Vehicles</span>
+                        </CardTitle>
+                        <CardDescription>
+                            Create and manage company vehicle units.
+                        </CardDescription>
                     </div>
+                    <div class="flex flex-1 justify-end">
+                        <Button
+                            v-if="canCreate"
+                            as-child
+                            variant="float-primary"
+                            class="shrink-0"
+                        >
+                            <Link :href="CompanyVehicleController.create().url">
+                                <RiAddLine class="h-4 w-4 shrink-0" />
+                                <span>Register Vehicle</span>
+                            </Link>
+                        </Button>
+                    </div>
+                </CardHeader>
 
-                    <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
-                        <Popover v-model:open="filterOpen">
-                            <PopoverTrigger as-child>
-                                <Button
-                                    variant="header-actions"
-                                    size="icon-text"
-                                    class="rounded-full"
-                                    :class="
-                                        activeFilterCount > 0
-                                            ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light'
-                                            : ''
-                                    "
-                                >
-                                    <RiFilter2Line class="h-3.5 w-3.5" />
-                                    <span class="hidden lg:flex">
-                                        {{
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                    <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
+                        <div class="w-full">
+                            <SearchInput
+                                :route="
+                                    CompanyVehicleController.index().url
+                                "
+                                :initial-value="filters.search"
+                                placeholder="Search vehicles..."
+                                :only="['vehicles', 'filters', 'flash']"
+                            />
+                        </div>
+
+                        <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
+                            <Popover v-model:open="filterOpen">
+                                <PopoverTrigger as-child>
+                                    <Button
+                                        variant="header-actions"
+                                        size="icon-text"
+                                        class="rounded-full"
+                                        :class="
                                             activeFilterCount > 0
-                                                ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
-                                                : 'Filter'
-                                        }}
-                                    </span>
-                                </Button>
-                            </PopoverTrigger>
+                                                ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light'
+                                                : ''
+                                        "
+                                    >
+                                        <RiFilter2Line class="h-3.5 w-3.5" />
+                                        <span class="hidden lg:flex">
+                                            {{
+                                                activeFilterCount > 0
+                                                    ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
+                                                    : 'Filter'
+                                            }}
+                                        </span>
+                                    </Button>
+                                </PopoverTrigger>
 
-                            <PopoverContent align="end">
-                                <div class="grid gap-y-2">
-                                    <div class="space-y-2">
-                                        <p class="text-sm text-custom-shadow/80">Status</p>
-                                        <Select
-                                            :model-value="statusFilter"
-                                            @update:model-value="onStatusChange"
-                                        >
-                                            <SelectTrigger class="w-full">
-                                                <SelectValue placeholder="All Statuses" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all" class="cursor-pointer">All Statuses</SelectItem>
-                                                <SelectItem value="active" class="cursor-pointer">Active</SelectItem>
-                                                <SelectItem value="inactive" class="cursor-pointer">Inactive</SelectItem>
-                                                <SelectItem value="suspended" class="cursor-pointer">Suspended</SelectItem>
-                                                <SelectItem value="pending" class="cursor-pointer">Pending</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                <PopoverContent align="end">
+                                    <div class="grid gap-y-2">
+                                        <div class="flex flex-col gap-y-1">
+                                            <p class="text-sm text-custom-shadow/80">Status</p>
+                                            <Select
+                                                :model-value="statusFilter"
+                                                @update:model-value="onStatusChange"
+                                            >
+                                                <SelectTrigger class="w-full">
+                                                    <SelectValue placeholder="All Statuses" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all" class="cursor-pointer">All Statuses</SelectItem>
+                                                    <SelectItem value="active" class="cursor-pointer">Active</SelectItem>
+                                                    <SelectItem value="inactive" class="cursor-pointer">Inactive</SelectItem>
+                                                    <SelectItem value="suspended" class="cursor-pointer">Suspended</SelectItem>
+                                                    <SelectItem value="pending" class="cursor-pointer">Pending</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
 
-                                    <div class="space-y-2">
-                                        <p class="text-sm text-custom-shadow/80">Vehicle Type</p>
-                                        <Select
-                                            :model-value="vehicleTypeFilter"
-                                            @update:model-value="onVehicleTypeChange"
-                                        >
-                                            <SelectTrigger class="w-full">
-                                                <SelectValue placeholder="All Types" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all" class="cursor-pointer">All Types</SelectItem>
-                                                <SelectItem value="Bus" class="cursor-pointer">Bus</SelectItem>
-                                                <SelectItem value="Modern Jeepney" class="cursor-pointer">Modern Jeepney</SelectItem>
-                                                <SelectItem value="Jeepney" class="cursor-pointer">Jeepney</SelectItem>
-                                                <SelectItem value="Mini Bus" class="cursor-pointer">Mini Bus</SelectItem>
-                                                <SelectItem value="UV Express" class="cursor-pointer">UV Express</SelectItem>
-                                                <SelectItem value="Van" class="cursor-pointer">Van</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                        <div class="flex flex-col gap-y-1">
+                                            <p class="text-sm text-custom-shadow/80">Vehicle Type</p>
+                                            <Select
+                                                :model-value="vehicleTypeFilter"
+                                                @update:model-value="onVehicleTypeChange"
+                                            >
+                                                <SelectTrigger class="w-full">
+                                                    <SelectValue placeholder="All Types" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all" class="cursor-pointer">All Types</SelectItem>
+                                                    <SelectItem value="Bus" class="cursor-pointer">Bus</SelectItem>
+                                                    <SelectItem value="Modern Jeepney" class="cursor-pointer">Modern Jeepney</SelectItem>
+                                                    <SelectItem value="Jeepney" class="cursor-pointer">Jeepney</SelectItem>
+                                                    <SelectItem value="Mini Bus" class="cursor-pointer">Mini Bus</SelectItem>
+                                                    <SelectItem value="UV Express" class="cursor-pointer">UV Express</SelectItem>
+                                                    <SelectItem value="Van" class="cursor-pointer">Van</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
 
-                                    <div class="space-y-2">
-                                        <p class="text-sm text-custom-shadow/80">Route</p>
-                                        <Select
-                                            :model-value="routeFilter"
-                                            @update:model-value="onRouteChange"
-                                        >
-                                            <SelectTrigger class="w-full">
-                                                <SelectValue placeholder="All Routes" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all" class="cursor-pointer">All Routes</SelectItem>
-                                                <SelectItem
-                                                    v-for="route in routes"
-                                                    :key="route.id"
-                                                    :value="String(route.id)"
-                                                    class="cursor-pointer"
+                                        <div class="flex flex-col gap-y-1">
+                                            <p class="text-sm text-custom-shadow/80">Route</p>
+                                            <Select
+                                                :model-value="routeFilter"
+                                                @update:model-value="onRouteChange"
+                                            >
+                                                <SelectTrigger class="w-full">
+                                                    <SelectValue placeholder="All Routes" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all" class="cursor-pointer">All Routes</SelectItem>
+                                                    <SelectItem
+                                                        v-for="route in routes"
+                                                        :key="route.id"
+                                                        :value="String(route.id)"
+                                                        class="cursor-pointer"
+                                                    >
+                                                        {{ route.route_name }}
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                                        <div class="flex w-full flex-row items-center justify-between">
+                                            <Button
+                                                v-if="hasActiveFilters"
+                                                size="sm"
+                                                variant="destructive"
+                                                @click="clearFilters"
+                                            >
+                                                Clear
+                                            </Button>
+
+                                            <div class="ml-auto flex items-center gap-2">
+                                                <Button
+                                                    variant="ghost-outline"
+                                                    size="sm"
+                                                    @click="filterOpen = false"
                                                 >
-                                                    {{ route.route_name }}
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-
-                                    <div class="flex w-full flex-row items-center justify-between">
-                                        <Button
-                                            v-if="hasActiveFilters"
-                                            size="sm"
-                                            variant="destructive"
-                                            @click="clearFilters"
-                                        >
-                                            Clear
-                                        </Button>
-
-                                        <div class="ml-auto flex items-center gap-2">
-                                            <Button
-                                                variant="ghost-outline"
-                                                size="sm"
-                                                @click="filterOpen = false"
-                                            >
-                                                Cancel
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="float-primary"
-                                                @click="applyFilterSelections"
-                                            >
-                                                Apply
-                                            </Button>
+                                                    Cancel
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="float-primary"
+                                                    @click="applyFilterSelections"
+                                                >
+                                                    Apply
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </PopoverContent>
-                        </Popover>
+                                </PopoverContent>
+                            </Popover>
 
-                        <!-- <Popover v-model:open="sortOpen">
-                            <PopoverTrigger as-child>
-                                <Button
-                                    variant="header-actions"
-                                    size="icon-text"
-                                    class="rounded-full"
-                                    :class="
-                                        hasActiveSort
-                                            ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light'
-                                            : ''
-                                    "
-                                >
-                                    <RiSortAsc class="h-3.5 w-3.5" />
-                                    <span class="hidden lg:flex">
-                                        {{ hasActiveSort ? `${activeSortLabel} ${sortDir}` : 'Sort' }}
-                                    </span>
-                                </Button>
-                            </PopoverTrigger>
+                            <!-- CODE: <Popover v-model:open="sortOpen">
+                                <PopoverTrigger as-child>
+                                    <Button
+                                        variant="header-actions"
+                                        size="icon-text"
+                                        class="rounded-full"
+                                        :class="
+                                            hasActiveSort
+                                                ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light'
+                                                : ''
+                                        "
+                                    >
+                                        <RiSortAsc class="h-3.5 w-3.5" />
+                                        <span class="hidden lg:flex">
+                                            {{ hasActiveSort ? `${activeSortLabel} ${sortDir}` : 'Sort' }}
+                                        </span>
+                                    </Button>
+                                </PopoverTrigger>
 
-                            <PopoverContent align="end">
-                                <div class="grid gap-y-2">
-                                    <div class="space-y-2">
-                                        <p class="text-sm text-custom-shadow/80">Sort By</p>
-                                        <Select
-                                            :model-value="sortBy ?? 'none'"
-                                            @update:model-value="onSortChange"
-                                        >
-                                            <SelectTrigger class="w-full">
-                                                <SelectValue placeholder="Sort by..." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="none" class="cursor-pointer">No Sort</SelectItem>
-                                                <SelectItem value="capacity" class="cursor-pointer">Capacity</SelectItem>
-                                                <SelectItem value="created_at" class="cursor-pointer">Created Date</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    <div class="space-y-2">
-                                        <p class="text-sm text-custom-shadow/80">Direction</p>
-                                        <Button
-                                            size="sm"
-                                            variant="header-actions"
-                                            class="w-full justify-start rounded-full"
-                                            :disabled="!sortBy"
-                                            @click="toggleSortDir"
-                                        >
-                                            <ArrowUp
-                                                v-if="sortDir === 'asc'"
-                                                class="h-3.5 w-3.5"
-                                            />
-                                            <ArrowDown v-else class="h-3.5 w-3.5" />
-                                            {{ sortDir === 'asc' ? 'Ascending' : 'Descending' }}
-                                        </Button>
-                                    </div>
-
-                                    <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-
-                                    <div class="flex w-full flex-row items-center justify-between">
-                                        <Button
-                                            v-if="hasActiveSort"
-                                            size="sm"
-                                            variant="destructive"
-                                            @click="clearSort"
-                                        >
-                                            Clear
-                                        </Button>
-
-                                        <div class="ml-auto flex items-center gap-2">
-                                            <Button
-                                                variant="ghost-outline"
-                                                size="sm"
-                                                @click="sortOpen = false"
+                                <PopoverContent align="end">
+                                    <div class="grid gap-y-2">
+                                        <div class="space-y-2">
+                                            <p class="text-sm text-custom-shadow/80">Sort By</p>
+                                            <Select
+                                                :model-value="sortBy ?? 'none'"
+                                                @update:model-value="onSortChange"
                                             >
-                                                Cancel
-                                            </Button>
+                                                <SelectTrigger class="w-full">
+                                                    <SelectValue placeholder="Sort by..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none" class="cursor-pointer">No Sort</SelectItem>
+                                                    <SelectItem value="capacity" class="cursor-pointer">Capacity</SelectItem>
+                                                    <SelectItem value="created_at" class="cursor-pointer">Created Date</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div class="space-y-2">
+                                            <p class="text-sm text-custom-shadow/80">Direction</p>
                                             <Button
                                                 size="sm"
-                                                variant="float-primary"
-                                                @click="applySortSelections"
+                                                variant="header-actions"
+                                                class="w-full justify-start rounded-full"
+                                                :disabled="!sortBy"
+                                                @click="toggleSortDir"
                                             >
-                                                Apply
+                                                <RiArrowUpLine
+                                                    v-if="sortDir === 'asc'"
+                                                    class="h-3.5 w-3.5"
+                                                />
+                                                <RiArrowDownLine v-else class="h-3.5 w-3.5" />
+                                                {{ sortDir === 'asc' ? 'Ascending' : 'Descending' }}
                                             </Button>
                                         </div>
+
+                                        <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                                        <div class="flex w-full flex-row items-center justify-between">
+                                            <Button
+                                                v-if="hasActiveSort"
+                                                size="sm"
+                                                variant="destructive"
+                                                @click="clearSort"
+                                            >
+                                                Clear
+                                            </Button>
+
+                                            <div class="ml-auto flex items-center gap-2">
+                                                <Button
+                                                    variant="ghost-outline"
+                                                    size="sm"
+                                                    @click="sortOpen = false"
+                                                >
+                                                    Cancel
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="float-primary"
+                                                    @click="applySortSelections"
+                                                >
+                                                    Apply
+                                                </Button>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </PopoverContent>
-                        </Popover> -->
+                                </PopoverContent>
+                            </Popover> -->
+                        </div>
                     </div>
-                </div>
 
-            <!-- Table -->
-            <Card
-                :class="[
-                    'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark dark:border-custom-bg-light py-0 shadow-none dark:inset-shadow-none',
-                    vehicles.data.length === 0 ? 'border-dashed' : 'border-solid',
-                ]"
-            >
-            <div class="no-scrollbar min-h-0 flex-1 overflow-auto">
-                <Table>
-                    <TableHeader v-if="vehicles.data.length > 0" class="border-b border-custom-bg-dark dark:border-custom-bg-light">
-                        <TableRow>
-                            <TableHead
-                                class="pl-5 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                >Vehicle</TableHead
-                            >
-                            <TableHead
-                                class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                >Plate Number</TableHead
-                            >
-                            <TableHead
-                                class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                >Route</TableHead
-                            >
-                            <TableHead
-                                class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                >Documents</TableHead
-                            >
-                            <TableHead
-                                class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                >Status</TableHead
-                            >
-                            <TableHead
-                                class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                >Remarks</TableHead
-                            >
-                            <TableHead
-                                class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                >Created</TableHead
-                            >
-                            <TableHead
-                                class="pr-5 text-right text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                >Actions</TableHead
-                            >
-                        </TableRow>
-                    </TableHeader>
-
-                    <TableBody>
-                        <!-- Empty state -->
-                        <TableRow
-                            v-if="vehicles.data.length === 0"
-                            class="hover:bg-transparent"
-                        >
-                            <TableCell
-                                colspan="8"
-                                class="py-20 text-center"
-                            >
+                
+                <Card
+                    :class="[
+                        'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark dark:border-custom-bg-light py-0 shadow-none dark:inset-shadow-none',
+                        vehicles.data.length === 0 ? 'border-dashed' : 'border-solid',
+                    ]"
+                >
+                <div class="no-scrollbar min-h-0 flex-1 overflow-auto">
+                    <div class="w-full min-w-210 lg:min-w-0">
+                        <div v-if="vehicles.data.length > 0" class="border-b border-custom-bg-dark bg-custom-bg dark:border-custom-bg-light dark:bg-custom-bg-light">
+                            <div class="grid grid-cols-[1fr_0.25fr_1fr_0.5fr_0.25fr_0.5fr] items-center">
                                 <div
-                                    class="flex flex-col items-center gap-3"
+                                    class="col-span-1 flex h-10 items-center justify-start px-0 pl-3 text-left text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
+                                    >Plate No. & Body</div
                                 >
-                                    <img
-                                        :src="emptyRafikiUrl"
-                                        alt=""
-                                        class="w-32 object-contain opacity-90"
-                                        aria-hidden="true"
-                                    />
-                                    <div>
-                                        <p
-                                            class="text-sm font-semibold text-slate-600"
-                                        >
-                                            No vehicles found
-                                        </p>
-                                        <p
-                                            class="mt-0.5 text-xs text-slate-400"
-                                        >
-                                            Try adjusting your search or
-                                            filters.
-                                        </p>
-                                    </div>
-                                </div>
-                            </TableCell>
-                        </TableRow>
+                                <div
+                                    class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
+                                    >Cap.</div
+                                >
+                                <div
+                                    class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
+                                    >Route</div
+                                >
+                                <div
+                                    class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
+                                    >Documents</div
+                                >
+                                <div
+                                    class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
+                                    >Status</div
+                                >
+                                <div
+                                    class="col-span-1 flex h-10 items-center justify-end px-0 pr-3 text-right text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
+                                    >Actions</div
+                                >
+                            </div>
+                        </div>
 
-                        <TableRow
-                            v-for="vehicle in vehicles.data"
-                            :key="vehicle.id"
-                            class="group border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light"
-                        >
-                            <!-- Vehicle -->
-                            <TableCell class="pl-5">
-                                <div class="flex items-center gap-2.5">
+                        <div>
+                            
+                            <div
+                                v-if="vehicles.data.length === 0"
+                                class="flex min-h-72 items-center justify-center border-0 hover:bg-transparent"
+                            >
+                                <div class="py-20 text-center">
                                     <div
-                                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100"
+                                        class="flex flex-col items-center gap-3"
                                     >
-                                        <Bus
-                                            class="h-3.5 w-3.5 text-slate-600"
+                                        <img
+                                            :src="emptyRafikiUrl"
+                                            alt=""
+                                            class="w-32 object-contain opacity-90"
+                                            aria-hidden="true"
                                         />
-                                    </div>
-                                    <div>
-                                        <p
-                                            class="text-sm font-semibold text-slate-800"
-                                        >
-                                            {{ vehicle.vehicle_type }}
-                                        </p>
-                                        <p
-                                            class="text-xs text-slate-400"
-                                        >
-                                            {{
-                                                vehicle.make_model ||
-                                                '—'
-                                            }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </TableCell>
-
-                            <!-- Plate number -->
-                            <TableCell>
-                                <span
-                                    class="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold tracking-wide text-slate-700"
-                                >
-                                    {{ vehicle.plate_number }}
-                                </span>
-                                <p class="mt-1 text-xs text-slate-400">
-                                    Body:
-                                    {{ vehicle.body_number || '—' }}
-                                </p>
-                            </TableCell>
-
-                            <!-- Route -->
-                            <TableCell>
-                                <div
-                                    v-if="vehicle.route"
-                                    class="flex items-start gap-1.5"
-                                >
-                                    <RouteIcon
-                                        class="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-600"
-                                    />
-                                    <div>
-                                        <p
-                                            class="text-sm font-medium text-slate-700"
-                                        >
-                                            {{
-                                                vehicle.route.route_name
-                                            }}
-                                        </p>
-                                        <p
-                                            class="text-xs text-slate-400"
-                                        >
-                                            Cap:
-                                            {{
-                                                vehicle.capacity ?? '—'
-                                            }}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div
-                                    v-else
-                                    class="flex items-center gap-1.5"
-                                >
-                                    <RouteIcon
-                                        class="h-3.5 w-3.5 text-slate-300"
-                                    />
-                                    <span class="text-xs text-slate-400"
-                                        >No route</span
-                                    >
-                                </div>
-                            </TableCell>
-
-                            <!-- Documents -->
-                            <TableCell>
-                                <Popover
-                                    v-if="vehicle.documents?.length"
-                                >
-                                    <PopoverTrigger as-child>
-                                        <Button
-                                            variant="header-actions"
-                                            size="sm"
-                                            class="h-7 gap-1.5 rounded-full text-xs"
-                                        >
-                                            <FileText class="h-3 w-3" />
-                                            {{
-                                                documentsCount(
-                                                    vehicle.documents,
-                                                )
-                                            }}
-                                            doc{{
-                                                documentsCount(
-                                                    vehicle.documents,
-                                                ) !== 1
-                                                    ? 's'
-                                                    : ''
-                                            }}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                        class="w-80 rounded-xl border-slate-200 p-0 shadow-lg"
-                                    >
-                                        <div
-                                            class="border-b border-slate-100 px-4 py-3"
-                                        >
-                                            <h4
-                                                class="text-sm font-semibold text-slate-800"
+                                        <div>
+                                            <p
+                                                class="text-sm font-semibold text-slate-600"
                                             >
-                                                Document Statuses
-                                            </h4>
+                                                No vehicles found
+                                            </p>
                                             <p
                                                 class="mt-0.5 text-xs text-slate-400"
                                             >
-                                                Documents attached to
-                                                this vehicle.
+                                                Try adjusting your search or
+                                                filters.
                                             </p>
                                         </div>
-                                        <div
-                                            class="divide-y divide-slate-100 p-2"
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div
+                                v-for="(vehicle, rowIndex) in vehicles.data"
+                                :key="vehicle.id"
+                                :class="[
+                                    'group cursor-pointer grid grid-cols-[1fr_0.25fr_1fr_0.5fr_0.25fr_0.5fr] items-center border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                    rowIndex === vehicles.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                    previewedVehicle?.id === vehicle.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
+                                ]"
+                                @click="openPreview(vehicle)"
+                            >
+                                
+                                <div class="col-span-1 min-w-0 py-1.5 pl-3">
+                                    <div class="flex min-w-0 flex-col gap-1">
+                                        <span class="w-fit rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold tracking-wide text-slate-700">
+                                            {{ vehicle.plate_number }}
+                                        </span>
+                                        <span class="truncate text-xs text-custom-shadow/70">
+                                            {{ vehicle.body_number || '—' }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="col-span-1 min-w-0 py-1.5 text-sm text-custom-shadow/80">
+                                    {{ vehicle.capacity ?? '—' }}
+                                </div>
+
+                                
+                                <div class="col-span-1 min-w-0 py-1.5">
+                                    <div
+                                        v-if="vehicle.route"
+                                        class="min-w-0"
+                                    >
+                                        <p class="truncate text-sm font-medium text-slate-700">
+                                            {{ vehicle.route.route_name }}
+                                        </p>
+                                    </div>
+                                    <div
+                                        v-else
+                                        class="flex items-center"
+                                    >
+                                        <span class="text-xs text-slate-400"
+                                            >No route</span
+                                        >
+                                    </div>
+                                </div>
+
+                                
+                                <div class="col-span-1 min-w-0 py-1.5">
+                                    <Popover
+                                        v-if="vehicle.documents?.length"
+                                    >
+                                        <PopoverTrigger as-child>
+                                            <Button
+                                                variant="header-actions"
+                                                size="sm"
+                                                class="h-7 gap-1.5 rounded-full text-xs"
+                                            >
+                                                <FileText class="h-3 w-3" />
+                                                {{
+                                                    documentsCount(
+                                                        vehicle.documents,
+                                                    )
+                                                }}
+                                                doc{{
+                                                    documentsCount(
+                                                        vehicle.documents,
+                                                    ) !== 1
+                                                        ? 's'
+                                                        : ''
+                                                }}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent
+                                            class="w-80 rounded-xl border-slate-200 p-0 shadow-lg"
                                         >
                                             <div
-                                                v-for="doc in vehicle.documents"
-                                                :key="doc.id"
-                                                class="flex items-center justify-between gap-3 rounded-lg px-2 py-2"
+                                                class="border-b border-slate-100 px-4 py-3"
                                             >
-                                                <div class="min-w-0">
-                                                    <p
-                                                        class="truncate text-xs font-medium text-slate-700"
-                                                    >
-                                                        {{
-                                                            humanize(
-                                                                doc.document_type,
-                                                            )
-                                                        }}
-                                                    </p>
-                                                    <p
-                                                        v-if="
-                                                            isDocExpired(
-                                                                doc,
-                                                            )
-                                                        "
-                                                        class="text-[11px] font-semibold text-rose-600"
-                                                    >
-                                                        Expired
-                                                    </p>
-                                                </div>
-                                                <span
-                                                    :class="[
-                                                        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium',
-                                                        documentStatusClass(
-                                                            doc.status,
-                                                        ),
-                                                    ]"
+                                                <h4
+                                                    class="text-sm font-semibold text-slate-800"
                                                 >
+                                                    Document Statuses
+                                                </h4>
+                                                <p
+                                                    class="mt-0.5 text-xs text-slate-400"
+                                                >
+                                                    Documents attached to
+                                                    this vehicle.
+                                                </p>
+                                            </div>
+                                            <div
+                                                class="divide-y divide-slate-100 p-2"
+                                            >
+                                                <div
+                                                    v-for="doc in vehicle.documents"
+                                                    :key="doc.id"
+                                                    class="flex items-center justify-between gap-3 rounded-lg px-2 py-2"
+                                                >
+                                                    <div class="min-w-0">
+                                                        <p
+                                                            class="truncate text-xs font-medium text-slate-700"
+                                                        >
+                                                            {{
+                                                                humanize(
+                                                                    doc.document_type,
+                                                                )
+                                                            }}
+                                                        </p>
+                                                        <p
+                                                            v-if="
+                                                                isDocExpired(
+                                                                    doc,
+                                                                )
+                                                            "
+                                                            class="text-[11px] font-semibold text-rose-600"
+                                                        >
+                                                            Expired
+                                                        </p>
+                                                    </div>
                                                     <span
                                                         :class="[
-                                                            'h-1.5 w-1.5 rounded-full',
-                                                            documentStatusDot(
+                                                            'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium',
+                                                            documentStatusClass(
                                                                 doc.status,
                                                             ),
                                                         ]"
-                                                    />
-                                                    {{
-                                                        humanize(
-                                                            doc.status,
-                                                        )
-                                                    }}
-                                                </span>
+                                                    >
+                                                        <span
+                                                            :class="[
+                                                                'h-1.5 w-1.5 rounded-full',
+                                                                documentStatusDot(
+                                                                    doc.status,
+                                                                ),
+                                                            ]"
+                                                        />
+                                                        {{
+                                                            humanize(
+                                                                doc.status,
+                                                            )
+                                                        }}
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
-                                <div
-                                    v-else
-                                    class="flex items-center gap-1.5"
-                                >
-                                    <FileText
-                                        class="h-3.5 w-3.5 text-slate-300"
-                                    />
-                                    <span class="text-xs text-slate-400"
-                                        >No documents</span
+                                        </PopoverContent>
+                                    </Popover>
+                                    <div
+                                        v-else
+                                        class="flex items-center gap-1.5"
                                     >
+                                        <FileText
+                                            class="h-3.5 w-3.5 text-slate-300"
+                                        />
+                                        <span class="text-xs text-slate-400"
+                                            >No documents</span
+                                        >
+                                    </div>
                                 </div>
-                            </TableCell>
 
-                            <!-- Status -->
-                            <TableCell>
-                                <span
-                                    :class="[
-                                        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
-                                        vehicleStatusClass(
-                                            vehicle.status,
-                                        ),
-                                    ]"
-                                >
+                                
+                                <div class="col-span-1 min-w-0 py-1.5">
                                     <span
                                         :class="[
-                                            'h-1.5 w-1.5 rounded-full',
-                                            vehicleStatusDot(
+                                            'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                                            vehicleStatusClass(
                                                 vehicle.status,
                                             ),
                                         ]"
-                                    />
-                                    {{ humanize(vehicle.status) }}
-                                </span>
-                            </TableCell>
-
-                            <!-- Remarks -->
-                            <TableCell>
-                                <Popover v-if="vehicle.remarks">
-                                    <PopoverTrigger as-child>
-                                        <Button
-                                            variant="header-actions"
-                                            size="sm"
-                                            class="h-7 rounded-full text-xs"
-                                        >
-                                            <FileText
-                                                class="mr-1.5 h-3.5 w-3.5"
-                                            />
-                                            View
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                        class="w-64 rounded-xl border-slate-200 p-3 text-sm text-slate-700 shadow-lg"
                                     >
-                                        {{ vehicle.remarks }}
-                                    </PopoverContent>
-                                </Popover>
-                                <span
-                                    v-else
-                                    class="text-xs text-slate-400"
-                                    >—</span
-                                >
-                            </TableCell>
-
-                            <!-- Created -->
-                            <TableCell class="text-sm text-slate-400">
-                                {{ formatDate(vehicle.created_at) }}
-                            </TableCell>
-
-                            <!-- Actions -->
-                            <TableCell class="pr-5 text-right">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger as-child>
-                                        <Button
-                                            variant="table-more"
-                                            size="icon-more"
-                                        >
-                                            <MoreHorizontal
-                                                class="h-4 w-4"
-                                            />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-
-                                    <DropdownMenuContent
-                                        align="end"
-                                        class="w-fit rounded-lg shadow-lg"
-                                    >
-                                        <DropdownMenuLabel
-                                            class="text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                        >
-                                            Actions
-                                        </DropdownMenuLabel>
-
-                                        <DropdownMenuSeparator
-                                            class="bg-slate-100"
-                                        />
-
-                                        <DropdownMenuItem
-                                            as-child
-                                            class="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900"
-                                        >
-                                            <Link
-                                                :href="
-                                                    CompanyVehicleController.show(
-                                                        vehicle.id,
-                                                    ).url
-                                                "
-                                                class="flex items-center"
-                                            >
-                                                <Eye
-                                                    class="mr-2 h-4 w-4"
-                                                />
-                                                View Details
-                                            </Link>
-                                        </DropdownMenuItem>
-
-                                        <DropdownMenuItem
-                                            v-if="
-                                                canEditVehicle(vehicle)
-                                            "
-                                            as-child
-                                            class="rounded-lg text-slate-700 focus:bg-amber-50 focus:text-amber-700"
-                                        >
-                                            <Link
-                                                :href="
-                                                    CompanyVehicleController.edit(
-                                                        vehicle.id,
-                                                    ).url
-                                                "
-                                                class="flex items-center"
-                                            >
-                                                <Pencil
-                                                    class="mr-2 h-4 w-4"
-                                                />
-                                                Update Invalid/Expired
-                                                Docs
-                                            </Link>
-                                        </DropdownMenuItem>
-
-                                        <DropdownMenuItem
-                                            v-else-if="canUpdate"
-                                            disabled
-                                            class="rounded-lg text-slate-300"
-                                        >
-                                            <Pencil
-                                                class="mr-2 h-4 w-4"
-                                            />
-                                            Update Invalid/Expired Docs
-                                        </DropdownMenuItem>
-
-                                        <DropdownMenuSeparator
-                                            class="bg-slate-100"
-                                        />
-
-                                        <DropdownMenuItem
-                                            v-if="
-                                                vehicle.status ===
-                                                'active'
-                                            "
-                                            :disabled="
-                                                !canToggleVehicle(
-                                                    vehicle,
-                                                )
-                                            "
+                                        <span
                                             :class="[
-                                                'rounded-lg',
-                                                canToggleVehicle(
-                                                    vehicle,
-                                                )
-                                                    ? toggleStatusClass(
-                                                            vehicle.status,
-                                                        )
-                                                    : 'text-slate-300',
-                                            ]"
-                                            @click="
-                                                openDeactivate(vehicle)
-                                            "
-                                        >
-                                            <Power
-                                                class="mr-2 h-4 w-4"
-                                            />
-                                            Set Inactive
-                                        </DropdownMenuItem>
-
-                                        <DropdownMenuItem
-                                            v-else
-                                            :disabled="
-                                                !canToggleVehicle(
-                                                    vehicle,
-                                                )
-                                            "
-                                            :class="[
-                                                'rounded-lg',
-                                                canToggleVehicle(
-                                                    vehicle,
-                                                )
-                                                    ? toggleStatusClass(
-                                                            vehicle.status,
-                                                        )
-                                                    : 'text-slate-300',
-                                            ]"
-                                            @click="
-                                                openActivate(vehicle)
-                                            "
-                                        >
-                                            <Power
-                                                class="mr-2 h-4 w-4"
-                                            />
-                                            {{
-                                                toggleLabel(
+                                                'h-1.5 w-1.5 rounded-full',
+                                                vehicleStatusDot(
                                                     vehicle.status,
-                                                )
-                                            }}
-                                        </DropdownMenuItem>
+                                                ),
+                                            ]"
+                                        />
+                                        {{ humanize(vehicle.status) }}
+                                    </span>
+                                </div>
 
-                                        <div
-                                            v-if="
-                                                (canUpdate &&
-                                                    !canEditVehicle(
-                                                        vehicle,
-                                                    )) ||
-                                                (canToggle &&
+                                
+                                <div class="col-span-1 min-w-0 py-1.5 pr-3 text-right" @click.stop>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger as-child>
+                                            <Button
+                                                variant="table-more"
+                                                size="icon-more"
+                                            >
+                                                <RiMore2Line
+                                                    class="h-4 w-4"
+                                                />
+                                                
+                                            </Button>
+                                        </DropdownMenuTrigger>
+
+                                        <DropdownMenuContent align="end" class="max-w-fit">
+                                            <DropdownMenuLabel>
+                                                {{ vehicle.plate_number || 'Vehicle' }}
+                                            </DropdownMenuLabel>
+
+                                            <DropdownMenuItem
+                                                as-child
+                                                class="group cursor-pointer rounded-md"
+                                            >
+                                                <Link
+                                                    :href="
+                                                        CompanyVehicleController.show(
+                                                            vehicle.id,
+                                                        ).url
+                                                    "
+                                                    class="flex items-center"
+                                                >
+                                                    <RiExternalLinkLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                    View
+                                                </Link>
+                                            </DropdownMenuItem>
+
+                                            <DropdownMenuItem
+                                                v-if="canUpdate"
+                                                as-child
+                                                :disabled="
+                                                    !canEditVehicle(vehicle)
+                                                "
+                                                :class="[
+                                                    'group rounded-md',
+                                                    canEditVehicle(vehicle)
+                                                        ? 'cursor-pointer text-custom-shadow'
+                                                        : 'cursor-not-allowed text-slate-300',
+                                                ]"
+                                            >
+                                                <Link
+                                                    :href="
+                                                        CompanyVehicleController.edit(
+                                                            vehicle.id,
+                                                        ).url
+                                                    "
+                                                    class="flex items-center"
+                                                >
+                                                    <RiEditLine class="h-4 w-4 transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                    Update Documents
+                                                </Link>
+                                            </DropdownMenuItem>
+
+                                            <DropdownMenuItem
+                                                v-if="
+                                                    vehicle.status ===
+                                                    'active'
+                                                "
+                                                :disabled="
                                                     !canToggleVehicle(
                                                         vehicle,
-                                                    ))
-                                            "
-                                            class="px-2 pt-1 pb-2 text-left text-[11px] text-slate-400"
-                                        >
-                                            {{
-                                                vehicleActionNote(
-                                                    vehicle,
-                                                )
-                                            }}
-                                        </div>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </TableCell>
-                        </TableRow>
-                    </TableBody>
-                </Table>
-            </div>
-            </Card>
+                                                    )
+                                                "
+                                                class="group cursor-pointer rounded-md"
+                                                @click="
+                                                    openDeactivate(vehicle)
+                                                "
+                                            >
+                                                <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Set Inactive</span>
+                                            </DropdownMenuItem>
 
-            <!-- Pagination -->
-            <div
-                v-if="vehicles.last_page > 1 || vehicles.total > 0"
-                class="border-t border-slate-100 px-5 py-3"
-            >
+                                            <DropdownMenuItem
+                                                v-else
+                                                :disabled="
+                                                    !canToggleVehicle(
+                                                        vehicle,
+                                                    )
+                                                "
+                                                class="group cursor-pointer rounded-md"
+                                                @click="
+                                                    openActivate(vehicle)
+                                                "
+                                            >
+                                                <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">{{ toggleLabel(vehicle.status) }}</span>
+                                            </DropdownMenuItem>
+
+                                            <div
+                                                v-if="
+                                                    (canUpdate &&
+                                                        !canEditVehicle(
+                                                            vehicle,
+                                                        )) ||
+                                                    (canToggle &&
+                                                        !canToggleVehicle(
+                                                            vehicle,
+                                                        ))
+                                                "
+                                                class="px-2 pt-1 pb-2 text-left text-[11px] text-slate-400"
+                                            >
+                                                {{
+                                                    vehicleActionNote(
+                                                        vehicle,
+                                                    )
+                                                }}
+                                            </div>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </Card>
+
                 <InertiaPagination
                     :links="vehicles.links"
                     :meta="{
@@ -1307,95 +1110,92 @@ function confirmActivate() {
                         total: vehicles.total,
                     }"
                 />
-            </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
 
-        <AlertDialog v-model:open="inactiveDialogOpen">
-            <AlertDialogContent>
-                <form class="space-y-4" @submit.prevent="submitDeactivate">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle
-                            >Set Vehicle Inactive</AlertDialogTitle
-                        >
-                        <AlertDialogDescription>
-                            <span class="block">
-                                Provide a reason to set
-                                <strong class="text-slate-800">{{
-                                    inactiveDialog.vehicle?.plate_number ||
-                                    'this vehicle'
-                                }}</strong>
-                                to inactive.
+            <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-100">
+                <CardHeader v-if="previewedVehicle" class="flex flex-row items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <CardTitle class="truncate uppercase">{{ previewedVehicle.plate_number || 'Vehicle' }}</CardTitle>
+                        <CardDescription>Preview</CardDescription>
+                    </div>
+                    <Button variant="header-actions" size="icon" class="h-8 w-8 shrink-0 rounded-full" @click="previewedVehicle = null">
+                        <RiCloseLine class="h-4 w-4" />
+                    </Button>
+                </CardHeader>
+
+                <CardContent v-if="previewedVehicle" class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto py-2">
+                    <div class="flex aspect-4/3 items-center justify-center rounded-md border border-dashed border-custom-bg-dark bg-custom-bg text-custom-shadow/70 dark:border-none dark:bg-custom-bg-dark">
+                        <RiBus2Line class="h-16 w-16" />
+                    </div>
+                    <div class="space-y-3 pt-2">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Status</span>
+                            <span :class="['inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium', vehicleStatusClass(previewedVehicle.status)]">
+                                <span :class="['h-1.5 w-1.5 rounded-full', vehicleStatusDot(previewedVehicle.status)]" />
+                                {{ humanize(previewedVehicle.status) }}
                             </span>
-                            <span class="mt-1 block"
-                                >This action can be reversed later.</span
-                            >
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
+                        </div>
+                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Route</span><span class="text-right text-sm">{{ previewedVehicle.route?.route_name || 'Not assigned' }}</span></div>
+                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Vehicle Type</span><span class="text-right text-sm">{{ humanize(previewedVehicle.vehicle_type) }}</span></div>
+                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Make / Model</span><span class="text-right text-sm">{{ previewedVehicle.make_model || 'Not recorded' }}</span></div>
+                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Body Number</span><span class="text-right text-sm">{{ previewedVehicle.body_number || 'Not recorded' }}</span></div>
+                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Capacity</span><span class="text-right text-sm">{{ previewedVehicle.capacity ?? 'Not recorded' }}</span></div>
+                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Documents</span><span class="text-right text-sm">{{ documentsCount(previewedVehicle.documents || []) }}</span></div>
+                        <div v-if="previewedVehicle.remarks" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Remarks</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.remarks }}</p></div>
+                    </div>
+                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <Button v-if="canToggleVehicle(previewedVehicle)" variant="ghost-outline" size="icon-text" @click="previewedVehicle.status === 'active' ? openDeactivate(previewedVehicle) : openActivate(previewedVehicle)">
+                            <RiShutDownLine class="h-4 w-4" />{{ previewedVehicle.status === 'active' ? 'Set Inactive' : toggleLabel(previewedVehicle.status) }}
+                        </Button>
+                        <Button as-child variant="float-primary" size="icon-text"><Link :href="CompanyVehicleController.show(previewedVehicle.id).url"><RiFileCheckLine class="h-4 w-4" />Review</Link></Button>
+                    </div>
+                </CardContent>
+                <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
+                    <div class="max-w-60 space-y-1 text-center"><p class="text-base font-semibold text-custom-shadow">No vehicle selected</p><p class="text-sm text-custom-shadow/80">Click on a vehicle to preview.</p></div>
+                </CardContent>
+            </Card>
+        </div>
 
-                    <div class="space-y-2">
-                        <label class="text-xs font-semibold text-slate-600">
-                            Reason <span class="text-rose-500">*</span>
-                        </label>
-                        <textarea
-                            v-model="inactiveDialog.remarks"
-                            class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+        <Dialog v-model:open="statusDialogOpen">
+            <DialogContent class="max-w-md px-6">
+                <DialogHeader class="px-0">
+                    <DialogTitle>{{ isInactivating ? 'Inactivate vehicle' : 'Activate vehicle' }}</DialogTitle>
+                    <DialogDescription>
+                        <span class="block">
+                            {{ isInactivating ? 'Provide a reason to inactivate' : 'This will activate' }}
+                            <strong class="font-semibold text-custom-accent-3">{{ statusDialog.vehicle?.plate_number || 'this vehicle' }}</strong>.
+                            {{ isInactivating ? 'You can activate it again later.' : 'All documents must be approved before activation.' }}
+                        </span>
+                    </DialogDescription>
+                </DialogHeader>
+                <form class="space-y-3" @submit.prevent="submitStatusChange">
+                    <div v-if="isInactivating" class="flex flex-col gap-y-2">
+                        <Textarea
+                            v-model="statusDialog.remarks"
+                            class="min-h-24 border-custom-bg-dark bg-custom-bg p-3 text-sm text-custom-shadow placeholder:text-custom-shadow/50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:bg-white dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5"
                             rows="3"
-                            placeholder="Brief reason for deactivation…"
+                            placeholder="Brief reason for inactivation..."
                         />
                     </div>
 
-                    <AlertDialogFooter>
-                        <AlertDialogCancel
-                            type="button"
-                            @click="inactiveDialog.vehicle = null"
-                        >
-                            Cancel
-                        </AlertDialogCancel>
-                        <AlertDialogAction
+                    <Separator />
+                    <DialogFooter class="gap-2 sm:justify-end">
+                        <DialogClose as-child>
+                            <Button type="button" variant="ghost-outline">Cancel</Button>
+                        </DialogClose>
+                        <Button
                             type="submit"
-                            class="border-0 bg-rose-600 text-white hover:bg-rose-700"
-                            :disabled="!inactiveDialog.remarks.trim()"
-                            @click.prevent="submitDeactivate"
+                            :variant="isInactivating ? 'destructive' : 'float-primary'"
+                            :disabled="isInactivating && !statusDialog.remarks.trim()"
                         >
-                            Set Inactive
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
+                            <RiShutDownLine class="h-4 w-4" />
+                            {{ isInactivating ? 'Inactivate' : 'Activate' }}
+                        </Button>
+                    </DialogFooter>
                 </form>
-            </AlertDialogContent>
-        </AlertDialog>
-
-        <!-- ── Activate dialog ───────────────────────── -->
-        <AlertDialog v-model:open="activateDialogOpen">
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Activate Vehicle</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        <span class="block">
-                            This will activate
-                            <strong class="text-slate-800">{{
-                                activateDialog.vehicle?.plate_number ||
-                                'this vehicle'
-                            }}</strong
-                            >.
-                        </span>
-                        <span class="mt-1 block">
-                            All documents must be approved before activation.
-                        </span>
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel @click="activateDialog.vehicle = null">
-                        Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                        class="border-0 bg-slate-800 text-white hover:bg-slate-900"
-                        @click="confirmActivate"
-                    >
-                        Confirm Activation
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+            </DialogContent>
+        </Dialog>
     </ExternalLayout>
 </template>

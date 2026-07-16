@@ -97,9 +97,7 @@ import {
     today,
 } from '@internationalized/date';
 
-/* ======================================================
-   Types
-====================================================== */
+
 type Company = {
     id: number;
     company_name: string;
@@ -179,9 +177,7 @@ type Paginated<T> = {
     to: number | null;
 };
 
-/* ======================================================
-   Props
-====================================================== */
+
 const props = defineProps<{
     company: Company;
     vehicles: Vehicle[];
@@ -217,9 +213,7 @@ const canCreateDispatch = can('external_dispatches.create');
 const canUpdateDispatch = can('external_dispatches.update');
 const canDepartDispatch = can('external_dispatches.depart');
 
-/* ======================================================
-   Date filter
-====================================================== */
+
 const df = new DateFormatter('en-US', { dateStyle: 'medium' });
 const localTz = getLocalTimeZone();
 
@@ -302,9 +296,7 @@ function clearFilters() {
     applyFilters();
 }
 
-/* ======================================================
-   Dialog / form state
-====================================================== */
+
 const dialogOpen = ref(false);
 const editingDispatchId = ref<number | null>(null);
 const confirmDepartOpen = ref(false);
@@ -346,9 +338,7 @@ const changeRequestFields: Array<{ value: ChangeRequestField; label: string }> =
         { value: 'bay_number', label: 'Change Bay Number' },
     ];
 
-/* ======================================================
-   Computed
-====================================================== */
+
 const selectedVehicle = computed(
     () =>
         props.vehicles.find((v) => String(v.id) === String(form.vehicle_id)) ??
@@ -452,9 +442,7 @@ function isDriverDisabledForChangeRequest(driverId: number): boolean {
     return assignedDriverIdsToday.value.has(driverId);
 }
 
-/* ======================================================
-   Methods
-====================================================== */
+
 function onGateChange(value: unknown) {
     form.gate_id = String(value ?? '');
     form.bay_number = '';
@@ -871,7 +859,7 @@ watch(confirmDepartOpen, (open) => {
 
                             <PopoverContent align="end">
                                 <div class="grid gap-y-2">
-                                    <div class="space-y-2">
+                                    <div class="flex flex-col gap-y-1">
                                         <p class="text-sm text-custom-shadow/80">Status</p>
                                         <Select
                                             :model-value="statusFilter"
@@ -888,7 +876,7 @@ watch(confirmDepartOpen, (open) => {
                                         </Select>
                                     </div>
 
-                                    <div class="space-y-2">
+                                    <div class="flex flex-col gap-y-1">
                                         <p class="text-sm text-custom-shadow/80">Date</p>
                                         <div class="flex gap-1.5">
                                             <Button
@@ -954,7 +942,7 @@ watch(confirmDepartOpen, (open) => {
                     </div>
                 </div>
 
-                <!-- Table -->
+                
                 <Card
                     :class="[
                         'flex min-h-0 max-h-fit flex-1 flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
@@ -1009,7 +997,7 @@ watch(confirmDepartOpen, (open) => {
                             </TableHeader>
 
                             <TableBody>
-                                <!-- Empty state -->
+                                
                                 <TableRow
                                     v-if="dispatches.data.length === 0"
                                     class="hover:bg-transparent"
@@ -1061,7 +1049,7 @@ watch(confirmDepartOpen, (open) => {
                                             : ''
                                     "
                                 >
-                                    <!-- Vehicle -->
+                                    
                                     <TableCell class="pl-5">
                                         <div class="flex items-center gap-2.5">
                                             <div
@@ -1090,7 +1078,7 @@ watch(confirmDepartOpen, (open) => {
                                         </div>
                                     </TableCell>
 
-                                    <!-- Driver -->
+                                    
                                     <TableCell>
                                         <div class="flex items-center gap-1.5">
                                             <UserRound
@@ -1112,7 +1100,7 @@ watch(confirmDepartOpen, (open) => {
                                         </div>
                                     </TableCell>
 
-                                    <!-- Gate / Bay -->
+                                    
                                     <TableCell>
                                         <p
                                             class="text-sm font-medium text-slate-700"
@@ -1126,7 +1114,7 @@ watch(confirmDepartOpen, (open) => {
                                         </p>
                                     </TableCell>
 
-                                    <!-- Pax -->
+                                    
                                     <TableCell>
                                         <div
                                             class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
@@ -1136,7 +1124,7 @@ watch(confirmDepartOpen, (open) => {
                                         </div>
                                     </TableCell>
 
-                                    <!-- Status -->
+                                    
                                     <TableCell>
                                         <span
                                             :class="[
@@ -1154,7 +1142,7 @@ watch(confirmDepartOpen, (open) => {
                                         </span>
                                     </TableCell>
 
-                                    <!-- Arrived -->
+                                    
                                     <TableCell class="text-xs text-slate-500">
                                         <div
                                             v-if="dispatch.arrived_at_formatted"
@@ -1170,7 +1158,7 @@ watch(confirmDepartOpen, (open) => {
                                         >
                                     </TableCell>
 
-                                    <!-- Departed -->
+                                    
                                     <TableCell class="text-xs text-slate-500">
                                         <div
                                             v-if="
@@ -1188,7 +1176,7 @@ watch(confirmDepartOpen, (open) => {
                                         >
                                     </TableCell>
 
-                                    <!-- Dispatcher -->
+                                    
                                     <TableCell>
                                         <div class="flex items-center gap-1.5">
                                             <Fingerprint
@@ -1205,7 +1193,7 @@ watch(confirmDepartOpen, (open) => {
                                         </div>
                                     </TableCell>
 
-                                    <!-- Remarks -->
+                                    
                                     <TableCell>
                                         <Button
                                             v-if="dispatch.remarks"
@@ -1226,7 +1214,7 @@ watch(confirmDepartOpen, (open) => {
                                         >
                                     </TableCell>
 
-                                    <!-- Actions -->
+                                    
                                     <TableCell class="pr-5 text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
@@ -1240,19 +1228,10 @@ watch(confirmDepartOpen, (open) => {
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent
-                                                align="end"
-                                                class="w-fit rounded-lg shadow-lg"
-                                            >
-                                                <DropdownMenuLabel
-                                                    class="text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                                >
+                                            <DropdownMenuContent align="end" class="">
+                                                <DropdownMenuLabel>
                                                     Actions
                                                 </DropdownMenuLabel>
-                                                <DropdownMenuSeparator
-                                                    class="bg-slate-100"
-                                                />
-
                                                 <DropdownMenuItem
                                                     as-child
                                                     class="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900"
@@ -1358,7 +1337,7 @@ watch(confirmDepartOpen, (open) => {
                     </div>
                     </Card>
 
-                <!-- Pagination -->
+                
                 <div
                     v-if="dispatches.last_page > 1 || dispatches.total > 0"
                     class="border-t border-custom-bg-dark px-5 py-3 dark:border-custom-bg-light"
@@ -1375,11 +1354,9 @@ watch(confirmDepartOpen, (open) => {
             </CardContent>
         </Card>
 
-        <!-- ══════════════════════════════════════════════
-             DIALOGS
-        ══════════════════════════════════════════════ -->
+        
 
-        <!-- Change Request Status Modal -->
+        
         <Dialog v-model:open="changeRequestStatusOpen">
             <DialogContent class="max-h-[80vh] max-w-2xl overflow-y-auto">
                 <DialogHeader>
@@ -1395,7 +1372,7 @@ watch(confirmDepartOpen, (open) => {
                 <Separator class="bg-slate-100" />
 
                 <div class="space-y-5">
-                    <!-- Summary cards -->
+                    
                     <div class="grid grid-cols-3 gap-3">
                         <div
                             class="rounded-lg border border-amber-200 bg-amber-50 p-3"
@@ -1440,7 +1417,7 @@ watch(confirmDepartOpen, (open) => {
                         </div>
                     </div>
 
-                    <!-- List -->
+                    
                     <div class="max-h-[380px] space-y-2 overflow-y-auto pr-1">
                         <div
                             v-for="request in props.changeRequests"
@@ -1600,7 +1577,7 @@ watch(confirmDepartOpen, (open) => {
             </DialogContent>
         </Dialog>
 
-        <!-- Create / Edit Dispatch Dialog -->
+        
         <Dialog v-model:open="dialogOpen">
             <DialogContent class="sm:max-w-md">
                 <DialogHeader>
@@ -1752,7 +1729,7 @@ watch(confirmDepartOpen, (open) => {
                         <InputError :message="form.errors.bay_number" />
                     </div>
 
-                    <!-- Selection summary -->
+                    
                     <div
                         v-if="selectedVehicle || selectedGate || selectedDriver"
                         class="flex flex-wrap gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3"
@@ -1814,7 +1791,7 @@ watch(confirmDepartOpen, (open) => {
                             <Send class="mr-2 h-4 w-4" />
                             {{
                                 form.processing
-                                    ? 'Saving…'
+                                    ? 'Saving...'
                                     : isEditing
                                       ? 'Save Changes'
                                       : 'Create Dispatch'
@@ -1825,7 +1802,7 @@ watch(confirmDepartOpen, (open) => {
             </DialogContent>
         </Dialog>
 
-        <!-- Remarks View Dialog -->
+        
         <Dialog v-model:open="remarksViewOpen">
             <DialogContent class="sm:max-w-sm">
                 <DialogHeader>
@@ -1909,7 +1886,7 @@ watch(confirmDepartOpen, (open) => {
             </DialogContent>
         </Dialog>
 
-        <!-- Confirm Departure Dialog -->
+        
         <AlertDialog v-model:open="confirmDepartOpen">
             <AlertDialogContent>
                 <form class="space-y-4" @submit.prevent="confirmDepart">
@@ -1971,7 +1948,7 @@ watch(confirmDepartOpen, (open) => {
                         <Button type="submit" :disabled="departForm.processing">
                             {{
                                 departForm.processing
-                                    ? 'Saving…'
+                                    ? 'Saving...'
                                     : 'Confirm Departure'
                             }}
                         </Button>
@@ -1980,7 +1957,7 @@ watch(confirmDepartOpen, (open) => {
             </AlertDialogContent>
         </AlertDialog>
 
-        <!-- Request Change Modal -->
+        
         <Dialog v-model:open="changeRequestOpen">
             <DialogContent class="sm:max-w-lg">
                 <DialogHeader>
@@ -1995,7 +1972,7 @@ watch(confirmDepartOpen, (open) => {
                 </DialogHeader>
 
                 <form class="space-y-4" @submit.prevent="submitChangeRequest">
-                    <!-- Notice -->
+                    
                     <div
                         class="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"
                     >
@@ -2047,7 +2024,7 @@ watch(confirmDepartOpen, (open) => {
                         v-if="changeRequestForm.requested_field"
                         class="space-y-3"
                     >
-                        <!-- Driver change -->
+                        
                         <template
                             v-if="
                                 changeRequestForm.requested_field ===
@@ -2121,7 +2098,7 @@ watch(confirmDepartOpen, (open) => {
                             </div>
                         </template>
 
-                        <!-- Pax count -->
+                        
                         <template
                             v-else-if="
                                 changeRequestForm.requested_field ===
@@ -2160,7 +2137,7 @@ watch(confirmDepartOpen, (open) => {
                             </div>
                         </template>
 
-                        <!-- Vehicle change -->
+                        
                         <template
                             v-else-if="
                                 changeRequestForm.requested_field ===
@@ -2217,7 +2194,7 @@ watch(confirmDepartOpen, (open) => {
                             </div>
                         </template>
 
-                        <!-- Bay change -->
+                        
                         <template
                             v-else-if="
                                 changeRequestForm.requested_field ===
@@ -2298,7 +2275,7 @@ watch(confirmDepartOpen, (open) => {
                         <textarea
                             id="change_reason"
                             v-model="changeRequestForm.reason"
-                            placeholder="Explain why this change is needed…"
+                            placeholder="Explain why this change is needed..."
                             class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                             rows="3"
                         />
@@ -2337,7 +2314,7 @@ watch(confirmDepartOpen, (open) => {
                         >
                             {{
                                 changeRequestForm.processing
-                                    ? 'Submitting…'
+                                    ? 'Submitting...'
                                     : 'Submit Request'
                             }}
                         </Button>
@@ -2346,7 +2323,7 @@ watch(confirmDepartOpen, (open) => {
             </DialogContent>
         </Dialog>
 
-        <!-- Change Request Detail Dialog -->
+        
         <Dialog v-model:open="changeRequestDetailOpen">
             <DialogContent class="sm:max-w-md">
                 <DialogHeader v-if="selectedChangeRequest">

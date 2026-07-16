@@ -785,7 +785,7 @@ function exportCsv() {
                                     <Loader2 v-if="exporting" class="h-4 w-4 shrink-0 animate-spin" />
                                     <Download v-else class="h-4 w-4 shrink-0" />
                                     <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-24 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-24 group-focus-visible/segment:opacity-100">
-                                        {{ exporting ? 'Exporting…' : 'Export CSV' }}
+                                        {{ exporting ? 'Exporting...' : 'Export CSV' }}
                                     </span>
                                 </Button>
                             </div>

@@ -391,6 +391,7 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
     Route::resource('vehicle-types', VehicleTypeController::class);
 
     Route::resource('gates', GateController::class);
+    Route::patch('gates/{gate}/toggle-status', [GateController::class, 'toggleStatus'])->name('gates.toggleStatus');
     Route::get('gates-trash', [GateController::class, 'trash'])->name('gates.trash');
     Route::post('gates/{gate}/restore', [GateController::class, 'restore'])->name('gates.restore');
     Route::delete('gates/{gate}/force-delete', [GateController::class, 'forceDelete'])->name('gates.forceDelete');

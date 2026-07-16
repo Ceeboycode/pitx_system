@@ -8,7 +8,7 @@ import { Mail, MapPin, Phone, Clock } from 'lucide-vue-next';
 <template>
     <Head title="Contact — PITX" />
     <div class="flex min-h-screen flex-col bg-[#f4f5f7] text-[#1a1a2e]">
-        <!-- HEADER -->
+        
         <header class="sticky top-0 z-50 border-b border-gray-200 bg-white/90 shadow-sm backdrop-blur-md">
             <div class="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
                 <Link :href="home()" class="flex items-center gap-3">
@@ -26,7 +26,7 @@ import { Mail, MapPin, Phone, Clock } from 'lucide-vue-next';
             </p>
 
             <div class="grid gap-5 sm:grid-cols-2">
-                <!-- Address -->
+                
                 <div class="flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                     <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1a3a6b]/10">
                         <MapPin class="h-5 w-5 text-[#1a3a6b]" />
@@ -38,7 +38,7 @@ import { Mail, MapPin, Phone, Clock } from 'lucide-vue-next';
                     </div>
                 </div>
 
-                <!-- Email -->
+                
                 <div class="flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                     <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#c0392b]/10">
                         <Mail class="h-5 w-5 text-[#c0392b]" />
@@ -50,7 +50,7 @@ import { Mail, MapPin, Phone, Clock } from 'lucide-vue-next';
                     </div>
                 </div>
 
-                <!-- Phone -->
+                
                 <div class="flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                     <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1a3a6b]/10">
                         <Phone class="h-5 w-5 text-[#1a3a6b]" />
@@ -62,7 +62,7 @@ import { Mail, MapPin, Phone, Clock } from 'lucide-vue-next';
                     </div>
                 </div>
 
-                <!-- Office Hours -->
+                
                 <div class="flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                     <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#c0392b]/10">
                         <Clock class="h-5 w-5 text-[#c0392b]" />

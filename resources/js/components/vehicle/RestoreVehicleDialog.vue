@@ -42,7 +42,7 @@ function restore() {
 
 <template>
     <AlertDialog>
-        <!-- <AlertDialogTrigger as-child>
+        <!-- CODE: <AlertDialogTrigger as-child>
             <Button variant="outline" size="sm" class="cursor-pointer">
                 <RotateCcw class="mr-2 h-4 w-4" />
                 Restore

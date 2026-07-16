@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 
@@ -44,12 +44,12 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 
 import {
-    Archive,
-    ArrowLeft,
-    MoreHorizontal,
-    RotateCcw,
-    Users,
-} from 'lucide-vue-next';
+    RiArchive2Line as Archive,
+    RiArrowLeftSLine as ArrowLeft,
+    RiGroupLine as Users,
+    RiMore2Line as MoreHorizontal,
+    RiRestartLine as RotateCcw,
+} from 'vue-remix-icons';
 
 import { ref } from 'vue';
 import { toast } from 'vue-sonner';
@@ -108,7 +108,7 @@ function confirmRestore() {
             <Card>
                 <CardHeader>
                     <CardTitle class="flex items-center gap-2">
-                        <!-- <span>Change Requests</span> -->
+                        <!-- CODE: <span>Change Requests</span> -->
                          <!-- TODO: make the text straight, not wrapped -->
                         <Button
                             as-child
@@ -250,9 +250,7 @@ function confirmRestore() {
                                                     <MoreHorizontal
                                                         class="h-4 w-4"
                                                     />
-                                                    <span class="sr-only"
-                                                        >Open actions</span
-                                                    >
+                                                    
                                                 </Button>
                                             </DropdownMenuTrigger>
 

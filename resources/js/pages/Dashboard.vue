@@ -227,7 +227,7 @@ const today = new Date().toLocaleDateString('en-PH', {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4 md:p-6">
 
-            <!-- Page Header -->
+            
             <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-900 via-blue-700 to-red-600 p-5 text-white">
                 <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -247,7 +247,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                 </div>
             </div>
 
-            <!-- KPI Stats Row -->
+            
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <Card class="border-l-4 border-l-blue-700 transition-shadow hover:shadow-md">
                     <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -312,7 +312,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                 </Card>
             </div>
 
-            <!-- Summary Report + Alert Snapshot -->
+            
             <div class="grid gap-4 xl:grid-cols-3">
                 <Card class="xl:col-span-2">
                     <CardHeader class="pb-3">
@@ -455,7 +455,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                 </Card>
             </div>
 
-            <!-- Donut Charts -->
+            
             <div class="grid gap-4 xl:grid-cols-2">
                 <Card>
                     <CardHeader class="pb-3">
@@ -546,7 +546,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                 </Card>
             </div>
 
-            <!-- Recent Dispatches + Gate Activity -->
+            
             <div class="grid gap-4 xl:grid-cols-3">
                 <Card class="xl:col-span-2">
                     <CardHeader class="pb-3">
@@ -643,7 +643,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                 </Card>
             </div>
 
-            <!-- Top Companies + Company Status -->
+            
             <div class="grid gap-4 lg:grid-cols-2">
                 <Card>
                     <CardHeader class="pb-3">
@@ -712,7 +712,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                 </Card>
             </div>
 
-            <!-- Vehicle Documents Expiring -->
+            
             <Card>
                 <CardHeader class="pb-3">
                     <div class="flex items-center justify-between">

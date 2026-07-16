@@ -94,7 +94,7 @@ function formatDate(value?: string | null): string {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
 
-            <!-- Header card -->
+            
             <Card>
                 <CardHeader class="py-0">
                     <div class="flex items-center gap-4">
@@ -155,12 +155,12 @@ function formatDate(value?: string | null): string {
                 </CardHeader>
             </Card>
 
-            <!-- Details card -->
+            
             <Card class="py-6">
                 <CardHeader class="flex items-center justify-between">
                     <div>
                         <CardTitle>Gate Details</CardTitle>
-                        <!-- <CardDescription>Configuration and audit information.</CardDescription> -->
+                        <!-- CODE: <CardDescription>Configuration and audit information.</CardDescription> -->
                     </div>
                 </CardHeader>
                 <CardContent class="px-6 grid divide-y gap-y-2 pt-2 border-t border-slate-100">
@@ -212,7 +212,7 @@ function formatDate(value?: string | null): string {
                 </CardContent>
             </Card>
 
-            <!-- Archive dialog -->
+            
             <Dialog :open="archiveOpen" @update:open="archiveOpen = $event">
                 <DialogContent class="sm:max-w-md p-4">
                     <DialogHeader>

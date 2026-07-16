@@ -240,7 +240,7 @@ function statusDot(status?: string | null) {
     <ExternalLayout :company="company" :user="user">
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
-                <!-- ── Page header ─────────────────────────────────────── -->
+                
                 <Card>
                     <CardContent class="p-6">
                         <div
@@ -351,7 +351,7 @@ function statusDot(status?: string | null) {
                     </CardContent>
                 </Card>
 
-                <!-- ── Stat cards ──────────────────────────────────────── -->
+                
                 <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
                     <div
                         class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
@@ -439,12 +439,12 @@ function statusDot(status?: string | null) {
                     </div>
                 </div>
 
-                <!-- ── Form ────────────────────────────────────────────── -->
+                
                 <form class="space-y-6" @submit.prevent="submit">
                     <div class="grid gap-6 xl:grid-cols-[1fr_320px]">
-                        <!-- Left column -->
+                        
                         <div class="space-y-6">
-                            <!-- Company Information -->
+                            
                             <div
                                 class="pointer-events-none rounded-xl border border-slate-200 bg-white opacity-60 shadow-sm"
                             >
@@ -513,7 +513,7 @@ function statusDot(status?: string | null) {
                                 </div>
                             </div>
 
-                            <!-- Route Assignment -->
+                            
                             <div
                                 class="pointer-events-none rounded-xl border border-slate-200 bg-white opacity-60 shadow-sm"
                             >
@@ -541,7 +541,7 @@ function statusDot(status?: string | null) {
                                 </div>
                             </div>
 
-                            <!-- Vehicle Information -->
+                            
                             <div
                                 class="pointer-events-none rounded-xl border border-slate-200 bg-white opacity-60 shadow-sm"
                             >
@@ -566,7 +566,7 @@ function statusDot(status?: string | null) {
                                 </div>
                             </div>
 
-                            <!-- Required Documents -->
+                            
                             <div
                                 class="rounded-xl border border-slate-200 bg-white shadow-sm"
                             >
@@ -634,9 +634,9 @@ function statusDot(status?: string | null) {
                             </div>
                         </div>
 
-                        <!-- Right sidebar -->
+                        
                         <div class="space-y-4">
-                            <!-- Update Summary -->
+                            
                             <div
                                 id="update-summary"
                                 class="rounded-xl border border-slate-200 bg-white shadow-sm"
@@ -669,7 +669,7 @@ function statusDot(status?: string | null) {
                                 </div>
                             </div>
 
-                            <!-- Editing Notes -->
+                            
                             <div
                                 class="rounded-xl border border-slate-200 bg-white shadow-sm"
                             >

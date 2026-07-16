@@ -58,7 +58,7 @@ function submit() {
                     <InputError :message="form.errors.type_name" />
                 </div>
 
-                <!-- <div class="space-y-2">
+                <!-- CODE: <div class="space-y-2">
                     <Label>Status</Label>
                     <Select
                         v-model="form.is_active"

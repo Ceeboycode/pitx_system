@@ -135,7 +135,7 @@ const routeInputDisplay = computed(() => {
     return selectedRoute.value?.route_name ?? ''
 })
 
-// ── Stop type helpers ─────────────────────────────────────────────────────────
+
 
 function markerColor(type: string) {
     switch (type) {
@@ -169,7 +169,7 @@ function humanize(value?: string | null) {
     return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-// ── Dropdown helpers ──────────────────────────────────────────────────────────
+
 
 function openRouteDropdown() {
     if (props.readonly) return
@@ -207,7 +207,7 @@ function onRouteInputBlur() {
     window.setTimeout(() => closeRouteDropdown(), 150)
 }
 
-// ── Map ───────────────────────────────────────────────────────────────────────
+
 
 function destroyMap() {
     mapInstance?.remove()
@@ -256,7 +256,7 @@ function initMap() {
                     source: 'route-line',
                     paint: { 'line-width': 5, 'line-color': '#2563eb' },
                 })
-            } catch { /* noop */ }
+            } catch {  }
         }
 
         validStops.forEach((stop) => {
@@ -305,10 +305,10 @@ onBeforeUnmount(() => destroyMap())
 <template>
     <div class="space-y-4">
 
-        <!-- ── Gate + Route selectors ── -->
+        
         <div class="grid gap-4 md:grid-cols-[200px_1fr]">
 
-            <!-- Gate filter -->
+            
             <div class="space-y-2">
                 <Label for="gate_id" class="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     Gate
@@ -326,7 +326,7 @@ onBeforeUnmount(() => destroyMap())
                 </Select>
             </div>
 
-            <!-- Route search combobox -->
+            
             <div class="space-y-2">
                 <Label for="route_id" class="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     Route
@@ -340,7 +340,7 @@ onBeforeUnmount(() => destroyMap())
                             :model-value="routeInputDisplay"
                             :disabled="readonly"
                             class="pl-9 pr-16"
-                            placeholder="Search route by name, origin, destination…"
+                            placeholder="Search route by name, origin, destination..."
                             @focus="openRouteDropdown"
                             @input="routeSearch = ($event.target as HTMLInputElement).value"
                             @blur="onRouteInputBlur"
@@ -364,7 +364,7 @@ onBeforeUnmount(() => destroyMap())
                         <ChevronsUpDown class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     </div>
 
-                    <!-- Dropdown list -->
+                    
                     <div
                         v-if="routeDropdownOpen && !readonly"
                         class="absolute z-50 mt-1.5 max-h-72 w-full overflow-y-auto rounded-lg border bg-background shadow-lg"
@@ -417,10 +417,10 @@ onBeforeUnmount(() => destroyMap())
             </div>
         </div>
 
-        <!-- ── Route summary card ── -->
+        
         <div v-if="routeSummary" class="overflow-hidden rounded-xl border shadow-sm">
 
-            <!-- Header row -->
+            
             <div class="flex flex-col gap-4 bg-muted/30 p-4 md:flex-row md:items-center md:justify-between">
                 <div class="flex items-center gap-3 min-w-0">
                     <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-background shadow-sm">
@@ -446,7 +446,7 @@ onBeforeUnmount(() => destroyMap())
                         {{ routeSummary.gateName }}
                     </Badge>
 
-                    <!-- Stops dialog -->
+                    
                     <Dialog v-model:open="stopsDialogOpen">
                         <DialogTrigger as-child>
                             <Button type="button" variant="outline" size="sm" class="h-7 gap-1.5 text-xs">
@@ -461,7 +461,7 @@ onBeforeUnmount(() => destroyMap())
                             </DialogHeader>
 
                             <div v-if="selectedRoute" class="space-y-4">
-                                <!-- Origin / Destination / Count -->
+                                
                                 <div class="grid grid-cols-3 gap-3">
                                     <Card>
                                         <CardContent class="p-3">
@@ -487,7 +487,7 @@ onBeforeUnmount(() => destroyMap())
                                     </Card>
                                 </div>
 
-                                <!-- Stop list -->
+                                
                                 <div
                                     v-if="sortedStops.length"
                                     class="max-h-[400px] space-y-1.5 overflow-y-auto rounded-lg border p-2"
@@ -497,7 +497,7 @@ onBeforeUnmount(() => destroyMap())
                                         :key="stop.id"
                                         class="flex items-start gap-3 rounded-lg border bg-card p-3 transition-colors hover:bg-accent/30"
                                     >
-                                        <!-- Order indicator -->
+                                        
                                         <div class="flex flex-col items-center gap-1">
                                             <div
                                                 class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
@@ -532,7 +532,7 @@ onBeforeUnmount(() => destroyMap())
                         </DialogContent>
                     </Dialog>
 
-                    <!-- Map dialog -->
+                    
                     <Dialog v-model:open="mapDialogOpen">
                         <DialogTrigger as-child>
                             <Button type="button" variant="outline" size="sm" class="h-7 gap-1.5 text-xs">
@@ -548,7 +548,7 @@ onBeforeUnmount(() => destroyMap())
                                 </DialogDescription>
                             </DialogHeader>
 
-                            <!-- Legend -->
+                            
                             <div v-if="selectedRoute" class="flex flex-wrap gap-3 text-xs text-muted-foreground">
                                 <span class="inline-flex items-center gap-1.5">
                                     <span class="h-2.5 w-2.5 rounded-full bg-emerald-500" />
@@ -581,7 +581,7 @@ onBeforeUnmount(() => destroyMap())
                 </div>
             </div>
 
-            <!-- Stop preview strip (first 4 stops inline) -->
+            
             <div v-if="sortedStops.length" class="flex items-center gap-0 overflow-x-auto px-4 py-3">
                 <template v-for="(stop, idx) in sortedStops.slice(0, 5)" :key="stop.id">
                     <div class="flex shrink-0 items-center gap-1.5">

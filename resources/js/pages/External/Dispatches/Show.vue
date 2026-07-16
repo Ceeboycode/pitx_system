@@ -24,9 +24,7 @@ import {
     Users,
 } from 'lucide-vue-next'
 
-/* ======================================================
-   Types
-====================================================== */
+
 type GateItem = {
     id: number
     gate_name: string
@@ -100,9 +98,7 @@ type Dispatch = {
     } | null
 }
 
-/* ======================================================
-   Props
-====================================================== */
+
 const props = defineProps<{
     dispatch: Dispatch
     routes: RouteItem[]
@@ -114,9 +110,7 @@ const props = defineProps<{
     }
 }>()
 
-/* ======================================================
-   Helpers
-====================================================== */
+
 function humanize(value?: string | null) {
     if (!value) return '—'
     return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
@@ -159,9 +153,7 @@ function initials(name?: string | null) {
         .join('')
 }
 
-/* ======================================================
-   Timeline
-====================================================== */
+
 const timeline = computed(() => [
     {
         label: 'Dispatched',
@@ -191,7 +183,7 @@ const timeline = computed(() => [
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
 
-                <!-- ── Page header ───────────────────────────── -->
+                
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
@@ -204,7 +196,7 @@ const timeline = computed(() => [
                             <h1 class="text-2xl font-bold tracking-tight text-slate-900">
                                 {{ dispatch.plate_number }}
                             </h1>
-                            <!-- Status pill -->
+                            
                             <span
                                 :class="[
                                     'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
@@ -235,10 +227,10 @@ const timeline = computed(() => [
                     </Button>
                 </div>
 
-                <!-- ── Timeline ───────────────────────────────── -->
+                
                 <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                     <div class="relative grid grid-cols-3">
-                        <!-- Connecting line behind the steps -->
+                        
                         <div class="absolute left-[33.33%] right-[33.33%] top-8 h-px bg-slate-200" />
 
                         <div
@@ -246,7 +238,7 @@ const timeline = computed(() => [
                             :key="i"
                             class="flex flex-col items-center gap-2 px-4 py-5 text-center"
                         >
-                            <!-- Icon ring -->
+                            
                             <div
                                 :class="[
                                     'relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors',
@@ -260,7 +252,7 @@ const timeline = computed(() => [
                                     class="h-4 w-4"
                                     :class="step.done ? 'text-emerald-600' : 'text-slate-400'"
                                 />
-                                <!-- Done checkmark badge -->
+                                
                                 <CheckCircle2
                                     v-if="step.done"
                                     class="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-white text-emerald-500"
@@ -283,13 +275,13 @@ const timeline = computed(() => [
                     </div>
                 </div>
 
-                <!-- ── Main content grid ──────────────────────── -->
+                
                 <div class="grid gap-6 lg:grid-cols-3">
 
-                    <!-- ── Left column ────────────────────────── -->
+                    
                     <div class="space-y-6 lg:col-span-1">
 
-                        <!-- Vehicle card -->
+                        
                         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
                                 <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100">
@@ -332,7 +324,7 @@ const timeline = computed(() => [
                             </div>
                         </div>
 
-                        <!-- Dispatch info card -->
+                        
                         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
                                 <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-100">
@@ -360,7 +352,7 @@ const timeline = computed(() => [
                             </div>
                         </div>
 
-                        <!-- Personnel card -->
+                        
                         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
                                 <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100">
@@ -370,7 +362,7 @@ const timeline = computed(() => [
                             </div>
 
                             <div class="divide-y divide-slate-100 px-5">
-                                <!-- Driver -->
+                                
                                 <div class="flex items-center gap-3 py-4">
                                     <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700">
                                         <template v-if="dispatch.driver">
@@ -392,7 +384,7 @@ const timeline = computed(() => [
                                     </div>
                                 </div>
 
-                                <!-- Dispatcher -->
+                                
                                 <div class="flex items-center gap-3 py-4">
                                     <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-100 text-xs font-bold text-violet-700">
                                         <template v-if="dispatch.dispatcher">
@@ -414,10 +406,10 @@ const timeline = computed(() => [
                         </div>
                     </div>
 
-                    <!-- ── Right column ───────────────────────── -->
+                    
                     <div class="space-y-6 lg:col-span-2">
 
-                        <!-- Route summary card -->
+                        
                         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
                                 <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100">
@@ -481,7 +473,7 @@ const timeline = computed(() => [
                             </div>
                         </div>
 
-                        <!-- Route map card -->
+                        
                         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
                                 <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
@@ -504,7 +496,7 @@ const timeline = computed(() => [
                             </div>
                         </div>
 
-                        <!-- Remarks card -->
+                        
                         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
                                 <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100">

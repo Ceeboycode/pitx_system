@@ -11,6 +11,7 @@ use App\Services\Gate\GateService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class GateController extends Controller
@@ -25,7 +26,7 @@ class GateController extends Controller
     Gate::authorize('viewAny', GateModel::class);
 
     $gates = GateModel::query()
-        ->select('id', 'gate_name', 'status', 'bays', 'location', 'created_by')
+        ->select('id', 'gate_name', 'status', 'bays', 'location', 'picture_path', 'created_by')
         ->with([
             'creator:id,name',
             'routes:id,gate_id,route_name,status',
@@ -113,7 +114,8 @@ class GateController extends Controller
                 'label' => $gate->location ?? 'Location not configured',
                 'is_placeholder' => $gate->location === null,
             ],
-            'picture_url' => null,
+            'picture_path' => $gate->picture_path,
+            'picture_url' => $gate->picture_path ? Storage::disk('public')->url($gate->picture_path) : null,
             'assigned_routes' => $gate->routes
                 ->map(fn ($route) => [
                     'id' => $route->id,
@@ -153,7 +155,11 @@ class GateController extends Controller
     {
         Gate::authorize('create', GateModel::class);
 
-        $this->gateService->createGate($request->validated());
+        $data = $request->safe()->except('picture');
+        if ($request->hasFile('picture')) {
+            $data['picture_path'] = $request->file('picture')->store('gates', 'public');
+        }
+        $this->gateService->createGate($data);
 
         return to_route('gates.index')->with('success', 'Gate created successfully.');
     }
@@ -164,7 +170,12 @@ class GateController extends Controller
 
         $oldStatus = (string) $gate->status;
 
-        $this->gateService->updateGate($gate, $request->validated());
+        $data = $request->safe()->except('picture');
+        if ($request->hasFile('picture')) {
+            if ($gate->picture_path) Storage::disk('public')->delete($gate->picture_path);
+            $data['picture_path'] = $request->file('picture')->store('gates', 'public');
+        }
+        $this->gateService->updateGate($gate, $data);
 
         $gate->refresh();
 
@@ -177,6 +188,22 @@ class GateController extends Controller
         return redirect()->back()->with('success', 'Gate updated successfully.');
     }
 
+    public function toggleStatus(GateModel $gate)
+    {
+        Gate::authorize('update', $gate);
+
+        $gate->update([
+            'status' => $gate->status === 'active' ? 'inactive' : 'active',
+            'updated_by' => auth()->id(),
+        ]);
+        $gate->refresh();
+
+        $notification = new GateStatusChangedNotification($gate, (string) $gate->status);
+        $this->notificationService->notifyAffectedCompaniesByGate($gate, $notification);
+
+        return back()->with('success', "Gate marked as {$gate->status}.");
+    }
+
     public function trash(Request $request)
     {
         Gate::authorize('viewTrash', GateModel::class);
@@ -184,13 +211,15 @@ class GateController extends Controller
         $gates = GateModel::onlyTrashed()
             ->select('id', 'gate_name', 'status', 'bays', 'deleted_at')
             ->when($request->search, fn ($q, $s) => $q->where('gate_name', 'like', "%{$s}%"))
+            ->when($request->status, fn ($q, $status) => $q->where('status', $status))
+            ->when($request->filled('bays'), fn ($q) => $q->where('bays', (int) $request->bays))
             ->latest('deleted_at')
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Gates/Trash', [
             'gates'   => $gates,
-            'filters' => $request->only('search'),
+            'filters' => $request->only('search', 'status', 'bays'),
         ]);
     }
 

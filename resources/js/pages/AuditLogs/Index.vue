@@ -46,11 +46,11 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 import {
-    Calendar,
-    Eye,
-    Filter,
-    X,
-} from 'lucide-vue-next';
+    RiCalendarLine as Calendar,
+    RiCloseLine as X,
+    RiEyeLine as Eye,
+    RiFilter2Line as Filter,
+} from 'vue-remix-icons';
 import { computed, ref } from 'vue';
 
 type SortDir = 'asc' | 'desc';
@@ -125,9 +125,14 @@ const userFilter = ref<string>(
     props.filters.user_id ? String(props.filters.user_id) : 'all',
 );
 const entityTypeFilter = ref<string>(props.filters.entity_type ?? 'all');
+const pendingActionFilter = ref(actionFilter.value);
+const pendingUserFilter = ref(userFilter.value);
+const pendingEntityTypeFilter = ref(entityTypeFilter.value);
+const filterOpen = ref(false);
 const dateFrom = ref<string>(props.filters.date_from ?? '');
 const dateTo = ref<string>(props.filters.date_to ?? '');
 const sortDir = ref<SortDir>('desc');
+const previewedLog = ref<AuditLogRow | null>(null);
 
 const popoverFromOpen = ref(false);
 const popoverToOpen = ref(false);
@@ -182,6 +187,14 @@ const hasCategoryFilters = computed(
         (entityTypeFilter.value && entityTypeFilter.value !== 'all')
 );
 
+const activeFilterCount = computed(() => {
+    let count = 0;
+    if (actionFilter.value !== 'all') count++;
+    if (userFilter.value !== 'all') count++;
+    if (entityTypeFilter.value !== 'all') count++;
+    return count;
+});
+
 const hasActiveFilters = computed(
     () =>
         actionFilter.value !== 'all' ||
@@ -229,6 +242,9 @@ function clearFilters() {
     actionFilter.value = 'all';
     userFilter.value = 'all';
     entityTypeFilter.value = 'all';
+    pendingActionFilter.value = 'all';
+    pendingUserFilter.value = 'all';
+    pendingEntityTypeFilter.value = 'all';
     dateFrom.value = '';
     dateTo.value = '';
 
@@ -239,21 +255,26 @@ function clearFilters() {
         date_from: undefined,
         date_to: undefined,
     });
+    filterOpen.value = false;
 }
 
-function onActionChange(value: string) {
-    actionFilter.value = value;
+function applyFilterPopover() {
+    actionFilter.value = pendingActionFilter.value;
+    userFilter.value = pendingUserFilter.value;
+    entityTypeFilter.value = pendingEntityTypeFilter.value;
     applyFilters();
+    filterOpen.value = false;
 }
 
-function onUserChange(value: string) {
-    userFilter.value = value;
-    applyFilters();
+function cancelFilterPopover() {
+    pendingActionFilter.value = actionFilter.value;
+    pendingUserFilter.value = userFilter.value;
+    pendingEntityTypeFilter.value = entityTypeFilter.value;
+    filterOpen.value = false;
 }
 
-function onEntityTypeChange(value: string) {
-    entityTypeFilter.value = value;
-    applyFilters();
+function openPreview(log: AuditLogRow) {
+    previewedLog.value = log;
 }
 
 function formatValue(value: unknown): string {
@@ -295,7 +316,7 @@ function actionBadgeClass(action: string): string {
     <Head title="Audit Logs" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
             <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader class="flex flex-row gap-2">
                     <div class="flex flex-col">
@@ -313,7 +334,7 @@ function actionBadgeClass(action: string): string {
                             <SearchInput
                                 :route="index().url"
                                 :initial-value="filters.search"
-                                placeholder="Search my activity…"
+                                placeholder="Search my activity..."
                                 :only="[
                                     'auditLogs',
                                     'filters',
@@ -326,40 +347,37 @@ function actionBadgeClass(action: string): string {
                         </div>
                         <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
                             <div class="flex flex-row items-center gap-2">
-                                <Popover>
+                                <Popover v-model:open="filterOpen">
                                     <PopoverTrigger as-child>
                                         <Button
                                             variant="header-actions"
                                             size="icon-text"
                                             class="rounded-full"
                                             :class="
-                                                hasCategoryFilters
+                                                activeFilterCount > 0
                                                     ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-300 dark:hover:text-custom-shadow'
                                                     : ''
                                             "
                                         >
                                             <Filter class="h-3.5 w-3.5" />
-                                            {{
-                                                hasCategoryFilters
-                                                    ? 'Filters Active'
-                                                    : 'Filters'
-                                            }}
+                                            <span class="hidden lg:flex">
+                                                {{ activeFilterCount > 0
+                                                    ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
+                                                    : 'Filter' }}
+                                            </span>
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent
-                                        align="start"
+                                        align="end"
                                     >
                                         <div class="grid gap-y-2">
-                                            <div class="space-y-2">
+                                            <div class="flex flex-col gap-y-1">
                                                 <p
                                                     class="text-sm text-custom-shadow/80"
                                                 >
                                                     Action
                                                 </p>
-                                                <Select
-                                                    :model-value="actionFilter"
-                                                    @update:model-value="onActionChange"
-                                                >
+                                                <Select v-model="pendingActionFilter">
                                                     <SelectTrigger
                                                         class="w-full"
                                                     >
@@ -383,16 +401,13 @@ function actionBadgeClass(action: string): string {
                                                 </Select>
                                             </div>
 
-                                            <div class="space-y-2">
+                                            <div class="flex flex-col gap-y-1">
                                                 <p
                                                     class="text-sm text-custom-shadow/80"
                                                 >
                                                     User
                                                 </p>
-                                                <Select
-                                                    :model-value="userFilter"
-                                                    @update:model-value="onUserChange"
-                                                >
+                                                <Select v-model="pendingUserFilter">
                                                     <SelectTrigger
                                                         class="w-full"
                                                     >
@@ -417,16 +432,13 @@ function actionBadgeClass(action: string): string {
                                                 </Select>
                                             </div>
 
-                                            <div class="space-y-2">
+                                            <div class="flex flex-col gap-y-1">
                                                 <p
                                                     class="text-sm text-custom-shadow/80"
                                                 >
                                                     Entity Type
                                                 </p>
-                                                <Select
-                                                    :model-value="entityTypeFilter"
-                                                    @update:model-value="onEntityTypeChange"
-                                                >
+                                                <Select v-model="pendingEntityTypeFilter">
                                                     <SelectTrigger
                                                         class="w-full"
                                                     >
@@ -449,16 +461,24 @@ function actionBadgeClass(action: string): string {
                                                     </SelectContent>
                                                 </Select>
                                             </div>
-                                            <div class="flex justify-end">
+                                            <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+                                            <div class="flex w-full items-center justify-between">
                                                 <Button
                                                     v-if="hasCategoryFilters"
                                                     size="sm"
                                                     variant="destructive"
                                                     @click="clearFilters"
                                                 >
-                                                    <X class="mr-1 h-3.5 w-3.5" />
-                                                    Clear filters
+                                                    Clear
                                                 </Button>
+                                                <div class="ml-auto flex items-center gap-2">
+                                                    <Button variant="ghost-outline" size="sm" @click="cancelFilterPopover">
+                                                        Cancel
+                                                    </Button>
+                                                    <Button variant="float-primary" size="sm" @click="applyFilterPopover">
+                                                        Apply
+                                                    </Button>
+                                                </div>
                                             </div>
                                         </div>
                                     </PopoverContent>
@@ -531,12 +551,12 @@ function actionBadgeClass(action: string): string {
                                 class="border-b border-custom-bg-dark dark:border-custom-bg-light"
                             >
                                 <TableRow>
-                                    <TableHead class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase">User</TableHead>
-                                    <TableHead class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase">Action</TableHead>
-                                    <TableHead class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase">Entity</TableHead>
-                                    <TableHead class="px-0 w-56 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase">Changes</TableHead>
-                                    <TableHead class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase">Timestamp</TableHead>
-                                    <TableHead class="px-0 w-30 text-right text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
+                                    <TableHead class="table-cell h-10 pl-3 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">User</TableHead>
+                                    <TableHead class="table-cell h-10 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Action</TableHead>
+                                    <TableHead class="table-cell h-10 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Entity</TableHead>
+                                    <TableHead class="table-cell h-10 w-56 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Changes</TableHead>
+                                    <TableHead class="table-cell h-10 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Timestamp</TableHead>
+                                    <TableHead class="table-cell h-10 w-30 pr-3 text-right text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Details</TableHead
                                     >
                                 </TableRow>
@@ -549,7 +569,7 @@ function actionBadgeClass(action: string): string {
                                 >
                                     <TableCell
                                         colspan="6"
-                                        class="py-20 text-center"
+                                        class="table-cell p-6 text-center"
                                     >
                                         <div
                                             class="flex flex-col items-center gap-3"
@@ -592,9 +612,13 @@ function actionBadgeClass(action: string): string {
                                 <TableRow
                                     v-for="log in auditLogs.data"
                                     :key="log.id"
-                                    class="group border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light"
+                                    :class="[
+                                        'group cursor-pointer border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                        previewedLog?.id === log.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
+                                    ]"
+                                    @click="openPreview(log)"
                                 >
-                                    <TableCell class="px-0">
+                                    <TableCell class="table-cell py-1.5 pl-3">
                                         <div class="text-sm font-medium">
                                             {{ log.user?.name ?? 'System' }}
                                         </div>
@@ -605,7 +629,7 @@ function actionBadgeClass(action: string): string {
                                         </div>
                                     </TableCell>
 
-                                    <TableCell class="px-0">
+                                    <TableCell class="table-cell py-1.5">
                                         <Badge
                                             :class="
                                                 actionBadgeClass(log.action)
@@ -615,7 +639,7 @@ function actionBadgeClass(action: string): string {
                                         </Badge>
                                     </TableCell>
 
-                                    <TableCell class="px-0">
+                                    <TableCell class="table-cell py-1.5">
                                         <div class="text-sm font-medium">
                                             {{ log.entity_label }}
                                         </div>
@@ -626,7 +650,7 @@ function actionBadgeClass(action: string): string {
                                         </div>
                                     </TableCell>
 
-                                    <TableCell class="px-0 w-56 max-w-56">
+                                    <TableCell class="table-cell w-56 max-w-56 py-1.5">
                                         <div class="space-y-1">
                                             <div
                                                 v-for="change in log.changes.slice(
@@ -655,7 +679,7 @@ function actionBadgeClass(action: string): string {
                                         </div>
                                     </TableCell>
 
-                                    <TableCell class="px-0">
+                                    <TableCell class="table-cell py-1.5">
                                         <div class="text-sm">
                                             {{ log.created_at_human ?? '—' }}
                                         </div>
@@ -666,7 +690,7 @@ function actionBadgeClass(action: string): string {
                                         </div>
                                     </TableCell>
 
-                                    <TableCell class="text-right px-0">
+                                    <TableCell class="table-cell py-1.5 pr-3 text-right" @click.stop>
                                         <Dialog>
                                             <DialogTrigger as-child>
                                                 <Button
@@ -827,6 +851,114 @@ function actionBadgeClass(action: string): string {
                             total: auditLogs.total,
                         }"
                     />
+                </CardContent>
+            </Card>
+
+            <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-100">
+                <CardHeader
+                    v-if="previewedLog"
+                    class="flex flex-row items-start justify-between gap-3"
+                >
+                    <div class="min-w-0">
+                        <CardTitle class="truncate">
+                            {{ previewedLog.action_label }}
+                        </CardTitle>
+                        <CardDescription>Preview</CardDescription>
+                    </div>
+                    <Button
+                        variant="header-actions"
+                        size="icon"
+                        class="h-8 w-8 shrink-0 rounded-full"
+                        aria-label="Close audit log preview"
+                        @click="previewedLog = null"
+                    >
+                        <X class="h-4 w-4" />
+                    </Button>
+                </CardHeader>
+
+                <CardContent
+                    v-if="previewedLog"
+                    class="no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto py-2"
+                >
+                    <div class="flex items-center justify-between gap-3">
+                        <span class="text-sm font-semibold text-custom-shadow">Action</span>
+                        <Badge :class="actionBadgeClass(previewedLog.action)">
+                            {{ previewedLog.action_label }}
+                        </Badge>
+                    </div>
+                    <div class="flex items-start justify-between gap-3">
+                        <span class="text-sm font-semibold text-custom-shadow">User</span>
+                        <div class="min-w-0 text-right">
+                            <p class="truncate text-sm text-custom-shadow/80">
+                                {{ previewedLog.user?.name ?? 'System' }}
+                            </p>
+                            <p class="truncate text-xs text-custom-shadow/60">
+                                {{ previewedLog.user?.email ?? '—' }}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-start justify-between gap-3">
+                        <span class="text-sm font-semibold text-custom-shadow">Entity</span>
+                        <div class="min-w-0 text-right">
+                            <p class="truncate text-sm text-custom-shadow/80">{{ previewedLog.entity_label }}</p>
+                            <p class="truncate text-xs text-custom-shadow/60">{{ previewedLog.entity_name ?? '—' }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start justify-between gap-3">
+                        <span class="text-sm font-semibold text-custom-shadow">Timestamp</span>
+                        <div class="text-right">
+                            <p class="text-sm text-custom-shadow/80">{{ previewedLog.created_at_human ?? '—' }}</p>
+                            <p class="text-xs text-custom-shadow/60">{{ previewedLog.created_at ?? '—' }}</p>
+                        </div>
+                    </div>
+
+                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Changed fields</span>
+                            <span class="text-sm text-custom-shadow/80">{{ previewedLog.changes.length }}</span>
+                        </div>
+                        <div v-if="previewedLog.changes.length" class="space-y-2">
+                            <div
+                                v-for="change in previewedLog.changes"
+                                :key="`${previewedLog.id}-preview-${change.field}`"
+                                class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark"
+                            >
+                                <p class="text-sm font-medium text-custom-shadow">{{ change.label }}</p>
+                                <p class="break-words text-xs text-custom-shadow/70">
+                                    {{ formatValue(change.old) }} → {{ formatValue(change.new) }}
+                                </p>
+                            </div>
+                        </div>
+                        <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">
+                            No field-level changes recorded.
+                        </p>
+                    </div>
+
+                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                    <div class="space-y-2 text-sm text-custom-shadow/80">
+                        <div class="flex justify-between gap-3">
+                            <span class="font-semibold text-custom-shadow">IP</span>
+                            <span>{{ previewedLog.ip_address ?? '—' }}</span>
+                        </div>
+                        <div class="flex justify-between gap-3">
+                            <span class="font-semibold text-custom-shadow">Method</span>
+                            <span>{{ previewedLog.request_method ?? '—' }}</span>
+                        </div>
+                        <div class="space-y-1">
+                            <span class="font-semibold text-custom-shadow">URL</span>
+                            <p class="break-all text-xs">{{ previewedLog.request_url ?? '—' }}</p>
+                        </div>
+                    </div>
+                </CardContent>
+
+                <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
+                    <div class="max-w-60 space-y-1 text-center">
+                        <p class="text-base font-semibold text-custom-shadow">No audit log selected</p>
+                        <p class="text-sm text-custom-shadow/80">Click on a log to preview.</p>
+                    </div>
                 </CardContent>
             </Card>
         </div>

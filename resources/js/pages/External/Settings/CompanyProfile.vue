@@ -335,7 +335,7 @@ function openRequestDetails(requestId: number | string): void {
     <ExternalLayout :company="company" :user="user">
         <div class="mx-auto max-w-6xl space-y-5 p-4 md:p-8">
 
-            <!-- ── Hero ── -->
+            
             <Card>
                 <CardContent class="px-6 py-6">
                     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -359,7 +359,7 @@ function openRequestDetails(requestId: number | string): void {
                 </CardContent>
             </Card>
 
-            <!-- ── Doc stat cards ── -->
+            
             <div class="grid gap-3 md:grid-cols-3">
                 <Card class="border-emerald-200/70 bg-emerald-50/50">
                     <CardContent class="flex items-center justify-between p-4">
@@ -392,10 +392,10 @@ function openRequestDetails(requestId: number | string): void {
                 </Card>
             </div>
 
-            <!-- ── Main grid ── -->
+            
             <div class="grid gap-5 lg:grid-cols-[1.5fr,1fr]">
 
-                <!-- Edit form -->
+                
                 <Card>
                     <CardHeader>
                         <CardTitle>Edit company details</CardTitle>
@@ -407,7 +407,7 @@ function openRequestDetails(requestId: number | string): void {
                     <CardContent>
                         <form class="grid gap-4 md:grid-cols-2" @submit.prevent="submitProfile">
 
-                            <!-- Before you submit notice -->
+                            
                             <div class="flex items-start gap-3 rounded-md border border-blue-200 bg-blue-50 p-3 md:col-span-2">
                                 <ShieldCheck class="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
                                 <div>
@@ -419,7 +419,7 @@ function openRequestDetails(requestId: number | string): void {
                                 </div>
                             </div>
 
-                            <!-- Read-only section divider -->
+                            
                             <div class="flex items-center gap-3 md:col-span-2">
                                 <div class="flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-muted-foreground">
                                     <Lock class="h-3 w-3" />
@@ -485,7 +485,7 @@ function openRequestDetails(requestId: number | string): void {
                                 </select>
                             </div>
 
-                            <!-- Editable section divider -->
+                            
                             <div class="flex items-center gap-3 md:col-span-2">
                                 <div class="flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-emerald-700">
                                     <ShieldCheck class="h-3 w-3" />
@@ -558,7 +558,7 @@ function openRequestDetails(requestId: number | string): void {
                                 </p>
                             </div>
 
-                            <!-- Compliance document section (conditional) -->
+                            
                             <div
                                 v-if="requiresComplianceDocument"
                                 class="space-y-3 rounded-md border border-amber-200 bg-amber-50 p-3 md:col-span-2"
@@ -612,7 +612,7 @@ function openRequestDetails(requestId: number | string): void {
                                 </div>
                             </div>
 
-                            <!-- Form footer actions -->
+                            
                             <div class="flex flex-wrap items-center gap-2 border-t pt-4 md:col-span-2">
                                 <Button
                                     variant="default"
@@ -632,7 +632,7 @@ function openRequestDetails(requestId: number | string): void {
                                 </Button>
                             </div>
 
-                            <!-- Inline validation notices -->
+                            
                             <div
                                 v-if="businessTypeRequiresRegistrationUpdate"
                                 class="flex items-start gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 md:col-span-2"
@@ -670,10 +670,10 @@ function openRequestDetails(requestId: number | string): void {
                     </CardContent>
                 </Card>
 
-                <!-- Sidebar -->
+                
                 <div class="space-y-5">
 
-                    <!-- Brand preview -->
+                    
                     <Card>
                         <CardHeader>
                             <CardTitle class="flex items-center gap-2">
@@ -702,7 +702,7 @@ function openRequestDetails(requestId: number | string): void {
                         </CardContent>
                     </Card>
 
-                    <!-- Latest change request -->
+                    
                     <Card v-if="latest_change_request">
                         <CardHeader>
                             <CardTitle>Latest change request</CardTitle>
@@ -744,7 +744,7 @@ function openRequestDetails(requestId: number | string): void {
                 </div>
             </div>
 
-            <!-- ── Document Status ── -->
+            
             <Card>
                 <CardHeader>
                     <CardTitle>Document status</CardTitle>
@@ -791,7 +791,7 @@ function openRequestDetails(requestId: number | string): void {
             </Card>
         </div>
 
-        <!-- ── Change request history dialog ── -->
+        
         <Dialog v-model:open="requestDialogOpen">
             <DialogContent class="max-h-[85vh] overflow-hidden sm:max-w-2xl">
                 <DialogHeader>
@@ -840,7 +840,7 @@ function openRequestDetails(requestId: number | string): void {
             </DialogContent>
         </Dialog>
 
-        <!-- ── Request details dialog ── -->
+        
         <Dialog v-model:open="requestDetailsDialogOpen">
             <DialogContent class="max-h-[85vh] overflow-hidden sm:max-w-3xl">
                 <DialogHeader>

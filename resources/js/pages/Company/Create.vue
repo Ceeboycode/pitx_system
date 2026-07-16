@@ -75,7 +75,7 @@ const form = useForm<CompanyForm>({
 
 const submit = () => {
     form.post(store().url, {
-        // optional, but safe even if no file present
+        
         forceFormData: true,
         preserveScroll: true,
     });
@@ -89,7 +89,7 @@ const submit = () => {
         <div
             class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
         >
-            <!-- Header -->
+            
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <h1 class="text-2xl leading-tight font-semibold">
@@ -107,7 +107,7 @@ const submit = () => {
             </div>
 
             <form class="space-y-4" @submit.prevent="submit">
-                <!-- Company Details -->
+                
                 <Card>
                     <CardHeader>
                         <CardTitle>Company Details</CardTitle>
@@ -218,7 +218,7 @@ const submit = () => {
                     </CardContent>
                 </Card>
 
-                <!-- Authorized Representative -->
+                
                 <Card>
                     <CardHeader>
                         <CardTitle>Authorized Representative</CardTitle>
@@ -287,7 +287,7 @@ const submit = () => {
                     </CardContent>
                 </Card>
 
-                <!-- Documents -->
+                
                 <Card>
                     <CardHeader>
                         <CardTitle>Company Documents</CardTitle>
@@ -301,7 +301,7 @@ const submit = () => {
                         <Separator />
 
                         <div class="grid gap-4 md:grid-cols-2">
-                            <!-- SEC or DTI -->
+                            
                             <div
                                 v-if="form.business_type === 'corporate'"
                                 class="space-y-2"
@@ -394,10 +394,10 @@ const submit = () => {
                             </div>
                         </div>
 
-                        <!-- Upload progress (optional but nice) -->
+                        
                         <div v-if="form.progress" class="space-y-2">
                             <div class="text-sm text-muted-foreground">
-                                Uploading… {{ form.progress.percentage }}%
+                                Uploading... {{ form.progress.percentage }}%
                             </div>
                             <progress
                                 class="h-2 w-full"
@@ -408,7 +408,7 @@ const submit = () => {
                     </CardContent>
                 </Card>
 
-                <!-- Actions -->
+                
                 <div class="flex items-center gap-2">
                     <Button type="submit" :disabled="form.processing">
                         {{

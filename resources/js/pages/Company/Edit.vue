@@ -454,7 +454,7 @@ const submit = () => {
 
                         <div v-if="form.progress" class="space-y-2">
                             <div class="text-sm text-muted-foreground">
-                                Uploading… {{ form.progress.percentage }}%
+                                Uploading... {{ form.progress.percentage }}%
                             </div>
                             <progress
                                 class="h-2 w-full"

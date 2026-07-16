@@ -91,7 +91,7 @@ const submit = () => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4 md:p-6">
 
-            <!-- ── Page header ────────────────────────────────────── -->
+            
             <div class="mx-5 flex items-start justify-between gap-4">
                 <div class="space-y-1">
                     <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -117,11 +117,11 @@ const submit = () => {
                 </Button>
             </div>
 
-            <!-- ── Form card ──────────────────────────────────────── -->
+            
             <Card class="mx-5">
                 <form @submit.prevent="submit">
 
-                    <!-- Assignment section -->
+                    
                     <CardHeader class="border-b border-slate-100 pb-4">
                         <CardTitle class="flex items-center gap-2 text-base">
                             <Building2 class="h-4 w-4 text-blue-700" />
@@ -135,7 +135,7 @@ const submit = () => {
                     <CardContent class="space-y-5 pt-5">
                         <div class="grid gap-5 md:grid-cols-3">
 
-                            <!-- Company -->
+                            
                             <div class="space-y-1.5">
                                 <Label class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                     Company <span class="text-rose-500">*</span>
@@ -149,7 +149,7 @@ const submit = () => {
                                             <div class="p-2">
                                                 <Input
                                                     v-model="companySearch"
-                                                    placeholder="Search company…"
+                                                    placeholder="Search company..."
                                                     autocomplete="off"
                                                     class="rounded-lg border-slate-200 text-sm"
                                                     @keydown.stop
@@ -175,7 +175,7 @@ const submit = () => {
                                 <InputError :message="form.errors.company_id" />
                             </div>
 
-                            <!-- Route -->
+                            
                             <div class="space-y-1.5">
                                 <Label class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                     Route <span class="text-rose-500">*</span>
@@ -189,7 +189,7 @@ const submit = () => {
                                             <div class="p-2">
                                                 <Input
                                                     v-model="routeSearch"
-                                                    placeholder="Search route…"
+                                                    placeholder="Search route..."
                                                     autocomplete="off"
                                                     class="rounded-lg border-slate-200 text-sm"
                                                     @keydown.stop
@@ -215,7 +215,7 @@ const submit = () => {
                                 <InputError :message="form.errors.route_id" />
                             </div>
 
-                            <!-- Vehicle Type -->
+                            
                             <div class="space-y-1.5">
                                 <Label class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                     Vehicle Type <span class="text-rose-500">*</span>
@@ -229,7 +229,7 @@ const submit = () => {
                                             <div class="p-2">
                                                 <Input
                                                     v-model="vehicleTypeSearch"
-                                                    placeholder="Search vehicle type…"
+                                                    placeholder="Search vehicle type..."
                                                     autocomplete="off"
                                                     class="rounded-lg border-slate-200 text-sm"
                                                     @keydown.stop
@@ -259,7 +259,7 @@ const submit = () => {
 
                         <Separator />
 
-                        <!-- Vehicle Details sub-section -->
+                        
                         <div class="space-y-1.5">
                             <div class="flex items-center gap-2">
                                 <Bus class="h-4 w-4 text-blue-700" />
@@ -270,7 +270,7 @@ const submit = () => {
 
                         <div class="grid gap-5 md:grid-cols-3">
 
-                            <!-- Plate Number -->
+                            
                             <div class="space-y-1.5">
                                 <Label for="plate_number" class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                     Plate Number <span class="text-rose-500">*</span>
@@ -286,7 +286,7 @@ const submit = () => {
                                 <InputError :message="form.errors.plate_number" />
                             </div>
 
-                            <!-- Body Number -->
+                            
                             <div class="space-y-1.5">
                                 <Label for="body_number" class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                     Body Number
@@ -300,7 +300,7 @@ const submit = () => {
                                 <InputError :message="form.errors.body_number" />
                             </div>
 
-                            <!-- Capacity -->
+                            
                             <div class="space-y-1.5">
                                 <Label for="capacity" class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                     Capacity
@@ -320,7 +320,7 @@ const submit = () => {
 
                         <Separator />
 
-                        <!-- Actions -->
+                        
                         <div class="flex items-center justify-end gap-3">
                             <Button
                                 type="button"
@@ -338,7 +338,7 @@ const submit = () => {
                             >
                                 <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
                                 <Save v-else class="mr-2 h-4 w-4" />
-                                {{ form.processing ? 'Saving…' : 'Update Vehicle' }}
+                                {{ form.processing ? 'Saving...' : 'Update Vehicle' }}
                             </Button>
                         </div>
 

@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
 
             UserSeeder::class,
             GateSeeder::class,
+            RouteSeeder::class,
             VehicleTypeSeeder::class,
         ]);
 

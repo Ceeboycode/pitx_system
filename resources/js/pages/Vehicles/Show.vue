@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { destroy, index } from '@/routes/vehicles';
 import type { BreadcrumbItem } from '@/types';
@@ -473,10 +473,10 @@ const routeMapStops = computed(() =>
     })),
 );
 
-/* stops dialog */
+
 const stopsDialogOpen = ref(false);
 
-/* preview dialog */
+
 const previewOpen = ref(false);
 const previewDoc = ref<VehicleDocument | null>(null);
 const pdfLoadError = ref(false);
@@ -494,7 +494,7 @@ function closePreview() {
     pdfLoadError.value = false;
 }
 
-/* verify / unverify only from preview */
+
 const actionForm = useForm({});
 const confirmOpen = ref(false);
 const actionType = ref<'verify' | 'unverify'>('verify');
@@ -529,7 +529,7 @@ function submitConfirm() {
     });
 }
 
-/* invalidate dialog with stackable checkbox remarks */
+
 const invalidPresets = [
     {
         value: 'blurred',
@@ -947,7 +947,7 @@ function downloadSelected() {
                         </CardHeader>
 
                         <CardContent class="border-t border-slate-100">
-                            <!-- Empty state -->
+                            
                             <div
                                 v-if="docs.length === 0"
                                 class="flex flex-col items-center gap-3 py-20 text-center"
@@ -963,7 +963,7 @@ function downloadSelected() {
                                 </div>
                             </div>
 
-                            <!-- Document rows -->
+                            
                             <div v-else>
                                 <div class="flex justify-between py-4">
                                     <div class="flex gap-2">
@@ -1016,7 +1016,7 @@ function downloadSelected() {
                                         class="grid grid-cols-[auto_1fr_auto] py-2 transition-colors"
                                         :class="!selectMode ? 'group/row' : ''"
                                     >
-                                        <!-- Checkbox (select mode) -->
+                                        
                                         <div
                                             class="flex items-start pt-1 overflow-hidden transition-all duration-300"
                                             :class="selectMode ? 'w-5 opacity-100 me-2' : 'w-0 opacity-0'"
@@ -1029,7 +1029,7 @@ function downloadSelected() {
                                             />
                                         </div>
 
-                                        <!-- Left: doc info -->
+                                        
                                         <div class="min-w-0">
                                             <div class="flex flex-wrap items-center gap-2">
                                                 <p class="text-sm font-semibold text-foreground">
@@ -1102,7 +1102,7 @@ function downloadSelected() {
                                             </div>
                                         </div>
 
-                                        <!-- Right: actions dropdown -->
+                                        
                                         <div class="flex items-start">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger as-child>
@@ -1112,7 +1112,7 @@ function downloadSelected() {
                                                         :disabled="actionForm.processing"
                                                     >
                                                         <MoreHorizontal class="h-4 w-4" />
-                                                        <span class="sr-only">Actions</span>
+                                                        
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" class="w-fit rounded-xl border-slate-200 shadow-lg">
@@ -1505,7 +1505,7 @@ function downloadSelected() {
                         :disabled="actionForm.processing"
                         @click="submitConfirm"
                     >
-                        {{ actionForm.processing ? 'Processing…' : 'Confirm' }}
+                        {{ actionForm.processing ? 'Processing...' : 'Confirm' }}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
@@ -1596,7 +1596,7 @@ function downloadSelected() {
                         <Textarea
                             id="inv-remarks"
                             v-model="invalidateForm.remarks"
-                            placeholder="Select reasons above or write your own…"
+                            placeholder="Select reasons above or write your own..."
                             class="min-h-[100px] rounded-lg text-sm"
                         />
 
@@ -1633,7 +1633,7 @@ function downloadSelected() {
                     >
                         {{
                             invalidateForm.processing
-                                ? 'Submitting…'
+                                ? 'Submitting...'
                                 : 'Mark Invalid'
                         }}
                     </Button>

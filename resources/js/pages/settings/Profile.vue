@@ -47,7 +47,7 @@ const user = page.props.auth.user;
                     enctype="multipart/form-data"
                     v-slot="{ errors, processing, recentlySuccessful }"
                 >
-                    <!-- Avatar -->
+                    
                     <div class="grid gap-2">
                         <Label for="avatar">Profile picture</Label>
                         <div
@@ -74,7 +74,7 @@ const user = page.props.auth.user;
 
                     <Separator />
 
-                    <!-- Name -->
+                    
                     <div class="grid gap-2">
                         <Label for="name">Name</Label>
                         <Input
@@ -89,7 +89,7 @@ const user = page.props.auth.user;
                         <InputError class="mt-1" :message="errors.name" />
                     </div>
 
-                    <!-- Email -->
+                    
                     <div class="grid gap-2">
                         <Label for="email">Email address</Label>
                         <Input
@@ -105,7 +105,7 @@ const user = page.props.auth.user;
                         <InputError class="mt-1" :message="errors.email" />
                     </div>
 
-                    <!-- Email verification -->
+                    
                     <div v-if="mustVerifyEmail && !user.email_verified_at">
                         <p class="text-sm text-muted-foreground">
                             Your email address is unverified.

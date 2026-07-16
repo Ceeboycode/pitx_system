@@ -95,7 +95,7 @@ const vehicleTypes = [
     'Van',
 ]
 
-/* ✅ AUTO CAPACITY MAP */
+
 const capacityMap: Record<string, number> = {
     'Jeepney': 16,
     'UV Express': 18,
@@ -123,7 +123,7 @@ const form = useForm({
     })),
 })
 
-/* ✅ WATCH VEHICLE TYPE → AUTO SET CAPACITY */
+
 watch(
     () => form.vehicle_type,
     (newType) => {

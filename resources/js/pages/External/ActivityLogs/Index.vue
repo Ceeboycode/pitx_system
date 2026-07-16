@@ -208,19 +208,19 @@ function actionDot(action: string): string {
 
                 <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
 
-                    <!-- Filters row -->
+                    
                     <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
-                        <!-- Search -->
+                        
                         <div class="lg:col-span-2">
                             <SearchInput
                                 :route="externalMyActivity().url"
                                 :initial-value="filters.search"
-                                placeholder="Search activity…"
+                                placeholder="Search activity..."
                                 :only="['auditLogs', 'filters', 'actions', 'entityTypes', 'flash']"
                             />
                         </div>
 
-                        <!-- Action filter -->
+                        
                         <Select :model-value="actionFilter" @update:model-value="onActionChange">
                             <SelectTrigger class="h-9 rounded-lg border-slate-200 text-sm cursor-pointer">
                                 <SelectValue placeholder="All actions" />
@@ -237,7 +237,7 @@ function actionDot(action: string): string {
                             </SelectContent>
                         </Select>
 
-                        <!-- Entity filter -->
+                        
                         <Select :model-value="entityTypeFilter" @update:model-value="onEntityTypeChange">
                                 <SelectTrigger class="h-9 rounded-lg border-slate-200 text-sm cursor-pointer">
                                     <SelectValue placeholder="All entities" />
@@ -254,7 +254,7 @@ function actionDot(action: string): string {
                             </SelectContent>
                         </Select>
 
-                        <!-- Date range -->
+                        
                         <div class="flex flex-col gap-1.5 lg:col-span-1">
                             <div class="relative">
                                 <CalendarDays class="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -277,7 +277,7 @@ function actionDot(action: string): string {
                         </div>
                     </div>
 
-                    <!-- Filter status bar -->
+                    
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <Filter class="h-3.5 w-3.5" />
@@ -299,7 +299,7 @@ function actionDot(action: string): string {
                         </Button>
                     </div>
 
-                    <!-- Table -->
+                    
                     <Card
                         :class="[
                             'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
@@ -329,7 +329,7 @@ function actionDot(action: string): string {
                             </TableHeader>
 
                             <TableBody>
-                                <!-- Empty state -->
+                                
                                 <TableRow v-if="auditLogs.data.length === 0" class="hover:bg-transparent">
                                     <TableCell colspan="5" class="py-20 text-center">
                                         <div class="flex flex-col items-center gap-3">
@@ -363,7 +363,7 @@ function actionDot(action: string): string {
                                     :key="log.id"
                                     class="border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light"
                                 >
-                                    <!-- Action badge -->
+                                    
                                     <TableCell>
                                         <Badge :class="['gap-1.5 text-xs', actionBadgeClass(log.action)]">
                                             <span :class="['h-1.5 w-1.5 rounded-full', actionDot(log.action)]" />
@@ -371,7 +371,7 @@ function actionDot(action: string): string {
                                         </Badge>
                                     </TableCell>
 
-                                    <!-- Entity -->
+                                    
                                     <TableCell>
                                         <div class="text-sm font-medium">{{ log.entity_label }}</div>
                                         <div class="mt-0.5 text-xs text-muted-foreground">
@@ -379,7 +379,7 @@ function actionDot(action: string): string {
                                         </div>
                                     </TableCell>
 
-                                    <!-- Summary -->
+                                    
                                     <TableCell class="max-w-xs">
                                         <div v-if="log.changes.length > 0" class="space-y-1">
                                             <div
@@ -399,12 +399,12 @@ function actionDot(action: string): string {
                                         <span v-else class="text-xs text-muted-foreground">No field details</span>
                                     </TableCell>
 
-                                    <!-- Timestamp -->
+                                    
                                     <TableCell>
                                         <div class="text-sm text-slate-700">{{ log.created_at_human ?? '—' }}</div>
                                     </TableCell>
 
-                                    <!-- Details dialog -->
+                                    
                                     <TableCell class="text-right">
                                         <Dialog>
                                             <DialogTrigger as-child>
@@ -437,7 +437,7 @@ function actionDot(action: string): string {
                                                 </DialogHeader>
 
                                                 <div class="px-5 py-4 space-y-4">
-                                                    <!-- Meta info -->
+                                                    
                                                     <div class="grid grid-cols-2 gap-3 rounded-lg bg-slate-50 p-3 text-xs">
                                                         <div>
                                                             <p class="font-semibold uppercase tracking-widest text-muted-foreground">Entity</p>
@@ -455,7 +455,7 @@ function actionDot(action: string): string {
 
                                                     <Separator />
 
-                                                    <!-- Changes -->
+                                                    
                                                     <div>
                                                         <p class="mb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                                                             What changed

@@ -24,7 +24,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 
-/* ── Types ─────────────────────────────────────────────────────────────── */
+
 
 type CompanyStatus =
     | 'draft'
@@ -43,7 +43,7 @@ const STATUS_OPTIONS: { value: CompanyStatus; label: string }[] = [
     { value: 'rejected', label: 'Rejected' },
 ];
 
-/* ── Props & model ─────────────────────────────────────────────────────── */
+
 
 const open = defineModel<boolean>('open');
 
@@ -55,7 +55,7 @@ const props = defineProps<{
     };
 }>();
 
-/* ── Form ──────────────────────────────────────────────────────────────── */
+
 
 const form = useForm({
     company_name: props.company.company_name,
@@ -146,7 +146,7 @@ function submit() {
 
                     <Button type="submit" :disabled="form.processing">
                         <Save class="mr-2 h-4 w-4" />
-                        {{ form.processing ? 'Saving…' : 'Save Changes' }}
+                        {{ form.processing ? 'Saving...' : 'Save Changes' }}
                     </Button>
                 </DialogFooter>
             </form>

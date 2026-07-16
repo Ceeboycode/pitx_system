@@ -23,11 +23,11 @@ const props = withDefaults(defineProps<{
 })
 
 // TODO: currently we use `createElement` and `render` to render the
-// const chartContext = useChart(null)
+
 
 const payload = computed(() => {
   return Object.entries(props.payload).map(([key, value]) => {
-    // const key = `${props.nameKey || item.name || item.dataKey || "value"}`
+    
     const itemConfig = props.config[key]
     const indicatorColor = props.config[key]?.color ?? props.payload.fill
 

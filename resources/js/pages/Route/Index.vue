@@ -1,18 +1,8 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,9 +17,16 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import {
     Popover,
     PopoverContent,
@@ -63,23 +60,24 @@ import {
     RiArrowDownSLine,
     RiArrowUpDownLine,
     RiArrowUpSLine,
+    RiCloseLine,
     RiEditLine,
-    RiEyeLine,
+    RiExternalLinkLine,
     RiFilter2Line,
     RiMore2Line,
     RiShutDownLine,
 } from 'vue-remix-icons';
 
+import Separator from '@/components/ui/separator/Separator.vue';
+
 import { computed, ref } from 'vue';
 
-/* ── Permissions ─────────────────────────────────────────────────── */
 const canCreate    = can('routes.create');
 const canUpdate    = can('routes.update');
 const canDelete    = can('routes.archive');
 const canViewTrash = can('routes.viewTrash');
 const canToggle    = can('routes.toggleStatus');
 
-/* ── Types ──────────────────────────────────────────────────────── */
 interface Gate {
     id: number;
     gate_name: string;
@@ -97,7 +95,6 @@ interface RouteRow {
     gate: Gate | null;
 }
 
-/* ── Props ───────────────────────────────────────────────────────── */
 const props = withDefaults(
     defineProps<{
         routes: {
@@ -124,16 +121,19 @@ const props = withDefaults(
     },
 );
 
-/* ── Breadcrumbs ─────────────────────────────────────────────────── */
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Routes', href: index().url },
 ];
 
-/* ── Filter & Sort state ─────────────────────────────────────────── */
 const statusFilter = ref<string>(props.filters.status ?? 'all');
 const sortBy = ref<SortField>(props.filters.sort_by ?? null);
 const sortDir = ref<SortDir>(props.filters.sort_dir ?? 'asc');
 const filterOpen = ref(false);
+const previewedRoute = ref<RouteRow | null>(null);
+
+function openPreview(route: RouteRow) {
+    previewedRoute.value = route;
+}
 
 const hasActiveFilters = computed(() =>
     (statusFilter.value && statusFilter.value !== 'all') ||
@@ -202,7 +202,6 @@ function sortIconClass(field: SortField) {
     return sortBy.value === field ? 'text-custom-primary' : 'text-custom-shadow/40';
 }
 
-/* ── Status helpers ──────────────────────────────────────────────── */
 function statusClass(status: RouteRow['status']): string {
     return status === 'active'
         ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
@@ -219,7 +218,6 @@ function toggleStatusClass(status: RouteRow['status']): string {
         : 'text-foreground';
 }
 
-/* ── Archive dialog ──────────────────────────────────────────────── */
 const archivingRoute = ref<RouteRow | null>(null);
 const archiveOpen = ref(false);
 
@@ -238,11 +236,6 @@ function confirmArchive() {
             archiveOpen.value = false;
         },
     });
-}
-
-/* ── Toggle status ───────────────────────────────────────────────── */
-function handleToggleStatus(id: number) {
-    router.patch(toggleStatus(id).url, {}, { preserveScroll: true });
 }
 
 const togglingRoute = ref<RouteRow | null>(null);
@@ -269,7 +262,7 @@ function confirmToggle() {
     <Head title="Routes" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
             <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader class="flex flex-row gap-2">
                     <div class="flex flex-col">
@@ -319,10 +312,10 @@ function confirmToggle() {
                                     <DropdownMenuItem
                                         v-if="canViewTrash"
                                         as-child
-                                        class="cursor-pointer"
+                                        class="cursor-pointer group"
                                     >
                                         <Link :href="trash().url" class="flex items-center">
-                                            <RiArchive2Line class="h-4 w-4" />
+                                            <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-300" />
                                             Archives
                                         </Link>
                                     </DropdownMenuItem>
@@ -338,7 +331,7 @@ function confirmToggle() {
                             <SearchInput
                                 :route="index().url"
                                 :initial-value="props.filters.search"
-                                placeholder="Search routes…"
+                                placeholder="Search routes..."
                                 :only="['routes', 'filters', 'flash']"
                                 :debounce="350"
                             />
@@ -370,7 +363,7 @@ function confirmToggle() {
 
                                 <PopoverContent align="end">
                                     <div class="grid gap-y-2">
-                                        <div class="space-y-2">
+                                        <div class="flex flex-col gap-y-1">
                                             <p class="text-sm text-custom-shadow/80">
                                                 Status
                                             </p>
@@ -502,9 +495,11 @@ function confirmToggle() {
                                     v-for="(routeItem, index) in props.routes.data"
                                     :key="routeItem.id"
                                     :class="[
-                                        'grid grid-cols-5 items-center border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                        'grid cursor-pointer grid-cols-5 items-center border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
                                         index === props.routes.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                        previewedRoute?.id === routeItem.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
                                     ]"
+                                    @click="openPreview(routeItem)"
                                 >
                                     <div class="col-span-1 flex justify-start py-1.5 pl-3 font-semibold capitalize">
                                         {{ routeItem.route_name }}
@@ -531,7 +526,7 @@ function confirmToggle() {
                                         {{ routeItem.created_at_human ?? '—' }}
                                     </div>
 
-                                    <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right">
+                                    <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right" @click.stop>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
@@ -539,44 +534,43 @@ function confirmToggle() {
                                                     size="icon-more"
                                                 >
                                                     <RiMore2Line class="h-4 w-4" />
-                                                    <span class="sr-only">Open menu</span>
+                                                    
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent align="end" class="w-fit rounded-lg shadow-lg">
-                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
+                                            <DropdownMenuContent align="end" class="text-custom-shadow">
+                                                <DropdownMenuLabel>
                                                     {{ routeItem.route_name }}
                                                 </DropdownMenuLabel>
-                                                <DropdownMenuSeparator />
-
                                                 <DropdownMenuItem
                                                     as-child
-                                                    class="cursor-pointer rounded-lg"
+                                                    class="group"
                                                 >
                                                     <Link :href="show(routeItem.id).url" class="flex items-center">
-                                                        <RiEyeLine class="h-4 w-4" />
+                                                        <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-300" />
                                                         View
                                                     </Link>
                                                 </DropdownMenuItem>
 
+                                                <!-- TODO: make this button work -->
                                                 <DropdownMenuItem
                                                     v-if="canUpdate"
                                                     as-child
-                                                    class="cursor-pointer rounded-lg"
+                                                    class="group"
                                                 >
                                                     <Link :href="edit(routeItem.id).url">
-                                                        <RiEditLine class="h-4 w-4" />
+                                                        <RiEditLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-300" />
                                                         Edit
                                                     </Link>
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
                                                     v-if="canToggle"
-                                                    :class="['cursor-pointer rounded-lg', toggleStatusClass(routeItem.status)]"
+                                                    :class="['group', toggleStatusClass(routeItem.status)]"
                                                     @click="openToggleDialog(routeItem)"
                                                 >
-                                                    <RiShutDownLine class="h-4 w-4" />
-                                                    {{ routeItem.status === 'active' ? 'Set Inactive' : 'Set Active' }}
+                                                    <RiShutDownLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-300" />
+                                                    <span class="text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-300">{{ routeItem.status === 'active' ? 'Inactivate' : 'Activate' }}</span>
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -613,42 +607,124 @@ function confirmToggle() {
                     />
                 </CardContent>
             </Card>
+
+            <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-100">
+                <CardHeader v-if="previewedRoute" class="flex flex-row items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <CardTitle class="truncate capitalize">{{ previewedRoute.route_name }}</CardTitle>
+                        <CardDescription>Preview</CardDescription>
+                    </div>
+                    <Button variant="header-actions" size="icon" class="h-8 w-8 shrink-0 rounded-full" @click="previewedRoute = null">
+                        <RiCloseLine class="h-4 w-4" />
+                    </Button>
+                </CardHeader>
+
+                <CardContent v-if="previewedRoute" class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto py-2">
+                    <div class="space-y-3 pt-2">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Status</span>
+                            <Badge :class="['gap-1.5', statusClass(previewedRoute.status)]">
+                                <span :class="['h-1.5 w-1.5 rounded-full', statusDot(previewedRoute.status)]" />
+                                {{ previewedRoute.status === 'active' ? 'Active' : 'Inactive' }}
+                            </Badge>
+                        </div>
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Gate</span>
+                            <span class="text-right text-sm">{{ previewedRoute.gate?.gate_name || 'Not assigned' }}</span>
+                        </div>
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Created</span>
+                            <span class="text-right text-sm">{{ previewedRoute.created_at_human || 'Not recorded' }}</span>
+                        </div>
+                    </div>
+
+                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <Button v-if="canUpdate" as-child variant="ghost-outline" size="icon-text">
+                            <Link :href="edit(previewedRoute.id).url">
+                                <RiEditLine class="h-4 w-4" />
+                                Edit
+                            </Link>
+                        </Button>
+                        <Button v-if="canDelete" variant="destructive" size="icon-text" @click="openArchiveDialog(previewedRoute)">
+                            <RiArchive2Line class="h-4 w-4" />
+                            Archive
+                        </Button>
+                        <Button v-if="canToggle" :variant="previewedRoute.status === 'active' ? 'destructive' : 'ghost-outline'" size="icon-text" @click="openToggleDialog(previewedRoute)">
+                            <RiShutDownLine class="h-4 w-4" />
+                            {{ previewedRoute.status === 'active' ? 'Inactivate' : 'Activate' }}
+                        </Button>
+                        <Button as-child variant="float-primary" size="icon">
+                            <Link :href="show(previewedRoute.id).url">
+                                <RiExternalLinkLine class="h-4 w-4" />
+                            </Link>
+                        </Button>
+                    </div>
+                </CardContent>
+
+                <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
+                    <div class="max-w-60 space-y-1 text-center">
+                        <p class="text-base font-semibold text-custom-shadow">No route selected</p>
+                        <p class="text-sm text-custom-shadow/80">Click on a route to preview.</p>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
 
-        <!-- Toggle status confirmation -->
-        <AlertDialog v-model:open="toggleOpen">
-            <AlertDialogContent class="rounded-lg p-4">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>
-                        {{ togglingRoute?.status === 'active' ? 'Set Route Inactive' : 'Set Route Active' }}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
+        
+        <Dialog v-model:open="toggleOpen">
+            <DialogContent class="px-6">
+                <DialogHeader class="px-0">
+                    <DialogTitle>
+                        Set route status
+                    </DialogTitle>
+                    <DialogDescription class="mt-4">
                         Are you sure you want to set
-                        <span class="font-semibold text-foreground">{{ togglingRoute?.route_name ?? 'this route' }}</span>
+                        <span class="font-semibold">{{ togglingRoute?.route_name ?? 'this route' }}</span>
                         to
-                        <span class="font-semibold" :class="togglingRoute?.status === 'active' ? 'text-foreground' : 'text-foreground'">
+                        <span class="font-semibold">
                             {{ togglingRoute?.status === 'active' ? 'inactive' : 'active' }}
                         </span>?
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg cursor-pointer hover:bg-slate-100" @click="togglingRoute = null">
+                    </DialogDescription>
+                </DialogHeader>
+                <Separator class="mb-4"/>
+                <DialogFooter class="gap-2 sm:justify-end">
+                    <Button variant="ghost-outline" @click="toggleOpen = false; togglingRoute = null">
                         Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                        :class="[
-                            'rounded-lg border-0 text-white cursor-pointer',
-                            togglingRoute?.status === 'active'
-                                ? 'bg-rose-600 hover:bg-rose-700'
-                                : 'bg-primary'
-                        ]"
+                    </Button>
+                    <Button
+                        :variant="togglingRoute?.status === 'active' ? 'destructive' : 'float-primary'"
                         @click="confirmToggle"
                     >
                         <RiShutDownLine class="h-4 w-4" />
-                        {{ togglingRoute?.status === 'active' ? 'Set Inactive' : 'Set Active' }}
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                        {{ togglingRoute?.status === 'active' ? 'Inactivate' : 'Activate' }}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog v-model:open="archiveOpen">
+            <DialogContent class="px-6">
+                <DialogHeader class="px-0">
+                    <DialogTitle>Archive Route</DialogTitle>
+                    <DialogDescription class="mt-4">
+                        Are you sure you want to archive
+                        <span class="font-semibold">{{ archivingRoute?.route_name ?? 'this route' }}</span>?
+                        You can restore it later from Archives.
+                    </DialogDescription>
+                </DialogHeader>
+                <Separator class="mb-4" />
+                <DialogFooter class="gap-2 sm:justify-end">
+                    <Button variant="ghost-outline" @click="archiveOpen = false; archivingRoute = null">
+                        Cancel
+                    </Button>
+                    <Button variant="destructive" @click="confirmArchive">
+                        <RiArchive2Line class="h-4 w-4" />
+                        Archive Route
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>

@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index, restore, trash } from '@/routes/roles';
 import { type BreadcrumbItem } from '@/types';
@@ -47,13 +47,13 @@ import SearchInput from '@/components/SearchInput.vue';
 import { can } from '@/lib/can';
 
 import {
-    Archive,
-    ArrowLeft,
-    MoreHorizontal,
-    RotateCcw,
-    ShieldCheck,
-    X,
-} from 'lucide-vue-next';
+    RiArchive2Line as Archive,
+    RiArrowLeftSLine as ArrowLeft,
+    RiCloseLine as X,
+    RiMore2Line as MoreHorizontal,
+    RiRestartLine as RotateCcw,
+    RiShieldCheckLine as ShieldCheck,
+} from 'vue-remix-icons';
 import { toast } from 'vue-sonner';
 
 type Permission = { id: number; name: string };
@@ -145,7 +145,7 @@ function confirmRestore() {
             <Card>
                 <CardHeader>
                     <CardTitle class="flex items-center gap-2">
-                        <!-- <span>Change Requests</span> -->
+                        <!-- CODE: <span>Change Requests</span> -->
                          <!-- TODO: make the text straight, not wrapped -->
                         <Button
                             as-child
@@ -174,7 +174,7 @@ function confirmRestore() {
                             <SearchInput
                                 :route="trash().url"
                                 :initial-value="filters.search"
-                                placeholder="Search archived roles…"
+                                placeholder="Search archived roles..."
                                 :only="['roles', 'filters', 'flash']"
                                 :debounce="350"
                             />
@@ -307,9 +307,7 @@ function confirmRestore() {
                                                     <MoreHorizontal
                                                         class="h-4 w-4"
                                                     />
-                                                    <span class="sr-only"
-                                                        >Open actions</span
-                                                    >
+                                                    
                                                 </Button>
                                             </DropdownMenuTrigger>
 

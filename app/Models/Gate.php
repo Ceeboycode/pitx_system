@@ -16,6 +16,7 @@ class Gate extends Model
         'status',
         'bays',
         'location',
+        'picture_path',
         'created_by',
         'updated_by',
     ];

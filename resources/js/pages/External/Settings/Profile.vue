@@ -45,7 +45,7 @@ const user = page.props.auth.user;
                     >
                         <input type="hidden" name="_method" value="PATCH" />
 
-                        <!-- Avatar field -->
+                        
                         <div class="grid gap-2">
                             <Label for="avatar">Profile picture</Label>
 
@@ -61,7 +61,7 @@ const user = page.props.auth.user;
                                 </div>
                             </div>
 
-                            <!-- Fallback initials avatar -->
+                            
                             <div v-else class="flex items-center gap-3 rounded-md border bg-muted/40 p-3">
                                 <div class="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-sm font-medium text-muted-foreground">
                                     {{ user.name?.charAt(0).toUpperCase() }}
@@ -69,7 +69,7 @@ const user = page.props.auth.user;
                                 <p class="text-sm text-muted-foreground">No profile picture set</p>
                             </div>
 
-                            <!-- Styled file upload trigger -->
+                            
                             <Label
                                 for="avatar"
                                 class="mt-1 inline-flex w-fit cursor-pointer items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted"
@@ -92,7 +92,7 @@ const user = page.props.auth.user;
                             <InputError :message="errors.avatar" />
                         </div>
 
-                        <!-- Name field -->
+                        
                         <div class="grid gap-2">
                             <Label for="name">Name</Label>
                             <Input
@@ -106,7 +106,7 @@ const user = page.props.auth.user;
                             <InputError :message="errors.name" />
                         </div>
 
-                        <!-- Email field -->
+                        
                         <div class="grid gap-2">
                             <Label for="email">Email address</Label>
                             <Input
@@ -120,7 +120,7 @@ const user = page.props.auth.user;
                             />
                             <InputError :message="errors.email" />
 
-                            <!-- Unverified email alert -->
+                            
                             <div v-if="mustVerifyEmail && !user.email_verified_at" class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 shrink-0">
                                     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -138,7 +138,7 @@ const user = page.props.auth.user;
                             </div>
                         </div>
 
-                        <!-- Footer actions -->
+                        
                         <div class="flex items-center gap-4 border-t pt-5">
                             <Button :disabled="processing">Save changes</Button>
                             <Transition

@@ -39,7 +39,7 @@ const showConfirm = ref(false);
                         class="space-y-6"
                         v-slot="{ errors, processing, recentlySuccessful }"
                     >
-                        <!-- Current password -->
+                        
                         <div class="grid gap-2">
                             <Label for="current_password">Current password</Label>
                             <div class="relative">
@@ -67,7 +67,7 @@ const showConfirm = ref(false);
                             <InputError :message="errors.current_password" />
                         </div>
 
-                        <!-- New password -->
+                        
                         <div class="grid gap-2">
                             <Label for="password">New password</Label>
                             <div class="relative">
@@ -95,7 +95,7 @@ const showConfirm = ref(false);
                             <InputError :message="errors.password" />
                         </div>
 
-                        <!-- Confirm password -->
+                        
                         <div class="grid gap-2">
                             <Label for="password_confirmation">Confirm password</Label>
                             <div class="relative">
@@ -123,7 +123,7 @@ const showConfirm = ref(false);
                             <InputError :message="errors.password_confirmation" />
                         </div>
 
-                        <!-- Footer -->
+                        
                         <div class="flex items-center gap-4 border-t pt-5">
                             <Button :disabled="processing">Save password</Button>
                             <Transition

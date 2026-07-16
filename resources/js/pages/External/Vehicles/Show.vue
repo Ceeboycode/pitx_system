@@ -56,17 +56,13 @@ import {
 
 import CompanyVehicleController from '@/actions/App/Http/Controllers/CompanyVehicleController';
 
-/* ======================================================
-   Permissions
-====================================================== */
+
 import { can } from '@/lib/can';
 
 const canUpdate = can('external_vehicles.update');
 const canToggle = can('external_vehicles.toggleStatus');
 
-/* ======================================================
-   Types
-====================================================== */
+
 type Company = {
     id: number;
     company_name: string;
@@ -144,9 +140,7 @@ type Vehicle = {
 
 type DocTypes = Record<string, string>;
 
-/* ======================================================
-   Props
-====================================================== */
+
 const props = defineProps<{
     company: Company;
     user: User;
@@ -161,9 +155,7 @@ const props = defineProps<{
     };
 }>();
 
-/* ======================================================
-   Read-only form state (for child components)
-====================================================== */
+
 const vehicleTypes = [
     'Bus',
     'Modern Jeepney',
@@ -193,9 +185,7 @@ const form = reactive({
     })),
 });
 
-/* ======================================================
-   Computed
-====================================================== */
+
 const selectedRoute = computed(
     () =>
         props.routes.find(
@@ -233,9 +223,7 @@ const orderedDocuments = computed(() =>
     })),
 );
 
-/* ======================================================
-   Business logic guards (toggle)
-====================================================== */
+
 function isSuspended(status?: string | null) {
     return status === 'suspended';
 }
@@ -304,9 +292,7 @@ function vehicleActionNote(vehicle: Vehicle) {
     return '';
 }
 
-/* ======================================================
-   Toggle status dialog
-====================================================== */
+
 const statusDialog = reactive({ open: false });
 
 function confirmToggleStatus() {
@@ -322,9 +308,7 @@ function confirmToggleStatus() {
     );
 }
 
-/* ======================================================
-   Document preview dialog
-====================================================== */
+
 const previewOpen = ref(false);
 const previewDoc = ref<VehicleDocument | null>(null);
 
@@ -334,9 +318,7 @@ function openPreview(doc: VehicleDocument) {
     previewOpen.value = true;
 }
 
-/* ======================================================
-   Helpers
-====================================================== */
+
 function humanize(value?: string | null) {
     if (!value) return '—';
     return value
@@ -444,7 +426,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
     <ExternalLayout :company="company" :user="user">
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
-                <!-- ── Page header ───────────────────────────── -->
+                
                 <div
                     class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
                 >
@@ -493,7 +475,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         </p>
                     </div>
 
-                    <!-- Action buttons -->
+                    
                     <div class="flex shrink-0 items-center gap-2 self-start">
                         <Button
                             as-child
@@ -506,7 +488,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                             </Link>
                         </Button>
 
-                        <!-- Actions dropdown — only shown when user has at least one permission -->
+                        
                         <DropdownMenu v-if="canUpdate || canToggle">
                             <DropdownMenuTrigger as-child>
                                 <Button
@@ -529,7 +511,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
 
                                 <DropdownMenuSeparator class="bg-slate-100" />
 
-                                <!-- Edit -->
+                                
                                 <DropdownMenuItem
                                     v-if="
                                         canEditDocumentsForResubmission(vehicle)
@@ -549,7 +531,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                     </Link>
                                 </DropdownMenuItem>
 
-                                <!-- Edit disabled -->
+                                
                                 <DropdownMenuItem
                                     v-else-if="canUpdate"
                                     disabled
@@ -564,7 +546,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                     class="bg-slate-100"
                                 />
 
-                                <!-- Toggle status -->
+                                
                                 <DropdownMenuItem
                                     v-if="canToggle && canToggleVehicle"
                                     :class="[
@@ -577,7 +559,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                     {{ toggleLabel(vehicle.status) }}
                                 </DropdownMenuItem>
 
-                                <!-- Toggle disabled — business rule blocks -->
+                                
                                 <DropdownMenuItem
                                     v-else-if="canToggle"
                                     disabled
@@ -587,7 +569,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                     {{ toggleLabel(vehicle.status) }}
                                 </DropdownMenuItem>
 
-                                <!-- Contextual note -->
+                                
                                 <div
                                     v-if="canToggle && !canToggleVehicle"
                                     class="px-2 pt-1 pb-2 text-left text-[11px] text-slate-400"
@@ -599,7 +581,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                     </div>
                 </div>
 
-                <!-- ── Stat cards ─────────────────────────────── -->
+                
                 <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
                     <div
                         class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
@@ -685,11 +667,11 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                     </div>
                 </div>
 
-                <!-- ── Main grid ──────────────────────────────── -->
+                
                 <div class="grid gap-6 xl:grid-cols-[1fr_330px]">
-                    <!-- Left column -->
+                    
                     <div class="space-y-6">
-                        <!-- Company Information -->
+                        
                         <div
                             class="rounded-xl border border-slate-200 bg-white shadow-sm"
                         >
@@ -756,7 +738,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                             </div>
                         </div>
 
-                        <!-- Route Assignment -->
+                        
                         <div
                             class="rounded-xl border border-slate-200 bg-white shadow-sm"
                         >
@@ -782,7 +764,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                             </div>
                         </div>
 
-                        <!-- Vehicle Information -->
+                        
                         <div
                             class="rounded-xl border border-slate-200 bg-white shadow-sm"
                         >
@@ -806,7 +788,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                             </div>
                         </div>
 
-                        <!-- Required Documents -->
+                        
                         <div
                             class="rounded-xl border border-slate-200 bg-white shadow-sm"
                         >
@@ -829,7 +811,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                     :key="document.document_type"
                                     class="mb-3 overflow-hidden rounded-xl border border-slate-200 bg-white transition-colors last:mb-0 hover:border-blue-200"
                                 >
-                                    <!-- Doc header row -->
+                                    
                                     <div
                                         class="flex flex-col gap-4 p-4 md:flex-row md:items-start md:justify-between"
                                     >
@@ -946,7 +928,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                         </div>
                                     </div>
 
-                                    <!-- Doc meta row -->
+                                    
                                     <div
                                         class="grid gap-4 border-t border-slate-100 bg-slate-50/60 px-4 py-3 md:grid-cols-2 xl:grid-cols-4"
                                     >
@@ -1024,9 +1006,9 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         </div>
                     </div>
 
-                    <!-- Right sidebar -->
+                    
                     <div class="space-y-4">
-                        <!-- Vehicle Summary -->
+                        
                         <div
                             class="rounded-xl border border-slate-200 bg-white shadow-sm"
                         >
@@ -1056,7 +1038,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                             </div>
                         </div>
 
-                        <!-- Document Status -->
+                        
                         <div
                             class="rounded-xl border border-slate-200 bg-white shadow-sm"
                         >
@@ -1205,7 +1187,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
             </div>
         </div>
 
-        <!-- ── Toggle status dialog ──────────────────── -->
+        
         <AlertDialog v-model:open="statusDialog.open">
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
@@ -1234,7 +1216,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
             </AlertDialogContent>
         </AlertDialog>
 
-        <!-- ── Document preview dialog ───────────────── -->
+        
         <Dialog v-model:open="previewOpen">
             <DialogContent
                 class="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl p-0"

@@ -17,6 +17,15 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
     Card,
     CardContent,
     CardDescription,
@@ -28,7 +37,6 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -43,6 +51,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
@@ -51,21 +61,26 @@ import {
     RiArrowDownSLine,
     RiArrowUpDownLine,
     RiArrowUpSLine,
-    RiDownloadLine,
+    RiFileAddLine,
+    RiFileCheckLine,
+    RiFileUploadLine,
     RiFileSearchLine,
     RiFileTextLine,
     RiFilter2Line,
     RiLoaderLine,
     RiMore2Line,
+    RiOctagonLine,
+    RiCloseLine,
+    RiBusLine,
     RiShutDownLine,
-    RiUploadLine,
+    RiSpam2Line,
 } from 'vue-remix-icons';
 import { computed, ref } from 'vue';
 
 import { destroy, index, show, trash } from '@/routes/vehicles';
 import { type BreadcrumbItem } from '@/types';
 
-/* ── Types ──────────────────────────────────────────────────────── */
+
 
 type SortField = 'capacity' | 'created_at' | 'status' | null;
 type SortDir = 'asc' | 'desc';
@@ -83,7 +98,7 @@ type VehicleItem = {
     route?: { id?: number; route_name?: string | null } | null;
 };
 
-/* ── Props ───────────────────────────────────────────────────────── */
+
 
 const props = defineProps<{
     vehicles: {
@@ -104,16 +119,21 @@ const props = defineProps<{
     routes: { id: number; route_name: string }[];
 }>();
 
-/* ── Breadcrumbs ─────────────────────────────────────────────────── */
+
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Vehicles', href: index().url },
 ];
 
-/* ── Import / Export ─────────────────────────────────────────────── */
+
 
 const importOpen = ref(false);
 const exporting = ref(false);
+const previewedVehicle = ref<VehicleItem | null>(null);
+
+function openPreview(vehicle: VehicleItem) {
+    previewedVehicle.value = vehicle;
+}
 
 function triggerExport() {
     exporting.value = true;
@@ -132,16 +152,16 @@ function onImportDone() {
     router.reload({ only: ['vehicles'] });
 }
 
-/* ── Dialog state ────────────────────────────────────────────────── */
+
 
 const archiveDialogOpen = ref(false);
 const selectedVehicle = ref<VehicleItem | null>(null);
-const suspendDialogOpen = ref(false);
-const activateDialogOpen = ref(false);
+const statusDialogOpen = ref(false);
 const statusVehicle = ref<VehicleItem | null>(null);
 const suspendRemarks = ref('');
+const isSuspending = computed(() => statusVehicle.value?.status !== 'suspended');
 
-/* ── Filter & Sort state ─────────────────────────────────────────── */
+
 
 const statusFilter = ref<string>(props.filters.status ?? 'all');
 const vehicleTypeFilter = ref<string>(props.filters.vehicle_type ?? 'all');
@@ -156,13 +176,6 @@ const hasActiveFilters = computed(
         (vehicleTypeFilter.value && vehicleTypeFilter.value !== 'all') ||
         (routeFilter.value && routeFilter.value !== 'all') ||
         sortBy.value !== null,
-);
-
-const hasCategoryFilters = computed(
-    () =>
-        (statusFilter.value && statusFilter.value !== 'all') ||
-        (vehicleTypeFilter.value && vehicleTypeFilter.value !== 'all') ||
-        (routeFilter.value && routeFilter.value !== 'all'),
 );
 
 const activeFilterCount = computed(() => {
@@ -239,7 +252,7 @@ function clearFilters() {
     });
 }
 
-/* ── Sort icon helpers ───────────────────────────────────────────── */
+
 
 function sortIcon(field: SortField) {
     if (sortBy.value !== field) return RiArrowUpDownLine;
@@ -252,16 +265,7 @@ function sortIconClass(field: SortField) {
         : 'text-custom-shadow/40';
 }
 
-/* ── Helpers ─────────────────────────────────────────────────────── */
 
-const formatDate = (value?: string | null) => {
-    if (!value) return '—';
-    return new Date(value).toLocaleDateString('en-PH', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
-};
 
 const humanize = (text?: string | null) => {
     if (!text) return '—';
@@ -306,12 +310,6 @@ function statusDot(status?: string | null): string {
     }
 }
 
-function toggleStatusClass(status?: string | null): string {
-    return status === 'active'
-        ? 'text-rose-600 focus:bg-rose-50 focus:text-rose-600'
-        : 'text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700';
-}
-
 const toggleLabel = (status?: string | null) =>
     status === 'active'
         ? 'Suspend'
@@ -322,7 +320,7 @@ const toggleLabel = (status?: string | null) =>
 const canToggle = (vehicle: VehicleItem) =>
     !['pending', 'for_verification'].includes(vehicle.status ?? '');
 
-/* ── Actions ─────────────────────────────────────────────────────── */
+
 
 const openArchiveDialog = (vehicle: VehicleItem) => {
     selectedVehicle.value = vehicle;
@@ -332,12 +330,13 @@ const openArchiveDialog = (vehicle: VehicleItem) => {
 const openSuspendDialog = (vehicle: VehicleItem) => {
     statusVehicle.value = vehicle;
     suspendRemarks.value = '';
-    suspendDialogOpen.value = true;
+    statusDialogOpen.value = true;
 };
 
 const openActivateDialog = (vehicle: VehicleItem) => {
     statusVehicle.value = vehicle;
-    activateDialogOpen.value = true;
+    suspendRemarks.value = '';
+    statusDialogOpen.value = true;
 };
 
 const confirmSuspend = () => {
@@ -348,7 +347,7 @@ const confirmSuspend = () => {
         {
             preserveScroll: true,
             onSuccess: () => {
-                suspendDialogOpen.value = false;
+                statusDialogOpen.value = false;
                 statusVehicle.value = null;
                 suspendRemarks.value = '';
             },
@@ -364,11 +363,19 @@ const confirmActivate = () => {
         {
             preserveScroll: true,
             onSuccess: () => {
-                activateDialogOpen.value = false;
+                statusDialogOpen.value = false;
                 statusVehicle.value = null;
             },
         },
     );
+};
+
+const confirmStatusChange = () => {
+    if (isSuspending.value) {
+        confirmSuspend();
+    } else {
+        confirmActivate();
+    }
 };
 
 const archiveVehicle = (vehicle: VehicleItem) => {
@@ -386,7 +393,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
     <Head title="Vehicles" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
             <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader class="flex flex-row gap-2">
                     <div class="flex flex-col">
@@ -397,32 +404,6 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                     </div>
                     <div class="flex flex-1 justify-end gap-2">
                         <div class="lg:flex items-center gap-2 sm:justify-end">
-                            <Button
-                                variant="float-primary"
-                                class="hidden lg:flex"
-                                @click="importOpen = true"
-                            >
-                                <RiUploadLine class="h-4 w-4 shrink-0" />
-                                <span>Import</span>
-                            </Button>
-
-                            <Button
-                                variant="float"
-                                class="hidden lg:flex"
-                                :disabled="exporting"
-                                @click="triggerExport"
-                            >
-                                <RiLoaderLine
-                                    v-if="exporting"
-                                    class="h-4 w-4 shrink-0 animate-spin"
-                                />
-                                <RiDownloadLine
-                                    v-else
-                                    class="h-4 w-4 shrink-0"
-                                />
-                                <span>{{ exporting ? 'Exporting...' : 'Export' }}</span>
-                            </Button>
-
                             <DropdownMenu class="w-fit">
                                 <DropdownMenuTrigger as-child class="m-0">
                                     <div class="inline-flex">
@@ -439,28 +420,24 @@ const archiveVehicle = (vehicle: VehicleItem) => {
 
                                 <DropdownMenuContent align="end" class="w-fit">
                                     <DropdownMenuItem
-                                        as-child
-                                        class="cursor-pointer lg:hidden"
+                                        class="group cursor-pointer"
                                         @click="importOpen = true"
                                     >
-                                        <button type="button" class="flex w-full items-center">
-                                            <RiUploadLine class="h-4 w-4" />
-                                            Import
-                                        </button>
+                                        <RiFileAddLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                        Import
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                        as-child
-                                        class="cursor-pointer lg:hidden"
+                                        class="group cursor-pointer"
+                                        :disabled="exporting"
                                         @click="triggerExport"
                                     >
-                                        <button type="button" class="flex w-full items-center">
-                                            <RiDownloadLine class="h-4 w-4" />
-                                            Export
-                                        </button>
+                                        <RiLoaderLine v-if="exporting" class="h-4 w-4 animate-spin text-custom-shadow" />
+                                        <RiFileUploadLine v-else class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                        {{ exporting ? 'Exporting...' : 'Export' }}
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem as-child class="cursor-pointer">
+                                    <DropdownMenuItem as-child class="group cursor-pointer">
                                         <Link :href="trash().url" class="flex items-center">
-                                            <RiArchive2Line class="h-4 w-4" />
+                                            <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-300" />
                                             Archives
                                         </Link>
                                     </DropdownMenuItem>
@@ -476,7 +453,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                             <SearchInput
                                 :route="index().url"
                                 :initial-value="filters.search"
-                                placeholder="Search vehicles…"
+                                placeholder="Search vehicles..."
                                 :only="['vehicles', 'filters', 'flash']"
                                 :debounce="350"
                             />
@@ -508,7 +485,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
 
                                 <PopoverContent align="start">
                                     <div class="grid gap-y-2">
-                                            <div class="space-y-2">
+                                            <div class="flex flex-col gap-y-1">
                                                 <p class="text-sm text-custom-shadow/80">
                                                     Status
                                                 </p>
@@ -568,7 +545,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                 </Select>
                                             </div>
 
-                                            <div class="space-y-2">
+                                            <div class="flex flex-col gap-y-1">
                                                 <p class="text-sm text-custom-shadow/80">
                                                     Vehicle Type
                                                 </p>
@@ -630,7 +607,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                 </Select>
                                             </div>
 
-                                            <div class="space-y-2">
+                                            <div class="flex flex-col gap-y-1">
                                                 <p class="text-sm text-custom-shadow/80">
                                                     Route
                                                 </p>
@@ -757,9 +734,11 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                     v-for="(vehicle, rowIndex) in vehicles.data"
                                     :key="vehicle.id"
                                     :class="[
-                                        'grid grid-cols-8 items-center border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                        'grid cursor-pointer grid-cols-8 items-center border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
                                         rowIndex === vehicles.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                        previewedVehicle?.id === vehicle.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
                                     ]"
+                                    @click="openPreview(vehicle)"
                                 >
                                     <div class="col-span-1 flex min-w-0 justify-start py-1.5 pl-3 text-sm font-medium">
                                         <span class="truncate">{{ vehicle.company?.company_name || '—' }}</span>
@@ -810,7 +789,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                         <span v-else class="text-xs text-custom-shadow/70">—</span>
                                     </div>
 
-                                    <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right">
+                                    <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right" @click.stop>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
@@ -818,22 +797,20 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     size="icon-more"
                                                 >
                                                     <RiMore2Line class="h-4 w-4" />
-                                                    <span class="sr-only">Open actions</span>
+
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent align="end" class="w-fit rounded-lg shadow-lg">
-                                                <DropdownMenuLabel class="text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
+                                            <DropdownMenuContent align="end" class="">
+                                                <DropdownMenuLabel>
                                                     {{ vehicle.plate_number || 'Vehicle' }}
                                                 </DropdownMenuLabel>
-                                                <DropdownMenuSeparator />
-
-                                                <DropdownMenuItem as-child class="cursor-pointer rounded-lg">
+                                                <DropdownMenuItem as-child class="group cursor-pointer rounded-md">
                                                     <Link
                                                         :href="show({ vehicle: vehicle.id }).url"
                                                         class="flex items-center"
                                                     >
-                                                        <RiFileSearchLine class="h-4 w-4" />
+                                                        <RiFileCheckLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
                                                         Review
                                                     </Link>
                                                 </DropdownMenuItem>
@@ -841,27 +818,21 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                 <DropdownMenuItem
                                                     v-if="vehicle.status === 'active' || vehicle.status === 'inactive'"
                                                     :disabled="!canToggle(vehicle)"
-                                                    :class="[
-                                                        'cursor-pointer rounded-lg',
-                                                        canToggle(vehicle) ? toggleStatusClass(vehicle.status) : 'text-slate-300',
-                                                    ]"
+                                                    class="group cursor-pointer rounded-md"
                                                     @click="canToggle(vehicle) && openSuspendDialog(vehicle)"
                                                 >
-                                                    <RiShutDownLine class="h-4 w-4" />
-                                                    Suspend
+                                                    <RiSpam2Line class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                    <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Suspend</span>
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
                                                     v-else-if="vehicle.status === 'suspended'"
                                                     :disabled="!canToggle(vehicle)"
-                                                    :class="[
-                                                        'cursor-pointer rounded-lg',
-                                                        canToggle(vehicle) ? toggleStatusClass(vehicle.status) : 'text-slate-300',
-                                                    ]"
+                                                    class="group cursor-pointer rounded-md"
                                                     @click="canToggle(vehicle) && openActivateDialog(vehicle)"
                                                 >
-                                                    <RiShutDownLine class="h-4 w-4" />
-                                                    Unsuspend
+                                                    <RiOctagonLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                    <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Unsuspend</span>
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
@@ -869,7 +840,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     disabled
                                                     class="rounded-lg text-slate-300"
                                                 >
-                                                    <RiShutDownLine class="h-4 w-4" />
+                                                    <RiSpam2Line class="h-4 w-4" />
                                                     {{ toggleLabel(vehicle.status) }}
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
@@ -907,9 +878,53 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                     />
                 </CardContent>
             </Card>
+
+            <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-100">
+                <CardHeader v-if="previewedVehicle" class="flex flex-row items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <CardTitle class="truncate uppercase">{{ previewedVehicle.plate_number || 'Vehicle' }}</CardTitle>
+                        <CardDescription>Preview</CardDescription>
+                    </div>
+                    <Button variant="header-actions" size="icon" class="h-8 w-8 shrink-0 rounded-full" @click="previewedVehicle = null">
+                        <RiCloseLine class="h-4 w-4" />
+                    </Button>
+                </CardHeader>
+
+                <CardContent v-if="previewedVehicle" class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto py-2">
+                    <div class="flex aspect-4/3 items-center justify-center rounded-md border border-dashed border-custom-bg-dark bg-custom-bg text-custom-shadow/70 dark:border-none dark:bg-custom-bg-dark">
+                        <RiBusLine class="h-16 w-16" />
+                    </div>
+                    <div class="space-y-3 pt-2">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Status</span>
+                            <Badge :class="['gap-1.5', statusClass(previewedVehicle.status)]"><span :class="['h-1.5 w-1.5 rounded-full', statusDot(previewedVehicle.status)]" />{{ humanize(previewedVehicle.status) }}</Badge>
+                        </div>
+                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Company</span><span class="text-right text-sm">{{ previewedVehicle.company?.company_name || 'Not assigned' }}</span></div>
+                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Route</span><span class="text-right text-sm">{{ previewedVehicle.route?.route_name || 'Not assigned' }}</span></div>
+                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Vehicle Type</span><span class="text-right text-sm">{{ humanize(previewedVehicle.vehicle_type) }}</span></div>
+                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Body Number</span><span class="text-right text-sm">{{ previewedVehicle.body_number || 'Not recorded' }}</span></div>
+                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Capacity</span><span class="text-right text-sm">{{ previewedVehicle.capacity || 'Not recorded' }}</span></div>
+                        <div v-if="previewedVehicle.remarks" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Remarks</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.remarks }}</p></div>
+                    </div>
+                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex flex-wrap gap-2">
+                            <Button v-if="canToggle(previewedVehicle)" variant="ghost-outline" size="icon-text" @click="previewedVehicle.status === 'suspended' ? openActivateDialog(previewedVehicle) : openSuspendDialog(previewedVehicle)">
+                                <RiShutDownLine class="h-4 w-4" />{{ previewedVehicle.status === 'suspended' ? 'Unsuspend' : 'Suspend' }}
+                            </Button>
+                            <Button variant="destructive" size="icon-text" @click="openArchiveDialog(previewedVehicle)">
+                                <RiArchive2Line class="h-4 w-4" />Archive
+                            </Button>
+                        </div>
+                        <Button as-child variant="float-primary" size="icon-text"><Link :href="show({ vehicle: previewedVehicle.id }).url"><RiFileSearchLine class="h-4 w-4" />Review</Link></Button>
+                    </div>
+                </CardContent>
+                <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
+                    <div class="max-w-60 space-y-1 text-center"><p class="text-base font-semibold text-custom-shadow">No vehicle selected</p><p class="text-sm text-custom-shadow/80">Click on a vehicle to preview.</p></div>
+                </CardContent>
+            </Card>
         </div>
 
-        <!-- Archive dialog -->
         <AlertDialog v-model:open="archiveDialogOpen">
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
@@ -940,79 +955,48 @@ const archiveVehicle = (vehicle: VehicleItem) => {
             </AlertDialogContent>
         </AlertDialog>
 
-        <!-- Suspend dialog (requires remarks) -->
-        <AlertDialog v-model:open="suspendDialogOpen">
-            <AlertDialogContent class="rounded-2xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle
-                        >Set Vehicle to Suspended</AlertDialogTitle
-                    >
-                    <AlertDialogDescription>
-                        Provide a reason before suspending
-                        <span class="font-semibold text-foreground">{{
-                            statusVehicle?.plate_number || 'this vehicle'
-                        }}</span
-                        >.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <div class="space-y-2">
-                    <label class="text-xs font-semibold text-slate-600"
-                        >Reason</label
-                    >
-                    <textarea
-                        v-model="suspendRemarks"
-                        rows="3"
-                        class="w-full rounded-lg border border-slate-200 bg-white p-2 text-sm focus:border-blue-500 focus:outline-none"
-                        placeholder="Brief reason (required)"
-                    />
-                </div>
-                <AlertDialogFooter>
-                    <AlertDialogCancel
-                        class="rounded-lg"
-                        @click="statusVehicle = null"
-                        >Cancel</AlertDialogCancel
-                    >
-                    <AlertDialogAction
-                        class="rounded-lg border-0 bg-rose-600 text-white hover:bg-rose-700"
-                        :disabled="!suspendRemarks.trim()"
-                        @click="confirmSuspend"
-                    >
-                        Suspend
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+        <Dialog v-model:open="statusDialogOpen">
+            <DialogContent class="max-w-md px-6">
+                <DialogHeader class="px-0">
+                    <DialogTitle>{{ isSuspending ? 'Suspend vehicle' : 'Unsuspend vehicle' }}</DialogTitle>
+                    <DialogDescription>
+                        <span class="block">
+                            {{ isSuspending ? 'Provide a reason to suspend' : 'This will unsuspend' }}
+                            <strong class="font-semibold text-custom-accent-3">{{ statusVehicle?.plate_number || 'this vehicle' }}</strong>.
+                            {{ isSuspending ? 'You can unsuspend it again later.' : 'The vehicle will become active again.' }}
+                        </span>
+                    </DialogDescription>
+                </DialogHeader>
+                <form class="space-y-3" @submit.prevent="confirmStatusChange">
+                    <div v-if="isSuspending" class="flex flex-col gap-y-2">
+                        <Textarea
+                            v-model="suspendRemarks"
+                            class="min-h-24 border-custom-bg-dark bg-custom-bg p-3 text-sm text-custom-shadow placeholder:text-custom-shadow/50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:bg-white dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5"
+                            rows="3"
+                            placeholder="Brief reason for suspension..."
+                        />
+                    </div>
 
-        <!-- Activate dialog -->
-        <AlertDialog v-model:open="activateDialogOpen">
-            <AlertDialogContent class="rounded-2xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Activate Vehicle</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Activate
-                        <span class="font-semibold text-foreground">{{
-                            statusVehicle?.plate_number || 'this vehicle'
-                        }}</span
-                        >?
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel
-                        class="rounded-lg"
-                        @click="statusVehicle = null"
-                        >Cancel</AlertDialogCancel
-                    >
-                    <AlertDialogAction
-                        class="rounded-lg border-0 bg-blue-700 text-white hover:bg-blue-800"
-                        @click="confirmActivate"
-                    >
-                        Confirm
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                    <Separator />
+                    <DialogFooter class="gap-2 sm:justify-end">
+                        <DialogClose as-child>
+                            <Button type="button" variant="ghost-outline">Cancel</Button>
+                        </DialogClose>
+                        <Button
+                            type="submit"
+                            :variant="isSuspending ? 'destructive' : 'float-primary'"
+                            :disabled="isSuspending && !suspendRemarks.trim()"
+                        >
+                            <RiSpam2Line v-if="isSuspending" class="h-4 w-4" />
+                            <RiOctagonLine v-else class="h-4 w-4" />
+                            {{ isSuspending ? 'Suspend' : 'Unsuspend' }}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
 
-        <!-- Import dialog -->
+
         <ImportVehicleDialog v-model:open="importOpen" @done="onImportDone" />
     </AppLayout>
 </template>

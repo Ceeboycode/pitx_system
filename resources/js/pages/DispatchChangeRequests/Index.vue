@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import {
     approve,
     index as changeRequestsIndex,
@@ -33,6 +33,7 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -55,13 +56,13 @@ import {
 } from '@/components/ui/table';
 
 import {
-    CheckCircle2,
-    Clock,
-    Eye,
-    Filter,
-    MoreHorizontal,
-    XCircle,
-} from 'lucide-vue-next';
+    RiCheckboxCircleLine as CheckCircle2,
+    RiCloseCircleLine as XCircle,
+    RiEyeLine as Eye,
+    RiFilter2Line as Filter,
+    RiMore2Line as MoreHorizontal,
+    RiTimeLine as Clock,
+} from 'vue-remix-icons';
 
 type PaginationLink = { url: string | null; label: string; active: boolean };
 
@@ -508,16 +509,13 @@ function statusIcon(status: string) {
                                                         <MoreHorizontal
                                                             class="h-4 w-4"
                                                         />
-                                                        <span class="sr-only"
-                                                            >Actions</span
-                                                        >
+                                                        
                                                     </Button>
                                                 </DropdownMenuTrigger>
 
-                                                <DropdownMenuContent
-                                                    align="end"
-                                                    class="w-fit rounded-lg shadow-lg"
-                                                >
+                                                <DropdownMenuContent align="end" class="">
+                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+
                                                     <DropdownMenuItem
                                                         as-child
                                                         class="cursor-pointer rounded-lg text-emerald-600 focus:text-emerald-600"
@@ -540,7 +538,7 @@ function statusIcon(status: string) {
                                                             {{
                                                                 approvingId ===
                                                                 request.id
-                                                                    ? 'Approving…'
+                                                                    ? 'Approving...'
                                                                     : 'Approve'
                                                             }}
                                                         </div>
@@ -584,7 +582,7 @@ function statusIcon(status: string) {
                                         </TableCell>
                                     </TableRow>
 
-                                    <!-- Rejection Reason Row -->
+                                    
                                     <TableRow
                                         v-if="
                                             request.status === 'rejected' &&
@@ -642,7 +640,7 @@ function statusIcon(status: string) {
             </Card>
         </div>
 
-        <!-- Approve Confirmation Modal -->
+        
         <Dialog
             :open="approveModalOpen"
             @update:open="
@@ -690,7 +688,7 @@ function statusIcon(status: string) {
                     >
                         {{
                             approvingId === approveTarget?.id
-                                ? 'Approving…'
+                                ? 'Approving...'
                                 : 'Confirm Approve'
                         }}
                     </Button>
@@ -698,7 +696,7 @@ function statusIcon(status: string) {
             </DialogContent>
         </Dialog>
 
-        <!-- Rejection Reason Modal -->
+        
         <Dialog v-model:open="rejectModalOpen">
             <DialogContent class="sm:max-w-sm">
                 <form class="space-y-4" @submit.prevent="rejectRequest">
@@ -754,7 +752,7 @@ function statusIcon(status: string) {
                         >
                             {{
                                 rejectForm.processing
-                                    ? 'Rejecting…'
+                                    ? 'Rejecting...'
                                     : 'Reject Request'
                             }}
                         </Button>

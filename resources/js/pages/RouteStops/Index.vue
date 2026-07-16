@@ -108,7 +108,7 @@ const confirmArchive = () => {
                         </TableBody>
                     </Table>
 
-                    <!-- <InertiaPagination :links="routeStops.links" class="mt-4" /> -->
+                    <!-- CODE: <InertiaPagination :links="routeStops.links" class="mt-4" /> -->
 
                     <InertiaPagination
                         :links="routeStops.links"

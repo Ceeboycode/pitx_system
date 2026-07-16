@@ -47,7 +47,7 @@ const clear = () => {
         <Input
             v-model="search"
             :placeholder="placeholder ?? 'Search...'"
-            class="px-9 placeholder:text-custom-shadow/50 h-9 w-full rounded-full border border-custom-bg-dark dark:border-none text-sm transition-[color,background-color,border-color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-white dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5',"
+            class="px-9 placeholder:text-custom-shadow/50 h-9 w-full rounded-full border border-custom-bg-dark dark:border-none text-sm transition-[color,background-color,border-color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-white bg-custom-light dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5',"
         />
 
         <button

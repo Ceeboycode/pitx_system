@@ -3,6 +3,7 @@
 namespace App\Services\Gate;
 
 use App\Models\Gate;
+use Illuminate\Support\Facades\Storage;
 
 class GateService
 {
@@ -34,6 +35,10 @@ class GateService
 
     public function forceDeleteGate(Gate $gate): bool
     {
+        if ($gate->picture_path) {
+            Storage::disk('public')->delete($gate->picture_path);
+        }
+
         return $gate->forceDelete();
     }
 }

@@ -27,7 +27,7 @@ import {
     Users,
 } from 'lucide-vue-next';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+
 
 type Company = {
     id: number;
@@ -45,7 +45,7 @@ type AuthUser = {
 };
 
 // FIX: RoleItem matches the custom Role model (name, guard_name, type)
-// Previously typed as string[] — caused v-for iteration bugs.
+
 type RoleItem = {
     name: string;
     guard_name: string;
@@ -69,7 +69,7 @@ type Employee = {
     company?: Company | null;
 };
 
-// ── Props ─────────────────────────────────────────────────────────────────────
+
 
 const props = defineProps<{
     company: Company;
@@ -82,7 +82,7 @@ const props = defineProps<{
 
 const canUpdateEmployee = can('external_users.update');
 
-// ── Form ──────────────────────────────────────────────────────────────────────
+
 
 const form = useForm({
     name: props.employee.name ?? '',
@@ -93,10 +93,10 @@ const form = useForm({
 });
 
 // FIX: sidebar role should reflect the *live* form.role value,
-// not the static selectedRole prop (which doesn't update as user picks a new role).
+
 const currentRoleName = computed(() => form.role || props.selectedRole || null);
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 function humanize(value?: string | null) {
     if (!value) return '—';
@@ -157,7 +157,7 @@ function roleColor(roleName?: string | null) {
     return roleColorMap[roleName ?? ''] ?? fallbackColor;
 }
 
-// Employee initials for the avatar
+
 const initials = computed(() =>
     props.employee.name
         .split(' ')
@@ -166,7 +166,7 @@ const initials = computed(() =>
         .join(''),
 );
 
-// ── Submit ────────────────────────────────────────────────────────────────────
+
 
 function submit() {
     if (!canUpdateEmployee) return;
@@ -183,7 +183,7 @@ function submit() {
     <ExternalLayout :company="company" :user="user">
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
-                <!-- ── Page header ── -->
+                
                 <div
                     class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
                 >
@@ -227,9 +227,9 @@ function submit() {
                     </Button>
                 </div>
 
-                <!-- ── Main grid ── -->
+                
                 <div class="grid gap-6 xl:grid-cols-3">
-                    <!-- Form card -->
+                    
                     <div class="xl:col-span-2">
                         <div
                             class="rounded-xl border border-slate-200 bg-white shadow-sm"
@@ -250,7 +250,7 @@ function submit() {
                                 @submit.prevent="submit"
                             >
                                 <div class="grid gap-5 md:grid-cols-2">
-                                    <!-- Username (read-only) -->
+                                    
                                     <div class="space-y-1.5 md:col-span-2">
                                         <Label
                                             class="text-xs font-semibold tracking-widest text-slate-400 uppercase"
@@ -271,7 +271,7 @@ function submit() {
                                         </p>
                                     </div>
 
-                                    <!-- Full Name -->
+                                    
                                     <div class="space-y-1.5 md:col-span-2">
                                         <Label
                                             for="name"
@@ -292,7 +292,7 @@ function submit() {
                                         />
                                     </div>
 
-                                    <!-- Email -->
+                                    
                                     <div class="space-y-1.5">
                                         <Label
                                             for="email"
@@ -313,7 +313,7 @@ function submit() {
                                         />
                                     </div>
 
-                                    <!-- Phone -->
+                                    
                                     <div class="space-y-1.5">
                                         <Label
                                             for="phone_number"
@@ -337,7 +337,7 @@ function submit() {
                                         />
                                     </div>
 
-                                    <!-- Role — FIX: iterates role.name, not role as string -->
+                                    
                                     <div class="space-y-1.5 md:col-span-2">
                                         <Label
                                             for="role"
@@ -418,7 +418,7 @@ function submit() {
                                     >
                                         {{
                                             form.processing
-                                                ? 'Saving…'
+                                                ? 'Saving...'
                                                 : 'Save Changes'
                                         }}
                                     </Button>
@@ -427,9 +427,9 @@ function submit() {
                         </div>
                     </div>
 
-                    <!-- Sidebar -->
+                    
                     <div class="space-y-4">
-                        <!-- Account Summary -->
+                        
                         <div
                             class="rounded-xl border border-slate-200 bg-white shadow-sm"
                         >
@@ -444,7 +444,7 @@ function submit() {
                                 </h3>
                             </div>
                             <div class="divide-y divide-slate-100">
-                                <!-- Avatar + name -->
+                                
                                 <div class="flex items-center gap-3 px-5 py-4">
                                     <img
                                         v-if="employee.avatar"
@@ -524,7 +524,7 @@ function submit() {
                             </div>
                         </div>
 
-                        <!-- Company -->
+                        
                         <div
                             class="rounded-xl border border-slate-200 bg-white shadow-sm"
                         >
@@ -587,7 +587,7 @@ function submit() {
                             </div>
                         </div>
 
-                        <!-- Available Roles reference -->
+                        
                         <div
                             class="rounded-xl border border-slate-200 bg-white shadow-sm"
                         >

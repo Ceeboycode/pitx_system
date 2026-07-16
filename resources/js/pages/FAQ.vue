@@ -19,7 +19,7 @@ import {
 
 import { Info, User, Truck, HelpCircle } from 'lucide-vue-next'
 
-// Breadcrumbs
+
 const breadcrumbs = [{ title: 'FAQ', href: '/faq' }]
 
 type FaqItem = { q: string; a: string }

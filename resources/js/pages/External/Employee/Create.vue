@@ -29,7 +29,7 @@ import {
     Users,
 } from 'lucide-vue-next';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+
 
 type Company = {
     id: number;
@@ -46,14 +46,14 @@ type AuthUser = {
     email: string;
 };
 
-// Matches the custom Role model columns: name, guard_name, type
+
 type RoleItem = {
     name: string;
     guard_name: string;
     type: string;
 };
 
-// ── Props ─────────────────────────────────────────────────────────────────────
+
 
 const props = defineProps<{
     company: Company;
@@ -66,7 +66,7 @@ const props = defineProps<{
 
 const canCreateEmployee = can('external_users.create');
 
-// ── Form ──────────────────────────────────────────────────────────────────────
+
 
 const form = useForm({
     name: '',
@@ -75,7 +75,7 @@ const form = useForm({
     role: '',
 });
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 function humanize(value?: string | null) {
     if (!value) return '—';
@@ -100,7 +100,7 @@ function statusDot(status?: string | null) {
     return 'bg-slate-400';
 }
 
-// Consistent accent color per role name — extend as you add external roles
+
 const roleColorMap: Record<
     string,
     { icon: string; text: string; badge: string }
@@ -136,7 +136,7 @@ function roleColor(roleName: string) {
     return roleColorMap[roleName] ?? fallbackColor;
 }
 
-// ── Submit ────────────────────────────────────────────────────────────────────
+
 
 function submit() {
     if (!canCreateEmployee) return;
@@ -151,7 +151,7 @@ function submit() {
     <ExternalLayout :company="company" :user="user">
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
-                <!-- ── Page header ── -->
+                
                 <div
                     class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
                 >
@@ -196,7 +196,7 @@ function submit() {
                     </Button>
                 </div>
 
-                <!-- ── Stat cards ── -->
+                
                 <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
                     <div
                         class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
@@ -287,12 +287,12 @@ function submit() {
                     </div>
                 </div>
 
-                <!-- ── Main form + sidebar ── -->
+                
                 <form class="space-y-6" @submit.prevent="submit">
                     <div
                         class="grid items-start gap-6 xl:grid-cols-[1fr_320px]"
                     >
-                        <!-- Left: form card -->
+                        
                         <div
                             class="rounded-xl border border-slate-200 bg-white shadow-sm"
                         >
@@ -309,7 +309,7 @@ function submit() {
                             </div>
 
                             <div class="space-y-6 p-6">
-                                <!-- Full Name -->
+                                
                                 <div class="space-y-1.5">
                                     <Label
                                         for="name"
@@ -328,7 +328,7 @@ function submit() {
                                     <InputError :message="form.errors.name" />
                                 </div>
 
-                                <!-- Email + Phone -->
+                                
                                 <div class="grid gap-5 sm:grid-cols-2">
                                     <div class="space-y-1.5">
                                         <Label
@@ -374,7 +374,7 @@ function submit() {
                                     </div>
                                 </div>
 
-                                <!-- Role — dynamic from Spatie, filtered by type = 'external' -->
+                                
                                 <div class="space-y-1.5">
                                     <Label
                                         for="role"
@@ -428,7 +428,7 @@ function submit() {
                                     <InputError :message="form.errors.role" />
                                 </div>
 
-                                <!-- Read-only info: Status + Password -->
+                                
                                 <div class="grid gap-5 sm:grid-cols-2">
                                     <div class="space-y-1.5">
                                         <Label
@@ -510,7 +510,7 @@ function submit() {
                                         <UserPlus v-else class="mr-2 h-4 w-4" />
                                         {{
                                             form.processing
-                                                ? 'Creating…'
+                                                ? 'Creating...'
                                                 : 'Create Employee'
                                         }}
                                     </Button>
@@ -518,9 +518,9 @@ function submit() {
                             </div>
                         </div>
 
-                        <!-- Right sidebar -->
+                        
                         <div class="space-y-4">
-                            <!-- Company card -->
+                            
                             <div
                                 class="rounded-xl border border-slate-200 bg-white shadow-sm"
                             >
@@ -587,7 +587,7 @@ function submit() {
                                 </div>
                             </div>
 
-                            <!-- Available Roles -->
+                            
                             <div
                                 class="rounded-xl border border-slate-200 bg-white shadow-sm"
                             >
@@ -679,7 +679,7 @@ function submit() {
                                 </div>
                             </div>
 
-                            <!-- Account Notes -->
+                            
                             <div
                                 class="rounded-xl border border-slate-200 bg-white shadow-sm"
                             >

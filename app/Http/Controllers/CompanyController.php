@@ -31,6 +31,7 @@ class CompanyController extends Controller
                 'company_email_verified_at',
                 'company_phone',
                 'business_type',
+                'logo',
                 'status',
                 'created_at'
             )
@@ -108,13 +109,18 @@ class CompanyController extends Controller
             )
             ->with(['deleter:id,name'])
             ->search($request->search)
+            ->when($request->filled('business_type'), fn ($q) => $q->where('business_type', 'like', "%{$request->business_type}%"))
+            ->when($request->filled('archived_by'), fn ($q) => $q->whereHas(
+                'deleter',
+                fn ($deleter) => $deleter->where('name', 'like', "%{$request->archived_by}%")
+            ))
             ->latest('deleted_at')
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Company/Trash', [
             'companies' => $companies,
-            'filters'   => ['search' => $request->search],
+            'filters'   => $request->only('search', 'business_type', 'archived_by'),
         ]);
     }
 

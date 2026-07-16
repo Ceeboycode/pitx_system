@@ -39,13 +39,13 @@ const breadcrumbs: BreadcrumbItem[] = [
     <Head :title="`Vehicle Type - ${vehicleType.type_name}`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <!-- Page wrapper (copied from Company show.vue) -->
+        
         <div class="w-full px-4 py-6 capitalize sm:px-6">
-            <!-- Centered container (copied from Company show.vue) -->
+            
             <div class="mx-auto w-full max-w-4xl">
                 <Card>
                     <CardHeader>
-                        <!-- Title style (copied from Company show.vue) -->
+                        
                         <CardTitle class="text-2xl">
                             {{ vehicleType.type_name }}
                         </CardTitle>
@@ -54,7 +54,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                             Details for {{ vehicleType.type_name }}
                         </CardDescription>
 
-                        <!-- Back button placement (copied from Company show.vue) -->
+                        
                         <CardAction>
                             <Button as-child variant="link" size="sm">
                                 <Link :href="index().url" class="cursor-pointer">

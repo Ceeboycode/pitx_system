@@ -7,7 +7,7 @@ import { Head, Link } from '@inertiajs/vue3';
 <template>
     <Head title="Terms & Conditions — PITX" />
     <div class="flex min-h-screen flex-col bg-[#f4f5f7] text-[#1a1a2e]">
-        <!-- HEADER -->
+        
         <header class="sticky top-0 z-50 border-b border-gray-200 bg-white/90 shadow-sm backdrop-blur-md">
             <div class="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
                 <Link :href="home()" class="flex items-center gap-3">

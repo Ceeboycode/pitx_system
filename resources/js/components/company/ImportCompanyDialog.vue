@@ -3,6 +3,8 @@ import { ref, computed } from 'vue';
 import axios from 'axios';
 
 import { Button } from '@/components/ui/button';
+import Label from '@/components/ui/label/Label.vue';
+import Separator from '@/components/ui/separator/Separator.vue';
 import {
     Dialog,
     DialogContent,
@@ -15,24 +17,23 @@ import {
 import {
     AlertCircle,
     CheckCircle2,
-    FileArchive,
-    Loader2,
-    UploadCloud,
-    X,
     XCircle,
 } from 'lucide-vue-next';
 
-/* ── Model & emits ──────────────────────────────────────────────────────── */
+import {
+    RiArchive2Line,
+    RiCloseLine,
+    RiFileUploadLine,
+    RiLoader2Line,
+} from 'vue-remix-icons';
 
 const open = defineModel<boolean>('open');
 const emit = defineEmits<{ done: [] }>();
 
-/* ── State ──────────────────────────────────────────────────────────────── */
-
 type Phase = 'idle' | 'uploading' | 'done' | 'error';
 
 const phase       = ref<Phase>('idle');
-const progress    = ref(0);          // 0–100
+const progress    = ref(0);          
 const file        = ref<File | null>(null);
 const fileInputEl = ref<HTMLInputElement | null>(null);
 const errorMsg    = ref('');
@@ -45,8 +46,6 @@ type Summary = {
 
 const summary = ref<Summary | null>(null);
 
-/* ── Computed ───────────────────────────────────────────────────────────── */
-
 const hasFile      = computed(() => file.value !== null);
 const fileSizeMB   = computed(() => file.value ? (file.value.size / 1024 / 1024).toFixed(2) : '0');
 const isProcessing = computed(() => phase.value === 'uploading');
@@ -55,8 +54,6 @@ const summaryHasResults = computed(() =>
     summary.value &&
     (summary.value.imported.length + summary.value.skipped.length + summary.value.errors.length) > 0
 );
-
-/* ── File selection ─────────────────────────────────────────────────────── */
 
 function onFileChange(e: Event) {
     const el = e.target as HTMLInputElement;
@@ -81,8 +78,6 @@ function clearFile() {
     summary.value = null;
     if (fileInputEl.value) fileInputEl.value.value = '';
 }
-
-/* ── Upload ─────────────────────────────────────────────────────────────── */
 
 async function submit() {
     if (!file.value) return;
@@ -118,11 +113,9 @@ async function submit() {
     }
 }
 
-/* ── Close / reset ──────────────────────────────────────────────────────── */
-
 function handleClose(val: boolean) {
     if (!val) {
-        // Reset state on close so dialog is fresh when reopened
+        
         setTimeout(() => {
             phase.value    = 'idle';
             progress.value = 0;
@@ -138,165 +131,118 @@ function handleClose(val: boolean) {
 
 <template>
     <Dialog :open="open" @update:open="handleClose">
-        <DialogContent class="sm:max-w-lg">
+        <DialogContent>
             <DialogHeader>
                 <DialogTitle>Import Company Backup</DialogTitle>
                 <DialogDescription>
-                    Upload a <code class="rounded bg-muted px-1 text-xs">.zip</code> backup file exported from this system.
-                    Existing companies (matched by company code) will be skipped.
+                    Upload a ZIP backup exported from this system. Existing company codes will be skipped.
                 </DialogDescription>
             </DialogHeader>
 
-            <div class="space-y-4 py-1">
-
-                <!-- ── File drop / select area ─────────────────────────── -->
-                <div v-if="!hasFile">
+            <form class="flex flex-col gap-y-2 px-6" @submit.prevent="submit">
+                <div class="space-y-1">
+                    <!-- CODE: <Label for="backup_file">Company Backup</Label> -->
                     <label
+                        v-if="!hasFile"
                         for="backup_file"
-                        class="flex cursor-pointer flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border bg-muted/30 px-6 py-10 transition-colors hover:border-primary/50 hover:bg-muted/50"
+                        class="flex cursor-pointer items-center gap-3 rounded-md border border-dashed border-custom-bg-dark p-3 transition-colors hover:bg-custom-bg dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5"
                     >
-                        <UploadCloud class="h-10 w-10 text-muted-foreground/50" />
-                        <div class="text-center">
-                            <p class="text-sm font-medium">Click to select a backup file</p>
-                            <p class="text-xs text-muted-foreground">ZIP files only · Max 100 MB</p>
+                        <div class="flex h-24 w-24 shrink-0 items-center justify-center rounded-md border border-dashed border-custom-bg-dark dark:border-custom-bg-light">
+                            <RiFileUploadLine class="h-7 w-7 text-custom-shadow/80" />
                         </div>
-                        <input
-                            id="backup_file"
-                            ref="fileInputEl"
-                            type="file"
-                            accept=".zip"
-                            class="sr-only"
-                            @change="onFileChange"
-                        />
+                        <div class="space-y-1">
+                            <!-- CODE: <p class="text-sm font-semibold text-custom-shadow">Select a backup file</p> -->
+                            <p class="text-sm text-custom-shadow/80">
+                                <span class="font-semibold">File format: </span>.zip<br />
+                                <span class="font-semibold">Max. file size: </span>100 MB
+                            </p>
+                        </div>
+                        <input id="backup_file" ref="fileInputEl" type="file" accept=".zip" class="sr-only" @change="onFileChange" />
                     </label>
-                </div>
 
-                <!-- ── Selected file info ──────────────────────────────── -->
-                <div
-                    v-else
-                    class="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3"
-                >
-                    <FileArchive class="h-8 w-8 shrink-0 text-primary" />
-                    <div class="min-w-0 flex-1">
-                        <p class="truncate text-sm font-medium">{{ file!.name }}</p>
-                        <p class="text-xs text-muted-foreground">{{ fileSizeMB }} MB</p>
-                    </div>
-                    <Button
-                        v-if="phase === 'idle'"
-                        variant="ghost"
-                        size="icon"
-                        class="h-7 w-7 shrink-0"
-                        @click="clearFile"
+                    <div
+                        v-else
+                        class="flex items-center gap-3 rounded-md border border-dashed border-custom-bg-dark p-3 dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5"
                     >
-                        <X class="h-4 w-4" />
-                    </Button>
+                        <div class="flex h-24 w-24 shrink-0 items-center justify-center rounded-md bg-custom-bg dark:bg-custom-bg-light">
+                            <RiArchive2Line class="h-7 w-7 text-custom-shadow/80" />
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate text-sm font-semibold text-custom-shadow">{{ file!.name }}</p>
+                            <p class="text-sm text-custom-shadow/80">{{ fileSizeMB }} MB</p>
+                        </div>
+                        <Button
+                            v-if="phase === 'idle'"
+                            type="button"
+                            aria-label="Remove backup file"
+                            class="flex h-7 w-7 shrink-0 cursor-pointer items-center rounded-full border border-custom-shadow/50 text-custom-shadow transition-all duration-300 hover:border-destructive hover:bg-destructive/20 hover:text-destructive"
+                            @click="clearFile"
+                        >
+                            <RiCloseLine class="h-4 w-4" />
+                        </Button>
+                    </div>
                 </div>
 
-                <!-- ── Progress bar ────────────────────────────────────── -->
                 <div v-if="phase === 'uploading'" class="space-y-1.5">
-                    <div class="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>Uploading and processing…</span>
+                    <div class="flex items-center justify-between text-xs text-custom-shadow/80">
+                        <span>Uploading and processing...</span>
                         <span>{{ progress }}%</span>
                     </div>
-                    <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
-                        <div
-                            class="h-full bg-primary transition-all duration-300"
-                            :style="{ width: `${progress}%` }"
-                        />
+                    <div class="h-2 w-full overflow-hidden rounded-full bg-custom-bg dark:bg-custom-bg-light">
+                        <div class="h-full bg-primary transition-all duration-300" :style="{ width: `${progress}%` }" />
                     </div>
                 </div>
 
-                <!-- ── Error ───────────────────────────────────────────── -->
-                <div
-                    v-if="errorMsg"
-                    class="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive"
-                >
+                <div v-if="errorMsg" class="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
                     <AlertCircle class="mt-0.5 h-4 w-4 shrink-0" />
                     {{ errorMsg }}
                 </div>
 
-                <!-- ── Result summary ──────────────────────────────────── -->
-                <div v-if="phase === 'done' && summary" class="space-y-3">
-
-                    <!-- Imported -->
+                <div v-if="phase === 'done' && summary" class="max-h-56 space-y-2 overflow-y-auto">
                     <div v-if="summary.imported.length" class="rounded-md border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-800 dark:bg-emerald-950/30">
                         <div class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                             <CheckCircle2 class="h-3.5 w-3.5" />
                             {{ summary.imported.length }} imported
                         </div>
-                        <ul class="space-y-0.5">
-                            <li
-                                v-for="item in summary.imported"
-                                :key="item"
-                                class="text-xs text-emerald-700 dark:text-emerald-400"
-                            >
-                                {{ item }}
-                            </li>
-                        </ul>
+                        <ul class="space-y-0.5"><li v-for="item in summary.imported" :key="item" class="text-xs text-emerald-700 dark:text-emerald-400">{{ item }}</li></ul>
                     </div>
 
-                    <!-- Skipped -->
                     <div v-if="summary.skipped.length" class="rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
                         <div class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
                             <AlertCircle class="h-3.5 w-3.5" />
                             {{ summary.skipped.length }} skipped (already exist)
                         </div>
-                        <ul class="space-y-0.5">
-                            <li
-                                v-for="item in summary.skipped"
-                                :key="item"
-                                class="text-xs text-amber-700 dark:text-amber-400"
-                            >
-                                {{ item }}
-                            </li>
-                        </ul>
+                        <ul class="space-y-0.5"><li v-for="item in summary.skipped" :key="item" class="text-xs text-amber-700 dark:text-amber-400">{{ item }}</li></ul>
                     </div>
 
-                    <!-- Errors -->
                     <div v-if="summary.errors.length" class="rounded-md border border-destructive/30 bg-destructive/5 p-3">
                         <div class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-destructive">
                             <XCircle class="h-3.5 w-3.5" />
                             {{ summary.errors.length }} failed
                         </div>
-                        <ul class="space-y-0.5">
-                            <li
-                                v-for="item in summary.errors"
-                                :key="item"
-                                class="text-xs text-destructive"
-                            >
-                                {{ item }}
-                            </li>
-                        </ul>
+                        <ul class="space-y-0.5"><li v-for="item in summary.errors" :key="item" class="text-xs text-destructive">{{ item }}</li></ul>
                     </div>
 
-                    <!-- Nothing happened -->
-                    <div
-                        v-if="!summaryHasResults"
-                        class="rounded-md border bg-muted/40 px-3 py-2.5 text-center text-sm text-muted-foreground"
-                    >
+                    <div v-if="!summaryHasResults" class="rounded-md bg-custom-bg px-3 py-2.5 text-center text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">
                         No companies were found in the backup file.
                     </div>
                 </div>
 
-            </div>
-
-            <DialogFooter class="gap-2 sm:gap-0">
-                <Button variant="outline" :disabled="isProcessing" @click="handleClose(false)">
-                    {{ phase === 'done' ? 'Close' : 'Cancel' }}
-                </Button>
-                <Button
-                    v-if="phase !== 'done'"
-                    :disabled="!hasFile || isProcessing"
-                    @click="submit"
-                >
-                    <Loader2 v-if="isProcessing" class="mr-2 h-4 w-4 animate-spin" />
-                    <UploadCloud v-else class="mr-2 h-4 w-4" />
-                    {{ isProcessing ? 'Importing…' : 'Import Backup' }}
-                </Button>
-                <Button v-else variant="default" @click="clearFile(); phase = 'idle'">
-                    Import Another
-                </Button>
-            </DialogFooter>
+                <Separator />
+                <DialogFooter class="gap-2">
+                    <Button type="button" variant="ghost-outline" :disabled="isProcessing" @click="handleClose(false)">
+                        {{ phase === 'done' ? 'Close' : 'Cancel' }}
+                    </Button>
+                    <Button v-if="phase !== 'done'" type="submit" variant="float-primary" :disabled="!hasFile || isProcessing">
+                        <RiLoader2Line v-if="isProcessing" class="h-4 w-4 animate-spin" />
+                        <RiFileUploadLine v-else class="h-4 w-4" />
+                        {{ isProcessing ? 'Importing...' : 'Import' }}
+                    </Button>
+                    <Button v-else type="button" variant="float-primary" @click="clearFile(); phase = 'idle'">
+                        Import Another
+                    </Button>
+                </DialogFooter>
+            </form>
         </DialogContent>
     </Dialog>
 </template>

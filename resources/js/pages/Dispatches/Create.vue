@@ -78,7 +78,7 @@ function submit() {
 
                     <CardContent>
                         <form @submit.prevent="submit" class="space-y-6">
-                            <!-- Vehicle -->
+                            
                             <div class="space-y-2">
                                 <Label>Vehicle</Label>
 
@@ -125,7 +125,7 @@ function submit() {
                                 </p>
                             </div>
 
-                            <!-- Pax -->
+                            
                             <div class="space-y-2">
                                 <Label for="pax_count">Pax Count</Label>
                                 <Input
@@ -142,7 +142,7 @@ function submit() {
                                 </p>
                             </div>
 
-                            <!-- Bay -->
+                            
                             <div class="space-y-2">
                                 <Label for="bay_number">Bay Number</Label>
                                 <Input
@@ -158,7 +158,7 @@ function submit() {
                                 </p>
                             </div>
 
-                            <!-- Remarks (Native Textarea) -->
+                            
                             <div class="space-y-2">
                                 <Label for="remarks">Remarks</Label>
                                 <textarea
@@ -177,7 +177,7 @@ function submit() {
                                 </p>
                             </div>
 
-                            <!-- Actions -->
+                            
                             <div class="flex items-center justify-end gap-2">
                                 <Button
                                     variant="outline"

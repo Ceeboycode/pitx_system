@@ -1,12 +1,10 @@
-﻿<script setup lang="ts">
-/* ======================================================
-   Shared UI
-====================================================== */
+<script setup lang="ts">
+
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 
-/* shadcn-vue */
+
 import {
     AlertDialog,
     AlertDialogAction,
@@ -31,7 +29,6 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -46,9 +43,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-/* ======================================================
-   Layout, Routing & Inertia
-====================================================== */
+
 import AppLayout from '@/layouts/AppLayout.vue';
 import {
     create,
@@ -62,9 +57,7 @@ import {
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 
-/* ======================================================
-   Icons
-====================================================== */
+
 import {
     RiAddLine,
     RiArchive2Line,
@@ -73,6 +66,7 @@ import {
     RiArrowUpSLine,
     RiCloseLine,
     RiEyeLine,
+    RiExternalLinkLine,
     RiFilter2Line,
     RiKey2Line,
     RiMailLine,
@@ -81,15 +75,11 @@ import {
     RiShutDownLine,
 } from 'vue-remix-icons';
 
-/* ======================================================
-   Vue Core
-====================================================== */
+
 import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
 
-/* ======================================================
-   Permissions
-====================================================== */
+
 import { can } from '@/lib/can';
 
 const canCreate = can('users.create');
@@ -98,9 +88,7 @@ const canToggle = can('users.toggleStatus');
 const canResetPass = can('users.resetPassword');
 const canViewTrash = can('users.viewTrash');
 
-/* ======================================================
-   Types
-====================================================== */
+
 interface Role {
     id: number;
     name: string;
@@ -131,14 +119,10 @@ interface User {
 type SortField = 'username' | 'name' | 'email' | 'status' | null;
 type SortDir = 'asc' | 'desc';
 
-/* ======================================================
-   Breadcrumbs
-====================================================== */
+
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Users', href: index().url }];
 
-/* ======================================================
-   Props
-====================================================== */
+
 const props = defineProps<{
     users: {
         data: User[];
@@ -159,11 +143,12 @@ const props = defineProps<{
     currentUserId: number;
 }>();
 
-/* ======================================================
-   Filter & Sort state
-====================================================== */
+
 const roleFilter = ref<string>(props.filters.roles ?? 'all');
 const statusFilter = ref<string>(props.filters.status ?? 'all');
+const pendingRoleFilter = ref(roleFilter.value);
+const pendingStatusFilter = ref(statusFilter.value);
+const filterOpen = ref(false);
 const sortBy = ref<SortField>(props.filters.sort_by ?? null);
 const sortDir = ref<SortDir>(props.filters.sort_dir ?? 'asc');
 
@@ -190,14 +175,14 @@ const activeFilterCount = computed(() => {
 const filteredUsers = computed(() => {
     let users = props.users.data;
 
-    // Role type filter
+    
     if (roleFilter.value !== 'all') {
         users = users.filter((user) =>
             user.roles?.some((role) => role.type === roleFilter.value),
         );
     }
 
-    // Status filter
+    
     if (statusFilter.value !== 'all') {
         users = users.filter((user) => user.status === statusFilter.value);
     }
@@ -228,14 +213,17 @@ function applyFilters(
     );
 }
 
-function onRoleChange(val: string) {
-    roleFilter.value = val;
+function applyFilterPopover() {
+    roleFilter.value = pendingRoleFilter.value;
+    statusFilter.value = pendingStatusFilter.value;
     applyFilters();
+    filterOpen.value = false;
 }
 
-function onStatusChange(val: string) {
-    statusFilter.value = val;
-    applyFilters();
+function cancelFilterPopover() {
+    pendingRoleFilter.value = roleFilter.value;
+    pendingStatusFilter.value = statusFilter.value;
+    filterOpen.value = false;
 }
 
 function toggleSort(field: SortField) {
@@ -251,6 +239,8 @@ function toggleSort(field: SortField) {
 function clearFilters() {
     roleFilter.value = 'all';
     statusFilter.value = 'all';
+    pendingRoleFilter.value = 'all';
+    pendingStatusFilter.value = 'all';
     sortBy.value = null;
     sortDir.value = 'asc';
 
@@ -260,16 +250,13 @@ function clearFilters() {
         sort_by: undefined,
         sort_dir: undefined,
     });
+    filterOpen.value = false;
 }
 
-/* ======================================================
-   Computed
-====================================================== */
+
 const showCompanyColumn = computed(() => roleFilter.value !== 'internal');
 
-/* ======================================================
-   Badge helpers
-====================================================== */
+
 function roleBadgeClass(role: Role) {
     switch (role.type) {
         case 'internal':
@@ -302,9 +289,7 @@ function emailVerificationLabel(emailVerifiedAt: string | null) {
     return emailVerifiedAt ? 'Verified' : 'Not Verified';
 }
 
-/* ======================================================
-   Sort icon helpers
-====================================================== */
+
 function sortIcon(field: SortField) {
     if (sortBy.value !== field) return RiArrowUpDownLine;
     return sortDir.value === 'asc' ? RiArrowUpSLine : RiArrowDownSLine;
@@ -316,9 +301,7 @@ function sortIconClass(field: SortField) {
         : 'text-custom-shadow/40';
 }
 
-/* ======================================================
-   Helpers
-====================================================== */
+
 function visibleRoles(user: User) {
     if (props.canSeeSuperAdmin) return user.roles;
     return user.roles.filter((role) => role.name !== 'super-admin');
@@ -338,9 +321,13 @@ function isOwnAccount(user: User) {
     return user.id === props.currentUserId;
 }
 
-/* ======================================================
-   Actions
-====================================================== */
+const previewedUser = ref<User | null>(null);
+
+function openPreview(user: User) {
+    previewedUser.value = user;
+}
+
+
 const togglingUser = ref<User | null>(null);
 const toggleOpen = ref(false);
 
@@ -394,16 +381,65 @@ function confirmResetPassword() {
     <Head title="Users" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
             <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader class="flex flex-row gap-2">
                     <div class="flex flex-col">
-                    <CardTitle class="flex items-center gap-2">
-                        <span class="font-semibold">Users</span>
-                    </CardTitle>
-                    <CardDescription>
-                        Manage users, assign roles, and control access.
-                    </CardDescription>
+                        <CardTitle class="flex items-center gap-2">
+                            <span class="font-semibold">Users</span>
+                        </CardTitle>
+                        <CardDescription>
+                            Manage users, assign roles, and control access.
+                        </CardDescription>
+                    </div>
+                    <div class="flex flex-1 items-center justify-end gap-2">
+                        <Button
+                            v-if="canCreate"
+                            variant="float-primary"
+                            class="hidden lg:flex"
+                            as-child
+                        >
+                            <Link :href="create().url" class="flex items-center">
+                                <RiAddLine class="h-4 w-4 shrink-0" />
+                                <span>Add User</span>
+                            </Link>
+                        </Button>
+                        <DropdownMenu v-if="canCreate || canViewTrash" class="w-fit">
+                            <DropdownMenuTrigger as-child class="m-0">
+                                <div class="inline-flex">
+                                    <Button
+                                        variant="header-actions"
+                                        class="text-custom-shadow"
+                                        size="icon"
+                                        aria-label="Open user actions"
+                                    >
+                                        <RiMore2Line class="h-4 w-4 shrink-0" />
+                                    </Button>
+                                </div>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" class="w-fit">
+                                <DropdownMenuItem
+                                    v-if="canCreate"
+                                    as-child
+                                    class="cursor-pointer lg:hidden"
+                                >
+                                    <Link :href="create().url" class="flex items-center">
+                                        <RiAddLine class="h-4 w-4" />
+                                        Add User
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    v-if="canViewTrash"
+                                    as-child
+                                    class="cursor-pointer"
+                                >
+                                    <Link :href="trash().url" class="flex items-center">
+                                        <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-300" />
+                                        Archives
+                                    </Link>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </CardHeader>
                 <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
@@ -426,7 +462,7 @@ function confirmResetPassword() {
                             class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between"
                         >
                             <div class="flex flex-wrap items-center gap-2">
-                                <Popover>
+                                <Popover v-model:open="filterOpen">
                                     <PopoverTrigger
                                         as-child
                                     >
@@ -452,18 +488,13 @@ function confirmResetPassword() {
                                     </PopoverTrigger>
                                     <PopoverContent align="end">
                                         <div class="grid gap-y-2">
-                                            <div class="space-y-2">
+                                            <div class="flex flex-col gap-y-1">
                                                 <p
                                                     class="text-sm text-custom-shadow/80"
                                                 >
                                                     Type
                                                 </p>
-                                                <Select
-                                                    :model-value="roleFilter"
-                                                    @update:model-value="
-                                                        onRoleChange
-                                                    "
-                                                >
+                                                <Select v-model="pendingRoleFilter">
                                                     <SelectTrigger
                                                         class="w-full"
                                                     >
@@ -495,18 +526,13 @@ function confirmResetPassword() {
                                                 </Select>
                                             </div>
 
-                                            <div class="space-y-2">
+                                            <div class="flex flex-col gap-y-1">
                                                 <p
                                                     class="text-sm text-custom-shadow/80"
                                                 >
                                                     Status
                                                 </p>
-                                                <Select
-                                                    :model-value="statusFilter"
-                                                    @update:model-value="
-                                                        onStatusChange
-                                                    "
-                                                >
+                                                <Select v-model="pendingStatusFilter">
                                                     <SelectTrigger
                                                         class="w-full"
                                                     >
@@ -548,86 +574,28 @@ function confirmResetPassword() {
                                                 >
                                                     Clear
                                                 </Button>
+                                                <div class="ml-auto flex items-center gap-2">
+                                                    <Button
+                                                        variant="ghost-outline"
+                                                        size="sm"
+                                                        @click="cancelFilterPopover"
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                    <Button
+                                                        variant="float-primary"
+                                                        size="sm"
+                                                        @click="applyFilterPopover"
+                                                    >
+                                                        Apply
+                                                    </Button>
+                                                </div>
                                             </div>
                                         </div>
                                     </PopoverContent>
                                 </Popover>
                             </div>
-                            <div
-                                class="flex min-w-auto flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                            >
-                                <Button
-                                    v-if="canCreate"
-                                    variant="float-primary"
-                                    class="hidden lg:flex"
-                                    as-child
-                                >
-                                    <Link :href="create().url" class="flex items-center">
-                                        <RiAddLine class="h-4 w-4 shrink-0" />
-                                        <span>Add User</span>
-                                    </Link>
-                                </Button>
-
-                                <DropdownMenu v-if="canCreate || canViewTrash" class="w-fit">
-                                    <DropdownMenuTrigger as-child class="m-0">
-                                        <div class="inline-flex">
-                                            <Button
-                                                variant="header-actions"
-                                                class="text-custom-shadow"
-                                                size="icon"
-                                                aria-label="Open user actions"
-                                            >
-                                                <RiMore2Line
-                                                    class="h-4 w-4 shrink-0"
-                                                />
-                                            </Button>
-                                        </div>
-                                    </DropdownMenuTrigger>
-
-                                    <DropdownMenuContent
-                                        align="end"
-                                        class="w-fit"
-                                    >
-                                        <DropdownMenuItem
-                                            v-if="canCreate"
-                                            as-child
-                                            class="cursor-pointer lg:hidden"
-                                        >
-                                            <Link
-                                                :href="create().url"
-                                                class="flex items-center"
-                                            >
-                                                <RiAddLine class="h-4 w-4" />
-                                                Add User
-                                            </Link>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                            v-if="canViewTrash"
-                                            as-child
-                                            class="cursor-pointer"
-                                        >
-                                            <Link
-                                                :href="trash().url"
-                                                class="flex items-center"
-                                            >
-                                                <RiArchive2Line class="h-4 w-4" />
-                                                Archives
-                                            </Link>
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                            <!-- <Button
-                                    v-if="canCreate"
-                                    size="sm"
-                                    variant="default"
-                                    as-child
-                                >
-                                    <Link :href="create().url" class="flex items-center gap-1.5">
-                                        <RiAddLine class="h-4 w-4" />
-                                        New User
-                                    </Link>
-                                </Button> -->
+                            
                         </div>
                     </div>
 
@@ -723,10 +691,12 @@ function confirmResetPassword() {
                                     v-for="(user, index) in filteredUsers"
                                     :key="user.id"
                                     :class="[
-                                        'grid items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                        'grid cursor-pointer items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
                                         showCompanyColumn ? 'grid-cols-8' : 'grid-cols-7',
                                         index === filteredUsers.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                        previewedUser?.id === user.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
                                     ]"
+                                    @click="openPreview(user)"
                                 >
                                     <div class="col-span-1 flex min-w-0 justify-start py-1.5 pl-3 font-medium">
                                         <span class="truncate">{{ user.username }}</span>
@@ -819,7 +789,7 @@ function confirmResetPassword() {
                                         </div>
                                     </div>
 
-                                    <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right">
+                                    <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right" @click.stop>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
@@ -829,23 +799,14 @@ function confirmResetPassword() {
                                                     <RiMore2Line
                                                         class="h-4 w-4"
                                                     />
-                                                    <span class="sr-only"
-                                                        >Open actions</span
-                                                    >
+                                                    
                                                 </Button>
                                             </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent
-                                                align="end"
-                                                class="w-fit rounded-lg border-slate-200 shadow-lg"
-                                            >
-                                                <DropdownMenuLabel
-                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-                                                >
+                                            <DropdownMenuContent align="end" class="">
+                                                <DropdownMenuLabel>
                                                     {{ user.username }}
                                                 </DropdownMenuLabel>
-
-                                                <DropdownMenuSeparator />
 
                                                 <DropdownMenuItem
                                                     as-child
@@ -889,7 +850,6 @@ function confirmResetPassword() {
                                                     "
                                                     class="cursor-pointer rounded-lg hover:bg-slate-100"
                                                     @click="
-                                                        // handleToggleStatus(user)
                                                         openToggleDialog(user)
                                                     "
                                                 >
@@ -965,6 +925,150 @@ function confirmResetPassword() {
                             total: props.users.total,
                         }"
                     />
+                </CardContent>
+            </Card>
+
+            <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-100">
+                <CardHeader
+                    v-if="previewedUser"
+                    class="flex flex-row items-start justify-between gap-3"
+                >
+                    <div class="min-w-0">
+                        <CardTitle class="truncate capitalize">
+                            {{ previewedUser.name }}
+                        </CardTitle>
+                        <CardDescription>Preview</CardDescription>
+                    </div>
+                    <Button
+                        variant="header-actions"
+                        size="icon"
+                        class="h-8 w-8 shrink-0 rounded-full"
+                        aria-label="Close user preview"
+                        @click="previewedUser = null"
+                    >
+                        <RiCloseLine class="h-4 w-4" />
+                    </Button>
+                </CardHeader>
+
+                <CardContent
+                    v-if="previewedUser"
+                    class="no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto py-2"
+                >
+                    <div class="flex flex-col items-center gap-3 rounded-md border border-dashed border-custom-bg-dark bg-custom-bg p-4 dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                        <img
+                            v-if="previewedUser.avatar_url"
+                            :src="previewedUser.avatar_url"
+                            :alt="`${previewedUser.name} avatar`"
+                            class="h-20 w-20 rounded-full object-cover"
+                        />
+                        <div
+                            v-else
+                            class="flex h-20 w-20 items-center justify-center rounded-full bg-custom-primary text-xl font-semibold text-white"
+                        >
+                            {{ initials(previewedUser.name) }}
+                        </div>
+                        <div class="min-w-0 text-center">
+                            <p class="truncate font-semibold text-custom-shadow">
+                                {{ previewedUser.name }}
+                            </p>
+                            <p class="truncate text-sm text-custom-shadow/70">
+                                @{{ previewedUser.username }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Status</span>
+                            <Badge :class="statusBadgeClass(previewedUser.status)" class="border capitalize">
+                                {{ previewedUser.status }}
+                            </Badge>
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Verification</span>
+                            <Badge :class="emailVerificationBadgeClass(previewedUser.email_verified_at)" class="border">
+                                {{ emailVerificationLabel(previewedUser.email_verified_at) }}
+                            </Badge>
+                        </div>
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Email</span>
+                            <span class="min-w-0 truncate text-right text-sm text-custom-shadow/80">
+                                {{ previewedUser.email }}
+                            </span>
+                        </div>
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Phone</span>
+                            <span class="text-right text-sm text-custom-shadow/80">
+                                {{ previewedUser.phone_number ?? 'Not provided' }}
+                            </span>
+                        </div>
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Company</span>
+                            <span class="min-w-0 truncate text-right text-sm text-custom-shadow/80">
+                                {{ previewedUser.company?.company_name ?? 'Not assigned' }}
+                            </span>
+                        </div>
+
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-sm font-semibold text-custom-shadow">Roles</span>
+                                <span class="text-sm text-custom-shadow/80">
+                                    {{ visibleRoles(previewedUser).length }}
+                                </span>
+                            </div>
+                            <div v-if="visibleRoles(previewedUser).length" class="flex flex-wrap gap-1.5">
+                                <Badge
+                                    v-for="role in visibleRoles(previewedUser)"
+                                    :key="role.id"
+                                    :class="roleBadgeClass(role)"
+                                    class="border capitalize"
+                                >
+                                    {{ role.name }}
+                                </Badge>
+                            </div>
+                            <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">
+                                No roles assigned.
+                            </p>
+                        </div>
+                    </div>
+
+                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                    <div class="flex items-center justify-between gap-2">
+                        <Button
+                            v-if="canUpdate && !isOwnAccount(previewedUser)"
+                            as-child
+                            variant="ghost-outline"
+                            size="icon-text"
+                        >
+                            <Link :href="edit(previewedUser.id).url">
+                                <RiPencilLine class="h-4 w-4" />
+                                Edit
+                            </Link>
+                        </Button>
+                        <Button
+                            as-child
+                            variant="float-primary"
+                            size="icon"
+                            class="ml-auto"
+                        >
+                            <Link :href="show(previewedUser.id).url" aria-label="View user profile">
+                                <RiExternalLinkLine class="h-4 w-4" />
+                            </Link>
+                        </Button>
+                    </div>
+                </CardContent>
+
+                <CardContent
+                    v-else
+                    class="flex min-h-0 flex-1 items-center justify-center"
+                >
+                    <div class="max-w-60 space-y-1 text-center">
+                        <p class="text-base font-semibold text-custom-shadow">No user selected</p>
+                        <p class="text-sm text-custom-shadow/80">
+                            Click on a user to preview.
+                        </p>
+                    </div>
                 </CardContent>
             </Card>
         </div>

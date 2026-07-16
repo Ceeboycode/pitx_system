@@ -244,6 +244,15 @@ class VehicleController extends Controller
                 'deleted_by',
             ])
             ->search($search)
+            ->when($request->filled('vehicle_type'), fn ($query) => $query->where('vehicle_type', 'like', "%{$request->vehicle_type}%"))
+            ->when($request->filled('company'), fn ($query) => $query->whereHas(
+                'company',
+                fn ($company) => $company->where('company_name', 'like', "%{$request->company}%")
+            ))
+            ->when($request->filled('route'), fn ($query) => $query->whereHas(
+                'route',
+                fn ($route) => $route->where('route_name', 'like', "%{$request->route}%")
+            ))
             ->latest('deleted_at')
             ->paginate(10)
             ->withQueryString();
@@ -252,6 +261,9 @@ class VehicleController extends Controller
             'vehicles' => $vehicles,
             'filters' => [
                 'search' => $search,
+                'vehicle_type' => $request->input('vehicle_type'),
+                'company' => $request->input('company'),
+                'route' => $request->input('route'),
             ],
         ]);
     }

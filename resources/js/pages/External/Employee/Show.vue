@@ -43,9 +43,7 @@ import {
     Users,
 } from 'lucide-vue-next';
 
-/* ======================================================
-   Types
-====================================================== */
+
 type Company = {
     id: number;
     company_name: string;
@@ -79,18 +77,14 @@ type Employee = {
     company?: Company | null;
 };
 
-/* ======================================================
-   Props
-====================================================== */
+
 const props = defineProps<{
     company: Company;
     user: AuthUser;
     employee: Employee;
 }>();
 
-/* ======================================================
-   Helpers
-====================================================== */
+
 function humanize(value?: string | null) {
     if (!value) return '—';
     return value
@@ -176,16 +170,12 @@ const hasManageActions = computed(
         canArchiveEmployee,
 );
 
-/* ======================================================
-   Dialog state
-====================================================== */
+
 const statusDialog = reactive({ open: false });
 const resetPasswordDialog = reactive({ open: false });
 const archiveDialog = reactive({ open: false });
 
-/* ======================================================
-   Actions (backend untouched)
-====================================================== */
+
 function confirmToggleStatus() {
     if (!canToggleEmployee) return;
 
@@ -234,7 +224,7 @@ function confirmArchive() {
     <ExternalLayout :company="company" :user="user">
         <div class="min-h-screen bg-slate-50/60">
             <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
-                <!-- ── Page header ───────────────────────────── -->
+                
                 <div
                     class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
                 >
@@ -259,7 +249,7 @@ function confirmArchive() {
                         </p>
                     </div>
 
-                    <!-- Back + Actions dropdown -->
+                    
                     <div class="flex shrink-0 items-center gap-2 self-start">
                         <Button
                             as-child
@@ -295,7 +285,7 @@ function confirmArchive() {
 
                                 <DropdownMenuSeparator class="bg-slate-100" />
 
-                                <!-- Edit -->
+                                
                                 <DropdownMenuItem
                                     v-if="!isOwnAccount && canUpdateEmployee"
                                     as-child
@@ -309,7 +299,7 @@ function confirmArchive() {
                                     </Link>
                                 </DropdownMenuItem>
 
-                                <!-- Toggle status -->
+                                
                                 <DropdownMenuItem
                                     v-if="!isOwnAccount && canToggleEmployee"
                                     :class="[
@@ -322,7 +312,7 @@ function confirmArchive() {
                                     {{ toggleStatusLabel(employee.status) }}
                                 </DropdownMenuItem>
 
-                                <!-- Reset password -->
+                                
                                 <DropdownMenuItem
                                     v-if="!isOwnAccount && canResetEmployee"
                                     class="rounded-lg text-slate-700 focus:bg-blue-50 focus:text-blue-700"
@@ -343,7 +333,7 @@ function confirmArchive() {
                                     class="bg-slate-100"
                                 />
 
-                                <!-- Archive -->
+                                
                                 <DropdownMenuItem
                                     v-if="!isOwnAccount && canArchiveEmployee"
                                     class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600"
@@ -365,14 +355,14 @@ function confirmArchive() {
                     </div>
                 </div>
 
-                <!-- ── Main content grid ──────────────────────── -->
+                
                 <div class="grid gap-6 xl:grid-cols-3">
-                    <!-- Left: employee info card -->
+                    
                     <div class="space-y-6 xl:col-span-2">
                         <div
                             class="rounded-xl border border-slate-200 bg-white shadow-sm"
                         >
-                            <!-- Card header -->
+                            
                             <div
                                 class="flex items-center gap-2 border-b border-slate-100 px-5 py-4"
                             >
@@ -389,7 +379,7 @@ function confirmArchive() {
                                 </div>
                             </div>
 
-                            <!-- Avatar + badges -->
+                            
                             <div class="px-5 pt-5">
                                 <div
                                     class="flex flex-col gap-4 sm:flex-row sm:items-center"
@@ -455,7 +445,7 @@ function confirmArchive() {
                                 <Separator class="bg-slate-100" />
                             </div>
 
-                            <!-- Detail fields grid -->
+                            
                             <div class="grid gap-4 px-5 pb-5 md:grid-cols-2">
                                 <div
                                     class="rounded-xl border border-slate-200 bg-slate-50/70 p-4"
@@ -556,7 +546,7 @@ function confirmArchive() {
                         </div>
                     </div>
 
-                    <!-- Right: company card -->
+                    
                     <div class="space-y-6">
                         <div
                             class="rounded-xl border border-slate-200 bg-white shadow-sm"
@@ -627,7 +617,7 @@ function confirmArchive() {
             </div>
         </div>
 
-        <!-- ── Toggle status dialog ──────────────────── -->
+        
         <AlertDialog
             v-if="!isOwnAccount && canToggleEmployee"
             v-model:open="statusDialog.open"
@@ -659,7 +649,7 @@ function confirmArchive() {
             </AlertDialogContent>
         </AlertDialog>
 
-        <!-- ── Reset password dialog ─────────────────── -->
+        
         <AlertDialog
             v-if="!isOwnAccount && canResetEmployee"
             v-model:open="resetPasswordDialog.open"
@@ -695,7 +685,7 @@ function confirmArchive() {
             </AlertDialogContent>
         </AlertDialog>
 
-        <!-- ── Archive dialog ────────────────────────── -->
+        
         <AlertDialog
             v-if="!isOwnAccount && canArchiveEmployee"
             v-model:open="archiveDialog.open"

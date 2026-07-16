@@ -110,7 +110,7 @@ const sections = [
 
     <div class="flex min-h-screen flex-col bg-[#f4f5f7] text-[#1a1a2e]">
 
-        <!-- HEADER -->
+        
         <header class="sticky top-0 z-50 border-b border-gray-200 bg-white/90 shadow-sm backdrop-blur-md">
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
                 <div class="flex items-center gap-3">
@@ -143,7 +143,7 @@ const sections = [
             </div>
         </header>
 
-        <!-- PAGE HERO -->
+        
         <div class="relative overflow-hidden bg-gradient-to-r from-[#0d1b2a] via-[#1a3a6b] to-[#0d1b2a] py-14">
             <div class="absolute -top-10 -right-10 h-64 w-64 rounded-full bg-[#c0392b]/20 blur-3xl"></div>
             <div class="absolute bottom-0 left-1/4 h-48 w-48 rounded-full bg-[#1a3a6b]/40 blur-3xl"></div>
@@ -163,10 +163,10 @@ const sections = [
             </div>
         </div>
 
-        <!-- MAIN CONTENT -->
+        
         <main class="mx-auto w-full max-w-7xl px-6 py-12 flex gap-8 items-start">
 
-            <!-- SIDEBAR TOC -->
+            
             <aside class="hidden lg:block w-64 shrink-0 sticky top-24">
                 <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                     <p class="mb-4 text-[10px] font-bold uppercase tracking-widest text-[#c0392b]">Table of Contents</p>
@@ -183,7 +183,7 @@ const sections = [
                     </nav>
                 </div>
 
-                <!-- Notice card -->
+                
                 <div class="mt-4 rounded-2xl border border-[#c0392b]/20 bg-[#c0392b]/5 p-4">
                     <p class="text-[10px] font-bold uppercase tracking-widest text-[#c0392b] mb-2">Important Notice</p>
                     <p class="text-xs text-gray-600 leading-relaxed">
@@ -192,7 +192,7 @@ const sections = [
                 </div>
             </aside>
 
-            <!-- CONTENT -->
+            
             <div class="flex-1 min-w-0 space-y-6">
                 <div
                     v-for="s in sections"
@@ -221,7 +221,7 @@ const sections = [
                     </div>
                 </div>
 
-                <!-- BACK LINK -->
+                
                 <div class="pt-2 flex items-center justify-between">
                     <Button variant="ghost" as-child class="text-sm text-gray-500 hover:text-[#c0392b] gap-2 pl-0">
                         <Link href="/">
@@ -234,7 +234,7 @@ const sections = [
             </div>
         </main>
 
-        <!-- FOOTER -->
+        
         <footer class="border-t border-gray-200 bg-white mt-auto">
             <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-6 py-6 sm:flex-row">
                 <div class="flex items-center gap-2">
