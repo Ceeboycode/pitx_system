@@ -44,7 +44,7 @@ function restoreCompany() {
     <AlertDialog v-model:open="open">
         <AlertDialogContent class="rounded-lg p-4">
             <AlertDialogHeader>
-                <AlertDialogTitle>Restore Company</AlertDialogTitle>
+                <AlertDialogTitle>Restore</AlertDialogTitle>
 
                 <AlertDialogDescription>
                     Are you sure you want to restore

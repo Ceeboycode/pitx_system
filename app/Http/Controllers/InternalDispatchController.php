@@ -16,6 +16,8 @@ class InternalDispatchController extends Controller
         Gate::authorize('dispatches.viewAny');
 
         $search = trim((string) $request->string('search'));
+        $status = trim((string) $request->string('status'));
+        $minimumDispatches = max(0, $request->integer('minimum_dispatches'));
 
         $allowedSortFields = ['company_name', 'company_code', 'status', 'dispatches_count'];
         $sortBy  = in_array($request->input('sort_by'), $allowedSortFields, true) ? $request->input('sort_by') : 'company_name';
@@ -32,6 +34,8 @@ class InternalDispatchController extends Controller
                         ->orWhere('company_phone', 'like', "%{$search}%");
                 });
             })
+            ->when($status, fn ($query) => $query->where('status', $status))
+            ->when($minimumDispatches > 0, fn ($query) => $query->has('dispatches', '>=', $minimumDispatches))
             ->orderBy($sortBy, $sortDir)
             ->paginate(10)
             ->withQueryString()
@@ -46,7 +50,13 @@ class InternalDispatchController extends Controller
             ]);
 
         return Inertia::render('Dispatches/Index', [
-            'filters'   => ['search' => $search, 'sort_by' => $sortBy, 'sort_dir' => $sortDir],
+            'filters'   => [
+                'search' => $search,
+                'status' => $status,
+                'minimum_dispatches' => $minimumDispatches ?: null,
+                'sort_by' => $sortBy,
+                'sort_dir' => $sortDir,
+            ],
             'companies' => $companies,
         ]);
     }

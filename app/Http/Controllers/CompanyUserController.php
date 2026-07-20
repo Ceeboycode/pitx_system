@@ -38,6 +38,11 @@ class CompanyUserController extends Controller
         $search = $request->input('search');
         $role   = $request->input('role');
         $status = $request->input('status');
+        $sortBy = $request->input('sort_by');
+        $sortDir = $request->input('sort_dir') === 'desc' ? 'desc' : 'asc';
+
+        $sortableColumns = ['name', 'username', 'status', 'phone_number', 'created_at'];
+        $sortBy = in_array($sortBy, $sortableColumns, true) ? $sortBy : null;
 
         $externalRoleNames = $this->getExternalRoles()->pluck('name')->toArray();
 
@@ -56,7 +61,11 @@ class CompanyUserController extends Controller
                 $query->where('status', $status);
             })
             ->search($search)
-            ->orderBy('name')
+            ->when(
+                $sortBy,
+                fn ($query) => $query->orderBy($sortBy, $sortDir)->orderBy('id'),
+                fn ($query) => $query->orderBy('name')->orderBy('id'),
+            )
             ->paginate(10)
             ->withQueryString()
             ->through(function (User $employeeUser) {
@@ -86,6 +95,8 @@ class CompanyUserController extends Controller
                 'search' => $search,
                 'role'   => $role,
                 'status' => $status,
+                'sort_by' => $sortBy,
+                'sort_dir' => $sortBy ? $sortDir : null,
             ],
             'roles'    => $this->getExternalRoles()->pluck('name')->values(),
             'statuses' => ['active', 'inactive', 'suspended'],

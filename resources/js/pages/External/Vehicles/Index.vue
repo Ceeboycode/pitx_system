@@ -258,7 +258,7 @@ function canToggleVehicle(vehicle: VehicleItem) {
 }
 
 function toggleLabel(status?: string | null) {
-    return status === 'active' ? 'Set Inactive' : 'Set Active';
+    return status === 'active' ? 'Set as Inactive' : 'Set as Active';
 }
 
 function firstBlockingReason(vehicle: VehicleItem) {
@@ -1055,7 +1055,7 @@ function openActivate(vehicle: VehicleItem) {
                                                 "
                                             >
                                                 <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Set Inactive</span>
+                                                <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Set as Inactive</span>
                                             </DropdownMenuItem>
 
                                             <DropdownMenuItem
@@ -1074,7 +1074,8 @@ function openActivate(vehicle: VehicleItem) {
                                                 <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">{{ toggleLabel(vehicle.status) }}</span>
                                             </DropdownMenuItem>
 
-                                            <div
+                                            <Separator
+                                                class="mt-4"
                                                 v-if="
                                                     (canUpdate &&
                                                         !canEditVehicle(
@@ -1085,14 +1086,27 @@ function openActivate(vehicle: VehicleItem) {
                                                             vehicle,
                                                         ))
                                                 "
-                                                class="px-2 pt-1 pb-2 text-left text-[11px] text-slate-400"
+                                            />
+
+                                            <DropdownMenuItem
+                                                v-if="
+                                                    (canUpdate &&
+                                                        !canEditVehicle(
+                                                            vehicle,
+                                                        )) ||
+                                                    (canToggle &&
+                                                        !canToggleVehicle(
+                                                            vehicle,
+                                                        ))
+                                                "
+                                                class="pointer-events-none text-custom-shadow/80 text-xs"
                                             >
                                                 {{
                                                     vehicleActionNote(
                                                         vehicle,
                                                     )
                                                 }}
-                                            </div>
+                                            </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </div>
@@ -1147,7 +1161,7 @@ function openActivate(vehicle: VehicleItem) {
                     <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <Button v-if="canToggleVehicle(previewedVehicle)" variant="ghost-outline" size="icon-text" @click="previewedVehicle.status === 'active' ? openDeactivate(previewedVehicle) : openActivate(previewedVehicle)">
-                            <RiShutDownLine class="h-4 w-4" />{{ previewedVehicle.status === 'active' ? 'Set Inactive' : toggleLabel(previewedVehicle.status) }}
+                            <RiShutDownLine class="h-4 w-4" />{{ previewedVehicle.status === 'active' ? 'Set as Inactive' : toggleLabel(previewedVehicle.status) }}
                         </Button>
                         <Button as-child variant="float-primary" size="icon-text"><Link :href="CompanyVehicleController.show(previewedVehicle.id).url"><RiFileCheckLine class="h-4 w-4" />Review</Link></Button>
                     </div>
@@ -1165,7 +1179,7 @@ function openActivate(vehicle: VehicleItem) {
                     <DialogDescription>
                         <span class="block">
                             {{ isInactivating ? 'Provide a reason to inactivate' : 'This will activate' }}
-                            <strong class="font-semibold text-custom-accent-3">{{ statusDialog.vehicle?.plate_number || 'this vehicle' }}</strong>.
+                            <span class="font-semibold text-custom-accent-3">{{ statusDialog.vehicle?.plate_number || 'this vehicle' }}</span>.
                             {{ isInactivating ? 'You can activate it again later.' : 'All documents must be approved before activation.' }}
                         </span>
                     </DialogDescription>

@@ -113,6 +113,7 @@ class PermissionSeeder extends Seeder
             'create',
             'update',
             'depart',
+            'requestChange',
         ],
 
         'external_vehicles' => [

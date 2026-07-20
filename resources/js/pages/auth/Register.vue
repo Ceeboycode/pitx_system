@@ -11,12 +11,12 @@ import { store } from '@/routes/register';
 import { Form, Head } from '@inertiajs/vue3';
 </script>
 
-<!-- TODO: clean this file up, or delete, cos it seems that this isnt really in use -->
+<!-- DEAD CODE: Fortify web self-registration is disabled. Retained for possible future use. -->
 
 <template>
     <AuthBase
         title="Create an account"
-        description=""
+        description="Enter your details to create your account"
     >
         <Head title="Register" />
 
@@ -34,7 +34,6 @@ import { Form, Head } from '@inertiajs/vue3';
                         type="text"
                         required
                         autofocus
-                        :tabindex="1"
                         autocomplete="name"
                         name="name"
                         placeholder="Full name"
@@ -48,7 +47,6 @@ import { Form, Head } from '@inertiajs/vue3';
                         id="email"
                         type="email"
                         required
-                        :tabindex="2"
                         autocomplete="email"
                         name="email"
                         placeholder="email@example.com"
@@ -62,7 +60,6 @@ import { Form, Head } from '@inertiajs/vue3';
                         id="password"
                         type="password"
                         required
-                        :tabindex="3"
                         autocomplete="new-password"
                         name="password"
                         placeholder="Password"
@@ -76,7 +73,6 @@ import { Form, Head } from '@inertiajs/vue3';
                         id="password_confirmation"
                         type="password"
                         required
-                        :tabindex="4"
                         autocomplete="new-password"
                         name="password_confirmation"
                         placeholder="Confirm password"
@@ -87,7 +83,6 @@ import { Form, Head } from '@inertiajs/vue3';
                 <Button
                     type="submit"
                     class="mt-2 w-full"
-                    tabindex="5"
                     :disabled="processing"
                     data-test="register-user-button"
                 >
@@ -101,7 +96,6 @@ import { Form, Head } from '@inertiajs/vue3';
                 <TextLink
                     :href="login()"
                     class="underline underline-offset-4"
-                    :tabindex="6"
                     >Log in</TextLink
                 >
             </div>

@@ -5,16 +5,6 @@ import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 
 
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,6 +14,14 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -43,6 +41,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 
 import AppLayout from '@/layouts/AppLayout.vue';
 import {
@@ -65,11 +64,9 @@ import {
     RiArrowUpDownLine,
     RiArrowUpSLine,
     RiCloseLine,
-    RiEyeLine,
     RiExternalLinkLine,
     RiFilter2Line,
     RiKey2Line,
-    RiMailLine,
     RiMore2Line,
     RiPencilLine,
     RiShutDownLine,
@@ -157,12 +154,6 @@ const hasActiveFilters = computed(
         (roleFilter.value && roleFilter.value !== 'all') ||
         (statusFilter.value && statusFilter.value !== 'all') ||
         sortBy.value !== null,
-);
-
-const hasCategoryFilters = computed(
-    () =>
-        (roleFilter.value && roleFilter.value !== 'all') ||
-        (statusFilter.value && statusFilter.value !== 'all'),
 );
 
 const activeFilterCount = computed(() => {
@@ -431,7 +422,7 @@ function confirmResetPassword() {
                                 <DropdownMenuItem
                                     v-if="canViewTrash"
                                     as-child
-                                    class="cursor-pointer"
+                                    class="cursor-pointer group"
                                 >
                                     <Link :href="trash().url" class="flex items-center">
                                         <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-300" />
@@ -610,28 +601,17 @@ function confirmResetPassword() {
                                 <div
                                     :class="[
                                         'grid gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light',
-                                        showCompanyColumn ? 'grid-cols-8' : 'grid-cols-7',
+                                        showCompanyColumn
+                                            ? 'grid-cols-[minmax(0,2fr)_minmax(0,1.6fr)_minmax(0,0.85fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,0.7fr)_3rem]'
+                                            : 'grid-cols-[minmax(0,2fr)_minmax(0,1.6fr)_minmax(0,0.85fr)_minmax(0,0.75fr)_minmax(0,0.7fr)_3rem]',
                                     ]"
                                 >
                                     <button
                                         type="button"
                                         class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 pl-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
-                                        @click="toggleSort('username')"
-                                    >
-                                        Username
-                                        <component
-                                            :is="sortIcon('username')"
-                                            class="h-3.5 w-3.5"
-                                            :class="sortIconClass('username')"
-                                        />
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('name')"
                                     >
-                                        Name
+                                        Name & Username
                                         <component
                                             :is="sortIcon('name')"
                                             class="h-3.5 w-3.5"
@@ -639,18 +619,9 @@ function confirmResetPassword() {
                                         />
                                     </button>
 
-                                    <button
-                                        type="button"
-                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
-                                        @click="toggleSort('email')"
-                                    >
-                                        Email
-                                        <component
-                                            :is="sortIcon('email')"
-                                            class="h-3.5 w-3.5"
-                                            :class="sortIconClass('email')"
-                                        />
-                                    </button>
+                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
+                                        Contact Details
+                                    </div>
 
                                     <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
                                         Verification
@@ -692,31 +663,36 @@ function confirmResetPassword() {
                                     :key="user.id"
                                     :class="[
                                         'grid cursor-pointer items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
-                                        showCompanyColumn ? 'grid-cols-8' : 'grid-cols-7',
+                                        showCompanyColumn
+                                            ? 'grid-cols-[minmax(0,2fr)_minmax(0,1.6fr)_minmax(0,0.85fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,0.7fr)_3rem]'
+                                            : 'grid-cols-[minmax(0,2fr)_minmax(0,1.6fr)_minmax(0,0.85fr)_minmax(0,0.75fr)_minmax(0,0.7fr)_3rem]',
                                         index === filteredUsers.length - 1 ? 'rounded-b-md border-b-0' : '',
                                         previewedUser?.id === user.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
                                     ]"
                                     @click="openPreview(user)"
                                 >
-                                    <div class="col-span-1 flex min-w-0 justify-start py-1.5 pl-3 font-medium">
-                                        <span class="truncate">{{ user.username }}</span>
-                                    </div>
-
-                                    <div class="col-span-1 flex min-w-0 justify-start py-1.5">
-                                        <span class="truncate">{{ user.name }}</span>
-                                    </div>
-
-                                    <div class="col-span-1 flex min-w-0 justify-start py-1.5 text-sm">
-                                        <div class="flex min-w-0 items-center gap-1.5 text-custom-shadow/70">
-                                            <RiMailLine
-                                                class="h-3.5 w-3.5 shrink-0"
-                                            />
-                                            <span
-                                                class="min-w-0 truncate"
-                                            >
-                                                {{ user.email }}
-                                            </span>
+                                    <div class="col-span-1 flex min-w-0 items-center gap-2 py-1.5 pl-3">
+                                        <img
+                                            v-if="user.avatar_url"
+                                            :src="user.avatar_url"
+                                            :alt="`${user.name} avatar`"
+                                            class="h-12 w-12 shrink-0 rounded-full object-cover"
+                                        />
+                                        <div
+                                            v-else
+                                            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-custom-secondary/20 text-xs font-semibold"
+                                        >
+                                            {{ initials(user.name) }}
                                         </div>
+                                        <div class="min-w-0">
+                                            <p class="truncate font-semibold capitalize">{{ user.name }}</p>
+                                            <p class="truncate font-mono text-xs text-custom-shadow/70">{{ user.username }}</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-span-1 flex min-w-0 flex-col gap-1 py-1.5 text-sm text-custom-shadow/80">
+                                        <span class="truncate">{{ user.email || '—' }}</span>
+                                        <span class="truncate">{{ user.phone_number || '—' }}</span>
                                     </div>
 
                                     <div class="col-span-1 flex justify-start py-1.5">
@@ -804,13 +780,21 @@ function confirmResetPassword() {
                                             </DropdownMenuTrigger>
 
                                             <DropdownMenuContent align="end" class="">
-                                                <DropdownMenuLabel>
+                                                <DropdownMenuLabel class="">
                                                     {{ user.username }}
                                                 </DropdownMenuLabel>
 
                                                 <DropdownMenuItem
+                                                    class="group hidden"
+                                                    @click="show(user.id).url"
+                                                >
+                                                    <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-bg transition-all duration-300" />
+                                                    View
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuItem
                                                     as-child
-                                                    class="cursor-pointer rounded-lg hover:bg-slate-100"
+                                                    class="group"
                                                 >
                                                     <Link
                                                         :href="
@@ -818,8 +802,8 @@ function confirmResetPassword() {
                                                         "
                                                         class="flex items-center"
                                                     >
-                                                        <RiEyeLine class="h-4 w-4" />
-                                                        View Profile
+                                                        <RiExternalLinkLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                        View
                                                     </Link>
                                                 </DropdownMenuItem>
 
@@ -829,17 +813,18 @@ function confirmResetPassword() {
                                                         !isOwnAccount(user)
                                                     "
                                                     as-child
+                                                    class="group"
                                                 >
                                                     <Link
                                                         :href="
                                                             edit(user.id).url
                                                         "
-                                                        class="cursor-pointer rounded-lg hover:bg-slate-100"
+                                                        class="flex items-center"
                                                     >
                                                         <RiPencilLine
-                                                            class="h-4 w-4"
+                                                            class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
                                                         />
-                                                        Edit Details
+                                                        Edit
                                                     </Link>
                                                 </DropdownMenuItem>
 
@@ -848,17 +833,17 @@ function confirmResetPassword() {
                                                         canToggle &&
                                                         !isOwnAccount(user)
                                                     "
-                                                    class="cursor-pointer rounded-lg hover:bg-slate-100"
+                                                    class="group"
                                                     @click="
                                                         openToggleDialog(user)
                                                     "
                                                 >
-                                                    <RiShutDownLine class="h-4 w-4" />
-                                                    {{
+                                                    <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                    <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">{{
                                                         isActive(user)
-                                                            ? 'Set Inactive'
-                                                            : 'Set Active'
-                                                    }}
+                                                            ? 'Set as Inactive'
+                                                            : 'Set as Active'
+                                                    }}</span>
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
@@ -866,22 +851,22 @@ function confirmResetPassword() {
                                                         canResetPass &&
                                                         !isOwnAccount(user)
                                                     "
-                                                    class="cursor-pointer rounded-lg hover:bg-slate-100"
+                                                    class="group"
                                                     @click="
                                                         openResetDialog(user)
                                                     "
                                                 >
-                                                    <RiKey2Line class="h-4 w-4" />
-                                                    Reset Password
+                                                    <RiKey2Line class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                    <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">Reset Password</span>
                                                 </DropdownMenuItem>
+
+                                                <Separator v-if="isOwnAccount(user)" class="mt-4"/>
 
                                                 <DropdownMenuItem
                                                     v-if="isOwnAccount(user)"
-                                                    disabled
-                                                    class="pointer-events-none rounded-lg text-muted-foreground"
+                                                    class="pointer-events-none text-custom-shadow/80 text-xs"
                                                 >
-                                                    You cannot manage your own
-                                                    account here
+                                                    You cannot manage your own account here.
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -904,15 +889,6 @@ function confirmResetPassword() {
                                         {{ hasActiveFilters ? 'Try adjusting your filters or search.' : 'Try adjusting your search.' }}
                                     </p>
                                 </div>
-                                <Button
-                                    v-if="hasActiveFilters"
-                                    size="sm"
-                                    variant="destructive"
-                                    @click="clearFilters"
-                                >
-                                    <RiCloseLine class="mr-1.5 h-3.5 w-3.5" />
-                                    Clear filters
-                                </Button>
                             </div>
                         </div>
                     </Card>
@@ -1073,93 +1049,73 @@ function confirmResetPassword() {
             </Card>
         </div>
 
-        <AlertDialog v-model:open="toggleOpen">
-            <AlertDialogContent class="rounded-lg p-4">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>
-                        {{
-                            togglingUser?.status === 'active'
-                                ? 'Set User Inactive'
-                                : 'Set User Active'
-                        }}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
+        <Dialog v-model:open="toggleOpen">
+            <DialogContent class="px-6">
+                <DialogHeader class="px-0">
+                    <DialogTitle>
+                        Set user status
+                    </DialogTitle>
+                    <DialogDescription class="mt-4">
                         Are you sure you want to set
-                        <span class="font-semibold text-foreground">{{
+                        <span class="font-semibold text-custom-accent-3">{{
                             togglingUser?.name ?? 'this user'
                         }}</span>
-                        to
-                        <span
-                            class="font-semibold"
-                            :class="
-                                togglingUser?.status === 'active'
-                                    ? 'text-foreground'
-                                    : 'text-foreground'
-                            "
-                        >
+                        as
+                        <span class="font-semibold text-custom-accent-3">
                             {{
                                 togglingUser?.status === 'active'
                                     ? 'inactive'
                                     : 'active'
                             }} </span
                         >?
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel
-                        class="cursor-pointer rounded-lg hover:bg-slate-100"
-                        @click="togglingUser = null"
-                    >
+                    </DialogDescription>
+                </DialogHeader>
+                <Separator class="mb-4" />
+                <DialogFooter class="gap-2 sm:justify-end">
+                    <Button variant="ghost-outline" @click="toggleOpen = false; togglingUser = null">
                         Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                        :class="[
-                            'cursor-pointer rounded-lg border-0 text-white',
-                            togglingUser?.status === 'active'
-                                ? 'bg-rose-600 hover:bg-rose-700'
-                                : 'bg-primary',
-                        ]"
+                    </Button>
+                    <Button
+                        :variant="togglingUser?.status === 'active' ? 'destructive' : 'float-primary'"
                         @click="confirmToggle"
                     >
                         <RiShutDownLine class="h-4 w-4" />
                         {{
                             togglingUser?.status === 'active'
-                                ? 'Set Inactive'
-                                : 'Set Active'
+                                ? 'Inactivate'
+                                : 'Activate'
                         }}
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
 
-        <AlertDialog v-model:open="resetOpen">
-            <AlertDialogContent class="rounded-lg p-4">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Reset Password</AlertDialogTitle>
-                    <AlertDialogDescription>
+        <Dialog v-model:open="resetOpen">
+            <DialogContent class="px-6">
+                <DialogHeader class="px-0">
+                    <DialogTitle>Reset Password</DialogTitle>
+                    <DialogDescription class="mt-4">
                         Are you sure you want to reset the password for
-                        <span class="font-semibold text-foreground">{{
+                        <span class="font-semibold text-custom-accent-3">{{
                             resettingUser?.name ?? 'this user'
                         }}</span
                         >?
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel
-                        class="cursor-pointer rounded-lg hover:bg-slate-100"
-                        @click="resettingUser = null"
-                    >
+                    </DialogDescription>
+                </DialogHeader>
+                <Separator class="mb-4" />
+                <DialogFooter class="gap-2 sm:justify-end">
+                    <Button variant="ghost-outline" @click="resetOpen = false; resettingUser = null">
                         Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                        class="cursor-pointer rounded-lg border-0 bg-primary text-white hover:bg-primary/90"
+                    </Button>
+                    <Button
+                        variant="float-primary"
                         @click="confirmResetPassword"
                     >
                         <RiKey2Line class="h-4 w-4" />
                         Reset Password
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>

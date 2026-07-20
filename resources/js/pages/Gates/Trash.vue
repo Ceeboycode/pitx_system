@@ -300,7 +300,7 @@ function restoreGate() {
                                                 <DropdownMenuLabel>{{ gate.gate_name }}</DropdownMenuLabel>
                                                 <DropdownMenuItem class="group" @click="openRestoreDialog(gate)">
                                                     <RiRestartLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                    Restore Gate
+                                                    Restore
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -359,7 +359,7 @@ function restoreGate() {
                         @click="restoreGate"
                     >
                         <RiRestartLine class="h-4 w-4" />
-                        Restore Gate
+                        Restore
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

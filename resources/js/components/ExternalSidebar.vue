@@ -83,8 +83,7 @@ const mainNavItems: NavItem[] = [
         icon: RiDashboardHorizontalLine,
     },
     {
-        // TODO: change this dispatches ID into company
-        id: 'dispatches',
+        id: 'company-management',
         title: 'Management',
         href: '/',
         icon: RiBuildingLine,
@@ -105,8 +104,7 @@ const mainNavItems: NavItem[] = [
         ],
     },
     {
-        // TODO: change this vehicles ID into operations
-        id: 'vehicles',
+        id: 'company-operations',
         title: 'Operations',
         href: '/',
         icon: RiBus2Line,
@@ -119,7 +117,7 @@ const mainNavItems: NavItem[] = [
             },
             {
                 id: 'dispatches',
-                title: 'Dispatch',
+                title: 'Dispatches',
                 href: '/company/dispatches',
                 permission: 'external_dispatches.viewAny',
             },

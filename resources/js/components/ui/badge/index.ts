@@ -21,6 +21,8 @@ export const badgeVariants = cva(
           "bg-custom-primary rounded-full px-2 text-custom-bg-light capitalize border-none",
         inactive:
           "bg-custom-bg rounded-full px-2 text-custom-shadow capitalize border-none",
+        "accent-3":
+          "bg-custom-accent-3 text-custom-shadow text-custom-bg-light dark:text-custom-bg-light",
 
         // ── Semantic status variants ─────────────────────────────
 

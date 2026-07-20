@@ -345,6 +345,7 @@ class UserController extends Controller
         Gate::authorize('viewTrash', User::class);
 
         $search = $request->input('search');
+        $archivedWithin = $request->input('archived_within');
 
         $users = User::onlyTrashed()
             ->select([
@@ -365,6 +366,16 @@ class UserController extends Controller
                         ->orWhere('email', 'like', $like);
                 });
             })
+            ->when(
+                in_array($archivedWithin, ['today', '7_days', '30_days'], true),
+                function ($query) use ($archivedWithin) {
+                    $query->where('deleted_at', '>=', match ($archivedWithin) {
+                        'today' => now()->startOfDay(),
+                        '7_days' => now()->subDays(7),
+                        '30_days' => now()->subDays(30),
+                    });
+                },
+            )
             ->latest('deleted_at')
             ->paginate(10)
             ->withQueryString()
@@ -388,6 +399,7 @@ class UserController extends Controller
             'users'    => $users,
             'filters' => [
                 'search' => $search,
+                'archived_within' => $archivedWithin,
             ],
         ]);
     }

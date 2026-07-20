@@ -5,10 +5,11 @@ import {
     reject,
 } from '@/actions/App/Http/Controllers/DispatchChangeRequestController';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import InputError from '@/components/InputError.vue';
+import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import AppLayout from '@/layouts/AppLayout.vue';
 
@@ -38,6 +39,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
     Select,
     SelectContent,
@@ -109,13 +111,15 @@ const props = defineProps<{
         total: number;
     };
     statusCounts: { pending: number; approved: number; rejected: number };
-    filters: { status: string };
+    filters: { status: string; search: string | null };
 }>();
 
 const selectedStatus = ref<'all' | 'pending' | 'approved' | 'rejected'>(
     (props.filters.status as 'all' | 'pending' | 'approved' | 'rejected') ??
         'pending',
 );
+const filterOpen = ref(false);
+const activeFilterCount = computed(() => selectedStatus.value === 'all' ? 0 : 1);
 const approveModalOpen = ref(false);
 const approveTarget = ref<DispatchChangeRequest | null>(null);
 const rejectModalOpen = ref(false);
@@ -127,13 +131,27 @@ const rejectForm = useForm({
     rejection_reason: '',
 });
 
-watch(selectedStatus, (val) => {
+function applyFilters() {
     router.get(
         changeRequestsIndex().url,
-        { status: val },
-        { preserveScroll: true, preserveState: true, replace: true },
+        {
+            search: props.filters.search || undefined,
+            status: selectedStatus.value === 'all' ? undefined : selectedStatus.value,
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+            only: ['changeRequests', 'statusCounts', 'filters'],
+        },
     );
-});
+    filterOpen.value = false;
+}
+
+function clearFilters() {
+    selectedStatus.value = 'all';
+    applyFilters();
+}
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Change Requests', href: '#' }];
 
@@ -213,12 +231,12 @@ function rejectRequest() {
 
 function statusVariant(
     status: string,
-): 'default' | 'secondary' | 'outline' | 'destructive' {
+): 'success' | 'warning' | 'outline' | 'destructive' {
     switch (status) {
         case 'pending':
-            return 'secondary';
+            return 'warning';
         case 'approved':
-            return 'default';
+            return 'success';
         case 'rejected':
             return 'destructive';
         default:
@@ -259,49 +277,53 @@ function statusIcon(status: string) {
                 </CardHeader>
                 <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
                     <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
-                        <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <Select v-model="selectedStatus">
-                                    <SelectTrigger
-                                        class="h-9 w-fit cursor-pointer rounded-full border-custom-bg-dark shadow-none dark:border-custom-bg-light"
-                                    >
-                                        <Filter
-                                            class="h-3.5 w-3.5 text-custom-shadow/80"
-                                        />
-                                        <SelectValue
-                                            placeholder="All Statuses"
-                                            class="flex justify-start"
-                                        />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem
-                                            key="all"
-                                            value="all"
-                                            class="cursor-pointer text-sm"
-                                            >All Statuses</SelectItem
-                                        >
-                                        <SelectItem
-                                            key="pending"
-                                            value="pending"
-                                            class="cursor-pointer text-sm"
-                                            >Pending</SelectItem
-                                        >
-                                        <SelectItem
-                                            key="approved"
-                                            value="approved"
-                                            class="cursor-pointer text-sm"
-                                            >Approved</SelectItem
-                                        >
-                                        <SelectItem
-                                            key="rejected"
-                                            value="rejected"
-                                            class="cursor-pointer text-sm"
-                                            >Rejected</SelectItem
-                                        >
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                        <div class="w-full">
+                            <SearchInput
+                                :route="`${changeRequestsIndex().url}?status=${selectedStatus === 'all' ? '' : selectedStatus}`"
+                                :initial-value="props.filters.search"
+                                placeholder="Search dispatches, companies, or requesters..."
+                                :only="['changeRequests', 'statusCounts', 'filters']"
+                                :debounce="350"
+                            />
                         </div>
+
+                        <Popover v-model:open="filterOpen">
+                            <PopoverTrigger as-child>
+                                <Button
+                                    variant="header-actions"
+                                    size="icon-text"
+                                    class="rounded-full"
+                                    :class="activeFilterCount ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''"
+                                >
+                                    <Filter class="h-3.5 w-3.5" />
+                                    <span class="hidden lg:flex">{{ activeFilterCount ? '1 filter active' : 'Filter' }}</span>
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent align="end">
+                                <div class="grid gap-y-2">
+                                    <div class="flex flex-col gap-y-1">
+                                        <p class="text-sm text-custom-shadow/80">Status</p>
+                                        <Select v-model="selectedStatus">
+                                            <SelectTrigger class="w-full"><SelectValue placeholder="Any status" /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Any status</SelectItem>
+                                                <SelectItem value="pending">Pending</SelectItem>
+                                                <SelectItem value="approved">Approved</SelectItem>
+                                                <SelectItem value="rejected">Rejected</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light" />
+                                    <div class="flex items-center justify-between">
+                                        <Button v-if="activeFilterCount" size="sm" variant="destructive" @click="clearFilters">Clear</Button>
+                                        <div class="ml-auto flex gap-2">
+                                            <Button size="sm" variant="ghost-outline" @click="filterOpen = false">Cancel</Button>
+                                            <Button size="sm" variant="float-primary" @click="applyFilters">Apply</Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
                     </div>
                     <Card
                         :class="[
@@ -313,35 +335,35 @@ function statusIcon(status: string) {
                         <Table>
                             <TableHeader
                                 v-if="changeRequests.data.length > 0"
-                                class="border-b border-custom-bg-dark dark:border-custom-bg-light"
+                                class="border-b border-custom-bg-dark bg-custom-bg dark:border-custom-bg-light dark:bg-custom-bg-light"
                             >
                                 <TableRow class="gap-2">
                                     <TableHead
-                                        class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
+                                        class="pl-3 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Dispatch</TableHead
                                     >
                                     <TableHead
-                                        class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
+                                        class="px-0 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Requester</TableHead
                                     >
                                     <TableHead
-                                        class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
+                                        class="px-0 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Company</TableHead
                                     >
                                     <TableHead
-                                        class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
+                                        class="px-0 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Change</TableHead
                                     >
                                     <TableHead
-                                        class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
+                                        class="px-0 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Reason</TableHead
                                     >
                                     <TableHead
-                                        class="px-0 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
+                                        class="px-0 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Status</TableHead
                                     >
                                     <TableHead
-                                        class="px-0 text-right text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
+                                        class="pr-3 text-right text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                         >Action</TableHead
                                     >
                                 </TableRow>
@@ -385,7 +407,7 @@ function statusIcon(status: string) {
                                     <TableRow
                                         class="group border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light"
                                     >
-                                        <TableCell class="px-0">
+                                        <TableCell class="pl-3">
                                             <div class="space-y-0.5">
                                                 <p
                                                     class="text-sm font-semibold"
@@ -495,7 +517,7 @@ function statusIcon(status: string) {
                                             </Badge>
                                         </TableCell>
 
-                                        <TableCell class="px-0 text-right">
+                                        <TableCell class="pr-3 text-right">
                                             <DropdownMenu
                                                 v-if="
                                                     request.status === 'pending'

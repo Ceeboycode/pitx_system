@@ -15,14 +15,6 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
-import {
     Select,
     SelectContent,
     SelectItem,
@@ -34,21 +26,12 @@ import {
     PopoverTrigger,
     PopoverContent
 } from '@/components/ui/popover';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 import {
     RiCalendarLine as Calendar,
     RiCloseLine as X,
-    RiEyeLine as Eye,
     RiFilter2Line as Filter,
 } from 'vue-remix-icons';
 import { computed, ref } from 'vue';
@@ -293,11 +276,6 @@ function formatValue(value: unknown): string {
     return String(value);
 }
 
-function hasDisplayValue(value: unknown): boolean {
-    const formatted = formatValue(value);
-    return formatted !== '—';
-}
-
 function actionBadgeClass(action: string): string {
     if (action === 'created')
         return 'border-emerald-200 bg-emerald-100 text-emerald-700';
@@ -396,37 +374,6 @@ function actionBadgeClass(action: string): string {
                                                             :value="action.value"
                                                             class="cursor-pointer text-sm">
                                                             {{ action.label }}
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-
-                                            <div class="flex flex-col gap-y-1">
-                                                <p
-                                                    class="text-sm text-custom-shadow/80"
-                                                >
-                                                    User
-                                                </p>
-                                                <Select v-model="pendingUserFilter">
-                                                    <SelectTrigger
-                                                        class="w-full"
-                                                    >
-                                                        <SelectValue
-                                                            placeholder="All Users"
-                                                            class="flex justify-start"
-                                                        />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="all" class="cursor-pointer text-sm">
-                                                            All Users
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            v-for="user in users"
-                                                            :key="user.id"
-                                                            :value="String(user.id)"
-                                                            class="cursor-pointer text-sm"
-                                                        >
-                                                            {{ user.name }}
                                                         </SelectItem>
                                                     </SelectContent>
                                                 </Select>
@@ -544,81 +491,28 @@ function actionBadgeClass(action: string): string {
                             auditLogs.data.length === 0 ? 'border-dashed' : 'border-solid',
                         ]"
                     >
-                    <div class="no-scrollbar min-h-0 flex-1 overflow-auto">
-                        <Table>
-                            <TableHeader
-                                v-if="auditLogs.data.length > 0"
-                                class="border-b border-custom-bg-dark dark:border-custom-bg-light"
-                            >
-                                <TableRow>
-                                    <TableHead class="table-cell h-10 pl-3 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">User</TableHead>
-                                    <TableHead class="table-cell h-10 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Action</TableHead>
-                                    <TableHead class="table-cell h-10 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Entity</TableHead>
-                                    <TableHead class="table-cell h-10 w-56 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Changes</TableHead>
-                                    <TableHead class="table-cell h-10 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Timestamp</TableHead>
-                                    <TableHead class="table-cell h-10 w-30 pr-3 text-right text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                        >Details</TableHead
-                                    >
-                                </TableRow>
-                            </TableHeader>
+                    <div v-if="auditLogs.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+                        <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
+                            <div class="grid grid-cols-4 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
+                                <div class="flex h-10 items-center justify-start pl-3 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">User</div>
+                                <div class="flex h-10 items-center justify-start text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Action</div>
+                                <div class="flex h-10 items-center justify-start text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Entity</div>
+                                <div class="flex h-10 items-center justify-start text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Timestamp</div>
+                            </div>
+                        </div>
 
-                            <TableBody>
-                                <TableRow
-                                    v-if="auditLogs.data.length === 0"
-                                    class="hover:bg-transparent"
-                                >
-                                    <TableCell
-                                        colspan="6"
-                                        class="table-cell p-6 text-center"
-                                    >
-                                        <div
-                                            class="flex flex-col items-center gap-3"
-                                        >
-                                            <img
-                                                :src="emptyRafikiUrl"
-                                                alt=""
-                                                class="w-32 object-contain opacity-90"
-                                                aria-hidden="true"
-                                            />
-                                            <div>
-                                                <p
-                                                    class="text-sm font-semibold text-foreground"
-                                                >
-                                                    No audit logs found
-                                                </p>
-                                                <p
-                                                    class="mt-0.5 text-xs text-muted-foreground"
-                                                >
-                                                    {{
-                                                        hasActiveFilters
-                                                            ? 'Try adjusting your filters or search.'
-                                                            : 'Try adjusting your search.'
-                                                    }}
-                                                </p>
-                                            </div>
-                                            <Button
-                                                v-if="hasActiveFilters"
-                                                size="sm"
-                                                variant="destructive"
-                                                @click="clearFilters"
-                                            >
-                                                <X class="mr-1.5 h-3.5 w-3.5" />
-                                                Clear filters
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-
-                                <TableRow
-                                    v-for="log in auditLogs.data"
+                        <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+                            <div
+                                    v-for="(log, index) in auditLogs.data"
                                     :key="log.id"
                                     :class="[
-                                        'group cursor-pointer border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                        'group grid cursor-pointer grid-cols-4 items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                        index === auditLogs.data.length - 1 ? 'rounded-b-md border-b-0' : '',
                                         previewedLog?.id === log.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
                                     ]"
                                     @click="openPreview(log)"
                                 >
-                                    <TableCell class="table-cell py-1.5 pl-3">
+                                    <div class="min-w-0 py-1.5 pl-3">
                                         <div class="text-sm font-medium">
                                             {{ log.user?.name ?? 'System' }}
                                         </div>
@@ -627,9 +521,9 @@ function actionBadgeClass(action: string): string {
                                         >
                                             {{ log.user?.email ?? '—' }}
                                         </div>
-                                    </TableCell>
+                                    </div>
 
-                                    <TableCell class="table-cell py-1.5">
+                                    <div class="py-1.5">
                                         <Badge
                                             :class="
                                                 actionBadgeClass(log.action)
@@ -637,9 +531,9 @@ function actionBadgeClass(action: string): string {
                                         >
                                             {{ log.action_label }}
                                         </Badge>
-                                    </TableCell>
+                                    </div>
 
-                                    <TableCell class="table-cell py-1.5">
+                                    <div class="min-w-0 py-1.5">
                                         <div class="text-sm font-medium">
                                             {{ log.entity_label }}
                                         </div>
@@ -648,38 +542,9 @@ function actionBadgeClass(action: string): string {
                                         >
                                             {{ log.entity_name ?? '—' }}
                                         </div>
-                                    </TableCell>
+                                    </div>
 
-                                    <TableCell class="table-cell w-56 max-w-56 py-1.5">
-                                        <div class="space-y-1">
-                                            <div
-                                                v-for="change in log.changes.slice(
-                                                    0,
-                                                    1,
-                                                )"
-                                                :key="`${log.id}-${change.field}`"
-                                                class="text-xs text-muted-foreground break-words whitespace-normal"
-                                            >
-                                                <span
-                                                    class="font-medium text-foreground"
-                                                    >{{ change.label }}:</span
-                                                >
-                                                {{ formatValue(change.old) }} to
-                                                {{ formatValue(change.new) }}
-                                            </div>
-                                            <div
-                                                v-if="log.changes.length > 2"
-                                                class="text-xs text-muted-foreground"
-                                            >
-                                                +{{
-                                                    log.changes.length - 1
-                                                }}
-                                                more
-                                            </div>
-                                        </div>
-                                    </TableCell>
-
-                                    <TableCell class="table-cell py-1.5">
+                                    <div class="min-w-0 py-1.5">
                                         <div class="text-sm">
                                             {{ log.created_at_human ?? '—' }}
                                         </div>
@@ -688,158 +553,27 @@ function actionBadgeClass(action: string): string {
                                         >
                                             {{ log.created_at ?? '—' }}
                                         </div>
-                                    </TableCell>
+                                    </div>
 
-                                    <TableCell class="table-cell py-1.5 pr-3 text-right" @click.stop>
-                                        <Dialog>
-                                            <DialogTrigger as-child>
-                                                <Button
-                                                    variant="table-more"
-                                                    size="icon-more"
-                                                >
-                                                    <Eye class="h-4 w-4" />
-                                                </Button>
-                                            </DialogTrigger>
+                            </div>
+                        </div>
+                    </div>
 
-                                            <DialogContent class="max-w-2xl max-h-70vh rounded-lg p-4">
-                                                <DialogHeader>
-                                                    <DialogTitle>{{
-                                                        log.action_label
-                                                    }}</DialogTitle>
-                                                    <DialogDescription>
-                                                        {{
-                                                            log.entity_label
-                                                        }}
-                                                        activity record
-                                                    </DialogDescription>
-                                                </DialogHeader>
-
-                                                <div class="space-y-4 text-sm">
-                                                    <div
-                                                        class="grid grid-cols-2 gap-4 text-xs text-muted-foreground"
-                                                    >
-                                                        <div>
-                                                            <span
-                                                                class="font-semibold text-foreground"
-                                                                >IP:</span
-                                                            >
-                                                            {{
-                                                                log.ip_address ??
-                                                                '—'
-                                                            }}
-                                                        </div>
-                                                        <div>
-                                                            <span
-                                                                class="font-semibold text-foreground"
-                                                                >Method:</span
-                                                            >
-                                                            {{
-                                                                log.request_method ??
-                                                                '—'
-                                                            }}
-                                                        </div>
-                                                        <div
-                                                            class="col-span-2 break-all"
-                                                        >
-                                                            <span
-                                                                class="font-semibold text-foreground"
-                                                                >URL:</span
-                                                            >
-                                                            {{
-                                                                log.request_url ??
-                                                                '—'
-                                                            }}
-                                                        </div>
-                                                    </div>
-
-                                                    <div>
-                                                        <p
-                                                            class="text-xs font-semibold tracking-wide uppercase"
-                                                        >
-                                                            Changed fields:
-                                                        </p>
-                                                        <div
-                                                            class="space-y-2 p-2 mt-2 border-t border-slate-200 overflow-y-auto h-60"
-                                                        >
-                                                            <div
-                                                                v-if="
-                                                                    log.changes
-                                                                        .length ===
-                                                                    0
-                                                                "
-                                                                class="text-xs text-muted-foreground"
-                                                            >
-                                                                No field-level
-                                                                changes
-                                                                recorded.
-                                                            </div>
-                                                            <div
-                                                                v-for="change in log.changes"
-                                                                :key="`${log.id}-detail-${change.field}`"
-                                                                class="text-xs"
-                                                            >
-                                                                <p
-                                                                    class="font-medium text-foreground"
-                                                                >
-                                                                    {{
-                                                                        change.label
-                                                                    }}
-                                                                </p>
-                                                                <p
-                                                                    v-if="
-                                                                        hasDisplayValue(
-                                                                            change.old,
-                                                                        )
-                                                                    "
-                                                                    class="text-muted-foreground"
-                                                                >
-                                                                    Old:
-                                                                    {{
-                                                                        formatValue(
-                                                                            change.old,
-                                                                        )
-                                                                    }}
-                                                                </p>
-                                                                <p
-                                                                    v-if="
-                                                                        hasDisplayValue(
-                                                                            change.new,
-                                                                        )
-                                                                    "
-                                                                    class="text-muted-foreground"
-                                                                >
-                                                                    New:
-                                                                    {{
-                                                                        formatValue(
-                                                                            change.new,
-                                                                        )
-                                                                    }}
-                                                                </p>
-                                                                <p
-                                                                    v-if="
-                                                                        !hasDisplayValue(
-                                                                            change.old,
-                                                                        ) &&
-                                                                        !hasDisplayValue(
-                                                                            change.new,
-                                                                        )
-                                                                    "
-                                                                    class="text-muted-foreground"
-                                                                >
-                                                                    No visible
-                                                                    value
-                                                                    changes
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </DialogContent>
-                                        </Dialog>
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
+                    <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                        <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                            <img
+                                :src="emptyRafikiUrl"
+                                alt=""
+                                class="w-1/3 object-contain opacity-90"
+                                aria-hidden="true"
+                            />
+                            <div class="space-y-1">
+                                <p class="text-base font-semibold text-custom-shadow">No audit logs found</p>
+                                <p class="text-sm text-custom-shadow/80">
+                                    {{ hasActiveFilters ? 'Try adjusting your filters or search.' : 'Try adjusting your search.' }}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                     </Card>
 
@@ -885,17 +619,6 @@ function actionBadgeClass(action: string): string {
                         <Badge :class="actionBadgeClass(previewedLog.action)">
                             {{ previewedLog.action_label }}
                         </Badge>
-                    </div>
-                    <div class="flex items-start justify-between gap-3">
-                        <span class="text-sm font-semibold text-custom-shadow">User</span>
-                        <div class="min-w-0 text-right">
-                            <p class="truncate text-sm text-custom-shadow/80">
-                                {{ previewedLog.user?.name ?? 'System' }}
-                            </p>
-                            <p class="truncate text-xs text-custom-shadow/60">
-                                {{ previewedLog.user?.email ?? '—' }}
-                            </p>
-                        </div>
                     </div>
                     <div class="flex items-start justify-between gap-3">
                         <span class="text-sm font-semibold text-custom-shadow">Entity</span>

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
@@ -552,7 +552,6 @@ function confirmToggle() {
                                                     </Link>
                                                 </DropdownMenuItem>
 
-                                                <!-- TODO: make this button work -->
                                                 <DropdownMenuItem
                                                     v-if="canUpdate"
                                                     as-child
@@ -681,9 +680,9 @@ function confirmToggle() {
                     </DialogTitle>
                     <DialogDescription class="mt-4">
                         Are you sure you want to set
-                        <span class="font-semibold">{{ togglingRoute?.route_name ?? 'this route' }}</span>
+                        <span class="font-semibold text-custom-accent-3">{{ togglingRoute?.route_name ?? 'this route' }}</span>
                         to
-                        <span class="font-semibold">
+                        <span class="font-semibold text-custom-accent-3">
                             {{ togglingRoute?.status === 'active' ? 'inactive' : 'active' }}
                         </span>?
                     </DialogDescription>
@@ -710,7 +709,7 @@ function confirmToggle() {
                     <DialogTitle>Archive Route</DialogTitle>
                     <DialogDescription class="mt-4">
                         Are you sure you want to archive
-                        <span class="font-semibold">{{ archivingRoute?.route_name ?? 'this route' }}</span>?
+                        <span class="font-semibold text-custom-accent-3">{{ archivingRoute?.route_name ?? 'this route' }}</span>?
                         You can restore it later from Archives.
                     </DialogDescription>
                 </DialogHeader>

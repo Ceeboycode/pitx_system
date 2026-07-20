@@ -4,16 +4,16 @@ import { router } from '@inertiajs/vue3';
 import { ArchiveX } from 'lucide-vue-next';
 import { ref } from 'vue';
 
+import { Button } from '@/components/ui/button';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 
 const open = defineModel<boolean>('open');
 
@@ -42,44 +42,36 @@ function archive() {
 </script>
 
 <template>
-    <AlertDialog v-model:open="open">
-        <AlertDialogContent class="rounded-lg p-4">
-            <AlertDialogHeader>
-                <AlertDialogTitle>Archive Company</AlertDialogTitle>
-
-                <AlertDialogDescription class="">
-                    <span>
-                        Are you sure you want to archive
-                        <span class="font-bold">{{
-                            props.company.company_name
-                        }}</span
-                        >?
-                    </span>
-
-                    <span class="text-muted-foreground">
-                        You can restore it later from Trash.
-                    </span>
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-
-            <AlertDialogFooter>
-                <AlertDialogCancel
-                    variant="outline"
-                    class="cursor-pointer hover:bg-slate-100 rounded-lg"
+    <Dialog v-model:open="open">
+        <DialogContent class="px-6">
+            <DialogHeader class="px-0">
+                <DialogTitle>Archive Company</DialogTitle>
+                <DialogDescription class="mt-4">
+                    Are you sure you want to archive
+                    <span class="font-semibold text-custom-accent-3">{{
+                        props.company.company_name
+                    }}</span
+                    >? This action will remove it from active records.
+                </DialogDescription>
+            </DialogHeader>
+            <Separator class="mb-4" />
+            <DialogFooter class="gap-2 sm:justify-end">
+                <Button
+                    variant="ghost-outline"
                     :disabled="processing"
+                    @click="open = false"
                 >
                     Cancel
-                </AlertDialogCancel>
-
-                <AlertDialogAction
+                </Button>
+                <Button
+                    variant="destructive"
                     :disabled="processing"
                     @click="archive"
-                    class="cursor-pointer bg-destructive text-destructive-foreground hover:bg-destructive/70 rounded-lg"
                 >
                     <ArchiveX class="h-4 w-4" />
-                    {{ processing ? 'Archiving...' : 'Yes, Archive Company' }}
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
+                    {{ processing ? 'Archiving...' : 'Archive' }}
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
 </template>

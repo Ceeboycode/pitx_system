@@ -1,7 +1,15 @@
 ﻿<script setup lang="ts">
+import { useAppearance } from '@/composables/useAppearance';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import {
+    computed,
+    nextTick,
+    onBeforeUnmount,
+    onMounted,
+    ref,
+    watch,
+} from 'vue';
 import { toast } from 'vue-sonner';
 
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
+    CardDescription,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
@@ -20,27 +29,16 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 
-import {
-    Archive,
-    ArrowLeft,
-    CheckCircle2,
-    Clock3,
-    DoorOpen,
-    MapPinned,
-    Pencil,
-    Route as RouteIcon,
-    Ruler,
-    ArchiveX,
-} from 'lucide-vue-next';
+import { Archive, ArchiveX, CheckCircle2, MapPinned } from 'lucide-vue-next';
+import { RiArrowLeftLine, RiEditLine } from 'vue-remix-icons';
 
 import { edit, index } from '@/actions/App/Http/Controllers/RouteController';
 import type { BreadcrumbItem } from '@/types';
 
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-
-
 
 type Gate = {
     id: number;
@@ -82,8 +80,6 @@ type RouteModel = {
     updated_at_human: string | null;
 };
 
-
-
 const props = defineProps<{
     route: RouteModel;
     mapConfig: {
@@ -93,20 +89,15 @@ const props = defineProps<{
 
 mapboxgl.accessToken = props.mapConfig.mapboxToken;
 
-
-
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Routes', href: index().url },
     { title: props.route.route_name, href: '#' },
 ];
 
-
-
 const mapEl = ref<HTMLElement | null>(null);
 const map = ref<mapboxgl.Map | null>(null);
+const { resolvedAppearance } = useAppearance();
 const archiveOpen = ref(false);
-
-
 
 const sortedStops = computed(() =>
     [...props.route.stops].sort((a, b) => a.stop_order - b.stop_order),
@@ -118,26 +109,6 @@ const routeHealthText = computed(() => {
     if (!props.route.route_geometry) return 'No saved route geometry.';
     return 'Route data is available and ready to inspect.';
 });
-
-const startStop = computed(() => {
-    return (
-        sortedStops.value.find((stop) => stop.stop_type === 'origin') ??
-        sortedStops.value[0] ??
-        null
-    );
-});
-
-const endStop = computed(() => {
-    return (
-        [...sortedStops.value]
-            .reverse()
-            .find((stop) => stop.stop_type === 'destination') ??
-        sortedStops.value[sortedStops.value.length - 1] ??
-        null
-    );
-});
-
-
 
 function fmtDistance(m: number) {
     if (!m) return '—';
@@ -214,8 +185,6 @@ function archiveRoute() {
     });
 }
 
-
-
 function initMap() {
     if (!mapEl.value) return;
 
@@ -224,7 +193,13 @@ function initMap() {
 
     map.value = new mapboxgl.Map({
         container: mapEl.value,
-        style: 'mapbox://styles/mapbox/streets-v12',
+        style: 'mapbox://styles/mapbox/standard',
+        config: {
+            basemap: {
+                lightPreset:
+                    resolvedAppearance.value === 'dark' ? 'night' : 'day',
+            },
+        },
         center: [originLng, originLat],
         zoom: 12,
         interactive: true,
@@ -259,11 +234,13 @@ function initMap() {
                     source: 'route-line',
                     paint: {
                         'line-width': 5,
-                        'line-color': '#2563eb',
+                        'line-color':
+                            resolvedAppearance.value === 'dark'
+                                ? '#3b82f6'
+                                : '#2563eb',
                     },
                 });
-            } catch {
-            }
+            } catch {}
         }
 
         sortedStops.value.forEach((stop) => {
@@ -311,6 +288,24 @@ onMounted(async () => {
     initMap();
 });
 
+watch(resolvedAppearance, (appearance) => {
+    if (!map.value?.isStyleLoaded()) return;
+
+    map.value.setConfigProperty(
+        'basemap',
+        'lightPreset',
+        appearance === 'dark' ? 'night' : 'day',
+    );
+
+    if (map.value.getLayer('route-line-layer')) {
+        map.value.setPaintProperty(
+            'route-line-layer',
+            'line-color',
+            appearance === 'dark' ? '#3b82f6' : '#2563eb',
+        );
+    }
+});
+
 onBeforeUnmount(() => {
     map.value?.remove();
 });
@@ -320,306 +315,347 @@ onBeforeUnmount(() => {
     <Head :title="route.route_name" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-
-            
-            <Card>
-                <CardHeader class="py-0">
-                    <div class="flex items-center gap-4">
-                        <div
-                            class="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border-2 bg-primary shadow-sm flex items-center justify-center"
+        <div
+            class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch"
+        >
+            <Card class="flex min-h-0 min-w-0 flex-1 flex-col lg:h-full">
+                <CardHeader class="flex flex-row items-start gap-3">
+                    <Button as-child variant="header-actions" size="icon-text">
+                        <Link :href="index().url" aria-label="Back to routes">
+                            <RiArrowLeftLine class="h-4 w-4" />
+                        </Link>
+                    </Button>
+                    <div class="flex min-w-0 flex-1 flex-col">
+                        <CardTitle class="truncate font-semibold">{{
+                            route.route_name
+                        }}</CardTitle>
+                        <CardDescription
+                            >Review the route path, destination, and stop
+                            sequence.</CardDescription
                         >
-                            <RouteIcon class="h-10 w-10 text-primary-foreground" />
-                        </div>
+                    </div>
+                    <Button as-child variant="header-actions" size="icon-text">
+                        <Link
+                            :href="edit(route.id).url"
+                            aria-label="Edit route"
+                        >
+                            <RiEditLine class="h-4 w-4" />
+                            <span>Edit</span>
+                        </Link>
+                    </Button>
+                </CardHeader>
 
-                        <div class="gap-2 w-full">
-                            <div class="flex flex-row gap-2 pb-2 w-full items-center">
-                                <h1 class="text-2xl leading-tight font-bold tracking-tight">
-                                    {{ route.route_name }}
-                                </h1>
-                                <div class="ml-2 flex flex-1 items-center">
-                                    <hr class="h-px w-full border border-rose-500" />
-                                    <div class="border-7 border-rose-500 rounded-xs">
-                                        <div class="border-3 border-white rounded-xs"></div>
+                <CardContent class="flex min-h-0 flex-1 flex-col gap-4 pt-2">
+                    <div class="relative min-h-[420px] flex-1">
+                        <div
+                            ref="mapEl"
+                            class="route-map h-full w-full overflow-hidden rounded-md"
+                        />
+                        <div
+                            class="pointer-events-none absolute inset-x-3 top-3 z-10 max-w-2/3"
+                        >
+                            <Card class="pointer-events-auto">
+                                <CardHeader class="mb-2">
+                                    <CardTitle class="text-sm"
+                                        >Destination</CardTitle
+                                    >
+                                    <CardDescription
+                                        class="text-custom-shadow/80"
+                                        >{{ routeHealthText }}</CardDescription
+                                    >
+                                </CardHeader>
+                                <CardContent>
+                                    <div
+                                        class="flex items-center justify-between gap-2 rounded-md border border-custom-accent-3 bg-custom-accent-3/10 px-3 py-2"
+                                    >
+                                        <MapPinned
+                                            class="h-4 w-4 shrink-0 text-custom-accent-3"
+                                        />
+                                        <span
+                                            class="min-w-0 flex-1 truncate text-sm font-semibold"
+                                            >{{ route.destination_name }}</span
+                                        >
+                                        <CheckCircle2
+                                            class="h-4 w-4 shrink-0 text-custom-accent-3"
+                                        />
                                     </div>
-                                </div>
-                            </div>
-                            <div class="flex justify-between">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <Badge class="border-0 bg-muted font-mono text-muted-foreground">
-                                        {{ route.origin_name }} → {{ route.destination_name }}
-                                    </Badge>
-                                    <Badge v-if="route.gate" class="border-0 bg-slate-100 text-slate-600">
-                                        {{ route.gate.gate_name }}
-                                    </Badge>
-                                </div>
-                                <div class="flex shrink-0 items-center gap-2">
-                                    <Button
-                                        as-child
-                                        variant="outline"
-                                        class="rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
-                                    >
-                                        <Link :href="index().url">
-                                            <ArrowLeft class="h-4 w-4" />
-                                        </Link>
-                                    </Button>
-                                    <Button
-                                        as-child
-                                        variant="outline"
-                                        class="group/segment rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 gap-0 cursor-pointer"
-                                    >
-                                        <Link :href="edit(route.id).url">
-                                            <Pencil class="h-4 w-4 shrink-0" />
-                                            <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-24 group-hover/segment:opacity-100">
-                                                Edit Route
-                                            </span>
-                                        </Link>
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        class="group/segment rounded-lg bg-card border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 gap-0 cursor-pointer"
-                                        @click="openArchiveDialog"
-                                    >
-                                        <Archive class="h-4 w-4 shrink-0" />
-                                        <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-32 group-hover/segment:opacity-100">
-                                            Archive Route
-                                        </span>
-                                    </Button>
-                                </div>
-                            </div>
+                                </CardContent>
+                            </Card>
                         </div>
                     </div>
-                </CardHeader>
+
+                    <div
+                        class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-custom-shadow/80"
+                    >
+                        <span class="flex items-center gap-1.5"
+                            ><span
+                                class="h-2 w-2 rounded-full bg-green-600"
+                            />Origin</span
+                        >
+                        <span class="flex items-center gap-1.5"
+                            ><span
+                                class="h-2 w-2 rounded-full bg-red-600"
+                            />Destination</span
+                        >
+                        <span class="flex items-center gap-1.5"
+                            ><span
+                                class="h-2 w-2 rounded-full bg-amber-500"
+                            />Bus stops</span
+                        >
+                        <span class="flex items-center gap-1.5"
+                            ><span
+                                class="h-2 w-2 rounded-full bg-violet-500"
+                            />Landmarks</span
+                        >
+                    </div>
+                </CardContent>
             </Card>
 
-            <div class="grid items-start gap-4 xl:grid-cols-[1fr_380px]">
+            <Card class="min-h-0 lg:flex lg:h-full lg:w-100">
+                <CardHeader>
+                    <CardTitle>Details</CardTitle>
+                    <CardDescription
+                        >Route information and stop sequence</CardDescription
+                    >
+                </CardHeader>
 
-                
-                <Card class="py-6">
-                    <CardHeader class="flex items-center justify-between">
-                        <CardTitle class="text-base">Map Workspace</CardTitle>
-                    </CardHeader>
-
-                    <CardContent class="p-6 grid divide-y gap-y-2 border-t border-slate-100">
-                        <div class="relative">
-                            <div
-                                ref="mapEl"
-                                class="h-[500px] w-full overflow-hidden rounded-lg border sm:h-[620px]"
-                            />
-                            <div
-                                class="pointer-events-none absolute inset-x-3 top-3 z-10 sm:right-auto sm:left-3 sm:w-[420px]"
-                            >
+                <CardContent
+                    class="no-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto py-2"
+                >
+                    <section class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="col-span-2 space-y-2">
+                                <p class="text-sm font-medium">Route</p>
                                 <div
-                                    class="pointer-events-auto rounded-lg border bg-background/95 p-4 shadow-lg backdrop-blur"
+                                    class="flex h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark"
                                 >
-                                    <div class="mb-2">
-                                        <p class="text-sm font-semibold">Destination</p>
-                                        <p class="text-xs text-muted-foreground">
-                                            Saved destination for this route.
-                                        </p>
-                                    </div>
-                                    <div
-                                        class="flex items-center gap-2 rounded-lg border border-primary bg-primary/10 p-4"
-                                    >
-                                        <MapPinned class="h-4 w-4 shrink-0 text-primary" />
-                                        <span class="min-w-0 truncate text-sm font-medium text-primary">
-                                            {{ route.destination_name }}
-                                        </span>
-                                        <CheckCircle2 class="ml-auto h-4 w-4 shrink-0 text-primary" />
-                                    </div>
+                                    {{ route.route_name }}
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <p class="text-sm font-medium">Gate</p>
+                                <div
+                                    class="flex h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark"
+                                >
+                                    {{ route.gate?.gate_name ?? '—' }}
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <p class="text-sm font-medium">Stops</p>
+                                <div
+                                    class="flex h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark"
+                                >
+                                    {{ totalStops }}
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <p class="text-sm font-medium">Distance</p>
+                                <div
+                                    class="flex h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark"
+                                >
+                                    {{
+                                        route.distance_meters
+                                            ? fmtDistance(route.distance_meters)
+                                            : '—'
+                                    }}
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <p class="text-sm font-medium">
+                                    Travel Duration
+                                </p>
+                                <div
+                                    class="flex h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark"
+                                >
+                                    {{
+                                        route.duration_seconds
+                                            ? fmtDuration(
+                                                  route.duration_seconds,
+                                              )
+                                            : '—'
+                                    }}
                                 </div>
                             </div>
                         </div>
 
-                        <div class="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-muted-foreground">
-                            <span class="flex items-center gap-1.5">
-                                <span class="inline-block h-2 w-2 rounded-full bg-green-600" />
-                                Origin
-                            </span>
-                            <span class="flex items-center gap-1.5">
-                                <span class="inline-block h-2 w-2 rounded-full bg-red-600" />
-                                Destination
-                            </span>
-                            <span class="flex items-center gap-1.5">
-                                <span class="inline-block h-2 w-2 rounded-full bg-yellow-500" />
-                                Bus stops
-                            </span>
-                            <span class="flex items-center gap-1.5">
-                                <span class="inline-block h-2 w-2 rounded-full bg-violet-500" />
-                                Landmark stops
-                            </span>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                
-                <Card class="py-6">
-                    <CardHeader class="flex items-center justify-between">
-                        <CardTitle class="text-base">Stops</CardTitle>
-                    </CardHeader>
-
-                    <CardContent class="overflow-y-auto p-6 border-t border-slate-100 max-h-[575px] sm:max-h-[695px]">
-                        <div v-if="sortedStops.length" class="relative">
-                            <div class="absolute top-6 bottom-6 left-[18px] w-px bg-slate-200" />
-
-                            <div class="space-y-1">
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-3 pt-2">
+                                <p class="font-semibold text-custom-accent-3">
+                                    Stops
+                                    <Badge variant="accent-3">{{
+                                        totalStops
+                                    }}</Badge>
+                                </p>
+                                <Separator class="flex-1" />
+                            </div>
+                            <div v-if="sortedStops.length" class="relative">
                                 <div
-                                    v-for="(stop, index) in sortedStops"
-                                    :key="stop.id"
-                                    class="group flex items-start gap-3 rounded-lg p-2 transition-colors hover:bg-muted"
-                                >
+                                    class="absolute top-6 bottom-6 left-[18px] w-px bg-slate-200"
+                                />
+                                <div class="space-y-1">
                                     <div
-                                        :class="[
-                                            'relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white ring-2 ring-background',
-                                            stop.stop_type === 'origin'
-                                                ? 'bg-green-600'
-                                                : stop.stop_type === 'destination'
-                                                  ? 'bg-red-600'
-                                                  : stop.stop_type === 'landmark'
-                                                    ? 'bg-violet-500'
-                                                    : 'bg-amber-500',
-                                        ]"
+                                        v-for="(stop, stopIndex) in sortedStops"
+                                        :key="stop.id"
+                                        class="group flex items-start gap-3 rounded-lg p-2 transition-colors hover:bg-muted/40"
                                     >
-                                        {{ index + 1 }}
-                                    </div>
-
-                                    <div class="min-w-0 flex-1">
-                                        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                            <p class="truncate max-h-[1.25rem] text-sm leading-tight font-medium transition-[max-height] duration-300 ease-in-out group-hover:max-h-20 group-hover:whitespace-normal">
-                                                {{ stop.stop_name }}
-                                            </p>
-                                            <span
-                                                :class="[
-                                                    'inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-medium',
-                                                    stopTypeBadgeClass(stop.stop_type),
-                                                ]"
-                                            >
-                                                {{ stopTypeLabel(stop.stop_type) }}
-                                            </span>
+                                        <div
+                                            :class="[
+                                                'relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white ring-2 ring-background',
+                                                stop.stop_type === 'origin'
+                                                    ? 'bg-green-600'
+                                                    : stop.stop_type ===
+                                                        'destination'
+                                                      ? 'bg-red-600'
+                                                      : stop.stop_type ===
+                                                          'landmark'
+                                                        ? 'bg-violet-500'
+                                                        : 'bg-amber-500',
+                                            ]"
+                                        >
+                                            {{ stopIndex + 1 }}
                                         </div>
-                                        <p class="truncate max-h-[1rem] text-[11px] text-muted-foreground transition-[max-height] duration-300 ease-in-out group-hover:max-h-12 group-hover:whitespace-normal">
-                                            {{ stop.address || 'No address' }}
-                                        </p>
-                                        <p class="text-[10px] text-muted-foreground">
-                                            {{ Number(stop.latitude).toFixed(5) }},
-                                            {{ Number(stop.longitude).toFixed(5) }}
-                                        </p>
+                                        <div class="min-w-0 flex-1 pt-0.5">
+                                            <div
+                                                class="flex items-center gap-2"
+                                            >
+                                                <p
+                                                    class="truncate text-sm leading-tight font-medium"
+                                                >
+                                                    {{ stop.stop_name }}
+                                                </p>
+                                                <span
+                                                    :class="[
+                                                        'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium',
+                                                        stopTypeBadgeClass(
+                                                            stop.stop_type,
+                                                        ),
+                                                    ]"
+                                                    >{{
+                                                        stopTypeLabel(
+                                                            stop.stop_type,
+                                                        )
+                                                    }}</span
+                                                >
+                                            </div>
+                                            <p
+                                                class="truncate text-[11px] text-muted-foreground"
+                                            >
+                                                {{
+                                                    stop.address || 'No address'
+                                                }}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div
-                            v-else
-                            class="rounded-xl border border-dashed px-4 py-6 text-center text-xs text-muted-foreground"
-                        >
-                            No stops available for this route.
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            
-            <div class="grid gap-4 xl:grid-cols-2">
-
-                
-                <Card class="py-6">
-                    <CardHeader>
-                        <CardTitle>Route Summary</CardTitle>
-                    </CardHeader>
-                    <CardContent class="px-6 grid divide-y gap-y-2 pt-2 border-t border-slate-100">
-                        <div class="py-2">
-                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">Origin</span>
-                            <span class="text-sm font-semibold truncate block">{{ startStop?.stop_name ?? route.origin_name }}</span>
-                        </div>
-                        <div class="py-2">
-                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">Destination</span>
-                            <span class="text-sm font-semibold truncate block">{{ endStop?.stop_name ?? route.destination_name }}</span>
-                        </div>
-                        <div class="py-2">
-                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">Stops</span>
-                            <span class="rounded bg-muted px-2 py-0.5 font-mono text-sm font-semibold tabular-nums">{{ totalStops }}</span>
-                        </div>
-                        <div class="py-2">
-                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">Distance</span>
-                            <div class="items-center flex">
-                                <div class="h-full mr-4">
-                                    <Ruler class="h-4 w-4 inline-block text-primary" />
-                                </div>
-                                <span class="text-sm font-semibold">{{ route.distance_meters ? fmtDistance(route.distance_meters) : '—' }}</span>
+                            <div
+                                v-else
+                                class="rounded-md border border-dashed border-custom-bg-dark p-3 text-center text-sm text-custom-shadow/80 dark:border-custom-bg-light"
+                            >
+                                No stops available for this route.
                             </div>
                         </div>
-                        <div class="py-2">
-                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">Duration</span>
-                            <div class="items-center flex">
-                                <div class="h-full mr-4">
-                                    <Clock3 class="h-4 w-4 inline-block text-primary" />
+
+                        <div class="space-y-4 pb-2">
+                            <div class="flex items-center gap-3 pt-2">
+                                <p class="font-semibold text-custom-accent-3">
+                                    Activity
+                                </p>
+                                <Separator class="flex-1" />
+                            </div>
+                            <div class="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                    <p class="text-xs text-custom-shadow/80">
+                                        Created
+                                    </p>
+                                    <p>{{ route.created_at_human ?? '—' }}</p>
+                                    <p
+                                        v-if="route.creator"
+                                        class="text-xs text-muted-foreground"
+                                    >
+                                        by {{ route.creator.name }}
+                                    </p>
                                 </div>
-                                <span class="text-sm font-semibold">{{ route.duration_seconds ? fmtDuration(route.duration_seconds) : '—' }}</span>
+                                <div>
+                                    <p class="text-xs text-custom-shadow/80">
+                                        Last updated
+                                    </p>
+                                    <p>{{ route.updated_at_human ?? '—' }}</p>
+                                    <p
+                                        v-if="route.updater"
+                                        class="text-xs text-muted-foreground"
+                                    >
+                                        by {{ route.updater.name }}
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                        <div class="py-2">
-                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">Gate</span>
-                            <div class="items-center flex">
-                                <div class="h-full mr-4">
-                                    <DoorOpen class="h-4 w-4 inline-block text-primary" />
-                                </div>
-                                <span class="text-sm font-semibold">{{ route.gate?.gate_name ?? '—' }}</span>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
 
-                
-                <Card class="py-6">
-                    <CardHeader>
-                        <CardTitle>Activity</CardTitle>
-                    </CardHeader>
-                    <CardContent class="px-6 grid divide-y gap-y-2 pt-2 border-t border-slate-100">
-                        <div class="py-2">
-                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">Created</span>
-                            <span class="text-sm">{{ route.created_at_human ?? '—' }}</span>
-                            <span v-if="route.creator" class="text-xs text-muted-foreground block">
-                                by <span class="font-medium text-foreground">{{ route.creator.name }}</span>
-                            </span>
+                        <Separator class="mt-4" />
+                        <div class="flex items-center justify-end gap-2">
+                            <Button as-child variant="float" size="icon-text"
+                                ><Link :href="edit(route.id).url"
+                                    ><RiEditLine class="h-4 w-4" />Edit</Link
+                                ></Button
+                            >
+                            <Button
+                                variant="destructive"
+                                size="icon-text"
+                                @click="openArchiveDialog"
+                                ><Archive class="h-4 w-4" />Archive</Button
+                            >
                         </div>
-                        <div class="py-2">
-                            <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">Last Updated</span>
-                            <span class="text-sm">{{ route.updated_at_human ?? '—' }}</span>
-                            <span v-if="route.updater" class="text-xs text-muted-foreground block">
-                                by <span class="font-medium text-foreground">{{ route.updater.name }}</span>
-                            </span>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+                    </section>
+                </CardContent>
+            </Card>
 
-            
             <Dialog :open="archiveOpen" @update:open="archiveOpen = $event">
-                <DialogContent class="sm:max-w-md p-4">
-                    <DialogHeader>
-                        <DialogTitle>Archive Route</DialogTitle>
-                        <DialogDescription>
-                            Are you sure you want to archive
-                            <span class="font-semibold text-foreground">{{ route.route_name }}</span>?
-                            This action will remove it from active records.
-                        </DialogDescription>
-                    </DialogHeader>
+                <DialogContent class="p-4 sm:max-w-md">
+                    <DialogHeader
+                        ><DialogTitle>Archive Route</DialogTitle
+                        ><DialogDescription
+                            >Are you sure you want to archive
+                            <span class="font-semibold text-custom-accent-3">{{
+                                route.route_name
+                            }}</span
+                            >? This action will remove it from active
+                            records.</DialogDescription
+                        ></DialogHeader
+                    >
                     <DialogFooter class="gap-2 sm:justify-end">
-                        <Button class="cursor-pointer hover:bg-slate-100" variant="outline" @click="archiveOpen = false">
-                            Cancel
-                        </Button>
-                        <Button
-                            class="bg-destructive text-destructive-foreground cursor-pointer hover:bg-destructive/90"
-                            @click="archiveRoute"
-
+                        <Button variant="outline" @click="archiveOpen = false"
+                            >Cancel</Button
                         >
-                            <ArchiveX class="h-4 w-4" />
-                            Archive
-                        </Button>
+                        <Button variant="destructive" @click="archiveRoute"
+                            ><ArchiveX class="h-4 w-4" />Archive</Button
+                        >
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>
     </AppLayout>
 </template>
+
+<style scoped>
+.route-map :deep(.mapboxgl-ctrl-group) {
+    background-color: var(--custom-bg-dark);
+    box-shadow: 0 0 0 1px
+        color-mix(in oklch, var(--custom-shadow) 25%, transparent);
+}
+
+.route-map :deep(.mapboxgl-ctrl-group button) {
+    background-color: var(--custom-bg-dark);
+}
+
+.route-map :deep(.mapboxgl-ctrl-group button + button) {
+    border-top-color: color-mix(
+        in oklch,
+        var(--custom-shadow) 25%,
+        transparent
+    );
+}
+
+.route-map :deep(.mapboxgl-ctrl-group button:hover) {
+    background-color: var(--custom-secondary);
+}
+</style>

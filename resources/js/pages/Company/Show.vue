@@ -74,7 +74,6 @@ import {
 
 import {
     Archive,
-    ArrowLeft,
     Building2,
     CheckCircle2,
     CircleAlert,
@@ -101,6 +100,7 @@ import {
     ListChecks,
     X,
 } from 'lucide-vue-next';
+import { RiArrowLeftLine } from 'vue-remix-icons';
 
 
 
@@ -590,151 +590,101 @@ const flaggedDocs = computed(
     <Head :title="company.company_name" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-        <!-- TODO: make the background a gradient, the bottom color the theme colro for cards, and the top color the 'average' color of the company logo. if the company logo is null, use the theme primary color instead -->
-            <!-- CODE: <Card class="bg-linear-to-r from-primary via-card-background to-card-background border-none"> -->
-            <Card class="">
-                <CardHeader class="py-0">
-                    <div class="flex items-center gap-4">
-                        <div
-                            class="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border-2 bg-white shadow-sm"
-                        >
-                            <img
-                                v-if="showLogo"
-                                :src="company.logo_url!"
-                                :alt="company.company_name"
-                                class="h-full w-full object-cover"
-                                @error="logoError = true"
-                            />
-                            <div
-                                v-else
-                                class="flex h-full w-full items-center justify-center bg-primary/10"
-                            >
-                                <span
-                                    class="text-lg font-bold text-primary select-none"
-                                    >{{ companyInitials }}</span
-                                >
-                            </div>
-                        </div>
-
-                        <div class="gap-2 w-full">
-                            <div class="flex flex-row gap-2 pb-2 w-full items-center">
-                                <h1
-                                    class="text-2xl leading-tight font-bold tracking-tight"
-                                >
-                                    {{ company.company_name }}
-                                </h1>
-                                <div class="ml-2 flex flex-1 items-center">
-                                    <hr class="h-px w-full border border-rose-500" />
-                                    <div class="border-7 border-rose-500 rounded-xs">
-                                        <div class="border-3 border-white rounded-xs"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex justify-between">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <Badge
-                                        class="border-0 bg-muted font-mono text-foreground"
-                                    >
-                                        {{ company.company_code ?? '—' }}
-                                    </Badge>
-                                    <Badge :class="['', statusClass(company.status)]">
-                                        <span
-                                            :class="[
-                                                'h-2 w-2 rounded-full',
-                                                statusDot(company.status),
-                                            ]"
-                                        />
-                                        {{ humanize(company.status) }}
-                                    </Badge>
-                                    <Badge class="border-0 bg-slate-100 text-slate-600">
-                                        {{
-                                            company.business_type
-                                                ? humanize(company.business_type)
-                                                : '—'
-                                        }}
-                                    </Badge>
-                                </div>
-                                <div class="flex items-start justify-between gap-4">
-                                    <div class="flex shrink-0 items-center gap-2">
-                                        <Button
-                                            as-child
-                                            variant="outline"
-                                            class="rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
-                                        >
-                                            <Link :href="index().url">
-                                                <ArrowLeft class="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-
-                                        <Button
-                                            v-if="canArchiveCompany"
-                                            variant="outline"
-                                            class="group/segment rounded-lg bg-card border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 gap-0 cursor-pointer"
-                                            @click="archiveOpen = true"
-                                        >
-                                            <Archive class="h-4 w-4 shrink-0" />
-                                            <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-32 group-hover/segment:opacity-100">
-                                                Archive Company
-                                            </span>
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- CODE: <div class="ml-2 flex flex-1 items-center">
-                            <hr class="h-px w-full border border-rose-500" />
-                            <div class="border-7 border-rose-500 rounded-xs">
-                                <div class="border-3 border-white rounded-xs"></div>
-                            </div>
-                        </div> -->
-                    </div>
-                </CardHeader>
-            </Card>
-
-            <div class="grid gap-4 lg:grid-cols-3 h-fit">
-                <div class="grid gap-4 col-span-1 h-fit">
-                    <Card class="py-6">
-                        <CardHeader class="flex items-center justify-between">
+        <div
+            class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch"
+        >
+            <div class="contents">
+                <!-- TODO: redesign this card and layout -->
+                <Card
+                    class="order-2 min-h-0 lg:flex lg:h-full lg:w-100"
+                >
+                    <CardHeader>
+                        <CardTitle>Details</CardTitle>
+                        <CardDescription>
+                            Company information and representative
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent
+                        class="no-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto py-2"
+                    >
+                    <section class="space-y-4">
+                        <CardHeader class="px-0 pb-0">
                             <div>
-                                <CardTitle>
+                                <CardTitle class="text-base text-custom-accent-3">
                                     Company Details
                                 </CardTitle>
                             </div>
                         </CardHeader>
-                        <CardContent class="px-6 grid divide-y gap-y-2 pt-2 border-t border-slate-100">                                        
-                            <div class="py-2">
-                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                        <CardContent class="grid gap-4 px-0">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="space-y-2">
+                                    <Label>Company Code</Label>
+                                    <div
+                                        class="flex h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 font-mono text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark"
+                                    >
+                                        {{ company.company_code ?? '—' }}
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>Status</Label>
+                                    <div
+                                        class="flex h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark"
+                                    >
+                                        <Badge :class="statusClass(company.status)">
+                                            <span
+                                                :class="[
+                                                    'h-2 w-2 rounded-full',
+                                                    statusDot(company.status),
+                                                ]"
+                                            />
+                                            {{ humanize(company.status) }}
+                                        </Badge>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <Label>Business Type</Label>
+                                <div
+                                    class="flex h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark"
+                                >
+                                    {{
+                                        company.business_type
+                                            ? humanize(company.business_type)
+                                            : '—'
+                                    }}
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <span class="block text-sm font-medium">
                                     Registration No.
                                 </span>
-                                <span class="font-mono text-sm">{{
+                                <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 font-mono text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark">{{
                                     company.registration_number ?? '—'
-                                }}</span>
+                                }}</div>
                             </div>
-                            <div class="py-2">
-                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                            <div class="space-y-2">
+                                <span class="block text-sm font-medium">
                                     Created
                                 </span>
-                                <span class="text-sm">
+                                <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark">
                                     {{ formatDate(company.created_at) }} ·
                                     {{ company.creator?.name ?? 'N/A' }}
-                                </span>
+                                </div>
                             </div>
-                            <div class="py-2">
-                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                            <div class="space-y-2">
+                                <span class="block text-sm font-medium">
                                     Last Updated
                                 </span>
-                                <span class="text-sm">
+                                <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark">
                                     {{ company.updated_at_human ?? '—' }} ·
                                     {{ company.updater?.name ?? 'N/A' }}
-                                </span>
+                                </div>
                             </div>
                             <div class="grid gap-y-2 pt-2">
-                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                                <span class="block text-sm font-medium">
                                     Contacts
                                 </span>
-                                <div class="items-center flex">
+                                <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
                                     <div class="h-full mr-4">
                                         <Mail class="h-4 w-4 inline-block text-primary" />
                                     </div>
@@ -745,7 +695,7 @@ const flaggedDocs = computed(
                                     >{{ company.company_email }}</a>
                                     <span v-else class="text-sm">—</span>
                                 </div>
-                                <div class="items-center flex">
+                                <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
                                     <div class="h-full mr-4">
                                         <Phone class="h-4 w-4 inline-block text-primary" />
                                     </div>
@@ -756,7 +706,7 @@ const flaggedDocs = computed(
                                     >{{ company.company_phone }}</a>
                                     <span v-else class="text-sm">—</span>
                                 </div>
-                                <div class="items-center flex">
+                                <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
                                     <div class="h-full mr-4">
                                         <MapPin class="h-4 w-4 inline-block text-primary" />
                                     </div>
@@ -766,21 +716,22 @@ const flaggedDocs = computed(
                                 </div>
                             </div>
                         </CardContent>
-                    </Card>
-                    <Card class="py-6">
-                        <CardHeader class="flex items-center justify-between">
+                    </section>
+                    <Separator />
+                    <section class="space-y-4">
+                        <CardHeader class="px-0 pb-0">
                             <div>
-                                <CardTitle>
+                                <CardTitle class="text-base text-custom-accent-3">
                                     Representative
                                 </CardTitle>
                             </div>
                         </CardHeader>
-                        <CardContent class="px-6 grid divide-y gap-y-2 pt-2 border-t border-slate-100">                                        
+                        <CardContent class="grid gap-4 px-0">
                             <div class="grid gap-y-2 pt-2">
-                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
+                                <span class="block text-sm font-medium">
                                     Contacts
                                 </span>
-                                <div class="items-center flex">
+                                <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
                                     <div class="h-full mr-4">
                                         <Mail class="h-4 w-4 inline-block text-primary" />
                                     </div>
@@ -791,7 +742,7 @@ const flaggedDocs = computed(
                                         }}
                                     </span>
                                 </div>
-                                <div class="items-center flex">
+                                <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
                                     <div class="h-full mr-4">
                                         <IdCard class="h-4 w-4 inline-block text-primary" />
                                     </div>
@@ -802,7 +753,7 @@ const flaggedDocs = computed(
                                         }}
                                     </span>
                                 </div>
-                                <div class="items-center flex">
+                                <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
                                     <div class="h-full mr-4">
                                         <Phone class="h-4 w-4 inline-block text-primary" />
                                     </div>
@@ -820,20 +771,54 @@ const flaggedDocs = computed(
                                 </div>
                             </div>
                         </CardContent>
-                    </Card>
-                </div>
+                    </section>
+                    <Separator />
+                    <div class="flex items-center justify-end">
+                        <Button
+                            v-if="canArchiveCompany"
+                            variant="destructive"
+                            size="icon-text"
+                            @click="archiveOpen = true"
+                        >
+                            <Archive class="h-4 w-4" />Archive
+                        </Button>
+                    </div>
+                    </CardContent>
+                </Card>
             
-                <div class="grid gap-4 col-span-2 h-fit">
-                    <Card>
-                        <CardHeader class="flex items-center justify-between">
-                            <div>
-                                <CardTitle>
-                                    Documents
-                                </CardTitle>
+                <div class="order-1 contents">
+                    <Card class="flex min-h-0 min-w-0 flex-1 flex-col lg:h-full">
+                        <CardHeader class="flex flex-row items-start gap-3">
+                            <Button as-child variant="header-actions" size="icon-text">
+                                <Link :href="index().url" aria-label="Back to companies">
+                                    <RiArrowLeftLine class="h-4 w-4" />
+                                </Link>
+                            </Button>
+                            <div class="flex min-w-0 flex-1 items-center gap-3">
+                                <div
+                                    v-if="showLogo"
+                                    class="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border border-custom-bg-dark bg-white dark:border-custom-bg-light"
+                                >
+                                    <img
+                                        :src="company.logo_url!"
+                                        :alt="company.company_name"
+                                        class="h-full w-full object-cover"
+                                        @error="logoError = true"
+                                    />
+                                </div>
+                                <div class="min-w-0">
+                                    <CardTitle class="truncate font-semibold">
+                                        {{ company.company_name }}
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Review and manage company documents.
+                                    </CardDescription>
+                                </div>
                             </div>
                         </CardHeader>
 
-                        <CardContent class="border-t border-slate-100">
+                        <!-- TODO: redesign this soon -->
+                        <CardContent class="no-scrollbar min-h-0 flex-1 overflow-y-auto border-t border-slate-100 dark:border-custom-bg-light">
                             
                             <div
                                 v-if="docs.length === 0"
@@ -1153,10 +1138,10 @@ const flaggedDocs = computed(
         <ArchiveCompanyDialog
             v-if="canArchiveCompany"
             v-model:open="archiveOpen"
-            :company="company""
+            :company="company"
         />
 
-        
+        <!-- TODO: find out what this dialog is for -->
         <Dialog v-model:open="previewOpen">
             <DialogContent
                 class="flex max-h-[90vh] w-full flex-col gap-0 rounded-lg py-4 px-6"

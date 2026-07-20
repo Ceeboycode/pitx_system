@@ -22,16 +22,10 @@ import DialogDescription from '@/components/ui/dialog/DialogDescription.vue';
 import DialogFooter from '@/components/ui/dialog/DialogFooter.vue';
 import DialogHeader from '@/components/ui/dialog/DialogHeader.vue';
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue';
-import {
-    Archive,
-    ArrowLeft,
-    CalendarDays,
-    DoorOpen,
-    Layers,
-    Milestone,
-    UserRound,
-    ArchiveX,
-} from 'lucide-vue-next';
+import { Archive, ArchiveX } from 'lucide-vue-next';
+import { RiArrowLeftLine } from 'vue-remix-icons';
+// import Separator from '@/components/ui/separator/Separator.vue'
+import { Separator } from '@/components/ui/separator';
 
 type UserMini = { id: number; name: string };
 
@@ -92,145 +86,201 @@ function formatDate(value?: string | null): string {
     <Head :title="`Gate — ${gate.gate_name}`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-
-            
-            <Card>
-                <CardHeader class="py-0">
-                    <div class="flex items-center gap-4">
-                        <div
-                            class="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border-2 bg-primary shadow-sm flex items-center justify-center"
+        <div class="flex h-full min-h-0 w-full flex-1 flex-col">
+            <Card class="flex min-h-0 min-w-0 flex-1 flex-col">
+                <CardHeader class="flex flex-row items-start gap-3">
+                    <Button as-child variant="header-actions" size="icon">
+                        <Link :href="index().url" aria-label="Back to gates">
+                            <RiArrowLeftLine class="h-4 w-4" />
+                        </Link>
+                    </Button>
+                    <div class="flex min-w-0 flex-1 flex-col">
+                        <CardTitle class="truncate font-semibold">{{
+                            gate.gate_name
+                        }}</CardTitle>
+                        <CardDescription
+                            >Review gate capacity, status, and
+                            activity.</CardDescription
                         >
-                            <DoorOpen class="h-10 w-10 text-white" />
+                    </div>
+                    <Badge
+                        :class="[
+                            'mt-1 shrink-0 gap-1.5',
+                            statusClass(gate.status),
+                        ]"
+                    >
+                        <span
+                            :class="[
+                                'h-1.5 w-1.5 rounded-full',
+                                statusDot(gate.status),
+                            ]"
+                        />
+                        {{ gate.status === 'active' ? 'Active' : 'Inactive' }}
+                    </Badge>
+                </CardHeader>
+
+                <CardContent
+                    class="no-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto py-2"
+                >
+                    <section class="space-y-4">
+                        <div
+                            class="flex min-h-52 flex-col items-center justify-center rounded-md border border-custom-bg-dark bg-custom-bg p-6 text-center dark:border-custom-bg-light dark:bg-custom-bg-dark"
+                        >
+                            <p class="text-lg font-semibold">
+                                {{ gate.gate_name }}
+                            </p>
+                            <p class="mt-1 text-sm text-custom-shadow/80">
+                                Terminal gate overview
+                            </p>
                         </div>
 
-                        <div class="gap-2 w-full">
-                            <div class="flex flex-row gap-2 pb-2 w-full items-center">
-                                <h1 class="text-2xl leading-tight font-bold tracking-tight">
+                        <div class="grid gap-3 sm:grid-cols-3">
+                            <div
+                                class="space-y-2 rounded-md border border-custom-bg-dark bg-custom-bg p-3 dark:border-custom-bg-light dark:bg-custom-bg-dark"
+                            >
+                                <p class="text-xs text-custom-shadow/80">
+                                    Status
+                                </p>
+                                <Badge
+                                    :class="[
+                                        'gap-1.5',
+                                        statusClass(gate.status),
+                                    ]"
+                                    ><span
+                                        :class="[
+                                            'h-1.5 w-1.5 rounded-full',
+                                            statusDot(gate.status),
+                                        ]"
+                                    />{{
+                                        gate.status === 'active'
+                                            ? 'Active'
+                                            : 'Inactive'
+                                    }}</Badge
+                                >
+                            </div>
+                            <div
+                                class="space-y-2 rounded-md border border-custom-bg-dark bg-custom-bg p-3 dark:border-custom-bg-light dark:bg-custom-bg-dark"
+                            >
+                                <p class="text-xs text-custom-shadow/80">
+                                    Bay Capacity
+                                </p>
+                                <p class="text-lg font-semibold">
+                                    {{ gate.bays }} bays
+                                </p>
+                            </div>
+                            <div
+                                class="space-y-2 rounded-md border border-custom-bg-dark bg-custom-bg p-3 dark:border-custom-bg-light dark:bg-custom-bg-dark"
+                            >
+                                <p class="text-xs text-custom-shadow/80">
+                                    Gate ID
+                                </p>
+                                <p class="font-mono text-lg font-semibold">
+                                    #{{ gate.id }}
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="space-y-4">
+                        <div class="flex items-center gap-3 pt-2">
+                            <p class="font-semibold text-custom-accent-3 text-base">
+                                Details
+                            </p>
+                            <Separator class="flex-1" />
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div class="space-y-2">
+                                <p class="text-sm font-medium">Gate Name</p>
+                                <div
+                                    class="flex h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark"
+                                >
                                     {{ gate.gate_name }}
-                                </h1>
-                                <div class="ml-2 flex flex-1 items-center">
-                                    <hr class="h-px w-full border border-rose-500" />
-                                    <div class="border-7 border-rose-500 rounded-xs">
-                                        <div class="border-3 border-white rounded-xs"></div>
-                                    </div>
                                 </div>
                             </div>
-                            <div class="flex justify-between">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <Badge :class="['gap-1.5', statusClass(gate.status)]">
-                                        <span :class="['h-1.5 w-1.5 rounded-full', statusDot(gate.status)]" />
-                                        {{ gate.status === 'active' ? 'Active' : 'Inactive' }}
-                                    </Badge>
-                                    <Badge class="border-0 bg-muted font-mono text-foreground">
-                                        <Milestone class="h-3 w-3 mr-1" />
-                                        {{ gate.bays }} bays
-                                    </Badge>
-                                </div>
-                                <div class="flex shrink-0 items-center gap-2">
-                                    <Button
-                                        as-child
-                                        variant="outline"
-                                        class="rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
-                                    >
-                                        <Link :href="index().url">
-                                            <ArrowLeft class="h-4 w-4" />
-                                        </Link>
-                                    </Button>
-                                    <Button
-                                        v-if="canArchiveGate"
-                                        variant="outline"
-                                        class="group/segment rounded-lg bg-card border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 gap-0 cursor-pointer"
-                                        @click="archiveOpen = true"
-                                    >
-                                        <Archive class="h-4 w-4 shrink-0" />
-                                        <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-32 group-hover/segment:opacity-100">
-                                            Archive Gate
-                                        </span>
-                                    </Button>
+                            <div class="space-y-2">
+                                <p class="text-sm font-medium">
+                                    Number of Bays
+                                </p>
+                                <div
+                                    class="flex h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark"
+                                >
+                                    {{ gate.bays }}
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </CardHeader>
-            </Card>
+                    </section>
 
-            
-            <Card class="py-6">
-                <CardHeader class="flex items-center justify-between">
-                    <div>
-                        <CardTitle>Gate Details</CardTitle>
-                        <!-- CODE: <CardDescription>Configuration and audit information.</CardDescription> -->
-                    </div>
-                </CardHeader>
-                <CardContent class="px-6 grid divide-y gap-y-2 pt-2 border-t border-slate-100">
-                    <div class="py-2">
-                        <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
-                            Gate Name
-                        </span>
-                        <span class="text-sm font-semibold">{{ gate.gate_name }}</span>
-                    </div>
-                    <div class="py-2">
-                        <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
-                            Status
-                        </span>
-                        <Badge :class="['mt-1 gap-1.5', statusClass(gate.status)]">
-                            <span :class="['h-1.5 w-1.5 rounded-full', statusDot(gate.status)]" />
-                            {{ gate.status === 'active' ? 'Active' : 'Inactive' }}
-                        </Badge>
-                    </div>
-                    <div class="py-2">
-                        <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
-                            Bays
-                        </span>
-                        <span class="rounded bg-muted px-2 py-0.5 font-mono text-sm font-semibold tabular-nums">
-                            {{ gate.bays }}
-                        </span>
-                    </div>
-                    <div class="py-2">
-                        <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
-                            Created
-                        </span>
-                        <span class="text-sm">
-                            {{ formatDate(gate.created_at) }}
-                            <template v-if="gate.creator">
-                                · <span class="font-medium">{{ gate.creator.name }}</span>
-                            </template>
-                        </span>
-                    </div>
-                    <div class="py-2">
-                        <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
-                            Last Updated
-                        </span>
-                        <span class="text-sm">
-                            {{ formatDate(gate.updated_at) }}
-                            <template v-if="gate.updater">
-                                · <span class="font-medium">{{ gate.updater.name }}</span>
-                            </template>
-                        </span>
+                    <section class="space-y-4">
+                        <div class="flex items-center gap-3 pt-2">
+                            <p class="font-semibold text-custom-accent-3 text-base">
+                                Activity
+                            </p>
+                            <Separator class="flex-1" />
+                        </div>
+                        <div class="grid gap-3 text-sm sm:grid-cols-2">
+                            <div>
+                                <p class="text-xs text-custom-shadow/80">
+                                    Created
+                                </p>
+                                <p>{{ formatDate(gate.created_at) }}</p>
+                                <p
+                                    v-if="gate.creator"
+                                    class="text-xs text-muted-foreground"
+                                >
+                                    by {{ gate.creator.name }}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-custom-shadow/80">
+                                    Last updated
+                                </p>
+                                <p>{{ formatDate(gate.updated_at) }}</p>
+                                <p
+                                    v-if="gate.updater"
+                                    class="text-xs text-muted-foreground"
+                                >
+                                    by {{ gate.updater.name }}
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div
+                        v-if="canArchiveGate"
+                        class="flex justify-end border-t pt-4"
+                    >
+                        <Button
+                            variant="destructive"
+                            size="icon-text"
+                            @click="archiveOpen = true"
+                            ><Archive class="h-4 w-4" />Archive</Button
+                        >
                     </div>
                 </CardContent>
             </Card>
 
-            
-            <Dialog :open="archiveOpen" @update:open="archiveOpen = $event">
-                <DialogContent class="sm:max-w-md p-4">
-                    <DialogHeader>
+            <Dialog v-model:open="archiveOpen">
+                <DialogContent class="px-6">
+                    <DialogHeader class="px-0">
                         <DialogTitle>Archive Gate</DialogTitle>
-                        <DialogDescription>
+                        <DialogDescription class="mt-4">
                             Are you sure you want to archive
-                            <span class="font-semibold text-foreground">{{ gate.gate_name }}</span>?
-                            This action will remove it from active records.
+                            <span class="font-semibold text-custom-accent-3">{{
+                                gate.gate_name
+                            }}</span
+                            >? This action will remove it from active records.
                         </DialogDescription>
                     </DialogHeader>
+                    <Separator class="mb-4" />
                     <DialogFooter class="gap-2 sm:justify-end">
-                        <Button variant="outline" @click="archiveOpen = false"
-                            class="cursor-pointer hover:bg-slate-100"
+                        <Button
+                            variant="ghost-outline"
+                            @click="archiveOpen = false"
                         >
                             Cancel
                         </Button>
                         <Button
-                            class="bg-destructive text-destructive-foreground cursor-pointer hover:bg-destructive/90"
+                            variant="destructive"
                             @click="archiveGate"
                         >
                             <ArchiveX class="h-4 w-4" />

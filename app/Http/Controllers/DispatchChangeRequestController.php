@@ -36,6 +36,7 @@ class DispatchChangeRequestController extends Controller
         $status  = in_array($request->input('status'), $allowed, true)
             ? $request->input('status')
             : 'pending';
+        $search = trim((string) $request->string('search'));
 
         $baseQuery = $user->company_id
             ? DispatchChangeRequest::whereHas('dispatch', function ($q) use ($user) {
@@ -54,6 +55,23 @@ class DispatchChangeRequestController extends Controller
         $changeRequests = $baseQuery
             ->with(['dispatch.driver', 'dispatch.gate', 'requestedBy.company', 'approvedBy'])
             ->when($status !== 'all', fn ($q) => $q->where('status', $status))
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('requested_field', 'like', "%{$search}%")
+                        ->orWhere('reason', 'like', "%{$search}%")
+                        ->orWhereHas('dispatch', fn ($dispatch) =>
+                            $dispatch->where('plate_number', 'like', "%{$search}%")
+                        )
+                        ->orWhereHas('requestedBy', function ($requester) use ($search) {
+                            $requester->where('name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%")
+                                ->orWhereHas('company', fn ($company) =>
+                                    $company->where('company_name', 'like', "%{$search}%")
+                                        ->orWhere('company_code', 'like', "%{$search}%")
+                                );
+                        });
+                });
+            })
             ->latest()
             ->paginate(20)
             ->withQueryString()
@@ -106,7 +124,7 @@ class DispatchChangeRequestController extends Controller
         return Inertia::render('DispatchChangeRequests/Index', [
             'changeRequests' => $changeRequests,
             'statusCounts'   => $statusCounts,
-            'filters'        => ['status' => $status],
+            'filters'        => ['status' => $status, 'search' => $search],
         ]);
     }
 

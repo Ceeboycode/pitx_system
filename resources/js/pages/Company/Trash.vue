@@ -234,7 +234,7 @@ function openRestore(company: Company) {
                                                 <DropdownMenuLabel>{{ company.company_name }}</DropdownMenuLabel>
                                                 <DropdownMenuItem class="group" @click="openRestore(company)">
                                                     <RiRestartLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                    Restore Company
+                                                    Restore
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>

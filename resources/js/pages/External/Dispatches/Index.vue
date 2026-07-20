@@ -12,15 +12,7 @@ import { can } from '@/lib/can';
 import { store as storeChangeRequest } from '@/actions/App/Http/Controllers/DispatchChangeRequestController';
 import DispatchController from '@/actions/App/Http/Controllers/DispatchController';
 
-import {
-    AlertDialog,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -61,33 +53,24 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 
 import {
-    RiAddLine as Plus,
-    RiArrowRightUpLine as ArrowUpRight,
-    RiBus2Line as Bus,
-    RiCalendarLine as CalendarDays,
-    RiCheckboxCircleLine as CheckCircle2,
-    RiCloseCircleLine as XCircle,
-    RiCloseLine as X,
-    RiFileTextLine as FileText,
+    RiAddLine,
+    RiExternalLinkLine,
+    RiBus2Line,
+    RiCheckboxCircleLine,
+    RiCloseLine,
+    RiCloseCircleLine,
+    RiFileTextLine,
     RiFilter2Line,
-    RiFingerprintLine as Fingerprint,
-    RiGroupLine as Users,
-    RiLogoutBoxLine as LogOut,
-    RiMore2Line as MoreHorizontal,
-    RiPencilLine as Pencil,
-    RiSendPlaneLine as Send,
-    RiTimeLine as Clock3,
-    RiUserLine as UserRound,
+    RiFingerprintLine,
+    RiGroupLine,
+    RiLogoutBoxLine,
+    RiMore2Line,
+    RiEditLine,
+    RiRoadMapLine,
+    RiTimeLine,
+    RiUserLine,
 } from 'vue-remix-icons';
 
 import {
@@ -96,7 +79,6 @@ import {
     getLocalTimeZone,
     today,
 } from '@internationalized/date';
-
 
 type Company = {
     id: number;
@@ -153,7 +135,6 @@ type DispatchItem = {
     status: string;
     arrived_at_formatted?: string | null;
     departed_at_formatted?: string | null;
-    dispatched_at_formatted?: string | null;
     vehicle?: {
         id: number;
         plate_number: string;
@@ -212,6 +193,7 @@ const props = defineProps<{
 const canCreateDispatch = can('external_dispatches.create');
 const canUpdateDispatch = can('external_dispatches.update');
 const canDepartDispatch = can('external_dispatches.depart');
+const canRequestDispatchChange = can('external_dispatches.requestChange');
 
 
 const df = new DateFormatter('en-US', { dateStyle: 'medium' });
@@ -304,6 +286,7 @@ const pendingDepartId = ref<number | null>(null);
 const pendingDepartDispatch = ref<DispatchItem | null>(null);
 const remarksViewOpen = ref(false);
 const viewingDispatch = ref<DispatchItem | null>(null);
+const previewedDispatch = ref<DispatchItem | null>(null);
 
 const form = useForm({
     vehicle_id: '',
@@ -780,6 +763,7 @@ watch(confirmDepartOpen, (open) => {
     <Head title="Dispatches" />
 
     <ExternalLayout :company="company">
+        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
         <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
             <CardHeader class="flex flex-row gap-2">
                 <div class="flex flex-col">
@@ -802,7 +786,7 @@ watch(confirmDepartOpen, (open) => {
                         class="relative rounded-full"
                         @click="changeRequestStatusOpen = true"
                     >
-                        <FileText class="h-3.5 w-3.5" />
+                        <RiFileTextLine class="h-3.5 w-3.5" />
                         <span class="hidden lg:flex">Change Requests</span>
                         <span
                             class="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white"
@@ -816,7 +800,7 @@ watch(confirmDepartOpen, (open) => {
                         variant="float-primary"
                         @click="openCreateDialog"
                     >
-                        <Plus class="h-4 w-4 shrink-0" />
+                        <RiAddLine class="h-4 w-4 shrink-0" />
                         <span>Add Dispatch</span>
                     </Button>
                 </div>
@@ -950,62 +934,27 @@ watch(confirmDepartOpen, (open) => {
                     ]"
                 >
                     <div class="no-scrollbar min-h-0 flex-1 overflow-auto">
-                        <Table>
-                            <TableHeader v-if="dispatches.data.length > 0" class="border-b border-custom-bg-dark dark:border-custom-bg-light">
-                                <TableRow>
-                                    <TableHead
-                                        class="pl-5 text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                        >Vehicle</TableHead
-                                    >
-                                    <TableHead
-                                        class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                        >Driver</TableHead
-                                    >
-                                    <TableHead
-                                        class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                        >Gate / Bay</TableHead
-                                    >
-                                    <TableHead
-                                        class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                        >Pax</TableHead
-                                    >
-                                    <TableHead
-                                        class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                        >Status</TableHead
-                                    >
-                                    <TableHead
-                                        class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                        >Arrived</TableHead
-                                    >
-                                    <TableHead
-                                        class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                        >Departed</TableHead
-                                    >
-                                    <TableHead
-                                        class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                        >Dispatcher</TableHead
-                                    >
-                                    <TableHead
-                                        class="text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                        >Remarks</TableHead
-                                    >
-                                    <TableHead
-                                        class="pr-5 text-right text-[11px] font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                        >Actions</TableHead
-                                    >
-                                </TableRow>
-                            </TableHeader>
+                        <div class="flex min-h-0 min-w-[1000px] w-full flex-1 flex-col overflow-hidden">
+                            <div v-if="dispatches.data.length > 0" class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
+                                <div class="grid grid-cols-[1fr_1fr_.65fr_.55fr_1fr_1fr_1fr_4rem] gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
+                                    <div class="flex h-10 items-center justify-start pl-3 text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Vehicle</div>
+                                    <div class="flex h-10 items-center justify-start text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Driver</div>
+                                    <div class="flex h-10 items-center justify-start text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Gate / Bay</div>
+                                    <div class="flex h-10 items-center justify-start text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Pax</div>
+                                    <div class="flex h-10 items-center justify-start text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Arrived</div>
+                                    <div class="flex h-10 items-center justify-start text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Departed</div>
+                                    <div class="flex h-10 items-center justify-start text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Dispatcher</div>
+                                    <div class="flex h-10 items-center justify-end pr-3 text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Actions</div>
+                                </div>
+                            </div>
 
-                            <TableBody>
+                            <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
                                 
-                                <TableRow
+                                <div
                                     v-if="dispatches.data.length === 0"
-                                    class="hover:bg-transparent"
+                                    class="flex min-h-64 items-center justify-center p-6 text-center"
                                 >
-                                    <TableCell
-                                        colspan="10"
-                                        class="py-20 text-center"
-                                    >
+                                    <div>
                                         <div
                                             class="flex flex-col items-center gap-3"
                                         >
@@ -1036,37 +985,30 @@ watch(confirmDepartOpen, (open) => {
                                                 </p>
                                             </div>
                                         </div>
-                                    </TableCell>
-                                </TableRow>
+                                    </div>
+                                </div>
 
-                                <TableRow
-                                    v-for="dispatch in dispatches.data"
+                                <div
+                                    v-for="(dispatch, dispatchIndex) in dispatches.data"
                                     :key="dispatch.id"
-                                    class="group border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light"
-                                    :class="
-                                        dispatch.status === 'departed'
-                                            ? 'opacity-60'
-                                            : ''
-                                    "
+                                    :class="[
+                                        'group grid cursor-pointer grid-cols-[1fr_1fr_.65fr_.55fr_1fr_1fr_1fr_4rem] items-center gap-2 border-b border-custom-bg-dark bg-transparent text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                        dispatch.status === 'departed' ? 'opacity-60' : '',
+                                        dispatchIndex === dispatches.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                        previewedDispatch?.id === dispatch.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
+                                    ]"
+                                    @click="previewedDispatch = dispatch"
                                 >
                                     
-                                    <TableCell class="pl-5">
-                                        <div class="flex items-center gap-2.5">
-                                            <div
-                                                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100"
-                                            >
-                                                <Bus
-                                                    class="h-3.5 w-3.5 text-slate-600"
-                                                />
-                                            </div>
-                                            <div>
+                                    <div class="flex min-w-0 justify-start py-1.5 pl-3">
+                                        <div>
                                                 <p
-                                                    class="text-sm font-semibold text-slate-800"
+                                                    class="text-sm font-semibold"
                                                 >
                                                     {{ dispatch.plate_number }}
                                                 </p>
                                                 <p
-                                                    class="text-xs text-slate-400"
+                                                    class="text-xs text-custom-shadow/60"
                                                 >
                                                     {{
                                                         dispatch.vehicle
@@ -1074,22 +1016,21 @@ watch(confirmDepartOpen, (open) => {
                                                         '—'
                                                     }}
                                                 </p>
-                                            </div>
                                         </div>
-                                    </TableCell>
+                                    </div>
 
                                     
-                                    <TableCell>
+                                    <div class="flex min-w-0 justify-start py-1.5">
                                         <div class="flex items-center gap-1.5">
-                                            <UserRound
-                                                class="h-3.5 w-3.5 text-slate-400"
+                                            <RiUserLine
+                                                class="h-3.5 w-3.5 text-custom-shadow/60"
                                             />
                                             <span
                                                 class="text-sm"
                                                 :class="
                                                     !dispatch.driver
-                                                        ? 'text-slate-400 italic'
-                                                        : 'text-slate-700'
+                                                        ? 'text-custom-shadow/60 italic'
+                                                        : ''
                                                 "
                                             >
                                                 {{
@@ -1098,92 +1039,66 @@ watch(confirmDepartOpen, (open) => {
                                                 }}
                                             </span>
                                         </div>
-                                    </TableCell>
+                                    </div>
 
                                     
-                                    <TableCell>
+                                    <div class="flex min-w-0 flex-col justify-center py-1.5">
                                         <p
-                                            class="text-sm font-medium text-slate-700"
+                                            class="text-sm font-medium"
                                         >
                                             {{
                                                 dispatch.gate?.gate_name ?? '—'
                                             }}
                                         </p>
-                                        <p class="text-xs text-slate-400">
+                                        <p class="text-xs text-custom-shadow/60">
                                             Bay {{ dispatch.bay_number }}
                                         </p>
-                                    </TableCell>
+                                    </div>
 
                                     
-                                    <TableCell>
+                                    <div class="flex justify-start py-1.5">
                                         <div
-                                            class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
+                                            class="inline-flex items-center gap-1.5 rounded-full bg-custom-bg px-2.5 py-1 text-xs font-medium text-custom-shadow dark:bg-custom-bg-light"
                                         >
-                                            <Users class="h-3 w-3" />
+                                            <RiGroupLine class="h-3 w-3" />
                                             {{ dispatch.pax_count }}
                                         </div>
-                                    </TableCell>
+                                    </div>
 
                                     
-                                    <TableCell>
-                                        <span
-                                            :class="[
-                                                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
-                                                statusClass(dispatch.status),
-                                            ]"
-                                        >
-                                            <span
-                                                :class="[
-                                                    'h-1.5 w-1.5 rounded-full',
-                                                    statusDot(dispatch.status),
-                                                ]"
-                                            />
-                                            {{ statusLabel(dispatch.status) }}
-                                        </span>
-                                    </TableCell>
-
-                                    
-                                    <TableCell class="text-xs text-slate-500">
+                                    <div class="flex justify-start py-1.5 text-xs text-custom-shadow/70">
                                         <div
                                             v-if="dispatch.arrived_at_formatted"
-                                            class="flex items-center gap-1.5"
                                         >
-                                            <Clock3
-                                                class="h-3 w-3 text-slate-400"
-                                            />
                                             {{ dispatch.arrived_at_formatted }}
                                         </div>
-                                        <span v-else class="text-slate-400"
+                                        <span v-else class="text-custom-shadow/60"
                                             >—</span
                                         >
-                                    </TableCell>
+                                    </div>
 
                                     
-                                    <TableCell class="text-xs text-slate-500">
+                                    <div class="flex justify-start py-1.5 text-xs text-custom-shadow/70">
                                         <div
                                             v-if="
                                                 dispatch.departed_at_formatted
                                             "
-                                            class="flex items-center gap-1.5"
                                         >
-                                            <CheckCircle2
-                                                class="h-3 w-3 text-slate-400"
-                                            />
                                             {{ dispatch.departed_at_formatted }}
                                         </div>
-                                        <span v-else class="text-slate-400"
+                                        <span v-else class="text-custom-shadow/60"
                                             >—</span
                                         >
-                                    </TableCell>
+                                    </div>
 
                                     
-                                    <TableCell>
+                                    <div class="flex min-w-0 justify-start py-1.5">
                                         <div class="flex items-center gap-1.5">
-                                            <Fingerprint
-                                                class="h-3.5 w-3.5 text-slate-400"
+                                            <RiFingerprintLine
+                                                class="h-3.5 w-3.5 text-custom-shadow/60"
                                             />
                                             <span
-                                                class="text-sm text-slate-700"
+                                                class="text-sm"
                                             >
                                                 {{
                                                     dispatch.dispatcher?.name ||
@@ -1191,50 +1106,26 @@ watch(confirmDepartOpen, (open) => {
                                                 }}
                                             </span>
                                         </div>
-                                    </TableCell>
+                                    </div>
 
                                     
-                                    <TableCell>
-                                        <Button
-                                            v-if="dispatch.remarks"
-                                            variant="header-actions"
-                                            size="sm"
-                                            class="h-7 rounded-full text-xs"
-                                            @click="openRemarksDialog(dispatch)"
-                                        >
-                                            <FileText
-                                                class="mr-1.5 h-3.5 w-3.5"
-                                            />
-                                            View
-                                        </Button>
-                                        <span
-                                            v-else
-                                            class="text-xs text-slate-400"
-                                            >—</span
-                                        >
-                                    </TableCell>
-
-                                    
-                                    <TableCell class="pr-5 text-right">
+                                    <div class="flex justify-end py-1.5 pr-3 text-right" @click.stop>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
                                                     variant="table-more"
                                                     size="icon-more"
                                                 >
-                                                    <MoreHorizontal
+                                                    <RiMore2Line
                                                         class="h-4 w-4"
                                                     />
                                                 </Button>
                                             </DropdownMenuTrigger>
 
                                             <DropdownMenuContent align="end" class="">
-                                                <DropdownMenuLabel>
-                                                    Actions
-                                                </DropdownMenuLabel>
                                                 <DropdownMenuItem
                                                     as-child
-                                                    class="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900"
+                                                    class="group"
                                                 >
                                                     <Link
                                                         :href="
@@ -1244,26 +1135,11 @@ watch(confirmDepartOpen, (open) => {
                                                         "
                                                         class="flex items-center"
                                                     >
-                                                        <ArrowUpRight
-                                                            class="mr-2 h-4 w-4"
+                                                        <RiExternalLinkLine
+                                                            class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
                                                         />
-                                                        View Details
+                                                        View
                                                     </Link>
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuItem
-                                                    v-if="dispatch.remarks"
-                                                    class="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900"
-                                                    @click="
-                                                        openRemarksDialog(
-                                                            dispatch,
-                                                        )
-                                                    "
-                                                >
-                                                    <FileText
-                                                        class="mr-2 h-4 w-4"
-                                                    />
-                                                    View Remarks
                                                 </DropdownMenuItem>
 
                                                 <template
@@ -1274,66 +1150,64 @@ watch(confirmDepartOpen, (open) => {
                                                             canDepartDispatch)
                                                     "
                                                 >
-                                                    <DropdownMenuSeparator
-                                                        class="bg-slate-100"
-                                                    />
                                                     <DropdownMenuItem
                                                         v-if="canUpdateDispatch"
-                                                        class="rounded-lg text-slate-700 focus:bg-amber-50 focus:text-amber-700"
+                                                        class="group"
                                                         @click="
                                                             openEditDialog(
                                                                 dispatch,
                                                             )
                                                         "
                                                     >
-                                                        <Pencil
-                                                            class="mr-2 h-4 w-4"
+                                                        <RiEditLine
+                                                            class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
                                                         />
                                                         Edit
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
                                                         v-if="canDepartDispatch"
-                                                        class="rounded-lg text-amber-600 focus:bg-amber-50 focus:text-amber-700"
+                                                        class="group"
                                                         @click="
                                                             askDepart(dispatch)
                                                         "
                                                     >
-                                                        <LogOut
-                                                            class="mr-2 h-4 w-4"
+                                                        <RiLogoutBoxLine
+                                                            class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
                                                         />
-                                                        Mark Departed
+                                                        Mark as Departed
                                                     </DropdownMenuItem>
                                                 </template>
 
                                                 <template
                                                     v-if="
                                                         dispatch.status ===
-                                                        'departed'
+                                                            'departed' &&
+                                                        canRequestDispatchChange
                                                     "
                                                 >
                                                     <DropdownMenuSeparator
-                                                        class="bg-slate-100"
+                                                        class=""
                                                     />
                                                     <DropdownMenuItem
-                                                        class="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900"
+                                                        class="group"
                                                         @click="
                                                             openChangeRequestModal(
                                                                 dispatch,
                                                             )
                                                         "
                                                     >
-                                                        <Send
-                                                            class="mr-2 h-4 w-4"
+                                                        <RiRoadMapLine
+                                                            class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
                                                         />
                                                         Request Change
                                                     </DropdownMenuItem>
                                                 </template>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     </Card>
 
@@ -1354,14 +1228,131 @@ watch(confirmDepartOpen, (open) => {
             </CardContent>
         </Card>
 
-        
+            <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-100">
+                <CardHeader
+                    v-if="previewedDispatch"
+                    class="flex flex-row items-start justify-between gap-3"
+                >
+                    <div class="min-w-0">
+                        <CardTitle class="truncate uppercase">
+                            {{ previewedDispatch.plate_number }}
+                        </CardTitle>
+                        <CardDescription>Preview</CardDescription>
+                    </div>
+                    <Button
+                        variant="header-actions"
+                        size="icon"
+                        class="h-8 w-8 shrink-0 rounded-full"
+                        aria-label="Close dispatch preview"
+                        @click="previewedDispatch = null"
+                    >
+                        <RiCloseLine class="h-4 w-4" />
+                    </Button>
+                </CardHeader>
+
+                <CardContent
+                    v-if="previewedDispatch"
+                    class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto py-2"
+                >
+                    <div class="flex aspect-4/3 items-center justify-center overflow-hidden rounded-md border border-dashed border-custom-bg-dark bg-custom-bg text-custom-shadow/70 dark:border-none dark:bg-custom-bg-dark">
+                        <RiBus2Line class="h-16 w-16" />
+                    </div>
+
+                    <div class="space-y-2 pt-2">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Status</span>
+                            <Badge :class="['gap-1.5', statusClass(previewedDispatch.status)]">
+                                <span :class="['h-1.5 w-1.5 rounded-full', statusDot(previewedDispatch.status)]" />
+                                {{ statusLabel(previewedDispatch.status) }}
+                            </Badge>
+                        </div>
+
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Vehicle</span>
+                            <div class="min-w-0 text-right text-sm">
+                                <p>{{ previewedDispatch.vehicle?.make_model ?? previewedDispatch.vehicle?.vehicle_type ?? '—' }}</p>
+                                <p v-if="previewedDispatch.vehicle?.body_number" class="text-xs text-custom-shadow/70">Body #{{ previewedDispatch.vehicle.body_number }}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Driver</span>
+                            <span class="text-right text-sm">{{ previewedDispatch.driver?.name ?? 'Unassigned' }}</span>
+                        </div>
+
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Gate / Bay</span>
+                            <span class="text-right text-sm">{{ previewedDispatch.gate?.gate_name ?? '—' }} / Bay {{ previewedDispatch.bay_number }}</span>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Passengers</span>
+                            <span class="text-sm text-custom-shadow">{{ previewedDispatch.pax_count }}</span>
+                        </div>
+
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <p class="text-sm font-semibold text-custom-shadow">Dispatch Timeline</p>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between gap-3 rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">
+                                    <span class="text-sm font-medium">Arrived</span>
+                                    <span class="shrink-0 text-xs text-custom-shadow/70">{{ previewedDispatch.arrived_at_formatted ?? '—' }}</span>
+                                </div>
+                                <div class="flex items-center justify-between gap-3 rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">
+                                    <span class="text-sm font-medium">Departed</span>
+                                    <span class="shrink-0 text-xs text-custom-shadow/70">{{ previewedDispatch.departed_at_formatted ?? '—' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Dispatcher</span>
+                            <span class="text-right text-sm">{{ previewedDispatch.dispatcher?.name ?? '—' }}</span>
+                        </div>
+
+                        <div v-if="previewedDispatch.remarks" class="space-y-1">
+                            <p class="text-sm font-semibold text-custom-shadow">Remarks</p>
+                            <p class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">{{ previewedDispatch.remarks }}</p>
+                        </div>
+                    </div>
+
+                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                    <div class="flex items-center justify-between gap-2">
+                        <Button
+                            v-if="canUpdateDispatch && previewedDispatch.status === 'arrived'"
+                            variant="ghost-outline"
+                            size="icon-text"
+                            @click="openEditDialog(previewedDispatch)"
+                        >
+                            <RiEditLine class="h-4 w-4" />
+                            Edit
+                        </Button>
+                        <span v-else />
+                        <Button as-child variant="float-primary" size="icon">
+                            <Link :href="DispatchController.show(previewedDispatch.id).url">
+                                <RiExternalLinkLine class="h-4 w-4" />
+                            </Link>
+                        </Button>
+                    </div>
+                </CardContent>
+
+                <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
+                    <div class="max-w-60 space-y-1 text-center">
+                        <p class="text-base font-semibold text-custom-shadow">No dispatch selected</p>
+                        <p class="text-sm text-custom-shadow/80">Click on a dispatch to preview.</p>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
 
         
         <Dialog v-model:open="changeRequestStatusOpen">
             <DialogContent class="max-h-[80vh] max-w-2xl overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle class="flex items-center gap-2">
-                        <FileText class="h-5 w-5 text-slate-500" />
+                        <RiFileTextLine class="h-5 w-5 text-slate-500" />
                         Change Request Status
                     </DialogTitle>
                     <DialogDescription>
@@ -1381,7 +1372,7 @@ watch(confirmDepartOpen, (open) => {
                                 <p class="text-xs font-medium text-amber-900">
                                     Pending
                                 </p>
-                                <Clock3 class="h-4 w-4 text-amber-600" />
+                                <RiTimeLine class="h-4 w-4 text-amber-600" />
                             </div>
                             <p class="mt-2 text-2xl font-bold text-amber-700">
                                 {{ pendingChangeRequests.length }}
@@ -1394,7 +1385,7 @@ watch(confirmDepartOpen, (open) => {
                                 <p class="text-xs font-medium text-emerald-900">
                                     Approved
                                 </p>
-                                <CheckCircle2
+                                <RiCheckboxCircleLine
                                     class="h-4 w-4 text-emerald-600"
                                 />
                             </div>
@@ -1409,7 +1400,7 @@ watch(confirmDepartOpen, (open) => {
                                 <p class="text-xs font-medium text-rose-900">
                                     Rejected
                                 </p>
-                                <XCircle class="h-4 w-4 text-rose-600" />
+                                <RiCloseCircleLine class="h-4 w-4 text-rose-600" />
                             </div>
                             <p class="mt-2 text-2xl font-bold text-rose-700">
                                 {{ rejectedChangeRequests.length }}
@@ -1525,7 +1516,7 @@ watch(confirmDepartOpen, (open) => {
                                                     size="sm"
                                                     class="h-auto p-0 text-rose-600 hover:bg-transparent hover:text-rose-700"
                                                 >
-                                                    <XCircle
+                                                    <RiCloseCircleLine
                                                         class="mr-1 h-3.5 w-3.5"
                                                     />
                                                     <span
@@ -1565,7 +1556,7 @@ watch(confirmDepartOpen, (open) => {
                             "
                             class="py-10 text-center"
                         >
-                            <FileText
+                            <RiFileTextLine
                                 class="mx-auto mb-3 h-10 w-10 text-slate-300"
                             />
                             <p class="text-sm font-medium text-slate-500">
@@ -1577,7 +1568,7 @@ watch(confirmDepartOpen, (open) => {
             </DialogContent>
         </Dialog>
 
-        
+        <!-- TODO: make the other dialog elements within the file follow the layout and design of this one -->
         <Dialog v-model:open="dialogOpen">
             <DialogContent class="sm:max-w-md">
                 <DialogHeader>
@@ -1593,8 +1584,8 @@ watch(confirmDepartOpen, (open) => {
                     </DialogDescription>
                 </DialogHeader>
 
-                <form class="space-y-4" @submit.prevent="submit">
-                    <div class="space-y-2">
+                <form class="flex flex-col px-6" @submit.prevent="submit">
+                    <div class="space-y-1 pb-2">
                         <Label for="vehicle_id">Vehicle</Label>
                         <Select
                             :model-value="form.vehicle_id"
@@ -1632,7 +1623,7 @@ watch(confirmDepartOpen, (open) => {
                         <InputError :message="form.errors.vehicle_id" />
                     </div>
 
-                    <div class="space-y-2">
+                    <div class="space-y-1 pb-2">
                         <Label for="driver_user_id">Driver</Label>
                         <Select v-model="form.driver_user_id">
                             <SelectTrigger id="driver_user_id"
@@ -1669,7 +1660,7 @@ watch(confirmDepartOpen, (open) => {
                         <InputError :message="form.errors.driver_user_id" />
                     </div>
 
-                    <div class="space-y-2">
+                    <div class="space-y-1 pb-2">
                         <Label for="gate_id">Gate</Label>
                         <Select
                             :disabled="isGateAutoLocked"
@@ -1707,7 +1698,7 @@ watch(confirmDepartOpen, (open) => {
                         <InputError :message="form.errors.gate_id" />
                     </div>
 
-                    <div class="space-y-2">
+                    <div class="space-y-1 pb-2">
                         <Label for="bay_number">Bay Number</Label>
                         <Select
                             v-model="form.bay_number"
@@ -1729,40 +1720,11 @@ watch(confirmDepartOpen, (open) => {
                         <InputError :message="form.errors.bay_number" />
                     </div>
 
-                    
-                    <div
-                        v-if="selectedVehicle || selectedGate || selectedDriver"
-                        class="flex flex-wrap gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3"
-                    >
-                        <div
-                            v-if="selectedVehicle"
-                            class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm"
-                        >
-                            <Bus class="h-3 w-3 text-slate-400" />
-                            {{ selectedVehicle.plate_number }}
-                        </div>
-                        <div
-                            v-if="selectedDriver"
-                            class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm"
-                        >
-                            <UserRound class="h-3 w-3 text-slate-400" />
-                            {{ selectedDriver.name }}
-                        </div>
-                        <div
-                            v-if="selectedGate"
-                            class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm"
-                        >
-                            <span class="text-slate-400">Gate</span>
-                            {{ selectedGate.gate_name }} ·
-                            {{ selectedGate.bays }} bays
-                        </div>
-                    </div>
-
-                    <div class="space-y-2">
+                    <div class="space-y-1 pb-2">
                         <Label for="remarks">
                             Remarks
                             <span
-                                class="ml-1 text-xs font-normal text-slate-400"
+                                class="text-xs text-custom-shadow/80"
                                 >(optional)</span
                             >
                         </Label>
@@ -1774,21 +1736,24 @@ watch(confirmDepartOpen, (open) => {
                         <InputError :message="form.errors.remarks" />
                     </div>
 
-                    <DialogFooter class="pt-2">
+                    <Separator class="mb-4"/>
+
+                    <DialogFooter class="gap-2 sm:justify-end">
                         <Button
                             type="button"
-                            variant="outline"
+                            variant="ghost-outline"
                             @click="dialogOpen = false"
                             >Cancel</Button
                         >
                         <Button
                             type="submit"
+                            variant="float-primary"
                             :disabled="
                                 form.processing ||
                                 selectedVehicleRouteGateInactive
                             "
                         >
-                            <Send class="mr-2 h-4 w-4" />
+                            <RiRoadMapLine class="h-4 w-4" />
                             {{
                                 form.processing
                                     ? 'Saving...'
@@ -1801,100 +1766,15 @@ watch(confirmDepartOpen, (open) => {
                 </form>
             </DialogContent>
         </Dialog>
-
         
-        <Dialog v-model:open="remarksViewOpen">
-            <DialogContent class="sm:max-w-sm">
-                <DialogHeader>
-                    <DialogTitle class="flex items-center gap-2">
-                        <FileText class="h-4 w-4 text-slate-500" />
-                        Dispatch Remarks
-                    </DialogTitle>
-                    <DialogDescription v-if="viewingDispatch">
-                        {{ viewingDispatch.plate_number }} ·
-                        {{ viewingDispatch.gate?.gate_name ?? '—' }} · Bay
-                        {{ viewingDispatch.bay_number }}
-                    </DialogDescription>
-                </DialogHeader>
-
-                <Separator class="bg-slate-100" />
-
-                <div
-                    class="min-h-[80px] rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed"
-                    :class="
-                        !viewingDispatch?.remarks
-                            ? 'text-slate-400 italic'
-                            : 'text-slate-700'
-                    "
-                >
-                    {{ viewingDispatch?.remarks || 'No remarks recorded.' }}
-                </div>
-
-                <div
-                    v-if="viewingDispatch"
-                    class="grid grid-cols-2 gap-3 text-xs"
-                >
-                    <div class="space-y-0.5">
-                        <p class="text-slate-400">Driver</p>
-                        <p
-                            class="font-semibold"
-                            :class="
-                                !viewingDispatch.driver
-                                    ? 'text-slate-400 italic'
-                                    : 'text-slate-800'
-                            "
-                        >
-                            {{ viewingDispatch.driver?.name ?? 'Unassigned' }}
-                        </p>
-                    </div>
-                    <div class="space-y-0.5">
-                        <p class="text-slate-400">Dispatcher</p>
-                        <p class="font-semibold text-slate-800">
-                            {{ viewingDispatch.dispatcher?.name ?? '—' }}
-                        </p>
-                    </div>
-                    <div class="space-y-0.5">
-                        <p class="text-slate-400">Status</p>
-                        <span
-                            :class="[
-                                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
-                                statusClass(viewingDispatch.status),
-                            ]"
-                        >
-                            <span
-                                :class="[
-                                    'h-1.5 w-1.5 rounded-full',
-                                    statusDot(viewingDispatch.status),
-                                ]"
-                            />
-                            {{ statusLabel(viewingDispatch.status) }}
-                        </span>
-                    </div>
-                    <div class="space-y-0.5">
-                        <p class="text-slate-400">Arrived</p>
-                        <p class="font-semibold text-slate-800">
-                            {{ viewingDispatch.arrived_at_formatted ?? '—' }}
-                        </p>
-                    </div>
-                </div>
-
-                <DialogFooter>
-                    <Button class="w-full" @click="remarksViewOpen = false"
-                        >Close</Button
-                    >
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
-        
-        <AlertDialog v-model:open="confirmDepartOpen">
-            <AlertDialogContent>
+        <Dialog v-model:open="confirmDepartOpen">
+            <DialogContent class="rounded-lg p-4 sm:max-w-md">
                 <form class="space-y-4" @submit.prevent="confirmDepart">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle
-                            >Mark dispatch as departed?</AlertDialogTitle
+                    <DialogHeader>
+                        <DialogTitle
+                            >Mark dispatch as departed?</DialogTitle
                         >
-                        <AlertDialogDescription>
+                        <DialogDescription>
                             <span class="block"
                                 >This will record the departure time as
                                 <strong>now</strong>.</span
@@ -1903,8 +1783,8 @@ watch(confirmDepartOpen, (open) => {
                                 >Departed dispatches can no longer be
                                 edited.</span
                             >
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
+                        </DialogDescription>
+                    </DialogHeader>
 
                     <div class="space-y-4">
                         <div
@@ -1939,30 +1819,32 @@ watch(confirmDepartOpen, (open) => {
                         </div>
                     </div>
 
-                    <AlertDialogFooter>
-                        <AlertDialogCancel
+                    <DialogFooter>
+                        <Button
                             type="button"
+                            variant="ghost-outline"
                             :disabled="departForm.processing"
-                            >Cancel</AlertDialogCancel
+                            @click="confirmDepartOpen = false"
+                            >Cancel</Button
                         >
-                        <Button type="submit" :disabled="departForm.processing">
+                        <Button type="submit" variant="float-primary" :disabled="departForm.processing">
                             {{
                                 departForm.processing
                                     ? 'Saving...'
                                     : 'Confirm Departure'
                             }}
                         </Button>
-                    </AlertDialogFooter>
+                    </DialogFooter>
                 </form>
-            </AlertDialogContent>
-        </AlertDialog>
+            </DialogContent>
+        </Dialog>
 
         
         <Dialog v-model:open="changeRequestOpen">
             <DialogContent class="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle class="flex items-center gap-2">
-                        <Send class="h-4 w-4 text-slate-500" />
+                        <RiRoadMapLine class="h-4 w-4 text-slate-500" />
                         Request Change
                     </DialogTitle>
                     <DialogDescription v-if="changeRequestDispatch">
@@ -2421,7 +2303,7 @@ watch(confirmDepartOpen, (open) => {
                         "
                         class="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-4"
                     >
-                        <XCircle
+                        <RiCloseCircleLine
                             class="mt-0.5 h-5 w-5 shrink-0 text-rose-600"
                         />
                         <div>
@@ -2438,7 +2320,7 @@ watch(confirmDepartOpen, (open) => {
                         v-if="selectedChangeRequest.status === 'approved'"
                         class="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-4"
                     >
-                        <CheckCircle2
+                        <RiCheckboxCircleLine
                             class="h-5 w-5 shrink-0 text-emerald-600"
                         />
                         <p class="text-sm font-medium text-emerald-900">
@@ -2450,7 +2332,7 @@ watch(confirmDepartOpen, (open) => {
                         v-if="selectedChangeRequest.status === 'pending'"
                         class="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-4"
                     >
-                        <Clock3 class="h-5 w-5 shrink-0 text-amber-600" />
+                        <RiTimeLine class="h-5 w-5 shrink-0 text-amber-600" />
                         <p class="text-sm font-medium text-amber-900">
                             Awaiting approval from administrator.
                         </p>

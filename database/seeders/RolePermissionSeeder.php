@@ -50,6 +50,17 @@ class RolePermissionSeeder extends Seeder
             ->pluck('name')
             ->all();
 
+        $dispatcherPermissions = Permission::query()
+            ->whereIn('name', [
+                'external_dispatches.viewAny',
+                'external_dispatches.view',
+                'external_dispatches.create',
+                'external_dispatches.depart',
+                'external_dispatches.requestChange',
+            ])
+            ->pluck('name')
+            ->all();
+
         $superAdmin = Role::query()
             ->where('name', 'super-admin')
             ->where('type', 'internal')
@@ -98,7 +109,7 @@ class RolePermissionSeeder extends Seeder
 
         $operator->syncPermissions($externalPermissions);
 
-        $dispatcher->syncPermissions([]);
+        $dispatcher->syncPermissions($dispatcherPermissions);
         $driver->syncPermissions([]);
         $commuter->syncPermissions([]);
 

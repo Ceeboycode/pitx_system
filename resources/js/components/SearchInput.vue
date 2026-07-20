@@ -5,23 +5,32 @@ import { Input } from '@/components/ui/input';
 import { RiSearchLine, RiCloseLine } from 'vue-remix-icons';
 
 const props = defineProps<{
-    route: string;
+    route?: string;
+    modelValue?: string;
     initialValue?: string | null;
     placeholder?: string;
     only?: string[];
     debounce?: number;
 }>();
 
-const search = ref(props.initialValue ?? '');
+const emit = defineEmits<{
+    'update:modelValue': [value: string];
+}>();
+
+const search = ref(props.modelValue ?? props.initialValue ?? '');
 
 let timeout: number | undefined;
 
 watch(search, (value) => {
+    emit('update:modelValue', value);
     window.clearTimeout(timeout);
+
+    const route = props.route;
+    if (!route) return;
 
     timeout = window.setTimeout(() => {
         router.get(
-            props.route,
+            route,
             { search: value || undefined },
             {
                 preserveState: true,
@@ -32,6 +41,13 @@ watch(search, (value) => {
         );
     }, props.debounce ?? 350);
 });
+
+watch(
+    () => props.modelValue,
+    (value) => {
+        if (value !== undefined && value !== search.value) search.value = value;
+    },
+);
 
 const clear = () => {
     search.value = '';

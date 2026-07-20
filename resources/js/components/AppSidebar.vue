@@ -16,7 +16,6 @@ import {
     index as auditLogsIndex,
     myActivity as myActivityLogsIndex,
 } from '@/actions/App/Http/Controllers/AuditLogController';
-import { index as changeRequestsIndex } from '@/actions/App/Http/Controllers/DispatchChangeRequestController';
 import { index as dispatchesIndex } from '@/actions/App/Http/Controllers/InternalDispatchController';
 import { dashboard } from '@/routes';
 import { index as companiesIndex } from '@/routes/companies';
@@ -38,6 +37,7 @@ import {
     RiBus2Line,
     RiComputerLine,
     RiDashboardHorizontalLine,
+    RiHistoryLine,
     RiMoonLine,
     RiQuestionAnswerLine,
     RiQuestionLine,
@@ -70,6 +70,7 @@ interface NavFooterItem {
     title: string;
     href: NavHref;
     icon: Component;
+    permission?: string;
 }
 
 const mainNavItems: NavItem[] = [
@@ -131,9 +132,9 @@ const mainNavItems: NavItem[] = [
                 permission: 'dispatches.viewAny',
             },
             {
-                id: 'change-requests',
-                title: 'Change Requests',
-                href: changeRequestsIndex().url,
+                id: 'incident-reports',
+                title: 'Incident Reports',
+                href: '#',
                 permission: 'dispatches.viewAny',
             },
         ],
@@ -175,12 +176,6 @@ const mainNavItems: NavItem[] = [
                 href: auditLogsIndex().url,
                 permission: 'audit_logs.viewAny',
             },
-            {
-                id: 'my-activity-logs',
-                title: 'My Activity Logs',
-                href: myActivityLogsIndex().url,
-                permission: 'audit_logs.viewOwn',
-            },
         ],
     },
 ];
@@ -199,11 +194,21 @@ const visibleMainNavItems = computed(() =>
 
 const footerNavItems: NavFooterItem[] = [
     {
+        title: 'Activity Logs',
+        href: myActivityLogsIndex().url,
+        icon: RiHistoryLine,
+        permission: 'audit_logs.viewOwn',
+    },
+    {
         title: 'FAQ',
         href: '/faq',
         icon: RiQuestionLine,
     },
 ];
+
+const visibleFooterNavItems = computed(() =>
+    footerNavItems.filter((item) => !item.permission || can(item.permission)),
+);
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
@@ -463,7 +468,7 @@ function handleLogout() {
                     <nav class="flex flex-col gap-0 overflow-hidden">
                         <component
                             :is="shouldExpandFromCollapsed() ? 'button' : Link"
-                            v-for="item in footerNavItems"
+                            v-for="item in visibleFooterNavItems"
                             :key="item.title"
                             :href="shouldExpandFromCollapsed() ? undefined : item.href"
                             :title="item.title"

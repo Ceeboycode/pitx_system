@@ -113,11 +113,13 @@ class RoleController extends Controller
         Gate::authorize('viewTrash', Role::class);
 
         $search = $request->input('search');
+        $type = $request->input('type');
 
         $roles = Role::onlyTrashed()
             ->select('id', 'name', 'type', 'deleted_at', 'deleted_by')
             ->with(['permissions:id,name', 'deleter:id,name'])
             ->when($search, fn ($q) => $q->where('name', 'like', "%{$search}%"))
+            ->when(in_array($type, ['internal', 'external'], true), fn ($q) => $q->where('type', $type))
             ->latest('deleted_at')
             ->paginate(20)
             ->withQueryString()
@@ -144,6 +146,7 @@ class RoleController extends Controller
             'roles'   => $roles,
             'filters' => [
                 'search' => $search,
+                'type' => $type,
             ],
         ]);
     }

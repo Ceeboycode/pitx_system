@@ -5,21 +5,19 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
+import { Separator } from '@/components/ui/separator/index';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
-    CardAction,
     CardContent,
     CardDescription,
     CardHeader,
@@ -32,7 +30,6 @@ import {
     DropdownMenuLabel,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
 import {
     Popover,
     PopoverContent,
@@ -45,34 +42,24 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 
 import { can } from '@/lib/can';
 
 import {
-    RiAddLine as Plus,
-    RiArchive2Line as Archive,
-    RiArrowDownSLine as ArrowDown,
-    RiArrowRightSLine as ChevronRight,
-    RiArrowUpDownLine as ArrowUpDown,
-    RiArrowUpSLine as ArrowUp,
-    RiCloseLine as X,
-    RiEditLine as Pencil,
-    RiFilter2Line as Filter,
-    RiInboxUnarchiveLine as ArchiveX,
-    RiKey2Line as Key,
-    RiMore2Line as MoreHorizontal,
-    RiMoreLine as Ellipsis,
-    RiShieldCheckLine as ShieldCheck,
+    RiAddLine,
+    RiArchive2Line,
+    RiArrowDownSLine,
+    RiArrowUpDownLine,
+    RiArrowUpSLine,
+    RiCloseLine,
+    RiEditLine,
+    RiFilter2Line,
+    RiKey2Line,
+    RiMore2Line,
+    RiMoreLine,
+    RiShieldCheckLine,
 } from 'vue-remix-icons';
 
 
@@ -187,8 +174,8 @@ function cancelFilterPopover() {
 }
 
 function sortIcon(field: SortField) {
-    if (sortBy.value !== field) return ArrowUpDown;
-    return sortDir.value === 'asc' ? ArrowUp : ArrowDown;
+    if (sortBy.value !== field) return RiArrowUpDownLine;
+    return sortDir.value === 'asc' ? RiArrowUpSLine : RiArrowDownSLine;
 }
 
 function sortIconClass(field: SortField) {
@@ -205,7 +192,6 @@ function typeClass(type: Role['type']): string {
 }
 
 
-const createOpen = ref(false);
 const deleteOpen = ref(false);
 const selectedRole = ref<Role | null>(null);
 const previewedRole = ref<Role | null>(null);
@@ -244,7 +230,7 @@ function deleteRole() {
                     <div class="flex flex-col">
                         <CardTitle class="flex items-center gap-2">Roles</CardTitle>
                         <CardDescription>
-                            Manage the roles and their permissions.
+                            Manage roles and their permissions.
                         </CardDescription>
                     </div>
                     <div class="flex flex-1 items-center justify-end gap-2">
@@ -255,8 +241,8 @@ function deleteRole() {
                             class="hidden lg:flex"
                         >
                             <Link :href="create().url" class="flex items-center">
-                                <Plus class="h-4 w-4 shrink-0" />
-                                <span>Create Role</span>
+                                <RiAddLine class="h-4 w-4 shrink-0" />
+                                <span>Add Role</span>
                             </Link>
                         </Button>
                         <DropdownMenu v-if="canCreate || canViewTrash">
@@ -268,7 +254,7 @@ function deleteRole() {
                                         size="icon"
                                         aria-label="Open role actions"
                                     >
-                                        <Ellipsis class="h-4 w-4 shrink-0" />
+                                        <RiMoreLine class="h-4 w-4 shrink-0" />
                                     </Button>
                                 </div>
                             </DropdownMenuTrigger>
@@ -279,7 +265,7 @@ function deleteRole() {
                                     class="cursor-pointer lg:hidden"
                                 >
                                     <Link :href="create().url" class="flex items-center">
-                                        <Plus class="h-4 w-4" />
+                                        <RiAddLine class="h-4 w-4" />
                                         Create Role
                                     </Link>
                                 </DropdownMenuItem>
@@ -289,7 +275,7 @@ function deleteRole() {
                                     class="cursor-pointer"
                                 >
                                     <Link :href="trash().url" class="flex items-center">
-                                        <Archive class="h-4 w-4" />
+                                        <RiArchive2Line class="h-4 w-4" />
                                         Archives
                                     </Link>
                                 </DropdownMenuItem>
@@ -319,7 +305,7 @@ function deleteRole() {
                                             ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light dark:hover:text-custom-shadow'
                                             : ''"
                                     >
-                                        <Filter class="h-3.5 w-3.5" />
+                                        <RiFilter2Line class="h-3.5 w-3.5" />
                                         <span class="hidden lg:flex">
                                             {{ activeFilterCount > 0 ? '1 filter active' : 'Filter' }}
                                         </span>
@@ -382,12 +368,11 @@ function deleteRole() {
                             props.roles.data.length === 0 ? 'border-dashed' : 'border-solid',
                         ]"
                     >
-                    <div class="no-scrollbar min-h-0 flex-1 overflow-auto">
-                        <Table>
-                            <TableHeader class="bg-custom-bg dark:bg-custom-bg-light">
-                                <TableRow class="gap-2 border-b border-custom-bg-dark hover:bg-transparent dark:border-custom-bg-light">
-                                    <TableHead
-                                        class="table-cell h-10 cursor-pointer pl-3 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase select-none transition-colors hover:text-custom-shadow"
+                    <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+                        <div v-if="props.roles.data.length" class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
+                            <div class="grid grid-cols-4 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
+                                    <div
+                                        class="col-span-1 flex h-10 cursor-pointer items-center pl-3 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase select-none transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('name')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -398,10 +383,10 @@ function deleteRole() {
                                                 :class="sortIconClass('name')"
                                             />
                                         </div>
-                                    </TableHead>
+                                    </div>
 
-                                    <TableHead
-                                        class="table-cell h-10 cursor-pointer text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase select-none transition-colors hover:text-custom-shadow"
+                                    <div
+                                        class="col-span-1 flex h-10 cursor-pointer items-center text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase select-none transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('type')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -412,10 +397,10 @@ function deleteRole() {
                                                 :class="sortIconClass('type')"
                                             />
                                         </div>
-                                    </TableHead>
+                                    </div>
 
-                                    <TableHead
-                                        class="table-cell h-10 cursor-pointer text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase select-none transition-colors hover:text-custom-shadow"
+                                    <div
+                                        class="col-span-1 flex h-10 cursor-pointer items-center text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase select-none transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('permissions_count')"
                                     >
                                         <div class="flex items-center gap-1.5">
@@ -434,33 +419,24 @@ function deleteRole() {
                                                 "
                                             />
                                         </div>
-                                    </TableHead>
+                                    </div>
 
-                                    <TableHead
-                                        class="table-cell h-10 pr-3 text-right text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
+                                    <div
+                                        class="col-span-1 flex h-10 items-center justify-end pr-3 text-right text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
                                     >
                                         Actions
-                                    </TableHead>
-                                </TableRow>
-                            </TableHeader>
+                                    </div>
+                            </div>
+                        </div>
 
-                            <TableBody>
-                                
-                                <TableRow
-                                    v-if="!props.roles.data.length"
-                                    class="hover:bg-transparent"
-                                >
-                                    <TableCell
-                                        colspan="4"
-                                        class="table-cell p-6 text-center"
-                                    >
+                        <div v-if="!props.roles.data.length" class="flex flex-1 items-center justify-center p-6 text-center">
                                         <div
                                             class="flex flex-col items-center gap-2"
                                         >
                                             <div
                                                 class="flex h-14 w-14 items-center justify-center rounded-full bg-custom-bg dark:bg-custom-bg-dark"
                                             >
-                                                <ShieldCheck
+                                                <RiShieldCheckLine
                                                     class="h-6 w-6 text-muted-foreground/40"
                                                 />
                                             </div>
@@ -480,37 +456,29 @@ function deleteRole() {
                                                     }}
                                                 </p>
                                             </div>
-                                            <Button
-                                                v-if="hasActiveFilters"
-                                                size="sm"
-                                                variant="destructive"
-                                                @click="clearFilters"
-                                            >
-                                                <X class="mr-1.5 h-3.5 w-3.5" />
-                                                Clear filters
-                                            </Button>
                                         </div>
-                                    </TableCell>
-                                </TableRow>
+                        </div>
 
-                                <TableRow
-                                    v-for="role in props.roles.data"
+                        <div v-else class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+                                <div
+                                    v-for="(role, roleIndex) in props.roles.data"
                                     :key="role.id"
                                     :class="[
-                                        'group cursor-pointer border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                        'group grid cursor-pointer grid-cols-4 items-center border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                        roleIndex === props.roles.data.length - 1 ? 'rounded-b-md border-b-0' : '',
                                         previewedRole?.id === role.id ? 'bg-custom-secondary/10' : '',
                                     ]"
                                     @click="openPreview(role)"
                                 >
                                     
-                                    <TableCell
-                                        class="table-cell py-1.5 pl-3 text-sm font-semibold capitalize"
+                                    <div
+                                        class="col-span-1 py-1.5 pl-3 text-sm font-semibold capitalize"
                                     >
                                         {{ role.name }}
-                                    </TableCell>
+                                    </div>
 
                                     
-                                    <TableCell class="table-cell py-1.5">
+                                    <div class="col-span-1 py-1.5">
                                         <Badge :class="typeClass(role.type)">
                                             {{
                                                 role.type === 'internal'
@@ -518,10 +486,10 @@ function deleteRole() {
                                                     : 'External'
                                             }}
                                         </Badge>
-                                    </TableCell>
+                                    </div>
 
                                     
-                                    <TableCell class="table-cell py-1.5" @click.stop>
+                                    <div class="col-span-1 py-1.5" @click.stop>
                                         <span
                                             v-if="!role.permissions?.length"
                                             class="text-sm text-muted-foreground"
@@ -536,7 +504,7 @@ function deleteRole() {
                                                     size="sm"
                                                     class="h-7 rounded-md text-xs"
                                                 >
-                                                    <Key
+                                                    <RiKey2Line
                                                         class="mr-1.5 h-3 w-3"
                                                     />
                                                     {{
@@ -580,10 +548,10 @@ function deleteRole() {
                                                 </div>
                                             </PopoverContent>
                                         </Popover>
-                                    </TableCell>
+                                    </div>
 
                                     
-                                    <TableCell class="table-cell py-1.5 pr-3 text-right" @click.stop>
+                                    <div class="col-span-1 py-1.5 pr-3 text-right" @click.stop>
                                         <DropdownMenu
                                             v-if="canUpdate || canDelete"
                                         >
@@ -592,7 +560,7 @@ function deleteRole() {
                                                     variant="table-more"
                                                     size="icon-more"
                                                 >
-                                                    <MoreHorizontal
+                                                    <RiMore2Line
                                                         class="h-4 w-4"
                                                     />
                                                     
@@ -606,7 +574,7 @@ function deleteRole() {
                                                 <DropdownMenuItem
                                                     v-if="canUpdate"
                                                     as-child
-                                                    class="rounded-lg cursor-pointer hover:bg-slate-100"
+                                                    class="group"
                                                 >
                                                     <Link
                                                         :href="
@@ -616,8 +584,8 @@ function deleteRole() {
                                                         "
                                                         class="flex items-center"
                                                     >
-                                                        <Pencil
-                                                            class="h-4 w-4"
+                                                        <RiEditLine
+                                                            class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
                                                         />
                                                         Edit
                                                     </Link>
@@ -625,20 +593,21 @@ function deleteRole() {
 
                                                 <DropdownMenuItem
                                                     v-if="canDelete"
-                                                    class="rounded-lg cursor-pointer hover:bg-slate-100"
+                                                    class="group"
                                                     @click="openDelete(role)"
                                                 >
-                                                    <ArchiveX
-                                                        class="h-4 w-4"
+                                                    <RiArchive2Line
+                                                        class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
                                                     />
-                                                    Archive
+                                                    <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">
+                                                        Archive
+                                                    </span>
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
+                                    </div>
+                                </div>
+                        </div>
                     </div>
                     </Card>
 
@@ -668,7 +637,7 @@ function deleteRole() {
                         aria-label="Close role preview"
                         @click="previewedRole = null"
                     >
-                        <X class="h-4 w-4" />
+                        <RiCloseLine class="h-4 w-4" />
                     </Button>
                 </CardHeader>
 
@@ -678,7 +647,7 @@ function deleteRole() {
                 >
                     <div class="flex items-center justify-center rounded-md border border-dashed border-custom-bg-dark bg-custom-bg p-6 dark:border-custom-bg-light dark:bg-custom-bg-dark">
                         <div class="flex h-20 w-20 items-center justify-center rounded-full bg-custom-primary/15 text-custom-primary">
-                            <ShieldCheck class="h-9 w-9" />
+                            <RiShieldCheckLine class="h-9 w-9" />
                         </div>
                     </div>
 
@@ -728,7 +697,7 @@ function deleteRole() {
                             size="icon-text"
                         >
                             <Link :href="edit({ role: previewedRole.id }).url">
-                                <Pencil class="h-4 w-4" />
+                                <RiEditLine class="h-4 w-4" />
                                 Edit
                             </Link>
                         </Button>
@@ -739,7 +708,7 @@ function deleteRole() {
                             class="ml-auto"
                             @click="openDelete(previewedRole)"
                         >
-                            <ArchiveX class="h-4 w-4" />
+                            <RiArchive2Line class="h-4 w-4" />
                             Archive
                         </Button>
                     </div>
@@ -756,29 +725,28 @@ function deleteRole() {
             </Card>
         </div>
 
-        
-        <AlertDialog v-if="canDelete" v-model:open="deleteOpen">
-            <AlertDialogContent class="rounded-lg p-4">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Archive Role</AlertDialogTitle>
-                    <AlertDialogDescription>
+        <Dialog v-if="canDelete" v-model:open="deleteOpen">
+            <DialogContent class="px-6">
+                <DialogHeader class="px-0">
+                    <DialogTitle>Archive role</DialogTitle>
+                    <DialogDescription class="mt-4">
                         Are you sure you want to archive
-                        <span class="font-semibold text-foreground">{{ selectedRole?.name }}</span>?
-                        It will be hidden from the active roles list and can be restored later from Archived Roles.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg cursor-pointer hover:bg-slate-100">Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                        :disabled="processing"
-                        class="rounded-lg border-0 text-white cursor-pointer bg-rose-600 hover:bg-rose-700 disabled:opacity-50"
+                        <span class="font-semibold text-custom-accent-3">{{ selectedRole?.name }}</span>?
+                        It can be restored later.
+                    </DialogDescription>
+                </DialogHeader>
+                <Separator class="mb-4" />
+                <DialogFooter class="gap-2 sm:justify-end">
+                    <Button variant="ghost-outline" @click="deleteOpen = false">Cancel</Button>
+                    <Button
+                        :variant="processing ? 'disabled' : 'float-primary'"
                         @click="deleteRole"
                     >
-                        <ArchiveX class="h-4 w-4" />
-                        {{ processing ? 'Archiving...' : 'Archive Role' }}
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                        <RiArchive2Line class="h-4 w-4" />
+                        {{ processing ? 'Archiving...' : 'Archive' }}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>

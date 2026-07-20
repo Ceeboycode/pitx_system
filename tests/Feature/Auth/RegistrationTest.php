@@ -1,5 +1,9 @@
 <?php
 
+/*
+ * DEAD CODE: Fortify web self-registration is disabled. Commuters register
+ * through POST /api/v1/auth/register from the mobile application.
+ *
 test('registration screen can be rendered', function () {
     $response = $this->get(route('register'));
 
@@ -17,3 +21,4 @@ test('new users can register', function () {
     $this->assertAuthenticated();
     $response->assertRedirect(route('dashboard', absolute: false));
 });
+*/

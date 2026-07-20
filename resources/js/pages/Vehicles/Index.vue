@@ -925,6 +925,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
             </Card>
         </div>
 
+        <!-- TODO: use a dialog component here instead -->
         <AlertDialog v-model:open="archiveDialogOpen">
             <AlertDialogContent class="rounded-2xl">
                 <AlertDialogHeader>
@@ -962,7 +963,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                     <DialogDescription>
                         <span class="block">
                             {{ isSuspending ? 'Provide a reason to suspend' : 'This will unsuspend' }}
-                            <strong class="font-semibold text-custom-accent-3">{{ statusVehicle?.plate_number || 'this vehicle' }}</strong>.
+                            <span class="font-semibold text-custom-accent-3">{{ statusVehicle?.plate_number || 'this vehicle' }}</span>.
                             {{ isSuspending ? 'You can unsuspend it again later.' : 'The vehicle will become active again.' }}
                         </span>
                     </DialogDescription>

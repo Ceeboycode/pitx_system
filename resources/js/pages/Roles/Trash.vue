@@ -1,63 +1,31 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
-import { index, restore, trash } from '@/routes/roles';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
-
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import InertiaPagination from '@/components/InertiaPagination.vue';
+import SearchInput from '@/components/SearchInput.vue';
+import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardAction,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator/index';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import SearchInput from '@/components/SearchInput.vue';
-
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import AppLayout from '@/layouts/AppLayout.vue';
 import { can } from '@/lib/can';
-
-import {
-    RiArchive2Line as Archive,
-    RiArrowLeftSLine as ArrowLeft,
-    RiCloseLine as X,
-    RiMore2Line as MoreHorizontal,
-    RiRestartLine as RotateCcw,
-    RiShieldCheckLine as ShieldCheck,
-} from 'vue-remix-icons';
+import { index, restore, trash } from '@/routes/roles';
+import { type BreadcrumbItem } from '@/types';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { RiArrowLeftSLine, RiFilter2Line, RiMore2Line, RiRestartLine } from 'vue-remix-icons';
+import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
 
 type Permission = { id: number; name: string };
-
 type Role = {
     id: number;
     name: string;
@@ -67,47 +35,55 @@ type Role = {
     deleter?: { id: number; name: string } | null;
 };
 
+type PaginatedRoles = {
+    data: Role[];
+    links: any[];
+    from: number | null;
+    to: number | null;
+    total: number;
+};
+
 const props = defineProps<{
-    roles: { data: Role[]; links: any[] };
-    filters: { search: string | null };
+    roles: PaginatedRoles;
+    filters: { search: string | null; type: string | null };
 }>();
 
 const canRestore = can('roles.restore');
+const filterType = ref(props.filters.type ?? 'all');
+const filterOpen = ref(false);
+const activeFilterCount = computed(() => (filterType.value === 'all' ? 0 : 1));
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Roles', href: index().url },
     { title: 'Archived Roles', href: trash().url },
 ];
 
-const search = ref(props.filters.search ?? '');
-const hasActiveFilters = computed(() => !!search.value);
-
-let filterTimer: number | null = null;
-
 function applyFilters() {
     router.get(
         trash().url,
         {
-            search: search.value || undefined,
+            search: props.filters.search || undefined,
+            type: filterType.value === 'all' ? undefined : filterType.value,
         },
         {
             preserveScroll: true,
             preserveState: true,
             replace: true,
-            only: ['roles', 'filters', 'flash'],
+            only: ['roles', 'filters'],
         },
     );
+    filterOpen.value = false;
 }
 
-watch(search, () => {
-    if (filterTimer) window.clearTimeout(filterTimer);
-    filterTimer = window.setTimeout(() => applyFilters(), 350);
-});
+function clearFilters() {
+    filterType.value = 'all';
+    applyFilters();
+}
 
-function typeClass(type: Role['type']): string {
+function typeClass(type: Role['type']) {
     return type === 'internal'
-        ? 'bg-blue-100 text-blue-700 border-blue-200'
-        : 'bg-violet-100 text-violet-700 border-violet-200';
+        ? 'border-blue-200 bg-blue-100 text-blue-700'
+        : 'border-violet-200 bg-violet-100 text-violet-700';
 }
 
 const restoringRole = ref<Role | null>(null);
@@ -118,6 +94,11 @@ function openRestoreDialog(role: Role) {
     restoreOpen.value = true;
 }
 
+function closeRestoreDialog() {
+    restoreOpen.value = false;
+    restoringRole.value = null;
+}
+
 function confirmRestore() {
     if (!restoringRole.value) return;
     router.patch(
@@ -125,10 +106,7 @@ function confirmRestore() {
         {},
         {
             preserveScroll: true,
-            onSuccess: () => {
-                restoringRole.value = null;
-                restoreOpen.value = false;
-            },
+            onSuccess: () => closeRestoreDialog(),
             onError: () => toast.error('Failed to restore role.'),
         },
     );
@@ -139,233 +117,157 @@ function confirmRestore() {
     <Head title="Archived Roles" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
-        >
-            <Card>
-                <CardHeader>
-                    <CardTitle class="flex items-center gap-2">
-                        <!-- CODE: <span>Change Requests</span> -->
-                         <!-- TODO: make the text straight, not wrapped -->
-                        <Button
-                            as-child
-                            variant="outline"
-                            class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 mr-2"
-                        >
-                            <Link :href="index().url">
-                                <ArrowLeft class="h-4 w-4" />
-                            </Link>
-                        </Button>
-                        Archives
-                        <span class="ml-2 flex flex-1 items-center">
-                            <hr class="h-px w-full border border-rose-500" />
-                            <div class="border-7 border-rose-500 rounded-xs">
-                                <div class="border-3 border-white rounded-xs"></div>
-                            </div>
-                        </span>
-                    </CardTitle>
-                    <CardDescription class="mt-1">
-                        Archived roles can be restored back to the active roles list.
-                    </CardDescription>
+        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+            <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
+                <CardHeader class="flex flex-row items-start gap-3">
+                    <Button as-child variant="header-actions" size="icon">
+                        <Link :href="index().url" aria-label="Back to roles">
+                            <RiArrowLeftSLine class="h-4 w-4" />
+                        </Link>
+                    </Button>
+                    <div class="flex min-w-0 flex-col">
+                        <CardTitle class="font-semibold">Archived Roles</CardTitle>
+                        <CardDescription>Restore archived roles to the active roles list.</CardDescription>
+                    </div>
                 </CardHeader>
-                <CardContent class="space-y-4">
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-                        <div class="w-full max-w-sm">
+
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                    <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
+                        <div class="w-full">
                             <SearchInput
-                                :route="trash().url"
+                                :route="`${trash().url}?type=${filterType === 'all' ? '' : filterType}`"
                                 :initial-value="filters.search"
                                 placeholder="Search archived roles..."
                                 :only="['roles', 'filters', 'flash']"
                                 :debounce="350"
                             />
                         </div>
-                    </div>
-                    
-                    <div class="overflow-x-auto">
-                        <Table>
-                            <TableHeader class="border-y border-slate-200">
-                                <TableRow class="gap-2">
-                                    <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Name</TableHead
-                                    >
-                                    <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Type</TableHead
-                                    >
-                                    <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Permissions</TableHead
-                                    >
-                                    <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Archived At</TableHead
-                                    >
-                                    <TableHead
-                                        class="px-0 text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Archived By</TableHead
-                                    >
-                                    <TableHead
-                                        class="px-0 text-right text-[11px] font-bold tracking-widest text-muted-foreground uppercase"
-                                        >Actions</TableHead
-                                    >
-                                </TableRow>
-                            </TableHeader>
 
-                            <TableBody class="border-y border-slate-200">
-                                <TableRow
-                                    v-if="!props.roles.data.length"
-                                    class="hover:bg-transparent"
+                        <Popover v-model:open="filterOpen">
+                            <PopoverTrigger as-child>
+                                <Button
+                                    variant="header-actions"
+                                    size="icon-text"
+                                    class="rounded-full"
+                                    :class="activeFilterCount > 0 ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''"
                                 >
-                                    <TableCell
-                                        colspan="6"
-                                        class="py-20 text-center"
-                                    >
-                                        <div
-                                            class="flex flex-col items-center gap-3"
-                                        >
-                                            <div
-                                                class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted"
-                                            >
-                                                <ShieldCheck
-                                                    class="h-6 w-6 text-muted-foreground/40"
-                                                />
-                                            </div>
-                                            <div>
-                                                <p
-                                                    class="text-sm font-semibold text-foreground"
-                                                >
-                                                    No archived roles
-                                                </p>
-                                                <p
-                                                    class="mt-0.5 text-xs text-muted-foreground"
-                                                >
-                                                    Nothing has been archived
-                                                    yet.
-                                                </p>
-                                            </div>
+                                    <RiFilter2Line class="h-3.5 w-3.5" />
+                                    <span class="hidden lg:flex">{{ activeFilterCount ? '1 filter active' : 'Filter' }}</span>
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent align="end">
+                                <div class="grid gap-y-2">
+                                    <div class="flex flex-col gap-y-1">
+                                        <p class="text-sm text-custom-shadow/80">Type</p>
+                                        <Select v-model="filterType">
+                                            <SelectTrigger class="w-full">
+                                                <SelectValue placeholder="Any type" class="flex justify-start" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Any type</SelectItem>
+                                                <SelectItem value="internal">Internal</SelectItem>
+                                                <SelectItem value="external">External</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light" />
+                                    <div class="flex w-full flex-row items-center justify-between">
+                                        <Button v-if="activeFilterCount" size="sm" variant="destructive" @click="clearFilters">Clear</Button>
+                                        <div class="ml-auto flex items-center gap-2">
+                                            <Button variant="ghost-outline" size="sm" @click="filterOpen = false">Cancel</Button>
+                                            <Button size="sm" variant="float-primary" @click="applyFilters">Apply</Button>
                                         </div>
-                                    </TableCell>
-                                </TableRow>
+                                    </div>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
 
-                                <TableRow
-                                    v-for="role in props.roles.data"
+                    <Card
+                        :class="[
+                            'flex min-h-0 max-h-fit flex-1 flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
+                            roles.data.length === 0 ? 'border-dashed' : 'border-solid',
+                        ]"
+                    >
+                        <div v-if="roles.data.length" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+                            <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
+                                <div class="grid grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_3rem] gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
+                                    <div class="flex h-10 items-center pl-3 text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Name</div>
+                                    <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Type</div>
+                                    <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Permissions</div>
+                                    <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Archived At</div>
+                                    <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Archived By</div>
+                                    <div class="flex h-10 items-center justify-end pr-3 text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Actions</div>
+                                </div>
+                            </div>
+
+                            <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+                                <div
+                                    v-for="(role, rowIndex) in roles.data"
                                     :key="role.id"
-                                    class="group transition-colors hover:bg-muted/30"
+                                    :class="[
+                                        'grid grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_3rem] items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                        rowIndex === roles.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                    ]"
                                 >
-                                    <TableCell
-                                        class="px-0 text-sm font-semibold capitalize"
-                                        >{{ role.name }}</TableCell
-                                    >
-
-                                    <TableCell class="px-0">
-                                        <Badge :class="typeClass(role.type)">
-                                            {{
-                                                role.type === 'internal'
-                                                    ? 'Internal'
-                                                    : 'External'
-                                            }}
-                                        </Badge>
-                                    </TableCell>
-
-                                    <TableCell class="px-0">
-                                        <span
-                                            class="text-sm text-muted-foreground"
-                                        >
-                                            {{
-                                                role.permissions?.length ?? 0
-                                            }}
-                                            permission{{
-                                                (role.permissions?.length ??
-                                                    0) !== 1
-                                                    ? 's'
-                                                    : ''
-                                            }}
-                                        </span>
-                                    </TableCell>
-
-                                    <TableCell
-                                        class="px-0 text-sm text-muted-foreground"
-                                        >{{
-                                            role.deleted_at_human ?? '—'
-                                        }}</TableCell
-                                    >
-                                    <TableCell
-                                        class="px-0 text-sm text-muted-foreground"
-                                        >{{
-                                            role.deleter?.name ?? '—'
-                                        }}</TableCell
-                                    >
-
-                                    <TableCell class="text-right px-0">
-                                        <DropdownMenu>
+                                    <div class="min-w-0 py-1.5 pl-3"><span class="block truncate font-semibold capitalize">{{ role.name }}</span></div>
+                                    <div class="py-1.5"><Badge :class="typeClass(role.type)" class="border capitalize">{{ role.type }}</Badge></div>
+                                    <div class="py-1.5 text-sm">{{ role.permissions?.length ?? 0 }} permission{{ (role.permissions?.length ?? 0) === 1 ? '' : 's' }}</div>
+                                    <div class="min-w-0 py-1.5 text-sm"><span class="block truncate">{{ role.deleted_at_human ?? '—' }}</span></div>
+                                    <div class="min-w-0 py-1.5 text-sm"><span class="block truncate">{{ role.deleter?.name ?? '—' }}</span></div>
+                                    <div class="flex justify-end py-1.5 pr-3 text-right">
+                                        <DropdownMenu v-if="canRestore">
                                             <DropdownMenuTrigger as-child>
-                                                <Button
-                                                    variant="outline"
-                                                    class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
-                                                >
-                                                    <MoreHorizontal
-                                                        class="h-4 w-4"
-                                                    />
-                                                    
-                                                </Button>
+                                                <Button variant="table-more" size="icon-more"><RiMore2Line class="h-4 w-4" /></Button>
                                             </DropdownMenuTrigger>
-
-                                            <DropdownMenuContent
-                                                align="end"
-                                                class="w-fit rounded-lg border-slate-200 shadow-lg"
-                                            >
-                                                <DropdownMenuLabel
-                                                    class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-                                                >
-                                                    {{ role.name }}
-                                                </DropdownMenuLabel>
-                                                <DropdownMenuSeparator />
-
-                                                <DropdownMenuItem
-                                                    v-if="canRestore"
-                                                    class="rounded-lg cursor-pointer hover:bg-slate-100"
-                                                    @click="openRestoreDialog(role)"
-                                                >
-                                                    <RotateCcw
-                                                        class="h-4 w-4"
-                                                    />
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuLabel>{{ role.name }}</DropdownMenuLabel>
+                                                <DropdownMenuItem class="group" @click="openRestoreDialog(role)">
+                                                    <RiRestartLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
                                                     Restore
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
-                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                            <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                                <img :src="emptyRafikiUrl" alt="" class="w-1/3 object-contain opacity-90" aria-hidden="true" />
+                                <div class="space-y-1">
+                                    <p class="text-base font-semibold text-custom-shadow">No archived roles found</p>
+                                    <p class="text-sm text-custom-shadow/80">{{ filters.search || activeFilterCount ? 'Try adjusting your search or filters.' : 'Nothing has been archived yet.' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <InertiaPagination :links="roles.links" :meta="{ from: roles.from, to: roles.to, total: roles.total }" />
                 </CardContent>
             </Card>
         </div>
 
-        <AlertDialog v-model:open="restoreOpen">
-            <AlertDialogContent class="rounded-lg p-4">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Restore Role</AlertDialogTitle>
-                    <AlertDialogDescription>
+        <Dialog v-model:open="restoreOpen">
+            <DialogContent class="px-6">
+                <DialogHeader class="px-0">
+                    <DialogTitle>Restore Role</DialogTitle>
+                    <DialogDescription class="mt-4">
                         Are you sure you want to restore
-                        <span class="font-semibold text-foreground">{{ restoringRole?.name ?? 'this role' }}</span>?
+                        <span class="font-semibold text-custom-accent-3">{{ restoringRole?.name ?? 'this role' }}</span>?
                         It will be moved back to the active roles list.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg cursor-pointer hover:bg-slate-100" @click="restoringRole = null">
-                        Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                        class="rounded-lg border-0 text-white cursor-pointer bg-primary hover:bg-primary/90"
-                        @click="confirmRestore"
-                    >
-                        <RotateCcw class="h-4 w-4" />
-                        Restore Role
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                    </DialogDescription>
+                </DialogHeader>
+                <Separator class="mb-4" />
+                <DialogFooter class="gap-2 sm:justify-end">
+                    <Button variant="ghost-outline" @click="closeRestoreDialog">Cancel</Button>
+                    <Button variant="float-primary" @click="confirmRestore">
+                        <RiRestartLine class="h-4 w-4" />
+                        Restore
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>

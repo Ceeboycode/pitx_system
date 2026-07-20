@@ -4,6 +4,7 @@ import type { BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
+import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import type { DateValue } from '@internationalized/date';
 import {
     DateFormatter,
@@ -27,6 +28,12 @@ import {
     CardDescription,
 } from '@/components/ui/card';
 import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
     Popover,
     PopoverContent,
     PopoverTrigger,
@@ -40,47 +47,22 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-import type { ChartConfig } from '@/components/ui/chart';
-import { ChartContainer } from '@/components/ui/chart';
-import { VisDonut, VisSingleContainer } from '@unovis/vue';
-
 import {
-    ArrowLeft,
-    Building2,
-    Bus,
-    CalendarDays,
-    ChevronRight,
-    ClipboardList,
-    Clock,
-    Download,
-    Filter,
-    Loader2,
-    Hash,
-    LogIn,
-    LogOut,
-    Mail,
-    Map as MapIcon,
-    MapPin,
-    MapPinned,
-    Navigation,
-    Phone,
-    Search,
-    SlidersHorizontal,
-    Users,
-    X,
-} from 'lucide-vue-next';
+    RiArrowLeftLine,
+    RiBuilding2Line,
+    RiCalendarLine,
+    RiCloseLine,
+    RiFilter2Line,
+    RiHashtag,
+    RiMailLine,
+    RiPhoneLine,
+    RiSearchLine,
+} from 'vue-remix-icons';
 
 import InternalDispatchController from '@/actions/App/Http/Controllers/InternalDispatchController';
+import { index } from '@/actions/App/Http/Controllers/InternalDispatchController';
 
 type RouteGeometry = { type: string; coordinates: [number, number][] };
 
@@ -121,7 +103,6 @@ type DispatchItem = {
     status: string;
     arrived_at: string | null;
     departed_at: string | null;
-    dispatched_at: string | null;
     vehicle: {
         plate_number: string | null;
         body_number: string | null;
@@ -201,7 +182,10 @@ const selectedDate = ref<DateValue | undefined>(
     props.filters?.date ? parseDate(props.filters.date) : undefined,
 );
 const selectedStatus = ref(props.filters?.status ?? 'all');
+const filterStatus = ref(selectedStatus.value);
 const calendarOpen = ref(false);
+const filterOpen = ref(false);
+const previewedDispatch = ref<DispatchItem | null>(null);
 
 const selectedDateLabel = computed(() =>
     selectedDate.value
@@ -263,31 +247,8 @@ const routeCoveragePercent = computed(
     () => props.summary.route_coverage_percent,
 );
 const gateCoveragePercent = computed(() => props.summary.gate_coverage_percent);
-
 const statusBreakdown = computed(() => props.summary.status_breakdown);
-
-const donutData = computed(() =>
-    statusBreakdown.value.map((s) => ({ value: s.count })),
-);
-
-const donutChartConfig = computed((): ChartConfig => {
-    const config: ChartConfig = {};
-    statusBreakdown.value.forEach((item, i) => {
-        config[item.status] = {
-            label: prettyStatus(item.status),
-            color: `var(--chart-${(i % 5) + 1})`,
-        };
-    });
-    return config;
-});
-
-const donutColorFn = computed(
-    () => (_d: { value: number }, i: number) => `var(--chart-${(i % 5) + 1})`,
-);
-
 const routeSummary = computed(() => props.summary.route_summary);
-const gateSummary = computed(() => props.summary.gate_summary);
-const baySummary = computed(() => props.summary.bay_summary);
 
 function barPct(count: number, list: SummaryEntry[]) {
     const max = list[0]?.count ?? 1;
@@ -323,11 +284,22 @@ function applyDateFilter(value: DateValue | undefined) {
 function applyStatus(value: string) {
     selectedStatus.value = value;
     reload({ status: value });
+    filterOpen.value = false;
+}
+
+function applyStatusFilter() {
+    applyStatus(filterStatus.value);
+}
+
+function closeStatusFilter() {
+    filterStatus.value = selectedStatus.value;
+    filterOpen.value = false;
 }
 
 function clearAllFilters() {
     selectedDate.value = undefined;
     selectedStatus.value = 'all';
+    filterStatus.value = 'all';
     router.get(
         `/dispatches/${props.company.id}`,
         {},
@@ -438,6 +410,10 @@ function prettyStatus(s: string | null | undefined) {
         .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function displayedBadgeStatus(status: string | null | undefined) {
+    return status === 'arrived' || status === 'departed' ? status : null;
+}
+
 const exporting = ref(false);
 
 function exportCsv() {
@@ -465,938 +441,200 @@ function exportCsv() {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <TooltipProvider>
-            <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-                <Card>
-                    <CardHeader class="py-0">
-                        <div class="flex items-center gap-4">
-                            <div class="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border-2 bg-white shadow-sm">
-                                <img
-                                    v-if="company.company_logo"
-                                    :src="company.company_logo"
-                                    :alt="company.company_name"
-                                    class="h-full w-full object-cover"
-                                />
-                                <div
-                                    v-else
-                                    class="flex h-full w-full items-center justify-center bg-primary/10"
-                                >
-                                    <Building2 class="h-10 w-10 text-primary" />
-                                </div>
-                            </div>
-
-                            <div class="gap-2 w-full">
-                                <div class="flex flex-row gap-2 pb-2 w-full items-center">
-                                    <h1 class="text-2xl leading-tight font-bold tracking-tight">
-                                        {{ company.company_name }}
-                                    </h1>
-                                    <div class="ml-2 flex flex-1 items-center">
-                                        <hr class="h-px w-full border border-rose-500" />
-                                        <div class="border-7 border-rose-500 rounded-xs">
-                                            <div class="border-3 border-white rounded-xs"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="flex justify-between">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <Badge class="border-0 bg-muted font-mono text-foreground">
-                                            {{ company.company_code ?? '—' }}
-                                        </Badge>
-                                        <Badge :class="['', statusBadgeClass(company.status)]">
-                                            <span :class="['h-2 w-2 rounded-full', statusBadgeDot(company.status)]" />
-                                            {{ prettyStatus(company.status) }}
-                                        </Badge>
-                                    </div>
-                                    <div class="flex shrink-0 items-center gap-2">
-                                        <Button
-                                            as-child
-                                            variant="outline"
-                                            class="rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
-                                        >
-                                            <Link :href="InternalDispatchController.index().url">
-                                                <ArrowLeft class="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </div>
-                                </div>
-                                <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                                    <span v-if="company.company_code" class="flex items-center gap-1">
-                                        <Hash class="size-3" />{{ company.company_code }}
-                                    </span>
-                                    <span v-if="company.company_email" class="flex items-center gap-1">
-                                        <Mail class="size-3" />{{ company.company_email }}
-                                    </span>
-                                    <span v-if="company.company_phone" class="flex items-center gap-1">
-                                        <Phone class="size-3" />{{ company.company_phone }}
-                                    </span>
-                                </div>
-                            </div>
+            <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
+                <Card class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:h-full">
+                    <CardHeader class="shrink-0 flex flex-row flex-wrap items-start gap-3 pb-0">
+                        <Button as-child variant="header-actions" size="icon">
+                            <Link :href="index().url" aria-label="Back to dispatches">
+                                <RiArrowLeftLine class="h-4 w-4" />
+                            </Link>
+                        </Button>
+                        <div class="min-w-0 flex-1">
+                            <CardTitle class="truncate font-semibold">{{ company.company_name }}</CardTitle>
+                            <CardDescription>Review the company’s individual dispatch records.</CardDescription>
                         </div>
                     </CardHeader>
-                </Card>
 
-                <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
-                    <Card>
-                        <CardContent class="p-4">
-                            <p class="text-xs text-muted-foreground">
-                                Dispatches
-                            </p>
-                            <p class="mt-1 text-2xl font-bold tabular-nums">
-                                {{ filteredTotal.toLocaleString() }}
-                            </p>
-                            <p
-                                class="mt-0.5 truncate text-xs text-muted-foreground"
-                            >
-                                {{ dispatchCountLabel }}
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardContent class="p-4">
-                            <p class="text-xs text-muted-foreground">
-                                Total PAX
-                            </p>
-                            <p class="mt-1 text-2xl font-bold tabular-nums">
-                                {{ totalPax.toLocaleString() }}
-                            </p>
-                            <p class="mt-0.5 text-xs text-muted-foreground">
-                                For the full filtered result
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardContent class="p-4">
-                            <p class="text-xs text-muted-foreground">
-                                Avg PAX / dispatch
-                            </p>
-                            <p class="mt-1 text-2xl font-bold tabular-nums">
-                                {{ avgPax }}
-                            </p>
-                            <p class="mt-0.5 text-xs text-muted-foreground">
-                                For the full filtered result
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardContent class="space-y-2 p-4">
-                            <p class="text-xs text-muted-foreground">
-                                Data Coverage
-                            </p>
-                            <div class="space-y-1.5">
-                                <div
-                                    class="flex items-center justify-between text-xs"
-                                >
-                                    <span class="text-muted-foreground"
-                                        >Routes</span
-                                    >
-                                    <span class="font-medium tabular-nums"
-                                        >{{ routeCoveragePercent }}%</span
-                                    >
-                                </div>
-                                <Progress
-                                    :model-value="routeCoveragePercent"
-                                    class="h-1.5"
-                                />
-                            </div>
-                            <div class="space-y-1.5">
-                                <div
-                                    class="flex items-center justify-between text-xs"
-                                >
-                                    <span class="text-muted-foreground"
-                                        >Gates</span
-                                    >
-                                    <span class="font-medium tabular-nums"
-                                        >{{ gateCoveragePercent }}%</span
-                                    >
-                                </div>
-                                <Progress
-                                    :model-value="gateCoveragePercent"
-                                    class="h-1.5"
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <Card class="overflow-hidden">
-                    <CardHeader class="pb-0">
-                        <div
-                            class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
-                        >
-                            <div>
-                                <CardTitle class="flex items-center gap-2">
-                                    Dispatch Records
-                                    <div class="ml-2 flex flex-1 items-center">
-                                        <hr class="h-px w-full border border-rose-500" />
-                                        <div class="border-7 border-rose-500 rounded-xs">
-                                            <div class="border-3 border-white rounded-xs"></div>
-                                        </div>
-                                    </div>
-                                </CardTitle>
-                                <CardDescription>
-                                    {{
-                                        filteredTotal.toLocaleString()
-                                    }}
-                                    record{{ filteredTotal !== 1 ? 's' : '' }}
-                                    <template
-                                        v-if="dispatches.from && dispatches.to"
-                                    >
-                                        · showing {{ dispatches.from }}–{{
-                                            dispatches.to
-                                        }}
-                                    </template>
-                                </CardDescription>
-                            </div>
-
-                            <div
-                                v-if="hasActiveFilters"
-                                class="flex flex-wrap items-center gap-1.5"
-                            >
-                                <Badge
-                                    v-if="selectedDate"
-                                    variant="secondary"
-                                    class="gap-1 text-xs"
-                                >
-                                    <CalendarDays class="size-3" />{{
-                                        selectedDateLabel
-                                    }}
-                                    <button
-                                        class="ml-0.5 opacity-60 hover:opacity-100"
-                                        @click="applyDateFilter(undefined)"
-                                    >
-                                        <X class="size-3" />
-                                    </button>
-                                </Badge>
-                                <Badge
-                                    v-if="selectedStatus !== 'all'"
-                                    variant="secondary"
-                                    class="gap-1 text-xs"
-                                >
-                                    {{ prettyStatus(selectedStatus) }}
-                                    <button
-                                        class="ml-0.5 opacity-60 hover:opacity-100"
-                                        @click="applyStatus('all')"
-                                    >
-                                        <X class="size-3" />
-                                    </button>
-                                </Badge>
-                                <Badge
-                                    v-if="filters?.search"
-                                    variant="secondary"
-                                    class="text-xs"
-                                    >"{{ filters.search }}"</Badge
-                                >
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    class="h-6 gap-1 px-2 text-xs text-muted-foreground"
-                                    @click="clearAllFilters"
-                                >
-                                    <X class="size-3" />Clear all
-                                </Button>
-                            </div>
-                        </div>
-
-                        <Separator class="mt-4" />
-
-                        <div
-                            class="flex flex-col gap-2 py-3 sm:flex-row sm:items-center"
-                        >
-                            <div class="w-full sm:w-64">
-                                <SearchInput
-                                    :key="searchKey"
-                                    :route="searchRoute"
-                                    :initial-value="filters?.search ?? ''"
-                                    :only="['dispatches', 'filters', 'summary']"
-                                    placeholder="Plate, route, driver..."
-                                />
-                            </div>
-
-                            <Select
-                                :model-value="selectedStatus"
-                                @update:model-value="applyStatus"
-                            >
-                                <SelectTrigger class="cursor-pointer h-8 w-full sm:w-fit rounded-lg border-slate-200 shadow-sm">
-                                    <Filter class="h-3.5 w-3.5 text-slate-600" />
-                                    <SelectValue placeholder="All Statuses" class="justify-start flex" />
-                                </SelectTrigger>
-                                <SelectContent class="rounded-lg shadow-lg">
-                                    <SelectItem value="all" class="cursor-pointer text-sm">All Statuses</SelectItem>
-                                    <SelectItem value="arrived" class="cursor-pointer text-sm">Arrived</SelectItem>
-                                    <SelectItem value="departed" class="cursor-pointer text-sm">Departed</SelectItem>
-                                </SelectContent>
-                            </Select>
-
-                            <Popover v-model:open="calendarOpen">
+                    <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                        <div class="flex gap-2 flex-row sm:items-center">
+                            <SearchInput
+                                :key="searchKey"
+                                :route="searchRoute"
+                                :initial-value="filters?.search ?? ''"
+                                placeholder="Search dispatches..."
+                                class="w-full"
+                            />
+                            <Popover v-model:open="filterOpen">
                                 <PopoverTrigger as-child>
                                     <Button
-                                        variant="outline"
-                                        size="sm"
-                                        class="w-full justify-start gap-2 sm:w-auto"
-                                        :class="
-                                            selectedDate
-                                                ? 'border-primary/50 text-primary'
-                                                : ''
-                                        "
+                                        variant="header-actions"
+                                        size="icon-text"
+                                        class="rounded-full"
+                                        :class="activeFilterCount > 0
+                                            ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light'
+                                            : ''"
                                     >
-                                        <CalendarDays class="size-3.5" />{{
-                                            selectedDateLabel ?? 'Pick a date'
-                                        }}
+                                        <RiFilter2Line class="h-3.5 w-3.5" />
+                                        <span class="hidden lg:flex">
+                                            {{ activeFilterCount > 0
+                                                ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
+                                                : 'Filter' }}
+                                        </span>
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent
-                                    class="w-auto p-0"
-                                    align="start"
-                                >
+                                <PopoverContent align="end">
+                                    <div class="grid gap-y-2">
+                                        <div class="flex flex-col gap-y-1">
+                                            <p class="text-sm text-custom-shadow/80">Status</p>
+                                            <Select v-model="filterStatus">
+                                                <SelectTrigger class="w-full">
+                                                    <SelectValue placeholder="Any status" class="flex justify-start" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all" class="cursor-pointer">Any status</SelectItem>
+                                                    <SelectItem value="arrived" class="cursor-pointer">Arrived</SelectItem>
+                                                    <SelectItem value="departed" class="cursor-pointer">Departed</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                                        <div class="flex w-full flex-row items-center justify-between">
+                                            <Button
+                                                v-if="activeFilterCount > 0"
+                                                size="sm"
+                                                variant="destructive"
+                                                @click="clearAllFilters"
+                                            >
+                                                Clear
+                                            </Button>
+                                            <div class="ml-auto flex items-center gap-2">
+                                                <Button variant="ghost-outline" size="sm" @click="closeStatusFilter">
+                                                    Cancel
+                                                </Button>
+                                                <Button size="sm" variant="float-primary" @click="applyStatusFilter">
+                                                    Apply
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                            <Popover>
+                                <PopoverTrigger as-child>
+                                    <Button variant="header-actions" size="icon-text" class="w-full justify-start gap-2 rounded-full sm:w-auto">
+                                        <RiCalendarLine class="h-4 w-4 shrink-0" />
+                                        <span class="text-sm">{{ selectedDateLabel ?? 'Pick a date' }}</span>
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent align="start">
+                                    <p class="mb-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">Dispatch Date</p>
                                     <Calendar
                                         :model-value="selectedDate"
-                                        :default-placeholder="
-                                            defaultPlaceholder
-                                        "
+                                        :default-placeholder="defaultPlaceholder"
                                         layout="month-and-year"
                                         initial-focus
+                                        class="px-0 pb-0"
                                         @update:model-value="applyDateFilter"
                                     />
-                                    <div
-                                        v-if="selectedDate"
-                                        class="border-t p-2"
-                                    >
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            class="w-full text-muted-foreground"
-                                            @click="applyDateFilter(undefined)"
-                                        >
-                                            <X class="size-3.5" />Clear date
+                                    <div v-if="selectedDate" class="border-t p-2">
+                                        <Button variant="ghost" size="sm" class="w-full text-muted-foreground" @click="applyDateFilter(undefined)">
+                                            <RiCloseLine class="size-3.5" />Clear date
                                         </Button>
                                     </div>
                                 </PopoverContent>
                             </Popover>
-
-                            <div class="ml-auto inline-flex rounded-lg border border-slate-200 bg-white shadow-sm">
-                                <Button
-                                    variant="ghost"
-                                    class="cursor-pointer group/segment rounded-lg border-0 px-3 text-slate-600 shadow-none transition-all duration-300 hover:bg-slate-100 focus-visible:z-10 gap-0"
-                                    :disabled="exporting"
-                                    @click="exportCsv"
-                                >
-                                    <Loader2 v-if="exporting" class="h-4 w-4 shrink-0 animate-spin" />
-                                    <Download v-else class="h-4 w-4 shrink-0" />
-                                    <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-24 group-hover/segment:opacity-100 group-focus-visible/segment:ml-2 group-focus-visible/segment:max-w-24 group-focus-visible/segment:opacity-100">
-                                        {{ exporting ? 'Exporting...' : 'Export CSV' }}
-                                    </span>
-                                </Button>
-                            </div>
-
-                            <Badge
-                                v-if="hasActiveFilters"
-                                variant="outline"
-                                class="gap-1.5 text-xs"
-                            >
-                                <Filter class="size-3" />{{
-                                    activeFilterCount
-                                }}
-                                active
-                            </Badge>
                         </div>
-                    </CardHeader>
 
-                    <div
-                        v-if="dispatches.data.length > 0"
-                        class="border-y bg-muted/20"
+                    <Card
+                        :class="[
+                            'flex min-h-0 max-h-fit flex-1 flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
+                            dispatches.data.length === 0 ? 'border-dashed' : 'border-solid',
+                        ]"
                     >
-                        <div
-                            class="grid grid-cols-1 divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4 xl:divide-x xl:divide-y-0"
-                        >
-                            <div class="space-y-3 p-4">
-                                <div class="flex items-center gap-1.5">
-                                    <Users
-                                        class="size-3.5 text-muted-foreground"
-                                    />
-                                    <p
-                                        class="text-xs font-medium text-muted-foreground"
-                                    >
-                                        Passengers
-                                    </p>
-                                </div>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div
-                                        class="rounded-lg border bg-background p-3 text-center"
-                                    >
-                                        <p
-                                            class="text-xs text-muted-foreground"
-                                        >
-                                            Total
-                                        </p>
-                                        <p
-                                            class="mt-0.5 text-xl font-bold tabular-nums"
-                                        >
-                                            {{ totalPax.toLocaleString() }}
-                                        </p>
-                                    </div>
-                                    <div
-                                        class="rounded-lg border bg-background p-3 text-center"
-                                    >
-                                        <p
-                                            class="text-xs text-muted-foreground"
-                                        >
-                                            Average
-                                        </p>
-                                        <p
-                                            class="mt-0.5 text-xl font-bold tabular-nums"
-                                        >
-                                            {{ avgPax }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="space-y-3 p-4">
-                                <div class="flex items-center gap-1.5">
-                                    <ClipboardList
-                                        class="size-3.5 text-muted-foreground"
-                                    />
-                                    <p
-                                        class="text-xs font-medium text-muted-foreground"
-                                    >
-                                        Status Breakdown
-                                    </p>
-                                </div>
-
-                                <div
-                                    v-if="statusBreakdown.length"
-                                    class="flex items-center gap-4"
-                                >
-                                    <div class="shrink-0">
-                                        <ChartContainer
-                                            :config="donutChartConfig"
-                                            class="size-[80px]"
-                                        >
-                                            <VisSingleContainer>
-                                                <VisDonut
-                                                    :data="donutData"
-                                                    :value="
-                                                        (d: {
-                                                            value: number;
-                                                        }) => d.value
-                                                    "
-                                                    :color="donutColorFn"
-                                                    :arc-width="14"
-                                                    :pad-angle="0.02"
-                                                    :corner-radius="2"
-                                                />
-                                            </VisSingleContainer>
-                                        </ChartContainer>
-                                    </div>
-
-                                    <div class="min-w-0 flex-1 space-y-1.5">
-                                        <div
-                                            v-for="(item, i) in statusBreakdown"
-                                            :key="item.status"
-                                            class="flex items-center gap-2"
-                                        >
-                                            <span
-                                                class="size-2 shrink-0 rounded-full"
-                                                :style="{
-                                                    backgroundColor: `var(--chart-${(i % 5) + 1})`,
-                                                }"
-                                            />
-                                            <span
-                                                class="min-w-0 flex-1 truncate text-xs"
-                                                >{{
-                                                    prettyStatus(item.status)
-                                                }}</span
-                                            >
-                                            <span
-                                                class="shrink-0 text-xs font-semibold tabular-nums"
-                                                >{{ item.count }}</span
-                                            >
-                                            <span
-                                                class="w-8 shrink-0 text-right text-[10px] text-muted-foreground tabular-nums"
-                                                >{{ item.pct }}%</span
-                                            >
+                        <div class="no-scrollbar min-h-0 flex-1 overflow-auto">
+                            <div class="flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden">
+                                <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+                                    <div v-if="dispatches.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+                                        <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
+                                            <div class="grid grid-cols-[.5fr_1fr_.5fr_.25fr_1fr] gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
+                                                <div class="flex h-10 items-center justify-start pl-3 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Vehicle</div>
+                                                <div class="flex h-10 items-center justify-start text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Route</div>
+                                                <div class="flex h-10 items-center justify-start text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Gate / Bay</div>
+                                                <div class="flex h-10 items-center justify-start text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Cap.</div>
+                                                <div class="flex h-10 items-center justify-start text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Timestamp</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
 
-                                <p v-else class="text-xs text-muted-foreground">
-                                    No data
-                                </p>
-                            </div>
-
-                            <div class="space-y-3 p-4">
-                                <div class="flex items-center gap-1.5">
-                                    <Navigation
-                                        class="size-3.5 text-muted-foreground"
-                                    />
-                                    <p
-                                        class="text-xs font-medium text-muted-foreground"
-                                    >
-                                        Top Routes
-                                    </p>
-                                </div>
-                                <div class="space-y-2.5">
-                                    <div
-                                        v-for="entry in routeSummary"
-                                        :key="entry.label"
-                                        class="space-y-1"
-                                    >
-                                        <div
-                                            class="flex items-baseline justify-between gap-2"
-                                        >
-                                            <span
-                                                class="min-w-0 flex-1 truncate text-xs font-medium"
-                                                >{{ entry.label }}</span
-                                            >
-                                            <span
-                                                class="shrink-0 text-xs text-muted-foreground tabular-nums"
-                                            >
-                                                {{ entry.count }}x ·
-                                                {{ entry.pax }} pax
-                                            </span>
-                                        </div>
-                                        <Progress
-                                            :model-value="
-                                                barPct(
-                                                    entry.count,
-                                                    routeSummary,
-                                                )
-                                            "
-                                            class="h-1.5"
-                                        />
-                                    </div>
-                                    <p
-                                        v-if="!routeSummary.length"
-                                        class="text-xs text-muted-foreground"
-                                    >
-                                        No route data
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="space-y-3 p-4">
-                                <div class="flex items-center gap-1.5">
-                                    <MapPin
-                                        class="size-3.5 text-muted-foreground"
-                                    />
-                                    <p
-                                        class="text-xs font-medium text-muted-foreground"
-                                    >
-                                        Gates & Bays
-                                    </p>
-                                </div>
-
-                                <div
-                                    v-if="gateSummary.length"
-                                    class="space-y-2.5"
-                                >
-                                    <p
-                                        class="text-[10px] font-medium tracking-wider text-muted-foreground/70 uppercase"
-                                    >
-                                        By Gate
-                                    </p>
-                                    <div
-                                        v-for="entry in gateSummary"
-                                        :key="entry.label"
-                                        class="space-y-1"
-                                    >
-                                        <div
-                                            class="flex items-center justify-between gap-2"
-                                        >
+                                        <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
                                             <div
-                                                class="flex min-w-0 items-center gap-1.5"
+                                                v-for="(dispatch, dispatchIndex) in dispatches.data"
+                                                :key="dispatch.id"
+                                                :class="[
+                                                    'group grid cursor-pointer grid-cols-[.5fr_1fr_.5fr_.25fr_1fr] items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light bg-transparent',
+                                                    dispatchIndex === dispatches.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                                    previewedDispatch?.id === dispatch.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
+                                                ]"
+                                                @click="previewedDispatch = dispatch"
                                             >
-                                                <MapPinned
-                                                    class="size-3 shrink-0 text-muted-foreground"
-                                                />
-                                                <span
-                                                    class="truncate text-xs font-medium"
-                                                    >{{ entry.label }}</span
-                                                >
-                                            </div>
-                                            <span
-                                                class="shrink-0 text-xs text-muted-foreground tabular-nums"
-                                                >{{ entry.count }}</span
-                                            >
-                                        </div>
-                                        <Progress
-                                            :model-value="
-                                                barPct(entry.count, gateSummary)
-                                            "
-                                            class="h-1.5"
-                                        />
-                                    </div>
-                                </div>
+                                                <div class="py-1.5 pl-3">
+                                                    <p class="text-sm font-semibold">{{ dispatch.plate_number || dispatch.vehicle?.plate_number || '—' }}</p>
+                                                    <p class="text-xs text-custom-shadow/80">{{ dispatch.vehicle?.vehicle_type || '—' }}</p>
+                                                </div>
 
-                                <div
-                                    v-if="
-                                        baySummary.some(
-                                            (b) => b.label !== 'No Bay',
-                                        )
-                                    "
-                                    class="space-y-1.5"
-                                >
-                                    <p
-                                        class="text-[10px] font-medium tracking-wider text-muted-foreground/70 uppercase"
-                                    >
-                                        By Bay
-                                    </p>
-                                    <div class="flex flex-wrap gap-1.5">
-                                        <div
-                                            v-for="entry in baySummary.filter(
-                                                (b) => b.label !== 'No Bay',
-                                            )"
-                                            :key="entry.label"
-                                            class="flex items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs"
-                                        >
-                                            <span class="font-medium">{{
-                                                entry.label
-                                            }}</span>
-                                            <Separator
-                                                orientation="vertical"
-                                                class="h-3"
+                                                <div class="min-w-0 py-1.5">
+                                                    <p class="text-sm font-semibold">{{ dispatch.vehicle?.route?.route_name || '—' }}</p>
+                                                </div>
+
+                                                <div class="min-w-0 py-1.5">
+                                                    <p class="flex items-center gap-1.5 text-sm font-semibold text-custom-shadow/80">{{ dispatch.gate?.gate_name || '—' }}</p>
+                                                    <p v-if="dispatch.bay_number" class="mt-0.5 text-custom-shadow/80 text-xs">Bay {{ dispatch.bay_number }}</p>
+                                                </div>
+                                                
+                                                <div class="min-w-0 py-1.5">
+                                                    <p class="flex items-center gap-1.5 text-sm">{{ dispatch.pax_count || '—' }}</p>
+                                                </div>
+
+                                                <div class="min-w-0 py-1.5">
+                                                    <div v-if="dispatch.arrived_at" class="flex gap-1.5"><div><p class="text-custom-shadow/80 text-sm font-semibold">Arrived</p><p class="text-custom-shadow/80 text-xs">{{ dispatch.arrived_at }}</p></div></div>
+                                                    <div v-if="dispatch.departed_at" class="flex gap-1.5"><div><p class="text-custom-shadow/80 text-sm font-semibold">Departed</p><p class="text-custom-shadow/80 text-xs">{{ dispatch.departed_at }}</p></div></div>
+                                                    <p v-if="!dispatch.arrived_at && !dispatch.departed_at" class="text-custom-shadow/80 text-sm">No timestamps</p>
+                                                </div>
+                                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                                        <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                                            <img
+                                                :src="emptyRafikiUrl"
+                                                alt=""
+                                                class="w-1/3 object-contain opacity-90"
+                                                aria-hidden="true"
                                             />
-                                            <span
-                                                class="text-muted-foreground tabular-nums"
-                                                >{{ entry.count }}</span
-                                            >
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <p
-                                    v-if="
-                                        !gateSummary.length &&
-                                        !baySummary.some(
-                                            (b) => b.label !== 'No Bay',
-                                        )
-                                    "
-                                    class="text-xs text-muted-foreground"
-                                >
-                                    No gate or bay data
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <CardContent class="hidden p-0 lg:block">
-                        <div class="overflow-x-auto">
-                            <Table>
-                                <TableHeader class="border-y border-slate-200">
-                                    <TableRow class="gap-2">
-                                        <TableHead class="pl-5 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Vehicle</TableHead>
-                                        <TableHead class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Route</TableHead>
-                                        <TableHead class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Gate / Bay</TableHead>
-                                        <TableHead class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Personnel</TableHead>
-                                        <TableHead class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Timeline</TableHead>
-                                        <TableHead class="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Status</TableHead>
-                                        <TableHead class="pr-5 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">Remarks</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-
-                                <TableBody>
-                                    <TableRow
-                                        v-for="dispatch in dispatches.data"
-                                        :key="dispatch.id"
-                                        class="align-top hover:bg-muted/20"
-                                    >
-                                        <TableCell class="py-3 pl-5">
-                                            <div class="flex items-start gap-2">
-                                                <div
-                                                    class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md bg-muted"
-                                                >
-                                                    <Bus
-                                                        class="size-3.5 text-muted-foreground"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <p
-                                                        class="text-sm font-medium"
-                                                    >
-                                                        {{
-                                                            dispatch.plate_number ||
-                                                            dispatch.vehicle
-                                                                ?.plate_number ||
-                                                            '—'
-                                                        }}
-                                                    </p>
-                                                    <p
-                                                        class="text-xs text-muted-foreground"
-                                                    >
-                                                        {{
-                                                            dispatch.vehicle
-                                                                ?.vehicle_type ||
-                                                            '—'
-                                                        }}
-                                                    </p>
-                                                    <p
-                                                        v-if="
-                                                            dispatch.vehicle
-                                                                ?.make_model
-                                                        "
-                                                        class="text-xs text-muted-foreground"
-                                                    >
-                                                        {{
-                                                            dispatch.vehicle
-                                                                .make_model
-                                                        }}
-                                                    </p>
-                                                    <Badge
-                                                        v-if="
-                                                            dispatch.pax_count !==
-                                                            null
-                                                        "
-                                                        variant="secondary"
-                                                        class="mt-1 gap-1 text-xs"
-                                                    >
-                                                        <Users
-                                                            class="size-3"
-                                                        />{{
-                                                            dispatch.pax_count
-                                                        }}
-                                                        pax
-                                                    </Badge>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-
-                                        <TableCell class="max-w-52 py-3">
-                                            <p class="text-sm font-medium">
-                                                {{
-                                                    dispatch.vehicle?.route
-                                                        ?.route_name || '—'
-                                                }}
-                                            </p>
-                                            <p
-                                                v-if="dispatch.vehicle?.route"
-                                                class="mt-0.5 flex items-center gap-0.5 text-xs text-muted-foreground"
-                                            >
-                                                <span class="truncate">{{
-                                                    dispatch.vehicle.route
-                                                        .origin_name || '?'
-                                                }}</span>
-                                                <ChevronRight
-                                                    class="size-3 shrink-0 opacity-40"
-                                                />
-                                                <span class="truncate">{{
-                                                    dispatch.vehicle.route
-                                                        .destination_name || '?'
-                                                }}</span>
-                                            </p>
-                                            <Button
-                                                v-if="hasMap(dispatch)"
-                                                variant="outline"
-                                                size="sm"
-                                                class="mt-1.5 h-6 gap-1 px-2 text-xs"
-                                                @click="openMap(dispatch)"
-                                            >
-                                                <MapIcon class="size-3" />View
-                                                map
-                                            </Button>
-                                        </TableCell>
-
-                                        <TableCell class="py-3">
-                                            <div
-                                                class="flex items-center gap-1.5 text-sm"
-                                            >
-                                                <MapPinned
-                                                    class="size-3.5 shrink-0 text-muted-foreground"
-                                                />
-                                                <span>{{
-                                                    dispatch.gate?.gate_name ||
-                                                    '—'
-                                                }}</span>
-                                            </div>
-                                            <p
-                                                v-if="dispatch.bay_number"
-                                                class="mt-0.5 pl-5 text-xs text-muted-foreground"
-                                            >
-                                                Bay {{ dispatch.bay_number }}
-                                            </p>
-                                        </TableCell>
-
-                                        <TableCell class="py-3">
-                                            <div class="space-y-2">
-                                                <div>
-                                                    <p
-                                                        class="text-xs text-muted-foreground"
-                                                    >
-                                                        Dispatcher
-                                                    </p>
-                                                    <p class="text-sm">
-                                                        {{
-                                                            dispatch.dispatcher
-                                                                ?.name || '—'
-                                                        }}
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <p
-                                                        class="text-xs text-muted-foreground"
-                                                    >
-                                                        Driver
-                                                    </p>
-                                                    <p class="text-sm">
-                                                        {{
-                                                            dispatch.driver
-                                                                ?.name || '—'
-                                                        }}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-
-                                        <TableCell class="min-w-44 py-3">
-                                            <div class="space-y-1.5">
-                                                <div
-                                                    v-if="
-                                                        dispatch.dispatched_at
-                                                    "
-                                                    class="flex items-start gap-1.5"
-                                                >
-                                                    <Clock
-                                                        class="mt-0.5 size-3 shrink-0 text-muted-foreground"
-                                                    />
-                                                    <div>
-                                                        <p
-                                                            class="text-[10px] text-muted-foreground"
-                                                        >
-                                                            Dispatched
-                                                        </p>
-                                                        <p class="text-xs">
-                                                            {{
-                                                                dispatch.dispatched_at
-                                                            }}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div
-                                                    v-if="dispatch.arrived_at"
-                                                    class="flex items-start gap-1.5"
-                                                >
-                                                    <LogIn
-                                                        class="mt-0.5 size-3 shrink-0 text-amber-500"
-                                                    />
-                                                    <div>
-                                                        <p
-                                                            class="text-[10px] text-muted-foreground"
-                                                        >
-                                                            Arrived
-                                                        </p>
-                                                        <p class="text-xs">
-                                                            {{
-                                                                dispatch.arrived_at
-                                                            }}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div
-                                                    v-if="dispatch.departed_at"
-                                                    class="flex items-start gap-1.5"
-                                                >
-                                                    <LogOut
-                                                        class="mt-0.5 size-3 shrink-0 text-emerald-500"
-                                                    />
-                                                    <div>
-                                                        <p
-                                                            class="text-[10px] text-muted-foreground"
-                                                        >
-                                                            Departed
-                                                        </p>
-                                                        <p class="text-xs">
-                                                            {{
-                                                                dispatch.departed_at
-                                                            }}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <p
-                                                    v-if="
-                                                        !dispatch.dispatched_at &&
-                                                        !dispatch.arrived_at &&
-                                                        !dispatch.departed_at
-                                                    "
-                                                    class="text-xs text-muted-foreground/50"
-                                                >
-                                                    No timestamps
+                                            <div class="space-y-1">
+                                                <p class="text-base font-semibold text-custom-shadow">{{ selectedDate ? `No dispatches on ${selectedDateLabel}` : 'No dispatch records found' }}</p>
+                                                <p class="text-sm text-custom-shadow/80">
+                                                    {{ selectedDate ? 'Try a different date or clear the filter.' : 'Try adjusting your search or filter.' }}
                                                 </p>
                                             </div>
-                                        </TableCell>
-
-                                        <TableCell class="py-3">
-                                            <Badge :class="['gap-1.5', statusBadgeClass(dispatch.status)]">
-                                                <span :class="['h-1.5 w-1.5 rounded-full', statusBadgeDot(dispatch.status)]" />
-                                                {{ prettyStatus(dispatch.status) }}
-                                            </Badge>
-                                        </TableCell>
-
-                                        <TableCell class="max-w-48 py-3 pr-5">
-                                            <p
-                                                v-if="dispatch.remarks"
-                                                class="line-clamp-3 text-xs text-muted-foreground"
-                                            >
-                                                {{ dispatch.remarks }}
-                                            </p>
-                                            <span
-                                                v-else
-                                                class="text-xs text-muted-foreground/40"
-                                                >—</span
-                                            >
-                                        </TableCell>
-                                    </TableRow>
-
-                                    <TableRow
-                                        v-if="dispatches.data.length === 0"
-                                    >
-                                        <TableCell
-                                            colspan="7"
-                                            class="py-16 text-center"
-                                        >
-                                            <div
-                                                class="flex flex-col items-center gap-3"
-                                            >
-                                                <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-                                                    <ClipboardList class="h-6 w-6 text-muted-foreground/40" />
-                                                </div>
-                                                <div>
-                                                    <p
-                                                        class="text-sm font-medium"
-                                                    >
-                                                        No records found
-                                                    </p>
-                                                    <p
-                                                        class="text-xs text-muted-foreground"
-                                                    >
-                                                        {{
-                                                            hasActiveFilters
-                                                                ? 'Try adjusting your search or filters.'
-                                                                : 'No dispatch records for this company yet.'
-                                                        }}
-                                                    </p>
-                                                </div>
-                                                <Button
-                                                    v-if="hasActiveFilters"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    @click="clearAllFilters"
-                                                    >Clear filters</Button
-                                                >
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                </TableBody>
-                            </Table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+                    </Card>
 
-                        <Separator />
-                        <div class="p-4">
-                            <InertiaPagination :links="dispatches.links" />
-                        </div>
+                    <Separator/>
+
+                    <InertiaPagination
+                        :links="dispatches.links"
+                        :meta="{ from: dispatches.from, to: dispatches.to, total: dispatches.total }"
+                    />
                     </CardContent>
 
-                    <CardContent class="space-y-3 p-4 lg:hidden">
+                    <CardContent class="no-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto border-t border-slate-100 p-4 dark:border-custom-bg-light lg:hidden">
                         <template v-if="dispatches.data.length > 0">
                             <div
                                 v-for="dispatch in dispatches.data"
@@ -1407,9 +645,6 @@ function exportCsv() {
                                     class="flex items-center justify-between gap-3 border-b bg-muted/30 px-3 py-2"
                                 >
                                     <div class="flex items-center gap-2">
-                                        <Bus
-                                            class="size-3.5 text-muted-foreground"
-                                        />
                                         <span class="text-sm font-semibold">{{
                                             dispatch.plate_number ||
                                             dispatch.vehicle?.plate_number ||
@@ -1423,10 +658,6 @@ function exportCsv() {
                                             }}</span
                                         >
                                     </div>
-                                    <Badge :class="['gap-1.5', statusBadgeClass(dispatch.status)]">
-                                        <span :class="['h-1.5 w-1.5 rounded-full', statusBadgeDot(dispatch.status)]" />
-                                        {{ prettyStatus(dispatch.status) }}
-                                    </Badge>
                                 </div>
 
                                 <div class="space-y-3 p-3">
@@ -1442,31 +673,6 @@ function exportCsv() {
                                                     ?.route_name || '—'
                                             }}
                                         </p>
-                                        <p
-                                            v-if="dispatch.vehicle?.route"
-                                            class="flex items-center gap-0.5 text-xs text-muted-foreground"
-                                        >
-                                            {{
-                                                dispatch.vehicle.route
-                                                    .origin_name || '?'
-                                            }}
-                                            <ChevronRight
-                                                class="size-3 opacity-40"
-                                            />
-                                            {{
-                                                dispatch.vehicle.route
-                                                    .destination_name || '?'
-                                            }}
-                                        </p>
-                                        <Button
-                                            v-if="hasMap(dispatch)"
-                                            variant="outline"
-                                            size="sm"
-                                            class="mt-1 h-6 gap-1 px-2 text-xs"
-                                            @click="openMap(dispatch)"
-                                        >
-                                            <MapIcon class="size-3" />View map
-                                        </Button>
                                     </div>
 
                                     <Separator />
@@ -1526,30 +732,9 @@ function exportCsv() {
                                         class="flex flex-wrap gap-x-4 gap-y-1.5"
                                     >
                                         <div
-                                            v-if="dispatch.dispatched_at"
-                                            class="flex items-start gap-1.5"
-                                        >
-                                            <Clock
-                                                class="mt-0.5 size-3 shrink-0 text-muted-foreground"
-                                            />
-                                            <div>
-                                                <p
-                                                    class="text-[10px] text-muted-foreground"
-                                                >
-                                                    Dispatched
-                                                </p>
-                                                <p class="text-xs font-medium">
-                                                    {{ dispatch.dispatched_at }}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div
                                             v-if="dispatch.arrived_at"
                                             class="flex items-start gap-1.5"
                                         >
-                                            <LogIn
-                                                class="mt-0.5 size-3 shrink-0 text-amber-500"
-                                            />
                                             <div>
                                                 <p
                                                     class="text-[10px] text-muted-foreground"
@@ -1565,9 +750,6 @@ function exportCsv() {
                                             v-if="dispatch.departed_at"
                                             class="flex items-start gap-1.5"
                                         >
-                                            <LogOut
-                                                class="mt-0.5 size-3 shrink-0 text-emerald-500"
-                                            />
                                             <div>
                                                 <p
                                                     class="text-[10px] text-muted-foreground"
@@ -1580,11 +762,7 @@ function exportCsv() {
                                             </div>
                                         </div>
                                         <p
-                                            v-if="
-                                                !dispatch.dispatched_at &&
-                                                !dispatch.arrived_at &&
-                                                !dispatch.departed_at
-                                            "
+                                            v-if="!dispatch.arrived_at && !dispatch.departed_at"
                                             class="text-xs text-muted-foreground/50"
                                         >
                                             No timestamps
@@ -1612,7 +790,7 @@ function exportCsv() {
                             class="flex flex-col items-center gap-3 py-14 text-center"
                         >
                             <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-                                <Search class="h-6 w-6 text-muted-foreground/40" />
+                                <RiSearchLine class="h-6 w-6 text-muted-foreground/40" />
                             </div>
                             <div>
                                 <p class="text-sm font-medium">
@@ -1626,15 +804,148 @@ function exportCsv() {
                                     }}
                                 </p>
                             </div>
-                            <Button
-                                v-if="hasActiveFilters"
-                                variant="outline"
-                                size="sm"
-                                @click="clearAllFilters"
-                                >Clear filters</Button
-                            >
                         </div>
                     </CardContent>
+                </Card>
+
+                <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-100">
+                    <CardHeader v-if="previewedDispatch" class="flex flex-row items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <CardTitle class="truncate uppercase">
+                                {{ previewedDispatch.plate_number || previewedDispatch.vehicle?.plate_number || 'Dispatch' }}
+                            </CardTitle>
+                            <CardDescription>Preview</CardDescription>
+                        </div>
+                        <Button
+                            variant="header-actions"
+                            size="icon"
+                            class="h-8 w-8 shrink-0 rounded-full"
+                            aria-label="Close dispatch preview"
+                            @click="previewedDispatch = null"
+                        >
+                            <RiCloseLine class="h-4 w-4" />
+                        </Button>
+                    </CardHeader>
+
+                    <CardContent v-if="previewedDispatch" class="no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto py-2">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Status</span>
+                            <Badge v-if="displayedBadgeStatus(previewedDispatch.status)" :class="['gap-1.5', statusBadgeClass(displayedBadgeStatus(previewedDispatch.status))]">
+                                <span :class="['h-1.5 w-1.5 rounded-full', statusBadgeDot(displayedBadgeStatus(previewedDispatch.status))]" />
+                                {{ prettyStatus(displayedBadgeStatus(previewedDispatch.status)) }}
+                            </Badge>
+                        </div>
+
+                        <div class="space-y-2 rounded-md bg-custom-bg px-3 py-3 dark:bg-custom-bg-dark">
+                            <div class="flex justify-between gap-3 text-sm">
+                                <span class="font-semibold text-custom-shadow">Vehicle</span>
+                                <span class="text-right text-custom-shadow/80">{{ previewedDispatch.vehicle?.make_model || previewedDispatch.vehicle?.vehicle_type || '—' }}</span>
+                            </div>
+                            <div class="flex justify-between gap-3 text-sm">
+                                <span class="font-semibold text-custom-shadow">Passengers</span>
+                                <span class="text-custom-shadow/80">{{ previewedDispatch.pax_count ?? '—' }}</span>
+                            </div>
+                            <div class="flex justify-between gap-3 text-sm">
+                                <span class="font-semibold text-custom-shadow">Gate / Bay</span>
+                                <span class="text-right text-custom-shadow/80">{{ previewedDispatch.gate?.gate_name || '—' }}<template v-if="previewedDispatch.bay_number"> · Bay {{ previewedDispatch.bay_number }}</template></span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <p class="text-sm font-semibold text-custom-shadow">Route</p>
+                            <div class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">
+                                <p class="text-sm font-medium text-custom-shadow">{{ previewedDispatch.vehicle?.route?.route_name || '—' }}</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <p class="text-sm font-semibold text-custom-shadow">Personnel</p>
+                            <div class="space-y-2 rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">
+                                <div class="flex justify-between gap-3 text-sm"><span class="text-custom-shadow/70">Dispatcher</span><span class="text-right text-custom-shadow">{{ previewedDispatch.dispatcher?.name || '—' }}</span></div>
+                                <div class="flex justify-between gap-3 text-sm"><span class="text-custom-shadow/70">Driver</span><span class="text-right text-custom-shadow">{{ previewedDispatch.driver?.name || '—' }}</span></div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <p class="text-sm font-semibold text-custom-shadow">Timeline</p>
+                            <div class="space-y-2 rounded-md bg-custom-bg px-3 py-2 text-sm dark:bg-custom-bg-dark">
+                                <div class="flex justify-between gap-3"><span class="text-custom-shadow/70">Arrived</span><span class="text-right">{{ previewedDispatch.arrived_at || '—' }}</span></div>
+                                <div class="flex justify-between gap-3"><span class="text-custom-shadow/70">Departed</span><span class="text-right">{{ previewedDispatch.departed_at || '—' }}</span></div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <p class="text-sm font-semibold text-custom-shadow">Remarks</p>
+                            <p class="break-words rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedDispatch.remarks || 'No remarks.' }}</p>
+                        </div>
+                    </CardContent>
+
+                    <template v-else>
+                        <CardHeader>
+                            <CardTitle>Statistics</CardTitle>
+                            <CardDescription>{{ dispatchCountLabel }}</CardDescription>
+                        </CardHeader>
+                        <CardContent class="no-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto py-2">
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-sm font-semibold text-custom-shadow">Passengers</p>
+                                    <span class="text-xs text-custom-shadow/70">{{ filteredTotal.toLocaleString() }} dispatches</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div class="rounded-md bg-custom-bg px-3 py-3 text-center dark:bg-custom-bg-dark">
+                                        <p class="text-xs text-custom-shadow/70">Total PAX</p>
+                                        <p class="mt-1 text-xl font-semibold text-custom-shadow tabular-nums">{{ totalPax.toLocaleString() }}</p>
+                                    </div>
+                                    <div class="rounded-md bg-custom-bg px-3 py-3 text-center dark:bg-custom-bg-dark">
+                                        <p class="text-xs text-custom-shadow/70">Average</p>
+                                        <p class="mt-1 text-xl font-semibold text-custom-shadow tabular-nums">{{ avgPax }}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-sm font-semibold text-custom-shadow">Top Routes</p>
+                                    <span class="text-xs text-custom-shadow/70">{{ routeSummary.length }}</span>
+                                </div>
+                                <div v-if="routeSummary.length" class="space-y-2">
+                                    <div
+                                        v-for="entry in routeSummary"
+                                        :key="entry.label"
+                                        class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark"
+                                    >
+                                        <div class="flex items-center justify-between gap-3">
+                                            <span class="min-w-0 truncate text-sm font-medium text-custom-shadow">{{ entry.label }}</span>
+                                            <span class="shrink-0 text-xs text-custom-shadow/70">{{ entry.count }}x · {{ entry.pax }} pax</span>
+                                        </div>
+                                        <Progress :model-value="barPct(entry.count, routeSummary)" class="mt-2 h-1.5" />
+                                    </div>
+                                </div>
+                                <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">No route data.</p>
+                            </div>
+
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-sm font-semibold text-custom-shadow">Status Breakdown</p>
+                                    <span class="text-xs text-custom-shadow/70">{{ statusBreakdown.length }}</span>
+                                </div>
+                                <div v-if="statusBreakdown.length" class="space-y-2">
+                                    <div
+                                        v-for="(item, index) in statusBreakdown"
+                                        :key="item.status"
+                                        class="flex items-center justify-between gap-3 rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark"
+                                    >
+                                        <div class="flex min-w-0 items-center gap-2">
+                                            <span class="h-2 w-2 shrink-0 rounded-full" :style="{ backgroundColor: `var(--chart-${(index % 5) + 1})` }" />
+                                            <span class="truncate text-sm">{{ prettyStatus(item.status) }}</span>
+                                        </div>
+                                        <span class="shrink-0 text-xs text-custom-shadow/70">{{ item.count }} · {{ item.pct }}%</span>
+                                    </div>
+                                </div>
+                                <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">No status data.</p>
+                            </div>
+                        </CardContent>
+                    </template>
                 </Card>
             </div>
         </TooltipProvider>

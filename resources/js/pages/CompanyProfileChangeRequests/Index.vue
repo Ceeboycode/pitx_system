@@ -53,9 +53,11 @@ import {
     RiFileDownloadLine as FileDown,
     RiFilter2Line as Filter,
     RiMore2Line as MoreHorizontal,
+    RiCloseLine as X,
 } from 'vue-remix-icons';
 import { type BreadcrumbItem } from '@/types';
 import { index } from '@/routes/companies';
+import Separator from '@/components/ui/separator/Separator.vue';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Companies', href: index().url },
@@ -134,6 +136,7 @@ const activeFilterCount = computed(() => selectedStatus.value === 'all' ? 0 : 1)
 const rejectModalOpen = ref(false);
 const selected = ref<ChangeRequest | null>(null);
 const approvingId = ref<number | null>(null);
+const previewedRequest = ref<ChangeRequest | null>(null);
 
 const previewOpen = ref(false);
 const previewDoc = ref<SupportingDocument | null>(null);
@@ -169,6 +172,7 @@ function approveRequest(item: ChangeRequest) {
     approvingId.value = item.id;
     router.post(`/company-profile-change-requests/${item.id}/approve`, {}, {
         preserveScroll: true,
+        onSuccess: () => { previewedRequest.value = null; },
         onFinish: () => { approvingId.value = null; },
     });
 }
@@ -193,6 +197,13 @@ function rejectSelected() {
 
 function normalizeFieldName(field: string): string {
     return field.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatValue(value: unknown): string {
+    if (value === null || value === undefined || value === '') return '—';
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (Array.isArray(value) || typeof value === 'object') return JSON.stringify(value);
+    return String(value);
 }
 
 function humanize(value: string | null | undefined): string {
@@ -269,7 +280,7 @@ function canTakePreviewAction(): boolean {
     <Head title="Change Requests" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row">
             <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader class="flex flex-row gap-2">
                     <div class="flex flex-col">
@@ -345,7 +356,8 @@ function canTakePreviewAction(): boolean {
                                 <div
                                     v-for="(item, rowIndex) in requests.data"
                                     :key="item.id"
-                                    :class="['grid grid-cols-[1.4fr_1.2fr_.8fr_2fr_5rem] items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light', rowIndex === requests.data.length - 1 ? 'rounded-b-md border-b-0' : '']"
+                                    :class="['grid cursor-pointer grid-cols-[1.4fr_1.2fr_.8fr_2fr_5rem] items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light', rowIndex === requests.data.length - 1 ? 'rounded-b-md border-b-0' : '', previewedRequest?.id === item.id ? 'bg-custom-secondary/10 text-custom-shadow' : '']"
+                                    @click="previewedRequest = item"
                                 >
                                     <div class="flex min-w-0 flex-col py-2 pl-3">
                                         <span class="truncate font-semibold capitalize">{{ item.company.company_name }}</span>
@@ -367,11 +379,8 @@ function canTakePreviewAction(): boolean {
                                             <DropdownMenuTrigger as-child><Button variant="table-more" size="icon-more"><MoreHorizontal class="h-4 w-4" /></Button></DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuLabel>{{ item.company.company_name }}</DropdownMenuLabel>
-                                                <template v-if="item.status === 'pending' && !primaryPreviewDoc(item)">
-                                                    <DropdownMenuItem class="group" :disabled="approvingId === item.id" @click="approveRequest(item)"><CheckCircle2 class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light" />Approve</DropdownMenuItem>
-                                                    <DropdownMenuItem class="group" @click="openReject(item)"><XCircle class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light" />Reject</DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                </template>
+                                                <DropdownMenuItem class="group" @click="previewedRequest = item"><Eye class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light" />Preview Request</DropdownMenuItem>
+                                                <DropdownMenuSeparator />
                                                 <DropdownMenuItem v-if="item.company.show_url" as-child class="group"><a :href="item.company.show_url"><ExternalLink class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light" />View Company</a></DropdownMenuItem>
                                                 <DropdownMenuItem v-if="primaryPreviewDoc(item)" class="group" @click="openPrimaryPreview(item)"><Eye class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light" />Preview Document</DropdownMenuItem>
                                                 <DropdownMenuItem v-if="primaryPreviewDoc(item)" class="group" @click="downloadPrimary(item)"><FileDown class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light" />Download</DropdownMenuItem>
@@ -393,19 +402,91 @@ function canTakePreviewAction(): boolean {
                     <InertiaPagination v-if="requests.links?.length" :links="requests.links" :meta="{ from: requests.from, to: requests.to, total: requests.total }" />
                 </CardContent>
             </Card>
+
+            <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-100">
+                <CardHeader v-if="previewedRequest" class="flex flex-row items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <CardTitle class="truncate">{{ previewedRequest.company.company_name }}</CardTitle>
+                        <CardDescription>Change request preview</CardDescription>
+                    </div>
+                    <Button variant="header-actions" size="icon" class="h-8 w-8 shrink-0 rounded-full" aria-label="Close request preview" @click="previewedRequest = null">
+                        <X class="h-4 w-4" />
+                    </Button>
+                </CardHeader>
+
+                <CardContent v-if="previewedRequest" class="no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto py-2">
+                    <div class="flex items-center justify-between gap-3">
+                        <span class="text-sm font-semibold text-custom-shadow">Status</span>
+                        <Badge :variant="badgeVariant(previewedRequest.status)" class="capitalize">{{ previewedRequest.status }}</Badge>
+                    </div>
+                    <div class="flex items-start justify-between gap-3">
+                        <span class="text-sm font-semibold text-custom-shadow">Requester</span>
+                        <div class="min-w-0 text-right">
+                            <p class="truncate text-sm text-custom-shadow/80">{{ previewedRequest.requester?.name ?? '—' }}</p>
+                            <p class="truncate text-xs text-custom-shadow/60">{{ previewedRequest.requester?.email ?? '—' }}</p>
+                        </div>
+                    </div>
+
+                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light" />
+
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Requested changes</span>
+                            <span class="text-sm text-custom-shadow/80">{{ Object.keys(previewedRequest.requested_values).length }}</span>
+                        </div>
+                        <div v-if="Object.keys(previewedRequest.requested_values).length" class="space-y-2">
+                            <div v-for="(value, field) in previewedRequest.requested_values" :key="`${previewedRequest.id}-${field}`" class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">
+                                <p class="text-sm font-medium text-custom-shadow">{{ normalizeFieldName(String(field)) }}</p>
+                                <p class="break-words text-xs text-custom-shadow/70">{{ formatValue(previewedRequest.current_values?.[field]) }} → {{ formatValue(value) }}</p>
+                            </div>
+                        </div>
+                        <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">No profile field changes requested.</p>
+                    </div>
+
+                    <div v-if="previewedRequest.logo_change?.has_change" class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">
+                        <p class="text-sm font-medium text-custom-shadow">Company Logo</p>
+                        <p class="text-xs text-custom-shadow/70">{{ previewedRequest.logo_change.is_remove ? 'Remove current logo' : 'Replace current logo' }}</p>
+                        <Button v-if="primaryPreviewDoc(previewedRequest)" variant="link" size="sm" class="h-auto px-0" @click="openPrimaryPreview(previewedRequest)">Preview logo</Button>
+                    </div>
+
+                    <div v-if="previewedRequest.supporting_documents?.length" class="space-y-2">
+                        <span class="text-sm font-semibold text-custom-shadow">Supporting documents</span>
+                        <button v-for="(doc, index) in previewedRequest.supporting_documents" :key="index" type="button" class="flex w-full items-center justify-between rounded-md bg-custom-bg px-3 py-2 text-left dark:bg-custom-bg-dark" @click="doc.preview_url && openPreviewDoc(doc, previewedRequest)">
+                            <span class="min-w-0 truncate text-sm">{{ doc.original_name ?? humanize(doc.doc_type) }}</span>
+                            <Eye v-if="doc.preview_url" class="h-4 w-4 shrink-0" />
+                        </button>
+                    </div>
+
+                    <Separator/>
+
+                    <div v-if="previewedRequest.status === 'pending'" class="flex gap-2 justify-end">
+                        <Button variant="destructive" @click="openReject(previewedRequest)">Reject</Button>
+                        <Button variant="float-primary" size="icon-text" :disabled="approvingId === previewedRequest.id" @click="approveRequest(previewedRequest)">
+                            {{ approvingId === previewedRequest.id ? 'Approving...' : 'Approve' }}
+                        </Button>
+                    </div>
+                </CardContent>
+
+                <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
+                    <div class="max-w-60 space-y-1 text-center">
+                        <p class="text-base font-semibold text-custom-shadow">No request selected</p>
+                        <p class="text-sm text-custom-shadow/80">Click on a request to preview its details.</p>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
 
         
         <Dialog :open="rejectModalOpen" @update:open="rejectModalOpen = $event">
-            <DialogContent class="sm:max-w-md">
-                <DialogHeader>
+            <DialogContent class="sm:max-w-md px-6">
+                <DialogHeader class="px-0">
                     <DialogTitle>Reject Change Request</DialogTitle>
                     <DialogDescription>
-                        Provide a reason for rejection. This will be visible to the requester.
+                        This will be visible to the requester.
                     </DialogDescription>
                 </DialogHeader>
 
-                <div class="space-y-2 py-2">
+                <div class="space-y-2">
                     <Textarea
                         v-model="rejectForm.rejection_reason"
                         rows="4"
@@ -417,26 +498,28 @@ function canTakePreviewAction(): boolean {
                     </p>
                 </div>
 
+                <Separator class="my-4"/>
+
                 <DialogFooter class="gap-2">
-                    <Button variant="outline" @click="rejectModalOpen = false">Cancel</Button>
+                    <Button variant="ghost-outline" @click="rejectModalOpen = false">Cancel</Button>
                     <Button
                         variant="destructive"
                         :disabled="rejectForm.processing || !selected"
                         @click="rejectSelected"
                     >
-                        Confirm Rejection
+                        Reject
                     </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
 
         
-        <Dialog
+        <!-- <Dialog
             :open="previewOpen"
             @update:open="(v) => { if (!v) closePreviewDoc(); else previewOpen = true; }"
         >
             <DialogContent class="flex max-h-[90vh] w-full max-w-4xl flex-col gap-0 overflow-hidden rounded-2xl p-0">
-                <DialogHeader class="border-b px-5 py-4">
+                <DialogHeader class="px-5 py-4">
                     <DialogTitle class="truncate text-base font-semibold">
                         {{ previewDoc?.original_name ?? humanize(previewDoc?.doc_type) }}
                     </DialogTitle>
@@ -470,8 +553,9 @@ function canTakePreviewAction(): boolean {
                     Preview not supported for this file type.
                 </div>
 
+                <Separator/>
                 
-                <div class="flex items-center justify-between border-t px-5 py-3">
+                <div class="flex items-center justify-between px-5 py-3">
                     <a
                         v-if="previewDoc?.preview_url"
                         :href="previewDoc.preview_url"
@@ -507,6 +591,6 @@ function canTakePreviewAction(): boolean {
                     </div>
                 </div>
             </DialogContent>
-        </Dialog>
+        </Dialog> -->
     </AppLayout>
 </template>

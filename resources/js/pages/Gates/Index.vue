@@ -1013,11 +1013,11 @@ const editGate = () => {
             <DialogContent class="px-6">
                 <DialogHeader class="px-0">
                     <DialogTitle>
-                        {{ togglingGate?.status === 'active' ? 'Set Gate Inactive' : 'Set Gate Active' }}
+                        Set gate status
                     </DialogTitle>
                     <DialogDescription class="mt-4">
                         Are you sure you want to set
-                        <span class="font-semibold">{{ togglingGate?.gate_name ?? 'this gate' }}</span>
+                        <span class="font-semibold text-custom-accent-3">{{ togglingGate?.gate_name ?? 'this gate' }}</span>
                         as {{ togglingGate?.status === 'active' ? 'inactive' : 'active' }}?
                     </DialogDescription>
                 </DialogHeader>
@@ -1026,7 +1026,7 @@ const editGate = () => {
                     <Button variant="ghost-outline" @click="toggleOpen = false; togglingGate = null">Cancel</Button>
                     <Button :variant="togglingGate?.status === 'active' ? 'destructive' : 'float-primary'" @click="confirmToggle">
                         <RiShutDownLine class="h-4 w-4" />
-                        {{ togglingGate?.status === 'active' ? 'Set Inactive' : 'Set Active' }}
+                        {{ togglingGate?.status === 'active' ? 'Inactivate' : 'Activate' }}
                     </Button>
                 </DialogFooter>
             </DialogContent>

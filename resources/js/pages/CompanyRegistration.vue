@@ -915,8 +915,7 @@ function selectDocumentDate(
                 <Separator v-if="currentStep !== 4" class="flex-1 my-2" />
 
                 <div v-if="currentStep !== 4" class="w-full flex flex-row justify-end items-center gap-x-2 pt-2">
-                    <!-- TODO: hide this button when the user is on the first step. -->
-                    <Button type="button" variant="ghost-outline" size="icon-text" @click="goBack" class="cursor-pointer">
+                    <Button v-if="currentStep !== 1" type="button" variant="ghost-outline" size="icon-text" @click="goBack" class="cursor-pointer">
                         <RiArrowLeftSLine class="h-4 w-4 text-custom-shadow"/>
                         <span class="hidden lg:block">Back</span>
                     </Button>

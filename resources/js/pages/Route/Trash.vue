@@ -357,7 +357,7 @@ function restoreRoute() {
         <AlertDialogContent class="rounded-lg p-4">
             <AlertDialogHeader>
                 <AlertDialogTitle class="flex items-center gap-2">
-                    Restore Route
+                    Restore
                 </AlertDialogTitle>
                 <AlertDialogDescription>
                     Are you sure you want to restore
@@ -376,7 +376,7 @@ function restoreRoute() {
                     @click="restoreRoute"
                 >
                     <RiRestartLine class="h-4 w-4" />
-                    Restore Route
+                    Restore
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>

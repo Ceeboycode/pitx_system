@@ -61,7 +61,7 @@ const pageLinks = computed(() => props.links.slice(1, -1));
                     size="default"
                     variant="segmented"
                     :data-active="link.active"
-                    class="px-0"
+                    class="px-0 mx-1"
                 >
                     <Link
                         :href="link.url"

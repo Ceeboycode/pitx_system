@@ -20,6 +20,8 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
 
             UserSeeder::class,
+            CompanySeeder::class,
+            CompanyDocumentSeeder::class,
             GateSeeder::class,
             RouteSeeder::class,
             VehicleTypeSeeder::class,

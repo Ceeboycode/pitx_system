@@ -2,7 +2,8 @@
 
 namespace App\Providers;
 
-use App\Actions\Fortify\CreateNewUser;
+// DEAD CODE: Only used by Fortify's disabled web self-registration flow.
+// use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Http\Responses\RoleBasedLoginResponse;
 use App\Http\Responses\RoleBasedTwoFactorLoginResponse;
@@ -39,7 +40,8 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureActions(): void
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        Fortify::createUsersUsing(CreateNewUser::class);
+        // DEAD CODE: Mobile users register through POST /api/v1/auth/register.
+        // Fortify::createUsersUsing(CreateNewUser::class);
     }
 
     private function configureViews(): void
@@ -63,7 +65,8 @@ class FortifyServiceProvider extends ServiceProvider
             'status' => $request->session()->get('status'),
         ]));
 
-        Fortify::registerView(fn () => Inertia::render('auth/Register'));
+        // DEAD CODE: Fortify web registration is disabled in config/fortify.php.
+        // Fortify::registerView(fn () => Inertia::render('auth/Register'));
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/TwoFactorChallenge'));
 
