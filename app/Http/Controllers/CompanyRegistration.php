@@ -23,14 +23,28 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CompanyRegistration extends Controller
 {
+    private const DOCUMENT_MAX_KB = 5120;
+
+    private const DOCUMENT_EXTENSIONS = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
+
+    private const DOCUMENT_LABELS = [
+        'AUTHORIZATION_LETTER' => 'Authorization Letter',
+        'SEC_CERT' => 'SEC Certificate',
+        'DTI_CERT' => 'DTI Certificate',
+        'MAYORS_PERMIT' => "Mayor's Permit",
+        'BIR_2303' => 'BIR Form 2303',
+        'SUPPORTING_DOCUMENT' => 'Supporting Document',
+    ];
+
     public function __construct(
         private readonly NotificationService $notificationService,
         private readonly CompanyStatusService $companyStatusService,
-    ) {
-    }
+    ) {}
 
     public function show(Request $request): Response|RedirectResponse
     {
@@ -48,7 +62,9 @@ class CompanyRegistration extends Controller
             $request->session()->regenerateToken();
         }
 
-        return Inertia::render('CompanyRegistration');
+        return Inertia::render('CompanyRegistration', [
+            'uploadRules' => $this->uploadRules(),
+        ]);
     }
 
     public function storeStep1(Request $request): RedirectResponse
@@ -345,25 +361,31 @@ class CompanyRegistration extends Controller
         $isCorporate = $step2['business_type'] === 'corporate';
 
         $request->validate([
-            'documents.MAYORS_PERMIT.file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'documents.MAYORS_PERMIT.file' => $this->documentFileRules(true),
             'documents.MAYORS_PERMIT.issued_at' => ['required', 'date', 'before_or_equal:today'],
             'documents.MAYORS_PERMIT.expires_at' => ['required', 'date', 'after:documents.MAYORS_PERMIT.issued_at', 'after_or_equal:today'],
 
-            'documents.BIR_2303.file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'documents.BIR_2303.file' => $this->documentFileRules(true),
             'documents.BIR_2303.issued_at' => ['required', 'date', 'before_or_equal:today'],
             'documents.BIR_2303.expires_at' => ['required', 'date', 'after:documents.BIR_2303.issued_at', 'after_or_equal:today'],
 
-            'documents.AUTHORIZATION_LETTER.file' => ['nullable', 'required_with:documents.AUTHORIZATION_LETTER.issued_at,documents.AUTHORIZATION_LETTER.expires_at', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'documents.AUTHORIZATION_LETTER.file' => $this->documentFileRules(false, 'documents.AUTHORIZATION_LETTER.issued_at,documents.AUTHORIZATION_LETTER.expires_at'),
             'documents.AUTHORIZATION_LETTER.issued_at' => ['nullable', 'required_with:documents.AUTHORIZATION_LETTER.file', 'date', 'before_or_equal:today'],
             'documents.AUTHORIZATION_LETTER.expires_at' => ['nullable', 'required_with:documents.AUTHORIZATION_LETTER.file', 'date', 'after:documents.AUTHORIZATION_LETTER.issued_at', 'after_or_equal:today'],
 
-            'documents.SEC_CERT.file' => [$isCorporate ? 'required' : 'nullable', 'required_with:documents.SEC_CERT.issued_at,documents.SEC_CERT.expires_at', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'documents.SEC_CERT.file' => $this->documentFileRules($isCorporate, 'documents.SEC_CERT.issued_at,documents.SEC_CERT.expires_at'),
             'documents.SEC_CERT.issued_at' => [$isCorporate ? 'required' : 'nullable', 'required_with:documents.SEC_CERT.file', 'date', 'before_or_equal:today'],
             'documents.SEC_CERT.expires_at' => [$isCorporate ? 'required' : 'nullable', 'required_with:documents.SEC_CERT.file', 'date', 'after:documents.SEC_CERT.issued_at', 'after_or_equal:today'],
 
-            'documents.DTI_CERT.file' => [! $isCorporate ? 'required' : 'nullable', 'required_with:documents.DTI_CERT.issued_at,documents.DTI_CERT.expires_at', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'documents.DTI_CERT.file' => $this->documentFileRules(! $isCorporate, 'documents.DTI_CERT.issued_at,documents.DTI_CERT.expires_at'),
             'documents.DTI_CERT.issued_at' => [! $isCorporate ? 'required' : 'nullable', 'required_with:documents.DTI_CERT.file', 'date', 'before_or_equal:today'],
             'documents.DTI_CERT.expires_at' => [! $isCorporate ? 'required' : 'nullable', 'required_with:documents.DTI_CERT.file', 'date', 'after:documents.DTI_CERT.issued_at', 'after_or_equal:today'],
+
+            'supporting_documents' => ['nullable', 'array', 'max:10'],
+            'supporting_documents.*.title' => ['nullable', 'string', 'max:120'],
+            'supporting_documents.*.file' => $this->documentFileRules(true),
+            'supporting_documents.*.issued_at' => ['nullable', 'date', 'before_or_equal:today'],
+            'supporting_documents.*.expires_at' => ['nullable', 'date', 'after_or_equal:today'],
         ], $this->documentMessages());
 
         $result = DB::transaction(function () use ($request, $step1, $step2) {
@@ -375,7 +397,7 @@ class CompanyRegistration extends Controller
 
             if ($logoTempPath && Storage::disk('local')->exists($logoTempPath)) {
                 $ext = pathinfo($logoTempPath, PATHINFO_EXTENSION);
-                $logoPublicPath = 'company-logos/' . Str::uuid() . '.' . $ext;
+                $logoPublicPath = 'company-logos/'.Str::uuid().'.'.$ext;
 
                 Storage::disk('public')->put(
                     $logoPublicPath,
@@ -431,7 +453,7 @@ class CompanyRegistration extends Controller
 
                 $path = $file->storeAs(
                     "company-documents/{$company->id}/{$docType}",
-                    Str::uuid() . '.' . $ext,
+                    Str::uuid().'.'.$ext,
                     'public'
                 );
 
@@ -455,6 +477,8 @@ class CompanyRegistration extends Controller
                     'uploaded_by' => $user->id,
                 ]);
             }
+
+            $this->storeSupportingDocuments($request, $company, $user->id, $companySlug);
 
             return [
                 'user' => $user,
@@ -544,11 +568,49 @@ class CompanyRegistration extends Controller
                 'is_company_email_verified' => $company->hasVerifiedCompanyEmail(),
                 'status' => $company->status,
                 'documents' => $company->documents()
-                    ->select(['id', 'doc_type', 'status', 'remarks', 'original_name', 'expires_at'])
-                    ->get(),
+                    ->latest()
+                    ->get()
+                    ->map(fn (CompanyDocument $document): array => $this->registrationDocumentPayload($document))
+                    ->values(),
             ],
             'meta' => $meta[$company->status] ?? $meta['for_verification'],
+            'uploadRules' => $this->uploadRules(),
         ]);
+    }
+
+    public function previewDocument(Request $request, CompanyDocument $document): BinaryFileResponse|StreamedResponse
+    {
+        $this->assertRegistrationDocumentBelongsToUser($request, $document);
+
+        if (! $this->canPreviewDocument($document)) {
+            return $this->downloadDocument($request, $document);
+        }
+
+        $path = $this->normalizeDocumentPath($document->file_path);
+
+        abort_if($path === null, 404, 'No file path saved.');
+        abort_unless(Storage::disk('public')->exists($path), 404, 'File not found.');
+
+        return response()->file(Storage::disk('public')->path($path), [
+            'Content-Type' => $document->mime_type ?: 'application/octet-stream',
+            'Content-Disposition' => 'inline; filename="'.$this->downloadFilename($document, $path).'"',
+        ]);
+    }
+
+    public function downloadDocument(Request $request, CompanyDocument $document): StreamedResponse
+    {
+        $this->assertRegistrationDocumentBelongsToUser($request, $document);
+
+        $path = $this->normalizeDocumentPath($document->file_path);
+
+        abort_if($path === null, 404, 'No file path saved.');
+        abort_unless(Storage::disk('public')->exists($path), 404, 'File not found.');
+
+        return Storage::disk('public')->download(
+            $path,
+            $this->downloadFilename($document, $path),
+            ['Content-Type' => $document->mime_type ?: 'application/octet-stream']
+        );
     }
 
     public function storeResubmission(Request $request): RedirectResponse
@@ -576,10 +638,16 @@ class CompanyRegistration extends Controller
         foreach ($actionRequiredDocs as $doc) {
             $t = $doc->doc_type;
 
-            $rules["documents.$t.file"] = ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'];
+            $rules["documents.$t.file"] = $this->documentFileRules(true);
             $rules["documents.$t.issued_at"] = ['required', 'date', 'before_or_equal:today'];
             $rules["documents.$t.expires_at"] = ['required', 'date', 'after_or_equal:today', "after:documents.$t.issued_at"];
         }
+
+        $rules['supporting_documents'] = ['nullable', 'array', 'max:10'];
+        $rules['supporting_documents.*.title'] = ['nullable', 'string', 'max:120'];
+        $rules['supporting_documents.*.file'] = $this->documentFileRules(true);
+        $rules['supporting_documents.*.issued_at'] = ['nullable', 'date', 'before_or_equal:today'];
+        $rules['supporting_documents.*.expires_at'] = ['nullable', 'date', 'after_or_equal:today'];
 
         $request->validate($rules, $this->documentMessages());
 
@@ -600,7 +668,7 @@ class CompanyRegistration extends Controller
 
                 $newPath = $file->storeAs(
                     "company-documents/{$company->id}/{$type}",
-                    Str::uuid() . '.' . $ext,
+                    Str::uuid().'.'.$ext,
                     'public'
                 );
 
@@ -643,6 +711,8 @@ class CompanyRegistration extends Controller
                 ]);
             }
 
+            $this->storeSupportingDocuments($request, $company, $user->id, $companySlug);
+
             $company->update(['status' => 'for_verification']);
         });
 
@@ -672,11 +742,11 @@ class CompanyRegistration extends Controller
         $phone = preg_replace('/\s+/', '', trim($raw));
 
         if (preg_match('/^09\d{9}$/', $phone)) {
-            return '+63' . substr($phone, 1);
+            return '+63'.substr($phone, 1);
         }
 
         if (preg_match('/^639\d{9}$/', $phone)) {
-            return '+' . $phone;
+            return '+'.$phone;
         }
 
         return $phone;
@@ -689,19 +759,12 @@ class CompanyRegistration extends Controller
 
     private function documentMessages(): array
     {
-        $labels = [
-            'AUTHORIZATION_LETTER' => 'Authorization Letter',
-            'SEC_CERT' => 'SEC Certificate',
-            'DTI_CERT' => 'DTI Certificate',
-            'MAYORS_PERMIT' => "Mayor's Permit",
-            'BIR_2303' => 'BIR Form 2303',
-        ];
-
         $messages = [];
-        foreach ($labels as $key => $label) {
+        foreach (self::DOCUMENT_LABELS as $key => $label) {
             $messages["documents.{$key}.file.required"] = "{$label} file is required.";
             $messages["documents.{$key}.file.required_with"] = "{$label} file is required when issue or expiry date is provided.";
-            $messages["documents.{$key}.file.mimes"] = "{$label} must be a PDF, JPG, or PNG.";
+            $messages["documents.{$key}.file.mimes"] = "{$label} must be a PDF, DOC, DOCX, JPG, or PNG file.";
+            $messages["documents.{$key}.file.extensions"] = "{$label} must use a PDF, DOC, DOCX, JPG, JPEG, or PNG file extension.";
             $messages["documents.{$key}.file.max"] = "{$label} must not exceed 5 MB.";
             $messages["documents.{$key}.issued_at.required"] = "{$label}: issue date is required.";
             $messages["documents.{$key}.issued_at.required_with"] = "{$label}: issue date is required when a file is uploaded.";
@@ -713,7 +776,158 @@ class CompanyRegistration extends Controller
             $messages["documents.{$key}.expires_at.after_or_equal"] = "{$label}: expiry date must be today or later.";
         }
 
+        $messages['supporting_documents.max'] = 'You may add up to 10 supporting documents.';
+        $messages['supporting_documents.*.title.max'] = 'Supporting document title must not exceed 120 characters.';
+        $messages['supporting_documents.*.file.required'] = 'Each supporting document needs a file.';
+        $messages['supporting_documents.*.file.mimes'] = 'Supporting documents must be PDF, DOC, DOCX, JPG, or PNG files.';
+        $messages['supporting_documents.*.file.extensions'] = 'Supporting documents must use PDF, DOC, DOCX, JPG, JPEG, or PNG file extensions.';
+        $messages['supporting_documents.*.file.max'] = 'Supporting documents must not exceed 5 MB each.';
+        $messages['supporting_documents.*.issued_at.date'] = 'Supporting document issue date must be a valid date.';
+        $messages['supporting_documents.*.issued_at.before_or_equal'] = 'Supporting document issue date cannot be in the future.';
+        $messages['supporting_documents.*.expires_at.date'] = 'Supporting document expiry date must be a valid date.';
+        $messages['supporting_documents.*.expires_at.after_or_equal'] = 'Supporting document expiry date must be today or later.';
+
         return $messages;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function documentFileRules(bool $required, ?string $requiredWith = null): array
+    {
+        return array_values(array_filter([
+            $required ? 'required' : 'nullable',
+            $requiredWith ? "required_with:{$requiredWith}" : null,
+            'file',
+            'mimes:'.implode(',', self::DOCUMENT_EXTENSIONS),
+            'extensions:'.implode(',', self::DOCUMENT_EXTENSIONS),
+            'max:'.self::DOCUMENT_MAX_KB,
+        ]));
+    }
+
+    /**
+     * @return array{extensions: array<int, string>, accept: string, maxKb: int, maxMb: int, previewableExtensions: array<int, string>}
+     */
+    private function uploadRules(): array
+    {
+        return [
+            'extensions' => self::DOCUMENT_EXTENSIONS,
+            'accept' => implode(',', array_map(fn (string $extension): string => ".{$extension}", self::DOCUMENT_EXTENSIONS)),
+            'maxKb' => self::DOCUMENT_MAX_KB,
+            'maxMb' => (int) (self::DOCUMENT_MAX_KB / 1024),
+            'previewableExtensions' => ['pdf', 'jpg', 'jpeg', 'png'],
+        ];
+    }
+
+    /**
+     * @return array{id: int, doc_type: string, status: string, original_name: ?string, remarks: ?string, expires_at: ?string, mime_type: ?string, file_size: ?int, file_type: string, can_preview: bool, preview_url: ?string, download_url: string}
+     */
+    private function registrationDocumentPayload(CompanyDocument $document): array
+    {
+        $canPreview = $this->canPreviewDocument($document);
+
+        return [
+            'id' => $document->id,
+            'doc_type' => $document->doc_type,
+            'status' => $document->status,
+            'original_name' => $document->original_name,
+            'remarks' => $document->remarks,
+            'expires_at' => $document->expires_at?->toDateString(),
+            'mime_type' => $document->mime_type,
+            'file_size' => $document->file_size,
+            'file_type' => $this->documentFileType($document),
+            'can_preview' => $canPreview,
+            'preview_url' => $canPreview
+                ? route('registration.documents.preview', $document, false)
+                : null,
+            'download_url' => route('registration.documents.download', $document, false),
+        ];
+    }
+
+    private function assertRegistrationDocumentBelongsToUser(Request $request, CompanyDocument $document): void
+    {
+        $companyId = $request->user()?->company_id;
+
+        abort_if(! $companyId || $document->company_id !== $companyId, 404);
+    }
+
+    private function canPreviewDocument(CompanyDocument $document): bool
+    {
+        $mimeType = strtolower((string) $document->mime_type);
+        $extension = strtolower(pathinfo((string) $document->original_name, PATHINFO_EXTENSION));
+
+        return $mimeType === 'application/pdf'
+            || str_starts_with($mimeType, 'image/')
+            || in_array($extension, ['pdf', 'jpg', 'jpeg', 'png'], true);
+    }
+
+    private function documentFileType(CompanyDocument $document): string
+    {
+        $extension = strtoupper(pathinfo((string) $document->original_name, PATHINFO_EXTENSION));
+
+        if ($extension !== '') {
+            return $extension;
+        }
+
+        return $document->mime_type ?: 'Unknown';
+    }
+
+    private function downloadFilename(CompanyDocument $document, string $path): string
+    {
+        $filename = $document->original_name ?: basename($path);
+
+        return preg_replace('/[^\x20-\x7E]|["\\\\]/', '', $filename) ?: basename($path);
+    }
+
+    private function normalizeDocumentPath(?string $path): ?string
+    {
+        if (blank($path)) {
+            return null;
+        }
+
+        return preg_replace('#^public/#', '', $path);
+    }
+
+    private function storeSupportingDocuments(Request $request, Company $company, int $userId, string $companySlug): void
+    {
+        $supportingDocuments = (array) $request->file('supporting_documents', []);
+
+        foreach ($supportingDocuments as $index => $documentFiles) {
+            $file = is_array($documentFiles) ? ($documentFiles['file'] ?? null) : null;
+
+            if (! $file) {
+                continue;
+            }
+
+            $docData = (array) $request->input("supporting_documents.{$index}", []);
+            $ext = strtolower($file->getClientOriginalExtension() ?: 'bin');
+            $title = trim((string) ($docData['title'] ?? ''));
+            $titleSlug = $title !== '' ? '_'.Str::upper(Str::slug($title, '_')) : '';
+
+            $path = $file->storeAs(
+                "company-documents/{$company->id}/SUPPORTING_DOCUMENT",
+                Str::uuid().'.'.$ext,
+                'public'
+            );
+
+            CompanyDocument::create([
+                'company_id' => $company->id,
+                'doc_type' => 'SUPPORTING_DOCUMENT',
+                'file_path' => $path,
+                'original_name' => $this->nextUniformOriginalName(
+                    companyId: $company->id,
+                    base: "{$companySlug}_SUPPORTING_DOCUMENT{$titleSlug}",
+                    ext: $ext
+                ),
+                'mime_type' => $file->getMimeType(),
+                'file_size' => $file->getSize(),
+                'issued_at' => $docData['issued_at'] ?? null,
+                'expires_at' => $docData['expires_at'] ?? null,
+                'status' => 'pending',
+                'remarks' => $title !== '' ? "Supporting document: {$title}" : null,
+                'uploaded_by' => $userId,
+            ]);
+        }
     }
 
     private function generateUniqueCompanyCode3(string $companyName): string
@@ -750,7 +964,7 @@ class CompanyRegistration extends Controller
     private function nextUsernameForCompanyCode(string $companyCode): string
     {
         $last = DB::table('users')
-            ->where('username', 'like', $companyCode . '-%')
+            ->where('username', 'like', $companyCode.'-%')
             ->orderByDesc('username')
             ->lockForUpdate()
             ->value('username');
@@ -760,12 +974,13 @@ class CompanyRegistration extends Controller
             $next = ((int) $m[1]) + 1;
         }
 
-        return $companyCode . '-' . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+        return $companyCode.'-'.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
     }
 
     private function companySlugUpper(string $companyName): string
     {
         $clean = preg_replace('/[^A-Za-z0-9]+/', '_', $companyName);
+
         return strtoupper(trim(preg_replace('/_+/', '_', $clean), '_') ?: 'COMPANY');
     }
 
@@ -790,6 +1005,7 @@ class CompanyRegistration extends Controller
     {
         if (method_exists($user, 'assignRole')) {
             $user->assignRole('operator');
+
             return;
         }
 

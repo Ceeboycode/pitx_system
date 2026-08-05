@@ -9,8 +9,6 @@ use Illuminate\Http\Request;
 
 class RouteSearchLogController extends Controller
 {
-    // POST v1/analytics/route-searches
-    // Fire-and-forget from Flutter — always returns 201, no complex response needed
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([

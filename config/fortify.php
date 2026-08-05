@@ -31,7 +31,6 @@ return [
     'features' => [
         // DEAD CODE: Web self-registration is disabled; commuters register through the mobile API.
         // Features::registration(),
-        Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([
             'confirm' => true,

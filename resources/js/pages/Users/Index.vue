@@ -1095,11 +1095,11 @@ function confirmResetPassword() {
                 <DialogHeader class="px-0">
                     <DialogTitle>Reset Password</DialogTitle>
                     <DialogDescription class="mt-4">
-                        Are you sure you want to reset the password for
+                        Generate a temporary password for
                         <span class="font-semibold text-custom-accent-3">{{
                             resettingUser?.name ?? 'this user'
                         }}</span
-                        >?
+                        > and email it to their registered address.
                     </DialogDescription>
                 </DialogHeader>
                 <Separator class="mb-4" />
@@ -1112,7 +1112,7 @@ function confirmResetPassword() {
                         @click="confirmResetPassword"
                     >
                         <RiKey2Line class="h-4 w-4" />
-                        Reset Password
+                        Send Temporary Password
                     </Button>
                 </DialogFooter>
             </DialogContent>

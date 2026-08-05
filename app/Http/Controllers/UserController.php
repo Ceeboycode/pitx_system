@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Mail\TemporaryPasswordMail;
 use App\Models\Company;
 use App\Models\Role;
 use App\Models\User;
@@ -13,9 +14,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class UserController extends Controller
 {
@@ -26,7 +30,7 @@ class UserController extends Controller
         Gate::authorize('viewAny', User::class);
 
         $search = $request->input('search');
-        $type   = $request->input('type');
+        $type = $request->input('type');
         $status = $request->input('status');
 
         $users = User::query()
@@ -61,28 +65,28 @@ class UserController extends Controller
                 $primaryRole = $user->roles->first();
 
                 return [
-                    'id'                => $user->id,
-                    'username'          => $user->username,
-                    'name'              => $user->name,
-                    'email'             => $user->email,
+                    'id' => $user->id,
+                    'username' => $user->username,
+                    'name' => $user->name,
+                    'email' => $user->email,
                     'email_verified_at' => $user->email_verified_at,
-                    'avatar'            => $user->profile_photo_path ? Storage::url($user->profile_photo_path) : null,
-                    'phone_number'      => $user->phone_number,
-                    'company_id'        => $user->company_id,
-                    'status'            => $user->status,
-                    'created_at'        => $user->created_at,
-                    'type'              => $primaryRole?->type,
-                    'avatar_url'        => $user->profile_photo_path
+                    'avatar' => $user->profile_photo_path ? Storage::url($user->profile_photo_path) : null,
+                    'phone_number' => $user->phone_number,
+                    'company_id' => $user->company_id,
+                    'status' => $user->status,
+                    'created_at' => $user->created_at,
+                    'type' => $primaryRole?->type,
+                    'avatar_url' => $user->profile_photo_path
                         ? Storage::disk('public')->url($user->profile_photo_path)
                         : null,
-                    'roles'             => $user->roles->map(fn ($role) => [
-                        'id'   => $role->id,
+                    'roles' => $user->roles->map(fn ($role) => [
+                        'id' => $role->id,
                         'name' => $role->name,
                         'type' => $role->type,
                     ])->values(),
                     'company' => $user->company
                         ? [
-                            'id'           => $user->company->id,
+                            'id' => $user->company->id,
                             'company_name' => $user->company->company_name,
                             'company_code' => $user->company->company_code,
                         ]
@@ -91,15 +95,15 @@ class UserController extends Controller
             });
 
         return Inertia::render('Users/Index', [
-            'users'   => $users,
+            'users' => $users,
             'filters' => [
                 'search' => $search,
-                'type'   => $type,
+                'type' => $type,
                 'status' => $status,
             ],
             'currentUserId' => $request->user()->id,
             'statuses' => ['active', 'inactive'],
-            'types'    => ['internal', 'external'],
+            'types' => ['internal', 'external'],
         ]);
     }
 
@@ -129,7 +133,7 @@ class UserController extends Controller
             ->where('name', $data['role'])
             ->firstOrFail(['id', 'name', 'type']);
 
-        $resolvedType      = $role->type;
+        $resolvedType = $role->type;
         $resolvedCompanyId = $resolvedType === 'external'
             ? (int) $data['company_id']
             : null;
@@ -141,13 +145,13 @@ class UserController extends Controller
             );
 
             $user = User::create([
-                'username'             => $username,
-                'name'                 => $data['name'],
-                'email'                => $data['email'],
-                'phone_number'         => $data['phone_number'] ?? null,
-                'company_id'           => $resolvedCompanyId,
-                'status'               => 'active',
-                'password'             => Hash::make(self::DEFAULT_PASSWORD),
+                'username' => $username,
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'phone_number' => $data['phone_number'] ?? null,
+                'company_id' => $resolvedCompanyId,
+                'status' => 'active',
+                'password' => Hash::make(self::DEFAULT_PASSWORD),
                 'must_change_password' => true,
             ]);
 
@@ -160,7 +164,7 @@ class UserController extends Controller
             ->route('users.index')
             ->with(
                 'success',
-                "User created successfully. Username: {$user->username}. Default password: " . self::DEFAULT_PASSWORD,
+                "User created successfully. Username: {$user->username}. Default password: ".self::DEFAULT_PASSWORD,
             );
     }
 
@@ -173,38 +177,38 @@ class UserController extends Controller
             'company:id,company_name,company_code',
         ]);
 
-        $primaryRole  = $user->roles->first();
+        $primaryRole = $user->roles->first();
         $resolvedType = $primaryRole?->type;
 
         return Inertia::render('Users/Show', [
             'currentUserId' => Auth::id(),
             'user' => [
-                'id'                => $user->id,
-                'username'          => $user->username,
-                'name'              => $user->name,
-                'email'             => $user->email,
+                'id' => $user->id,
+                'username' => $user->username,
+                'name' => $user->name,
+                'email' => $user->email,
                 'email_verified_at' => $user->email_verified_at,
-                'avatar'            => $user->profile_photo_path ? Storage::url($user->profile_photo_path) : null,
-                'phone_number'      => $user->phone_number,
-                'status'            => $user->status,
-                'created_at'        => $user->created_at,
-                'type'              => $resolvedType,
-                'company'           => $resolvedType === 'external' && $user->company
+                'avatar' => $user->profile_photo_path ? Storage::url($user->profile_photo_path) : null,
+                'phone_number' => $user->phone_number,
+                'status' => $user->status,
+                'created_at' => $user->created_at,
+                'type' => $resolvedType,
+                'company' => $resolvedType === 'external' && $user->company
                     ? [
-                        'id'           => $user->company->id,
+                        'id' => $user->company->id,
                         'company_name' => $user->company->company_name,
                         'company_code' => $user->company->company_code,
                     ]
                     : null,
                 'roles' => $user->roles->map(fn ($role) => [
-                    'id'   => $role->id,
+                    'id' => $role->id,
                     'name' => $role->name,
                     'type' => $role->type,
                 ])->values(),
                 'internal_roles' => $user->roles
                     ->filter(fn ($role) => $role->type === 'internal')
                     ->map(fn ($role) => [
-                        'id'   => $role->id,
+                        'id' => $role->id,
                         'name' => $role->name,
                         'type' => $role->type,
                     ])
@@ -212,7 +216,7 @@ class UserController extends Controller
                 'external_roles' => $user->roles
                     ->filter(fn ($role) => $role->type === 'external')
                     ->map(fn ($role) => [
-                        'id'   => $role->id,
+                        'id' => $role->id,
                         'name' => $role->name,
                         'type' => $role->type,
                     ])
@@ -234,13 +238,13 @@ class UserController extends Controller
 
         return Inertia::render('Users/Edit', [
             'user' => [
-                'id'           => $user->id,
-                'username'     => $user->username,
-                'name'         => $user->name,
-                'email'        => $user->email,
+                'id' => $user->id,
+                'username' => $user->username,
+                'name' => $user->name,
+                'email' => $user->email,
                 'phone_number' => $user->phone_number,
-                'type'         => $selectedRole?->type,
-                'company_id'   => $user->company_id,
+                'type' => $selectedRole?->type,
+                'company_id' => $user->company_id,
             ],
             'roles' => Role::query()
                 ->select('id', 'name', 'type')
@@ -248,7 +252,7 @@ class UserController extends Controller
                 ->orderBy('name')
                 ->get(),
             'selectedRole' => $selectedRole?->name,
-            'companies'    => Company::query()
+            'companies' => Company::query()
                 ->orderBy('company_name')
                 ->get(['id', 'company_name', 'company_code']),
         ]);
@@ -264,17 +268,17 @@ class UserController extends Controller
             ->where('name', $validated['role'])
             ->firstOrFail(['id', 'name', 'type']);
 
-        $nextType      = $role->type;
+        $nextType = $role->type;
         $nextCompanyId = $nextType === 'external'
             ? (isset($validated['company_id']) ? (int) $validated['company_id'] : null)
             : null;
 
-        $currentRoleType  = $user->roles()->first()?->type;
+        $currentRoleType = $user->roles()->first()?->type;
         $currentCompanyId = $currentRoleType === 'external'
             ? ($user->company_id ? (int) $user->company_id : null)
             : null;
 
-        $typeChanged    = $currentRoleType !== $nextType;
+        $typeChanged = $currentRoleType !== $nextType;
         $companyChanged = $currentCompanyId !== $nextCompanyId;
 
         DB::transaction(function () use ($user, $validated, $role, $nextType, $nextCompanyId, $typeChanged, $companyChanged) {
@@ -288,11 +292,11 @@ class UserController extends Controller
             }
 
             $user->update([
-                'username'     => $nextUsername,
-                'name'         => $validated['name'],
-                'email'        => $validated['email'],
+                'username' => $nextUsername,
+                'name' => $validated['name'],
+                'email' => $validated['email'],
                 'phone_number' => $validated['phone_number'] ?? null,
-                'company_id'   => $nextCompanyId,
+                'company_id' => $nextCompanyId,
             ]);
 
             $user->syncRoles([$role->name]);
@@ -316,14 +320,34 @@ class UserController extends Controller
     {
         Gate::authorize('resetPassword', $user);
 
-        $user->update([
-            'password'             => Hash::make(self::DEFAULT_PASSWORD),
+        $temporaryPassword = Str::password(16, true, true, true, false);
+        $previousPassword = $user->password;
+        $previousMustChangePassword = (bool) $user->must_change_password;
+
+        $user->forceFill([
+            'password' => Hash::make($temporaryPassword),
             'must_change_password' => true,
-        ]);
+        ])->save();
+
+        try {
+            Mail::to($user->email)->send(new TemporaryPasswordMail($user, $temporaryPassword));
+        } catch (Throwable $exception) {
+            report($exception);
+
+            $user->forceFill([
+                'password' => $previousPassword,
+                'must_change_password' => $previousMustChangePassword,
+            ])->save();
+
+            return back()->with(
+                'error',
+                'Password reset failed. The temporary password email could not be sent.',
+            );
+        }
 
         return back()->with(
             'success',
-            "{$user->name}'s password has been reset to the default password: " . self::DEFAULT_PASSWORD,
+            "A temporary password has been emailed to {$user->email}.",
         );
     }
 
@@ -358,7 +382,7 @@ class UserController extends Controller
             ])
             ->with(['deleter:id,name'])
             ->when($search, function ($query) use ($search) {
-                $like = '%' . $search . '%';
+                $like = '%'.$search.'%';
 
                 $query->where(function ($innerQuery) use ($like) {
                     $innerQuery->where('username', 'like', $like)
@@ -381,14 +405,14 @@ class UserController extends Controller
             ->withQueryString()
             ->through(function (User $user) {
                 return [
-                    'id'              => $user->id,
-                    'username'        => $user->username,
-                    'name'            => $user->name,
-                    'email'           => $user->email,
+                    'id' => $user->id,
+                    'username' => $user->username,
+                    'name' => $user->name,
+                    'email' => $user->email,
                     'deleted_at_human' => $user->deleted_at?->diffForHumans(),
-                    'deleter'         => $user->deleter
+                    'deleter' => $user->deleter
                         ? [
-                            'id'   => $user->deleter->id,
+                            'id' => $user->deleter->id,
                             'name' => $user->deleter->name,
                         ]
                         : null,
@@ -396,7 +420,7 @@ class UserController extends Controller
             });
 
         return Inertia::render('Users/Trash', [
-            'users'    => $users,
+            'users' => $users,
             'filters' => [
                 'search' => $search,
                 'archived_within' => $archivedWithin,
@@ -421,13 +445,13 @@ class UserController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $prefix = $company->company_code . '-';
+            $prefix = $company->company_code.'-';
         } else {
-            $prefix = now()->year . '-';
+            $prefix = now()->year.'-';
         }
 
         $lastUsername = User::query()
-            ->where('username', 'like', $prefix . '%')
+            ->where('username', 'like', $prefix.'%')
             ->lockForUpdate()
             ->orderByDesc('username')
             ->value('username');
@@ -439,6 +463,6 @@ class UserController extends Controller
             $nextNumber = ((int) $lastDigits) + 1;
         }
 
-        return $prefix . str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
+        return $prefix.str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
     }
 }

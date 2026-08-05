@@ -10,7 +10,6 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -107,35 +106,15 @@ class AuthTokenController extends Controller
         $user = request()->user();
 
         $validated = request()->validate([
-            'name'         => 'sometimes|string|max:255',
+            'name' => 'sometimes|string|max:255',
             'phone_number' => ['sometimes', 'nullable', 'regex:/^\+63[0-9]{10}$/'],
-            'username'     => ['sometimes', 'string', 'max:20', 'alpha_dash', Rule::unique('users')->ignore($user->id)],
+            'username' => ['sometimes', 'string', 'max:20', 'alpha_dash', Rule::unique('users')->ignore($user->id)],
         ]);
 
         $user->fill($validated)->save();
 
         return response()->json([
             'data' => new UserResource($user->loadMissing('roles')),
-        ]);
-    }
-
-    public function forgotPassword(Request $request): JsonResponse
-    {
-        $request->validate(['email' => ['required', 'email']]);
-
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
-
-        if ($status === Password::RESET_LINK_SENT) {
-            return response()->json([
-                'message' => 'If an account with that email exists, a password reset link has been sent.',
-            ]);
-        }
-
-        // Return same generic message to avoid email enumeration
-        return response()->json([
-            'message' => 'If an account with that email exists, a password reset link has been sent.',
         ]);
     }
 
@@ -198,7 +177,7 @@ class AuthTokenController extends Controller
         $suffix = 1;
 
         while (User::query()->where('username', $username)->exists()) {
-            $username = $base . $suffix;
+            $username = $base.$suffix;
             $suffix++;
         }
 

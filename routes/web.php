@@ -1,15 +1,14 @@
 <?php
 
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CompanyDashboardController;
-use App\Http\Controllers\Messaging\MessagingController;
 use App\Http\Controllers\CompanyDocumentController;
 use App\Http\Controllers\CompanyProfileChangeRequestController;
 use App\Http\Controllers\CompanyProfileController;
 use App\Http\Controllers\CompanyRegistration;
 use App\Http\Controllers\CompanyUserController;
 use App\Http\Controllers\CompanyVehicleController;
-use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Crm\CrmMessageAttachmentController;
 use App\Http\Controllers\Crm\CrmMessageController;
 use App\Http\Controllers\Crm\CrmThreadController;
@@ -19,6 +18,7 @@ use App\Http\Controllers\DispatchController;
 use App\Http\Controllers\ForcePasswordController;
 use App\Http\Controllers\GateController;
 use App\Http\Controllers\InternalDispatchController;
+use App\Http\Controllers\Messaging\MessagingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\RouteController;
@@ -142,6 +142,12 @@ Route::middleware(['auth', 'role.type:external', 'audit.request'])->group(functi
 
     Route::post('registration/resubmit', [CompanyRegistration::class, 'storeResubmission'])
         ->name('registration.resubmit.store');
+
+    Route::get('registration/documents/{document}/preview', [CompanyRegistration::class, 'previewDocument'])
+        ->name('registration.documents.preview');
+
+    Route::get('registration/documents/{document}/download', [CompanyRegistration::class, 'downloadDocument'])
+        ->name('registration.documents.download');
 
     /*
     |--------------------------------------------------------------------------
@@ -448,4 +454,4 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
     Route::get('faq', fn () => Inertia::render('FAQ'))->name('faq');
 });
 
-require __DIR__ . '/settings.php';
+require __DIR__.'/settings.php';
