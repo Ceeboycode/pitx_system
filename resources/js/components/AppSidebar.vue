@@ -34,7 +34,6 @@ import {
     RiArrowDownSLine,
     RiArrowRightSLine,
     RiBuildingLine,
-    RiBus2Line,
     RiComputerLine,
     RiDashboardHorizontalLine,
     RiHistoryLine,

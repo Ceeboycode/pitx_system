@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Auth\AuthTokenController;
 use App\Http\Controllers\Api\V1\Analytics\RouteFavoriteController;
+use App\Http\Controllers\Api\V2\Driver\Auth\AuthController as DriverAuthController;
 use App\Http\Controllers\Api\V1\Analytics\RouteSearchLogController;
 use App\Http\Controllers\Api\V1\Crm\CommuterAttachmentController;
 use App\Http\Controllers\Api\V1\Crm\CommuterMessageController;
@@ -12,6 +13,16 @@ use Illuminate\Support\Facades\Route;
 
 // production test endpoint
 Route::get('/ping', fn() => response()->json(['ok' => true]));
+
+Route::prefix('v2/driver')->name('api.v2.driver.')->group(function () {
+    Route::post('auth/register', [DriverAuthController::class, 'register'])->name('auth.register');
+    Route::post('auth/login', [DriverAuthController::class, 'login'])->name('auth.login');
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('auth/me', [DriverAuthController::class, 'me'])->name('auth.me');
+        Route::post('auth/logout', [DriverAuthController::class, 'logout'])->name('auth.logout');
+    });
+});
 
 Route::prefix('v1')->name('api.v1.')->group(function () {
 
