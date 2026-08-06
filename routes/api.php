@@ -1,9 +1,9 @@
 <?php
 
-use App\Http\Controllers\Api\V1\Auth\AuthTokenController;
 use App\Http\Controllers\Api\V1\Analytics\RouteFavoriteController;
 use App\Http\Controllers\Api\V2\Driver\Auth\AuthController as DriverAuthController;
 use App\Http\Controllers\Api\V1\Analytics\RouteSearchLogController;
+use App\Http\Controllers\Api\V1\Auth\AuthTokenController;
 use App\Http\Controllers\Api\V1\Crm\CommuterAttachmentController;
 use App\Http\Controllers\Api\V1\Crm\CommuterMessageController;
 use App\Http\Controllers\Api\V1\Crm\CommuterThreadController;
@@ -12,7 +12,7 @@ use App\Http\Controllers\Api\V1\Route\RouteSearchController;
 use Illuminate\Support\Facades\Route;
 
 // production test endpoint
-Route::get('/ping', fn() => response()->json(['ok' => true]));
+Route::get('/ping', fn () => response()->json(['ok' => true]));
 
 Route::prefix('v2/driver')->name('api.v2.driver.')->group(function () {
     Route::post('auth/register', [DriverAuthController::class, 'register'])->name('auth.register');
@@ -28,7 +28,6 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
     Route::post('auth/register', [AuthTokenController::class, 'register'])->name('auth.register');
     Route::post('auth/login', [AuthTokenController::class, 'login'])->name('auth.login');
-    Route::post('auth/forgot-password', [AuthTokenController::class, 'forgotPassword'])->name('auth.forgot-password');
 
     // Public route — location search does not require user identity
     Route::get('locations', [LocationController::class, 'index'])->name('locations.index');

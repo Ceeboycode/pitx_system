@@ -4,13 +4,11 @@ namespace App\Providers;
 
 // DEAD CODE: Only used by Fortify's disabled web self-registration flow.
 // use App\Actions\Fortify\CreateNewUser;
-use App\Actions\Fortify\ResetUserPassword;
 use App\Http\Responses\RoleBasedLoginResponse;
 use App\Http\Responses\RoleBasedTwoFactorLoginResponse;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -31,17 +29,9 @@ class FortifyServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $this->configureActions();
         $this->configureViews();
         $this->configureAuthentication();
         $this->configureRateLimiting();
-    }
-
-    private function configureActions(): void
-    {
-        Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        // DEAD CODE: Mobile users register through POST /api/v1/auth/register.
-        // Fortify::createUsersUsing(CreateNewUser::class);
     }
 
     private function configureViews(): void
@@ -49,15 +39,6 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/Login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
             'canRegister' => Features::enabled(Features::registration()),
-            'status' => $request->session()->get('status'),
-        ]));
-
-        Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/ResetPassword', [
-            'email' => $request->email,
-            'token' => $request->route('token'),
-        ]));
-
-        Fortify::requestPasswordResetLinkView(fn (Request $request) => Inertia::render('auth/ForgotPassword', [
             'status' => $request->session()->get('status'),
         ]));
 
@@ -87,7 +68,7 @@ class FortifyServiceProvider extends ServiceProvider
 
             $user = User::query()
                 ->with('roles')
-                ->where(function ($query) use ($login, $loginLower) {
+                ->where(function ($query) use ($loginLower) {
                     $query->whereRaw('LOWER(username) = ?', [$loginLower])
                         ->orWhereRaw('LOWER(email) = ?', [$loginLower]);
                 })
@@ -117,7 +98,7 @@ class FortifyServiceProvider extends ServiceProvider
 
         RateLimiter::for('login', function (Request $request) {
             $value = trim((string) $request->input(Fortify::username()));
-            $throttleKey = Str::transliterate(Str::lower($value) . '|' . $request->ip());
+            $throttleKey = Str::transliterate(Str::lower($value).'|'.$request->ip());
 
             return Limit::perMinute(5)->by($throttleKey);
         });

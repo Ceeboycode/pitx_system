@@ -16,7 +16,6 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthBase from '@/layouts/AuthLayout.vue';
 import { store } from '@/routes/login';
-import { request } from '@/routes/password';
 import { Form, Head } from '@inertiajs/vue3';
 import { Link } from '@inertiajs/vue3';
 import PitxLogo from '@/components/assets/PITX.png'
@@ -28,7 +27,6 @@ const showPassword = ref(false);
 
 defineProps<{
     status?: string;
-    canResetPassword: boolean;
 }>();
 </script>
 
@@ -81,16 +79,7 @@ defineProps<{
                         </div>
 
                         <div class="flex flex-col gap-y-1">
-                            <div class="flex items-center justify-between">
-                                <Label class="text-sm" for="password">Password</Label>
-                                <TextLink
-                                    v-if="canResetPassword"
-                                    :href="request()"
-                                    class="text-xs font-semibold text-custom-accent-3"
-                                >
-                                    Forgot password?
-                                </TextLink>
-                            </div>
+                            <Label class="text-sm" for="password">Password</Label>
                             <div class="relative">
                                 <Input
                                     id="password"
