@@ -47,6 +47,7 @@ import {
     RiArrowUpDownLine,
     RiArrowUpSLine,
     RiCloseLine,
+    RiEditLine,
     RiFileAddLine,
     RiFileCheckLine,
     RiFileInfoLine,
@@ -72,6 +73,7 @@ type SortField =
     | 'company_name'
     | 'company_code'
     | 'status'
+    | 'is_active'
     | 'created_at'
     | null;
 type SortDir = 'asc' | 'desc';
@@ -86,6 +88,7 @@ type Company = {
     business_type?: string | null;
     logo_url?: string | null;
     status?: CompanyStatus;
+    is_active?: boolean | number | null;
     created_at_human?: string | null;
 };
 
@@ -111,6 +114,7 @@ const props = defineProps<{
 
 const canViewArchived = computed(() => can('companies.viewAny'));
 const canViewCompany = computed(() => can('companies.view'));
+const canUpdateCompany = computed(() => can('companies.update'));
 const canViewProfileChangeRequests = computed(() => can('companies.viewAny'));
 
 const createOpen = ref(false);
@@ -268,6 +272,24 @@ function statusDot(status?: CompanyStatus): string {
         default:
             return 'bg-slate-400';
     }
+}
+
+function isCompanyActive(company: Company): boolean {
+    return company.is_active === true || company.is_active === 1;
+}
+
+function activeStatusClass(company: Company): string {
+    return isCompanyActive(company)
+        ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+        : 'bg-slate-100 text-slate-500 border-0';
+}
+
+function activeStatusDot(company: Company): string {
+    return isCompanyActive(company) ? 'bg-emerald-500' : 'bg-slate-400';
+}
+
+function activeStatusLabel(company: Company): string {
+    return isCompanyActive(company) ? 'Active' : 'Inactive';
 }
 
 function hasVerifiedEmail(company: Company): boolean {
@@ -457,7 +479,7 @@ function hasVerifiedEmail(company: Company): boolean {
                     >
                         <div v-if="props.companies.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
                             <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                                <div class="grid grid-cols-[1.5fr_1fr_1fr_1fr_5rem] gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
+                                <div class="grid grid-cols-[1.5fr_1fr_1fr_0.9fr_1fr_5rem] gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
                                     <button
                                         type="button"
                                         class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 pl-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
@@ -480,11 +502,24 @@ function hasVerifiedEmail(company: Company): boolean {
                                         class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('status')"
                                     >
-                                        Status
+                                        Verification Status
                                         <component
                                             :is="sortIcon('status')"
                                             class="h-3.5 w-3.5"
                                             :class="sortIconClass('status')"
+                                        />
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        @click="toggleSort('is_active')"
+                                    >
+                                        Active Status
+                                        <component
+                                            :is="sortIcon('is_active')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('is_active')"
                                         />
                                     </button>
 
@@ -512,7 +547,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                     v-for="(company, rowIndex) in props.companies.data"
                                     :key="company.id"
                                     :class="[
-                                        'grid cursor-pointer grid-cols-[1.5fr_1fr_1fr_1fr_5rem] items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                        'grid cursor-pointer grid-cols-[1.5fr_1fr_1fr_0.9fr_1fr_5rem] items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
                                         rowIndex === props.companies.data.length - 1 ? 'rounded-b-md border-b-0' : '',
                                         previewedCompany?.id === company.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
                                     ]"
@@ -546,6 +581,13 @@ function hasVerifiedEmail(company: Company): boolean {
                                         </Badge>
                                     </div>
 
+                                    <div class="col-span-1 flex justify-start py-1.5">
+                                        <Badge :class="['gap-1.5', activeStatusClass(company)]">
+                                            <span :class="['h-1.5 w-1.5 rounded-full', activeStatusDot(company)]" />
+                                            {{ activeStatusLabel(company) }}
+                                        </Badge>
+                                    </div>
+
                                     <div class="col-span-1 flex justify-start py-1.5 text-sm text-custom-shadow/80">
                                         {{ company.created_at_human ?? '—' }}
                                     </div>
@@ -566,6 +608,14 @@ function hasVerifiedEmail(company: Company): boolean {
                                                 <DropdownMenuLabel>
                                                     {{ company.company_name }}
                                                 </DropdownMenuLabel>
+                                                <DropdownMenuItem
+                                                    v-if="canUpdateCompany"
+                                                    class="group cursor-pointer rounded-md"
+                                                    @click="openEdit(company)"
+                                                >
+                                                    <RiEditLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                    Edit
+                                                </DropdownMenuItem>
                                                 <DropdownMenuItem
                                                     as-child
                                                     class="group cursor-pointer rounded-md"
@@ -641,10 +691,17 @@ function hasVerifiedEmail(company: Company): boolean {
 
                     <div class="space-y-3 pt-2">
                         <div class="flex items-center justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Status</span>
+                            <span class="text-sm font-semibold text-custom-shadow">Verification Status</span>
                             <Badge :class="['gap-1.5', statusClass(previewedCompany.status ?? null)]">
                                 <span :class="['h-1.5 w-1.5 rounded-full', statusDot(previewedCompany.status ?? null)]" />
                                 {{ humanizeStatus(previewedCompany.status ?? null) }}
+                            </Badge>
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Active Status</span>
+                            <Badge :class="['gap-1.5', activeStatusClass(previewedCompany)]">
+                                <span :class="['h-1.5 w-1.5 rounded-full', activeStatusDot(previewedCompany)]" />
+                                {{ activeStatusLabel(previewedCompany) }}
                             </Badge>
                         </div>
                         <div class="flex items-start justify-between gap-3">
@@ -677,7 +734,8 @@ function hasVerifiedEmail(company: Company): boolean {
                     <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
 
                     <div class="flex items-center justify-between gap-2">
-                        <Button variant="ghost-outline" size="icon-text" @click="openEdit(previewedCompany)">
+                        <Button v-if="canUpdateCompany" variant="ghost-outline" size="icon-text" @click="openEdit(previewedCompany)">
+                            <RiEditLine class="h-4 w-4" />
                             Edit
                         </Button>
                         <Button v-if="canViewCompany" as-child variant="float-primary" size="icon-text">

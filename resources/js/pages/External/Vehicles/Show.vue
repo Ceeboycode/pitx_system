@@ -132,7 +132,10 @@ type Vehicle = {
     chassis_number: string;
     make_model: string;
     status: string;
-    remarks?: string | null;
+    verification_status?: string | null;
+    verification_remark?: string | null;
+    operator_remark?: string | null;
+    suspension_remark?: string | null;
     created_at?: string | null;
     route?: RouteItem | null;
     documents: VehicleDocument[];
@@ -293,12 +296,22 @@ function vehicleActionNote(vehicle: Vehicle) {
 }
 
 
-const statusDialog = reactive({ open: false });
+const statusDialog = reactive({
+    open: false,
+    operator_remark: props.vehicle.operator_remark ?? '',
+});
 
 function confirmToggleStatus() {
+    const targetStatus = props.vehicle.status === 'active' ? 'inactive' : 'active';
+
     router.patch(
         CompanyVehicleController.toggleStatus(props.vehicle.id).url,
-        {},
+        {
+            status: targetStatus,
+            operator_remark: targetStatus === 'inactive'
+                ? statusDialog.operator_remark
+                : undefined,
+        },
         {
             preserveScroll: true,
             onSuccess: () => {
@@ -332,6 +345,8 @@ function statusClass(status?: string | null) {
         case 'approved':
         case 'verified':
             return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        case 'suspended':
+            return 'bg-orange-100 text-orange-700 border-orange-200';
         case 'pending':
         case 'for_verification':
             return 'bg-amber-100 text-amber-700 border-amber-200';
@@ -351,6 +366,8 @@ function statusDot(status?: string | null) {
         case 'approved':
         case 'verified':
             return 'bg-emerald-500';
+        case 'suspended':
+            return 'bg-orange-500';
         case 'pending':
         case 'for_verification':
             return 'bg-amber-500';
@@ -467,12 +484,20 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                             Registered vehicle profile, assigned route, and
                             submitted documents.
                         </p>
-                        <p
-                            v-if="vehicle.remarks"
-                            class="text-xs font-medium text-amber-700"
-                        >
-                            {{ vehicle.remarks }}
-                        </p>
+                        <div class="space-y-1">
+                            <p
+                                v-if="vehicle.operator_remark"
+                                class="text-xs font-medium text-slate-600"
+                            >
+                                Operator Remark: {{ vehicle.operator_remark }}
+                            </p>
+                            <p
+                                v-if="vehicle.suspension_remark"
+                                class="text-xs font-medium text-orange-700"
+                            >
+                                Suspension Remark: {{ vehicle.suspension_remark }}
+                            </p>
+                        </div>
                     </div>
 
                     
@@ -1202,12 +1227,28 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         >. Are you sure you want to continue?
                     </AlertDialogDescription>
                 </AlertDialogHeader>
+                <div v-if="vehicle.status === 'active'" class="space-y-1.5">
+                    <label
+                        for="operator-remark"
+                        class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
+                    >
+                        Operator Remark
+                    </label>
+                    <textarea
+                        id="operator-remark"
+                        v-model="statusDialog.operator_remark"
+                        rows="3"
+                        class="min-h-24 w-full rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700"
+                        placeholder="Reason for setting this vehicle inactive..."
+                    />
+                </div>
                 <AlertDialogFooter>
                     <AlertDialogCancel class="rounded-lg"
                         >Cancel</AlertDialogCancel
                     >
                     <AlertDialogAction
                         class="rounded-lg border-0 bg-blue-700 text-white hover:bg-blue-800"
+                        :disabled="vehicle.status === 'active' && !statusDialog.operator_remark.trim()"
                         @click="confirmToggleStatus"
                     >
                         Confirm

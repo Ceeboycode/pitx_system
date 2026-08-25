@@ -13,133 +13,134 @@ class PermissionSeeder extends Seeder
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $modules = [
-        // ── Internal ─────────────────────────────────────────
-        'companies' => [
-            'viewAny',
-            'view',
-            'archive',
-            'restore',
-        ],
+            // ── Internal ─────────────────────────────────────────
+            'companies' => [
+                'viewAny',
+                'view',
+                'update',
+                'archive',
+                'restore',
+            ],
 
-        'company_documents' => [
-            'viewAny',
-            'download',
-            'verify',
-            'update',
-            'reject',
-            'archive',
-        ],
+            'company_documents' => [
+                'viewAny',
+                'download',
+                'verify',
+                'update',
+                'reject',
+                'archive',
+            ],
 
-        'vehicles' => [
-            'viewAny',
-            'view',
-            'create',
-            'update',
-            'archive',
-            'restore',
-            'toggleStatus',
-        ],
+            'vehicles' => [
+                'viewAny',
+                'view',
+                'create',
+                'update',
+                'archive',
+                'restore',
+                'toggleStatus',
+            ],
 
-        'vehicle_documents' => [
-            'verify',
-            'invalidate',
-            'unverify',
-        ],
+            'vehicle_documents' => [
+                'verify',
+                'invalidate',
+                'unverify',
+            ],
 
-        'gates' => [
-            'viewAny',
-            'view',
-            'create',
-            'update',
-            'archive',
-            'restore',
-            'viewTrash',
-        ],
+            'gates' => [
+                'viewAny',
+                'view',
+                'create',
+                'update',
+                'archive',
+                'restore',
+                'viewTrash',
+            ],
 
-        'routes' => [
-            'viewAny',
-            'view',
-            'create',
-            'update',
-            'archive',
-            'restore',
-            'viewTrash',
-            'toggleStatus',
-        ],
+            'routes' => [
+                'viewAny',
+                'view',
+                'create',
+                'update',
+                'archive',
+                'restore',
+                'viewTrash',
+                'toggleStatus',
+            ],
 
-        'users' => [
-            'viewAny',
-            'view',
-            'create',
-            'update',
-            'archive',
-            'restore',
-            'viewTrash',
-            'toggleStatus',
-            'resetPassword',
-        ],
+            'users' => [
+                'viewAny',
+                'view',
+                'create',
+                'update',
+                'archive',
+                'restore',
+                'viewTrash',
+                'toggleStatus',
+                'resetPassword',
+            ],
 
-        'roles' => [
-            'viewAny',
-            'view',
-            'create',
-            'update',
-            'archive',
-            'restore',
-            'viewTrash',
-        ],
+            'roles' => [
+                'viewAny',
+                'view',
+                'create',
+                'update',
+                'archive',
+                'restore',
+                'viewTrash',
+            ],
 
-        'dispatches' => [
-            'viewAny',
-            'view',
-        ],
+            'dispatches' => [
+                'viewAny',
+                'view',
+            ],
 
-        'audit_logs' => [
-            'viewAny',
-            'viewOwn',
-        ],
+            'audit_logs' => [
+                'viewAny',
+                'viewOwn',
+            ],
 
-        // ── External ──────────────────────────────────────────
-        // prefix ALL external modules with external_
-        // e.g. if companies can be managed by external users too:
-        'external_companies_settings' => [
-            'view',
-            'update',
-        ],
+            // ── External ──────────────────────────────────────────
+            // prefix ALL external modules with external_
+            // e.g. if companies can be managed by external users too:
+            'external_companies_settings' => [
+                'view',
+                'update',
+            ],
 
-        'external_dispatches' => [
-            'viewAny',
-            'view',
-            'create',
-            'update',
-            'depart',
-            'requestChange',
-        ],
+            'external_dispatches' => [
+                'viewAny',
+                'view',
+                'create',
+                'update',
+                'depart',
+                'requestChange',
+            ],
 
-        'external_vehicles' => [
-            'viewAny',
-            'view',
-            'create',
-            'update',
-            'toggleStatus',
-        ],
+            'external_vehicles' => [
+                'viewAny',
+                'view',
+                'create',
+                'update',
+                'toggleStatus',
+            ],
 
-        'external_vehicle_documents' => [
-            'download',
-            'upload',
-        ],
+            'external_vehicle_documents' => [
+                'download',
+                'upload',
+            ],
 
-        'external_users' => [
-            'viewAny',
-            'view',
-            'create',
-            'update',
-            'archive',
-            'toggleStatus',
-            'resetPassword',
-        ],
+            'external_users' => [
+                'viewAny',
+                'view',
+                'create',
+                'update',
+                'archive',
+                'toggleStatus',
+                'resetPassword',
+            ],
 
-    ];
+        ];
 
         Permission::query()
             ->where(function ($query) {

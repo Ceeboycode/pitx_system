@@ -32,7 +32,7 @@ class VehicleBackupController extends Controller
             'route:id,route_name',
         ])->orderBy('plate_number')->get();
 
-        $filename = 'vehicles-' . now()->format('Y-m-d') . '.csv';
+        $filename = 'vehicles-'.now()->format('Y-m-d').'.csv';
 
         return response()->streamDownload(function () use ($vehicles) {
             $out = fopen('php://output', 'w');
@@ -44,24 +44,28 @@ class VehicleBackupController extends Controller
                 'ID', 'Plate Number', 'Body Number', 'Vehicle Type',
                 'Make / Model', 'Capacity', 'Color',
                 'Engine Number', 'Chassis Number',
-                'Status', 'Company', 'Route', 'Remarks', 'Created At',
+                'Status', 'Verification Status', 'Company', 'Route',
+                'Operator Remark', 'Suspension Remark', 'Verification Remark', 'Created At',
             ]);
 
             foreach ($vehicles as $v) {
                 fputcsv($out, [
                     $v->id,
-                    $v->plate_number    ?? '',
-                    $v->body_number     ?? '',
-                    $v->vehicle_type    ?? '',
-                    $v->make_model      ?? '',
-                    $v->capacity        ?? '',
-                    $v->color           ?? '',
-                    $v->engine_number   ?? '',
-                    $v->chassis_number  ?? '',
-                    $v->status          ?? '',
+                    $v->plate_number ?? '',
+                    $v->body_number ?? '',
+                    $v->vehicle_type ?? '',
+                    $v->make_model ?? '',
+                    $v->capacity ?? '',
+                    $v->color ?? '',
+                    $v->engine_number ?? '',
+                    $v->chassis_number ?? '',
+                    $v->status ?? '',
+                    $v->verification_status ?? '',
                     $v->company?->company_name ?? '',
-                    $v->route?->route_name     ?? '',
-                    $v->remarks         ?? '',
+                    $v->route?->route_name ?? '',
+                    $v->operator_remark ?? '',
+                    $v->suspension_remark ?? '',
+                    $v->verification_remark ?? '',
                     $v->created_at?->timezone('Asia/Manila')->format('M d, Y h:i A') ?? '',
                 ]);
             }
@@ -92,28 +96,30 @@ class VehicleBackupController extends Controller
             'backup' => ['required', 'file', 'mimes:zip', 'max:102400'], // 100 MB
         ], [
             'backup.required' => 'Please select a backup ZIP file.',
-            'backup.mimes'    => 'The file must be a ZIP archive.',
-            'backup.max'      => 'The backup file must not exceed 100 MB.',
+            'backup.mimes' => 'The file must be a ZIP archive.',
+            'backup.max' => 'The backup file must not exceed 100 MB.',
         ]);
 
         $zipFile = $request->file('backup');
-        $tmpDir  = sys_get_temp_dir() . '/vbackup_import_' . Str::uuid();
+        $tmpDir = sys_get_temp_dir().'/vbackup_import_'.Str::uuid();
         mkdir($tmpDir, 0755, true);
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
 
         if ($zip->open($zipFile->getRealPath()) !== true) {
             $this->cleanupTmp($tmpDir);
+
             return response()->json(['message' => 'Could not open the ZIP file. It may be corrupted.'], 422);
         }
 
         $zip->extractTo($tmpDir);
         $zip->close();
 
-        $manifestPath = $tmpDir . '/manifest.json';
+        $manifestPath = $tmpDir.'/manifest.json';
 
         if (! file_exists($manifestPath)) {
             $this->cleanupTmp($tmpDir);
+
             return response()->json(['message' => 'Invalid backup: manifest.json not found.'], 422);
         }
 
@@ -121,13 +127,14 @@ class VehicleBackupController extends Controller
 
         if (! isset($manifest['vehicles']) || ! is_array($manifest['vehicles'])) {
             $this->cleanupTmp($tmpDir);
+
             return response()->json(['message' => 'Invalid backup: manifest format unrecognised.'], 422);
         }
 
         $summary = [
             'imported' => [],
-            'skipped'  => [],
-            'errors'   => [],
+            'skipped' => [],
+            'errors' => [],
         ];
 
         $importedBy = $request->user()?->id;
@@ -137,62 +144,75 @@ class VehicleBackupController extends Controller
 
             if (! $plate) {
                 $summary['errors'][] = 'Skipped one entry: missing plate_number.';
+
                 continue;
             }
 
             // Skip if already exists (idempotent import)
             if (Vehicle::where('plate_number', $plate)->withTrashed()->exists()) {
                 $summary['skipped'][] = "{$plate} — already exists, skipped.";
+
                 continue;
             }
 
             try {
                 DB::transaction(function () use ($entry, $tmpDir, $importedBy, &$summary) {
                     $vehicle = Vehicle::create([
-                        'plate_number'   => $entry['plate_number'],
-                        'body_number'    => $entry['body_number'] ?? null,
-                        'vehicle_type'   => $entry['vehicle_type'] ?? null,
-                        'capacity'       => $entry['capacity'] ?? null,
-                        'color'          => $entry['color'] ?? null,
-                        'engine_number'  => $entry['engine_number'] ?? null,
+                        'plate_number' => $entry['plate_number'],
+                        'body_number' => $entry['body_number'] ?? null,
+                        'vehicle_type' => $entry['vehicle_type'] ?? null,
+                        'capacity' => $entry['capacity'] ?? null,
+                        'color' => $entry['color'] ?? null,
+                        'engine_number' => $entry['engine_number'] ?? null,
                         'chassis_number' => $entry['chassis_number'] ?? null,
-                        'make_model'     => $entry['make_model'] ?? null,
-                        'status'         => $entry['status'] ?? 'for_verification',
-                        'remarks'        => $entry['remarks'] ?? null,
-                        'created_by'     => $importedBy,
-                        'updated_by'     => $importedBy,
+                        'make_model' => $entry['make_model'] ?? null,
+                        'status' => in_array($entry['status'] ?? null, [
+                            Vehicle::STATUS_ACTIVE,
+                            Vehicle::STATUS_INACTIVE,
+                            Vehicle::STATUS_SUSPENDED,
+                        ], true) ? $entry['status'] : Vehicle::STATUS_INACTIVE,
+                        'verification_status' => $entry['verification_status'] ?? Vehicle::VERIFICATION_STATUS_FOR_VERIFICATION,
+                        'operator_remark' => $entry['operator_remark'] ?? (
+                            ($entry['status'] ?? null) !== Vehicle::STATUS_SUSPENDED ? ($entry['remarks'] ?? null) : null
+                        ),
+                        'suspension_remark' => $entry['suspension_remark'] ?? (
+                            ($entry['status'] ?? null) === Vehicle::STATUS_SUSPENDED ? ($entry['remarks'] ?? null) : null
+                        ),
+                        'verification_remark' => $entry['verification_remark'] ?? null,
+                        'created_by' => $importedBy,
+                        'updated_by' => $importedBy,
                     ]);
 
                     foreach ($entry['documents'] ?? [] as $docData) {
                         $newPath = null;
 
                         if (! empty($docData['archive_path'])) {
-                            $srcPath = $tmpDir . '/' . $docData['archive_path'];
+                            $srcPath = $tmpDir.'/'.$docData['archive_path'];
 
                             if (file_exists($srcPath)) {
-                                $ext     = pathinfo($srcPath, PATHINFO_EXTENSION) ?: 'bin';
-                                $newPath = "vehicle-documents/{$vehicle->id}/{$docData['document_type']}/" . Str::uuid() . '.' . $ext;
+                                $ext = pathinfo($srcPath, PATHINFO_EXTENSION) ?: 'bin';
+                                $newPath = "vehicle-documents/{$vehicle->id}/{$docData['document_type']}/".Str::uuid().'.'.$ext;
 
                                 Storage::disk('public')->put($newPath, file_get_contents($srcPath));
                             }
                         }
 
                         VehicleDocument::create([
-                            'vehicle_id'     => $vehicle->id,
-                            'document_type'  => $docData['document_type'],
-                            'file_path'      => $newPath,
-                            'file_name'      => $docData['file_name'] ?? null,
+                            'vehicle_id' => $vehicle->id,
+                            'document_type' => $docData['document_type'],
+                            'file_path' => $newPath,
+                            'file_name' => $docData['file_name'] ?? null,
                             'file_mime_type' => $docData['file_mime_type'] ?? null,
-                            'file_size'      => $docData['file_size'] ?? null,
-                            'issued_at'      => $docData['issued_at'] ?? null,
-                            'expires_at'     => $docData['expires_at'] ?? null,
-                            'status'         => $docData['status'] ?? 'pending',
-                            'remarks'        => $docData['remarks'] ?? null,
-                            'created_by'     => $importedBy,
+                            'file_size' => $docData['file_size'] ?? null,
+                            'issued_at' => $docData['issued_at'] ?? null,
+                            'expires_at' => $docData['expires_at'] ?? null,
+                            'status' => $docData['status'] ?? 'pending',
+                            'remarks' => $docData['remarks'] ?? null,
+                            'created_by' => $importedBy,
                         ]);
                     }
 
-                    $summary['imported'][] = "{$vehicle->plate_number}" . ($vehicle->body_number ? " ({$vehicle->body_number})" : '');
+                    $summary['imported'][] = "{$vehicle->plate_number}".($vehicle->body_number ? " ({$vehicle->body_number})" : '');
                 });
             } catch (\Throwable $e) {
                 $summary['errors'][] = "{$plate} — {$e->getMessage()}";
@@ -214,7 +234,9 @@ class VehicleBackupController extends Controller
     */
     private function cleanupTmp(string $dir): void
     {
-        if (! is_dir($dir)) return;
+        if (! is_dir($dir)) {
+            return;
+        }
 
         $files = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),

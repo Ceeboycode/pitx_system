@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,28 +27,27 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class CompanyVehicleController extends Controller
 {
     private const DOC_TYPES = [
-        'insurance_certificate'       => 'Insurance Certificate',
-        'cpc'                         => 'Certificate of Public Convenience (CPC)',
-        'official_receipt'            => 'Official Receipt (OR)',
+        'insurance_certificate' => 'Insurance Certificate',
+        'cpc' => 'Certificate of Public Convenience (CPC)',
+        'official_receipt' => 'Official Receipt (OR)',
         'certificate_of_registration' => 'Certificate of Registration (CR)',
         'puv_identification_markings' => 'PUV Identification Markings',
     ];
 
     public function __construct(
         private readonly NotificationService $notificationService,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
         Gate::authorize('external_vehicles.viewAny');
 
-        $user    = $request->user();
+        $user = $request->user();
         $company = $user->company;
 
-        $allowedSortBy  = ['capacity', 'created_at'];
-        $sortBy         = in_array($request->sort_by, $allowedSortBy, true) ? $request->sort_by : null;
-        $sortDir        = $request->sort_dir === 'desc' ? 'desc' : 'asc';
+        $allowedSortBy = ['capacity', 'created_at'];
+        $sortBy = in_array($request->sort_by, $allowedSortBy, true) ? $request->sort_by : null;
+        $sortDir = $request->sort_dir === 'desc' ? 'desc' : 'asc';
 
         $query = Vehicle::query()
             ->where('company_id', $company->id)
@@ -62,7 +62,10 @@ class CompanyVehicleController extends Controller
                 'color',
                 'make_model',
                 'status',
-                'remarks',
+                'verification_status',
+                'verification_remark',
+                'operator_remark',
+                'suspension_remark',
                 'created_at',
             ])
             ->with([
@@ -100,28 +103,28 @@ class CompanyVehicleController extends Controller
 
         return Inertia::render('External/Vehicles/Index', [
             'company' => [
-                'id'           => $company->id,
+                'id' => $company->id,
                 'company_name' => $company->company_name,
                 'company_code' => $company->company_code,
-                'status'       => $company->status,
-                'logo_url'     => $company->logo
+                'status' => $company->status,
+                'logo_url' => $company->logo
                     ? $this->publicDisk()->url($company->logo)
                     : null,
             ],
             'user' => [
-                'id'       => $user->id,
-                'name'     => $user->name,
+                'id' => $user->id,
+                'name' => $user->name,
                 'username' => $user->username,
-                'email'    => $user->email,
+                'email' => $user->email,
             ],
             'vehicles' => $vehicles,
-            'filters'  => [
-                'search'       => $request->search,
-                'status'       => $request->status,
+            'filters' => [
+                'search' => $request->search,
+                'status' => $request->status,
                 'vehicle_type' => $request->vehicle_type,
-                'route_id'     => $request->route_id,
-                'sort_by'      => $sortBy,
-                'sort_dir'     => $sortDir,
+                'route_id' => $request->route_id,
+                'sort_by' => $sortBy,
+                'sort_dir' => $sortDir,
             ],
             'routes' => $routes,
         ]);
@@ -131,7 +134,7 @@ class CompanyVehicleController extends Controller
     {
         Gate::authorize('external_vehicles.create');
 
-        $user    = $request->user();
+        $user = $request->user();
         $company = $user->company;
 
         $gates = GateModel::query()
@@ -157,27 +160,27 @@ class CompanyVehicleController extends Controller
 
         return Inertia::render('External/Vehicles/Create', [
             'company' => [
-                'id'           => $company->id,
+                'id' => $company->id,
                 'company_name' => $company->company_name,
                 'company_code' => $company->company_code,
-                'status'       => $company->status,
-                'logo_url'     => $company->logo
+                'status' => $company->status,
+                'logo_url' => $company->logo
                     ? $this->publicDisk()->url($company->logo)
                     : null,
             ],
             'user' => [
-                'id'       => $user->id,
-                'name'     => $user->name,
+                'id' => $user->id,
+                'name' => $user->name,
                 'username' => $user->username,
-                'email'    => $user->email,
+                'email' => $user->email,
             ],
-            'gates'     => $gates,
-            'routes'    => $routes,
-            'docTypes'  => self::DOC_TYPES,
+            'gates' => $gates,
+            'routes' => $routes,
+            'docTypes' => self::DOC_TYPES,
             'mapConfig' => [
-                'mapboxToken'   => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
+                'mapboxToken' => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
                 'defaultCenter' => ['lng' => 120.9842, 'lat' => 14.5995],
-                'defaultZoom'   => 11,
+                'defaultZoom' => 11,
             ],
         ]);
     }
@@ -186,24 +189,25 @@ class CompanyVehicleController extends Controller
     {
         Gate::authorize('external_vehicles.create');
 
-        $user      = $request->user();
-        $company   = $user->company;
+        $user = $request->user();
+        $company = $user->company;
         $validated = $request->validated();
 
         $vehicle = DB::transaction(function () use ($validated, $company, $user, $request) {
             $vehicle = Vehicle::create([
-                'company_id'     => $company->id,
-                'route_id'       => $validated['route_id'],
-                'vehicle_type'   => $validated['vehicle_type'],
-                'plate_number'   => $validated['plate_number'],
-                'body_number'    => $validated['body_number'],
-                'capacity'       => $validated['capacity'],
-                'color'          => $validated['color'],
-                'engine_number'  => $validated['engine_number'],
+                'company_id' => $company->id,
+                'route_id' => $validated['route_id'],
+                'vehicle_type' => $validated['vehicle_type'],
+                'plate_number' => $validated['plate_number'],
+                'body_number' => $validated['body_number'],
+                'capacity' => $validated['capacity'],
+                'color' => $validated['color'],
+                'engine_number' => $validated['engine_number'],
                 'chassis_number' => $validated['chassis_number'],
-                'make_model'     => $validated['make_model'],
-                'status'         => 'pending',
-                'created_by'     => $user->id,
+                'make_model' => $validated['make_model'],
+                'status' => Vehicle::STATUS_INACTIVE,
+                'verification_status' => Vehicle::VERIFICATION_STATUS_FOR_VERIFICATION,
+                'created_by' => $user->id,
             ]);
 
             foreach ($validated['documents'] ?? [] as $index => $docMeta) {
@@ -213,27 +217,27 @@ class CompanyVehicleController extends Controller
                     continue;
                 }
 
-                $documentType     = strtoupper($docMeta['document_type']);
-                $extension        = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'bin');
-                $companyCode      = $this->sanitizeForFileName($company->company_code ?: 'COMPANY_' . $company->id);
-                $plateNumber      = $this->sanitizeForFileName($vehicle->plate_number ?: 'VEHICLE_' . $vehicle->id);
+                $documentType = strtoupper($docMeta['document_type']);
+                $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'bin');
+                $companyCode = $this->sanitizeForFileName($company->company_code ?: 'COMPANY_'.$company->id);
+                $plateNumber = $this->sanitizeForFileName($vehicle->plate_number ?: 'VEHICLE_'.$vehicle->id);
                 $documentTypeSafe = $this->sanitizeForFileName($documentType);
-                $timestamp        = now()->format('Ymd_His');
-                $fileName         = "{$companyCode}_{$plateNumber}_{$documentTypeSafe}_{$timestamp}.{$extension}";
-                $directory        = "company-documents/{$company->id}/vehicles/{$vehicle->id}/{$documentTypeSafe}";
-                $path             = $file->storeAs($directory, $fileName, 'public');
+                $timestamp = now()->format('Ymd_His');
+                $fileName = "{$companyCode}_{$plateNumber}_{$documentTypeSafe}_{$timestamp}.{$extension}";
+                $directory = "company-documents/{$company->id}/vehicles/{$vehicle->id}/{$documentTypeSafe}";
+                $path = $file->storeAs($directory, $fileName, 'public');
 
                 VehicleDocument::create([
-                    'vehicle_id'     => $vehicle->id,
-                    'document_type'  => $docMeta['document_type'],
-                    'file_path'      => $path,
-                    'file_name'      => $fileName,
+                    'vehicle_id' => $vehicle->id,
+                    'document_type' => $docMeta['document_type'],
+                    'file_path' => $path,
+                    'file_name' => $fileName,
                     'file_mime_type' => $file->getMimeType(),
-                    'file_size'      => $file->getSize(),
-                    'status'         => 'pending',
-                    'issued_at'      => $this->usesDocumentDates($docMeta['document_type']) ? $docMeta['issued_at'] : null,
-                    'expires_at'     => $this->usesDocumentDates($docMeta['document_type']) ? $docMeta['expires_at'] : null,
-                    'created_by'     => $user->id,
+                    'file_size' => $file->getSize(),
+                    'status' => 'pending',
+                    'issued_at' => $this->usesDocumentDates($docMeta['document_type']) ? $docMeta['issued_at'] : null,
+                    'expires_at' => $this->usesDocumentDates($docMeta['document_type']) ? $docMeta['expires_at'] : null,
+                    'created_by' => $user->id,
                 ]);
             }
 
@@ -253,7 +257,7 @@ class CompanyVehicleController extends Controller
     {
         Gate::authorize('external_vehicles.view');
 
-        $user    = $request->user();
+        $user = $request->user();
         $company = $user->company;
 
         abort_unless($vehicle->company_id === $company->id, 404);
@@ -290,84 +294,87 @@ class CompanyVehicleController extends Controller
 
         return Inertia::render('External/Vehicles/Show', [
             'company' => [
-                'id'           => $company->id,
+                'id' => $company->id,
                 'company_name' => $company->company_name,
                 'company_code' => $company->company_code,
-                'status'       => $company->status,
-                'logo_url'     => $company->logo
+                'status' => $company->status,
+                'logo_url' => $company->logo
                     ? $this->publicDisk()->url($company->logo)
                     : null,
             ],
             'user' => [
-                'id'       => $user->id,
-                'name'     => $user->name,
+                'id' => $user->id,
+                'name' => $user->name,
                 'username' => $user->username,
-                'email'    => $user->email,
+                'email' => $user->email,
             ],
             'vehicle' => [
-                'id'             => $vehicle->id,
-                'route_id'       => $vehicle->route_id,
-                'vehicle_type'   => $vehicle->vehicle_type,
-                'plate_number'   => $vehicle->plate_number,
-                'body_number'    => $vehicle->body_number,
-                'capacity'       => $vehicle->capacity,
-                'color'          => $vehicle->color,
-                'engine_number'  => $vehicle->engine_number,
+                'id' => $vehicle->id,
+                'route_id' => $vehicle->route_id,
+                'vehicle_type' => $vehicle->vehicle_type,
+                'plate_number' => $vehicle->plate_number,
+                'body_number' => $vehicle->body_number,
+                'capacity' => $vehicle->capacity,
+                'color' => $vehicle->color,
+                'engine_number' => $vehicle->engine_number,
                 'chassis_number' => $vehicle->chassis_number,
-                'make_model'     => $vehicle->make_model,
-                'status'         => $vehicle->status,
-                'remarks'        => $vehicle->remarks,
-                'created_at'     => optional($vehicle->created_at)?->toDateTimeString(),
-                'route'          => $vehicle->route ? [
-                    'id'               => $vehicle->route->id,
-                    'gate_id'          => $vehicle->route->gate_id,
-                    'route_name'       => $vehicle->route->route_name,
-                    'origin_name'      => $vehicle->route->origin_name,
+                'make_model' => $vehicle->make_model,
+                'status' => $vehicle->status,
+                'verification_status' => $vehicle->verification_status,
+                'verification_remark' => $vehicle->verification_remark,
+                'operator_remark' => $vehicle->operator_remark,
+                'suspension_remark' => $vehicle->suspension_remark,
+                'created_at' => optional($vehicle->created_at)?->toDateTimeString(),
+                'route' => $vehicle->route ? [
+                    'id' => $vehicle->route->id,
+                    'gate_id' => $vehicle->route->gate_id,
+                    'route_name' => $vehicle->route->route_name,
+                    'origin_name' => $vehicle->route->origin_name,
                     'destination_name' => $vehicle->route->destination_name,
-                    'route_geometry'   => $vehicle->route->route_geometry,
-                    'gate'             => $vehicle->route->gate ? [
-                        'id'        => $vehicle->route->gate->id,
+                    'route_geometry' => $vehicle->route->route_geometry,
+                    'gate' => $vehicle->route->gate ? [
+                        'id' => $vehicle->route->gate->id,
                         'gate_name' => $vehicle->route->gate->gate_name,
                     ] : null,
                     'stops' => $vehicle->route->stops->map(fn ($stop) => [
-                        'id'         => $stop->id,
-                        'route_id'   => $stop->route_id,
-                        'stop_name'  => $stop->stop_name,
+                        'id' => $stop->id,
+                        'route_id' => $stop->route_id,
+                        'stop_name' => $stop->stop_name,
                         'stop_order' => $stop->stop_order,
-                        'stop_type'  => $stop->stop_type,
-                        'address'    => $stop->address,
-                        'latitude'   => $stop->latitude,
-                        'longitude'  => $stop->longitude,
+                        'stop_type' => $stop->stop_type,
+                        'address' => $stop->address,
+                        'latitude' => $stop->latitude,
+                        'longitude' => $stop->longitude,
                     ])->values(),
                 ] : null,
                 'documents' => $vehicle->documents->map(function ($document) use ($vehicle) {
                     return [
-                        'id'             => $document->id,
-                        'document_type'  => $document->document_type,
-                        'file_name'      => $document->file_name,
-                        'file_url'       => $document->file_path
+                        'id' => $document->id,
+                        'document_type' => $document->document_type,
+                        'file_name' => $document->file_name,
+                        'file_url' => $document->file_path
                             ? $this->publicDisk()->url($document->file_path)
                             : null,
                         'file_mime_type' => $document->file_mime_type,
-                        'file_size'      => $document->file_size,
-                        'status'         => $document->status,
-                        'issued_at'      => optional($document->issued_at)?->format('Y-m-d'),
-                        'expires_at'     => optional($document->expires_at)?->format('Y-m-d'),
-                        'created_at'     => optional($document->created_at)?->toDateTimeString(),
-                        'download_url'   => route('company.vehicles.documents.download', [
-                            'vehicle'  => $vehicle->id,
+                        'file_size' => $document->file_size,
+                        'status' => $document->status,
+                        'issued_at' => optional($document->issued_at)?->format('Y-m-d'),
+                        'expires_at' => optional($document->expires_at)?->format('Y-m-d'),
+                        'created_at' => optional($document->created_at)?->toDateTimeString(),
+                        'download_url' => route('company.vehicles.documents.download', [
+                            'vehicle' => $vehicle->id,
                             'document' => $document->id,
                         ]),
                     ];
                 })->values(),
             ],
-            'gates'     => $gates,
-            'routes'    => $routes,
-            'docTypes'  => self::DOC_TYPES,
+            'gates' => $gates,
+            'routes' => $routes,
+            'docTypes' => self::DOC_TYPES,
             'mapConfig' => [
-                'mapboxToken'   => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
+                'mapboxToken' => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
                 'defaultCenter' => ['lng' => 120.9842, 'lat' => 14.5995],
-                'defaultZoom'   => 11,
+                'defaultZoom' => 11,
             ],
         ]);
     }
@@ -376,7 +383,7 @@ class CompanyVehicleController extends Controller
     {
         Gate::authorize('external_vehicles.update');
 
-        $user    = $request->user();
+        $user = $request->user();
         $company = $user->company;
 
         abort_unless($vehicle->company_id === $company->id, 404);
@@ -411,50 +418,53 @@ class CompanyVehicleController extends Controller
 
         return Inertia::render('External/Vehicles/Edit', [
             'company' => [
-                'id'           => $company->id,
+                'id' => $company->id,
                 'company_name' => $company->company_name,
                 'company_code' => $company->company_code,
-                'status'       => $company->status,
-                'logo_url'     => $company->logo
+                'status' => $company->status,
+                'logo_url' => $company->logo
                     ? $this->publicDisk()->url($company->logo)
                     : null,
             ],
             'user' => [
-                'id'       => $user->id,
-                'name'     => $user->name,
+                'id' => $user->id,
+                'name' => $user->name,
                 'username' => $user->username,
-                'email'    => $user->email,
+                'email' => $user->email,
             ],
             'vehicle' => [
-                'id'             => $vehicle->id,
-                'route_id'       => $vehicle->route_id,
-                'vehicle_type'   => $vehicle->vehicle_type,
-                'plate_number'   => $vehicle->plate_number,
-                'body_number'    => $vehicle->body_number,
-                'capacity'       => $vehicle->capacity,
-                'color'          => $vehicle->color,
-                'engine_number'  => $vehicle->engine_number,
+                'id' => $vehicle->id,
+                'route_id' => $vehicle->route_id,
+                'vehicle_type' => $vehicle->vehicle_type,
+                'plate_number' => $vehicle->plate_number,
+                'body_number' => $vehicle->body_number,
+                'capacity' => $vehicle->capacity,
+                'color' => $vehicle->color,
+                'engine_number' => $vehicle->engine_number,
                 'chassis_number' => $vehicle->chassis_number,
-                'make_model'     => $vehicle->make_model,
-                'status'         => $vehicle->status,
-                'remarks'        => $vehicle->remarks,
-                'documents'      => $vehicle->documents->map(fn ($document) => [
-                    'id'            => $document->id,
+                'make_model' => $vehicle->make_model,
+                'status' => $vehicle->status,
+                'verification_status' => $vehicle->verification_status,
+                'verification_remark' => $vehicle->verification_remark,
+                'operator_remark' => $vehicle->operator_remark,
+                'suspension_remark' => $vehicle->suspension_remark,
+                'documents' => $vehicle->documents->map(fn ($document) => [
+                    'id' => $document->id,
                     'document_type' => $document->document_type,
-                    'file_name'     => $document->file_name,
-                    'status'        => $document->status,
-                    'issued_at'     => optional($document->issued_at)?->format('Y-m-d'),
-                    'expires_at'    => optional($document->expires_at)?->format('Y-m-d'),
-                    'created_at'    => optional($document->created_at)?->toDateTimeString(),
+                    'file_name' => $document->file_name,
+                    'status' => $document->status,
+                    'issued_at' => optional($document->issued_at)?->format('Y-m-d'),
+                    'expires_at' => optional($document->expires_at)?->format('Y-m-d'),
+                    'created_at' => optional($document->created_at)?->toDateTimeString(),
                 ])->values(),
             ],
-            'gates'     => $gates,
-            'routes'    => $routes,
-            'docTypes'  => self::DOC_TYPES,
+            'gates' => $gates,
+            'routes' => $routes,
+            'docTypes' => self::DOC_TYPES,
             'mapConfig' => [
-                'mapboxToken'   => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
+                'mapboxToken' => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
                 'defaultCenter' => ['lng' => 120.9842, 'lat' => 14.5995],
-                'defaultZoom'   => 11,
+                'defaultZoom' => 11,
             ],
         ]);
     }
@@ -463,8 +473,8 @@ class CompanyVehicleController extends Controller
     {
         Gate::authorize('external_vehicles.update');
 
-        $company   = $request->user()->company;
-        $user      = $request->user();
+        $company = $request->user()->company;
+        $user = $request->user();
         $validated = $request->validated();
 
         abort_unless($vehicle->company_id === $company->id, 404);
@@ -482,7 +492,7 @@ class CompanyVehicleController extends Controller
                     continue;
                 }
 
-                $documentType     = $docMeta['document_type'] ?? null;
+                $documentType = $docMeta['document_type'] ?? null;
                 $existingDocument = $documentsByType->get($documentType);
 
                 if (! $existingDocument) {
@@ -502,25 +512,25 @@ class CompanyVehicleController extends Controller
                     ]);
                 }
 
-                $extension        = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'bin');
-                $companyCode      = $this->sanitizeForFileName($company->company_code ?: 'COMPANY_' . $company->id);
-                $plateNumber      = $this->sanitizeForFileName($vehicle->plate_number ?: 'VEHICLE_' . $vehicle->id);
+                $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'bin');
+                $companyCode = $this->sanitizeForFileName($company->company_code ?: 'COMPANY_'.$company->id);
+                $plateNumber = $this->sanitizeForFileName($vehicle->plate_number ?: 'VEHICLE_'.$vehicle->id);
                 $documentTypeSafe = $this->sanitizeForFileName(strtoupper((string) $documentType));
-                $timestamp        = now()->format('Ymd_His');
-                $fileName         = "{$companyCode}_{$plateNumber}_{$documentTypeSafe}_{$timestamp}.{$extension}";
-                $directory        = "company-documents/{$company->id}/vehicles/{$vehicle->id}/{$documentTypeSafe}";
-                $newPath          = $file->storeAs($directory, $fileName, 'public');
-                $oldPath          = ltrim((string) $existingDocument->file_path, '/');
+                $timestamp = now()->format('Ymd_His');
+                $fileName = "{$companyCode}_{$plateNumber}_{$documentTypeSafe}_{$timestamp}.{$extension}";
+                $directory = "company-documents/{$company->id}/vehicles/{$vehicle->id}/{$documentTypeSafe}";
+                $newPath = $file->storeAs($directory, $fileName, 'public');
+                $oldPath = ltrim((string) $existingDocument->file_path, '/');
 
                 $existingDocument->update([
-                    'file_path'      => $newPath,
-                    'file_name'      => $fileName,
+                    'file_path' => $newPath,
+                    'file_name' => $fileName,
                     'file_mime_type' => $file->getMimeType(),
-                    'file_size'      => $file->getSize(),
-                    'status'         => 'pending',
-                    'issued_at'      => $this->usesDocumentDates((string) $documentType) ? $docMeta['issued_at'] : null,
-                    'expires_at'     => $this->usesDocumentDates((string) $documentType) ? $docMeta['expires_at'] : null,
-                    'updated_by'     => $user->id,
+                    'file_size' => $file->getSize(),
+                    'status' => 'pending',
+                    'issued_at' => $this->usesDocumentDates((string) $documentType) ? $docMeta['issued_at'] : null,
+                    'expires_at' => $this->usesDocumentDates((string) $documentType) ? $docMeta['expires_at'] : null,
+                    'updated_by' => $user->id,
                 ]);
 
                 if ($oldPath !== '' && $oldPath !== $newPath) {
@@ -537,18 +547,19 @@ class CompanyVehicleController extends Controller
             }
 
             $vehicle->update([
-                'route_id'       => $validated['route_id'],
-                'vehicle_type'   => $validated['vehicle_type'],
-                'plate_number'   => strtoupper(trim((string) $validated['plate_number'])),
-                'body_number'    => $validated['body_number'],
-                'capacity'       => $validated['capacity'],
-                'color'          => $validated['color'],
-                'engine_number'  => $validated['engine_number'],
+                'route_id' => $validated['route_id'],
+                'vehicle_type' => $validated['vehicle_type'],
+                'plate_number' => strtoupper(trim((string) $validated['plate_number'])),
+                'body_number' => $validated['body_number'],
+                'capacity' => $validated['capacity'],
+                'color' => $validated['color'],
+                'engine_number' => $validated['engine_number'],
                 'chassis_number' => $validated['chassis_number'],
-                'make_model'     => $validated['make_model'],
-                'status'         => 'pending',
-                'remarks'        => 'Pending review: resubmitted invalid/expired documents - ' . collect($resubmittedDocumentLabels)->unique()->implode(', '),
-                'updated_by'     => $user->id,
+                'make_model' => $validated['make_model'],
+                'status' => Vehicle::STATUS_INACTIVE,
+                'verification_status' => Vehicle::VERIFICATION_STATUS_FOR_VERIFICATION,
+                'verification_remark' => 'Pending review: resubmitted invalid/expired documents - '.collect($resubmittedDocumentLabels)->unique()->implode(', '),
+                'updated_by' => $user->id,
             ]);
 
             return [
@@ -579,10 +590,20 @@ class CompanyVehicleController extends Controller
 
         abort_unless($vehicle->company_id === $company->id, 404);
 
-        if ($vehicle->status === 'suspended') {
+        if ($vehicle->status === Vehicle::STATUS_SUSPENDED) {
             return to_route('company.vehicles.index')
                 ->with('error', 'Suspended vehicles cannot change status.');
         }
+
+        $targetStatus = $request->input('status')
+            ?: ($vehicle->status === Vehicle::STATUS_ACTIVE ? Vehicle::STATUS_INACTIVE : Vehicle::STATUS_ACTIVE);
+
+        $validated = $request->validate([
+            'status' => ['nullable', Rule::in([Vehicle::STATUS_ACTIVE, Vehicle::STATUS_INACTIVE])],
+            'operator_remark' => ['nullable', 'string', 'max:1000'],
+            'remarks' => ['nullable', 'string', 'max:1000'],
+            'suspension_remark' => ['prohibited'],
+        ]);
 
         $hasDocuments = $vehicle->documents()->exists();
         $hasPendingOrRejected = $vehicle->documents()
@@ -594,14 +615,18 @@ class CompanyVehicleController extends Controller
             ->where('expires_at', '<', now()->toDateString())
             ->exists();
 
-        if ($vehicle->status === 'active') {
-            $validated = $request->validate([
-                'remarks' => ['required', 'string', 'max:1000'],
-            ]);
+        if ($targetStatus === Vehicle::STATUS_INACTIVE) {
+            $operatorRemark = $validated['operator_remark'] ?? $validated['remarks'] ?? null;
+
+            if (! is_string($operatorRemark) || trim($operatorRemark) === '') {
+                throw ValidationException::withMessages([
+                    'operator_remark' => 'Please provide an operator remark before setting this vehicle to inactive.',
+                ]);
+            }
 
             $vehicle->update([
-                'status'  => 'inactive',
-                'remarks' => $validated['remarks'],
+                'status' => Vehicle::STATUS_INACTIVE,
+                'operator_remark' => $operatorRemark,
                 'updated_by' => $request->user()->id,
             ]);
 
@@ -609,7 +634,7 @@ class CompanyVehicleController extends Controller
                 ->with('success', 'Vehicle set to inactive.');
         }
 
-        if ($vehicle->status === 'inactive') {
+        if ($targetStatus === Vehicle::STATUS_ACTIVE) {
             if (! $hasDocuments) {
                 return to_route('company.vehicles.index')
                     ->with('error', 'Upload the required documents before activating this vehicle.');
@@ -626,8 +651,7 @@ class CompanyVehicleController extends Controller
             }
 
             $vehicle->update([
-                'status'  => 'active',
-                'remarks' => null,
+                'status' => Vehicle::STATUS_ACTIVE,
                 'updated_by' => $request->user()->id,
             ]);
 
@@ -721,14 +745,15 @@ class CompanyVehicleController extends Controller
             return;
         }
 
-        $remarks = 'Pending due to expired documents: ' . $expiredDocuments
+        $remarks = 'Pending due to expired documents: '.$expiredDocuments
             ->map(fn (VehicleDocument $document) => self::DOC_TYPES[$document->document_type] ?? strtoupper((string) $document->document_type))
             ->unique()
             ->implode(', ');
 
         $payload = [
-            'status' => 'pending',
-            'remarks' => $remarks,
+            'status' => Vehicle::STATUS_INACTIVE,
+            'verification_status' => Vehicle::VERIFICATION_STATUS_PENDING,
+            'verification_remark' => $remarks,
         ];
 
         if ($userId !== null) {

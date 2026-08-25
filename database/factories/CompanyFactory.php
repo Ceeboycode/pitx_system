@@ -31,7 +31,7 @@ class CompanyFactory extends Factory
         $base = substr($initials, 0, 3);
 
         if (strlen($base) < 3) {
-            $base = substr($base . $cleanName, 0, 3);
+            $base = substr($base.$cleanName, 0, 3);
         }
 
         if (strlen($base) < 3) {
@@ -42,7 +42,7 @@ class CompanyFactory extends Factory
         $i = 1;
 
         while (Company::query()->where('company_code', $code)->exists()) {
-            $code = $base . str_pad((string) $i, 2, '0', STR_PAD_LEFT);
+            $code = $base.str_pad((string) $i, 2, '0', STR_PAD_LEFT);
             $i++;
         }
 
@@ -52,13 +52,13 @@ class CompanyFactory extends Factory
             'company_code' => $code,
             'company_email' => fake()->unique()->companyEmail(),
             'company_email_verified_at' => fake()->boolean(70) ? now() : null,
-            'company_phone' => '09' . fake()->numerify('#########'),
+            'company_phone' => '09'.fake()->numerify('#########'),
             'company_address' => fake()->address(),
             'business_type' => fake()->randomElement(['corporate', 'sole_proprietorship']),
             'registration_number' => strtoupper(fake()->bothify('REG-####-???')),
             'authorized_representative_name' => fake()->name(),
             'authorized_representative_position' => fake()->jobTitle(),
-            'authorized_representative_contact' => '09' . fake()->numerify('#########'),
+            'authorized_representative_contact' => '09'.fake()->numerify('#########'),
             'status' => fake()->randomElement([
                 'draft',
                 'docs_completed',
@@ -67,6 +67,7 @@ class CompanyFactory extends Factory
                 'needs_revision',
                 'rejected',
             ]),
+            'is_active' => true,
             'created_by' => User::query()->value('id'),
             'updated_by' => User::query()->value('id'),
             'deleted_by' => null,

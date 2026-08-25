@@ -3,41 +3,26 @@
 namespace App\Http\Requests\Company;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class CompanyUpdateRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // Gate check is done in the controller
+        return $this->user()?->can('update', $this->route('company')) ?? false;
     }
 
     public function rules(): array
     {
         return [
-            'company_name' => ['required', 'string', 'max:255'],
-
-            'status' => [
-                'required',
-                Rule::in([
-                    'draft',
-                    'docs_completed',
-                    'for_verification',
-                    'verified',
-                    'needs_revision',
-                    'rejected',
-                ]),
-            ],
+            'is_active' => ['required', 'boolean'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'company_name.required' => 'Company name is required.',
-            'company_name.max'      => 'Company name must not exceed 255 characters.',
-            'status.required'       => 'Please select a status.',
-            'status.in'             => 'The selected status is not valid.',
+            'is_active.required' => 'Please select an active status.',
+            'is_active.boolean' => 'The selected active status is not valid.',
         ];
     }
 }

@@ -90,6 +90,8 @@ type Vehicle = {
     chassis_number: string;
     make_model: string;
     status: string;
+    operator_remark?: string | null;
+    suspension_remark?: string | null;
     documents: VehicleDocument[];
 };
 
@@ -205,6 +207,8 @@ function statusClass(status?: string | null) {
         case 'approved':
         case 'verified':
             return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        case 'suspended':
+            return 'bg-orange-100 text-orange-700 border-orange-200';
         case 'pending':
         case 'for_verification':
             return 'bg-amber-100 text-amber-700 border-amber-200';
@@ -222,6 +226,8 @@ function statusDot(status?: string | null) {
         case 'approved':
         case 'verified':
             return 'bg-emerald-500';
+        case 'suspended':
+            return 'bg-orange-500';
         case 'pending':
         case 'for_verification':
             return 'bg-amber-500';
@@ -316,6 +322,24 @@ function statusDot(status?: string | null) {
                                         >
                                             {{ vehicle.plate_number }}
                                         </Badge>
+                                    </div>
+
+                                    <div
+                                        v-if="vehicle.operator_remark || vehicle.suspension_remark"
+                                        class="space-y-1 text-xs"
+                                    >
+                                        <p
+                                            v-if="vehicle.operator_remark"
+                                            class="font-medium text-slate-500"
+                                        >
+                                            Operator Remark: {{ vehicle.operator_remark }}
+                                        </p>
+                                        <p
+                                            v-if="vehicle.suspension_remark"
+                                            class="font-medium text-orange-700"
+                                        >
+                                            Suspension Remark: {{ vehicle.suspension_remark }}
+                                        </p>
                                     </div>
                                 </div>
                             </div>

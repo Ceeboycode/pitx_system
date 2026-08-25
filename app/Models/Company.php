@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\CompanyProfileChangeRequest;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,9 +15,13 @@ class Company extends Model
     use HasFactory, SoftDeletes;
 
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_DOCS_COMPLETED = 'docs_completed';
+
     public const STATUS_FOR_VERIFICATION = 'for_verification';
+
     public const STATUS_VERIFIED = 'verified';
+
     public const STATUS_NEEDS_REVISION = 'needs_revision';
 
     protected $fillable = [
@@ -36,14 +38,20 @@ class Company extends Model
         'authorized_representative_position',
         'authorized_representative_contact',
         'status',
+        'is_active',
         'created_by',
         'updated_by',
         'deleted_by',
     ];
 
+    protected $attributes = [
+        'is_active' => true,
+    ];
+
     protected $casts = [
         'deleted_at' => 'datetime',
         'company_email_verified_at' => 'datetime',
+        'is_active' => 'boolean',
     ];
 
     protected $appends = [
@@ -61,10 +69,10 @@ class Company extends Model
         return $query->when(
             filled($search),
             fn (Builder $q) => $q->where(function (Builder $qq) use ($search) {
-                $qq->where('company_name', 'like', '%' . $search . '%')
-                    ->orWhere('company_code', 'like', '%' . $search . '%')
-                    ->orWhere('company_email', 'like', '%' . $search . '%')
-                    ->orWhere('company_phone', 'like', '%' . $search . '%');
+                $qq->where('company_name', 'like', '%'.$search.'%')
+                    ->orWhere('company_code', 'like', '%'.$search.'%')
+                    ->orWhere('company_email', 'like', '%'.$search.'%')
+                    ->orWhere('company_phone', 'like', '%'.$search.'%');
             })
         );
     }

@@ -30,18 +30,18 @@ class CompanyPolicy
     //     return $user->can('companies.create');
     // }
 
-    // public function update(User $user, Company $company): bool
-    // {
-    //     if (! $user->can('companies.update')) {
-    //         return false;
-    //     }
+    public function update(User $user, Company $company): bool
+    {
+        if (! $user->can('companies.update')) {
+            return false;
+        }
 
-    //     if ($user->hasAnyRole(['operator', 'dispatcher', 'driver'])) {
-    //         return (int) $user->company_id === (int) $company->id;
-    //     }
+        if ($user->hasAnyRole(['operator', 'dispatcher', 'driver'])) {
+            return (int) $user->company_id === (int) $company->id;
+        }
 
-    //     return true;
-    // }
+        return true;
+    }
 
     public function delete(User $user, Company $company): bool
     {

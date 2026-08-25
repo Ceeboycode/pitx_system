@@ -92,8 +92,8 @@ class VehicleService
             }
         });
 
-        $nextStatus = 'draft';
-        $vehicleRemarks = null;
+        $nextVerificationStatus = Vehicle::VERIFICATION_STATUS_DRAFT;
+        $verificationRemark = null;
 
         $expiredDocs = $documents
             ->filter(fn ($doc) => $doc->expires_at && $doc->expires_at->isPast())
@@ -101,10 +101,10 @@ class VehicleService
             ->values();
 
         if ($documents->isEmpty()) {
-            $nextStatus = 'draft';
+            $nextVerificationStatus = Vehicle::VERIFICATION_STATUS_DRAFT;
         } elseif ($expiredDocs->isNotEmpty()) {
-            $nextStatus = 'pending';
-            $vehicleRemarks = $this->expiredDocumentsRemark($expiredDocs);
+            $nextVerificationStatus = Vehicle::VERIFICATION_STATUS_PENDING;
+            $verificationRemark = $this->expiredDocumentsRemark($expiredDocs);
         } else {
             $missingRequiredDocument = collect($requiredTypes)
                 ->contains(fn ($type) => ! $documents->has($type));
@@ -114,29 +114,35 @@ class VehicleService
                 ->map(fn ($type) => $documents[$type]->status);
 
             if ($statuses->contains('invalid')) {
-                $nextStatus = 'needs_revision';
+                $nextVerificationStatus = Vehicle::VERIFICATION_STATUS_NEEDS_REVISION;
 
                 $firstInvalid = collect($requiredTypes)
                     ->filter(fn ($type) => $documents->has($type))
                     ->map(fn ($type) => $documents[$type])
                     ->firstWhere('status', 'invalid');
 
-                $vehicleRemarks = $firstInvalid?->remarks;
+                $verificationRemark = $firstInvalid?->remarks;
             } elseif (
                 ! $missingRequiredDocument &&
                 $statuses->count() === count($requiredTypes) &&
                 $statuses->every(fn ($status) => $status === 'verified')
             ) {
-                $nextStatus = 'active';
+                $nextVerificationStatus = Vehicle::VERIFICATION_STATUS_VERIFIED;
             } else {
-                $nextStatus = 'for_verification';
+                $nextVerificationStatus = Vehicle::VERIFICATION_STATUS_FOR_VERIFICATION;
             }
         }
 
         $payload = [
-            'status' => $nextStatus,
-            'remarks' => $vehicleRemarks,
+            'verification_status' => $nextVerificationStatus,
+            'verification_remark' => $verificationRemark,
         ];
+
+        if ($vehicle->status !== Vehicle::STATUS_SUSPENDED) {
+            $payload['status'] = $nextVerificationStatus === Vehicle::VERIFICATION_STATUS_VERIFIED
+                ? Vehicle::STATUS_ACTIVE
+                : Vehicle::STATUS_INACTIVE;
+        }
 
         if ($userId) {
             $payload['updated_by'] = $userId;
@@ -192,7 +198,7 @@ class VehicleService
             ->unique()
             ->implode(', ');
 
-        return 'Pending due to expired documents: ' . $labels;
+        return 'Pending due to expired documents: '.$labels;
     }
 
     private function documentTypeLabel(string $type): string

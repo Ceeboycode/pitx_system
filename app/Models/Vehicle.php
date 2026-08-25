@@ -21,6 +21,22 @@ class Vehicle extends Model
         'puv_identification_markings',
     ];
 
+    public const STATUS_ACTIVE = 'active';
+
+    public const STATUS_INACTIVE = 'inactive';
+
+    public const STATUS_SUSPENDED = 'suspended';
+
+    public const VERIFICATION_STATUS_DRAFT = 'draft';
+
+    public const VERIFICATION_STATUS_FOR_VERIFICATION = 'for_verification';
+
+    public const VERIFICATION_STATUS_NEEDS_REVISION = 'needs_revision';
+
+    public const VERIFICATION_STATUS_PENDING = 'pending';
+
+    public const VERIFICATION_STATUS_VERIFIED = 'verified';
+
     protected $fillable = [
         'company_id',
         'route_id',
@@ -33,10 +49,18 @@ class Vehicle extends Model
         'chassis_number',
         'make_model',
         'status',
-        'remarks',
+        'verification_status',
+        'verification_remark',
+        'operator_remark',
+        'suspension_remark',
         'created_by',
         'updated_by',
         'deleted_by',
+    ];
+
+    protected $attributes = [
+        'status' => self::STATUS_ACTIVE,
+        'verification_status' => self::VERIFICATION_STATUS_DRAFT,
     ];
 
     protected $appends = ['docs_status'];
@@ -82,7 +106,8 @@ class Vehicle extends Model
                 ->orWhere('body_number', 'like', "%{$term}%")
                 ->orWhere('make_model', 'like', "%{$term}%")
                 ->orWhere('vehicle_type', 'like', "%{$term}%")
-                ->orWhere('status', 'like', "%{$term}%");
+                ->orWhere('status', 'like', "%{$term}%")
+                ->orWhere('verification_status', 'like', "%{$term}%");
         });
     }
 

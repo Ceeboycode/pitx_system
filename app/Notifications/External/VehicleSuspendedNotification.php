@@ -15,8 +15,7 @@ class VehicleSuspendedNotification extends Notification implements ShouldQueue
 
     public function __construct(
         public Vehicle $vehicle,
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {
@@ -38,6 +37,7 @@ class VehicleSuspendedNotification extends Notification implements ShouldQueue
             'plate_number' => $this->vehicle->plate_number,
             'body_number' => $this->vehicle->body_number,
             'status' => $this->vehicle->status,
+            'suspension_remark' => $this->vehicle->suspension_remark,
         ];
     }
 
@@ -47,6 +47,10 @@ class VehicleSuspendedNotification extends Notification implements ShouldQueue
             ->subject('Vehicle Suspended')
             ->greeting('Hello,')
             ->line("Your vehicle {$this->vehicle->plate_number} has been suspended.")
+            ->when(
+                filled($this->vehicle->suspension_remark),
+                fn (MailMessage $message) => $message->line("Reason: {$this->vehicle->suspension_remark}")
+            )
             ->line('Please review the vehicle record or contact support for more information.')
             ->action('Open Vehicle Record', route('company.vehicles.show', $this->vehicle->id))
             ->line('Thank you.');

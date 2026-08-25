@@ -110,7 +110,10 @@ type VehicleItem = {
     color?: string | null;
     make_model?: string | null;
     status: string;
-    remarks?: string | null;
+    verification_status?: string | null;
+    verification_remark?: string | null;
+    operator_remark?: string | null;
+    suspension_remark?: string | null;
     created_at?: string | null;
     route?: VehicleRoute | null;
     documents?: VehicleDocument[];
@@ -422,7 +425,7 @@ function clearSort() {
 const statusDialog = reactive({
     open: false,
     vehicle: null as VehicleItem | null,
-    remarks: '',
+    operator_remark: '',
 });
 
 const statusDialogOpen = computed({
@@ -431,7 +434,7 @@ const statusDialogOpen = computed({
         statusDialog.open = val;
         if (!val) {
             statusDialog.vehicle = null;
-            statusDialog.remarks = '';
+            statusDialog.operator_remark = '';
         }
     },
 });
@@ -441,17 +444,20 @@ const isInactivating = computed(() => statusDialog.vehicle?.status === 'active')
 function openDeactivate(vehicle: VehicleItem) {
     if (!canToggleVehicle(vehicle) || vehicle.status !== 'active') return;
     statusDialog.vehicle = vehicle;
-    statusDialog.remarks = '';
+    statusDialog.operator_remark = vehicle.operator_remark ?? '';
     statusDialog.open = true;
 }
 
 function submitStatusChange() {
     if (!statusDialog.vehicle) return;
     const isInactivating = statusDialog.vehicle.status === 'active';
-    if (isInactivating && !statusDialog.remarks.trim()) return;
+    if (isInactivating && !statusDialog.operator_remark.trim()) return;
     router.patch(
         CompanyVehicleController.toggleStatus(statusDialog.vehicle.id).url,
-        isInactivating ? { remarks: statusDialog.remarks } : {},
+        {
+            status: isInactivating ? 'inactive' : 'active',
+            operator_remark: isInactivating ? statusDialog.operator_remark : undefined,
+        },
         {
             preserveScroll: true,
             onSuccess: () => {
@@ -464,7 +470,7 @@ function submitStatusChange() {
 function openActivate(vehicle: VehicleItem) {
     if (!canToggleVehicle(vehicle) || vehicle.status !== 'inactive') return;
     statusDialog.vehicle = vehicle;
-    statusDialog.remarks = '';
+    statusDialog.operator_remark = vehicle.operator_remark ?? '';
     statusDialog.open = true;
 }
 </script>
@@ -552,7 +558,6 @@ function openActivate(vehicle: VehicleItem) {
                                                     <SelectItem value="active" class="cursor-pointer">Active</SelectItem>
                                                     <SelectItem value="inactive" class="cursor-pointer">Inactive</SelectItem>
                                                     <SelectItem value="suspended" class="cursor-pointer">Suspended</SelectItem>
-                                                    <SelectItem value="pending" class="cursor-pointer">Pending</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -1156,7 +1161,8 @@ function openActivate(vehicle: VehicleItem) {
                         <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Body Number</span><span class="text-right text-sm">{{ previewedVehicle.body_number || 'Not recorded' }}</span></div>
                         <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Capacity</span><span class="text-right text-sm">{{ previewedVehicle.capacity ?? 'Not recorded' }}</span></div>
                         <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Documents</span><span class="text-right text-sm">{{ documentsCount(previewedVehicle.documents || []) }}</span></div>
-                        <div v-if="previewedVehicle.remarks" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Remarks</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.remarks }}</p></div>
+                        <div v-if="previewedVehicle.operator_remark" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Operator Remark</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.operator_remark }}</p></div>
+                        <div v-if="previewedVehicle.suspension_remark" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Suspension Remark</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.suspension_remark }}</p></div>
                     </div>
                     <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
                     <div class="flex flex-wrap items-center justify-between gap-2">
@@ -1187,7 +1193,7 @@ function openActivate(vehicle: VehicleItem) {
                 <form class="space-y-3" @submit.prevent="submitStatusChange">
                     <div v-if="isInactivating" class="flex flex-col gap-y-2">
                         <Textarea
-                            v-model="statusDialog.remarks"
+                            v-model="statusDialog.operator_remark"
                             class="min-h-24 border-custom-bg-dark bg-custom-bg p-3 text-sm text-custom-shadow placeholder:text-custom-shadow/50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:bg-white dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5"
                             rows="3"
                             placeholder="Brief reason for inactivation..."
@@ -1202,7 +1208,7 @@ function openActivate(vehicle: VehicleItem) {
                         <Button
                             type="submit"
                             :variant="isInactivating ? 'destructive' : 'float-primary'"
-                            :disabled="isInactivating && !statusDialog.remarks.trim()"
+                            :disabled="isInactivating && !statusDialog.operator_remark.trim()"
                         >
                             <RiShutDownLine class="h-4 w-4" />
                             {{ isInactivating ? 'Inactivate' : 'Activate' }}

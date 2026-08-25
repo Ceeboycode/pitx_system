@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { destroy, index } from '@/routes/vehicles';
+import { destroy, index, toggleStatus } from '@/routes/vehicles';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
@@ -135,8 +135,11 @@ type VehicleModel = {
     chassis_number?: string | null;
     make_model?: string | null;
     status?: string | null;
+    verification_status?: string | null;
     docs_status?: string | null;
-    remarks?: string | null;
+    verification_remark?: string | null;
+    operator_remark?: string | null;
+    suspension_remark?: string | null;
     created_at?: string | null;
     updated_at?: string | null;
     deleted_at?: string | null;
@@ -166,6 +169,7 @@ const route = computed(() => props.vehicle.route ?? null);
 const docs = computed(() => props.vehicle.documents ?? []);
 
 const canArchiveVehicle = computed(() => can('vehicles.archive'));
+const canUpdateVehicleStatus = computed(() => can('vehicles.toggleStatus'));
 const archiveOpen = ref(false);
 
 const VEHICLES_INDEX_URL = index().url;
@@ -250,9 +254,24 @@ const vehicleMeta = computed(() => [
     {
         label: 'Status',
         value: humanize(vehicle.value.status),
-        helper: vehicle.value.remarks || null,
+        helper: vehicle.value.suspension_remark || vehicle.value.operator_remark || null,
     },
 ]);
+
+const statusForm = useForm({
+    status: props.vehicle.status ?? 'active',
+    suspension_remark: props.vehicle.suspension_remark ?? '',
+});
+
+const statusRequiresReason = computed(
+    () => statusForm.status === 'suspended',
+);
+
+function submitStatusUpdate() {
+    statusForm.patch(toggleStatus(vehicle.value.id).url, {
+        preserveScroll: true,
+    });
+}
 
 function humanize(text?: string | null) {
     if (!text) return '—';
@@ -813,6 +832,66 @@ function downloadSelected() {
                                 </span>
                                 <span class="text-sm break-all">{{ vehicle.chassis_number ?? '—' }}</span>
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card class="py-6">
+                        <CardHeader class="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Operational Status</CardTitle>
+                            </div>
+                        </CardHeader>
+                        <CardContent class="space-y-4 border-t border-slate-100 px-6 pt-4">
+                            <form class="space-y-4" @submit.prevent="submitStatusUpdate">
+                                <div class="space-y-1.5">
+                                    <Label for="vehicle-status" class="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                                        Status
+                                    </Label>
+                                    <select
+                                        id="vehicle-status"
+                                        v-model="statusForm.status"
+                                        :disabled="!canUpdateVehicleStatus || statusForm.processing"
+                                        class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                                    >
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                        <option value="suspended">Suspended</option>
+                                    </select>
+                                    <InputError :message="statusForm.errors.status" />
+                                </div>
+
+                                <div class="space-y-1.5">
+                                    <Label class="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                                        Operator Remark
+                                    </Label>
+                                    <p class="min-h-16 rounded-md border bg-slate-50 p-3 text-sm text-muted-foreground whitespace-pre-wrap">
+                                        {{ vehicle.operator_remark || 'No operator remark.' }}
+                                    </p>
+                                </div>
+
+                                <div class="space-y-1.5">
+                                    <Label for="suspension-remark" class="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                                        Suspension/Admin Remark
+                                    </Label>
+                                    <Textarea
+                                        id="suspension-remark"
+                                        v-model="statusForm.suspension_remark"
+                                        :disabled="!canUpdateVehicleStatus || statusForm.processing"
+                                        class="min-h-24 text-sm"
+                                        placeholder="Reason for suspension..."
+                                    />
+                                    <InputError :message="statusForm.errors.suspension_remark" />
+                                </div>
+
+                                <Button
+                                    v-if="canUpdateVehicleStatus"
+                                    type="submit"
+                                    class="w-full"
+                                    :disabled="statusForm.processing || (statusRequiresReason && !statusForm.suspension_remark.trim())"
+                                >
+                                    {{ statusForm.processing ? 'Saving...' : 'Save Status' }}
+                                </Button>
+                            </form>
                         </CardContent>
                     </Card>
 

@@ -5,6 +5,7 @@ import { watch } from 'vue';
 import { Save } from 'lucide-vue-next';
 
 import InputError from '@/components/InputError.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -34,13 +35,11 @@ type CompanyStatus =
     | 'needs_revision'
     | 'rejected';
 
-const STATUS_OPTIONS: { value: CompanyStatus; label: string }[] = [
-    { value: 'draft', label: 'Draft' },
-    { value: 'docs_completed', label: 'Documents Completed' },
-    { value: 'for_verification', label: 'For Verification' },
-    { value: 'verified', label: 'Verified' },
-    { value: 'needs_revision', label: 'Needs Revision' },
-    { value: 'rejected', label: 'Rejected' },
+type ActiveStatusValue = '1' | '0';
+
+const ACTIVE_STATUS_OPTIONS: { value: ActiveStatusValue; label: string }[] = [
+    { value: '1', label: 'Active' },
+    { value: '0', label: 'Inactive' },
 ];
 
 
@@ -52,21 +51,24 @@ const props = defineProps<{
         id: number;
         company_name: string;
         status?: CompanyStatus | null;
+        is_active?: boolean | number | null;
     };
 }>();
 
 
 
 const form = useForm({
-    company_name: props.company.company_name,
-    status: (props.company.status ?? 'draft') as CompanyStatus,
+    is_active: (props.company.is_active === false || props.company.is_active === 0
+        ? '0'
+        : '1') as ActiveStatusValue,
 });
 
 watch(
     () => props.company,
     (company) => {
-        form.company_name = company.company_name;
-        form.status = (company.status ?? 'draft') as CompanyStatus;
+        form.is_active = (company.is_active === false || company.is_active === 0
+            ? '0'
+            : '1') as ActiveStatusValue;
         form.clearErrors();
     },
     { deep: true },
@@ -90,6 +92,54 @@ function submit() {
         },
     });
 }
+
+function humanizeStatus(status?: CompanyStatus | null): string {
+    if (!status) return '-';
+    const map: Record<CompanyStatus, string> = {
+        draft: 'Draft',
+        docs_completed: 'Docs Completed',
+        for_verification: 'For Verification',
+        verified: 'Verified',
+        needs_revision: 'Needs Revision',
+        rejected: 'Rejected',
+    };
+
+    return map[status];
+}
+
+function verificationStatusClass(status?: CompanyStatus | null): string {
+    switch (status) {
+        case 'verified':
+            return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        case 'docs_completed':
+            return 'bg-blue-100 text-blue-700 border-blue-200';
+        case 'for_verification':
+            return 'bg-violet-100 text-violet-700 border-violet-200';
+        case 'needs_revision':
+            return 'bg-amber-100 text-amber-700 border-amber-200';
+        case 'rejected':
+            return 'bg-rose-100 text-rose-600 border-rose-200';
+        default:
+            return 'bg-slate-100 text-slate-500 border-0';
+    }
+}
+
+function verificationStatusDot(status?: CompanyStatus | null): string {
+    switch (status) {
+        case 'verified':
+            return 'bg-emerald-500';
+        case 'docs_completed':
+            return 'bg-blue-500';
+        case 'for_verification':
+            return 'bg-violet-500';
+        case 'needs_revision':
+            return 'bg-amber-500';
+        case 'rejected':
+            return 'bg-rose-500';
+        default:
+            return 'bg-slate-400';
+    }
+}
 </script>
 
 <template>
@@ -98,32 +148,40 @@ function submit() {
             <DialogHeader>
                 <DialogTitle>Edit Company</DialogTitle>
                 <DialogDescription>
-                    Update the company name and verification status.
+                    Update the company's active status.
                 </DialogDescription>
             </DialogHeader>
 
             <form class="space-y-5 py-1" @submit.prevent="submit">
                 <div class="space-y-2">
-                    <Label for="edit_company_name">Company Name</Label>
+                    <Label>Company Name</Label>
                     <Input
-                        id="edit_company_name"
-                        v-model="form.company_name"
-                        placeholder="Enter company name"
-                        :disabled="form.processing"
+                        :model-value="props.company.company_name"
+                        readonly
+                        class="bg-custom-bg text-custom-shadow/80 dark:bg-custom-bg-dark"
                     />
-                    <InputError :message="form.errors.company_name" />
                 </div>
 
                 <div class="space-y-2">
-                    <Label for="edit_status">Verification Status</Label>
-                    <Select v-model="form.status" :disabled="form.processing">
-                        <SelectTrigger id="edit_status">
-                            <SelectValue placeholder="Select a status" />
+                    <Label>Verification Status</Label>
+                    <div class="flex h-10 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                        <Badge :class="['gap-1.5', verificationStatusClass(props.company.status ?? null)]">
+                            <span :class="['h-1.5 w-1.5 rounded-full', verificationStatusDot(props.company.status ?? null)]" />
+                            {{ humanizeStatus(props.company.status ?? null) }}
+                        </Badge>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <Label for="edit_is_active">Active Status</Label>
+                    <Select v-model="form.is_active" :disabled="form.processing">
+                        <SelectTrigger id="edit_is_active">
+                            <SelectValue placeholder="Select active status" />
                         </SelectTrigger>
 
                         <SelectContent>
                             <SelectItem
-                                v-for="option in STATUS_OPTIONS"
+                                v-for="option in ACTIVE_STATUS_OPTIONS"
                                 :key="option.value"
                                 :value="option.value"
                             >
@@ -131,7 +189,7 @@ function submit() {
                             </SelectItem>
                         </SelectContent>
                     </Select>
-                    <InputError :message="form.errors.status" />
+                    <InputError :message="form.errors.is_active" />
                 </div>
 
                 <DialogFooter class="gap-2 sm:gap-0">

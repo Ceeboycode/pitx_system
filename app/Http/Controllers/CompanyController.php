@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Company\CompanyUpdateRequest;
 use App\Models\Company;
 use App\Services\Company\CompanyService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class CompanyController extends Controller
 {
@@ -18,9 +21,9 @@ class CompanyController extends Controller
     {
         Gate::authorize('viewAny', Company::class);
 
-        $allowedSorts = ['company_name', 'company_code', 'status', 'created_at'];
-        $sortBy       = in_array($request->sort_by, $allowedSorts) ? $request->sort_by : 'created_at';
-        $sortDir      = in_array($request->sort_dir, ['asc', 'desc']) ? $request->sort_dir : 'desc';
+        $allowedSorts = ['company_name', 'company_code', 'status', 'is_active', 'created_at'];
+        $sortBy = in_array($request->sort_by, $allowedSorts) ? $request->sort_by : 'created_at';
+        $sortDir = in_array($request->sort_dir, ['asc', 'desc']) ? $request->sort_dir : 'desc';
 
         $companies = Company::query()
             ->select(
@@ -33,6 +36,7 @@ class CompanyController extends Controller
                 'business_type',
                 'logo',
                 'status',
+                'is_active',
                 'created_at'
             )
             ->search($request->search)
@@ -43,10 +47,10 @@ class CompanyController extends Controller
 
         return Inertia::render('Company/Index', [
             'companies' => $companies,
-            'filters'   => [
-                'search'   => $request->search,
-                'status'   => $request->status,
-                'sort_by'  => $request->sort_by,
+            'filters' => [
+                'search' => $request->search,
+                'status' => $request->status,
+                'sort_by' => $request->sort_by,
                 'sort_dir' => $request->sort_dir,
             ],
         ]);
@@ -120,13 +124,41 @@ class CompanyController extends Controller
 
         return Inertia::render('Company/Trash', [
             'companies' => $companies,
-            'filters'   => $request->only('search', 'business_type', 'archived_by'),
+            'filters' => $request->only('search', 'business_type', 'archived_by'),
         ]);
     }
 
     public function create()
     {
         return Inertia::render('Company/Create');
+    }
+
+    public function edit(Company $company): Response
+    {
+        Gate::authorize('update', $company);
+
+        return Inertia::render('Company/Edit', [
+            'company' => $company->only([
+                'id',
+                'company_name',
+                'status',
+                'is_active',
+            ]),
+        ]);
+    }
+
+    public function update(CompanyUpdateRequest $request, Company $company): RedirectResponse
+    {
+        $userId = $request->user()?->id;
+        abort_if(! $userId, 403);
+
+        $this->companyService->updateActiveStatus(
+            $company,
+            $request->boolean('is_active'),
+            $userId
+        );
+
+        return back()->with('success', 'Company active status updated successfully.');
     }
 
     public function destroy(Request $request, Company $company)

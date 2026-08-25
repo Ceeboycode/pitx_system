@@ -15,6 +15,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -23,8 +24,7 @@ class VehicleController extends Controller
     public function __construct(
         private readonly VehicleService $vehicleService,
         private readonly NotificationService $notificationService,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -54,7 +54,10 @@ class VehicleController extends Controller
                 'company_id',
                 'route_id',
                 'status',
-                'remarks',
+                'verification_status',
+                'verification_remark',
+                'operator_remark',
+                'suspension_remark',
                 'created_at',
             ])
             ->search($search)
@@ -124,8 +127,11 @@ class VehicleController extends Controller
                 'chassis_number' => $vehicle->chassis_number,
                 'make_model' => $vehicle->make_model,
                 'status' => $vehicle->status,
+                'verification_status' => $vehicle->verification_status,
                 'docs_status' => $vehicle->docs_status,
-                'remarks' => $vehicle->remarks,
+                'verification_remark' => $vehicle->verification_remark,
+                'operator_remark' => $vehicle->operator_remark,
+                'suspension_remark' => $vehicle->suspension_remark,
                 'created_at' => $vehicle->created_at,
                 'updated_at' => $vehicle->updated_at,
                 'deleted_at' => $vehicle->deleted_at,
@@ -355,39 +361,44 @@ class VehicleController extends Controller
     {
         Gate::authorize('toggleStatus', $vehicle);
 
-        if ($vehicle->status === 'pending') {
-            return back()->with('error', 'Pending vehicles must be reviewed before changing status.');
+        $validated = $request->validate([
+            'status' => ['required', Rule::in([
+                Vehicle::STATUS_ACTIVE,
+                Vehicle::STATUS_INACTIVE,
+                Vehicle::STATUS_SUSPENDED,
+            ])],
+            'suspension_remark' => [
+                Rule::requiredIf(fn () => $request->input('status') === Vehicle::STATUS_SUSPENDED),
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+        ]);
+
+        $previousStatus = $vehicle->status;
+
+        $payload = [
+            'status' => $validated['status'],
+            'updated_by' => $request->user()->id,
+        ];
+
+        if ($validated['status'] === Vehicle::STATUS_SUSPENDED) {
+            $payload['suspension_remark'] = $validated['suspension_remark'];
         }
 
-        if ($vehicle->status === 'suspended') {
-            $vehicle->update([
-                'status' => 'active',
-                'remarks' => null,
-                'updated_by' => $request->user()->id,
-            ]);
-        } else {
-            $validated = $request->validate([
-                'remarks' => ['required', 'string', 'max:1000'],
-            ]);
-
-            $vehicle->update([
-                'status' => 'suspended',
-                'remarks' => $validated['remarks'],
-                'updated_by' => $request->user()->id,
-            ]);
-        }
+        $vehicle->update($payload);
 
         $vehicle->refresh();
         $vehicle->loadMissing('company');
 
-        if ($vehicle->status === 'suspended') {
+        if ($vehicle->status === Vehicle::STATUS_SUSPENDED && $previousStatus !== Vehicle::STATUS_SUSPENDED) {
             $notification = new VehicleSuspendedNotification($vehicle);
 
             $this->notificationService->notifyCompanyUsers($vehicle->company, $notification);
             $this->notificationService->notifyCompanyEmail($vehicle->company, $notification);
         }
 
-        if ($vehicle->status === 'active') {
+        if ($vehicle->status === Vehicle::STATUS_ACTIVE && $previousStatus === Vehicle::STATUS_SUSPENDED) {
             $notification = new VehicleReactivatedNotification($vehicle);
 
             $this->notificationService->notifyCompanyUsers($vehicle->company, $notification);

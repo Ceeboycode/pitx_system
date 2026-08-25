@@ -77,7 +77,7 @@ import {
 } from 'vue-remix-icons';
 import { computed, ref } from 'vue';
 
-import { destroy, index, show, trash } from '@/routes/vehicles';
+import { destroy, index, show, toggleStatus, trash } from '@/routes/vehicles';
 import { type BreadcrumbItem } from '@/types';
 
 
@@ -88,12 +88,14 @@ type SortDir = 'asc' | 'desc';
 type VehicleItem = {
     id: number;
     status?: string | null;
+    verification_status?: string | null;
     vehicle_type?: string | null;
     plate_number?: string | null;
     body_number?: string | null;
     capacity?: string | number | null;
     created_at?: string | null;
-    remarks?: string | null;
+    operator_remark?: string | null;
+    suspension_remark?: string | null;
     company?: { company_name?: string | null } | null;
     route?: { id?: number; route_name?: string | null } | null;
 };
@@ -158,8 +160,9 @@ const archiveDialogOpen = ref(false);
 const selectedVehicle = ref<VehicleItem | null>(null);
 const statusDialogOpen = ref(false);
 const statusVehicle = ref<VehicleItem | null>(null);
+const targetStatus = ref<'active' | 'inactive' | 'suspended'>('suspended');
 const suspendRemarks = ref('');
-const isSuspending = computed(() => statusVehicle.value?.status !== 'suspended');
+const isSuspending = computed(() => targetStatus.value === 'suspended');
 
 
 
@@ -277,6 +280,8 @@ function statusClass(status?: string | null): string {
         case 'active':
         case 'verified':
             return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        case 'suspended':
+            return 'bg-orange-100 text-orange-700 border-orange-200';
         case 'for_verification':
             return 'bg-violet-100 text-violet-700 border-violet-200';
         case 'draft':
@@ -296,6 +301,8 @@ function statusDot(status?: string | null): string {
         case 'active':
         case 'verified':
             return 'bg-emerald-500';
+        case 'suspended':
+            return 'bg-orange-500';
         case 'for_verification':
             return 'bg-violet-500';
         case 'draft':
@@ -310,15 +317,14 @@ function statusDot(status?: string | null): string {
     }
 }
 
-const toggleLabel = (status?: string | null) =>
+const statusActionLabel = (status: string) =>
     status === 'active'
-        ? 'Suspend'
-        : status === 'suspended'
-          ? 'Unsuspend'
+        ? 'Set Active'
+        : status === 'inactive'
+          ? 'Set Inactive'
           : 'Suspend';
 
-const canToggle = (vehicle: VehicleItem) =>
-    !['pending', 'for_verification'].includes(vehicle.status ?? '');
+const canToggle = (_vehicle: VehicleItem) => true;
 
 
 
@@ -327,23 +333,26 @@ const openArchiveDialog = (vehicle: VehicleItem) => {
     archiveDialogOpen.value = true;
 };
 
-const openSuspendDialog = (vehicle: VehicleItem) => {
+const openStatusDialog = (
+    vehicle: VehicleItem,
+    status: 'active' | 'inactive' | 'suspended',
+) => {
     statusVehicle.value = vehicle;
+    targetStatus.value = status;
     suspendRemarks.value = '';
     statusDialogOpen.value = true;
 };
 
-const openActivateDialog = (vehicle: VehicleItem) => {
-    statusVehicle.value = vehicle;
-    suspendRemarks.value = '';
-    statusDialogOpen.value = true;
-};
-
-const confirmSuspend = () => {
+const confirmStatusChange = () => {
     if (!statusVehicle.value) return;
     router.patch(
-        `/vehicles/${statusVehicle.value.id}/toggle-status`,
-        { remarks: suspendRemarks.value },
+        toggleStatus(statusVehicle.value.id).url,
+        {
+            status: targetStatus.value,
+            suspension_remark: isSuspending.value
+                ? suspendRemarks.value
+                : undefined,
+        },
         {
             preserveScroll: true,
             onSuccess: () => {
@@ -353,29 +362,6 @@ const confirmSuspend = () => {
             },
         },
     );
-};
-
-const confirmActivate = () => {
-    if (!statusVehicle.value) return;
-    router.patch(
-        `/vehicles/${statusVehicle.value.id}/toggle-status`,
-        {},
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                statusDialogOpen.value = false;
-                statusVehicle.value = null;
-            },
-        },
-    );
-};
-
-const confirmStatusChange = () => {
-    if (isSuspending.value) {
-        confirmSuspend();
-    } else {
-        confirmActivate();
-    }
 };
 
 const archiveVehicle = (vehicle: VehicleItem) => {
@@ -518,28 +504,16 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                             Active
                                                         </SelectItem>
                                                         <SelectItem
+                                                            value="inactive"
+                                                            class="cursor-pointer text-sm"
+                                                        >
+                                                            Inactive
+                                                        </SelectItem>
+                                                        <SelectItem
                                                             value="suspended"
                                                             class="cursor-pointer text-sm"
                                                         >
                                                             Suspended
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            value="for_verification"
-                                                            class="cursor-pointer text-sm"
-                                                        >
-                                                            For Verification
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            value="pending"
-                                                            class="cursor-pointer text-sm"
-                                                        >
-                                                            Pending
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            value="needs_revision"
-                                                            class="cursor-pointer text-sm"
-                                                        >
-                                                            Needs Revision
                                                         </SelectItem>
                                                     </SelectContent>
                                                 </Select>
@@ -692,7 +666,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                     >
                         <div v-if="vehicles.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
                             <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                                <div class="grid grid-cols-8 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
+                                <div class="grid grid-cols-9 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
                                     <div class="col-span-1 flex h-10 items-center justify-start px-0 pl-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Company</div>
                                     <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Route</div>
                                     <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Vehicle</div>
@@ -724,7 +698,8 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                         />
                                     </button>
 
-                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Remarks</div>
+                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Operator Remark</div>
+                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Admin Remark</div>
                                     <div class="col-span-1 flex h-10 items-center justify-end px-0 pr-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Actions</div>
                                 </div>
                             </div>
@@ -734,7 +709,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                     v-for="(vehicle, rowIndex) in vehicles.data"
                                     :key="vehicle.id"
                                     :class="[
-                                        'grid cursor-pointer grid-cols-8 items-center border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                        'grid cursor-pointer grid-cols-9 items-center border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
                                         rowIndex === vehicles.data.length - 1 ? 'rounded-b-md border-b-0' : '',
                                         previewedVehicle?.id === vehicle.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
                                     ]"
@@ -771,7 +746,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                     </div>
 
                                     <div class="col-span-1 flex justify-start py-1.5">
-                                        <Popover v-if="vehicle.remarks">
+                                        <Popover v-if="vehicle.operator_remark">
                                             <PopoverTrigger as-child>
                                                 <Button
                                                     variant="ghost-outline"
@@ -783,10 +758,29 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                 </Button>
                                             </PopoverTrigger>
                                             <PopoverContent class="w-64 p-3 text-sm text-custom-shadow">
-                                                {{ vehicle.remarks }}
+                                                {{ vehicle.operator_remark }}
                                             </PopoverContent>
                                         </Popover>
                                         <span v-else class="text-xs text-custom-shadow/70">—</span>
+                                    </div>
+
+                                    <div class="col-span-1 flex justify-start py-1.5">
+                                        <Popover v-if="vehicle.suspension_remark">
+                                            <PopoverTrigger as-child>
+                                                <Button
+                                                    variant="ghost-outline"
+                                                    size="sm"
+                                                    class="h-7 px-2 text-xs"
+                                                >
+                                                    <RiFileTextLine class="h-3.5 w-3.5" />
+                                                    View
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent class="w-64 p-3 text-sm text-custom-shadow">
+                                                {{ vehicle.suspension_remark }}
+                                            </PopoverContent>
+                                        </Popover>
+                                        <span v-else class="text-xs text-custom-shadow/70">â€”</span>
                                     </div>
 
                                     <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right" @click.stop>
@@ -816,32 +810,33 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem
-                                                    v-if="vehicle.status === 'active' || vehicle.status === 'inactive'"
+                                                    v-if="vehicle.status !== 'active'"
                                                     :disabled="!canToggle(vehicle)"
                                                     class="group cursor-pointer rounded-md"
-                                                    @click="canToggle(vehicle) && openSuspendDialog(vehicle)"
+                                                    @click="canToggle(vehicle) && openStatusDialog(vehicle, 'active')"
+                                                >
+                                                    <RiOctagonLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                    <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Set Active</span>
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuItem
+                                                    v-if="vehicle.status !== 'inactive'"
+                                                    :disabled="!canToggle(vehicle)"
+                                                    class="group cursor-pointer rounded-md"
+                                                    @click="canToggle(vehicle) && openStatusDialog(vehicle, 'inactive')"
+                                                >
+                                                    <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                    <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Set Inactive</span>
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuItem
+                                                    v-if="vehicle.status !== 'suspended'"
+                                                    :disabled="!canToggle(vehicle)"
+                                                    class="group cursor-pointer rounded-md"
+                                                    @click="canToggle(vehicle) && openStatusDialog(vehicle, 'suspended')"
                                                 >
                                                     <RiSpam2Line class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
                                                     <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Suspend</span>
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuItem
-                                                    v-else-if="vehicle.status === 'suspended'"
-                                                    :disabled="!canToggle(vehicle)"
-                                                    class="group cursor-pointer rounded-md"
-                                                    @click="canToggle(vehicle) && openActivateDialog(vehicle)"
-                                                >
-                                                    <RiOctagonLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                    <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Unsuspend</span>
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuItem
-                                                    v-else
-                                                    disabled
-                                                    class="rounded-lg text-slate-300"
-                                                >
-                                                    <RiSpam2Line class="h-4 w-4" />
-                                                    {{ toggleLabel(vehicle.status) }}
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -904,13 +899,20 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                         <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Vehicle Type</span><span class="text-right text-sm">{{ humanize(previewedVehicle.vehicle_type) }}</span></div>
                         <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Body Number</span><span class="text-right text-sm">{{ previewedVehicle.body_number || 'Not recorded' }}</span></div>
                         <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Capacity</span><span class="text-right text-sm">{{ previewedVehicle.capacity || 'Not recorded' }}</span></div>
-                        <div v-if="previewedVehicle.remarks" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Remarks</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.remarks }}</p></div>
+                        <div v-if="previewedVehicle.operator_remark" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Operator Remark</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.operator_remark }}</p></div>
+                        <div v-if="previewedVehicle.suspension_remark" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Admin Remark</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.suspension_remark }}</p></div>
                     </div>
                     <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div class="flex flex-wrap gap-2">
-                            <Button v-if="canToggle(previewedVehicle)" variant="ghost-outline" size="icon-text" @click="previewedVehicle.status === 'suspended' ? openActivateDialog(previewedVehicle) : openSuspendDialog(previewedVehicle)">
-                                <RiShutDownLine class="h-4 w-4" />{{ previewedVehicle.status === 'suspended' ? 'Unsuspend' : 'Suspend' }}
+                            <Button v-if="canToggle(previewedVehicle) && previewedVehicle.status !== 'active'" variant="ghost-outline" size="icon-text" @click="openStatusDialog(previewedVehicle, 'active')">
+                                <RiOctagonLine class="h-4 w-4" />Set Active
+                            </Button>
+                            <Button v-if="canToggle(previewedVehicle) && previewedVehicle.status !== 'inactive'" variant="ghost-outline" size="icon-text" @click="openStatusDialog(previewedVehicle, 'inactive')">
+                                <RiShutDownLine class="h-4 w-4" />Set Inactive
+                            </Button>
+                            <Button v-if="canToggle(previewedVehicle) && previewedVehicle.status !== 'suspended'" variant="ghost-outline" size="icon-text" @click="openStatusDialog(previewedVehicle, 'suspended')">
+                                <RiSpam2Line class="h-4 w-4" />Suspend
                             </Button>
                             <Button variant="destructive" size="icon-text" @click="openArchiveDialog(previewedVehicle)">
                                 <RiArchive2Line class="h-4 w-4" />Archive
@@ -959,12 +961,12 @@ const archiveVehicle = (vehicle: VehicleItem) => {
         <Dialog v-model:open="statusDialogOpen">
             <DialogContent class="max-w-md px-6">
                 <DialogHeader class="px-0">
-                    <DialogTitle>{{ isSuspending ? 'Suspend vehicle' : 'Unsuspend vehicle' }}</DialogTitle>
+                    <DialogTitle>{{ statusActionLabel(targetStatus) }}</DialogTitle>
                     <DialogDescription>
                         <span class="block">
-                            {{ isSuspending ? 'Provide a reason to suspend' : 'This will unsuspend' }}
+                            {{ isSuspending ? 'Provide a reason to suspend' : 'This will set' }}
                             <span class="font-semibold text-custom-accent-3">{{ statusVehicle?.plate_number || 'this vehicle' }}</span>.
-                            {{ isSuspending ? 'You can unsuspend it again later.' : 'The vehicle will become active again.' }}
+                            {{ isSuspending ? 'The suspension reason is stored separately.' : `New status: ${humanize(targetStatus)}.` }}
                         </span>
                     </DialogDescription>
                 </DialogHeader>
@@ -990,7 +992,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                         >
                             <RiSpam2Line v-if="isSuspending" class="h-4 w-4" />
                             <RiOctagonLine v-else class="h-4 w-4" />
-                            {{ isSuspending ? 'Suspend' : 'Unsuspend' }}
+                            {{ statusActionLabel(targetStatus) }}
                         </Button>
                     </DialogFooter>
                 </form>

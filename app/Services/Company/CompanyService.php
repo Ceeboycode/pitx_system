@@ -74,6 +74,16 @@ class CompanyService
         return $company;
     }
 
+    public function updateActiveStatus(Company $company, bool $isActive, int $userId): Company
+    {
+        $company->update([
+            'is_active' => $isActive,
+            'updated_by' => $userId,
+        ]);
+
+        return $company->fresh();
+    }
+
     public function updateCompanyWithDocuments(Company $company, array $data, Request $request, int $userId): Company
     {
         return DB::transaction(function () use ($company, $data, $request, $userId) {
@@ -135,7 +145,9 @@ class CompanyService
         ?UploadedFile $file,
         int $userId
     ): void {
-        if (!$file) return;
+        if (! $file) {
+            return;
+        }
 
         $path = $file->store("companies/{$company->id}/documents", 'public');
 
@@ -166,7 +178,9 @@ class CompanyService
         ?UploadedFile $file,
         int $userId
     ): void {
-        if (!$file) return;
+        if (! $file) {
+            return;
+        }
 
         $existing = CompanyDocument::where('company_id', $company->id)
             ->where('doc_type', $docType)
@@ -201,7 +215,7 @@ class CompanyService
 
     protected function syncDocsCompletedStatus(Company $company, int $userId): void
     {
-        if (!filled($company->business_type)) {
+        if (! filled($company->business_type)) {
             return;
         }
 
@@ -234,7 +248,7 @@ class CompanyService
         $i = 1;
 
         while (Company::where('company_code', $code)->exists()) {
-            $code = $base . str_pad((string) $i, 2, '0', STR_PAD_LEFT);
+            $code = $base.str_pad((string) $i, 2, '0', STR_PAD_LEFT);
             $i++;
         }
 
