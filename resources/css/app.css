@@ -7,6 +7,8 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* TODO: create a part where the user can modify the text size, because right now, eveyrthing looks a little too big */
+
 @theme inline {
     --font-sans:
         Raleway, ui-sans-serif, system-ui, sans-serif,
@@ -134,6 +136,7 @@
 }
 
 :root {
+    /* unused classes by arsha */
     --background: oklch(98.4% 0.003 247.858);
     --foreground: oklch(20.8% 0.042 265.755);
     --card: hsl(0 0% 100%);
@@ -148,15 +151,21 @@
     --muted-foreground: oklch(37.2% 0.044 257.287);
     --accent: oklch(98.4% 0.003 247.858);
     --accent-foreground: oklch(20.8% 0.042 265.755);
-    --success: oklch(52.7% 0.154 150.069);
-    --success-foreground: oklch(98.5% 0 0);
-    --destructive: hsl(0 84.2% 60.2%);
-    --destructive-foreground: oklch(98.4% 0.003 247.858);
-    --warning: oklch(79.5% 0.184 86.047);
-    --warning-foreground: oklch(20.8% 0.042 265.755);
-    --info: oklch(54.6% 0.215 262.881);
-    --info-foreground: oklch(98.5% 0 0);
-    --dk-grey: hsl(215.385, 22.034%, 34.706%);
+
+    /* modified semantics */
+    --success: oklch(67% 0.1585 156.35);
+    --destructive: oklch(59.02% 0.1681 20.48);
+    --warning: oklch(80.62% 0.1309 95.88);
+    /* based on primary color */
+    --info: oklch(48.092% 0.12718 265.651); 
+
+    /* --success-foreground: oklch(98.5% 0 0); */
+    /* --destructive-foreground: oklch(98.4% 0.003 247.858); */
+    /* --warning-foreground: oklch(20.8% 0.042 265.755); */
+    /* --info-foreground: oklch(98.5% 0 0); */
+    /* --dk-grey: hsl(215.385, 22.034%, 34.706%); */
+
+    /* unused classes */
     --border: oklch(98.4% 0.003 247.858);
     --input: oklch(98.4% 0.003 247.858);
     --ring: hsl(215.385, 22.034%, 34.706%);
@@ -165,6 +174,7 @@
     --chart-3: hsl(197 37% 24%);
     --chart-4: hsl(43 74% 66%);
     --chart-5: hsl(27 87% 67%);
+
     --radius: 1rem;
     --pitxred:  hsl(7, 84, 54);
     --custom-bg-light: oklch(97.081% 0.00674 277.164);
@@ -183,6 +193,7 @@
 }
 
 .dark {
+    /* unused classes by arsha */
     --background: oklch(17.9% 0.042 264.695);
     --foreground: oklch(100% 0.003 247.858);
     --card: oklch(25.8% 0.042 265.755);
@@ -197,27 +208,35 @@
     --muted-foreground: hsl(0 0% 68.9%);
     --accent: oklch(17.9% 0.042 264.695);
     --accent-foreground: oklch(100% 0.003 247.858);
-    --success: oklch(72.3% 0.219 149.579);
-    --success-foreground: oklch(20.8% 0.042 265.755);
-    --destructive: hsl(0 84% 65%);
-    --destructive-foreground: hsl(0 0% 100%);
-    --warning: oklch(85.2% 0.199 91.936);
-    --warning-foreground: oklch(20.8% 0.042 265.755);
-    --info: oklch(70.7% 0.165 254.624);
-    --info-foreground: oklch(20.8% 0.042 265.755);
+
+    /* modified semantics */
+    --success: oklch(66.1% 0.158 156.12);
+    --destructive: oklch(52.27% 0.1691 22.17);
+    --warning: oklch(63.83% 0.122 94.96);
+    /* based on primary color */
+    --info: oklch(34.076% 0.13074 265.369); 
+
+    /* --success-foreground: oklch(98.5% 0 0); */
+    /* --destructive-foreground: oklch(98.4% 0.003 247.858); */
+    /* --warning-foreground: oklch(20.8% 0.042 265.755); */
+    /* --info-foreground: oklch(98.5% 0 0); */
+
+    /* unused classes */
     --border: oklch(32.9% 0.041 260.031);
     --input: oklch(32.9% 0.041 260.031);
     --ring: hsl(0 0% 88.1%);
+
     --chart-1: hsl(220 70% 55%);
     --chart-2: hsl(160 60% 50%);
     --chart-3: hsl(30 80% 60%);
     --chart-4: hsl(280 65% 65%);
     --chart-5: hsl(340 75% 60%);
+
     --pitxred:  hsl(7, 84, 59);
-    --custom-bg-light: oklch(26.884% 0.01405 272.656);
-    --custom-bg: oklch(20.928% 0.01114 267.979);
-    --custom-bg-dark: oklch(14.640% 0.01999 256.725);
-    --custom-shadow: oklch(70.841% 0.01950 275.488);
+    --custom-bg-light: oklch(30% 0.01405 272.656);
+    --custom-bg: oklch(24% 0.01114 267.979);
+    --custom-bg-dark: oklch(20% 0.01999 256.725);
+    --custom-shadow: oklch(75% 0.01950 275.488);
     --custom-body: oklch(77.926% 0.01926 272.226);
     --custom-h1: oklch(83.804% 0.02141 276.871);
     --custom-primary: oklch(34.076% 0.13074 265.369);

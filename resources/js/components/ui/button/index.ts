@@ -41,6 +41,7 @@ export const buttonVariants = cva(
         "icon-sm": "size-8",
         "icon-lg": "size-10",
         "icon-text": "size-9 lg:h-9 lg:w-fit items-center flex flex-row",
+        "text": "size-9 lg:h-9 w-fit items-center flex flex-row",
         dropdown: "items-center",
       },
     },

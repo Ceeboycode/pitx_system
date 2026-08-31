@@ -42,7 +42,9 @@ import {
 import { Separator } from '@/components/ui/separator';
 
 import AddressSelectPH from '@/components/AddressSelectPH.vue';
+import ConfirmPasswordRequirements from '@/components/ConfirmPasswordRequirements.vue';
 import InputError from '@/components/InputError.vue';
+import PasswordRequirements from '@/components/PasswordRequirements.vue';
 import RegistrationStatus from '@/pages/RegistrationStatus.vue';
 
 import {
@@ -189,6 +191,95 @@ const step1 = useForm({
     password_confirmation: '',
 });
 
+const isValidEmail = (value: string): boolean =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
+const step1EmailValidationMessage = computed(() => {
+    if (!step1.email || isValidEmail(step1.email)) {
+        return '';
+    }
+
+    return 'Please enter a valid email address.';
+});
+
+const isPhilippineMobileNumber = (value: string): boolean => {
+    const digits = value.replace(/[\s()-]/g, '');
+
+    return (
+        /^09\d{9}$/.test(digits) ||
+        /^\+639\d{9}$/.test(digits) ||
+        /^639\d{9}$/.test(digits)
+    );
+};
+
+const normalizePhilippineMobileNumber = (value: string): string => {
+    const digits = value.replace(/[\s()-]/g, '');
+
+    if (/^09\d{9}$/.test(digits)) {
+        return digits;
+    }
+
+    if (/^639\d{9}$/.test(digits)) {
+        return `0${digits.slice(2)}`;
+    }
+
+    return value;
+};
+
+function sanitizeStep1Phone(): void {
+    const value = step1.phone.replace(/[^\d+]/g, '');
+
+    step1.phone = value.startsWith('+')
+        ? `+${value.slice(1).replace(/\+/g, '')}`
+        : value.replace(/\+/g, '');
+}
+
+const phoneValidationMessage = computed(() => {
+    if (!step1.phone || isPhilippineMobileNumber(step1.phone)) {
+        return '';
+    }
+
+    return 'Enter a valid PH phone number.';
+});
+
+const isStep1Valid = computed(() => {
+    const password = step1.password;
+
+    return (
+        step1.name.trim().length > 0 &&
+        isValidEmail(step1.email) &&
+        isPhilippineMobileNumber(step1.phone) &&
+        password.length >= 12 &&
+        /[A-Z]/.test(password) &&
+        /[a-z]/.test(password) &&
+        /\d/.test(password) &&
+        /[^A-Za-z\d]/.test(password) &&
+        password === step1.password_confirmation
+    );
+});
+
+function validateStep1Phone(): boolean {
+    if (!step1.phone || !isPhilippineMobileNumber(step1.phone)) {
+        step1.setError(
+            'phone',
+            phoneValidationMessage.value || 'Phone number is required.',
+        );
+
+        return false;
+    }
+
+    normalizeStep1Phone();
+    step1.clearErrors('phone');
+
+    return true;
+}
+
+function normalizeStep1Phone(): void {
+    if (isPhilippineMobileNumber(step1.phone)) {
+        step1.phone = normalizePhilippineMobileNumber(step1.phone);
+    }
+}
+
 const otpAccount = useForm({ otp: '' });
 const resendAccount = useForm({});
 const resentAccountMsg = ref('');
@@ -205,6 +296,35 @@ const step2 = useForm({
     authorized_representative_contact: '',
 
     logo: null as File | null,
+});
+
+const step2EmailValidationMessage = computed(() => {
+    if (!step2.company_email || isValidEmail(step2.company_email)) {
+        return '';
+    }
+
+    return 'Please enter a valid email address.';
+});
+
+const isStep2Valid = computed(() => {
+    const hasRequiredCompanyDetails = [
+        step2.company_name,
+        step2.company_email,
+        step2.company_phone,
+        step2.company_address,
+        step2.business_type,
+    ].every((value) => value.trim().length > 0);
+
+    if (!hasRequiredCompanyDetails || !isValidEmail(step2.company_email)) {
+        return false;
+    }
+
+    return Boolean(
+        step2.registration_number &&
+            step2.authorized_representative_name &&
+            step2.authorized_representative_position &&
+            step2.authorized_representative_contact,
+    );
 });
 
 const logoPreview = ref<string | null>(null);
@@ -336,6 +456,12 @@ const requiredDocs = computed<
     ];
 });
 
+const isStep3Valid = computed(() =>
+    requiredDocs.value
+        .filter((document) => document.required)
+        .every((document) => Boolean(step3.documents[document.key]?.file)),
+);
+
 const confirmStep3Open = ref(false);
 const previewOpen = ref(false);
 const previewFile = ref<{
@@ -366,6 +492,14 @@ const selectedSubmissionDocuments = computed(() => [
 ]);
 
 function submitStep1() {
+    if (!step1.email || !isValidEmail(step1.email)) {
+        step1.setError('email', 'Please enter a valid email address.');
+
+        return;
+    }
+
+    if (!validateStep1Phone()) return;
+
     step1.submit(storeStep1(), {
         onSuccess: () => {
             resentAccountMsg.value = '';
@@ -384,6 +518,16 @@ function submitAccountOtp() {
 }
 
 function submitStep2() {
+    if (!step2.company_email || !isValidEmail(step2.company_email)) {
+        step2.setError(
+            'company_email',
+            step2EmailValidationMessage.value ||
+                'Please enter a valid email address.',
+        );
+
+        return;
+    }
+
     step2.submit(storeStep2(), {
         forceFormData: true,
         onSuccess: () => {
@@ -470,6 +614,8 @@ function onOtpInput(type: 'account' | 'company') {
         type === 'account' ? submitAccountOtp() : submitCompanyOtp();
     }
 }
+
+// UNFINISHED CODE KASI I CANT PROCEED SA NEXT STEPSSSSS!!!
 
 function handleFile(docKey: string, event: Event) {
     const el = event.target as HTMLInputElement;
@@ -754,7 +900,13 @@ onUnmounted(() => {
 
                 <div class="py-2 text-sm">
                     <!-- LABEL: ══ STEP 1 – Account Details ══════════════════════════ -->
-                    <div v-if="currentStep === 1" class="flex flex-col gap-y-2">
+                    <div
+                        v-if="currentStep === 1"
+                        class="flex flex-col gap-y-2"
+                        @keydown.enter.prevent="
+                            !step1.processing && isStep1Valid && submitStep1()
+                        "
+                    >
                         <div class="grid gap-2 sm:grid-cols-2">
                             <!-- TODO: might need to separate the full name into first name, middle name, and last name -->
                             <div class="space-y-1">
@@ -764,7 +916,7 @@ onUnmounted(() => {
                                     v-model="step1.name"
                                     placeholder="Juan Dela Cruz"
                                     autocomplete="name"
-                                    class="bg-custom-bg dark:bg-custom-bg-dark"
+                                    class="bg-custom-bg dark:bg-custom-bg-dark capitalize"
                                 />
                                 <InputError :message="step1.errors.name" />
                             </div>
@@ -774,30 +926,49 @@ onUnmounted(() => {
                                     id="s1_email"
                                     type="email"
                                     v-model="step1.email"
-                                    placeholder="juan.delacruz@example.com"
+                                    placeholder="juan.delacruz@gmail.com"
                                     autocomplete="email"
+                                    :aria-invalid="!!step1EmailValidationMessage"
                                     class="bg-custom-bg dark:bg-custom-bg-dark"
                                 />
+                                <p
+                                    v-if="step1EmailValidationMessage"
+                                    class="text-sm text-destructive"
+                                >
+                                    {{ step1EmailValidationMessage }}
+                                </p>
                                 <InputError :message="step1.errors.email" />
                             </div>
                         </div>
 
-                        <!-- TODO: add the philipino code number thingy i used in flutter app that automatically validates this -->
                         <div class="grid gap-2 sm:grid-cols-2">
                             <div class="space-y-1">
                                 <Label for="s1_phone">Phone</Label>
                                 <Input
                                     id="s1_phone"
                                     v-model="step1.phone"
-                                    placeholder="+63 9XX XXX XXXX"
+                                    type="tel"
+                                    inputmode="tel"
+                                    required
+                                    pattern="(09[0-9]{9}|\+639[0-9]{9}|639[0-9]{9})"
+                                    placeholder="0917 123 4567"
                                     autocomplete="tel"
+                                    :aria-invalid="Boolean(phoneValidationMessage)"
+                                    @input="sanitizeStep1Phone"
+                                    @blur="normalizeStep1Phone"
                                     class="bg-custom-bg dark:bg-custom-bg-dark"
                                 />
+                                <p
+                                    v-if="phoneValidationMessage"
+                                    class="text-sm text-destructive"
+                                >
+                                    {{ phoneValidationMessage }}
+                                </p>
                                 <InputError :message="step1.errors.phone" />
                             </div>
                         </div>
 
-                        <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="grid gap-2 sm:grid-cols-2">
                             <div class="space-y-1.5">
                                 <Label for="s1_pw">Password</Label>
                                 <div class="relative">
@@ -830,8 +1001,11 @@ onUnmounted(() => {
                                     </button>
                                 </div>
                                 <InputError :message="step1.errors.password" />
+                                <PasswordRequirements
+                                    :password="step1.password"
+                                    :active="step1.password.length > 0"
+                                />
                             </div>
-                            <!-- TODO: add password creation instructions at the bottom, styled like inputerror component -->
                             <div class="space-y-1.5">
                                 <Label for="s1_pwc">Confirm Password</Label>
                                 <div class="relative">
@@ -876,12 +1050,25 @@ onUnmounted(() => {
                                         step1.errors.password_confirmation
                                     "
                                 />
+                                <ConfirmPasswordRequirements
+                                    :password="step1.password"
+                                    :confirmation="step1.password_confirmation"
+                                    :active="step1.password_confirmation.length > 0"
+                                />
                             </div>
                         </div>
                     </div>
 
                     <!-- LABEL: ══ STEP 1.5 – Account Email OTP ══════════════════════ -->
-                    <div v-else-if="currentStep === 1.5" class="space-y-2">
+                    <div
+                        v-else-if="currentStep === 1.5"
+                        class="space-y-2"
+                        @keydown.enter.prevent="
+                            !otpAccount.processing &&
+                            otpAccount.otp.length === 6 &&
+                            submitAccountOtp()
+                        "
+                    >
                         <div
                             class="flex flex-col items-center rounded-md border border-dashed border-custom-bg-dark p-6 text-center text-custom-shadow dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5"
                         >
@@ -916,20 +1103,20 @@ onUnmounted(() => {
                             />
                             <InputError
                                 :message="otpAccount.errors.otp"
-                                class="text-center"
+                                class="justify-center"
                             />
                         </div>
 
                         <div
                             v-if="resentAccountMsg"
-                            class="mt-2 flex w-full flex-row items-start gap-x-2 rounded-md border-2 border-info/50 bg-info/20 p-3 text-info"
+                            class="mt-2 flex w-full flex-row items-start justify-center gap-x-2 rounded-md border-2 border-info/30 bg-info/10 p-3 text-info"
                         >
                             <RiCheckboxCircleFill
                                 class="mt-0.5 h-4 w-4 shrink-0"
                             />
-                            <p class="text-sm">
+                            <span class="text-sm">
                                 {{ resentAccountMsg }}
-                            </p>
+                            </span>
                         </div>
 
                         <div
@@ -951,6 +1138,9 @@ onUnmounted(() => {
                     <div
                         v-else-if="currentStep === 2"
                         class="flex flex-col gap-y-2"
+                        @keydown.enter.capture.prevent="
+                            !step2.processing && isStep2Valid && submitStep2()
+                        "
                     >
                         <div class="space-y-2">
                             <Label>
@@ -1064,8 +1254,15 @@ onUnmounted(() => {
                                     type="email"
                                     v-model="step2.company_email"
                                     autocomplete="email"
+                                    :aria-invalid="Boolean(step2EmailValidationMessage)"
                                     class="bg-custom-bg dark:bg-custom-bg-dark"
                                 />
+                                <p
+                                    v-if="step2EmailValidationMessage"
+                                    class="text-sm text-destructive"
+                                >
+                                    {{ step2EmailValidationMessage }}
+                                </p>
                                 <InputError
                                     :message="step2.errors.company_email"
                                 />
@@ -1228,7 +1425,15 @@ onUnmounted(() => {
                     </div>
 
                     <!-- LABEL: ══ STEP 2.5 – Company Email OTP ══════════════════════ -->
-                    <div v-else-if="currentStep === 2.5" class="space-y-2">
+                    <div
+                        v-else-if="currentStep === 2.5"
+                        class="space-y-2"
+                        @keydown.enter.prevent="
+                            !otpCompany.processing &&
+                            otpCompany.otp.length === 6 &&
+                            submitCompanyOtp()
+                        "
+                    >
                         <div
                             class="flex flex-col items-center rounded-md border border-dashed border-custom-bg-dark p-6 text-center text-custom-shadow dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5"
                         >
@@ -1295,9 +1500,13 @@ onUnmounted(() => {
                     </div>
 
                     <!-- LABEL: ══ STEP 3 – Documents ════════════════════════════════ -->
+
                     <div
                         v-else-if="currentStep === 3"
                         class="flex flex-col gap-y-2"
+                        @keydown.enter.capture.prevent="
+                            !step3.processing && isStep3Valid && submitStep3()
+                        "
                     >
                         <div class="space-y-2">
                             <template
@@ -1768,6 +1977,7 @@ onUnmounted(() => {
                     v-if="currentStep !== 4"
                     class="flex w-full flex-row items-center justify-end gap-x-2 pt-2"
                 >
+                    <!-- TODO: make this button strictly go only to step 1 -->
                     <Button
                         v-if="currentStep !== 1"
                         type="button"
@@ -1784,22 +1994,22 @@ onUnmounted(() => {
                         v-if="currentStep === 1"
                         type="button"
                         variant="float-primary"
-                        size="icon-text"
-                        :disabled="step1.processing"
+                        size="text"
+                        :disabled="step1.processing || !isStep1Valid"
                         @click="submitStep1"
                     >
                         <RiLoaderLine
                             v-if="step1.processing"
                             class="h-4 w-4 animate-spin"
                         />
-                        {{ step1.processing ? 'Validating...' : 'Continue' }}
+                        {{ step1.processing ? 'Validating' : 'Continue' }}
                     </Button>
 
                     <Button
                         v-else-if="currentStep === 1.5"
                         type="button"
                         variant="float-primary"
-                        size="icon-text"
+                        size="text"
                         :disabled="
                             otpAccount.processing || otpAccount.otp.length < 6
                         "
@@ -1816,7 +2026,7 @@ onUnmounted(() => {
                         v-else-if="currentStep === 2"
                         type="button"
                         variant="float-primary"
-                        size="icon-text"
+                        size="text"
                         :disabled="step2.processing"
                         @click="submitStep2"
                     >
@@ -1824,14 +2034,14 @@ onUnmounted(() => {
                             v-if="step2.processing"
                             class="h-4 w-4 animate-spin"
                         />
-                        {{ step2.processing ? 'Validating...' : 'Continue' }}
+                        {{ step2.processing ? 'Validating' : 'Continue' }}
                     </Button>
 
                     <Button
                         v-else-if="currentStep === 2.5"
                         type="button"
                         variant="float-primary"
-                        size="icon-text"
+                        size="text"
                         :disabled="
                             otpCompany.processing || otpCompany.otp.length < 6
                         "
@@ -1841,14 +2051,14 @@ onUnmounted(() => {
                             v-if="otpCompany.processing"
                             class="h-4 w-4 animate-spin"
                         />
-                        {{ otpCompany.processing ? 'Verifying...' : 'Verify' }}
+                        {{ otpCompany.processing ? 'Verifying' : 'Verify' }}
                     </Button>
 
                     <Button
                         v-else-if="currentStep === 3"
                         type="button"
                         variant="float-primary"
-                        size="icon-text"
+                        size="text"
                         :disabled="step3.processing"
                         @click="requestStep3Submission"
                     >

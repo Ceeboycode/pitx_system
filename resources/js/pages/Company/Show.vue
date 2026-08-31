@@ -55,13 +55,6 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 
-import {
-    Accordion,
-    AccordionContent,
-    AccordionTrigger,
-    AccordionItem
-} from '@/components/ui/accordion';
-
 import { index, show } from '@/routes/companies';
 import {
     destroy as destroyDoc,
@@ -74,33 +67,25 @@ import {
 
 import {
     Archive,
-    Building2,
     CheckCircle2,
-    CircleAlert,
-    Clock3,
     Download,
     Eye,
-    FileArchive,
-    Files,
     FileText,
     MessageSquareText,
     MoreHorizontal,
-    RotateCcw,
-    UserRound,
-    XCircle,
-    Mail,
-    Phone,
-    MapPin,
-    ChevronDown,
-    ChevronRight,
-    User,
     IdCard,
-    Ellipsis,
-    File,
     ListChecks,
     X,
 } from 'lucide-vue-next';
-import { RiArrowLeftLine } from 'vue-remix-icons';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+    RiArrowLeftLine,
+    RiCheckboxMultipleBlankLine,
+    RiCheckboxMultipleLine,
+    RiMore2Line,
+    RiDownloadLine,
+
+ } from 'vue-remix-icons';
 
 
 
@@ -160,13 +145,13 @@ const canArchiveCompany = computed(() => can('companies.archive'));
 const logoError = ref(false);
 const showLogo = computed(() => !!company.value.logo_url && !logoError.value);
 
-const companyInitials = computed(
-    () =>
-        (company.value.company_code ?? company.value.company_name ?? '')
-            .replace(/[^A-Za-z0-9]/g, '')
-            .slice(0, 2)
-            .toUpperCase() || '??',
-);
+// const companyInitials = computed(
+//     () =>
+//         (company.value.company_code ?? company.value.company_name ?? '')
+//             .replace(/[^A-Za-z0-9]/g, '')
+//             .slice(0, 2)
+//             .toUpperCase() || '??',
+// );
 
 
 
@@ -217,6 +202,8 @@ function isExpired(expiresAt?: string | null): boolean {
     if (Number.isNaN(d.getTime())) return false;
     return d.getTime() < Date.now();
 }
+
+// CREATE A NEW statuscoloring system, not these ones
 
 function statusClass(status?: string | null): string {
     switch (status) {
@@ -566,6 +553,8 @@ const repHasAny = computed(() => {
     );
 });
 
+// USE OTHER INDICATORS FOR THESE
+
 const totalDocs = computed(() => docs.value.length);
 const verifiedDocs = computed(
     () => docs.value.filter((doc) => doc.status === 'verified').length,
@@ -607,187 +596,187 @@ const flaggedDocs = computed(
                     <CardContent
                         class="no-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto py-2"
                     >
-                    <section class="space-y-4">
-                        <CardHeader class="px-0 pb-0">
-                            <div>
-                                <CardTitle class="text-base text-custom-accent-3">
-                                    Company Details
-                                </CardTitle>
-                            </div>
-                        </CardHeader>
-                        <CardContent class="grid gap-4 px-0">
-                            <div class="grid grid-cols-2 gap-3">
-                                <div class="space-y-2">
-                                    <Label>Company Code</Label>
-                                    <div
-                                        class="flex h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 font-mono text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark"
-                                    >
-                                        {{ company.company_code ?? '—' }}
+                        <section class="space-y-4">
+                            <CardHeader class="px-0 pb-0">
+                                <div>
+                                    <CardTitle class="text-base text-custom-accent-3">
+                                        Company Details
+                                    </CardTitle>
+                                </div>
+                            </CardHeader>
+                            <CardContent class="grid gap-4 px-0">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="space-y-2">
+                                        <Label>Company Code</Label>
+                                        <div
+                                            class="flex h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 font-mono text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark"
+                                        >
+                                            {{ company.company_code ?? '—' }}
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label>Status</Label>
+                                        <div
+                                            class="flex h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark"
+                                        >
+                                            <Badge :class="statusClass(company.status)">
+                                                <span
+                                                    :class="[
+                                                        'h-2 w-2 rounded-full',
+                                                        statusDot(company.status),
+                                                    ]"
+                                                />
+                                                {{ humanize(company.status) }}
+                                            </Badge>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="space-y-2">
-                                    <Label>Status</Label>
+                                    <Label>Business Type</Label>
                                     <div
                                         class="flex h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark"
                                     >
-                                        <Badge :class="statusClass(company.status)">
-                                            <span
-                                                :class="[
-                                                    'h-2 w-2 rounded-full',
-                                                    statusDot(company.status),
-                                                ]"
-                                            />
-                                            {{ humanize(company.status) }}
-                                        </Badge>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="space-y-2">
-                                <Label>Business Type</Label>
-                                <div
-                                    class="flex h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark"
-                                >
-                                    {{
-                                        company.business_type
-                                            ? humanize(company.business_type)
-                                            : '—'
-                                    }}
-                                </div>
-                            </div>
-                            <div class="space-y-2">
-                                <span class="block text-sm font-medium">
-                                    Registration No.
-                                </span>
-                                <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 font-mono text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark">{{
-                                    company.registration_number ?? '—'
-                                }}</div>
-                            </div>
-                            <div class="space-y-2">
-                                <span class="block text-sm font-medium">
-                                    Created
-                                </span>
-                                <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark">
-                                    {{ formatDate(company.created_at) }} ·
-                                    {{ company.creator?.name ?? 'N/A' }}
-                                </div>
-                            </div>
-                            <div class="space-y-2">
-                                <span class="block text-sm font-medium">
-                                    Last Updated
-                                </span>
-                                <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark">
-                                    {{ company.updated_at_human ?? '—' }} ·
-                                    {{ company.updater?.name ?? 'N/A' }}
-                                </div>
-                            </div>
-                            <div class="grid gap-y-2 pt-2">
-                                <span class="block text-sm font-medium">
-                                    Contacts
-                                </span>
-                                <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
-                                    <div class="h-full mr-4">
-                                        <Mail class="h-4 w-4 inline-block text-primary" />
-                                    </div>
-                                    <a
-                                        v-if="company.company_email"
-                                        :href="`mailto:${company.company_email}`"
-                                        class="text-sm hover:underline underline-offset-2"
-                                    >{{ company.company_email }}</a>
-                                    <span v-else class="text-sm">—</span>
-                                </div>
-                                <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
-                                    <div class="h-full mr-4">
-                                        <Phone class="h-4 w-4 inline-block text-primary" />
-                                    </div>
-                                    <a
-                                        v-if="company.company_phone"
-                                        :href="`tel:${company.company_phone}`"
-                                        class="text-sm hover:underline underline-offset-2"
-                                    >{{ company.company_phone }}</a>
-                                    <span v-else class="text-sm">—</span>
-                                </div>
-                                <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
-                                    <div class="h-full mr-4">
-                                        <MapPin class="h-4 w-4 inline-block text-primary" />
-                                    </div>
-                                    <span class="text-sm">{{
-                                        company.company_address ?? '—'
-                                    }}</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </section>
-                    <Separator />
-                    <section class="space-y-4">
-                        <CardHeader class="px-0 pb-0">
-                            <div>
-                                <CardTitle class="text-base text-custom-accent-3">
-                                    Representative
-                                </CardTitle>
-                            </div>
-                        </CardHeader>
-                        <CardContent class="grid gap-4 px-0">
-                            <div class="grid gap-y-2 pt-2">
-                                <span class="block text-sm font-medium">
-                                    Contacts
-                                </span>
-                                <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
-                                    <div class="h-full mr-4">
-                                        <Mail class="h-4 w-4 inline-block text-primary" />
-                                    </div>
-                                    <span class="text-sm">
                                         {{
-                                            company.authorized_representative_name ??
-                                            '—'
+                                            company.business_type
+                                                ? humanize(company.business_type)
+                                                : '—'
                                         }}
-                                    </span>
-                                </div>
-                                <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
-                                    <div class="h-full mr-4">
-                                        <IdCard class="h-4 w-4 inline-block text-primary" />
                                     </div>
-                                    <span class="text-sm">
-                                        {{
-                                            company.authorized_representative_position ??
-                                            '—'
-                                        }}
+                                </div>
+                                <div class="space-y-2">
+                                    <span class="block text-sm font-medium">
+                                        Registration No.
                                     </span>
+                                    <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 font-mono text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark">{{
+                                        company.registration_number ?? '—'
+                                    }}</div>
                                 </div>
-                                <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
-                                    <div class="h-full mr-4">
-                                        <Phone class="h-4 w-4 inline-block text-primary" />
+                                <div class="space-y-2">
+                                    <span class="block text-sm font-medium">
+                                        Created
+                                    </span>
+                                    <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                                        {{ formatDate(company.created_at) }} ·
+                                        {{ company.creator?.name ?? 'N/A' }}
                                     </div>
-                                    <a
-                                        v-if="company.authorized_representative_contact"
-                                        :href="`tel:${company.authorized_representative_contact}`"
-                                        class="text-sm hover:underline underline-offset-2"
-                                    >{{ company.authorized_representative_contact }}</a>
-                                    <span v-else class="text-sm">—</span>
                                 </div>
-                                <div v-if="!repHasAny" class="px-5 py-4">
-                                    <p class="text-xs text-muted-foreground">
-                                        No representative details provided.
-                                    </p>
+                                <div class="space-y-2">
+                                    <span class="block text-sm font-medium">
+                                        Last Updated
+                                    </span>
+                                    <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                                        {{ company.updated_at_human ?? '—' }} ·
+                                        {{ company.updater?.name ?? 'N/A' }}
+                                    </div>
                                 </div>
-                            </div>
-                        </CardContent>
-                    </section>
-                    <Separator />
-                    <div class="flex items-center justify-end">
-                        <Button
-                            v-if="canArchiveCompany"
-                            variant="destructive"
-                            size="icon-text"
-                            @click="archiveOpen = true"
-                        >
-                            <Archive class="h-4 w-4" />Archive
-                        </Button>
-                    </div>
+                                <div class="grid gap-y-2 pt-2">
+                                    <span class="block text-sm font-medium">
+                                        Contacts
+                                    </span>
+                                    <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                                        <div class="h-full mr-4">
+                                            <Mail class="h-4 w-4 inline-block text-primary" />
+                                        </div>
+                                        <a
+                                            v-if="company.company_email"
+                                            :href="`mailto:${company.company_email}`"
+                                            class="text-sm hover:underline underline-offset-2"
+                                        >{{ company.company_email }}</a>
+                                        <span v-else class="text-sm">—</span>
+                                    </div>
+                                    <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                                        <div class="h-full mr-4">
+                                            <Phone class="h-4 w-4 inline-block text-primary" />
+                                        </div>
+                                        <a
+                                            v-if="company.company_phone"
+                                            :href="`tel:${company.company_phone}`"
+                                            class="text-sm hover:underline underline-offset-2"
+                                        >{{ company.company_phone }}</a>
+                                        <span v-else class="text-sm">—</span>
+                                    </div>
+                                    <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                                        <div class="h-full mr-4">
+                                            <MapPin class="h-4 w-4 inline-block text-primary" />
+                                        </div>
+                                        <span class="text-sm">{{
+                                            company.company_address ?? '—'
+                                        }}</span>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </section>
+                        <Separator />
+                        <section class="space-y-4">
+                            <CardHeader class="px-0 pb-0">
+                                <div>
+                                    <CardTitle class="text-base text-custom-accent-3">
+                                        Representative
+                                    </CardTitle>
+                                </div>
+                            </CardHeader>
+                            <CardContent class="grid gap-4 px-0">
+                                <div class="grid gap-y-2 pt-2">
+                                    <span class="block text-sm font-medium">
+                                        Contacts
+                                    </span>
+                                    <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                                        <div class="h-full mr-4">
+                                            <Mail class="h-4 w-4 inline-block text-primary" />
+                                        </div>
+                                        <span class="text-sm">
+                                            {{
+                                                company.authorized_representative_name ??
+                                                '—'
+                                            }}
+                                        </span>
+                                    </div>
+                                    <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                                        <div class="h-full mr-4">
+                                            <IdCard class="h-4 w-4 inline-block text-primary" />
+                                        </div>
+                                        <span class="text-sm">
+                                            {{
+                                                company.authorized_representative_position ??
+                                                '—'
+                                            }}
+                                        </span>
+                                    </div>
+                                    <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                                        <div class="h-full mr-4">
+                                            <Phone class="h-4 w-4 inline-block text-primary" />
+                                        </div>
+                                        <a
+                                            v-if="company.authorized_representative_contact"
+                                            :href="`tel:${company.authorized_representative_contact}`"
+                                            class="text-sm hover:underline underline-offset-2"
+                                        >{{ company.authorized_representative_contact }}</a>
+                                        <span v-else class="text-sm">—</span>
+                                    </div>
+                                    <div v-if="!repHasAny" class="px-5 py-4">
+                                        <p class="text-xs text-muted-foreground">
+                                            No representative details provided.
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </section>
+                        <Separator />
+                        <div class="flex items-center justify-end">
+                            <Button
+                                v-if="canArchiveCompany"
+                                variant="destructive"
+                                size="icon-text"
+                                @click="archiveOpen = true"
+                            >
+                                <Archive class="h-4 w-4" />Archive
+                            </Button>
+                        </div>
                     </CardContent>
                 </Card>
             
-                <div class="order-1 contents">
-                    <Card class="flex min-h-0 min-w-0 flex-1 flex-col lg:h-full">
+                <div class="order-1 contents flex flex-col flex-1 gap-4">
+                    <Card class="flex min-h-0 min-w-0 flex-col lg:h-fit">
                         <CardHeader class="flex flex-row items-start gap-3">
                             <Button as-child variant="header-actions" size="icon-text">
                                 <Link :href="index().url" aria-label="Back to companies">
@@ -818,318 +807,542 @@ const flaggedDocs = computed(
                         </CardHeader>
 
                         <!-- TODO: redesign this soon -->
-                        <CardContent class="no-scrollbar min-h-0 flex-1 overflow-y-auto border-t border-slate-100 dark:border-custom-bg-light">
-                            
-                            <div
-                                v-if="docs.length === 0"
-                                class="flex flex-col items-center gap-3 py-20 text-center"
+                    </Card>
+                    <div class="grid grid-cols-3 flex-1 gap-4">
+                        <Card class="order-1 col-span-1">
+                            <CardHeader>
+                                <CardTitle>Representative</CardTitle>
+                                <CardDescription>
+                                    Company representative details
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent
+                                class="no-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto py-2"
                             >
-                                <div
-                                    class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted"
-                                >
-                                    <FileText
-                                        class="h-6 w-6 text-muted-foreground/40"
-                                    />
+                                <!-- <section class="space-y-4">
+                                    <CardHeader class="px-0 pb-0">
+                                        <div>
+                                            <CardTitle class="text-base text-custom-accent-3">
+                                                Company Details
+                                            </CardTitle>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent class="grid gap-4 px-0">
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div class="space-y-2">
+                                                <Label>Company Code</Label>
+                                                <div
+                                                    class="flex h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 font-mono text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark"
+                                                >
+                                                    {{ company.company_code ?? '—' }}
+                                                </div>
+                                            </div>
+                                            <div class="space-y-2">
+                                                <Label>Status</Label>
+                                                <div
+                                                    class="flex h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark"
+                                                >
+                                                    <Badge :class="statusClass(company.status)">
+                                                        <span
+                                                            :class="[
+                                                                'h-2 w-2 rounded-full',
+                                                                statusDot(company.status),
+                                                            ]"
+                                                        />
+                                                        {{ humanize(company.status) }}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="space-y-2">
+                                            <Label>Business Type</Label>
+                                            <div
+                                                class="flex h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark"
+                                            >
+                                                {{
+                                                    company.business_type
+                                                        ? humanize(company.business_type)
+                                                        : '—'
+                                                }}
+                                            </div>
+                                        </div>
+                                        <div class="space-y-2">
+                                            <span class="block text-sm font-medium">
+                                                Registration No.
+                                            </span>
+                                            <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 font-mono text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark">{{
+                                                company.registration_number ?? '—'
+                                            }}</div>
+                                        </div>
+                                        <div class="space-y-2">
+                                            <span class="block text-sm font-medium">
+                                                Created
+                                            </span>
+                                            <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                                                {{ formatDate(company.created_at) }} ·
+                                                {{ company.creator?.name ?? 'N/A' }}
+                                            </div>
+                                        </div>
+                                        <div class="space-y-2">
+                                            <span class="block text-sm font-medium">
+                                                Last Updated
+                                            </span>
+                                            <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 text-sm dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                                                {{ company.updated_at_human ?? '—' }} ·
+                                                {{ company.updater?.name ?? 'N/A' }}
+                                            </div>
+                                        </div>
+                                        <div class="grid gap-y-2 pt-2">
+                                            <span class="block text-sm font-medium">
+                                                Contacts
+                                            </span>
+                                            <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                                                <div class="h-full mr-4">
+                                                    <Mail class="h-4 w-4 inline-block text-primary" />
+                                                </div>
+                                                <a
+                                                    v-if="company.company_email"
+                                                    :href="`mailto:${company.company_email}`"
+                                                    class="text-sm hover:underline underline-offset-2"
+                                                >{{ company.company_email }}</a>
+                                                <span v-else class="text-sm">—</span>
+                                            </div>
+                                            <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                                                <div class="h-full mr-4">
+                                                    <Phone class="h-4 w-4 inline-block text-primary" />
+                                                </div>
+                                                <a
+                                                    v-if="company.company_phone"
+                                                    :href="`tel:${company.company_phone}`"
+                                                    class="text-sm hover:underline underline-offset-2"
+                                                >{{ company.company_phone }}</a>
+                                                <span v-else class="text-sm">—</span>
+                                            </div>
+                                            <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                                                <div class="h-full mr-4">
+                                                    <MapPin class="h-4 w-4 inline-block text-primary" />
+                                                </div>
+                                                <span class="text-sm">{{
+                                                    company.company_address ?? '—'
+                                                }}</span>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </section> -->
+                                <Separator />
+                                <!-- <section class="space-y-4">
+                                    <CardHeader class="px-0 pb-0">
+                                        <div>
+                                            <CardTitle class="text-base text-custom-accent-3">
+                                                Representative
+                                            </CardTitle>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent class="grid gap-4 px-0">
+                                        <div class="grid gap-y-2 pt-2">
+                                            <span class="block text-sm font-medium">
+                                                Contacts
+                                            </span>
+                                            <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                                                <div class="h-full mr-4">
+                                                    <Mail class="h-4 w-4 inline-block text-primary" />
+                                                </div>
+                                                <span class="text-sm">
+                                                    {{
+                                                        company.authorized_representative_name ??
+                                                        '—'
+                                                    }}
+                                                </span>
+                                            </div>
+                                            <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                                                <div class="h-full mr-4">
+                                                    <IdCard class="h-4 w-4 inline-block text-primary" />
+                                                </div>
+                                                <span class="text-sm">
+                                                    {{
+                                                        company.authorized_representative_position ??
+                                                        '—'
+                                                    }}
+                                                </span>
+                                            </div>
+                                            <div class="flex min-h-9 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 py-2 dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                                                <div class="h-full mr-4">
+                                                    <Phone class="h-4 w-4 inline-block text-primary" />
+                                                </div>
+                                                <a
+                                                    v-if="company.authorized_representative_contact"
+                                                    :href="`tel:${company.authorized_representative_contact}`"
+                                                    class="text-sm hover:underline underline-offset-2"
+                                                >{{ company.authorized_representative_contact }}</a>
+                                                <span v-else class="text-sm">—</span>
+                                            </div>
+                                            <div v-if="!repHasAny" class="px-5 py-4">
+                                                <p class="text-xs text-muted-foreground">
+                                                    No representative details provided.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </section> -->
+                                <Separator />
+                                <!-- <div class="flex items-center justify-end">
+                                    <Button
+                                        v-if="canArchiveCompany"
+                                        variant="destructive"
+                                        size="icon-text"
+                                        @click="archiveOpen = true"
+                                    >
+                                        <Archive class="h-4 w-4" />Archive
+                                    </Button>
+                                </div> -->
+                            </CardContent>
+                        </Card>
+                        <Card class="order-2 col-span-2">
+                            <CardHeader class="flex flex-row gap-2">
+                                <div class="flex flex-col">
+                                    <CardTitle class="flex items-center gap-2">
+                                        <span class="font-semibold">Documents</span>
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Review company documents and requirements.
+                                    </CardDescription>
                                 </div>
-                                <div>
-                                    <p class="text-sm font-semibold">
-                                        No documents uploaded yet.
-                                    </p>
-                                    <p class="mt-0.5 text-xs text-muted-foreground">
-                                        Documents submitted by the company will
-                                        appear here.
-                                    </p>
-                                </div>
-                            </div>
+                                <div class="flex flex-1 justify-end gap-2">
+                                    <div class="lg:flex items-center gap-2 sm:justify-end">
+                                        <DropdownMenu class="w-fit">
+                                            <DropdownMenuTrigger as-child class="m-0">
+                                                <div class="inline-flex">
+                                                    <Button
+                                                        variant="header-actions"
+                                                        class="text-custom-shadow"
+                                                        size="icon"
+                                                        aria-label="Open company actions"
+                                                    >
+                                                        <RiMore2Line class="h-4 w-4 shrink-0" />
+                                                    </Button>
+                                                </div>
+                                            </DropdownMenuTrigger>
 
-                            
-                            <div v-else>
-                                <div class="flex justify-between py-4">
-                                    <div class="flex gap-2">
+                                            <DropdownMenuContent align="end" class="w-fit">
+                                                <DropdownMenuItem
+                                                    class="group cursor-pointer"
+                                                    @click="toggleSelectMode"
+                                                >
+                                                    <RiCheckboxMultipleBlankLine v-if="selectMode" class="h-4 w-4 shrink-0 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                    <RiCheckboxMultipleLine v-else class="h-4 w-4 shrink-0 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                    <span v-if="selectMode" class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">
+                                                        Cancel select
+                                                    </span>
+                                                    <span v-else>
+                                                        Select
+                                                    </span>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    class="group cursor-pointer"
+                                                    @click="openBulkConfirm()"
+                                                >
+                                                    <RiDownloadLine class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                    <span>Download all verified</span>
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent class="no-scrollbar min-h-0 flex-1 overflow-y-auto border-t border-slate-100 dark:border-custom-bg-light">
+                                <div
+                                    v-if="docs.length === 0"
+                                    class="flex flex-col items-center gap-3 py-20 text-center"
+                                >
+                                    <div
+                                        class="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted"
+                                    >
+                                        <FileText
+                                            class="h-6 w-6 text-muted-foreground/40"
+                                        />
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-semibold">
+                                            No documents uploaded yet.
+                                        </p>
+                                        <p class="mt-0.5 text-xs text-muted-foreground">
+                                            Documents submitted by the company will
+                                            appear here.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                
+                                <div v-else>
+                                    <!-- TODO: add smooth transition for when this div appears and when it disappears -->
+                                    <div v-if="selectMode" class="pt-2 flex justify-between">
                                         <Button
-                                            variant="outline"
-                                            class="group/segment shrink-0 rounded-lg cursor-pointer gap-0 cursor-pointer hover:bg-slate-100 text-slate-600"
-                                            @click="toggleSelectMode"
+                                            v-if="selectMode"
+                                            variant="float"
+                                            @click="selectAll"
                                         >
-                                            <X v-if="selectMode" class="h-4 w-4 shrink-0" />
-                                            <ListChecks v-else class="h-4 w-4 shrink-0" />
-                                            <span v-if="!selectMode" class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-16 group-hover/segment:opacity-100">
-                                                Select
+                                            <RiCheckboxMultipleBlankLine v-if="allSelected" class="h-4 w-4 shrink-0" />
+                                            <RiCheckboxMultipleLine v-else class="h-4 w-4 shrink-0" />
+                                            <span>
+                                                {{ allSelected ? 'Deselect all' : 'Select all' }}
                                             </span>
                                         </Button>
-                                        <Transition
-                                            enter-active-class="transition-all duration-200"
-                                            enter-from-class="opacity-0 scale-95"
-                                            enter-to-class="opacity-100 scale-100"
-                                            leave-active-class="transition-all duration-150"
-                                            leave-from-class="opacity-100 scale-100"
-                                            leave-to-class="opacity-0 scale-95"
+                                        <Button
+                                            v-if="docs.length > 0"
+                                            variant="float"
+                                            :disabled="selectMode && selectedDocIds.length === 0"
+                                            @click="downloadSelected()"
                                         >
-                                            <Button
-                                                v-if="selectMode"
-                                                variant="outline"
-                                                class="shrink-0 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer"
-                                                @click="selectAll"
-                                            >
-                                                {{ allSelected ? 'Deselect All' : 'Select All' }}
-                                            </Button>
-                                        </Transition>
+                                            <Download class="h-4 w-4 shrink-0" />
+                                            <span class="">
+                                                {{ allSelected ? `Download all` : (selectMode && `Download (${selectedDocIds.length})`)}}
+                                            </span>
+                                        </Button>
                                     </div>
-                                    <Button
-                                        v-if="docs.length > 0"
-                                        variant="outline"
-                                        class="group/segment shrink-0 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer gap-0"
-                                        :disabled="selectMode && selectedDocIds.length === 0"
-                                        @click="selectMode ? downloadSelected() : openBulkConfirm()"
-                                    >
-                                        <Download class="h-4 w-4 shrink-0" />
-                                        <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-48 group-hover/segment:opacity-100">
-                                            {{ selectMode ? `Download Selected (${selectedDocIds.length})` : 'Download All Verified' }}
-                                        </span>
-                                    </Button>
-                                </div>
-                                <div class="divide-y divide-slate-100 py-0">
-                                    <div
-                                        v-for="doc in docs"
-                                        :key="doc.id"
-                                        class="grid grid-cols-[auto_1fr_auto] py-2 transition-colors"
-                                        :class="!selectMode ? 'group/row' : ''"
-                                    >
-                                        
+                                    <div class="py-0 border border-custom-bg-dark rounded-md mt-4">
                                         <div
-                                            class="flex items-start pt-1 overflow-hidden transition-all duration-300"
-                                            :class="selectMode ? 'w-5 opacity-100 me-2' : 'w-0 opacity-0'"
+                                            v-for="doc in docs"
+                                            :key="doc.id"
+                                            class="grid grid-cols-[auto_1fr_auto] transition-colors text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light py-1.5 px-3"
+                                            :class="!selectMode ? 'group/row' : ''"
                                         >
-                                            <input
-                                                type="checkbox"
-                                                class="h-4 w-4 cursor-pointer rounded-lg accent-primary"
-                                                :checked="selectedDocIds.includes(doc.id)"
-                                                @change="setDoc(doc.id, ($event.target as HTMLInputElement).checked)"
-                                            />
-                                        </div>
-
-                                        
-                                        <div class="min-w-0">
+                                            
                                             <div
-                                                class="flex flex-wrap items-center gap-2"
+                                                class="flex items-start pt-1 overflow-hidden transition-all duration-300"
+                                                :class="selectMode ? 'w-5 opacity-100 me-2' : 'w-0 opacity-0'"
                                             >
-                                                <p
-                                                    class="text-sm font-semibold text-foreground"
-                                                >
-                                                    {{ humanize(doc.doc_type) }}
-                                                </p>
-                                                <Badge
-                                                    :class="[
-                                                        'gap-1.5',
-                                                        statusClass(doc.status),
-                                                    ]"
-                                                >
-                                                    <span
-                                                        :class="[
-                                                            'h-1.5 w-1.5 rounded-full',
-                                                            statusDot(doc.status),
-                                                        ]"
-                                                    />
-                                                    {{ humanize(doc.status) }}
-                                                </Badge>
-                                                <Badge
-                                                    v-if="
-                                                        isExpired(doc.expires_at) &&
-                                                        doc.status !== 'expired'
-                                                    "
-                                                    class="gap-1.5 border-rose-200 bg-rose-100 text-rose-600"
-                                                >
-                                                    <span
-                                                        class="h-1.5 w-1.5 rounded-full bg-rose-500"
-                                                    />
-                                                    Expired
-                                                </Badge>
+                                            <!-- TODO: use the checkbox component here -->
+                                                <input
+                                                    type="checkbox"
+                                                    class="h-4 w-4"
+                                                    :checked="selectedDocIds.includes(doc.id)"
+                                                    @change="setDoc(doc.id, ($event.target as HTMLInputElement).checked)"
+                                                />
                                             </div>
 
-                                            <div>
-                                                <button
-                                                    v-if="canPreview(doc)"
-                                                    class="cursor-pointer flex items-center gap-2 text-sm text-muted-foreground underline-offset-2 hover:underline"
-                                                    :title="doc.original_name ?? ''"
-                                                    @click="openPreview(doc)"
-                                                >
-                                                    <File class="h-4- w-4 shrink-0" />
-                                                    <span class="truncate">{{
-                                                        doc.original_name ?? '—'
-                                                    }}</span>
-                                                </button>
-                                            </div>
-
-                                            <div class="overflow-hidden max-h-0 opacity-0 group-hover/row:max-h-96 group-hover/row:opacity-100 transition-all delay-200 duration-300 flex-col">
+                                            
+                                            <div class="min-w-0">
                                                 <div
-                                                    class="flex flex-row items-center gap-x-10 text-xs text-muted-foreground"
+                                                    class="flex flex-wrap items-center gap-2"
                                                 >
-                                                    <div class="flex flex-col w-40 gap-y-1">
-                                                        <span v-if="doc.issued_at"
-                                                            >Issued:
-                                                            <span
-                                                                class="font-medium text-foreground"
-                                                                >{{
-                                                                    formatDate(doc.issued_at)
-                                                                }}</span
-                                                            ></span
-                                                        >
-                                                        <span v-if="doc.expires_at">
-                                                            Expires:
-                                                            <span
-                                                                :class="[
-                                                                    'font-medium',
-                                                                    isExpired(doc.expires_at)
-                                                                        ? 'text-rose-600'
-                                                                        : 'text-foreground',
-                                                                ]"
-                                                            >
-                                                                {{ formatDate(doc.expires_at) }}
-                                                            </span>
-                                                        </span>
-                                                    </div>
-                                                    <div class="flex flex-col flex-1 gap-y-1">
-                                                        <span v-if="doc.uploader"
-                                                            >Uploaded by:
-                                                            <span
-                                                                class="font-medium text-foreground"
-                                                            >
-                                                                {{ doc.uploader.name }}
-                                                            </span>
-                                                            on
-                                                            <span
-                                                                class="font-medium text-foreground"
-                                                            >
-                                                                {{
-                                                                    formatDateTime(
-                                                                        doc.created_at,
-                                                                    )
-                                                                }}
-                                                            </span>
-                                                        </span>
-                                                        <span v-if="doc.verifier">
-                                                            Verified by:
-                                                            <span
-                                                                class="font-medium text-foreground"
-                                                            >
-                                                                {{ doc.verifier.name }}
-                                                            </span>
-                                                            on
-                                                            <span
-                                                                class="font-medium text-foreground"
-                                                            >
-                                                                {{
-                                                                    formatDateTime( 
-                                                                        doc.verified_at,
-                                                                    )
-                                                                }}
-                                                            </span>
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                                <div v-if="doc.remarks" class="pt-2">
-                                                    <Popover>
-                                                        <PopoverTrigger as-child>
-                                                            <Button
-                                                                variant="outline"
-                                                                class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
-                                                            >
-                                                                <MessageSquareText
-                                                                    class="h-4 w-4"
-                                                                />
-                                                                View Remarks
-                                                            </Button>
-                                                        </PopoverTrigger>
-                                                        <PopoverContent
-                                                            align="start"
-                                                            class="w-80 rounded-lg border-slate-200 bg-white shadow-lg"
-                                                        >
-                                                            <div>
-                                                                <p
-                                                                    class="text-sm font-semibold pb-2"
-                                                                >
-                                                                    Remarks
-                                                                </p>
-                                                                <p
-                                                                    class="text-sm whitespace-pre-wrap text-muted-foreground"
-                                                                >
-                                                                    {{ doc.remarks }}
-                                                                </p>
-                                                            </div>
-                                                        </PopoverContent>
-                                                    </Popover>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        
-                                        <div class="flex items-start">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger as-child>
-                                                    <Button
-                                                        variant="outline"
-                                                        class="rounded-lg border text-muted-foreground hover:bg-slate-100 hover:text-foreground cursor-pointer"
-                                                        :disabled="
-                                                            actionForm.processing ||
-                                                            rejectForm.processing
-                                                        "
-                                                    >
-                                                        <MoreHorizontal
-                                                            class="h-4 w-4"
-                                                        />
-                                                        
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-
-                                                <DropdownMenuContent
-                                                    align="end"
-                                                    class="w-fit rounded-xl border-slate-200 shadow-lg"
-                                                >
-                                                    <DropdownMenuLabel
-                                                        class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                                    <p
+                                                        class="text-sm font-semibold text-foreground"
                                                     >
                                                         {{ humanize(doc.doc_type) }}
-                                                    </DropdownMenuLabel>
-                                                    <DropdownMenuSeparator />
+                                                    </p>
+                                                    <Badge
+                                                        :class="[
+                                                            'gap-1.5',
+                                                            statusClass(doc.status),
+                                                        ]"
+                                                    >
+                                                        <span
+                                                            :class="[
+                                                                'h-1.5 w-1.5 rounded-full',
+                                                                statusDot(doc.status),
+                                                            ]"
+                                                        />
+                                                        {{ humanize(doc.status) }}
+                                                    </Badge>
+                                                    <Badge
+                                                        v-if="
+                                                            isExpired(doc.expires_at) &&
+                                                            doc.status !== 'expired'
+                                                        "
+                                                        class="gap-1.5 border-rose-200 bg-rose-100 text-rose-600"
+                                                    >
+                                                        <span
+                                                            class="h-1.5 w-1.5 rounded-full bg-rose-500"
+                                                        />
+                                                        Expired
+                                                    </Badge>
+                                                </div>
 
-                                                    <DropdownMenuItem
+                                                <div>
+                                                    <button
                                                         v-if="canPreview(doc)"
-                                                        class="rounded-lg cursor-pointer hover:bg-slate-100"
+                                                        class="cursor-pointer flex items-center gap-2 text-sm text-muted-foreground underline-offset-2 hover:underline"
+                                                        :title="doc.original_name ?? ''"
                                                         @click="openPreview(doc)"
                                                     >
-                                                        <Eye
-                                                            class="h-4 w-4"
-                                                        />Preview
-                                                    </DropdownMenuItem>
+                                                        <File class="h-4- w-4 shrink-0" />
+                                                        <span class="truncate">{{
+                                                            doc.original_name ?? '—'
+                                                        }}</span>
+                                                    </button>
+                                                </div>
 
-                                                    <DropdownMenuItem
-                                                        v-else
-                                                        class="cursor-not-allowed rounded-lg text-slate-500 opacity-50 focus:bg-slate-50 focus:text-slate-500"
-                                                        disabled
+                                                <div class="overflow-hidden max-h-0 opacity-0 group-hover/row:max-h-96 group-hover/row:opacity-100 transition-all delay-200 duration-300 flex-col">
+                                                    <div
+                                                        class="flex flex-row items-center gap-x-10 text-xs text-muted-foreground"
                                                     >
-                                                        <Eye class="mr-2 h-4 w-4" />No
-                                                        preview available
-                                                    </DropdownMenuItem>
+                                                        <div class="flex flex-col w-40 gap-y-1">
+                                                            <span v-if="doc.issued_at"
+                                                                >Issued:
+                                                                <span
+                                                                    class="font-medium text-foreground"
+                                                                    >{{
+                                                                        formatDate(doc.issued_at)
+                                                                    }}</span
+                                                                ></span
+                                                            >
+                                                            <span v-if="doc.expires_at">
+                                                                Expires:
+                                                                <span
+                                                                    :class="[
+                                                                        'font-medium',
+                                                                        isExpired(doc.expires_at)
+                                                                            ? 'text-rose-600'
+                                                                            : 'text-foreground',
+                                                                    ]"
+                                                                >
+                                                                    {{ formatDate(doc.expires_at) }}
+                                                                </span>
+                                                            </span>
+                                                        </div>
+                                                        <div class="flex flex-col flex-1 gap-y-1">
+                                                            <span v-if="doc.uploader"
+                                                                >Uploaded by:
+                                                                <span
+                                                                    class="font-medium text-foreground"
+                                                                >
+                                                                    {{ doc.uploader.name }}
+                                                                </span>
+                                                                on
+                                                                <span
+                                                                    class="font-medium text-foreground"
+                                                                >
+                                                                    {{
+                                                                        formatDateTime(
+                                                                            doc.created_at,
+                                                                        )
+                                                                    }}
+                                                                </span>
+                                                            </span>
+                                                            <span v-if="doc.verifier">
+                                                                Verified by:
+                                                                <span
+                                                                    class="font-medium text-foreground"
+                                                                >
+                                                                    {{ doc.verifier.name }}
+                                                                </span>
+                                                                on
+                                                                <span
+                                                                    class="font-medium text-foreground"
+                                                                >
+                                                                    {{
+                                                                        formatDateTime( 
+                                                                            doc.verified_at,
+                                                                        )
+                                                                    }}
+                                                                </span>
+                                                            </span>
+                                                        </div>
+                                                    </div>
 
-                                                    <DropdownMenuItem
-                                                        class="rounded-lg cursor-pointer hover:bg-slate-100"
-                                                        @click="
-                                                            openConfirm('download', doc)
-                                                        "
+                                                    <div v-if="doc.remarks" class="pt-2">
+                                                        <Popover>
+                                                            <PopoverTrigger as-child>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
+                                                                >
+                                                                    <MessageSquareText
+                                                                        class="h-4 w-4"
+                                                                    />
+                                                                    View Remarks
+                                                                </Button>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent
+                                                                align="start"
+                                                                class="w-80 rounded-lg border-slate-200 bg-white shadow-lg"
+                                                            >
+                                                                <div>
+                                                                    <p
+                                                                        class="text-sm font-semibold pb-2"
+                                                                    >
+                                                                        Remarks
+                                                                    </p>
+                                                                    <p
+                                                                        class="text-sm whitespace-pre-wrap text-muted-foreground"
+                                                                    >
+                                                                        {{ doc.remarks }}
+                                                                    </p>
+                                                                </div>
+                                                            </PopoverContent>
+                                                        </Popover>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            
+                                            <div class="flex items-start">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger as-child>
+                                                        <Button
+                                                            variant="table-more"
+                                                            size="icon-more"
+                                                            :disabled="
+                                                                actionForm.processing ||
+                                                                rejectForm.processing
+                                                            "
+                                                        >
+                                                            <RiMore2Line
+                                                                class="h-4 w-4 shrink-0"
+                                                            />
+                                                            
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+
+                                                    <DropdownMenuContent
+                                                        align="end"
+                                                        class="w-fit rounded-xl border-slate-200 shadow-lg"
                                                     >
-                                                        <Download
-                                                            class="h-4 w-4"
-                                                        />Download
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                                        <DropdownMenuLabel
+                                                            class="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+                                                        >
+                                                            {{ humanize(doc.doc_type) }}
+                                                        </DropdownMenuLabel>
+                                                        <DropdownMenuSeparator />
+
+                                                        <DropdownMenuItem
+                                                            v-if="canPreview(doc)"
+                                                            class="rounded-lg cursor-pointer hover:bg-slate-100"
+                                                            @click="openPreview(doc)"
+                                                        >
+                                                            <Eye
+                                                                class="h-4 w-4"
+                                                            />Preview
+                                                        </DropdownMenuItem>
+
+                                                        <DropdownMenuItem
+                                                            v-else
+                                                            class="cursor-not-allowed rounded-lg text-slate-500 opacity-50 focus:bg-slate-50 focus:text-slate-500"
+                                                            disabled
+                                                        >
+                                                            <Eye class="mr-2 h-4 w-4" />No
+                                                            preview available
+                                                        </DropdownMenuItem>
+
+                                                        <DropdownMenuItem
+                                                            class="rounded-lg cursor-pointer hover:bg-slate-100"
+                                                            @click="
+                                                                openConfirm('download', doc)
+                                                            "
+                                                        >
+                                                            <Download
+                                                                class="h-4 w-4"
+                                                            />Download
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
             </div>
         </div>

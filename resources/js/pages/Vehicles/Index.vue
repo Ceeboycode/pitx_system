@@ -5,6 +5,17 @@ import ImportVehicleDialog from '@/components/vehicle/ImportVehicleDialog.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 
 import {
+    Table,
+    TableColumn,
+    // TableSortColumn,
+    TableHeader,
+    TableContent,
+    TableRow,
+    TableCard,
+    TableData,
+    TableMoreButton,
+} from '@/components/ui/_table';
+import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -137,6 +148,43 @@ function openPreview(vehicle: VehicleItem) {
     previewedVehicle.value = vehicle;
 }
 
+// const openMenus = ref<Record<number, { open: boolean; x: number; y: number }>>({})
+
+// function handleRowContextMenu(event: MouseEvent, vehicle: VehicleItem) {
+//     event.preventDefault()
+
+//     openMenus.value[vehicle.id] = {
+//         open: true,
+//         x: event.clientX,
+//         y: event.clientY,
+//     }
+// }
+
+const openMenus = ref<Record<number, {
+  open: boolean
+  x: number
+  y: number
+  mode: 'trigger' | 'context'
+}>>({})
+
+function setMenuState(vehicleId: number, next: { open: boolean; x: number; y: number; mode: 'trigger' | 'context' }) {
+    openMenus.value = {
+        ...openMenus.value,
+        [vehicleId]: next,
+    }
+}
+
+function openRowMenu(event: MouseEvent, vehicle: VehicleItem) {
+    event.preventDefault()
+
+    setMenuState(vehicle.id, {
+        open: true,
+        x: event.clientX,
+        y: event.clientY,
+        mode: 'context',
+    })
+}
+
 function triggerExport() {
     exporting.value = true;
     const a = document.createElement('a');
@@ -153,7 +201,6 @@ function triggerExport() {
 function onImportDone() {
     router.reload({ only: ['vehicles'] });
 }
-
 
 
 const archiveDialogOpen = ref(false);
@@ -658,94 +705,104 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                         </div>
                     </div>
 
-                    <Card
-                        :class="[
-                            'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
-                            vehicles.data.length === 0 ? 'border-dashed' : 'border-solid',
-                        ]"
-                    >
-                        <div v-if="vehicles.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                            <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                                <div class="grid grid-cols-9 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
-                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 pl-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Company</div>
-                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Route</div>
-                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Vehicle</div>
-                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Plate</div>
+                    <TableCard :table-data-length="vehicles.data.length">
+                        <!-- my attempt at making this into a custom component -->
+                        <Table v-if="vehicles.data.length > 0">
+                            <TableHeader class="grid-cols-9">
+                                <TableColumn class="pl-3">
+                                    Company
+                                </TableColumn>
+                                <TableColumn>
+                                    Route
+                                </TableColumn>
+                                <TableColumn>
+                                    Vehicle
+                                </TableColumn>
+                                <TableColumn>
+                                    Plate
+                                </TableColumn>
 
-                                    <button
-                                        type="button"
-                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
-                                        @click="toggleSort('capacity')"
-                                    >
-                                        Cap.
-                                        <component
-                                            :is="sortIcon('capacity')"
-                                            class="h-3.5 w-3.5"
-                                            :class="sortIconClass('capacity')"
-                                        />
-                                    </button>
+                                <!-- _TableSortColumn -->
+                                <!-- TODO: make this component work -->
+                                <button
+                                    type="button"
+                                    class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                    @click="toggleSort('capacity')"
+                                >
+                                    Cap.
+                                    <component
+                                        :is="sortIcon('capacity')"
+                                        class="h-3.5 w-3.5"
+                                        :class="sortIconClass('capacity')"
+                                    />
+                                </button>
 
-                                    <button
-                                        type="button"
-                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
-                                        @click="toggleSort('status')"
-                                    >
-                                        Status
-                                        <component
-                                            :is="sortIcon('status')"
-                                            class="h-3.5 w-3.5"
-                                            :class="sortIconClass('status')"
-                                        />
-                                    </button>
+                                <button
+                                    type="button"
+                                    class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                    @click="toggleSort('status')"
+                                >
+                                    Status
+                                    <component
+                                        :is="sortIcon('status')"
+                                        class="h-3.5 w-3.5"
+                                        :class="sortIconClass('status')"
+                                    />
+                                </button>
 
-                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Operator Remark</div>
-                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Admin Remark</div>
-                                    <div class="col-span-1 flex h-10 items-center justify-end px-0 pr-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Actions</div>
-                                </div>
-                            </div>
+                                <TableColumn>
+                                    Operator Remark
+                                </TableColumn>
+                                <TableColumn>
+                                    Admin Remark
+                                </TableColumn>
+                            </TableHeader>
 
-                            <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-                                <div
+                            <TableContent>
+                                <TableRow
                                     v-for="(vehicle, rowIndex) in vehicles.data"
                                     :key="vehicle.id"
                                     :class="[
-                                        'grid cursor-pointer grid-cols-9 items-center border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                        'grid-cols-9',
                                         rowIndex === vehicles.data.length - 1 ? 'rounded-b-md border-b-0' : '',
                                         previewedVehicle?.id === vehicle.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
                                     ]"
-                                    @click="openPreview(vehicle)"
+                                    @click.left="openPreview(vehicle)"
+                                    @contextmenu.prevent="openRowMenu($event, vehicle)"
                                 >
-                                    <div class="col-span-1 flex min-w-0 justify-start py-1.5 pl-3 text-sm font-medium">
+                                    <TableData class="pl-3 font-semibold">
                                         <span class="truncate">{{ vehicle.company?.company_name || '—' }}</span>
-                                    </div>
-
-                                    <div class="col-span-1 flex min-w-0 justify-start py-1.5 text-sm">
+                                    </TableData>
+                                    
+                                    <TableData>
                                         <span class="truncate">{{ vehicle.route?.route_name || '—' }}</span>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex min-w-0 flex-col justify-center py-1.5">
+                                    <TableData class="justify-center flex-col">
                                         <p class="truncate text-sm font-medium">{{ humanize(vehicle.vehicle_type) }}</p>
                                         <p class="truncate text-xs text-custom-shadow/70">{{ vehicle.body_number || '—' }}</p>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-start py-1.5">
+                                    <TableData>
                                         <span class="rounded bg-custom-bg px-2 py-0.5 font-mono text-xs font-semibold text-custom-shadow dark:bg-custom-bg-light">
                                             {{ vehicle.plate_number || '—' }}
                                         </span>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-start py-1.5 text-sm tabular-nums text-custom-shadow/80">
-                                        {{ vehicle.capacity || '—' }}
-                                    </div>
+                                    <TableData>
+                                        <span class="tabular-nums">
+                                            {{ vehicle.capacity || '—' }}
+                                        </span>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-start py-1.5">
+                                    <TableData>
                                         <Badge :class="['gap-1.5', statusClass(vehicle.status)]">
                                             <span :class="['h-1.5 w-1.5 rounded-full', statusDot(vehicle.status)]" />
                                             {{ humanize(vehicle.status) }}
                                         </Badge>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-start py-1.5">
+                                    <TableData>
                                         <Popover v-if="vehicle.operator_remark">
                                             <PopoverTrigger as-child>
                                                 <Button
@@ -762,9 +819,9 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                             </PopoverContent>
                                         </Popover>
                                         <span v-else class="text-xs text-custom-shadow/70">—</span>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-start py-1.5">
+                                    <TableData>
                                         <Popover v-if="vehicle.suspension_remark">
                                             <PopoverTrigger as-child>
                                                 <Button
@@ -780,10 +837,69 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                 {{ vehicle.suspension_remark }}
                                             </PopoverContent>
                                         </Popover>
-                                        <span v-else class="text-xs text-custom-shadow/70">â€”</span>
-                                    </div>
+                                        <span v-else class="text-xs text-custom-shadow/70">—</span>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right" @click.stop>
+                                    <TableMoreButton
+                                        :open="openMenus[vehicle.id]?.open ?? false"
+                                        :x="openMenus[vehicle.id]?.x ?? 0"
+                                        :y="openMenus[vehicle.id]?.y ?? 0"
+                                        :mode="openMenus[vehicle.id]?.mode ?? 'trigger'"
+                                        @update:open="(value) => {
+                                            const current = openMenus[vehicle.id] ?? { open: false, x: 0, y: 0, mode: 'trigger' }
+
+                                            setMenuState(vehicle.id, {
+                                                ...current,
+                                                open: value,
+                                                mode: value ? current.mode : 'trigger',
+                                            })
+                                        }"
+                                    >
+                                        <DropdownMenuLabel>
+                                            <span>{{ vehicle.plate_number }}</span>
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuItem as-child class="group cursor-pointer rounded-md">
+                                            <Link
+                                                :href="show({ vehicle: vehicle.id }).url"
+                                                class="flex items-center"
+                                            >
+                                                <RiFileCheckLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                Review
+                                            </Link>
+                                        </DropdownMenuItem>
+
+                                        <DropdownMenuItem
+                                            v-if="vehicle.status !== 'active'"
+                                            :disabled="!canToggle(vehicle)"
+                                            class="group cursor-pointer rounded-md"
+                                            @click="canToggle(vehicle) && openStatusDialog(vehicle, 'active')"
+                                        >
+                                            <RiOctagonLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                            <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Set Active</span>
+                                        </DropdownMenuItem>
+
+                                        <DropdownMenuItem
+                                            v-if="vehicle.status !== 'inactive'"
+                                            :disabled="!canToggle(vehicle)"
+                                            class="group cursor-pointer rounded-md"
+                                            @click="canToggle(vehicle) && openStatusDialog(vehicle, 'inactive')"
+                                        >
+                                            <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                            <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Set Inactive</span>
+                                        </DropdownMenuItem>
+
+                                        <DropdownMenuItem
+                                            v-if="vehicle.status !== 'suspended'"
+                                            :disabled="!canToggle(vehicle)"
+                                            class="group cursor-pointer rounded-md"
+                                            @click="canToggle(vehicle) && openStatusDialog(vehicle, 'suspended')"
+                                        >
+                                            <RiSpam2Line class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                            <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Suspend</span>
+                                        </DropdownMenuItem>
+                                    </TableMoreButton>
+
+                                    <!-- <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right" @click.stop>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
                                                 <Button
@@ -840,10 +956,10 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                                    </div> -->
+                                </TableRow>
+                            </TableContent>
+                        </Table>
 
                         <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
                             <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
@@ -861,7 +977,8 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                 </div>
                             </div>
                         </div>
-                    </Card>
+                    <!-- </Card> -->
+                    </TableCard>
 
                     <InertiaPagination
                         :links="vehicles.links"

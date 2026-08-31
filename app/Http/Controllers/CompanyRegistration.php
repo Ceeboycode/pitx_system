@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -80,10 +81,10 @@ class CompanyRegistration extends Controller
                 'required',
                 'string',
                 'max:20',
-                'regex:/^\+639\d{9}$/',
+                'regex:/^09\d{9}$/',
                 'unique:users,phone_number',
             ],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'string', Password::defaults(), 'confirmed'],
             'password_confirmation' => ['required', 'string'],
         ], [
             'name.regex' => 'Name may only contain letters, spaces, apostrophes, periods, and hyphens.',
@@ -92,7 +93,7 @@ class CompanyRegistration extends Controller
             'phone.regex' => 'Phone number must be a valid PH mobile number.',
             'phone.unique' => 'This phone number is already registered.',
             'password.confirmed' => 'Password confirmation does not match.',
-            'password.min' => 'Password must be at least 8 characters.',
+            'password.min' => 'Password must be at least 12 characters.',
         ]);
 
         $otp = $this->generateOtp();
@@ -101,7 +102,7 @@ class CompanyRegistration extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'phone' => $validated['phone'],
-            'password' => $validated['password'],
+            'password_hash' => Hash::make($validated['password']),
         ]);
 
         $request->session()->put('registration.otp.account', [
@@ -429,7 +430,7 @@ class CompanyRegistration extends Controller
                 'email' => $step1['email'],
                 'email_verified_at' => now(),
                 'phone_number' => $step1['phone'],
-                'password' => Hash::make($step1['password']),
+                'password' => $step1['password_hash'],
                 'username' => $username,
                 'company_id' => $company->id,
                 'status' => 'active',
@@ -742,11 +743,15 @@ class CompanyRegistration extends Controller
         $phone = preg_replace('/\s+/', '', trim($raw));
 
         if (preg_match('/^09\d{9}$/', $phone)) {
-            return '+63'.substr($phone, 1);
+            return $phone;
         }
 
         if (preg_match('/^639\d{9}$/', $phone)) {
-            return '+'.$phone;
+            return '0'.substr($phone, 2);
+        }
+
+        if (preg_match('/^\+639\d{9}$/', $phone)) {
+            return '0'.substr($phone, 3);
         }
 
         return $phone;

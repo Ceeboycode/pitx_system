@@ -106,6 +106,7 @@ defineProps<{
                             <InputError :message="errors.password" />
                         </div>
 
+                        <!-- TODO: double check if this checkbox works, or if it's just decoration -->
                         <Label
                             for="remember"
                             class="flex flex-row items-center gap-x-1 text-sm py-2"

@@ -21,8 +21,8 @@ test('driver can register and receive a sanctum token', function (): void {
         'name' => 'Driver One',
         'email' => 'driver.one@example.com',
         'username' => 'driver_one',
-        'password' => 'password123',
-        'password_confirmation' => 'password123',
+        'password' => 'password12345',
+        'password_confirmation' => 'password12345',
     ]);
 
     $response->assertCreated()

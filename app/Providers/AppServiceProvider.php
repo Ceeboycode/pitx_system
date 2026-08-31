@@ -10,8 +10,9 @@ use Illuminate\Auth\Events\Logout;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,6 +29,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Password::defaults(fn (): Password => Password::min(12)->uncompromised());
+
         Gate::before(function ($user, $ability) {
             return $user->hasRole('super-admin') ? true : null;
         });
@@ -36,41 +39,32 @@ class AppServiceProvider extends ServiceProvider
         $this->registerAuditAuthEvents();
 
         // ── External Vehicles ─────────────────────────────────────────
-        Gate::define('external_vehicles.viewAny', fn ($user) =>
-            $user->hasPermissionTo('external_vehicles.viewAny')
+        Gate::define('external_vehicles.viewAny', fn ($user) => $user->hasPermissionTo('external_vehicles.viewAny')
         );
 
-        Gate::define('external_vehicles.view', fn ($user) =>
-            $user->hasPermissionTo('external_vehicles.view')
+        Gate::define('external_vehicles.view', fn ($user) => $user->hasPermissionTo('external_vehicles.view')
         );
 
-        Gate::define('external_vehicles.create', fn ($user) =>
-            $user->hasPermissionTo('external_vehicles.create')
+        Gate::define('external_vehicles.create', fn ($user) => $user->hasPermissionTo('external_vehicles.create')
         );
 
-        Gate::define('external_vehicles.update', fn ($user) =>
-            $user->hasPermissionTo('external_vehicles.update')
+        Gate::define('external_vehicles.update', fn ($user) => $user->hasPermissionTo('external_vehicles.update')
         );
 
-        Gate::define('external_vehicles.toggleStatus', fn ($user) =>
-            $user->hasPermissionTo('external_vehicles.toggleStatus')
+        Gate::define('external_vehicles.toggleStatus', fn ($user) => $user->hasPermissionTo('external_vehicles.toggleStatus')
         );
 
         // ── External Vehicle Documents ────────────────────────────────
-        Gate::define('external_vehicle_documents.viewAny', fn ($user) =>
-            $user->hasPermissionTo('external_vehicle_documents.viewAny')
+        Gate::define('external_vehicle_documents.viewAny', fn ($user) => $user->hasPermissionTo('external_vehicle_documents.viewAny')
         );
 
-        Gate::define('external_vehicle_documents.view', fn ($user) =>
-            $user->hasPermissionTo('external_vehicle_documents.view')
+        Gate::define('external_vehicle_documents.view', fn ($user) => $user->hasPermissionTo('external_vehicle_documents.view')
         );
 
-        Gate::define('external_vehicle_documents.download', fn ($user) =>
-            $user->hasPermissionTo('external_vehicle_documents.download')
+        Gate::define('external_vehicle_documents.download', fn ($user) => $user->hasPermissionTo('external_vehicle_documents.download')
         );
 
-        Gate::define('external_vehicle_documents.upload', fn ($user) =>
-            $user->hasPermissionTo('external_vehicle_documents.upload')
+        Gate::define('external_vehicle_documents.upload', fn ($user) => $user->hasPermissionTo('external_vehicle_documents.upload')
         );
     }
 
@@ -110,8 +104,8 @@ class AppServiceProvider extends ServiceProvider
         $classes = [];
 
         foreach ($modelFiles as $file) {
-            $relativePath = str_replace([app_path() . DIRECTORY_SEPARATOR, '.php'], '', $file->getPathname());
-            $class = 'App\\' . str_replace(DIRECTORY_SEPARATOR, '\\', $relativePath);
+            $relativePath = str_replace([app_path().DIRECTORY_SEPARATOR, '.php'], '', $file->getPathname());
+            $class = 'App\\'.str_replace(DIRECTORY_SEPARATOR, '\\', $relativePath);
 
             if (class_exists($class) && is_subclass_of($class, Model::class)) {
                 $classes[] = $class;
