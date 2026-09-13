@@ -1125,7 +1125,7 @@ onUnmounted(() => {
                             <span> Didn't receive it? </span>
                             <button
                                 type="button"
-                                class="cursor-pointer text-xs font-semibold text-custom-accent-3 transition-colors duration-300 ease-out hover:underline hover:underline-offset-2 disabled:opacity-50"
+                                class="cursor-pointer text-xs font-semibold text-custom-accent-3 transition-colors duration-200 ease-out hover:underline hover:underline-offset-2 disabled:opacity-50"
                                 :disabled="resendAccount.processing"
                                 @click="doResendAccount"
                             >
@@ -1203,7 +1203,7 @@ onUnmounted(() => {
                                         type="button"
                                         aria-label="Remove logo"
                                         @click.stop="removeLogo"
-                                        class="absolute top-1 right-1 z-10 flex h-6 w-6 cursor-pointer items-center rounded-full border border-custom-shadow/50 text-custom-shadow transition-all duration-300 hover:border-destructive hover:bg-destructive/20 hover:text-destructive"
+                                        class="absolute top-1 right-1 z-10 flex h-6 w-6 cursor-pointer items-center rounded-full border border-custom-shadow/50 text-custom-shadow transition-all duration-200 hover:border-destructive hover:bg-destructive/20 hover:text-destructive"
                                     >
                                         <RiCloseLine class="h-4 w-4" />
                                     </Button>
@@ -1490,7 +1490,7 @@ onUnmounted(() => {
                             <span> Didn't receive it? </span>
                             <button
                                 type="button"
-                                class="cursor-pointer text-xs font-semibold text-custom-accent-3 transition-colors duration-300 ease-out hover:underline hover:underline-offset-2 disabled:opacity-50"
+                                class="cursor-pointer text-xs font-semibold text-custom-accent-3 transition-colors duration-200 ease-out hover:underline hover:underline-offset-2 disabled:opacity-50"
                                 :disabled="resendCompany.processing"
                                 @click="doResendCompany"
                             >

@@ -307,7 +307,7 @@ function canTakePreviewAction(): boolean {
                                     variant="header-actions"
                                     size="icon-text"
                                     class="rounded-full"
-                                    :class="activeFilterCount > 0 ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''"
+                                    :class="activeFilterCount > 0 ? 'bg-custom-secondary/20 transition-all duration-200 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''"
                                 >
                                     <Filter class="h-3.5 w-3.5" />
                                     <span class="hidden lg:flex">{{ activeFilterCount ? '1 filter active' : 'Filter' }}</span>
@@ -379,11 +379,11 @@ function canTakePreviewAction(): boolean {
                                             <DropdownMenuTrigger as-child><Button variant="table-more" size="icon-more"><MoreHorizontal class="h-4 w-4" /></Button></DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuLabel>{{ item.company.company_name }}</DropdownMenuLabel>
-                                                <DropdownMenuItem class="group" @click="previewedRequest = item"><Eye class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light" />Preview Request</DropdownMenuItem>
+                                                <DropdownMenuItem class="group" @click="previewedRequest = item"><Eye class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light" />Preview Request</DropdownMenuItem>
                                                 <DropdownMenuSeparator />
-                                                <DropdownMenuItem v-if="item.company.show_url" as-child class="group"><a :href="item.company.show_url"><ExternalLink class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light" />View Company</a></DropdownMenuItem>
-                                                <DropdownMenuItem v-if="primaryPreviewDoc(item)" class="group" @click="openPrimaryPreview(item)"><Eye class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light" />Preview Document</DropdownMenuItem>
-                                                <DropdownMenuItem v-if="primaryPreviewDoc(item)" class="group" @click="downloadPrimary(item)"><FileDown class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light" />Download</DropdownMenuItem>
+                                                <DropdownMenuItem v-if="item.company.show_url" as-child class="group"><a :href="item.company.show_url"><ExternalLink class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light" />View Company</a></DropdownMenuItem>
+                                                <DropdownMenuItem v-if="primaryPreviewDoc(item)" class="group" @click="openPrimaryPreview(item)"><Eye class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light" />Preview Document</DropdownMenuItem>
+                                                <DropdownMenuItem v-if="primaryPreviewDoc(item)" class="group" @click="downloadPrimary(item)"><FileDown class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light" />Download</DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>

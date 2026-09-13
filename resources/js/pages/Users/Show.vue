@@ -224,7 +224,7 @@ function initials(name: string) {
                                     >
                                         <Link :href="edit(user.id).url">
                                             <Pencil class="h-4 w-4 shrink-0" />
-                                            <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-24 group-hover/segment:opacity-100">
+                                            <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover/segment:ml-2 group-hover/segment:max-w-24 group-hover/segment:opacity-100">
                                                 Edit User
                                             </span>
                                         </Link>
@@ -236,7 +236,7 @@ function initials(name: string) {
                                         @click="archiveOpen = true"
                                     >
                                         <Archive class="h-4 w-4 shrink-0" />
-                                        <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-32 group-hover/segment:opacity-100">
+                                        <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover/segment:ml-2 group-hover/segment:max-w-32 group-hover/segment:opacity-100">
                                             Archive User
                                         </span>
                                     </Button>

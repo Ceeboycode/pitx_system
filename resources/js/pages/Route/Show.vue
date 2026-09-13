@@ -1,4 +1,6 @@
 ﻿<script setup lang="ts">
+// THIS WILL BECOME A DEAD FILE!!!!!!!!!!!!!!!!!!!!!
+// THIS FILE MAY USE THE CONTENTS OF EDIT.VUE INSTEAD!!!!!
 import { useAppearance } from '@/composables/useAppearance';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';

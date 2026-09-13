@@ -199,7 +199,7 @@ function handleClose(val: boolean) {
                     </div>
                     <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
                         <div
-                            class="h-full bg-primary transition-all duration-300"
+                            class="h-full bg-primary transition-all duration-200"
                             :style="{ width: `${progress}%` }"
                         />
                     </div>

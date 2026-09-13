@@ -1,19 +1,11 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { create, destroy, edit, index, trash } from '@/routes/roles';
+import { create, edit, index, trash } from '@/routes/roles';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
-import { Separator } from '@/components/ui/separator/index';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { ArchiveRoleDialog } from '@/components/internal/roles';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,6 +36,7 @@ import {
 } from '@/components/ui/select';
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
+import { PanelLayout } from '@/components/ui/_panels';
 
 import { can } from '@/lib/can';
 
@@ -76,6 +69,10 @@ type Role = {
     name: string;
     type: 'internal' | 'external';
     permissions: Permission[];
+    created_at_human?: string | null;
+    updated_at_human?: string | null;
+    creator?: { id: number; name: string } | null;
+    updater?: { id: number; name: string } | null;
 };
 
 type SortField = 'name' | 'type' | 'permissions_count' | 'created_at' | null;
@@ -195,7 +192,6 @@ function typeClass(type: Role['type']): string {
 const deleteOpen = ref(false);
 const selectedRole = ref<Role | null>(null);
 const previewedRole = ref<Role | null>(null);
-const processing = ref(false);
 
 function openPreview(role: Role) {
     previewedRole.value = role;
@@ -205,26 +201,13 @@ function openDelete(role: Role) {
     selectedRole.value = role;
     deleteOpen.value = true;
 }
-
-function deleteRole() {
-    if (processing.value || !selectedRole.value) return;
-    processing.value = true;
-    router.delete(destroy({ role: selectedRole.value.id }).url, {
-        preserveScroll: true,
-        onFinish: () => {
-            processing.value = false;
-            deleteOpen.value = false;
-            selectedRole.value = null;
-        },
-    });
-}
 </script>
 
 <template>
     <Head title="Roles" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
+        <PanelLayout>
             <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader class="flex flex-row gap-2">
                     <div class="flex flex-col">
@@ -302,7 +285,7 @@ function deleteRole() {
                                         size="icon-text"
                                         class="rounded-full"
                                         :class="activeFilterCount > 0
-                                            ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light dark:hover:text-custom-shadow'
+                                            ? 'bg-custom-secondary/20 transition-all duration-200 hover:bg-custom-secondary/80 hover:text-custom-bg-light dark:hover:text-custom-shadow'
                                             : ''"
                                     >
                                         <RiFilter2Line class="h-3.5 w-3.5" />
@@ -585,7 +568,7 @@ function deleteRole() {
                                                         class="flex items-center"
                                                     >
                                                         <RiEditLine
-                                                            class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
+                                                            class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
                                                         />
                                                         Edit
                                                     </Link>
@@ -597,9 +580,9 @@ function deleteRole() {
                                                     @click="openDelete(role)"
                                                 >
                                                     <RiArchive2Line
-                                                        class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
+                                                        class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
                                                     />
-                                                    <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">
+                                                    <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">
                                                         Archive
                                                     </span>
                                                 </DropdownMenuItem>
@@ -685,6 +668,23 @@ function deleteRole() {
                                 No permissions assigned.
                             </p>
                         </div>
+
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Created</span>
+                            <span class="truncate text-right text-sm text-custom-shadow/80">
+                                {{ previewedRole.created_at_human ?? '—' }}
+                                <span v-if="previewedRole.creator?.name" class="text-custom-accent-3"> • </span>
+                                {{ previewedRole.creator?.name ?? '—' }}
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Updated</span>
+                            <span class="truncate text-right text-sm text-custom-shadow/80">
+                                {{ previewedRole.updated_at_human ?? '—' }}
+                                <span v-if="previewedRole.updater?.name" class="text-custom-accent-3"> • </span>
+                                {{ previewedRole.updater?.name ?? '—' }}
+                            </span>
+                        </div>
                     </div>
 
                     <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
@@ -723,30 +723,8 @@ function deleteRole() {
                     </div>
                 </CardContent>
             </Card>
-        </div>
+        </PanelLayout>
 
-        <Dialog v-if="canDelete" v-model:open="deleteOpen">
-            <DialogContent class="px-6">
-                <DialogHeader class="px-0">
-                    <DialogTitle>Archive role</DialogTitle>
-                    <DialogDescription class="mt-4">
-                        Are you sure you want to archive
-                        <span class="font-semibold text-custom-accent-3">{{ selectedRole?.name }}</span>?
-                        It can be restored later.
-                    </DialogDescription>
-                </DialogHeader>
-                <Separator class="mb-4" />
-                <DialogFooter class="gap-2 sm:justify-end">
-                    <Button variant="ghost-outline" @click="deleteOpen = false">Cancel</Button>
-                    <Button
-                        :variant="processing ? 'disabled' : 'float-primary'"
-                        @click="deleteRole"
-                    >
-                        <RiArchive2Line class="h-4 w-4" />
-                        {{ processing ? 'Archiving...' : 'Archive' }}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <ArchiveRoleDialog v-if="canDelete" v-model:open="deleteOpen" :role="selectedRole" />
     </AppLayout>
 </template>

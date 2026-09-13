@@ -55,7 +55,7 @@ watch(
                 </div>
             </header>
 
-            <main class="flex min-h-0 flex-1 flex-col bg-custom-bg p-6 shadow-sm inset-shadow-sm dark:bg-custom-bg-dark dark:shadow-white/5 dark:inset-shadow-none lg:rounded-3xl">
+            <main class="flex min-h-0 flex-1 flex-col bg-custom-bg py-0 shadow-sm inset-shadow-sm dark:bg-custom-bg-dark dark:shadow-white/5 dark:inset-shadow-none lg:rounded-3xl">
                 <div class="mx-auto flex min-h-0 w-full flex-1 flex-col">
                     <slot />
                 </div>

@@ -90,6 +90,24 @@ class CompanyController extends Controller
             ? \Illuminate\Support\Facades\Storage::url($company->logo)
             : null;
 
+        $operator = $company->operator()
+            ->select('id', 'company_id', 'name', 'username', 'email', 'phone_number', 'profile_photo_path', 'email_verified_at', 'created_at')
+            ->first();
+
+        $company->setAttribute('operator', $operator ? [
+            'id' => $operator->id,
+            'name' => $operator->name,
+            'username' => $operator->username,
+            'email' => $operator->email,
+            'phone' => $operator->phone_number,
+            'avatar' => filled($operator->profile_photo_path)
+                ? \Illuminate\Support\Facades\Storage::url($operator->profile_photo_path)
+                : null,
+            'email_verified' => $operator->email_verified_at !== null,
+            'email_verified_at' => $operator->email_verified_at,
+            'created_at' => $operator->created_at,
+        ] : null);
+
         return Inertia::render('Company/Show', [
             'company' => $company,
         ]);

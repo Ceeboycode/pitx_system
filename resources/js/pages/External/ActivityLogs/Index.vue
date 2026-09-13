@@ -271,7 +271,7 @@ function actionBadgeClass(action: string): string {
                                             class="rounded-full"
                                             :class="
                                                 hasCategoryFilters
-                                                    ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-300 dark:hover:text-custom-shadow'
+                                                    ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-200 dark:hover:text-custom-shadow'
                                                     : ''
                                             "
                                         >

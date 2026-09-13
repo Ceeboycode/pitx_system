@@ -152,7 +152,7 @@ function verificationStatusDot(status?: CompanyStatus | null): string {
                 </DialogDescription>
             </DialogHeader>
 
-            <form class="space-y-5 py-1" @submit.prevent="submit">
+            <form class="space-y-5 py-1 px-6" @submit.prevent="submit">
                 <div class="space-y-2">
                     <Label>Company Name</Label>
                     <Input

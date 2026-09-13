@@ -3,11 +3,15 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { destroy, index, toggleStatus } from '@/routes/vehicles';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
 
-import InputError from '@/components/InputError.vue';
 import RouteMapDialog from '@/components/routes/RouteMapDialog.vue';
+import {
+    DocumentPreviewDialog,
+    InvalidateDocumentDialog,
+    RouteStopsDialog,
+} from '@/components/vehicles/show';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -21,15 +25,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -44,15 +39,6 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
-import { Separator } from '@/components/ui/separator';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { can } from '@/lib/can';
 
@@ -62,7 +48,6 @@ import {
     CheckCircle2,
     CircleHelp,
     Download,
-    Ellipsis,
     Eye,
     File,
     FileText,
@@ -79,6 +64,29 @@ import {
     X,
     XCircle,
 } from 'lucide-vue-next';
+import {
+    RiArchive2Line,
+    RiCloseLine,
+    RiDashboardHorizontalLine,
+    RiFileListLine,
+    RiRoadMapLine,
+    RiFolderLine,
+    RiAlertLine,
+} from "vue-remix-icons";
+import { PanelLayout, LeadPanel } from '@/components/ui/_panels';
+import { LeadingCard } from '@/components/ui/_leading-card';
+import { 
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from '@/components/ui/_tabs';
+
+import Overview from '@/components/internal/vehicles/show/OverviewTab.vue';
+import Details from '@/components/internal/vehicles/show/DetailsTab.vue';
+import Documents from '@/components/internal/vehicles/show/DocumentsTab.vue';
+import Dispatches from '@/components/internal/vehicles/show/DispatchesTab.vue';
+import IncidentReports from '@/components/internal/vehicles/show/IncidentReportsTab.vue';
 
 type UserMini = { id?: number; name: string };
 
@@ -433,32 +441,6 @@ function canPreview(doc: VehicleDocument) {
     return Boolean(fileUrl(doc)) && (isImage(doc) || isPdf(doc));
 }
 
-function stopTypeLabel(type: RouteStop['stop_type']) {
-    switch (type) {
-        case 'origin':
-            return 'Origin';
-        case 'destination':
-            return 'Destination';
-        case 'landmark':
-            return 'Landmark';
-        default:
-            return 'Stop';
-    }
-}
-
-function stopDotClass(type: RouteStop['stop_type']) {
-    switch (type) {
-        case 'origin':
-            return 'bg-green-600';
-        case 'destination':
-            return 'bg-red-600';
-        case 'landmark':
-            return 'bg-violet-500';
-        default:
-            return 'bg-amber-500';
-    }
-}
-
 const mapDialogOpen = ref(false);
 const parsedRouteGeometry = computed(() => {
     if (!route.value?.route_geometry) return null;
@@ -498,19 +480,16 @@ const stopsDialogOpen = ref(false);
 
 const previewOpen = ref(false);
 const previewDoc = ref<VehicleDocument | null>(null);
-const pdfLoadError = ref(false);
 
 function openPreview(doc: VehicleDocument) {
     if (!canPreview(doc)) return;
     previewDoc.value = doc;
-    pdfLoadError.value = false;
     previewOpen.value = true;
 }
 
 function closePreview() {
     previewOpen.value = false;
     previewDoc.value = null;
-    pdfLoadError.value = false;
 }
 
 
@@ -523,11 +502,6 @@ function openConfirm(type: 'verify' | 'unverify', doc: VehicleDocument) {
     actionType.value = type;
     actionDoc.value = doc;
     confirmOpen.value = true;
-}
-
-function openConfirmFromPreview(type: 'verify' | 'unverify') {
-    if (!previewDoc.value) return;
-    openConfirm(type, previewDoc.value);
 }
 
 function submitConfirm() {
@@ -549,109 +523,11 @@ function submitConfirm() {
 }
 
 
-const invalidPresets = [
-    {
-        value: 'blurred',
-        label: 'Blurred or unreadable file',
-        text: 'The uploaded document is blurred or unreadable. Please upload a clearer copy.',
-    },
-    {
-        value: 'expired',
-        label: 'Expired document',
-        text: 'The uploaded document is already expired. Please upload a valid updated copy.',
-    },
-    {
-        value: 'wrong_document',
-        label: 'Wrong document uploaded',
-        text: 'The uploaded file is the wrong document. Please upload the correct requirement.',
-    },
-    {
-        value: 'missing_pages',
-        label: 'Missing pages or incomplete scan',
-        text: 'The uploaded document is incomplete or has missing pages. Please upload the full copy.',
-    },
-    {
-        value: 'mismatch',
-        label: 'Vehicle details do not match',
-        text: 'The document details do not match the assigned vehicle information. Please review and re-upload.',
-    },
-    {
-        value: 'reupload_pdf',
-        label: 'Please upload as PDF',
-        text: 'Please re-upload this requirement as a PDF file.',
-    },
-] as const;
-
-type InvalidPresetValue = (typeof invalidPresets)[number]['value'];
-
-const selectedInvalidPresets = ref<InvalidPresetValue[]>([]);
-
-const invalidateForm = useForm<{
-    remarks: string;
-}>({
-    remarks: '',
-});
 const invalidateOpen = ref(false);
-
-watch(
-    selectedInvalidPresets,
-    (values) => {
-        const lines = values
-            .map(
-                (value) =>
-                    invalidPresets.find((preset) => preset.value === value)
-                        ?.text ?? '',
-            )
-            .filter(Boolean);
-
-        invalidateForm.remarks = lines.join('\n');
-    },
-    { deep: true },
-);
-
-function toggleInvalidPreset(value: InvalidPresetValue) {
-    const exists = selectedInvalidPresets.value.includes(value);
-
-    if (exists) {
-        selectedInvalidPresets.value = selectedInvalidPresets.value.filter(
-            (item) => item !== value,
-        );
-        return;
-    }
-
-    selectedInvalidPresets.value = [...selectedInvalidPresets.value, value];
-}
 
 function openInvalidate(doc: VehicleDocument) {
     actionDoc.value = doc;
-    selectedInvalidPresets.value = [];
-    invalidateForm.reset();
-    invalidateForm.clearErrors();
-    invalidateForm.remarks = doc.remarks ?? '';
     invalidateOpen.value = true;
-}
-
-function openInvalidateFromPreview() {
-    if (!previewDoc.value) return;
-    openInvalidate(previewDoc.value);
-    closePreview();
-}
-
-function submitInvalidate() {
-    if (!actionDoc.value || invalidateForm.processing) return;
-
-    invalidateForm.patch(
-        `/vehicles/${vehicle.value.id}/documents/${actionDoc.value.id}/invalidate`,
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                invalidateOpen.value = false;
-                actionDoc.value = null;
-                selectedInvalidPresets.value = [];
-                invalidateForm.reset();
-            },
-        },
-    );
 }
 
 const selectMode = ref(false);
@@ -696,321 +572,87 @@ function downloadSelected() {
     selectMode.value = false;
     selectedDocIds.value = [];
 }
+
+const tabs = [
+    {
+        value: 'overview',
+        label: 'Overview',
+        icon: RiDashboardHorizontalLine,
+        component: Overview,
+    },
+    {
+        value: 'details',
+        label: 'Details',
+        icon: RiFileListLine,
+        component: Details,
+    },
+    {
+        value: 'documents',
+        label: 'Documents',
+        icon: RiFolderLine,
+        component: Documents,
+    },
+    {
+        value: 'dispatches',
+        label: 'Dispatches',
+        icon: RiRoadMapLine,
+        component: Dispatches,
+    },
+    {
+        value: 'incident-reports',
+        label: 'Incident Reports',
+        icon: RiAlertLine,
+        component: IncidentReports,
+    },
+] as const;
 </script>
 
 <template>
     <Head :title="vehicle.plate_number || `Vehicle #${vehicle.id}`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-            <Card class="">
-                <CardHeader class="py-0">
-                    <div class="flex items-center gap-4">
-                        <div
-                            class="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border-2 bg-white shadow-sm"
-                        >
-                            <div class="flex h-full w-full items-center justify-center">
-                                <Truck class="h-10 w-10 text-primary" />
-                            </div>
-                        </div>
-
-                        <div class="gap-2 w-full">
-                            <div class="flex flex-row gap-2 pb-2 w-full items-center">
-                                <h1 class="text-2xl leading-tight font-bold tracking-tight">
-                                    {{ vehicle.plate_number || `Vehicle #${vehicle.id}` }}
-                                </h1>
-                                <div class="ml-2 flex flex-1 items-center">
-                                    <hr class="h-px w-full border border-rose-500" />
-                                    <div class="border-7 border-rose-500 rounded-xs">
-                                        <div class="border-3 border-white rounded-xs"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex justify-between">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <Badge class="border-0 bg-muted font-mono text-foreground">
-                                        {{ vehicle.vehicle_type ? humanize(vehicle.vehicle_type) : '—' }}
-                                    </Badge>
-                                    <Badge :class="['', statusClass(vehicle.status)]">
-                                        <span
-                                            :class="[
-                                                'h-2 w-2 rounded-full',
-                                                statusDot(vehicle.status),
-                                            ]"
-                                        />
-                                        {{ humanize(vehicle.status) }}
-                                    </Badge>
-                                    <Badge class="border-0 bg-slate-100 text-slate-600">
-                                        {{ company?.company_code ?? '—' }}
-                                    </Badge>
-                                </div>
-                                <div class="flex items-start justify-between gap-4">
-                                    <div class="flex shrink-0 items-center gap-2">
-                                        <Button
-                                            as-child
-                                            variant="outline"
-                                            class="rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
-                                        >
-                                            <Link :href="VEHICLES_INDEX_URL">
-                                                <ArrowLeft class="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-
-                                        <Button
-                                            v-if="canArchiveVehicle"
-                                            variant="outline"
-                                            class="group/segment rounded-lg bg-card border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 gap-0 cursor-pointer"
-                                            @click="archiveOpen = true"
-                                        >
-                                            <Archive class="h-4 w-4 shrink-0" />
-                                            <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-32 group-hover/segment:opacity-100">
-                                                Archive Vehicle
-                                            </span>
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </CardHeader>
-            </Card>
+        <LeadPanel>
+            <LeadingCard
+                :title="vehicle.plate_number || `Vehicle #${vehicle.id}`"
+                description="View vehicle information, documents, and route details."
+                variant="entity-details"
+                :back="VEHICLES_INDEX_URL"
+                entity="Vehicles"
+                :status="vehicle.status"
+            >
+                <DropdownMenuItem as-child class="group cursor-pointer">
+                    <Button v-if="canArchiveVehicle" variant="dropdown" @click="archiveOpen = true">
+                        <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
+                        <span>Archive {{ vehicle.plate_number || `Vehicle #${vehicle.id}` }}</span>
+                    </Button>
+                    <!-- <Button
+                        as-child
+                        variant="outline"
+                        class="rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                    >
+                        <Link :href="VEHICLES_INDEX_URL">
+                            <RiArrowLeftLine class="h-4 w-4" />
+                        </Link>
+                    </Button> -->
+                </DropdownMenuItem>
+            </LeadingCard>
+            <Tabs default-value="details">
+                <TabsList>
+                    <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value">
+                        <component :is="tab.icon" class="h-4 w-4"/>
+                        <span>{{ tab.label }}</span>
+                    </TabsTrigger>
+                </TabsList>
+                <TabsContent v-for="tab in tabs" :key="tab.value" :value="tab.value">
+                    <component :is="tab.component" :vehicle="vehicle" :map-config="mapConfig" />
+                </TabsContent>
+            </Tabs>
+        <!-- </LeadPanel> -->
 
             <div class="grid gap-4 lg:grid-cols-3 h-fit">
-                <div class="grid gap-4 col-span-1 h-fit">
-                    <Card class="py-6">
-                        <CardHeader class="flex items-center justify-between">
-                            <div>
-                                <CardTitle>Vehicle Details</CardTitle>
-                            </div>
-                        </CardHeader>
-                        <CardContent class="px-6 grid divide-y gap-y-2 pt-4 border-t border-slate-100">
-                            <div class="py-2">
-                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
-                                    Plate Number
-                                </span>
-                                <span class="text-sm">{{ vehicle.plate_number ?? '—' }}</span>
-                            </div>
-                            <div class="py-2">
-                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
-                                    Vehicle Type
-                                </span>
-                                <span class="text-sm">{{ humanize(vehicle.vehicle_type) }}</span>
-                            </div>
-                            <div class="py-2">
-                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
-                                    Body Number
-                                </span>
-                                <span class="text-sm">{{ vehicle.body_number ?? '—' }}</span>
-                            </div>
-                            <div class="py-2">
-                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
-                                    Capacity
-                                </span>
-                                <span class="text-sm">{{ vehicle.capacity ?? '—' }}</span>
-                            </div>
-                            <div class="py-2">
-                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
-                                    Color
-                                </span>
-                                <span class="text-sm">{{ vehicle.color ?? '—' }}</span>
-                            </div>
-                            <div class="py-2">
-                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
-                                    Make / Model
-                                </span>
-                                <span class="text-sm">{{ vehicle.make_model ?? '—' }}</span>
-                            </div>
-                            <div class="py-2">
-                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
-                                    Engine Number
-                                </span>
-                                <span class="text-sm break-all">{{ vehicle.engine_number ?? '—' }}</span>
-                            </div>
-                            <div class="py-2">
-                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
-                                    Chassis Number
-                                </span>
-                                <span class="text-sm break-all">{{ vehicle.chassis_number ?? '—' }}</span>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card class="py-6">
-                        <CardHeader class="flex items-center justify-between">
-                            <div>
-                                <CardTitle>Operational Status</CardTitle>
-                            </div>
-                        </CardHeader>
-                        <CardContent class="space-y-4 border-t border-slate-100 px-6 pt-4">
-                            <form class="space-y-4" @submit.prevent="submitStatusUpdate">
-                                <div class="space-y-1.5">
-                                    <Label for="vehicle-status" class="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-                                        Status
-                                    </Label>
-                                    <select
-                                        id="vehicle-status"
-                                        v-model="statusForm.status"
-                                        :disabled="!canUpdateVehicleStatus || statusForm.processing"
-                                        class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                                    >
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                        <option value="suspended">Suspended</option>
-                                    </select>
-                                    <InputError :message="statusForm.errors.status" />
-                                </div>
-
-                                <div class="space-y-1.5">
-                                    <Label class="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-                                        Operator Remark
-                                    </Label>
-                                    <p class="min-h-16 rounded-md border bg-slate-50 p-3 text-sm text-muted-foreground whitespace-pre-wrap">
-                                        {{ vehicle.operator_remark || 'No operator remark.' }}
-                                    </p>
-                                </div>
-
-                                <div class="space-y-1.5">
-                                    <Label for="suspension-remark" class="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-                                        Suspension/Admin Remark
-                                    </Label>
-                                    <Textarea
-                                        id="suspension-remark"
-                                        v-model="statusForm.suspension_remark"
-                                        :disabled="!canUpdateVehicleStatus || statusForm.processing"
-                                        class="min-h-24 text-sm"
-                                        placeholder="Reason for suspension..."
-                                    />
-                                    <InputError :message="statusForm.errors.suspension_remark" />
-                                </div>
-
-                                <Button
-                                    v-if="canUpdateVehicleStatus"
-                                    type="submit"
-                                    class="w-full"
-                                    :disabled="statusForm.processing || (statusRequiresReason && !statusForm.suspension_remark.trim())"
-                                >
-                                    {{ statusForm.processing ? 'Saving...' : 'Save Status' }}
-                                </Button>
-                            </form>
-                        </CardContent>
-                    </Card>
-
-                    <Card class="py-6">
-                        <CardHeader class="flex items-center justify-between">
-                            <div>
-                                <CardTitle>Company Details</CardTitle>
-                            </div>
-                        </CardHeader>
-                        <CardContent class="px-6 grid divide-y gap-y-2 pt-2 border-t border-slate-100">
-                            <div class="py-2">
-                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
-                                    Company Name
-                                </span>
-                                <span class="text-sm">{{ company?.company_name ?? '—' }}</span>
-                            </div>
-                            <div class="py-2">
-                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
-                                    Company Code
-                                </span>
-                                <span class="font-mono text-sm">{{ company?.company_code ?? '—' }}</span>
-                            </div>
-                            <div class="grid gap-y-2 pt-2">
-                                <span class="text-xs font-semibold tracking-widest text-muted-foreground uppercase block">
-                                    Contacts
-                                </span>
-                                <div class="items-center flex">
-                                    <div class="h-full mr-4">
-                                        <Mail class="h-4 w-4 inline-block text-primary" />
-                                    </div>
-                                    <a
-                                        v-if="company?.company_email"
-                                        :href="`mailto:${company.company_email}`"
-                                        class="text-sm hover:underline underline-offset-2"
-                                    >{{ company.company_email }}</a>
-                                    <span v-else class="text-sm">—</span>
-                                </div>
-                                <div class="items-center flex">
-                                    <div class="h-full mr-4">
-                                        <Phone class="h-4 w-4 inline-block text-primary" />
-                                    </div>
-                                    <a
-                                        v-if="company?.company_phone"
-                                        :href="`tel:${company.company_phone}`"
-                                        class="text-sm hover:underline underline-offset-2"
-                                    >{{ company.company_phone }}</a>
-                                    <span v-else class="text-sm">—</span>
-                                </div>
-                                <div class="items-center flex">
-                                    <div class="h-full mr-4">
-                                        <MapPin class="h-4 w-4 inline-block text-primary" />
-                                    </div>
-                                    <span class="text-sm">{{ company?.company_address ?? '—' }}</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
 
                 <div class="grid gap-4 col-span-2 h-fit">
-                    <Card class="py-6">
-                        <CardHeader class="">
-                            <div class="items-center flex justify-between">
-                                <div>
-                                    <CardTitle>Route Overview</CardTitle>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent class="px-6 grid flex-col gap-4 pt-4 border-t border-slate-100">
-                            <div class="flex flex-wrap gap-2 col-span-2 w-full">
-                                <Button
-                                    v-if="canViewVehicle"
-                                    variant="outline"
-                                    size="sm"
-                                    class="flex items-center gap-1"
-                                    @click="mapDialogOpen = true"
-                                >
-                                    <Map class="h-4 w-4" />
-                                    Open Map
-                                </Button>
-                                <Button
-                                    v-if="canViewVehicle"
-                                    variant="outline"
-                                    size="sm"
-                                    class="flex items-center gap-1"
-                                    @click="stopsDialogOpen = true"
-                                >
-                                    <RouteIcon class="-4 w-4" />
-                                    View Stops
-                                </Button>
-                            </div>
-                            <div class="rounded-lg border p-4 col-span-1">
-                                <p class="text-xs text-muted-foreground">Route</p>
-                                <p class="mt-1 text-sm font-medium">{{ route.route_name }}</p>
-                            </div>
-                            <div class="rounded-lg border p-4 col-span-1">
-                                <p class="text-xs text-muted-foreground">Gate</p>
-                                <p class="mt-1 text-sm font-medium">{{ route.gate?.gate_name ?? '—' }}</p>
-                            </div>
-                            <div class="rounded-lg border p-4 col-span-1">
-                                <p class="text-xs text-muted-foreground">Distance</p>
-                                <p class="mt-1 text-sm font-medium">{{ fmtDistance(route.distance_meters) }}</p>
-                            </div>
-                            <div class="rounded-lg border p-4 col-span-1">
-                                <p class="text-xs text-muted-foreground">Duration</p>
-                                <p class="mt-1 text-sm font-medium">{{ fmtDuration(route.duration_seconds) }}</p>
-                            </div>
-                            <div class="rounded-lg border p-4 col-span-1">
-                                <p class="text-xs text-muted-foreground">Origin</p>
-                                <p class="mt-1 text-sm font-medium">{{ route.origin_name }}</p>
-                            </div>
-                            <div class="rounded-lg border p-4 col-span-1">
-                                <p class="text-xs text-muted-foreground">Destination</p>
-                                <p class="mt-1 text-sm font-medium">{{ route.destination_name }}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
+                    <!-- <Card>
                         <CardHeader class="flex items-center justify-between">
                             <div>
                                 <CardTitle>Documents</CardTitle>
@@ -1053,7 +695,7 @@ function downloadSelected() {
                                         >
                                             <X v-if="selectMode" class="h-4 w-4 shrink-0" />
                                             <ListChecks v-else class="h-4 w-4 shrink-0" />
-                                            <span v-if="!selectMode" class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-16 group-hover/segment:opacity-100">
+                                            <span v-if="!selectMode" class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover/segment:ml-2 group-hover/segment:max-w-16 group-hover/segment:opacity-100">
                                                 Select
                                             </span>
                                         </Button>
@@ -1083,7 +725,7 @@ function downloadSelected() {
                                         @click="selectMode ? downloadSelected() : undefined"
                                     >
                                         <Download class="h-4 w-4 shrink-0" />
-                                        <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover/segment:ml-2 group-hover/segment:max-w-48 group-hover/segment:opacity-100">
+                                        <span class="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover/segment:ml-2 group-hover/segment:max-w-48 group-hover/segment:opacity-100">
                                             {{ selectMode ? `Download Selected (${selectedDocIds.length})` : 'Download All' }}
                                         </span>
                                     </Button>
@@ -1097,7 +739,7 @@ function downloadSelected() {
                                     >
                                         
                                         <div
-                                            class="flex items-start pt-1 overflow-hidden transition-all duration-300"
+                                            class="flex items-start pt-1 overflow-hidden transition-all duration-200"
                                             :class="selectMode ? 'w-5 opacity-100 me-2' : 'w-0 opacity-0'"
                                         >
                                             <input
@@ -1140,7 +782,7 @@ function downloadSelected() {
                                                 <span v-else class="text-sm text-muted-foreground">{{ doc.file_name ?? '—' }}</span>
                                             </div>
 
-                                            <div class="overflow-hidden max-h-0 opacity-0 group-hover/row:max-h-96 group-hover/row:opacity-100 transition-all delay-200 duration-300 flex-col">
+                                            <div class="overflow-hidden max-h-0 opacity-0 group-hover/row:max-h-96 group-hover/row:opacity-100 transition-all delay-200 duration-200 flex-col">
                                                 <div class="flex flex-row items-center gap-x-10 text-xs text-muted-foreground">
                                                     <div class="flex flex-col w-40 gap-y-1">
                                                         <span v-if="doc.issued_at">
@@ -1250,9 +892,9 @@ function downloadSelected() {
                                 </div>
                             </div>
                         </CardContent>
-                    </Card>
+                    </Card> -->
 
-                    <Card class="py-6">
+                    <!-- <Card class="py-6">
                         <CardHeader>
                             <CardTitle class="text-base">Quick Summary</CardTitle>
                         </CardHeader>
@@ -1287,10 +929,10 @@ function downloadSelected() {
                                 </div>
                             </div>
                         </CardContent>
-                    </Card>
+                    </Card> -->
                 </div>
             </div>
-        </div>
+        </LeadPanel>
 
         <RouteMapDialog
             v-if="canViewVehicle"
@@ -1305,229 +947,20 @@ function downloadSelected() {
             :default-zoom="11"
         />
 
-        <Dialog v-model:open="stopsDialogOpen">
-            <DialogContent class="max-w-3xl">
-                <DialogHeader>
-                    <DialogTitle>Route Stops</DialogTitle>
-                    <DialogDescription>
-                        Ordered list of all route stops.
-                    </DialogDescription>
-                </DialogHeader>
 
-                <div
-                    v-if="sortedStops.length"
-                    class="max-h-[65vh] overflow-auto pr-1"
-                >
-                    <div class="space-y-3">
-                        <div
-                            v-for="(stop, i) in sortedStops"
-                            :key="stop.id"
-                            class="flex items-start gap-3 rounded-lg border p-4"
-                        >
-                            <div
-                                :class="[
-                                    'mt-1 h-3 w-3 shrink-0 rounded-full',
-                                    stopDotClass(stop.stop_type),
-                                ]"
-                            />
-                            <div class="min-w-0 flex-1">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <p class="text-sm font-medium">
-                                        {{ i + 1 }}. {{ stop.stop_name }}
-                                    </p>
-                                    <Badge variant="outline">
-                                        {{ stopTypeLabel(stop.stop_type) }}
-                                    </Badge>
-                                </div>
-                                <p class="mt-1 text-sm text-muted-foreground">
-                                    {{ stop.address || 'No address provided' }}
-                                </p>
-                                <p class="mt-1 text-xs text-muted-foreground">
-                                    {{ Number(stop.latitude).toFixed(5) }},
-                                    {{ Number(stop.longitude).toFixed(5) }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <RouteStopsDialog v-model:open="stopsDialogOpen" :stops="sortedStops" />
 
-                <div
-                    v-else
-                    class="py-8 text-center text-sm text-muted-foreground"
-                >
-                    No stops available.
-                </div>
+        <DocumentPreviewDialog
+            v-model:open="previewOpen"
+            :doc="previewDoc"
+            :can-verify="canVerifyVehicleDocument"
+            :can-unverify="canUnverifyVehicleDocument"
+            :can-invalidate="canInvalidateVehicleDocument"
+            @verify="(d) => openConfirm('verify', d)"
+            @unverify="(d) => openConfirm('unverify', d)"
+            @invalidate="(d) => openInvalidate(d)"
+        />
 
-                <DialogFooter>
-                    <Button variant="outline" @click="stopsDialogOpen = false">
-                        Close
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
-        <Dialog v-model:open="previewOpen">
-            <DialogContent
-                class="flex max-h-[90vh] w-full flex-col gap-0 rounded-lg py-4 px-6"
-                className="[&>button:last-child]:hidden"
-            >
-                <DialogHeader class="shrink-0">
-                    <div class="flex items-center justify-between gap-4">
-                        <div class="min-w-0 space-y-1">
-                            <DialogTitle class="truncate text-base">
-                                {{
-                                    previewDoc?.file_name ??
-                                    humanize(previewDoc?.document_type)
-                                }}
-                            </DialogTitle>
-                            <DialogDescription
-                                class="flex flex-wrap items-center gap-2"
-                            >
-                                <span class="text-xs text-muted-foreground">{{
-                                    humanize(previewDoc?.document_type)
-                                }}</span>
-                                <Badge
-                                    :class="[
-                                        'gap-1.5',
-                                        statusClass(previewDoc?.status),
-                                    ]"
-                                >
-                                    <span
-                                        :class="[
-                                            'h-1.5 w-1.5 rounded-full',
-                                            statusDot(previewDoc?.status),
-                                        ]"
-                                    />
-                                    {{ humanize(previewDoc?.status) }}
-                                </Badge>
-                            </DialogDescription>
-                        </div>
-                    </div>
-                </DialogHeader>
-
-                <div class="relative flex-1 overflow-auto py-4">
-                    <div
-                        v-if="previewDoc && isImage(previewDoc)"
-                        class="flex min-h-[50vh] items-center justify-center"
-                    >
-                        <img
-                            :src="fileUrl(previewDoc)"
-                            :alt="
-                                previewDoc.file_name ?? previewDoc.document_type
-                            "
-                            class="max-h-[70vh] max-w-full rounded-lg object-contain"
-                            @error="
-                                (e) => ((e.target as HTMLImageElement).src = '')
-                            "
-                        />
-                    </div>
-
-                    <div
-                        v-else-if="previewDoc && isPdf(previewDoc)"
-                        class="h-[70vh] w-full"
-                    >
-                        <iframe
-                            v-if="!pdfLoadError"
-                            :src="fileUrl(previewDoc)"
-                            class="h-full w-full border-0"
-                            @error="pdfLoadError = true"
-                        />
-                        <div
-                            v-else
-                            class="flex h-full flex-col items-center justify-center"
-                        >
-                            <FileText class="h-12 w-12 opacity-30" />
-                            <p class="text-sm">
-                                Your browser cannot preview this PDF inline.
-                            </p>
-                            <Button as-child variant="outline" class="rounded-lg">
-                                <a
-                                    :href="fileUrl(previewDoc)"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    <Eye class="mr-2 h-4 w-4" />Open in new tab
-                                </a>
-                            </Button>
-                        </div>
-                    </div>
-
-                    <div
-                        v-else
-                        class="flex h-[50vh] items-center justify-center text-sm text-muted-foreground"
-                    >
-                        Preview not available.
-                    </div>
-                </div>
-
-                <DialogFooter
-                    v-if="previewDoc"
-                    class="shrink-0 flex flex-row items-center"
-                >
-                    <p class="flex-1 text-xs text-muted-foreground">
-                        Issued: {{ formatDate(previewDoc?.issued_at ?? null) }}<br>
-                        Expires: {{ formatDate(previewDoc?.expires_at ?? null) }}
-                    </p>
-                    <div class="flex flex-1 flex-row gap-x-2 justify-end">
-                        <Popover>
-                            <PopoverTrigger as-child>
-                                <Button
-                                    variant="outline"
-                                    class="rounded-lg cursor-pointer hover:bg-slate-100"
-                                >
-                                    <Ellipsis class="h-4 w-4" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent
-                                align="end"
-                                class="w-fit rounded-lg border-slate-200 shadow-lg p-0 gap-2"
-                            >
-                                <div
-                                    v-if="canVerifyVehicleDocument && previewDoc.status !== 'verified'"
-                                    class="cursor-pointer flex items-center gap-2 rounded-lg px-4 py-2 text-sm hover:bg-slate-100"
-                                    @click="openConfirmFromPreview('verify')"
-                                >
-                                    <CheckCircle2 class="h-4 w-4" />
-                                    Verify
-                                </div>
-                                <div
-                                    v-if="canUnverifyVehicleDocument && previewDoc.status === 'verified'"
-                                    class="cursor-pointer flex items-center gap-2 rounded-lg px-4 py-2 text-sm hover:bg-slate-100"
-                                    @click="openConfirmFromPreview('unverify')"
-                                >
-                                    <RotateCcw class="h-4 w-4" />
-                                    Move to Pending
-                                </div>
-                                <div
-                                    v-if="canInvalidateVehicleDocument"
-                                    class="cursor-pointer flex items-center gap-2 rounded-lg px-4 py-2 text-sm hover:bg-slate-100"
-                                    @click="openInvalidateFromPreview"
-                                >
-                                    <XCircle class="h-4 w-4" />
-                                    Mark Invalid
-                                </div>
-                                <a
-                                    v-if="fileUrl(previewDoc)"
-                                    :href="fileUrl(previewDoc)"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    download
-                                    class="cursor-pointer flex items-center gap-2 rounded-lg px-4 py-2 text-sm hover:bg-slate-100"
-                                >
-                                    <Download class="h-4 w-4" />
-                                    Download
-                                </a>
-                            </PopoverContent>
-                        </Popover>
-                        <Button
-                            variant="outline"
-                            class="rounded-lg cursor-pointer hover:bg-slate-100"
-                            @click="closePreview"
-                        >Close</Button>
-                    </div>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
 
         <AlertDialog v-model:open="archiveOpen">
             <AlertDialogContent class="rounded-2xl">
@@ -1590,134 +1023,10 @@ function downloadSelected() {
             </AlertDialogContent>
         </AlertDialog>
 
-        <Dialog v-model:open="invalidateOpen">
-            <DialogContent class="rounded-2xl sm:max-w-lg">
-                <DialogHeader>
-                    <DialogTitle>Mark as Invalid</DialogTitle>
-                    <DialogDescription>
-                        Select one or more reasons below. The remarks field will
-                        be built automatically — you can still edit it before
-                        submitting for
-                        <span class="font-medium text-foreground">
-                            {{ humanize(actionDoc?.document_type) }} </span
-                        >.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <Separator />
-
-                <div class="space-y-4">
-                    <div>
-                        <p
-                            class="mb-2.5 text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
-                        >
-                            Reasons
-                        </p>
-
-                        <div class="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                            <label
-                                v-for="preset in invalidPresets"
-                                :key="preset.value"
-                                :class="[
-                                    'flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors',
-                                    selectedInvalidPresets.includes(
-                                        preset.value,
-                                    )
-                                        ? 'border-rose-300 bg-rose-50 text-rose-700'
-                                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
-                                ]"
-                                @click="toggleInvalidPreset(preset.value)"
-                            >
-                                <Checkbox
-                                    :checked="
-                                        selectedInvalidPresets.includes(
-                                            preset.value,
-                                        )
-                                    "
-                                    :class="
-                                        selectedInvalidPresets.includes(
-                                            preset.value,
-                                        )
-                                            ? 'border-rose-400 data-[state=checked]:border-rose-600 data-[state=checked]:bg-rose-600'
-                                            : ''
-                                    "
-                                    @click.stop
-                                    @update:checked="
-                                        toggleInvalidPreset(preset.value)
-                                    "
-                                />
-                                <span class="leading-snug">{{
-                                    preset.label
-                                }}</span>
-                            </label>
-                        </div>
-
-                        <p
-                            v-if="selectedInvalidPresets.length > 0"
-                            class="mt-2 text-xs font-medium text-rose-600"
-                        >
-                            {{ selectedInvalidPresets.length }}
-                            reason{{
-                                selectedInvalidPresets.length > 1 ? 's' : ''
-                            }}
-                            selected
-                        </p>
-                    </div>
-
-                    <div class="space-y-1.5">
-                        <Label
-                            for="inv-remarks"
-                            class="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase"
-                        >
-                            Remarks <span class="text-destructive">*</span>
-                        </Label>
-
-                        <Textarea
-                            id="inv-remarks"
-                            v-model="invalidateForm.remarks"
-                            placeholder="Select reasons above or write your own..."
-                            class="min-h-[100px] rounded-lg text-sm"
-                        />
-
-                        <InputError
-                            class="mt-1"
-                            :message="invalidateForm.errors.remarks"
-                        />
-
-                        <p class="text-[11px] text-muted-foreground">
-                            You can edit the auto-generated text or write your
-                            own remarks.
-                        </p>
-                    </div>
-                </div>
-
-                <DialogFooter class="gap-2">
-                    <Button
-                        variant="outline"
-                        class="rounded-lg"
-                        :disabled="invalidateForm.processing"
-                        @click="invalidateOpen = false"
-                    >
-                        Cancel
-                    </Button>
-
-                    <Button
-                        variant="destructive"
-                        class="rounded-lg border-0 bg-rose-600 text-white hover:bg-rose-700"
-                        :disabled="
-                            invalidateForm.processing ||
-                            !invalidateForm.remarks.trim()
-                        "
-                        @click="submitInvalidate"
-                    >
-                        {{
-                            invalidateForm.processing
-                                ? 'Submitting...'
-                                : 'Mark Invalid'
-                        }}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <InvalidateDocumentDialog
+            v-model:open="invalidateOpen"
+            :doc="actionDoc"
+            :vehicle-id="vehicle.id"
+        />
     </AppLayout>
 </template>

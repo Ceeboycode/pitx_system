@@ -14,6 +14,8 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { MainPanel } from '@/components/ui/_panels';
+import { LeadingCard } from '@/components/ui/_leading-card';
 
 import {
     RiArrowLeftRightLine,
@@ -308,35 +310,13 @@ const today = new Date().toLocaleDateString('en-PH', {
     <Head title="Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto no-scrollbar"
-        >
-        <!-- TODO: make the card bg a gradient -->
-            <Card class="shrink-0 bg-custom-primary pb-0">
-                <CardHeader
-                    class="flex flex-row justify-between"
-                >
-                    <div>
-                        <CardTitle class="text-custom-bg-light">
-                            Good morning, {{ $page.props.auth.user.name }}
-                        </CardTitle
-                        >
-                        <CardDescription class="mt-2 text-custom-bg-light">
-                            See terminal and system overviews, manage your tasks.
-                        </CardDescription>
-                    </div>
-                    <div class="text-right h-full flex items-center">
-                        <div
-                            class=" text-custom-bg-light text-sm"
-                        >
-                            {{ today }}
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent
-                    class="h-6 mt-6 rounded-b-md bg-[repeating-linear-gradient(135deg,var(--custom-bg-light),var(--custom-bg-light)_12px,var(--custom-bg-dark)_12px,var(--custom-bg-dark)_24px)]"
-                ></CardContent>
-            </Card>
+        <MainPanel>
+            <LeadingCard
+                :user="$page.props.auth.user.name"
+                description="See terminal and system overviews, manage your tasks."
+                :today="today"
+                variant="dashboard"
+            ></LeadingCard>
 
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <Card>
@@ -1283,6 +1263,6 @@ const today = new Date().toLocaleDateString('en-PH', {
                     </div>
                 </CardContent>
             </Card>
-        </div>
+        </MainPanel>
     </AppLayout>
 </template>

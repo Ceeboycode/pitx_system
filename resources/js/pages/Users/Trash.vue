@@ -145,7 +145,7 @@ function confirmRestore() {
                                     variant="header-actions"
                                     size="icon-text"
                                     class="rounded-full"
-                                    :class="activeFilterCount > 0 ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''"
+                                    :class="activeFilterCount > 0 ? 'bg-custom-secondary/20 transition-all duration-200 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''"
                                 >
                                     <RiFilter2Line class="h-3.5 w-3.5" />
                                     <span class="hidden lg:flex">{{ activeFilterCount > 0 ? '1 filter active' : 'Filter' }}</span>

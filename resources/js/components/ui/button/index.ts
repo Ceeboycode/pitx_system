@@ -11,7 +11,7 @@ export const buttonVariants = cva(
         default: "text-custom-shadow hover:bg-custom-secondary/20",
         primary: "bg-custom-primary text-custom-bg-light hover:bg-custom-primary/90",
         destructive:
-          "items-center border rounded-full cursor-pointer border-destructive/50 hover:bg-destructive/20 text-destructive transition-all duration-300",
+          "items-center border rounded-full cursor-pointer border-destructive/50 hover:bg-destructive/20 text-destructive transition-all duration-200",
         logout:
           "items-center justify-start text-custom-shadow hover:text-destructive-foreground cursor-pointer",
         outline:
@@ -22,14 +22,15 @@ export const buttonVariants = cva(
           "text-custom-shadow hover:bg-custom-secondary hover:text-custom-bg-light dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
         float: "bg-custom-bg text-custom-shadow hover:shadow-md dark:shadow-none hover:dark:inset-shadow-sm hover:dark:inset-shadow-white/5 rounded-full hover:bg-custom-secondary/20 cursor-pointer dark:bg-custom-bg-light dark:hover:bg-custom-secondary/20 hover:-translate-y-0.5",
-        "float-primary": "bg-custom-primary text-custom-bg-light dark:text-custom-shadow hover:shadow-md hover:dark:text-custom-shadow hover:dark:shadow-none dark:inset-shadow-sm dark:inset-shadow-white/5 rounded-full hover:bg-custom-primary/60 cursor-pointer hover:-translate-y-0.5 text-custom-bg-light transition-all duration-300",
-        "float-secondary": "bg-custom-secondary text-custom-bg-light dark:text-custom-shadow hover:shadow-md hover:dark:text-custom-shadow hover:dark:shadow-none dark:inset-shadow-sm dark:inset-shadow-white/5 rounded-full hover:bg-custom-secondary/60 cursor-pointer hover:-translate-y-0.5 text-custom-bg-light transition-all duration-300",
-        dropdown: "p-2 w-full justify-start rounded-md text-custom-shadow hover:bg-custom-secondary/20 cursor-pointer",
-        "ghost-outline": "items-center text-custom-shadow border border-custom-bg-dark dark:border-custom-bg-light rounded-full hover:bg-custom-secondary/20 cursor-pointer hover:-translate-y-0.5 transition-all duration-300",
-        "header-actions" : "text-sm bg-custom-bg text-custom-shadow hover:shadow-md dark:shadow-none hover:dark:inset-shadow-sm hover:dark:inset-shadow-white/5 rounded-full hover:bg-custom-secondary/20 cursor-pointer dark:bg-custom-bg-light dark:hover:bg-custom-secondary/20 dark:hover:text-custom-shadow hover:-translate-y-0.5 transition-all duration-300",
-        "table-more" : "items-center text-custom-shadow rounded-full cursor-pointer transition-all duration-300",
-        segmented: "rounded-none text-custom-shadow/80 data-[active=true]:text-custom-shadow cursor-pointer transition-all duration-300 px-1",
-        pagination: "rounded-full bg-custom-bg dark:bg-custom-bg-light text-custom-shadow hover:bg-custom-secondary/20 cursor-pointer transition-all duration-300",
+        "float-primary": "bg-custom-primary text-custom-bg-light dark:text-custom-shadow hover:shadow-md hover:dark:text-custom-shadow hover:dark:shadow-none dark:inset-shadow-sm dark:inset-shadow-white/5 rounded-full hover:bg-custom-primary/60 cursor-pointer hover:-translate-y-0.5 text-custom-bg-light transition-all duration-200",
+        "float-secondary": "bg-custom-secondary text-custom-bg-light dark:text-custom-shadow hover:shadow-md hover:dark:text-custom-shadow hover:dark:shadow-none dark:inset-shadow-sm dark:inset-shadow-white/5 rounded-full hover:bg-custom-secondary/60 cursor-pointer hover:-translate-y-0.5 text-custom-bg-light transition-all duration-200",
+        // i dont think ginagamit tong dropdown rn
+        dropdown: "flex flex-row p-2 w-full justify-start rounded-md text-custom-shadow hover:bg-custom-secondary/20 cursor-pointer",
+        "ghost-outline": "items-center text-custom-shadow border border-custom-bg-dark dark:border-custom-bg-light rounded-full hover:bg-custom-secondary/20 cursor-pointer hover:-translate-y-0.5 transition-all duration-200",
+        "header-actions" : "text-sm bg-custom-bg text-custom-shadow hover:shadow-md dark:shadow-none hover:dark:inset-shadow-sm hover:dark:inset-shadow-white/5 rounded-full hover:bg-custom-secondary/20 cursor-pointer dark:bg-custom-bg-light dark:hover:bg-custom-secondary/20 dark:hover:text-custom-shadow hover:-translate-y-0.5 transition-all duration-200",
+        "table-more" : "items-center rounded-full cursor-pointer transition-all duration-200",
+        segmented: "rounded-none text-custom-shadow/80 data-[active=true]:text-custom-shadow cursor-pointer transition-all duration-200 px-1",
+        pagination: "rounded-full bg-custom-bg dark:bg-custom-bg-light text-custom-shadow hover:bg-custom-secondary/20 cursor-pointer transition-all duration-200",
         disabled: "rounded-full bg-custom-bg dark:bg-custom-bg-light text-custom-shadow/80 cursor-not-allowed pointer-events-none",
       },
       size: {

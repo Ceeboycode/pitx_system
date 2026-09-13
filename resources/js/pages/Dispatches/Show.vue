@@ -13,6 +13,8 @@ import {
     today,
 } from '@internationalized/date';
 
+import { PanelLayout } from '@/components/ui/_panels';
+
 import RouteMapDialog from '@/components/routes/RouteMapDialog.vue';
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
@@ -471,7 +473,7 @@ function exportCsv() {
                                         size="icon-text"
                                         class="rounded-full"
                                         :class="activeFilterCount > 0
-                                            ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light'
+                                            ? 'bg-custom-secondary/20 transition-all duration-200 hover:bg-custom-secondary/80 hover:text-custom-bg-light'
                                             : ''"
                                     >
                                         <RiFilter2Line class="h-3.5 w-3.5" />

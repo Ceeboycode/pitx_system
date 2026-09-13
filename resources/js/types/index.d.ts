@@ -45,6 +45,8 @@ export interface User {
     id: number;
     name: string;
     email: string;
+    role: string;
+    role_type?: 'internal' | 'external' | null;
     avatar?: string | null;
     email_verified_at: string | null;
     created_at: string;

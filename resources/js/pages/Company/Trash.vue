@@ -147,7 +147,7 @@ function openRestore(company: Company) {
                                     variant="header-actions"
                                     size="icon-text"
                                     class="rounded-full"
-                                    :class="activeFilterCount > 0 ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''"
+                                    :class="activeFilterCount > 0 ? 'bg-custom-secondary/20 transition-all duration-200 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''"
                                 >
                                     <RiFilter2Line class="h-3.5 w-3.5" />
                                     <span class="hidden lg:flex">
@@ -233,7 +233,7 @@ function openRestore(company: Company) {
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuLabel>{{ company.company_name }}</DropdownMenuLabel>
                                                 <DropdownMenuItem class="group" @click="openRestore(company)">
-                                                    <RiRestartLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                    <RiRestartLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
                                                     Restore
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>

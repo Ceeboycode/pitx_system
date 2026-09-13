@@ -30,6 +30,7 @@ import {
 import Input from '@/components/ui/input/Input.vue';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PanelLayout } from '@/components/ui/_panels';
 
 
 import {
@@ -188,7 +189,7 @@ function statusDot(status: string | null | undefined): string {
     <Head title="Dispatches" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
+        <PanelLayout>
             <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader class="flex flex-row gap-2 items-center">
                     <div class="flex flex-col">
@@ -209,7 +210,7 @@ function statusDot(status: string | null | undefined): string {
                             <DropdownMenuContent align="end" class="w-fit">
                                 <DropdownMenuItem as-child class="group cursor-pointer">
                                     <Link :href="changeRequestsIndex().url" class="flex items-center">
-                                        <RiFileInfoLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                        <RiFileInfoLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
                                         Change Requests
                                     </Link>
                                 </DropdownMenuItem>
@@ -235,7 +236,7 @@ function statusDot(status: string | null | undefined): string {
                                     variant="header-actions"
                                     size="icon-text"
                                     class="rounded-full"
-                                    :class="activeFilterCount ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''"
+                                    :class="activeFilterCount ? 'bg-custom-secondary/20 transition-all duration-200 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''"
                                 >
                                     <RiFilter2Line class="h-3.5 w-3.5" />
                                     <span class="hidden lg:flex">
@@ -420,7 +421,7 @@ function statusDot(status: string | null | undefined): string {
                                                         :href="InternalDispatchController.show(company.id).url"
                                                         class="flex items-center"
                                                     >
-                                                        <RiExternalLinkLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                        <RiExternalLinkLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
                                                         View
                                                     </Link>
                                                 </DropdownMenuItem>
@@ -551,6 +552,6 @@ function statusDot(status: string | null | undefined): string {
                     </div>
                 </CardContent>
             </Card>
-        </div>
+        </PanelLayout>
     </AppLayout>
 </template>

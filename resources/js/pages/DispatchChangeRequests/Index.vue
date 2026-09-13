@@ -293,7 +293,7 @@ function statusIcon(status: string) {
                                     variant="header-actions"
                                     size="icon-text"
                                     class="rounded-full"
-                                    :class="activeFilterCount ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''"
+                                    :class="activeFilterCount ? 'bg-custom-secondary/20 transition-all duration-200 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''"
                                 >
                                     <Filter class="h-3.5 w-3.5" />
                                     <span class="hidden lg:flex">{{ activeFilterCount ? '1 filter active' : 'Filter' }}</span>

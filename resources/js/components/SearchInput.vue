@@ -69,7 +69,7 @@ const clear = () => {
         <button
             v-if="search"
             type="button"
-            class="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-auto text-custom-shadow/80 hover:text-custom-shadow cursor-pointer transition-all duration-300"
+            class="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-auto text-custom-shadow/80 hover:text-custom-shadow cursor-pointer transition-all duration-200"
             @click="clear"
             aria-label="Clear search"
         >

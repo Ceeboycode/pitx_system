@@ -32,10 +32,7 @@ defineProps<{
 
 
 <template>
-    <AuthBase
-        title="Log in to your account"
-        description="Access the PITX centralized dispatch system"
-    >
+    <AuthBase>
         <Head title="Log in" />
 
         <Card class="mx-auto w-full max-w-sm">

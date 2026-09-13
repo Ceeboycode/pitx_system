@@ -28,6 +28,12 @@ class HandleInertiaRequests extends Middleware
         $user = $request->user();
         $company = $user?->company;
 
+        $roleType = match (true) {
+            (bool) $user?->roles()->where('type', 'internal')->exists() => 'internal',
+            (bool) $user?->roles()->where('type', 'external')->exists() => 'external',
+            default => null,
+        };
+
         return [
             ...parent::share($request),
 
@@ -53,6 +59,7 @@ class HandleInertiaRequests extends Middleware
                     'email' => $user->email,
                     'avatar' => $user->profile_photo_path ? Storage::url($user->profile_photo_path) : null,
                     'type' => $user->type,
+                    'role_type' => $roleType,
                     'status' => $user->status,
                     'must_change_password' => (bool) $user->must_change_password,
                 ] : null,

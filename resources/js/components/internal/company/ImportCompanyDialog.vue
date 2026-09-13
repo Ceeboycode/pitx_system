@@ -175,7 +175,7 @@ function handleClose(val: boolean) {
                             v-if="phase === 'idle'"
                             type="button"
                             aria-label="Remove backup file"
-                            class="flex h-7 w-7 shrink-0 cursor-pointer items-center rounded-full border border-custom-shadow/50 text-custom-shadow transition-all duration-300 hover:border-destructive hover:bg-destructive/20 hover:text-destructive"
+                            class="flex h-7 w-7 shrink-0 cursor-pointer items-center rounded-full border border-custom-shadow/50 text-custom-shadow transition-all duration-200 hover:border-destructive hover:bg-destructive/20 hover:text-destructive"
                             @click="clearFile"
                         >
                             <RiCloseLine class="h-4 w-4" />
@@ -189,7 +189,7 @@ function handleClose(val: boolean) {
                         <span>{{ progress }}%</span>
                     </div>
                     <div class="h-2 w-full overflow-hidden rounded-full bg-custom-bg dark:bg-custom-bg-light">
-                        <div class="h-full bg-primary transition-all duration-300" :style="{ width: `${progress}%` }" />
+                        <div class="h-full bg-primary transition-all duration-200" :style="{ width: `${progress}%` }" />
                     </div>
                 </div>
 

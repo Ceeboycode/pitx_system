@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHIPS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #060B1E;
+    --bg-mid: #0C1A4A;
+    --bg-glow: #142B72;
+    --gold: #F6C511;
+    --gold-soft: #FFDE7A;
+    --paper: #F3EFE2;
+    --grey: #8C97BE;
+    --line: rgba(246, 197, 17, 0.16);
+    --radius: 3px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    background:
+      radial-gradient(circle at 12% -10%, rgba(246,197,17,0.10), transparent 45%),
+      radial-gradient(circle at 100% 0%, rgba(20,43,114,0.55), transparent 42%),
+      linear-gradient(160deg, var(--bg-deep) 0%, var(--bg-mid) 55%, var(--bg-glow) 100%);
+    background-attachment: fixed;
+    color: var(--paper);
+    font-family: 'Manrope', sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  /* faint circuit grid overlay */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 64px 64px;
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  nav, .page, footer { position: relative; z-index: 1; }
+
+  h1, h2, h3, .brand {
+    font-family: 'Chakra Petch', sans-serif;
+  }
+
+  /* ---------- NAV ---------- */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 40px;
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .brand {
+    font-weight: 700;
+    font-size: 1.3rem;
+    letter-spacing: 0.02em;
+  }
+
+  .brand span { color: var(--gold); }
+
+  .tabs { display: flex; gap: 4px; }
+
+  .tab {
+    background: none;
+    border: 1px solid transparent;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 9px 18px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    color: var(--grey);
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .tab:hover { color: var(--paper); }
+
+  .tab.active {
+    color: var(--gold);
+    border-color: var(--line);
+    background: rgba(246, 197, 17, 0.08);
+    box-shadow: 0 0 18px rgba(246, 197, 17, 0.15);
+  }
+
+  /* ---------- PAGES ---------- */
+  .page { display: none; padding: 60px 40px 100px; max-width: 900px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* ---- Org info page ---- */
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 700;
+    max-width: 14ch;
+    margin-bottom: 10px;
+    text-shadow: 0 0 30px rgba(246, 197, 17, 0.2);
+  }
+
+  .hero .full-name {
+    color: var(--gold);
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    margin-bottom: 14px;
+  }
+
+  .hero .tagline {
+    color: var(--grey);
+    font-size: 1.1rem;
+    max-width: 55ch;
+    margin-bottom: 40px;
+  }
+
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 24px;
+    padding: 28px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 44px;
+  }
+
+  .fact .value {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--gold);
+  }
+
+  .fact .label {
+    color: var(--grey);
+    font-size: 0.9rem;
+    margin-top: 2px;
+  }
+
+  .about h2 {
+    font-size: 1.4rem;
+    margin-bottom: 14px;
+    color: var(--paper);
+  }
+
+  .about p {
+    max-width: 68ch;
+    margin-bottom: 16px;
+    color: #C3CAE3;
+  }
+
+  .about p + h2 { margin-top: 36px; }
+
+  /* ---- Officers page ---- */
+  .page-header {
+    margin-bottom: 32px;
+  }
+
+  .page-header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .page-header p {
+    color: var(--grey);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead th {
+    text-align: left;
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--grey);
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--gold);
+  }
+
+  tbody td {
+    padding: 16px;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.98rem;
+    color: var(--paper);
+  }
+
+  tbody tr:hover { background: rgba(246, 197, 17, 0.06); }
+
+  .officer-name { font-weight: 600; }
+
+  .position-tag {
+    display: inline-block;
+    font-size: 0.85rem;
+    color: var(--gold-soft);
+  }
+
+  footer {
+    text-align: center;
+    padding: 30px;
+    color: var(--grey);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--line);
+  }
+
+  @media (max-width: 600px) {
+    nav { padding: 18px 20px; }
+    .page { padding: 40px 20px 80px; }
+    thead th:nth-child(3), tbody td:nth-child(3) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">CH<span>IPS</span></div>
+  <div class="tabs">
+    <button class="tab active" data-page="info">Organization</button>
+    <button class="tab" data-page="officers">Officers</button>
+  </div>
+</nav>
+
+<!-- ============ PAGE 1: ORGANIZATION INFO ============ -->
+<!-- Edit everything inside this section: name, tagline, facts, about text -->
+<section class="page active" id="info">
+  <div class="hero">
+    <h1>CHIPS</h1>
+    <p class="full-name">Computer Hardware Interfacing and Programming Society</p>
+    <p class="tagline">[One or two sentence tagline or mission statement goes here — what the org is and who it's for.]</p>
+  </div>
+
+  <div class="facts">
+    <div class="fact">
+      <div class="value">[Year]</div>
+      <div class="label">Founded</div>
+    </div>
+    <div class="fact">
+      <div class="value">[#]</div>
+      <div class="label">Members</div>
+    </div>
+    <div class="fact">
+      <div class="value">NCST</div>
+      <div class="label">College / Department</div>
+    </div>
+  </div>
+
+  <div class="about">
+    <h2>About Us</h2>
+    <p>[Paragraph describing the organization: what it does, when it meets, and what it offers members. Replace this placeholder text with the real description.]</p>
+    <p>[Optional second paragraph — background, history, or achievements.]</p>
+
+    <h2>Our Goals</h2>
+    <p>[List or describe the organization's mission and objectives here.]</p>
+  </div>
+</section>
+
+<!-- ============ PAGE 2: OFFICERS TABLE ============ -->
+<!-- Add or remove <tr> rows as needed; each row is one officer -->
+<section class="page" id="officers">
+  <div class="page-header">
+    <h1>Current Officers</h1>
+    <p>[Academic year, e.g. "A.Y. 2026–2027"]</p>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Position</th>
+        <th>Year Level</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="officer-name">[Full Name]</td>
+        <td><span class="position-tag">President</span></td>
+        <td>[Year Level]</td>
+      </tr>
+      <tr>
+        <td class="officer-name">[Full Name]</td>
+        <td><span class="position-tag">Vice President</span></td>
+        <td>[Year Level]</td>
+      </tr>
+      <tr>
+        <td class="officer-name">[Full Name]</td>
+        <td><span class="position-tag">Secretary</span></td>
+        <td>[Year Level]</td>
+      </tr>
+      <tr>
+        <td class="officer-name">[Full Name]</td>
+        <td><span class="position-tag">Treasurer</span></td>
+        <td>[Year Level]</td>
+      </tr>
+      <tr>
+        <td class="officer-name">[Full Name]</td>
+        <td><span class="position-tag">Auditor</span></td>
+        <td>[Year Level]</td>
+      </tr>
+      <!-- Add more rows here as needed -->
+    </tbody>
+  </table>
+</section>
+
+<footer>
+  CHIPS &middot; [Contact email or social handle]
+</footer>
+
+<script>
+  const tabs = document.querySelectorAll('.tab');
+  const pages = document.querySelectorAll('.page');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      pages.forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.page).classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>

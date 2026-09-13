@@ -35,6 +35,7 @@ import {
     RiFilter2Line as Filter,
 } from 'vue-remix-icons';
 import { computed, ref } from 'vue';
+import { PanelLayout } from '@/components/ui/_panels';
 
 type SortDir = 'asc' | 'desc';
 
@@ -294,7 +295,7 @@ function actionBadgeClass(action: string): string {
     <Head title="Audit Logs" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
+        <PanelLayout>
             <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader class="flex flex-row gap-2">
                     <div class="flex flex-col">
@@ -333,7 +334,7 @@ function actionBadgeClass(action: string): string {
                                             class="rounded-full"
                                             :class="
                                                 activeFilterCount > 0
-                                                    ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-300 dark:hover:text-custom-shadow'
+                                                    ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-200 dark:hover:text-custom-shadow'
                                                     : ''
                                             "
                                         >
@@ -684,6 +685,6 @@ function actionBadgeClass(action: string): string {
                     </div>
                 </CardContent>
             </Card>
-        </div>
+        </PanelLayout>
     </AppLayout>
 </template>

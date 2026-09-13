@@ -1002,7 +1002,7 @@ watch(
                                                 </div>
                                                 <p
                                                     :class="{
-                                                        'text-[11px] text-muted-foreground px-3 max-h-0 overflow-hidden opacity-0 transition-all duration-300 ease-out group-hover:max-h-6 group-hover:opacity-100': true,
+                                                        'text-[11px] text-muted-foreground px-3 max-h-0 overflow-hidden opacity-0 transition-all duration-200 ease-out group-hover:max-h-6 group-hover:opacity-100': true,
                                                         'text-end': message.sender?.id === currentUserId,
                                                     }"
                                                 >

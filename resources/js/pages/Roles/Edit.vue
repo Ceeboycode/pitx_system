@@ -3,37 +3,18 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { index, update } from '@/routes/roles';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import {
-    ArrowLeft,
-    CheckSquare,
-    ChevronDown,
-    ChevronRight,
-    KeyRound,
-    Save,
-    Shield,
-    Users,
-} from 'lucide-vue-next';
+
 import { computed, ref } from 'vue';
 
-import InputError from '@/components/InputError.vue';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardFooter,
-    CardHeader,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+    RiFileListLine,
+    RiGroupLine,
+} from 'vue-remix-icons';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/_tabs';
+import { LeadPanel } from '@/components/ui/_panels';
+import { LeadingCard } from '@/components/ui/_leading-card';
+import Details from '@/components/internal/roles/edit/DetailsTab.vue';
+import Users from '@/components/internal/roles/edit/UsersTab.vue';
 
 
 type Permission = {
@@ -196,103 +177,66 @@ function tabSelectedCount(list: Permission[]) {
 function submit() {
     form.put(update({ role: props.role.id }).url, { preserveScroll: true });
 }
+
+const tabs = [
+    {
+        value: 'details',
+        label: 'Details',
+        icon: RiFileListLine,
+        component: Details,
+    },
+    {
+        value: 'users',
+        label: 'Users',
+        icon: RiGroupLine,
+        component: Users,
+    },
+] as const;
 </script>
 
 <template>
     <Head title="Edit Role" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-            <Card class="">
-                <CardHeader class="py-0">
-                    <div class="flex items-center gap-4">
-                        <div
-                            class="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border-2 bg-primary shadow-sm flex items-center justify-center"
-                        >
-                            <Shield class="h-10 w-10 text-white" />
-                        </div>
+        <LeadPanel>
+            <LeadingCard
+                :title="role.name"
+                description="Update the role name, type, and permissions."
+                variant="entity-details"
+                :back="index().url"
+                :more="false"
+            >
+                <!-- <DropdownMenuItem
+                    class="group cursor-pointer"
+                    :disabled="!canArchiveRoute"
+                    @click="archiveOpen = true"
+                >
+                    <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                    Archive
+                </DropdownMenuItem> -->
+            </LeadingCard>
+            <Tabs default-value="details">
+                <TabsList>
+                    <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value">
+                        <component :is="tab.icon" class="h-4 w-4"/>
+                        <span>{{ tab.label }}</span>
+                    </TabsTrigger>
+                </TabsList>
+                <TabsContent v-for="tab in tabs" :key="tab.value" :value="tab.value">
+                    <component
+                        :is="tab.component"
+                        :role="role"
+                        :permissions="permissions"
+                        :role-permission-ids="rolePermissionIds"
+                        :role-types="roleTypes"
+                    />
+                </TabsContent>
+            </Tabs>
+        <!-- </LeadPanel> -->
 
-                        <div class="gap-2 w-full">
-                            <div class="flex flex-row gap-2 pb-2 w-full items-center">
-                                <h1 class="text-2xl leading-tight font-bold tracking-tight">
-                                    {{ role.name }}
-                                </h1>
-                                <div class="ml-2 flex flex-1 items-center">
-                                    <hr class="h-px w-full border border-rose-500" />
-                                    <div class="border-7 border-rose-500 rounded-xs">
-                                        <div class="border-3 border-white rounded-xs"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex justify-between">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <Badge
-                                        :class="[
-                                            'border capitalize',
-                                            role.type === 'internal'
-                                                ? 'border-blue-200 bg-blue-100 text-blue-700'
-                                                : 'border-amber-200 bg-amber-100 text-amber-700',
-                                        ]"
-                                    >
-                                        {{ role.type }}
-                                    </Badge>
-                                </div>
-                                <div class="flex shrink-0 items-center gap-2">
-                                    <Button
-                                        as-child
-                                        variant="outline"
-                                        class="rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
-                                    >
-                                        <Link :href="index().url">
-                                            <ArrowLeft class="h-4 w-4" />
-                                        </Link>
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </CardHeader>
+        <!-- <Card class=""> -->
 
-                <CardContent class="space-y-8 pt-6 border-t border-slate-100">
-                    
-                    <div class="grid gap-6 sm:grid-cols-2">
-                        <div class="space-y-2">
-                            <Label for="name" class="flex items-center gap-1.5">
-                                <!-- CODE: <KeyRound class="h-3.5 w-3.5 text-muted-foreground" /> -->
-                                Role name
-                            </Label>
-                            <Input
-                                id="name"
-                                v-model="form.name"
-                                placeholder="e.g. Manager"
-                            />
-                            <InputError :message="form.errors.name" />
-                        </div>
-
-                        <div class="space-y-2">
-                            <Label for="type" class="flex items-center gap-1.5">
-                                <!-- CODE: <Users class="h-3.5 w-3.5 text-muted-foreground" /> -->
-                                Role type
-                            </Label>
-                            <Select v-model="form.type">
-                                <SelectTrigger id="type" class="w-full">
-                                    <SelectValue placeholder="Select role type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem
-                                        v-for="t in props.roleTypes"
-                                        :key="t"
-                                        :value="t"
-                                    >
-                                        {{ t.charAt(0).toUpperCase() + t.slice(1) }}
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <InputError :message="form.errors.type" />
-                        </div>
-                    </div>
-
-                    
+                <!-- <CardContent class="space-y-8 pt-6 border-t border-slate-100">
                     <div class="space-y-4">
                         
                         <div class="flex items-center justify-between">
@@ -311,9 +255,9 @@ function submit() {
                                     :checked="allChecked"
                                     :indeterminate="someChecked"
                                     @change="toggleAll(($event.target as HTMLInputElement).checked)"
-                                />
+                                /> -->
                                 <!-- CODE: <CheckSquare class="h-3.5 w-3.5 text-muted-foreground" /> -->
-                                <span>Select all</span>
+                                <!-- <span>Select all</span>
                             </label>
                         </div>
 
@@ -518,9 +462,9 @@ function submit() {
                             </TabsContent>
                         </Tabs>
                     </div>
-                </CardContent>
+                </CardContent> -->
 
-                <CardFooter class="flex flex-wrap justify-end gap-2 border-t border-slate-100">
+                <!-- <CardFooter class="flex flex-wrap justify-end gap-2 border-t border-slate-100">
                     <Button variant="outline" as-child class="cursor-pointer">
                         <Link :href="index().url">Cancel</Link>
                     </Button>
@@ -529,8 +473,8 @@ function submit() {
                         <Save class="h-4 w-4" />
                         {{ form.processing ? 'Saving...' : 'Save Changes' }}
                     </Button>
-                </CardFooter>
-            </Card>
-        </div>
+                </CardFooter> -->
+            <!-- </Card> -->
+        </LeadPanel>
     </AppLayout>
 </template>

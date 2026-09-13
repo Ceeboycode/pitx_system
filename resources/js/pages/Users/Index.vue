@@ -15,14 +15,6 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -48,13 +40,17 @@ import {
     create,
     edit,
     index,
-    resetPassword,
     show,
-    toggleStatus,
     trash,
 } from '@/routes/users';
+
+import {
+    ResetPasswordDialog,
+    ToggleUserStatusDialog,
+} from '@/components/internal/users';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
+import { PanelLayout } from '@/components/ui/_panels';
 
 
 import {
@@ -74,7 +70,6 @@ import {
 
 
 import { computed, ref } from 'vue';
-import { toast } from 'vue-sonner';
 
 
 import { can } from '@/lib/can';
@@ -327,22 +322,6 @@ function openToggleDialog(user: User) {
     toggleOpen.value = true;
 }
 
-function confirmToggle() {
-    if (!togglingUser.value) return;
-    router.put(
-        toggleStatus(togglingUser.value.id).url,
-        {},
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                togglingUser.value = null;
-                toggleOpen.value = false;
-            },
-            onError: () => toast.error('Failed to update user status.'),
-        },
-    );
-}
-
 const resettingUser = ref<User | null>(null);
 const resetOpen = ref(false);
 
@@ -350,29 +329,13 @@ function openResetDialog(user: User) {
     resettingUser.value = user;
     resetOpen.value = true;
 }
-
-function confirmResetPassword() {
-    if (!resettingUser.value) return;
-    router.post(
-        resetPassword(resettingUser.value.id).url,
-        {},
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                resettingUser.value = null;
-                resetOpen.value = false;
-            },
-            onError: () => toast.error('Failed to reset password.'),
-        },
-    );
-}
 </script>
 
 <template>
     <Head title="Users" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
+        <PanelLayout>
             <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader class="flex flex-row gap-2">
                     <div class="flex flex-col">
@@ -425,7 +388,7 @@ function confirmResetPassword() {
                                     class="cursor-pointer group"
                                 >
                                     <Link :href="trash().url" class="flex items-center">
-                                        <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-300" />
+                                        <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
                                         Archives
                                     </Link>
                                 </DropdownMenuItem>
@@ -463,7 +426,7 @@ function confirmResetPassword() {
                                             class="rounded-full"
                                             :class="
                                                 activeFilterCount > 0
-                                                    ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-300 dark:hover:text-custom-shadow'
+                                                    ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-200 dark:hover:text-custom-shadow'
                                                     : ''
                                             "
                                         >
@@ -788,7 +751,7 @@ function confirmResetPassword() {
                                                     class="group hidden"
                                                     @click="show(user.id).url"
                                                 >
-                                                    <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-bg transition-all duration-300" />
+                                                    <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-bg transition-all duration-200" />
                                                     View
                                                 </DropdownMenuItem>
 
@@ -802,7 +765,7 @@ function confirmResetPassword() {
                                                         "
                                                         class="flex items-center"
                                                     >
-                                                        <RiExternalLinkLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                        <RiExternalLinkLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
                                                         View
                                                     </Link>
                                                 </DropdownMenuItem>
@@ -822,7 +785,7 @@ function confirmResetPassword() {
                                                         class="flex items-center"
                                                     >
                                                         <RiPencilLine
-                                                            class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
+                                                            class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
                                                         />
                                                         Edit
                                                     </Link>
@@ -838,8 +801,8 @@ function confirmResetPassword() {
                                                         openToggleDialog(user)
                                                     "
                                                 >
-                                                    <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                                                    <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">{{
+                                                    <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                    <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">{{
                                                         isActive(user)
                                                             ? 'Set as Inactive'
                                                             : 'Set as Active'
@@ -856,8 +819,8 @@ function confirmResetPassword() {
                                                         openResetDialog(user)
                                                     "
                                                 >
-                                                    <RiKey2Line class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                                                    <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">Reset Password</span>
+                                                    <RiKey2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                    <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">Reset Password</span>
                                                 </DropdownMenuItem>
 
                                                 <Separator v-if="isOwnAccount(user)" class="mt-4"/>
@@ -1047,75 +1010,9 @@ function confirmResetPassword() {
                     </div>
                 </CardContent>
             </Card>
-        </div>
+        </PanelLayout>
 
-        <Dialog v-model:open="toggleOpen">
-            <DialogContent class="px-6">
-                <DialogHeader class="px-0">
-                    <DialogTitle>
-                        Set user status
-                    </DialogTitle>
-                    <DialogDescription class="mt-4">
-                        Are you sure you want to set
-                        <span class="font-semibold text-custom-accent-3">{{
-                            togglingUser?.name ?? 'this user'
-                        }}</span>
-                        as
-                        <span class="font-semibold text-custom-accent-3">
-                            {{
-                                togglingUser?.status === 'active'
-                                    ? 'inactive'
-                                    : 'active'
-                            }} </span
-                        >?
-                    </DialogDescription>
-                </DialogHeader>
-                <Separator class="mb-4" />
-                <DialogFooter class="gap-2 sm:justify-end">
-                    <Button variant="ghost-outline" @click="toggleOpen = false; togglingUser = null">
-                        Cancel
-                    </Button>
-                    <Button
-                        :variant="togglingUser?.status === 'active' ? 'destructive' : 'float-primary'"
-                        @click="confirmToggle"
-                    >
-                        <RiShutDownLine class="h-4 w-4" />
-                        {{
-                            togglingUser?.status === 'active'
-                                ? 'Inactivate'
-                                : 'Activate'
-                        }}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
-        <Dialog v-model:open="resetOpen">
-            <DialogContent class="px-6">
-                <DialogHeader class="px-0">
-                    <DialogTitle>Reset Password</DialogTitle>
-                    <DialogDescription class="mt-4">
-                        Generate a temporary password for
-                        <span class="font-semibold text-custom-accent-3">{{
-                            resettingUser?.name ?? 'this user'
-                        }}</span
-                        > and email it to their registered address.
-                    </DialogDescription>
-                </DialogHeader>
-                <Separator class="mb-4" />
-                <DialogFooter class="gap-2 sm:justify-end">
-                    <Button variant="ghost-outline" @click="resetOpen = false; resettingUser = null">
-                        Cancel
-                    </Button>
-                    <Button
-                        variant="float-primary"
-                        @click="confirmResetPassword"
-                    >
-                        <RiKey2Line class="h-4 w-4" />
-                        Send Temporary Password
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <ToggleUserStatusDialog v-model:open="toggleOpen" :user="togglingUser" />
+        <ResetPasswordDialog v-model:open="resetOpen" :user="resettingUser" />
     </AppLayout>
 </template>

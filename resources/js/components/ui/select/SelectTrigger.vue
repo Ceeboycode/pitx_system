@@ -1,33 +1,47 @@
 <script setup lang="ts">
 import type { SelectTriggerProps } from "reka-ui"
 import type { HTMLAttributes } from "vue"
+import { computed } from "vue"
 import { reactiveOmit } from "@vueuse/core"
 import { SelectIcon, SelectTrigger, useForwardProps } from "reka-ui"
 import { cn } from "@/lib/utils"
-import { RiArrowRightSLine } from 'vue-remix-icons';
+import { RiArrowDownSLine } from 'vue-remix-icons';
+import type { SelectTriggerVariants } from "."
+import { selectTriggerVariants } from "."
 
 const props = withDefaults(
-  defineProps<SelectTriggerProps & { class?: HTMLAttributes["class"], size?: "sm" | "default" }>(),
-  { size: "default" },
+  defineProps<SelectTriggerProps & {
+    class?: HTMLAttributes["class"]
+    size?: "sm" | "default"
+    variant?: SelectTriggerVariants["variant"]
+  }>(),
+  { size: "default", variant: "default" },
 )
 
-const delegatedProps = reactiveOmit(props, "class", "size")
+const delegatedProps = reactiveOmit(props, "class", "size", "variant")
 const forwardedProps = useForwardProps(delegatedProps)
+
+// inline-edit opts out of the base `data-[size=*]:h-*` height so it can match Input's inline-edit (content height)
+const dataSize = computed(() => (props.variant === "inline-edit" ? undefined : props.size))
+
+const iconClass = computed(() =>
+  props.variant === "inline-edit"
+    ? "shrink-0 size-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:size-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:size-4 group-focus-within:ml-2 group-focus-within:opacity-100 group-data-[state=open]:size-4 group-data-[state=open]:ml-2 group-data-[state=open]:opacity-100 group-data-[state=open]:rotate-180"
+    : "size-4 transition-transform duration-200 ease-out group-data-[state=open]:rotate-180",
+)
 </script>
 
 <template>
   <SelectTrigger
     data-slot="select-trigger"
-    :data-size="size"
+    :data-size="dataSize"
+    :data-variant="variant"
     v-bind="forwardedProps"
-    :class="cn(
-      ' text-custom-shadow cursor-pointer border-custom-bg-dark dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5 bg-custom-bg data-[placeholder]:text-custom-shadow [&_svg:not([class*=\'text-\'])]:text-custom-shadow focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive flex w-fit items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm whitespace-nowrap transition-[color,box-shadow] transition-all duration-300 outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=\'size-\'])]:size-4',
-      props.class,
-    )"
+    :class="cn('group', selectTriggerVariants({ variant }), props.class)"
   >
     <slot />
     <SelectIcon as-child>
-      <RiArrowRightSLine class="size-4" />
+      <RiArrowDownSLine :class="iconClass" />
     </SelectIcon>
   </SelectTrigger>
 </template>

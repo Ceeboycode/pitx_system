@@ -10,6 +10,11 @@ import { initializeTheme } from './composables/useAppearance';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
+const progressColor =
+    getComputedStyle(document.documentElement)
+        .getPropertyValue('--custom-primary')
+        .trim() || '#4B5563';
+
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: (name) =>
@@ -24,9 +29,8 @@ createInertiaApp({
             .mount(el);
     },
     progress: {
-        color: '#4B5563',
+        color: progressColor,
     },
 });
 
-// This will set light / dark mode on page load...
 initializeTheme();

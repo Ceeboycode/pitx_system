@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import CreateCompanyDialog from '@/components/company/CreateCompanyDialog.vue';
-import EditCompanyDialog from '@/components/company/EditCompanyDialog.vue';
-import ImportCompanyDialog from '@/components/company/ImportCompanyDialog.vue';
+// import CreateCompanyDialog from '@/components/internal/company/CreateCompanyDialog.vue';
+import EditCompanyDialog from '@/components/internal/company/EditCompanyDialog.vue';
+import ImportCompanyDialog from '@/components/internal/company/ImportCompanyDialog.vue';
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
@@ -40,6 +40,7 @@ import { index as companyProfileChangeRequestsIndex } from '@/routes/company-pro
 import { index, show, trash } from '@/routes/companies';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
+import { PanelLayout } from '@/components/ui/_panels';
 
 import {
     RiArchive2Line,
@@ -117,7 +118,7 @@ const canViewCompany = computed(() => can('companies.view'));
 const canUpdateCompany = computed(() => can('companies.update'));
 const canViewProfileChangeRequests = computed(() => can('companies.viewAny'));
 
-const createOpen = ref(false);
+// const createOpen = ref(false);
 const editOpen = ref(false);
 const importOpen = ref(false);
 const selectedCompany = ref<Company | null>(null);
@@ -301,7 +302,7 @@ function hasVerifiedEmail(company: Company): boolean {
     <Head title="Companies" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
+        <PanelLayout>
             <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader class="flex flex-row gap-2">
                     <div class="flex flex-col">
@@ -333,7 +334,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                         class="group cursor-pointer"
                                         @click="importOpen = true"
                                     >
-                                        <RiFileAddLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                        <RiFileAddLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
                                         Import
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
@@ -341,8 +342,8 @@ function hasVerifiedEmail(company: Company): boolean {
                                         :disabled="exporting"
                                         @click="triggerExport"
                                     >
-                                        <RiLoaderLine v-if="exporting" class="h-4 w-4 animate-spin text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                                        <RiFileUploadLine v-else class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                        <RiLoaderLine v-if="exporting" class="h-4 w-4 animate-spin text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                        <RiFileUploadLine v-else class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
                                         {{ exporting ? 'Exporting...' : 'Export' }}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
@@ -354,7 +355,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                             :href="companyProfileChangeRequestsIndex().url"
                                             class="flex items-center"
                                         >
-                                            <RiFileInfoLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                            <RiFileInfoLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
                                             Change Requests
                                         </Link>
                                     </DropdownMenuItem>
@@ -365,7 +366,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                         class="group cursor-pointer"
                                     >
                                         <Link :href="trash().url" class="flex items-center">
-                                            <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-300" />
+                                            <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
                                             Archives
                                         </Link>
                                     </DropdownMenuItem>
@@ -396,7 +397,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                         class="rounded-full"
                                         :class="
                                             activeFilterCount > 0
-                                                ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-300 dark:hover:text-custom-shadow'
+                                                ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-200 dark:hover:text-custom-shadow'
                                                 : ''
                                         "
                                     >
@@ -613,7 +614,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                                     class="group cursor-pointer rounded-md"
                                                     @click="openEdit(company)"
                                                 >
-                                                    <RiEditLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                    <RiEditLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
                                                     Edit
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
@@ -624,7 +625,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                                         :href="show({ company: company.id }).url"
                                                         class="flex items-center"
                                                     >
-                                                        <RiFileCheckLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                        <RiFileCheckLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
                                                         Review Company
                                                     </Link>
                                                 </DropdownMenuItem>
@@ -754,10 +755,10 @@ function hasVerifiedEmail(company: Company): boolean {
                     </div>
                 </CardContent>
             </Card>
-        </div>
+        </PanelLayout>
 
         <!-- TODO: is this dead code? i dont think the superadmin and admin should be allowed to create companies?-->
-        <CreateCompanyDialog v-model:open="createOpen" />
+        <!-- <CreateCompanyDialog v-model:open="createOpen" /> -->
 
         <EditCompanyDialog
             v-if="selectedCompany"

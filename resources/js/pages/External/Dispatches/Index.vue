@@ -826,7 +826,7 @@ watch(confirmDepartOpen, (open) => {
                                     class="rounded-full"
                                     :class="
                                         activeFilterCount > 0
-                                            ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light'
+                                            ? 'bg-custom-secondary/20 transition-all duration-200 hover:bg-custom-secondary/80 hover:text-custom-bg-light'
                                             : ''
                                     "
                                 >
@@ -1136,7 +1136,7 @@ watch(confirmDepartOpen, (open) => {
                                                         class="flex items-center"
                                                     >
                                                         <RiExternalLinkLine
-                                                            class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
+                                                            class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
                                                         />
                                                         View
                                                     </Link>
@@ -1160,7 +1160,7 @@ watch(confirmDepartOpen, (open) => {
                                                         "
                                                     >
                                                         <RiEditLine
-                                                            class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
+                                                            class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
                                                         />
                                                         Edit
                                                     </DropdownMenuItem>
@@ -1172,7 +1172,7 @@ watch(confirmDepartOpen, (open) => {
                                                         "
                                                     >
                                                         <RiLogoutBoxLine
-                                                            class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
+                                                            class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
                                                         />
                                                         Mark as Departed
                                                     </DropdownMenuItem>
@@ -1197,7 +1197,7 @@ watch(confirmDepartOpen, (open) => {
                                                         "
                                                     >
                                                         <RiRoadMapLine
-                                                            class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
+                                                            class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
                                                         />
                                                         Request Change
                                                     </DropdownMenuItem>

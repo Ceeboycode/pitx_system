@@ -1,22 +1,25 @@
 export { default as Table } from "./Table.vue"
-// export { default as TableBody } from "./TableBody.vue"
-// export { default as TableCaption } from "./TableCaption.vue"
-// export { default as TableCell } from "./TableCell.vue"
-// export { default as TableEmpty } from "./TableEmpty.vue"
-// export { default as TableFooter } from "./TableFooter.vue"
-// export { default as TableHead } from "./TableHead.vue"
 export { default as TableHeader } from "./TableHeader.vue"
-export { default as TableRow } from "./TableRow.vue"
 export { default as TableColumn } from "./TableColumn.vue"
 export { default as TableSortColumn } from "./TableSortColumn.vue"
 export { default as TableContent } from "./TableContent.vue"
 export { default as TableData } from "./TableData.vue"
 export { default as TableMoreButton } from "./TableMoreButton.vue"
 
-// FOR TABLE CARD
-
 import type { VariantProps } from "class-variance-authority"
 import { cva } from "class-variance-authority"
+
+// NOTE: hierarchy will look like this:
+// TableCard
+//   TableHeader
+//     TableColumn
+//     TableSortColumn
+//   TableContent
+//     TableRow
+//       TableData
+//       TableMoreButton
+
+// FOR TABLE CARD ==================================================
 
 export { default as TableCard } from "./TableCard.vue"
 
@@ -35,3 +38,27 @@ export const tableVariants = cva(
   },
 )
 export type TableVariants = VariantProps<typeof tableVariants>
+
+
+
+
+
+// FOR TABLE ROW ==================================================
+
+export { default as TableRow } from "./TableRow.vue"
+
+export const tableRowVariants = cva(
+  "grid cursor-pointer items-center border-b border-custom-bg-dark transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light",
+  {
+    variants: {
+      status: {
+        default: "text-custom-shadow",
+        inactive: "bg-custom-bg/50 text-custom-shadow/50 dark:bg-custom-bg-dark/50",
+      },
+    },
+    defaultVariants: {
+      status: "default",
+    },
+  },
+)
+export type TableRowVariants = VariantProps<typeof tableRowVariants>

@@ -26,6 +26,7 @@ import { Archive, ArchiveX } from 'lucide-vue-next';
 import { RiArrowLeftLine } from 'vue-remix-icons';
 // import Separator from '@/components/ui/separator/Separator.vue'
 import { Separator } from '@/components/ui/separator';
+import { LeadPanel } from '@/components/ui/_panels';
 
 type UserMini = { id: number; name: string };
 
@@ -86,7 +87,7 @@ function formatDate(value?: string | null): string {
     <Head :title="`Gate — ${gate.gate_name}`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col">
+        <LeadPanel>
             <Card class="flex min-h-0 min-w-0 flex-1 flex-col">
                 <CardHeader class="flex flex-row items-start gap-3">
                     <Button as-child variant="header-actions" size="icon">
@@ -258,37 +259,37 @@ function formatDate(value?: string | null): string {
                     </div>
                 </CardContent>
             </Card>
+        </LeadPanel>
 
-            <Dialog v-model:open="archiveOpen">
-                <DialogContent class="px-6">
-                    <DialogHeader class="px-0">
-                        <DialogTitle>Archive Gate</DialogTitle>
-                        <DialogDescription class="mt-4">
-                            Are you sure you want to archive
-                            <span class="font-semibold text-custom-accent-3">{{
-                                gate.gate_name
-                            }}</span
-                            >? This action will remove it from active records.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <Separator class="mb-4" />
-                    <DialogFooter class="gap-2 sm:justify-end">
-                        <Button
-                            variant="ghost-outline"
-                            @click="archiveOpen = false"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            @click="archiveGate"
-                        >
-                            <ArchiveX class="h-4 w-4" />
-                            Archive
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </div>
+        <Dialog v-model:open="archiveOpen">
+            <DialogContent class="px-6">
+                <DialogHeader class="px-0">
+                    <DialogTitle>Archive Gate</DialogTitle>
+                    <DialogDescription class="mt-4">
+                        Are you sure you want to archive
+                        <span class="font-semibold text-custom-accent-3">{{
+                            gate.gate_name
+                        }}</span
+                        >? This action will remove it from active records.
+                    </DialogDescription>
+                </DialogHeader>
+                <Separator class="mb-4" />
+                <DialogFooter class="gap-2 sm:justify-end">
+                    <Button
+                        variant="ghost-outline"
+                        @click="archiveOpen = false"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="destructive"
+                        @click="archiveGate"
+                    >
+                        <ArchiveX class="h-4 w-4" />
+                        Archive
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>

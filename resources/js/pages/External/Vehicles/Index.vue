@@ -527,7 +527,7 @@ function openActivate(vehicle: VehicleItem) {
                                         class="rounded-full"
                                         :class="
                                             activeFilterCount > 0
-                                                ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light'
+                                                ? 'bg-custom-secondary/20 transition-all duration-200 hover:bg-custom-secondary/80 hover:text-custom-bg-light'
                                                 : ''
                                         "
                                     >
@@ -647,7 +647,7 @@ function openActivate(vehicle: VehicleItem) {
                                         class="rounded-full"
                                         :class="
                                             hasActiveSort
-                                                ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light'
+                                                ? 'bg-custom-secondary/20 transition-all duration-200 hover:bg-custom-secondary/80 hover:text-custom-bg-light'
                                                 : ''
                                         "
                                     >
@@ -1013,7 +1013,7 @@ function openActivate(vehicle: VehicleItem) {
                                                     "
                                                     class="flex items-center"
                                                 >
-                                                    <RiExternalLinkLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                    <RiExternalLinkLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
                                                     View
                                                 </Link>
                                             </DropdownMenuItem>
@@ -1039,7 +1039,7 @@ function openActivate(vehicle: VehicleItem) {
                                                     "
                                                     class="flex items-center"
                                                 >
-                                                    <RiEditLine class="h-4 w-4 transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                    <RiEditLine class="h-4 w-4 transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
                                                     Update Documents
                                                 </Link>
                                             </DropdownMenuItem>
@@ -1059,8 +1059,8 @@ function openActivate(vehicle: VehicleItem) {
                                                     openDeactivate(vehicle)
                                                 "
                                             >
-                                                <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Set as Inactive</span>
+                                                <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Set as Inactive</span>
                                             </DropdownMenuItem>
 
                                             <DropdownMenuItem
@@ -1075,8 +1075,8 @@ function openActivate(vehicle: VehicleItem) {
                                                     openActivate(vehicle)
                                                 "
                                             >
-                                                <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                <span class="text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">{{ toggleLabel(vehicle.status) }}</span>
+                                                <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">{{ toggleLabel(vehicle.status) }}</span>
                                             </DropdownMenuItem>
 
                                             <Separator

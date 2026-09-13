@@ -5,7 +5,10 @@ import {
     Card,
     CardContent,
     CardHeader,
+    CardDescription,
+    CardTitle,
 } from '@/components/ui/card';
+import CardSeparator from '@/components/ui/_card-separator/CardSeparator.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -13,17 +16,25 @@ import {
     SelectContent,
     SelectGroup,
     SelectItem,
-    SelectLabel,
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
 import AppLayout from '@/layouts/AppLayout.vue';
 
+import { useClipboard } from '@vueuse/core';
+import { toast } from 'vue-sonner';
+
 import { create, index, store } from '@/routes/users';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ArrowLeft, UserPlus } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
+import { LeadPanel, MainPanel } from '@/components/ui/_panels';
+import { LeadingCard } from '@/components/ui/_leading-card';
+import Separator from '@/components/ui/separator/Separator.vue';
+
+import {
+    RiFileCheckLine,
+} from 'vue-remix-icons';
 
 type Company = {
     id: number;
@@ -44,7 +55,7 @@ const props = defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Users', href: index().url },
-    { title: 'Create User', href: create().url },
+    { title: 'New User', href: create().url },
 ];
 
 const companySearch = ref('');
@@ -52,6 +63,8 @@ const roleSearch = ref('');
 
 const includesText = (value: string, query: string) =>
     value.toLowerCase().includes(query.trim().toLowerCase());
+
+const { copy } = useClipboard({ legacy: true });
 
 const form = useForm({
     name: '',
@@ -76,6 +89,12 @@ const filteredCompanies = computed(() =>
     }),
 );
 
+// Looks up the full Company object for the currently selected form.company_id,
+// so the "Company" preview span can show its name/code instead of just the id.
+const selectedCompany = computed(() =>
+    props.companies.find((c) => c.id === form.company_id) ?? null,
+);
+
 const filteredRoles = computed(() =>
     rolesByType.value.filter((r) => includesText(r.name, roleSearch.value)),
 );
@@ -93,6 +112,17 @@ watch(
     },
 );
 
+async function copyToClipboard(value?: string | null, label = 'Value') {
+  const text = (value ?? '').trim();
+  if (!text || text === '—') return;
+  try {
+    await copy(text);
+    toast.success(`${label} copied to clipboard.`);
+  } catch {
+    toast.error(`Could not copy ${label.toLowerCase()}.`);
+  }
+}
+
 function submit() {
     form.post(store().url, {
         preserveScroll: true,
@@ -108,262 +138,387 @@ const requiredMark = '*';
 </script>
 
 <template>
-    <Head title="Create User" />
+    <Head title="Add User" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex flex-1 items-start justify-center p-4">
-            <Card class="w-full">
-                <CardHeader class="py-0">
-                    <div class="flex items-center gap-4">
-                        <div
-                            class="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border-2 bg-primary shadow-sm flex items-center justify-center"
-                        >
-                            <UserPlus class="h-10 w-10 text-white" />
+        <MainPanel>
+            <!-- TODO: this leadpanel component would have to adjust when the mainpanels come around -->
+            <LeadPanel class="h-fit pb-0">
+                <LeadingCard
+                    title="New user"
+                    description="Add a new user account into the system."
+                    variant="entity-crud"
+                    :back="index().url"
+                    :more="false"
+                    class=""
+                >
+                </LeadingCard>
+            </LeadPanel>
+
+            <!-- TODO: the padding of leading card will have to adjust in being inside mainpanel -->
+            <div class="grid lg:grid-cols-3 gap-4 w-full h-fit p-6 pt-0">
+                <Card
+                    class="col-span-1"
+                >
+                    <CardHeader>
+                        <CardTitle>Review</CardTitle>
+                        <CardDescription>Review new user details before confirming.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <CardSeparator title="Account Info" />
+
+                        <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
+                            <div class="flex flex-row justify-between items-center">
+                                <div class="inline-flex gap-2 items-center">
+                                    <RiFileCheckLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
+                                    <span>Name</span>
+                                </div>
+                                <span class="inline-flex gap-2 items-center overflow-hidden">
+                                    <span
+                                        role="button"
+                                        tabindex="0"
+                                        title="Copy to clipboard"
+                                        @click="copyToClipboard(form.name, 'Name')"
+                                        @keydown.enter.prevent="copyToClipboard(form.name, 'Name')"
+                                        @keydown.space.prevent="copyToClipboard(form.name, 'Name')"
+                                        class="cursor-pointer line-clamp-1 text-ellipsis"
+                                    >
+                                        {{ form.name || '—' }}
+                                    </span>
+                                </span>
+                            </div>
+
+                            <div class="flex flex-row justify-between items-center">
+                                <div class="inline-flex gap-2 items-center">
+                                    <RiFileCheckLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
+                                    <span>Email</span>
+                                </div>
+                                <span class="inline-flex gap-2 items-center overflow-hidden">
+                                    <span
+                                        role="button"
+                                        tabindex="0"
+                                        title="Copy to clipboard"
+                                        @click="copyToClipboard(form.email, 'Email')"
+                                        @keydown.enter.prevent="copyToClipboard(form.email, 'Email')"
+                                        @keydown.space.prevent="copyToClipboard(form.email, 'Email')"
+                                        class="cursor-pointer line-clamp-1 text-ellipsis"
+                                    >
+                                        {{ form.email || '—' }}
+                                    </span>
+                                </span>
+                            </div>
+
+                            <div class="flex flex-row justify-between items-center">
+                                <div class="inline-flex gap-2 items-center">
+                                    <RiFileCheckLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
+                                    <span>Phone</span>
+                                </div>
+                                <span class="inline-flex gap-2 items-center overflow-hidden">
+                                    <span
+                                        role="button"
+                                        tabindex="0"
+                                        title="Copy to clipboard"
+                                        @click="copyToClipboard(form.phone_number, 'Phone')"
+                                        @keydown.enter.prevent="copyToClipboard(form.phone_number, 'Phone')"
+                                        @keydown.space.prevent="copyToClipboard(form.phone_number, 'Phone')"
+                                        class="cursor-pointer line-clamp-1 text-ellipsis"
+                                    >
+                                        {{ form.phone_number || '—' }}
+                                    </span>
+                                </span>
+                            </div>
                         </div>
 
-                        <div class="gap-2 w-full">
-                            <div class="flex flex-row gap-2 pb-2 w-full items-center">
-                                <h1 class="text-2xl leading-tight font-bold tracking-tight">
-                                    Create User
-                                </h1>
-                                <div class="ml-2 flex flex-1 items-center">
-                                    <hr class="h-px w-full border border-rose-500" />
-                                    <div class="border-7 border-rose-500 rounded-xs">
-                                        <div class="border-3 border-white rounded-xs"></div>
+                        <CardSeparator title="Access & Assignment Info" />
+
+                        <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
+                            <div class="flex flex-row justify-between items-center">
+                                <div class="inline-flex gap-2 items-center">
+                                    <RiFileCheckLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
+                                    <span>User Type</span>
+                                </div>
+                                <span class="inline-flex gap-2 items-center overflow-hidden">
+                                    <span
+                                        role="button"
+                                        tabindex="0"
+                                        title="Copy to clipboard"
+                                        @click="copyToClipboard(form.type, 'User Type')"
+                                        @keydown.enter.prevent="copyToClipboard(form.type, 'User Type')"
+                                        @keydown.space.prevent="copyToClipboard(form.type, 'User Type')"
+                                        class="cursor-pointer line-clamp-1 text-ellipsis capitalize"
+                                    >
+                                        {{ form.type || '—' }}
+                                    </span>
+                                </span>
+                            </div>
+
+                            <div v-if="form.type" class="flex flex-row justify-between items-center">
+                                <div class="inline-flex gap-2 items-center">
+                                    <RiFileCheckLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
+                                    <span>Role</span>
+                                </div>
+                                <span class="inline-flex gap-2 items-center overflow-hidden">
+                                    <span
+                                        role="button"
+                                        tabindex="0"
+                                        title="Copy to clipboard"
+                                        @click="copyToClipboard(form.role, 'Role')"
+                                        @keydown.enter.prevent="copyToClipboard(form.role, 'Role')"
+                                        @keydown.space.prevent="copyToClipboard(form.role, 'Role')"
+                                        class="cursor-pointer line-clamp-1 text-ellipsis capitalize"
+                                    >
+                                        {{ form.role || '—' }}
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <CardSeparator v-if="form.type === 'external'" title="Company Info" />
+
+                        <div v-if="form.type === 'external'" class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
+                            <div v-if="form.type === 'external'" class="flex flex-row justify-between items-center">
+                                <div class="inline-flex gap-2 items-center">
+                                    <RiFileCheckLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
+                                    <span>Company</span>
+                                </div>
+                                <span class="inline-flex gap-2 items-center overflow-hidden">
+                                    <span
+                                        role="button"
+                                        tabindex="0"
+                                        title="Copy to clipboard"
+                                        @click="copyToClipboard(selectedCompany?.company_name, 'Company')"
+                                        @keydown.enter.prevent="copyToClipboard(selectedCompany?.company_name, 'Company')"
+                                        @keydown.space.prevent="copyToClipboard(selectedCompany?.company_name, 'Company')"
+                                        class="cursor-pointer line-clamp-1 text-ellipsis capitalize"
+                                    >
+                                        {{ selectedCompany?.company_name || '—' }}
+                                        <span
+                                            v-if="selectedCompany"
+                                            class="group-hover:text-custom-shadow cursor-pointer tracking-widest bg-custom-bg dark:bg-custom-bg-light px-2 rounded-md font-mono mr-1 font-normal"
+                                        >
+                                            {{ selectedCompany.company_code }}
+                                        </span>
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <p class="text-sm text-custom-shadow/80 mt-4 flex flex-col">
+                            <span>
+                                Default password is <span class="font-semibold">pitx@123</span>.
+                            </span>
+                            <span>
+                                New users are created with <span class="font-semibold">active</span> status.
+                            </span>
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card
+                    class="col-span-2"
+                >
+                    <CardHeader>
+                        <CardTitle>Details</CardTitle>
+                        <CardDescription>Fields with <span class="text-destructive font-semibold">*</span> are required.</CardDescription>
+                    </CardHeader>
+                    <CardContent class="flex flex-row gap-4">
+                        <div class="flex-1">
+                            <form @submit.prevent="submit">
+                                <CardSeparator title="Account Info" />
+
+                                <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
+                                    <div class="space-y-2">
+                                        <Label class="flex items-center gap-1">
+                                            Name
+                                            <span class="text-destructive">
+                                                {{ requiredMark }}
+                                            </span>
+                                        </Label>
+                                        <Input
+                                            v-model="form.name"
+                                            placeholder="e.g. Juan Dela Cruz"
+                                            autocomplete="name"
+                                        />
+                                        <InputError :message="form.errors.name" />
+                                    </div>
+
+                                    <div class="flex flex-row gap-x-2">
+                                        <div class="space-y-2 flex-1">
+                                            <Label class="flex items-center gap-1">
+                                                Email
+                                                <span class="text-destructive">
+                                                    {{ requiredMark }}
+                                                </span>
+                                            </Label>
+                                            <Input
+                                                v-model="form.email"
+                                                type="email"
+                                                placeholder="e.g. juan@example.com"
+                                                autocomplete="email"
+                                            />
+                                            <InputError :message="form.errors.email" />
+                                        </div>
+
+                                        <div class="space-y-2 flex-1">
+                                            <Label>Phone Number</Label>
+                                            <Input
+                                                v-model="form.phone_number"
+                                                placeholder="e.g. 09xxxxxxxxx"
+                                                autocomplete="tel"
+                                            />
+                                            <InputError :message="form.errors.phone_number" />
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="flex justify-between items-start">
-                                <p class="text-sm text-muted-foreground">
-                                    Add a new user account and assign access. Default password is
-                                    <span class="font-medium text-foreground">pitx@123</span>. New users are created
-                                    as <span class="font-medium text-foreground">active</span>. Fields marked with
-                                    <span class="font-medium text-red-500">{{ requiredMark }}</span>
-                                    are required.
-                                </p>
-                                <div class="flex shrink-0 items-center gap-2 ml-4">
-                                    <Button
-                                        as-child
-                                        variant="outline"
-                                        class="rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
-                                    >
-                                        <Link :href="index().url">
-                                            <ArrowLeft class="h-4 w-4" />
-                                        </Link>
+
+                                <CardSeparator title="Access & Assignment Info" />
+
+                                <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
+                                    <div class="grid grid-cols-2 gap-x-2">
+                                        <div class="space-y-2 col-span-1">
+                                            <Label class="flex items-center gap-1">
+                                                User Type
+                                                <span class="text-destructive">
+                                                    {{ requiredMark }}
+                                                </span>
+                                            </Label>
+
+                                            <Select v-model="form.type">
+                                                <SelectTrigger class="w-full">
+                                                    <SelectValue placeholder="Select internal/external" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        <SelectItem value="internal">
+                                                            Internal
+                                                        </SelectItem>
+                                                        <SelectItem value="external">
+                                                            External
+                                                        </SelectItem>
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+
+                                            <InputError :message="form.errors.type" />
+                                        </div>
+
+                                        <div v-if="form.type" class="space-y-2 col-span-1">
+                                            <Label class="flex items-center gap-1">
+                                                Role
+                                                <span class="text-destructive">
+                                                    {{ requiredMark }}
+                                                </span>
+                                            </Label>
+
+                                            <Select v-model="form.role">
+                                                <SelectTrigger class="w-full">
+                                                    <SelectValue placeholder="Select a role" />
+                                                </SelectTrigger>
+
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        <div class="p-2">
+                                                            <Input
+                                                                v-model="roleSearch"
+                                                                placeholder="Search role..."
+                                                                autocomplete="off"
+                                                                @keydown.stop
+                                                            />
+                                                        </div>
+
+                                                        <SelectItem
+                                                            v-for="role in filteredRoles"
+                                                            :key="role.id"
+                                                            :value="role.name"
+                                                            class="capitalize"
+                                                        >
+                                                            {{ role.name }}
+                                                        </SelectItem>
+
+                                                        <p
+                                                            v-if="filteredRoles.length === 0"
+                                                            class="px-2 py-1 text-sm text-custom-shadow/80"
+                                                        >
+                                                            No roles found.
+                                                        </p>
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+
+                                            <InputError :message="form.errors.role" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <CardSeparator v-if="form.type === 'external'" title="Company Info" />
+
+                                <div v-if="form.type === 'external'" class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
+                                    <div class="grid grid-cols-2 gap-x-2">
+                                        <div
+                                            v-if="form.type === 'external'"
+                                            class="space-y-2 col-span-1"
+                                        >
+                                            <Label class="flex items-center gap-1">
+                                                Company
+                                                <span class="text-destructive">
+                                                    {{ requiredMark }}
+                                                </span>
+                                            </Label>
+
+                                            <Select v-model="form.company_id">
+                                                <SelectTrigger class="w-full">
+                                                    <SelectValue placeholder="Select a company" />
+                                                </SelectTrigger>
+
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        <div class="p-2">
+                                                            <Input
+                                                                v-model="companySearch"
+                                                                placeholder="Search by name or code..."
+                                                                autocomplete="off"
+                                                                @keydown.stop
+                                                            />
+                                                        </div>
+
+                                                        <SelectItem
+                                                            v-for="company in filteredCompanies"
+                                                            :key="company.id"
+                                                            :value="company.id"
+                                                        >
+                                                            {{ company.company_name }} -
+                                                            {{ company.company_code }}
+                                                        </SelectItem>
+
+                                                        <p
+                                                            v-if="filteredCompanies.length === 0"
+                                                            class="px-2 py-1 text-sm text-custom-shadow/80"
+                                                        >
+                                                            No companies found.
+                                                        </p>
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+
+                                            <InputError :message="form.errors.company_id" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-end gap-2">
+                                    <Button type="button" variant="float" as-child>
+                                        <Link :href="index().url">Cancel</Link>
+                                    </Button>
+
+                                    <Button type="submit" variant="float-primary" :disabled="form.processing">
+                                        {{ form.processing ? 'Adding...' : 'Add new user' }}
                                     </Button>
                                 </div>
-                            </div>
+                            </form>
                         </div>
-                    </div>
-                </CardHeader>
-
-                <CardContent class="border-t border-slate-100">
-                    <form class="space-y-8" @submit.prevent="submit">
-                        <div class="space-y-4">
-                            <div class="space-y-1">
-                                <p class="text-sm font-medium">Account Information</p>
-                                <p class="text-xs text-muted-foreground">
-                                    Basic details used for login and contact.
-                                </p>
-                            </div>
-
-                            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                <div class="space-y-2">
-                                    <Label class="flex items-center gap-1">
-                                        Full Name
-                                        <span class="text-red-500">
-                                            {{ requiredMark }}
-                                        </span>
-                                    </Label>
-                                    <Input
-                                        v-model="form.name"
-                                        placeholder="e.g. Juan Dela Cruz"
-                                        autocomplete="name"
-                                    />
-                                    <InputError :message="form.errors.name" />
-                                </div>
-
-                                <div class="space-y-2">
-                                    <Label class="flex items-center gap-1">
-                                        Email
-                                        <span class="text-red-500">
-                                            {{ requiredMark }}
-                                        </span>
-                                    </Label>
-                                    <Input
-                                        v-model="form.email"
-                                        type="email"
-                                        placeholder="e.g. juan@example.com"
-                                        autocomplete="email"
-                                    />
-                                    <p class="text-xs text-muted-foreground">
-                                        This will be used for login and notifications.
-                                    </p>
-                                    <InputError :message="form.errors.email" />
-                                </div>
-
-                                <div class="space-y-2">
-                                    <Label>Phone Number</Label>
-                                    <Input
-                                        v-model="form.phone_number"
-                                        placeholder="e.g. 09xxxxxxxxx"
-                                        autocomplete="tel"
-                                    />
-                                    <InputError :message="form.errors.phone_number" />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="space-y-4 border-t pt-6">
-                            <div class="space-y-1">
-                                <p class="text-sm font-medium">Access & Assignment</p>
-                                <p class="text-xs text-muted-foreground">
-                                    Choose the user type and assign the correct role.
-                                </p>
-                            </div>
-
-                            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                <div class="space-y-2">
-                                    <Label class="flex items-center gap-1">
-                                        User Type
-                                        <span class="text-red-500">
-                                            {{ requiredMark }}
-                                        </span>
-                                    </Label>
-
-                                    <Select v-model="form.type">
-                                        <SelectTrigger class="w-full">
-                                            <SelectValue placeholder="Select internal/external" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectGroup>
-                                                <SelectLabel>User Types</SelectLabel>
-                                                <SelectItem value="internal">
-                                                    Internal
-                                                </SelectItem>
-                                                <SelectItem value="external">
-                                                    External
-                                                </SelectItem>
-                                            </SelectGroup>
-                                        </SelectContent>
-                                    </Select>
-
-                                    <InputError :message="form.errors.type" />
-                                </div>
-
-                                <div
-                                    v-if="form.type === 'external'"
-                                    class="space-y-2"
-                                >
-                                    <Label class="flex items-center gap-1">
-                                        Company
-                                        <span class="text-red-500">
-                                            {{ requiredMark }}
-                                        </span>
-                                    </Label>
-
-                                    <Select v-model="form.company_id">
-                                        <SelectTrigger class="w-full">
-                                            <SelectValue placeholder="Select a company" />
-                                        </SelectTrigger>
-
-                                        <SelectContent>
-                                            <SelectGroup>
-                                                <div class="p-2">
-                                                    <Input
-                                                        v-model="companySearch"
-                                                        placeholder="Search by name or code..."
-                                                        autocomplete="off"
-                                                        @keydown.stop
-                                                    />
-                                                </div>
-
-                                                <SelectLabel>Companies</SelectLabel>
-
-                                                <SelectItem
-                                                    v-for="company in filteredCompanies"
-                                                    :key="company.id"
-                                                    :value="company.id"
-                                                >
-                                                    {{ company.company_name }} -
-                                                    {{ company.company_code }}
-                                                </SelectItem>
-
-                                                <p
-                                                    v-if="filteredCompanies.length === 0"
-                                                    class="px-2 py-1 text-sm text-muted-foreground"
-                                                >
-                                                    No companies found.
-                                                </p>
-                                            </SelectGroup>
-                                        </SelectContent>
-                                    </Select>
-
-                                    <InputError :message="form.errors.company_id" />
-                                </div>
-
-                                <div v-if="form.type" class="space-y-2">
-                                    <Label class="flex items-center gap-1">
-                                        Role
-                                        <span class="text-red-500">
-                                            {{ requiredMark }}
-                                        </span>
-                                    </Label>
-
-                                    <Select v-model="form.role">
-                                        <SelectTrigger class="w-full">
-                                            <SelectValue placeholder="Select a role" />
-                                        </SelectTrigger>
-
-                                        <SelectContent>
-                                            <SelectGroup>
-                                                <div class="p-2">
-                                                    <Input
-                                                        v-model="roleSearch"
-                                                        placeholder="Search role..."
-                                                        autocomplete="off"
-                                                        @keydown.stop
-                                                    />
-                                                </div>
-
-                                                <SelectLabel>Roles</SelectLabel>
-
-                                                <SelectItem
-                                                    v-for="role in filteredRoles"
-                                                    :key="role.id"
-                                                    :value="role.name"
-                                                >
-                                                    {{ role.name }}
-                                                </SelectItem>
-
-                                                <p
-                                                    v-if="filteredRoles.length === 0"
-                                                    class="px-2 py-1 text-sm text-muted-foreground"
-                                                >
-                                                    No roles found.
-                                                </p>
-                                            </SelectGroup>
-                                        </SelectContent>
-                                    </Select>
-
-                                    <InputError :message="form.errors.role" />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center justify-end gap-2 border-t pt-4">
-                            <Button type="button" variant="outline" as-child>
-                                <Link :href="index().url">Cancel</Link>
-                            </Button>
-
-                            <Button type="submit" variant="outline" :disabled="form.processing" class="rounded-lg bg-primary text-primary-foreground hover:text-primary-foreground hover:bg-primary/90 cursor-pointer">
-                                <UserPlus class="h-4 w-4" />
-                                {{ form.processing ? 'Creating...' : 'Create User' }}
-                            </Button>
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
-        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        </MainPanel>
     </AppLayout>
 </template>

@@ -492,7 +492,7 @@ function handleLogout() {
                         <Button
                             variant="float"
                             :class="cn(
-                                'group min-h-fit items-center rounded-3xl border border-custom-bg-dark bg-custom-bg px-3 py-2 shadow-none transition-colors transition-all duration-300 hover:border-custom-secondary/10 hover:bg-custom-secondary/20 focus-visible:ring-2 focus-visible:ring-ring/50 dark:border-custom-bg-light dark:bg-custom-bg-light',
+                                'group min-h-fit items-center rounded-3xl border border-custom-bg-dark bg-custom-bg px-3 py-2 shadow-none transition-colors transition-all duration-200 hover:border-custom-secondary/10 hover:bg-custom-secondary/20 focus-visible:ring-2 focus-visible:ring-ring/50 dark:border-custom-bg-light dark:bg-custom-bg-light',
                                 isCollapsed ? 'mx-auto size-12 justify-center rounded-full p-1' : 'gap-3',
                             )"
                         >
@@ -502,7 +502,7 @@ function handleLogout() {
                                     :src="user.avatar"
                                     :alt="user.name"
                                 />
-                                <AvatarFallback class="bg-custom-primary/20 dark:bg-custom-primary dark:text-custom-shadow text-sm font-semibold text-custom-primary">
+                                <AvatarFallback variant="current-user" class="bg-custom-primary/20 dark:bg-custom-primary dark:text-custom-shadow">
                                     {{ getInitials(user.name) }}
                                 </AvatarFallback>
                             </Avatar>
@@ -511,7 +511,7 @@ function handleLogout() {
                                     {{ user.name }}
                                 </p>
                                 <p class="truncate text-start text-xs text-custom-shadow">
-                                    {{ user.email }}
+                                    {{ user.role }}
                                 </p>
                             </div>
                         </Button>

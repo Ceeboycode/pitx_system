@@ -20,18 +20,14 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+    ArchiveRouteDialog,
+    ToggleRouteStatusDialog,
+} from '@/components/internal/route';
 import {
     Select,
     SelectContent,
@@ -43,11 +39,9 @@ import {
 import AppLayout from '@/layouts/AppLayout.vue';
 import {
     create,
-    destroy,
     edit,
     index,
     show,
-    toggleStatus,
     trash,
 } from '@/actions/App/Http/Controllers/RouteController';
 import { type BreadcrumbItem } from '@/types';
@@ -68,7 +62,7 @@ import {
     RiShutDownLine,
 } from 'vue-remix-icons';
 
-import Separator from '@/components/ui/separator/Separator.vue';
+import { PanelLayout } from '@/components/ui/_panels';
 
 import { computed, ref } from 'vue';
 
@@ -226,18 +220,6 @@ function openArchiveDialog(route: RouteRow) {
     archiveOpen.value = true;
 }
 
-function confirmArchive() {
-    if (!archivingRoute.value) return;
-
-    router.delete(destroy(archivingRoute.value.id).url, {
-        preserveScroll: true,
-        onFinish: () => {
-            archivingRoute.value = null;
-            archiveOpen.value = false;
-        },
-    });
-}
-
 const togglingRoute = ref<RouteRow | null>(null);
 const toggleOpen = ref(false);
 
@@ -245,24 +227,13 @@ function openToggleDialog(route: RouteRow) {
     togglingRoute.value = route;
     toggleOpen.value = true;
 }
-
-function confirmToggle() {
-    if (!togglingRoute.value) return;
-    router.patch(toggleStatus(togglingRoute.value.id).url, {}, {
-        preserveScroll: true,
-        onFinish: () => {
-            togglingRoute.value = null;
-            toggleOpen.value = false;
-        },
-    });
-}
 </script>
 
 <template>
     <Head title="Routes" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
+        <PanelLayout>
             <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader class="flex flex-row gap-2">
                     <div class="flex flex-col">
@@ -315,7 +286,7 @@ function confirmToggle() {
                                         class="cursor-pointer group"
                                     >
                                         <Link :href="trash().url" class="flex items-center">
-                                            <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-300" />
+                                            <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
                                             Archives
                                         </Link>
                                     </DropdownMenuItem>
@@ -346,7 +317,7 @@ function confirmToggle() {
                                         class="rounded-full"
                                         :class="
                                             activeFilterCount > 0
-                                                ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-300 dark:hover:text-custom-shadow'
+                                                ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-200 dark:hover:text-custom-shadow'
                                                 : ''
                                         "
                                     >
@@ -542,15 +513,17 @@ function confirmToggle() {
                                                 <DropdownMenuLabel>
                                                     {{ routeItem.route_name }}
                                                 </DropdownMenuLabel>
-                                                <DropdownMenuItem
+                                                <!-- <DropdownMenuItem
                                                     as-child
                                                     class="group"
                                                 >
                                                     <Link :href="show(routeItem.id).url" class="flex items-center">
-                                                        <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-300" />
+                                                        <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
                                                         View
                                                     </Link>
-                                                </DropdownMenuItem>
+                                                </DropdownMenuItem> -->
+
+                                                <!-- I JUST THINK NAAAA PAG NI VIEW NILA, SAME NA YUN AS HAVING THE TOOLS TO EDIT, KAYA WALA TO -->
 
                                                 <DropdownMenuItem
                                                     v-if="canUpdate"
@@ -558,8 +531,9 @@ function confirmToggle() {
                                                     class="group"
                                                 >
                                                     <Link :href="edit(routeItem.id).url">
-                                                        <RiEditLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-300" />
-                                                        Edit
+                                                        <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
+                                                        <!-- <RiEditLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" /> -->
+                                                        View
                                                     </Link>
                                                 </DropdownMenuItem>
 
@@ -568,8 +542,8 @@ function confirmToggle() {
                                                     :class="['group', toggleStatusClass(routeItem.status)]"
                                                     @click="openToggleDialog(routeItem)"
                                                 >
-                                                    <RiShutDownLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-300" />
-                                                    <span class="text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-300">{{ routeItem.status === 'active' ? 'Inactivate' : 'Activate' }}</span>
+                                                    <RiShutDownLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
+                                                    <span class="text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200">{{ routeItem.status === 'active' ? 'Inactivate' : 'Activate' }}</span>
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -669,61 +643,9 @@ function confirmToggle() {
                     </div>
                 </CardContent>
             </Card>
-        </div>
+        </PanelLayout>
 
-        
-        <Dialog v-model:open="toggleOpen">
-            <DialogContent class="px-6">
-                <DialogHeader class="px-0">
-                    <DialogTitle>
-                        Set route status
-                    </DialogTitle>
-                    <DialogDescription class="mt-4">
-                        Are you sure you want to set
-                        <span class="font-semibold text-custom-accent-3">{{ togglingRoute?.route_name ?? 'this route' }}</span>
-                        to
-                        <span class="font-semibold text-custom-accent-3">
-                            {{ togglingRoute?.status === 'active' ? 'inactive' : 'active' }}
-                        </span>?
-                    </DialogDescription>
-                </DialogHeader>
-                <Separator class="mb-4"/>
-                <DialogFooter class="gap-2 sm:justify-end">
-                    <Button variant="ghost-outline" @click="toggleOpen = false; togglingRoute = null">
-                        Cancel
-                    </Button>
-                    <Button
-                        :variant="togglingRoute?.status === 'active' ? 'destructive' : 'float-primary'"
-                        @click="confirmToggle"
-                    >
-                        <RiShutDownLine class="h-4 w-4" />
-                        {{ togglingRoute?.status === 'active' ? 'Inactivate' : 'Activate' }}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
-        <Dialog v-model:open="archiveOpen">
-            <DialogContent class="px-6">
-                <DialogHeader class="px-0">
-                    <DialogTitle>Archive Route</DialogTitle>
-                    <DialogDescription class="mt-4">
-                        Are you sure you want to archive
-                        <span class="font-semibold text-custom-accent-3">{{ archivingRoute?.route_name ?? 'this route' }}</span>?
-                        You can restore it later from Archives.
-                    </DialogDescription>
-                </DialogHeader>
-                <Separator class="mb-4" />
-                <DialogFooter class="gap-2 sm:justify-end">
-                    <Button variant="ghost-outline" @click="archiveOpen = false; archivingRoute = null">
-                        Cancel
-                    </Button>
-                    <Button variant="destructive" @click="confirmArchive">
-                        <RiArchive2Line class="h-4 w-4" />
-                        Archive Route
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <ToggleRouteStatusDialog v-model:open="toggleOpen" :route="togglingRoute" />
+        <ArchiveRouteDialog v-model:open="archiveOpen" :route="archivingRoute" />
     </AppLayout>
 </template>

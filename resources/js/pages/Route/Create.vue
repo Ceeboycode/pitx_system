@@ -1491,7 +1491,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     <button
                                         type="button"
                                         :class="[
-                                            'cursor-pointer w-full rounded-md border p-3 text-left transition-all duration-300 hover:-translate-y-0.5',
+                                            'cursor-pointer w-full rounded-md border p-3 text-left transition-all duration-200 hover:-translate-y-0.5',
                                             selectedRouteIndex === 0
                                                 ? 'hover:bg-custom-accent-3/5 bg-custom-accent-3/10 border-custom-accent-3'
                                                 : 'hover:bg-custom-accent-3/5 bg-transparent border-custom-bg-dark dark:border-custom-bg-light',
@@ -1524,7 +1524,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                         :key="alt.index"
                                         type="button"
                                         :class="[
-                                            'cursor-pointer w-full rounded-md border p-3 text-left transition-all duration-300 hover:-translate-y-0.5',
+                                            'cursor-pointer w-full rounded-md border p-3 text-left transition-all duration-200 hover:-translate-y-0.5',
                                             selectedRouteIndex === alt.index
                                                 ? 'hover:bg-custom-accent-3/5 bg-custom-accent-3/10 border-custom-accent-3'
                                                 : 'hover:bg-custom-accent-3/5 bg-transparent border-custom-bg-dark dark:border-custom-bg-light',
@@ -1564,7 +1564,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     <div
                                         v-for="(wp, index) in waypoints"
                                         :key="index"
-                                        class="flex w-full items-center gap-2.5 rounded-md border border-custom-bg-dark bg-transparent p-3 text-left transition-all duration-300 dark:border-custom-bg-light"
+                                        class="flex w-full items-center gap-2.5 rounded-md border border-custom-bg-dark bg-transparent p-3 text-left transition-all duration-200 dark:border-custom-bg-light"
                                     >
                                         <p class="flex-1 font-mono tex-xs font-semibold">
                                             {{ wp.lat.toFixed(4) }}, {{ wp.lng.toFixed(4) }}
@@ -1573,7 +1573,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                             type="button"
                                             aria-label="Remove detour point"
                                             @click="waypoints.splice(index, 1); renderWaypointMarkers(); redrawRoute()"
-                                            class="flex h-6 w-6 items-center rounded-full text-custom-shadow transition-all duration-300 hover:bg-destructive/20 hover:text-destructive cursor-pointer"
+                                            class="flex h-6 w-6 items-center rounded-full text-custom-shadow transition-all duration-200 hover:bg-destructive/20 hover:text-destructive cursor-pointer"
                                         >
                                             <RiCloseLine class="h-4 w-4" />
                                         </Button>

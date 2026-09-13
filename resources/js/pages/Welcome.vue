@@ -187,7 +187,7 @@ const features = [
             v-for="(feature, i) in features"
             :key="i"
             :class="[
-                'group relative overflow-hidden rounded-2xl border p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl',
+                'group relative overflow-hidden rounded-2xl border p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl',
                 feature.cardClass,
                 feature.borderHover,
             ]"

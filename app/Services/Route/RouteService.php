@@ -20,14 +20,14 @@ class RouteService
 
             foreach ($stops as $index => $stop) {
                 $route->stops()->create([
-                    'stop_name'         => $stop['stop_name'],
-                    'stop_type'         => $stop['stop_type'] ?? 'stop',
-                    'address'           => $stop['address'] ?? null,
-                    'latitude'          => $stop['latitude'],
-                    'longitude'         => $stop['longitude'],
+                    'stop_name' => $stop['stop_name'],
+                    'stop_type' => $stop['stop_type'] ?? 'stop',
+                    'address' => $stop['address'] ?? null,
+                    'latitude' => $stop['latitude'],
+                    'longitude' => $stop['longitude'],
                     'mapbox_feature_id' => $stop['mapbox_feature_id'] ?? null,
-                    'stop_order'        => $stop['stop_order'] ?? ($index + 1),
-                    'created_by'        => auth()->id(),
+                    'stop_order' => $stop['stop_order'] ?? ($index + 1),
+                    'created_by' => auth()->id(),
                 ]);
             }
 
@@ -41,6 +41,13 @@ class RouteService
             $stops = $data['stops'] ?? [];
             unset($data['stops']);
 
+            // Route path metrics are only persisted when a freshly computed
+            // geometry is submitted. Editing just the name, gate, or stops
+            // leaves the previously saved distance/duration/geometry untouched.
+            if (blank($data['route_geometry'] ?? null)) {
+                unset($data['distance_meters'], $data['duration_seconds'], $data['route_geometry']);
+            }
+
             $data['updated_by'] = auth()->id();
 
             $route->update($data);
@@ -50,15 +57,15 @@ class RouteService
 
             foreach ($stops as $index => $stop) {
                 $route->stops()->create([
-                    'stop_name'         => $stop['stop_name'],
-                    'stop_type'         => $stop['stop_type'] ?? 'stop',
-                    'address'           => $stop['address'] ?? null,
-                    'latitude'          => $stop['latitude'],
-                    'longitude'         => $stop['longitude'],
+                    'stop_name' => $stop['stop_name'],
+                    'stop_type' => $stop['stop_type'] ?? 'stop',
+                    'address' => $stop['address'] ?? null,
+                    'latitude' => $stop['latitude'],
+                    'longitude' => $stop['longitude'],
                     'mapbox_feature_id' => $stop['mapbox_feature_id'] ?? null,
-                    'stop_order'        => $stop['stop_order'] ?? ($index + 1),
-                    'created_by'        => $route->created_by,
-                    'updated_by'        => auth()->id(),
+                    'stop_order' => $stop['stop_order'] ?? ($index + 1),
+                    'created_by' => $route->created_by,
+                    'updated_by' => auth()->id(),
                 ]);
             }
 
@@ -73,7 +80,7 @@ class RouteService
             // if the route is later restored it won't go live without
             // a deliberate re-activation.
             $route->update([
-                'status'     => RouteStatus::Inactive,
+                'status' => RouteStatus::Inactive,
                 'updated_by' => auth()->id(),
             ]);
 
@@ -88,7 +95,7 @@ class RouteService
             // if the route is later restored it won't go live without
             // a deliberate re-activation.
             $route->update([
-                'status'     => RouteStatus::Active,
+                'status' => RouteStatus::Active,
                 'updated_by' => auth()->id(),
             ]);
 

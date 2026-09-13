@@ -231,6 +231,9 @@ class UserController extends Controller
 
         $user->load([
             'roles:id,name,type',
+            // Also pull each loaded role's permissions (id + name only) so
+            // hasAllPermissionsInGroup() below doesn't need extra queries.
+            'roles.permissions:id,name',
             'company:id,company_name,company_code',
         ]);
 
@@ -245,6 +248,12 @@ class UserController extends Controller
                 'phone_number' => $user->phone_number,
                 'type' => $selectedRole?->type,
                 'company_id' => $user->company_id,
+                // Same conversion HandleInertiaRequests.php uses for the logged-in
+                // user's own avatar: profile_photo_path is a storage-relative path,
+                // Storage::url() turns it into a browser-usable URL.
+                'avatar' => $user->profile_photo_path ? Storage::url($user->profile_photo_path) : null,
+                'created_at' => $user->created_at,
+                'updated_at_human' => $user->updated_at?->diffForHumans(),
             ],
             'roles' => Role::query()
                 ->select('id', 'name', 'type')
@@ -252,6 +261,12 @@ class UserController extends Controller
                 ->orderBy('name')
                 ->get(),
             'selectedRole' => $selectedRole?->name,
+            // Drive which tabs Users/Edit.vue shows: the edited user's role
+            // must hold every permission in the group, not just some of
+            // them. `?->` short-circuits to null (then `?? false`) if the
+            // user has no role at all.
+            'canManageExternalUsers' => $selectedRole?->hasAllPermissionsInGroup('external_users') ?? false,
+            'canManageExternalDispatches' => $selectedRole?->hasAllPermissionsInGroup('external_dispatches') ?? false,
             'companies' => Company::query()
                 ->orderBy('company_name')
                 ->get(['id', 'company_name', 'company_code']),

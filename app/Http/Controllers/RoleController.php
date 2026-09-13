@@ -18,22 +18,39 @@ class RoleController extends Controller
         Gate::authorize('viewAny', Role::class);
 
         $search = $request->input('search');
-        $type   = $request->input('type');
+        $type = $request->input('type');
 
         $roles = Role::query()
-            ->select('id', 'name', 'type')
-            ->with(['permissions:id,name'])
+            ->select('id', 'name', 'type', 'created_at', 'updated_at', 'created_by', 'updated_by')
+            ->with(['permissions:id,name', 'creator:id,name', 'updater:id,name'])
             ->when($search, fn ($q) => $q->where('name', 'like', "%{$search}%"))
             ->when($type, fn ($q) => $q->where('type', $type))
             ->latest()
             ->paginate(20)
-            ->withQueryString();
+            ->withQueryString()
+            ->through(fn (Role $role) => [
+                'id' => $role->id,
+                'name' => $role->name,
+                'type' => $role->type,
+                'created_at_human' => $role->created_at?->diffForHumans(),
+                'updated_at_human' => $role->updated_at?->diffForHumans(),
+                'permissions' => $role->permissions->map(fn ($permission) => [
+                    'id' => $permission->id,
+                    'name' => $permission->name,
+                ])->values(),
+                'creator' => $role->creator
+                    ? ['id' => $role->creator->id, 'name' => $role->creator->name]
+                    : null,
+                'updater' => $role->updater
+                    ? ['id' => $role->updater->id, 'name' => $role->updater->name]
+                    : null,
+            ]);
 
         return Inertia::render('Roles/Index', [
-            'roles'   => $roles,
+            'roles' => $roles,
             'filters' => [
                 'search' => $search,
-                'type'   => $type,
+                'type' => $type,
             ],
         ]);
     }
@@ -44,7 +61,7 @@ class RoleController extends Controller
 
         return Inertia::render('Roles/Create', [
             'permissions' => Permission::select('id', 'name')->orderBy('name')->get(),
-            'roleTypes'   => ['internal', 'external'],
+            'roleTypes' => ['internal', 'external'],
         ]);
     }
 
@@ -53,9 +70,11 @@ class RoleController extends Controller
         Gate::authorize('create', Role::class);
 
         $role = Role::create([
-            'name'       => $request->string('name')->toString(),
-            'type'       => $request->string('type')->toString(),
+            'name' => $request->string('name')->toString(),
+            'type' => $request->string('type')->toString(),
             'guard_name' => config('auth.defaults.guard'),
+            'created_by' => $request->user()?->id,
+            'updated_by' => $request->user()?->id,
         ]);
 
         $role->syncPermissions($request->input('permissions', []));
@@ -67,17 +86,25 @@ class RoleController extends Controller
     {
         Gate::authorize('update', $role);
 
-        $role->load('permissions:id');
+        $role->load('permissions:id', 'creator:id,name', 'updater:id,name');
 
         return Inertia::render('Roles/Edit', [
             'role' => [
-                'id'   => $role->id,
+                'id' => $role->id,
                 'name' => $role->name,
                 'type' => $role->type,
+                'created_at_human' => $role->created_at?->diffForHumans(),
+                'updated_at_human' => $role->updated_at?->diffForHumans(),
+                'creator' => $role->creator
+                    ? ['id' => $role->creator->id, 'name' => $role->creator->name]
+                    : null,
+                'updater' => $role->updater
+                    ? ['id' => $role->updater->id, 'name' => $role->updater->name]
+                    : null,
             ],
-            'permissions'       => Permission::select('id', 'name')->orderBy('name')->get(),
+            'permissions' => Permission::select('id', 'name')->orderBy('name')->get(),
             'rolePermissionIds' => $role->permissions->pluck('id')->values(),
-            'roleTypes'         => ['internal', 'external'],
+            'roleTypes' => ['internal', 'external'],
         ]);
     }
 
@@ -90,6 +117,7 @@ class RoleController extends Controller
         $role->update([
             'name' => $validated['name'],
             'type' => $validated['type'],
+            'updated_by' => $request->user()?->id,
         ]);
 
         $role->syncPermissions($validated['permissions'] ?? []);
@@ -116,8 +144,8 @@ class RoleController extends Controller
         $type = $request->input('type');
 
         $roles = Role::onlyTrashed()
-            ->select('id', 'name', 'type', 'deleted_at', 'deleted_by')
-            ->with(['permissions:id,name', 'deleter:id,name'])
+            ->select('id', 'name', 'type', 'created_at', 'deleted_at', 'created_by', 'deleted_by')
+            ->with(['permissions:id,name', 'creator:id,name', 'deleter:id,name'])
             ->when($search, fn ($q) => $q->where('name', 'like', "%{$search}%"))
             ->when(in_array($type, ['internal', 'external'], true), fn ($q) => $q->where('type', $type))
             ->latest('deleted_at')
@@ -128,11 +156,18 @@ class RoleController extends Controller
                     'id' => $role->id,
                     'name' => $role->name,
                     'type' => $role->type,
+                    'created_at_human' => $role->created_at?->diffForHumans(),
                     'deleted_at_human' => $role->deleted_at?->diffForHumans(),
                     'permissions' => $role->permissions->map(fn ($permission) => [
                         'id' => $permission->id,
                         'name' => $permission->name,
                     ])->values(),
+                    'creator' => $role->creator
+                        ? [
+                            'id' => $role->creator->id,
+                            'name' => $role->creator->name,
+                        ]
+                        : null,
                     'deleter' => $role->deleter
                         ? [
                             'id' => $role->deleter->id,
@@ -143,7 +178,7 @@ class RoleController extends Controller
             });
 
         return Inertia::render('Roles/Trash', [
-            'roles'   => $roles,
+            'roles' => $roles,
             'filters' => [
                 'search' => $search,
                 'type' => $type,

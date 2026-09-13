@@ -103,7 +103,7 @@ function humanize(text?: string | null) {
                         </div>
                         <Popover v-model:open="filterOpen">
                             <PopoverTrigger as-child>
-                                <Button variant="header-actions" size="icon-text" class="rounded-full" :class="activeFilterCount ? 'bg-custom-secondary/20 transition-all duration-300 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''">
+                                <Button variant="header-actions" size="icon-text" class="rounded-full" :class="activeFilterCount ? 'bg-custom-secondary/20 transition-all duration-200 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''">
                                     <RiFilter2Line class="h-3.5 w-3.5" /><span class="hidden lg:flex">{{ activeFilterCount ? `${activeFilterCount} ${activeFilterCount === 1 ? 'filter' : 'filters'} active` : 'Filter' }}</span>
                                 </Button>
                             </PopoverTrigger>
@@ -141,7 +141,7 @@ function humanize(text?: string | null) {
                                     <div class="flex py-2 text-sm">{{ vehicle.deleted_at_human || '—' }}</div>
                                     <div class="flex min-w-0 py-2 text-sm"><span class="truncate">{{ vehicle.deleter?.name || '—' }}</span></div>
                                     <div class="flex justify-end py-2 pr-3">
-                                        <DropdownMenu><DropdownMenuTrigger as-child><Button variant="table-more" size="icon-more"><RiMore2Line class="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>{{ vehicle.plate_number || 'Vehicle' }}</DropdownMenuLabel><DropdownMenuItem class="group" @click="openRestore(vehicle)"><RiRestartLine class="h-4 w-4 text-custom-shadow transition-all duration-300 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />Restore Vehicle</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+                                        <DropdownMenu><DropdownMenuTrigger as-child><Button variant="table-more" size="icon-more"><RiMore2Line class="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>{{ vehicle.plate_number || 'Vehicle' }}</DropdownMenuLabel><DropdownMenuItem class="group" @click="openRestore(vehicle)"><RiRestartLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />Restore Vehicle</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
                                     </div>
                                 </div>
                             </div>
