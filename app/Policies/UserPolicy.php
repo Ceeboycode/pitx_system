@@ -18,7 +18,10 @@ class UserPolicy
 
     public function view(User $user, User $model): bool
     {
-        return $user->can('users.view');
+        // Anyone who can update a user can also view their detail page -
+        // Users/Edit.vue is now the single destination for both, gating
+        // edit affordances internally via `can('users.update')`.
+        return $user->can('users.view') || $user->can('users.update');
     }
 
     public function create(User $user): bool

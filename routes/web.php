@@ -308,7 +308,7 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
     |--------------------------------------------------------------------------
     */
 
-    Route::resource('users', UserController::class);
+    Route::resource('users', UserController::class)->except('edit');
 
     Route::get('users-trash', [UserController::class, 'trash'])
         ->name('users.trash');

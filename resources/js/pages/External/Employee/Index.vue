@@ -14,6 +14,7 @@ import ExternalLayout from '@/layouts/ExternalLayout.vue';
 import { can } from '@/lib/can';
 import { create, destroy, edit, index, resetPassword, show, toggleStatus } from '@/routes/employee-users';
 import { Head, Link, router } from '@inertiajs/vue3';
+import { MainPanel, PanelLayout } from '@/components/ui/_panels';
 import {
     RiAddLine,
     RiArchive2Line,
@@ -245,7 +246,7 @@ function confirmArchive() {
     <Head title="Employees" />
 
     <ExternalLayout :company="company" :user="user">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
+        <PanelLayout class="p-6 gap-4">
             <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader class="flex flex-row gap-2">
                     <div class="flex flex-col">
@@ -397,7 +398,7 @@ function confirmArchive() {
                 </CardContent>
                 <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center"><div class="max-w-60 space-y-1 text-center"><p class="text-base font-semibold text-custom-shadow">No employee selected</p><p class="text-sm text-custom-shadow/80">Click on an employee to preview.</p></div></CardContent>
             </Card>
-        </div>
+        </PanelLayout>
 
         <Dialog v-model:open="toggleOpen"><DialogContent class="px-6"><DialogHeader class="px-0"><DialogTitle>{{ togglingEmployee?.status === 'active' ? 'Set Employee Inactive' : 'Set Employee Active' }}</DialogTitle><DialogDescription class="mt-4">Are you sure you want to set <span class="font-semibold text-custom-accent-3">{{ togglingEmployee?.name ?? 'this employee' }}</span> as {{ togglingEmployee?.status === 'active' ? 'inactive' : 'active' }}?</DialogDescription></DialogHeader><Separator class="mb-4" /><DialogFooter class="gap-2 sm:justify-end"><Button variant="ghost-outline" @click="toggleOpen = false; togglingEmployee = null">Cancel</Button><Button :variant="togglingEmployee?.status === 'active' ? 'destructive' : 'float-primary'" @click="confirmToggle"><RiShutDownLine class="h-4 w-4" />{{ togglingEmployee?.status === 'active' ? 'Set Inactive' : 'Set Active' }}</Button></DialogFooter></DialogContent></Dialog>
         <Dialog v-model:open="resetOpen"><DialogContent class="px-6"><DialogHeader class="px-0"><DialogTitle>Reset Password</DialogTitle><DialogDescription class="mt-4">Are you sure you want to reset the password for <span class="font-semibold text-custom-accent-3">{{ resettingEmployee?.name ?? 'this employee' }}</span>?</DialogDescription></DialogHeader><Separator class="mb-4" /><DialogFooter class="gap-2 sm:justify-end"><Button variant="ghost-outline" @click="resetOpen = false; resettingEmployee = null">Cancel</Button><Button variant="float-primary" @click="confirmReset"><RiKey2Line class="h-4 w-4" />Reset Password</Button></DialogFooter></DialogContent></Dialog>

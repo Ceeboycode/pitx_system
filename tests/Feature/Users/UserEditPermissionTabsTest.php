@@ -63,7 +63,7 @@ test('employees and dispatches tabs are exposed when the edited user role has ev
     $target->assignRole($fullRole);
 
     $this->actingAs($this->admin)
-        ->get(route('users.edit', $target))
+        ->get(route('users.show', $target))
         ->assertInertia(fn ($page) => $page
             ->component('Users/Edit')
             ->where('canManageExternalUsers', true)
@@ -94,7 +94,7 @@ test('employees and dispatches tabs are hidden when the edited user role is miss
     $target->assignRole($partialRole);
 
     $this->actingAs($this->admin)
-        ->get(route('users.edit', $target))
+        ->get(route('users.show', $target))
         ->assertInertia(fn ($page) => $page
             ->component('Users/Edit')
             ->where('canManageExternalUsers', false)
@@ -105,9 +105,26 @@ test('employees and dispatches tabs are hidden when the edited user has no role 
     $target = User::factory()->create();
 
     $this->actingAs($this->admin)
-        ->get(route('users.edit', $target))
+        ->get(route('users.show', $target))
         ->assertInertia(fn ($page) => $page
             ->component('Users/Edit')
             ->where('canManageExternalUsers', false)
             ->where('canManageExternalDispatches', false));
+});
+
+test('edit page exposes the edited user\'s email verification timestamp', function (): void {
+    $verified = User::factory()->create(['email_verified_at' => now()]);
+    $unverified = User::factory()->unverified()->create();
+
+    $this->actingAs($this->admin)
+        ->get(route('users.show', $verified))
+        ->assertInertia(fn ($page) => $page
+            ->component('Users/Edit')
+            ->where('user.email_verified_at', fn ($value) => $value !== null));
+
+    $this->actingAs($this->admin)
+        ->get(route('users.show', $unverified))
+        ->assertInertia(fn ($page) => $page
+            ->component('Users/Edit')
+            ->where('user.email_verified_at', null));
 });

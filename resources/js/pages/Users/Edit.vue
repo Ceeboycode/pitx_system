@@ -3,17 +3,19 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { index } from '@/routes/users';
 import type { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 // import { Badge } from '@/components/ui/badge';
 import { LeadPanel } from '@/components/ui/_panels';
 import { LeadingCard } from '@/components/ui/_leading-card';
-import { 
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import {
     Tabs,
     TabsContent,
     TabsList,
     TabsTrigger,
 } from '@/components/ui/_tabs';
+import { ArchiveUserDialog } from '@/components/internal/users';
 import Overview from '@/components/internal/users/edit/OverviewTab.vue';
 import Details from '@/components/internal/users/edit/DetailsTab.vue';
 import Vehicles from '@/components/internal/users/edit/VehiclesTab.vue';
@@ -21,7 +23,8 @@ import Employees from '@/components/internal/users/edit/EmployeesTab.vue';
 import Dispatches from '@/components/internal/users/edit/DispatchesTab.vue';
 import IncidentReports from '@/components/internal/users/edit/IncidentReportsTab.vue';
 import History from '@/components/internal/users/edit/HistoryTab.vue';
-import { RiAlertLine, RiBusLine, RiDashboardHorizontalLine, RiFileListLine, RiTimeLine, RiRoadMapLine, RiGroupLine } from 'vue-remix-icons';
+import { RiAlertLine, RiArchive2Line, RiBusLine, RiDashboardHorizontalLine, RiFileListLine, RiTimeLine, RiRoadMapLine, RiGroupLine } from 'vue-remix-icons';
+import { can } from '@/lib/can';
 
 type Role = {
     id: number;
@@ -36,23 +39,30 @@ type Company = {
 };
 
 const props = defineProps<{
+    currentUserId: number | null;
     user: {
         id: number;
         username: string | null;
         name: string;
         email: string;
+        email_verified_at: string | null;
         phone_number: string | null;
+        status: 'active' | 'inactive' | string;
         type: 'internal' | 'external';
         company_id: number | null;
     };
     roles: Role[];
     companies: Company[];
     selectedRole: string | null;
-    // Sent by UserController@edit: true only when the edited user's role
+    // Sent by UserController@show: true only when the edited user's role
     // holds every permission in that group (see Role::hasAllPermissionsInGroup).
     canManageExternalUsers: boolean;
     canManageExternalDispatches: boolean;
 }>();
+
+const isOwnAccount = computed(() => props.currentUserId === props.user.id);
+const canArchiveUser = can('users.archive');
+const archiveOpen = ref(false);
 
 // `computed(() => ...)` re-runs its callback whenever a value it reads
 // (here, the props above) changes, and the result is what the template
@@ -115,7 +125,7 @@ const tabs = computed(() =>
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Users', href: index().url },
-    { title: 'Edit', href: '#' },
+    { title: props.user.name, href: '#' },
 ];
 
 // function initials(name: string) {
@@ -137,7 +147,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 </script>
 
 <template>
-    <Head title="Edit User" />
+    <Head :title="user.name" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <LeadPanel>
@@ -146,8 +156,17 @@ const breadcrumbs: BreadcrumbItem[] = [
                 description="Review and manage user details."
                 variant="entity-details"
                 :back="index().url"
-                :more="false"
-            ></LeadingCard>
+                :status="user.status === 'active' || user.status === 'inactive' ? user.status : null"
+            >
+                <DropdownMenuItem
+                    class="group cursor-pointer"
+                    :disabled="!canArchiveUser || isOwnAccount"
+                    @click="archiveOpen = true"
+                >
+                    <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                    Archive
+                </DropdownMenuItem>
+            </LeadingCard>
             <Tabs default-value="details">
                 <TabsList>
                     <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value">
@@ -173,5 +192,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                 </TabsContent>
             </Tabs>
         </LeadPanel>
+
+        <ArchiveUserDialog v-model:open="archiveOpen" :user="user" />
     </AppLayout>
 </template>

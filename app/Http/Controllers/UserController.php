@@ -117,6 +117,7 @@ class UserController extends Controller
                 ->get(['id', 'company_name', 'company_code']),
             'roles' => Role::query()
                 ->select('id', 'name', 'type')
+                ->where('name', '!=', Role::NAME_COMMUTER)
                 ->orderBy('type')
                 ->orderBy('name')
                 ->get(),
@@ -168,66 +169,16 @@ class UserController extends Controller
             );
     }
 
+    /**
+     * Single detail page for a user, serving both viewing and editing.
+     * Gate::authorize('view', ...) only checks that the user is allowed to
+     * open the page at all - Users/Edit.vue decides what's editable per
+     * field via `can('users.update')`, and the update() action below still
+     * independently authorizes the actual write.
+     */
     public function show(User $user): Response
     {
         Gate::authorize('view', $user);
-
-        $user->load([
-            'roles:id,name,type',
-            'company:id,company_name,company_code',
-        ]);
-
-        $primaryRole = $user->roles->first();
-        $resolvedType = $primaryRole?->type;
-
-        return Inertia::render('Users/Show', [
-            'currentUserId' => Auth::id(),
-            'user' => [
-                'id' => $user->id,
-                'username' => $user->username,
-                'name' => $user->name,
-                'email' => $user->email,
-                'email_verified_at' => $user->email_verified_at,
-                'avatar' => $user->profile_photo_path ? Storage::url($user->profile_photo_path) : null,
-                'phone_number' => $user->phone_number,
-                'status' => $user->status,
-                'created_at' => $user->created_at,
-                'type' => $resolvedType,
-                'company' => $resolvedType === 'external' && $user->company
-                    ? [
-                        'id' => $user->company->id,
-                        'company_name' => $user->company->company_name,
-                        'company_code' => $user->company->company_code,
-                    ]
-                    : null,
-                'roles' => $user->roles->map(fn ($role) => [
-                    'id' => $role->id,
-                    'name' => $role->name,
-                    'type' => $role->type,
-                ])->values(),
-                'internal_roles' => $user->roles
-                    ->filter(fn ($role) => $role->type === 'internal')
-                    ->map(fn ($role) => [
-                        'id' => $role->id,
-                        'name' => $role->name,
-                        'type' => $role->type,
-                    ])
-                    ->values(),
-                'external_roles' => $user->roles
-                    ->filter(fn ($role) => $role->type === 'external')
-                    ->map(fn ($role) => [
-                        'id' => $role->id,
-                        'name' => $role->name,
-                        'type' => $role->type,
-                    ])
-                    ->values(),
-            ],
-        ]);
-    }
-
-    public function edit(User $user): Response
-    {
-        Gate::authorize('update', $user);
 
         $user->load([
             'roles:id,name,type',
@@ -240,12 +191,15 @@ class UserController extends Controller
         $selectedRole = $user->roles->first();
 
         return Inertia::render('Users/Edit', [
+            'currentUserId' => Auth::id(),
             'user' => [
                 'id' => $user->id,
                 'username' => $user->username,
                 'name' => $user->name,
                 'email' => $user->email,
+                'email_verified_at' => $user->email_verified_at,
                 'phone_number' => $user->phone_number,
+                'status' => $user->status,
                 'type' => $selectedRole?->type,
                 'company_id' => $user->company_id,
                 // Same conversion HandleInertiaRequests.php uses for the logged-in
@@ -257,6 +211,7 @@ class UserController extends Controller
             ],
             'roles' => Role::query()
                 ->select('id', 'name', 'type')
+                ->where('name', '!=', Role::NAME_COMMUTER)
                 ->orderBy('type')
                 ->orderBy('name')
                 ->get(),

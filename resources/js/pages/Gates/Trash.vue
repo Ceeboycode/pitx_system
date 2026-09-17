@@ -41,6 +41,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import SearchInput from '@/components/SearchInput.vue';
+import { MainPanel, PanelLayout } from '@/components/ui/_panels';
 
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index, restore, trash } from '@/routes/gates';
@@ -162,7 +163,7 @@ function restoreGate() {
     <Head title="Archived Gates" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+        <PanelLayout>
             <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader class="flex flex-row items-start gap-3">
                     <Button as-child variant="header-actions" size="icon">
@@ -333,7 +334,7 @@ function restoreGate() {
                     />
                 </CardContent>
             </Card>
-        </div>
+        </PanelLayout>
 
         
         <AlertDialog v-model:open="restoreOpen">

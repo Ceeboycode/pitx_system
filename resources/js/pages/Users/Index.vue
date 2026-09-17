@@ -38,7 +38,6 @@ import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/AppLayout.vue';
 import {
     create,
-    edit,
     index,
     show,
     trash,
@@ -64,7 +63,6 @@ import {
     RiFilter2Line,
     RiKey2Line,
     RiMore2Line,
-    RiPencilLine,
     RiShutDownLine,
 } from 'vue-remix-icons';
 
@@ -75,7 +73,6 @@ import { computed, ref } from 'vue';
 import { can } from '@/lib/can';
 
 const canCreate = can('users.create');
-const canUpdate = can('users.update');
 const canToggle = can('users.toggleStatus');
 const canResetPass = can('users.resetPassword');
 const canViewTrash = can('users.viewTrash');
@@ -772,27 +769,6 @@ function openResetDialog(user: User) {
 
                                                 <DropdownMenuItem
                                                     v-if="
-                                                        canUpdate &&
-                                                        !isOwnAccount(user)
-                                                    "
-                                                    as-child
-                                                    class="group"
-                                                >
-                                                    <Link
-                                                        :href="
-                                                            edit(user.id).url
-                                                        "
-                                                        class="flex items-center"
-                                                    >
-                                                        <RiPencilLine
-                                                            class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
-                                                        />
-                                                        Edit
-                                                    </Link>
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuItem
-                                                    v-if="
                                                         canToggle &&
                                                         !isOwnAccount(user)
                                                     "
@@ -973,23 +949,11 @@ function openResetDialog(user: User) {
 
                     <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
 
-                    <div class="flex items-center justify-between gap-2">
-                        <Button
-                            v-if="canUpdate && !isOwnAccount(previewedUser)"
-                            as-child
-                            variant="ghost-outline"
-                            size="icon-text"
-                        >
-                            <Link :href="edit(previewedUser.id).url">
-                                <RiPencilLine class="h-4 w-4" />
-                                Edit
-                            </Link>
-                        </Button>
+                    <div class="flex items-center justify-end gap-2">
                         <Button
                             as-child
                             variant="float-primary"
                             size="icon"
-                            class="ml-auto"
                         >
                             <Link :href="show(previewedUser.id).url" aria-label="View user profile">
                                 <RiExternalLinkLine class="h-4 w-4" />

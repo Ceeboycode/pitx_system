@@ -10,7 +10,7 @@ export const inputVariants = cva(
       variant: {
         default: "w-full h-9 border border-custom-bg-dark dark:border-none dark:border-custom-bg-light rounded-md bg-custom-bg p-3 text-sm dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5",
         // "active-inline-edit": "w-fit bg-pink-300 underline focus-visible:ring-0",
-        "inline-edit": "w-fit text-end p-0 group-hover:underline group-focus-within:underline focus-visible:ring-0",
+        "inline-edit": "w-full min-w-0 text-end p-0 group-hover:underline group-focus-within:underline focus-visible:ring-0",
       },
       size: {
         default: "",

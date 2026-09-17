@@ -35,12 +35,11 @@ import {
 
 import {
     CreateGateDialog,
-    EditGateDialog,
     ToggleGateStatusDialog,
 } from '@/components/internal/gate';
 
 import AppLayout from '@/layouts/AppLayout.vue';
-import { index, show, trash } from '@/routes/gates';
+import { edit, index, show, trash } from '@/routes/gates';
 import { type BreadcrumbItem, type User } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { PanelLayout } from '@/components/ui/_panels';
@@ -159,8 +158,6 @@ function clearFilters() {
 }
 
 const createOpen   = ref(false);
-const editOpen     = ref(false);
-const selectedGate = ref<Gate | null>(null);
 const previewedGate = ref<Gate | null>(null);
 const toggleOpen = ref(false);
 const togglingGate = ref<Gate | null>(null);
@@ -173,11 +170,6 @@ function statusClass(status: Gate['status']): string {
 
 function statusDot(status: Gate['status']): string {
     return status === 'active' ? 'bg-emerald-500' : 'bg-slate-400';
-}
-
-function openEdit(gate: Gate) {
-    selectedGate.value = gate;
-    editOpen.value = true;
 }
 
 function openPreview(gate: Gate) {
@@ -461,9 +453,11 @@ function openToggleDialog(gate: Gate) {
                                                     </Link>
                                                 </DropdownMenuItem>
 
-                                                <DropdownMenuItem class="group" @click="openEdit(gate)">
-                                                    <RiEditLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
-                                                    Edit
+                                                <DropdownMenuItem as-child class="group">
+                                                    <Link :href="edit(gate.id).url" class="flex items-center">
+                                                        <RiEditLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
+                                                        Edit
+                                                    </Link>
                                                 </DropdownMenuItem>
 
                                                 <DropdownMenuItem class="group" @click="openToggleDialog(gate)">
@@ -655,12 +649,14 @@ function openToggleDialog(gate: Gate) {
 
                     <div class="flex items-center justify-between gap-2">
                         <Button
+                            as-child
                             variant="ghost-outline"
                             size="icon-text"
-                            @click="openEdit(previewedGate)"
                         >
-                            <RiEditLine class="h-4 w-4" />
-                            Edit
+                            <Link :href="edit(previewedGate.id).url">
+                                <RiEditLine class="h-4 w-4" />
+                                Edit
+                            </Link>
                         </Button>
                         <Button
                             as-child
@@ -692,7 +688,6 @@ function openToggleDialog(gate: Gate) {
         </PanelLayout>
 
         <CreateGateDialog v-model:open="createOpen" />
-        <EditGateDialog v-model:open="editOpen" :gate="selectedGate" />
         <ToggleGateStatusDialog v-model:open="toggleOpen" :gate="togglingGate" />
 
         <!-- CODE: <AlertDialog v-model:open="archiveOpen">

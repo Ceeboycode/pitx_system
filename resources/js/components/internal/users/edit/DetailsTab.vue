@@ -37,6 +37,8 @@ import {
     SelectLabel,
 } from '@/components/ui/select';
 import SearchInput from '@/components/SearchInput.vue'
+import EditableField from '@/components/ui/_field/EditableField.vue';
+import { can } from '@/lib/can';
 
 import {
   RiPhoneLine,
@@ -44,6 +46,7 @@ import {
   RiTimeLine,
   RiBuildingLine,
   RiEditLine,
+  RiVerifiedBadgeLine,
 } from "vue-remix-icons";
 
 import { formatDate } from '@/lib/format';
@@ -66,6 +69,7 @@ const props = defineProps<{
         username: string | null;
         name: string;
         email: string;
+        email_verified_at: string | null;
         phone_number: string | null;
         type: 'internal' | 'external';
         company_id: number | null;
@@ -87,6 +91,11 @@ const props = defineProps<{
 // const { getInitials } = useInitials();
 
 const { copy } = useClipboard({ legacy: true });
+
+// Drives every EditableField below: view-only roles (no `users.update`
+// permission) see the same layout with static text instead of inputs,
+// and never see the Save/Cancel actions or validation errors.
+const canEdit = can('users.update');
 
 const form = useForm({
     name: props.user.name ?? '',
@@ -130,10 +139,10 @@ const filteredCompanies = computed(() => {
 
 // Looks up the full Company object matching the currently selected
 // form.company_id, purely so the template can show its name/code back
-// to the user as confirmation.
-// const selectedCompany = computed(() =>
-//     props.companies.find((company) => String(company.id) === form.company_id) ?? null,
-// );
+// to the user as confirmation (and as the read-only value when !canEdit).
+const selectedCompany = computed(() =>
+    props.companies.find((company) => String(company.id) === form.company_id) ?? null,
+);
 
 // If the chosen role stops being "external" (e.g. the user picks a
 // different role), clear out any company selection so a stale company_id
@@ -204,19 +213,21 @@ function submit() {
     <CardHeader class="flex flex-row items-start justify-between gap-4">
       <div class="flex flex-col">
         <CardTitle>User</CardTitle>
-        <CardDescription>Manage user details.</CardDescription>
+        <CardDescription>{{ canEdit ? 'Manage user details.' : 'View user details.' }}</CardDescription>
       </div>
-      <div class="flex flex-row items-center gap-2">
-        <!-- TODO: make the cancel button disabled unless change has been made -->
-        <Button variant="float" @click="form.reset(); form.clearErrors()">
+      <div v-if="canEdit" class="flex flex-row items-center gap-2">
+        <Button
+          :variant="!form.isDirty || form.processing ? 'disabled' : 'float'"
+          :disabled="!form.isDirty || form.processing"
+          @click="form.reset(); form.clearErrors()"
+        >
           Cancel
         </Button>
 
-        <!-- TODO: make the save button disabled unless change has been made -->
         <Button
-          :variant="form.processing ? 'disabled' : 'float-primary'"
+          :variant="!form.isDirty || form.processing ? 'disabled' : 'float-primary'"
           size="icon-text"
-          :disabled="form.processing"
+          :disabled="!form.isDirty || form.processing"
           @click="submit"
         >
           {{ form.processing ? 'Saving...' : 'Save Changes' }}
@@ -244,16 +255,21 @@ function submit() {
                 <RiPhoneLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
                 <Label for="route_name_sidebar">Name</Label>
               </div>
-              <span class="flex flex-row items-center">
-                <Input
-                    id="route_name_sidebar"
-                    :model-value="form.name"
-                    placeholder="Enter user name"
-                    variant="inline-edit"
-                />
-                <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
-              </span>
-              <InputError :message="form.errors.name" />
+              <EditableField :editable="canEdit">
+                <template #edit>
+                  <span class="flex flex-row items-center">
+                    <Input
+                        id="route_name_sidebar"
+                        v-model="form.name"
+                        placeholder="Enter user name"
+                        variant="inline-edit"
+                    />
+                    <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
+                  </span>
+                </template>
+                <span class="text-sm font-medium">{{ user.name }}</span>
+              </EditableField>
+              <InputError v-if="canEdit" :message="form.errors.name" />
             </div>
 
             <div class="flex flex-row justify-between items-center gap-2 overflow-hidden">
@@ -289,16 +305,44 @@ function submit() {
               <RiPhoneLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
               <Label for="route_name_sidebar">Email</Label>
             </div>
-            <span class="flex flex-row items-center">
-              <Input
-                  id="route_name_sidebar"
-                  :model-value="form.email"
-                  placeholder="Enter email"
-                  variant="inline-edit"
-              />
-              <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
-            </span>
-            <InputError :message="form.errors.email" />
+
+            <EditableField :editable="canEdit">
+              <template #edit>
+                <span class="inline-flex items-center overflow-hidden">
+                  <Input
+                      id="route_name_sidebar"
+                      v-model="form.email"
+                      placeholder="Enter email"
+                      variant="inline-edit"
+                  />
+                  <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
+                  <TooltipProvider v-if="user.email_verified_at">
+                    <Tooltip>
+                      <TooltipTrigger as-child>
+                        <RiVerifiedBadgeLine class="shrink-0 h-4 w-4 text-custom-shadow/80 text-custom-accent-3 ml-2 group-hover:w-0 group-hover:ml-0 group-hover:opacity-0 group-focus-within:w-0 group-focus-within:ml-0 group-focus-within:opacity-0"/>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Email verified
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </span>
+              </template>
+              <span class="inline-flex items-center gap-2 overflow-hidden">
+                <span class="text-sm font-medium">{{ user.email }}</span>
+                <TooltipProvider v-if="user.email_verified_at">
+                  <Tooltip>
+                    <TooltipTrigger as-child>
+                      <RiVerifiedBadgeLine class="shrink-0 h-4 w-4 text-custom-accent-3"/>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Email verified
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </span>
+            </EditableField>
+            <InputError v-if="canEdit" :message="form.errors.email" />
           </div>
 
           <div class="flex flex-row justify-between items-center gap-2 overflow-hidden group">
@@ -306,16 +350,21 @@ function submit() {
               <RiPhoneLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
               <Label for="route_name_sidebar">Phone</Label>
             </div>
-            <span class="flex flex-row items-center">
-              <Input
-                  id="route_name_sidebar"
-                  :model-value="form.phone_number"
-                  placeholder="Enter user name"
-                  variant="inline-edit"
-              />
-              <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
-            </span>
-            <InputError :message="form.errors.phone_number" />
+            <EditableField :editable="canEdit">
+              <template #edit>
+                <span class="flex flex-row items-center">
+                  <Input
+                      id="route_name_sidebar"
+                      v-model="form.phone_number"
+                      placeholder="Enter user name"
+                      variant="inline-edit"
+                  />
+                  <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
+                </span>
+              </template>
+              <span class="text-sm font-medium">{{ user.phone_number || '—' }}</span>
+            </EditableField>
+            <InputError v-if="canEdit" :message="form.errors.phone_number" />
           </div>
         </div>
 
@@ -346,41 +395,46 @@ function submit() {
               <RiPhoneLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
               <Label for="gate_id_sidebar">Role</Label>
             </div>
-            <span class="flex flex-row items-center">
-              <Select v-model="form.role">
-                <SelectTrigger
-                  id="role"
-                  variant="inline-edit"
-                >
-                  <SelectValue
-                    placeholder="Select a role type..."
-                    class="capitalize"
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectLabel>Internal</SelectLabel>
-                  <SelectItem
-                    v-for="role in props.roles.filter((item) => item.type === 'internal')"
-                    :key="role.id"
-                    :value="role.name"
-                    class="capitalize"
-                  >
-                    {{ role.name }}
-                  </SelectItem>
+            <EditableField :editable="canEdit">
+              <template #edit>
+                <span class="flex flex-row items-center">
+                  <Select v-model="form.role">
+                    <SelectTrigger
+                      id="role"
+                      variant="inline-edit"
+                    >
+                      <SelectValue
+                        placeholder="Select a role type..."
+                        class="capitalize"
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectLabel>Internal</SelectLabel>
+                      <SelectItem
+                        v-for="role in props.roles.filter((item) => item.type === 'internal')"
+                        :key="role.id"
+                        :value="role.name"
+                        class="capitalize"
+                      >
+                        {{ role.name }}
+                      </SelectItem>
 
-                  <SelectLabel>External</SelectLabel>
-                  <SelectItem
-                    v-for="role in props.roles.filter((item) => item.type === 'external')"
-                    :key="role.id"
-                    :value="role.name"
-                    class="capitalize"
-                  >
-                    {{ role.name }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </span>
-            <InputError :message="form.errors.role" />
+                      <SelectLabel>External</SelectLabel>
+                      <SelectItem
+                        v-for="role in props.roles.filter((item) => item.type === 'external')"
+                        :key="role.id"
+                        :value="role.name"
+                        class="capitalize"
+                      >
+                        {{ role.name }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </span>
+              </template>
+              <span class="text-sm font-medium capitalize">{{ selectedRole?.name ?? '—' }}</span>
+            </EditableField>
+            <InputError v-if="canEdit" :message="form.errors.role" />
           </div>
         </div>
 
@@ -392,54 +446,59 @@ function submit() {
               <RiPhoneLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
               <Label for="company_search">Company</Label>
             </div>
-            <span class="flex flex-row items-center">
-              <!-- `v-model:open` mirrors Select's expanded/collapsed state into
-                   companySelectOpen, which drives the focus + placeholder
-                   behavior below. -->
-              <Select v-model="form.company_id" v-model:open="companySelectOpen">
-                <SelectTrigger
-                  id="company"
-                  variant="inline-edit"
-                >
-                  <SelectValue
-                    placeholder="Select a company..."
-                    class="capitalize"
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <div class="p-2 relative w-full">
-                    <SearchInput
-                      id="company_search"
-                      ref="companySearchInputRef"
-                      v-model="companySearch"
-                      placeholder="Search by name or code..."
-                      @keydown.stop
-                    />
-                  </div>
-                  <span
-                    v-if="filteredCompanies.length === 0"
-                      class="px-2 pb-3 text-sm text-custom-shadow"
-                  >
-                    No companies found.
-                  </span>
-                  <SelectItem
-                    v-for="company in filteredCompanies"
-                    :key="company.id"
-                    :value="String(company.id)"
-                    class="capitalize group"
-                  >
-                    <span>{{ company.company_name }}</span>
-                    <span
-                      class="group-hover:text-custom-shadow cursor-pointer tracking-widest bg-custom-bg dark:bg-custom-bg-light px-2 rounded-md font-mono mr-1 font-normal"
+            <EditableField :editable="canEdit">
+              <template #edit>
+                <span class="flex flex-row items-center">
+                  <!-- `v-model:open` mirrors Select's expanded/collapsed state into
+                       companySelectOpen, which drives the focus + placeholder
+                       behavior below. -->
+                  <Select v-model="form.company_id" v-model:open="companySelectOpen">
+                    <SelectTrigger
+                      id="company"
+                      variant="inline-edit"
                     >
-                      {{ company.company_code }}
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </span>
+                      <SelectValue
+                        placeholder="Select a company..."
+                        class="capitalize"
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <div class="p-2 relative w-full">
+                        <SearchInput
+                          id="company_search"
+                          ref="companySearchInputRef"
+                          v-model="companySearch"
+                          placeholder="Search by name or code..."
+                          @keydown.stop
+                        />
+                      </div>
+                      <span
+                        v-if="filteredCompanies.length === 0"
+                          class="px-2 pb-3 text-sm text-custom-shadow"
+                      >
+                        No companies found.
+                      </span>
+                      <SelectItem
+                        v-for="company in filteredCompanies"
+                        :key="company.id"
+                        :value="String(company.id)"
+                        class="capitalize group"
+                      >
+                        <span>{{ company.company_name }}</span>
+                        <span
+                          class="group-hover:text-custom-shadow cursor-pointer tracking-widest bg-custom-bg dark:bg-custom-bg-light px-2 rounded-md font-mono mr-1 font-normal"
+                        >
+                          {{ company.company_code }}
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </span>
+              </template>
+              <span class="text-sm font-medium">{{ selectedCompany?.company_name ?? '—' }}</span>
+            </EditableField>
 
-            <InputError :message="form.errors.company_id" />
+            <InputError v-if="canEdit" :message="form.errors.company_id" />
           </div>
         </div>
 

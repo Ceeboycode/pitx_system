@@ -11,6 +11,14 @@ class Role extends SpatieRole
 {
     use SoftDeletes;
 
+    /**
+     * Commuters self-register through POST /api/v1/auth/register from the
+     * mobile app (see RegistrationTest) - this role must never be
+     * assignable from the internal Users module or the company Employee
+     * module, both of which only manage staff accounts.
+     */
+    public const NAME_COMMUTER = 'commuter';
+
     protected $fillable = [
         'name',
         'guard_name',
