@@ -34,6 +34,9 @@ class UpdateUserRequest extends FormRequest
                 'required',
                 'string',
                 Rule::exists('roles', 'name'),
+                // Commuters self-register through the mobile app and must
+                // never be assignable from this internal admin module.
+                Rule::notIn([Role::NAME_COMMUTER]),
             ],
 
             'company_id' => [
@@ -84,6 +87,7 @@ class UpdateUserRequest extends FormRequest
     {
         return [
             'name.regex' => 'Name may only contain letters, spaces, apostrophes, periods, and hyphens.',
+            'role.not_in' => 'Commuter accounts cannot be managed here; they self-register through the mobile app.',
         ];
     }
 }

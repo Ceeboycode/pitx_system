@@ -265,12 +265,12 @@ function buildDonutSegments(data: { value: number; color: string }[]) {
     });
 }
 
-const companySegments = computed(() =>
-    buildDonutSegments(companyChartData.value),
-);
-const dispatchSegments = computed(() =>
-    buildDonutSegments(dispatchChartData.value),
-);
+// const companySegments = computed(() =>
+//     buildDonutSegments(companyChartData.value),
+// );
+// const dispatchSegments = computed(() =>
+//     buildDonutSegments(dispatchChartData.value),
+// );
 
 function documentUrgencyVariant(daysLeft: number) {
     if (daysLeft <= 7) return 'destructive';
@@ -310,7 +310,7 @@ const today = new Date().toLocaleDateString('en-PH', {
     <Head title="Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <MainPanel>
+        <MainPanel className="p-6 gap-4">
             <LeadingCard
                 :user="$page.props.auth.user.name"
                 description="See terminal and system overviews, manage your tasks."

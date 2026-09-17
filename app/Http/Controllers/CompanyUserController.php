@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -15,12 +15,16 @@ use Inertia\Inertia;
 
 class CompanyUserController extends Controller
 {
-    // ── Shared: fetch all external roles ──────────────────────────────────────
+    // ── Shared: fetch all external roles a company can assign to its own
+    // employees. Excludes 'commuter': that role is for riders who
+    // self-register through the mobile app, not company staff, and every
+    // role-listing/validation call in this controller goes through here.
     private function getExternalRoles(): \Illuminate\Support\Collection
     {
         return Role::query()
             ->where('type', 'external')
             ->where('guard_name', 'web')
+            ->where('name', '!=', Role::NAME_COMMUTER)
             ->orderBy('name')
             ->get(['name', 'guard_name', 'type']);
     }
@@ -36,7 +40,7 @@ class CompanyUserController extends Controller
         abort_if(! $company, 403, 'No company assigned.');
 
         $search = $request->input('search');
-        $role   = $request->input('role');
+        $role = $request->input('role');
         $status = $request->input('status');
         $sortBy = $request->input('sort_by');
         $sortDir = $request->input('sort_dir') === 'desc' ? 'desc' : 'asc';
@@ -70,35 +74,35 @@ class CompanyUserController extends Controller
             ->withQueryString()
             ->through(function (User $employeeUser) {
                 return [
-                    'id'           => $employeeUser->id,
-                    'username'     => $employeeUser->username,
-                    'name'         => $employeeUser->name,
-                    'email'        => $employeeUser->email,
+                    'id' => $employeeUser->id,
+                    'username' => $employeeUser->username,
+                    'name' => $employeeUser->name,
+                    'email' => $employeeUser->email,
                     'phone_number' => $employeeUser->phone_number,
-                    'status'       => $employeeUser->status,
-                    'created_at'   => $employeeUser->created_at,
-                    'avatar'       => $employeeUser->profile_photo_path
+                    'status' => $employeeUser->status,
+                    'created_at' => $employeeUser->created_at,
+                    'avatar' => $employeeUser->profile_photo_path
                         ? Storage::url($employeeUser->profile_photo_path)
                         : null,
                     'roles' => $employeeUser->roles->map(fn ($role) => [
-                        'id'   => $role->id,
+                        'id' => $role->id,
                         'name' => $role->name,
                     ])->values(),
                 ];
             });
 
         return Inertia::render('External/Employee/Index', [
-            'company'  => $company,
-            'user'     => $request->user(),
-            'users'    => $users,
-            'filters'  => [
+            'company' => $company,
+            'user' => $request->user(),
+            'users' => $users,
+            'filters' => [
                 'search' => $search,
-                'role'   => $role,
+                'role' => $role,
                 'status' => $status,
                 'sort_by' => $sortBy,
                 'sort_dir' => $sortBy ? $sortDir : null,
             ],
-            'roles'    => $this->getExternalRoles()->pluck('name')->values(),
+            'roles' => $this->getExternalRoles()->pluck('name')->values(),
             'statuses' => ['active', 'inactive', 'suspended'],
         ]);
     }
@@ -114,11 +118,11 @@ class CompanyUserController extends Controller
         abort_if(! $company, 403, 'No company assigned.');
 
         return Inertia::render('External/Employee/Create', [
-            'company'             => $company,
-            'user'                => $request->user(),
-            'roles'               => $this->getExternalRoles()->values(),
+            'company' => $company,
+            'user' => $request->user(),
+            'roles' => $this->getExternalRoles()->values(),
             // FIX: default status is now 'active' — removed 'pending'
-            'defaultStatus'       => 'active',
+            'defaultStatus' => 'active',
             'nextUsernamePreview' => $this->generateNextUsername($company->company_code),
         ]);
     }
@@ -136,10 +140,10 @@ class CompanyUserController extends Controller
         $externalRoleNames = $this->getExternalRoles()->pluck('name')->toArray();
 
         $validated = $request->validate([
-            'name'         => ['required', 'string', 'max:255', "regex:/^[A-Za-z][A-Za-z\s.'-]*$/"],
-            'email'        => ['required', 'email:rfc,dns', 'max:255', Rule::unique('users', 'email')],
+            'name' => ['required', 'string', 'max:255', "regex:/^[A-Za-z][A-Za-z\s.'-]*$/"],
+            'email' => ['required', 'email:rfc,dns', 'max:255', Rule::unique('users', 'email')],
             'phone_number' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-()\s]{7,20}$/', Rule::unique('users', 'phone_number')],
-            'role'         => ['required', 'string', Rule::in($externalRoleNames)],
+            'role' => ['required', 'string', Rule::in($externalRoleNames)],
         ], [
             'name.regex' => 'Name may only contain letters, spaces, apostrophes, periods, and hyphens.',
             'email.required' => 'Email is required.',
@@ -155,14 +159,14 @@ class CompanyUserController extends Controller
             $username = $this->generateNextUsername($company->company_code, true);
 
             $user = User::create([
-                'username'             => $username,
-                'name'                 => $validated['name'],
-                'email'                => $validated['email'],
-                'phone_number'         => $validated['phone_number'],
-                'company_id'           => $company->id,
+                'username' => $username,
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'phone_number' => $validated['phone_number'],
+                'company_id' => $company->id,
                 // FIX: create as 'active', not 'pending'
-                'status'               => 'active',
-                'password'             => Hash::make('pitx@123'),
+                'status' => 'active',
+                'password' => Hash::make('pitx@123'),
                 'must_change_password' => true,
             ]);
 
@@ -187,21 +191,21 @@ class CompanyUserController extends Controller
         $employeeUser->load(['roles', 'company']);
 
         return Inertia::render('External/Employee/Show', [
-            'company'  => $request->user()->company,
-            'user'     => $request->user(),
+            'company' => $request->user()->company,
+            'user' => $request->user(),
             'employee' => [
-                'id'           => $employeeUser->id,
-                'username'     => $employeeUser->username,
-                'name'         => $employeeUser->name,
-                'email'        => $employeeUser->email,
+                'id' => $employeeUser->id,
+                'username' => $employeeUser->username,
+                'name' => $employeeUser->name,
+                'email' => $employeeUser->email,
                 'phone_number' => $employeeUser->phone_number,
-                'status'       => $employeeUser->status,
-                'created_at'   => $employeeUser->created_at,
-                'avatar'       => $employeeUser->profile_photo_path
+                'status' => $employeeUser->status,
+                'created_at' => $employeeUser->created_at,
+                'avatar' => $employeeUser->profile_photo_path
                     ? Storage::url($employeeUser->profile_photo_path)
                     : null,
                 'roles' => $employeeUser->roles->map(fn ($role) => [
-                    'id'   => $role->id,
+                    'id' => $role->id,
                     'name' => $role->name,
                 ])->values(),
                 'company' => $employeeUser->company,
@@ -221,28 +225,28 @@ class CompanyUserController extends Controller
         $employeeUser->load(['roles', 'company']);
 
         return Inertia::render('External/Employee/Edit', [
-            'company'      => $request->user()->company,
-            'user'         => $request->user(),
-            'employee'     => [
-                'id'           => $employeeUser->id,
-                'username'     => $employeeUser->username,
-                'name'         => $employeeUser->name,
-                'email'        => $employeeUser->email,
+            'company' => $request->user()->company,
+            'user' => $request->user(),
+            'employee' => [
+                'id' => $employeeUser->id,
+                'username' => $employeeUser->username,
+                'name' => $employeeUser->name,
+                'email' => $employeeUser->email,
                 'phone_number' => $employeeUser->phone_number,
-                'status'       => $employeeUser->status,
-                'created_at'   => $employeeUser->created_at,
-                'avatar'       => $employeeUser->profile_photo_path
+                'status' => $employeeUser->status,
+                'created_at' => $employeeUser->created_at,
+                'avatar' => $employeeUser->profile_photo_path
                     ? Storage::url($employeeUser->profile_photo_path)
                     : null,
                 'roles' => $employeeUser->roles->map(fn ($role) => [
-                    'id'   => $role->id,
+                    'id' => $role->id,
                     'name' => $role->name,
                 ])->values(),
                 'company' => $employeeUser->company,
             ],
-            'roles'        => $this->getExternalRoles()->values(),
+            'roles' => $this->getExternalRoles()->values(),
             // FIX: statuses on edit do not include 'pending' — only real operational states
-            'statuses'     => ['active', 'inactive', 'suspended'],
+            'statuses' => ['active', 'inactive', 'suspended'],
             // selectedRole is the current role name string (or null if none)
             'selectedRole' => $employeeUser->getRoleNames()->first() ?? null,
         ]);
@@ -260,10 +264,10 @@ class CompanyUserController extends Controller
         $externalRoleNames = $this->getExternalRoles()->pluck('name')->toArray();
 
         $validated = $request->validate([
-            'name'         => ['required', 'string', 'max:255', "regex:/^[A-Za-z][A-Za-z\s.'-]*$/"],
-            'email'        => ['required', 'email:rfc,dns', 'max:255', Rule::unique('users', 'email')->ignore($employeeUser->id)],
+            'name' => ['required', 'string', 'max:255', "regex:/^[A-Za-z][A-Za-z\s.'-]*$/"],
+            'email' => ['required', 'email:rfc,dns', 'max:255', Rule::unique('users', 'email')->ignore($employeeUser->id)],
             'phone_number' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-()\s]{7,20}$/', Rule::unique('users', 'phone_number')->ignore($employeeUser->id)],
-            'role'         => ['required', 'string', Rule::in($externalRoleNames)],
+            'role' => ['required', 'string', Rule::in($externalRoleNames)],
         ], [
             'name.regex' => 'Name may only contain letters, spaces, apostrophes, periods, and hyphens.',
             'email.required' => 'Email is required.',
@@ -276,8 +280,8 @@ class CompanyUserController extends Controller
         ]);
 
         $employeeUser->update([
-            'name'         => $validated['name'],
-            'email'        => $validated['email'],
+            'name' => $validated['name'],
+            'email' => $validated['email'],
             'phone_number' => $validated['phone_number'],
         ]);
 
@@ -298,11 +302,11 @@ class CompanyUserController extends Controller
         $this->ensureNotActingOnSelf($request, $employeeUser);
 
         $nextStatus = match ($employeeUser->status) {
-            'active'    => 'inactive',
-            'inactive'  => 'active',
-            'pending'   => 'active',   // legacy — migrate any pending users to active
+            'active' => 'inactive',
+            'inactive' => 'active',
+            'pending' => 'active',   // legacy — migrate any pending users to active
             'suspended' => 'active',
-            default     => 'active',
+            default => 'active',
         };
 
         $employeeUser->update(['status' => $nextStatus]);
@@ -320,7 +324,7 @@ class CompanyUserController extends Controller
         $this->ensureNotActingOnSelf($request, $employeeUser);
 
         $employeeUser->update([
-            'password'             => Hash::make('pitx@123'),
+            'password' => Hash::make('pitx@123'),
             'must_change_password' => true,
         ]);
 
@@ -379,9 +383,9 @@ class CompanyUserController extends Controller
 
     private function generateNextUsername(?string $companyCode, bool $lock = false): string
     {
-        $prefix = Str::upper($companyCode ?: 'COMP') . '-';
+        $prefix = Str::upper($companyCode ?: 'COMP').'-';
 
-        $query = User::query()->where('username', 'like', $prefix . '%');
+        $query = User::query()->where('username', 'like', $prefix.'%');
 
         if ($lock) {
             $query->lockForUpdate();
@@ -398,6 +402,6 @@ class CompanyUserController extends Controller
             $nextNumber = ((int) $lastDigits) + 1;
         }
 
-        return $prefix . str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
+        return $prefix.str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
     }
 }

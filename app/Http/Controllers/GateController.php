@@ -22,52 +22,49 @@ class GateController extends Controller
     ) {}
 
     public function index(Request $request)
-{
-    Gate::authorize('viewAny', GateModel::class);
+    {
+        Gate::authorize('viewAny', GateModel::class);
 
-    $gates = GateModel::query()
-        ->select('id', 'gate_name', 'status', 'bays', 'location', 'picture_path', 'created_by')
-        ->with([
-            'creator:id,name',
-            'routes:id,gate_id,route_name,status',
-            'dispatches' => fn ($query) => $query
-                ->select('id', 'company_id', 'vehicle_id', 'gate_id', 'plate_number', 'bay_number', 'status')
-                ->where('status', '!=', Dispatch::STATUS_DEPARTED)
-                ->with([
-                    'company:id,company_name',
-                    'vehicle:id,company_id,plate_number,body_number',
-                    'vehicle.company:id,company_name',
-                ])
-                ->latest('updated_at'),
-        ])
+        $gates = GateModel::query()
+            ->select('id', 'gate_name', 'status', 'bays', 'location', 'picture_path', 'created_by')
+            ->with([
+                'creator:id,name',
+                'routes:id,gate_id,route_name,status',
+                'dispatches' => fn ($query) => $query
+                    ->select('id', 'company_id', 'vehicle_id', 'gate_id', 'plate_number', 'bay_number', 'status')
+                    ->where('status', '!=', Dispatch::STATUS_DEPARTED)
+                    ->with([
+                        'company:id,company_name',
+                        'vehicle:id,company_id,plate_number,body_number',
+                        'vehicle.company:id,company_name',
+                    ])
+                    ->latest('updated_at'),
+            ])
 
-        // ✅ Search
-        ->when($request->search, fn ($q, $s) =>
-            $q->where('gate_name', 'like', "%{$s}%")
-        )
+            // ✅ Search
+            ->when($request->search, fn ($q, $s) => $q->where('gate_name', 'like', "%{$s}%")
+            )
 
-        // ✅ Status filter (FIXED)
-        ->when($request->filled('status'), fn ($q) =>
-            $q->where('status', $request->status)
-        )
+            // ✅ Status filter (FIXED)
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status)
+            )
 
-        // ✅ Bays filter (optional but you already have it in UI)
-        ->when($request->filled('bays'), fn ($q) =>
-            $q->where('bays', $request->bays)
-        )
+            // ✅ Bays filter (optional but you already have it in UI)
+            ->when($request->filled('bays'), fn ($q) => $q->where('bays', $request->bays)
+            )
 
-        ->latest()
-        ->paginate(10)
-        ->withQueryString()
-        ->through(fn (GateModel $gate) => $this->gateIndexPayload($gate));
+            ->latest()
+            ->paginate(10)
+            ->withQueryString()
+            ->through(fn (GateModel $gate) => $this->gateIndexPayload($gate));
 
-    return Inertia::render('Gates/Index', [
-        'gates' => $gates,
+        return Inertia::render('Gates/Index', [
+            'gates' => $gates,
 
-        // ✅ IMPORTANT: include ALL filters
-        'filters' => $request->only('search', 'status', 'bays'),
-    ]);
-}
+            // ✅ IMPORTANT: include ALL filters
+            'filters' => $request->only('search', 'status', 'bays'),
+        ]);
+    }
 
     private function gateIndexPayload(GateModel $gate): array
     {
@@ -151,6 +148,28 @@ class GateController extends Controller
         ]);
     }
 
+    public function edit(GateModel $gate)
+    {
+        Gate::authorize('update', $gate);
+
+        $gate->load(['creator:id,name', 'updater:id,name']);
+
+        return Inertia::render('Gates/Edit', [
+            'gate' => [
+                'id' => $gate->id,
+                'gate_name' => $gate->gate_name,
+                'status' => $gate->status,
+                'bays' => $gate->bays,
+                'location' => $gate->location,
+                'picture_url' => $gate->picture_path ? Storage::disk('public')->url($gate->picture_path) : null,
+                'created_at_human' => $gate->created_at_human,
+                'updated_at_human' => $gate->updated_at_human,
+                'creator' => $gate->creator ? ['name' => $gate->creator->name] : null,
+                'updater' => $gate->updater ? ['name' => $gate->updater->name] : null,
+            ],
+        ]);
+    }
+
     public function store(GateStoreRequest $request)
     {
         Gate::authorize('create', GateModel::class);
@@ -170,10 +189,15 @@ class GateController extends Controller
 
         $oldStatus = (string) $gate->status;
 
-        $data = $request->safe()->except('picture');
+        $data = $request->safe()->except(['picture', 'remove_picture']);
         if ($request->hasFile('picture')) {
-            if ($gate->picture_path) Storage::disk('public')->delete($gate->picture_path);
+            if ($gate->picture_path) {
+                Storage::disk('public')->delete($gate->picture_path);
+            }
             $data['picture_path'] = $request->file('picture')->store('gates', 'public');
+        } elseif ($request->boolean('remove_picture') && $gate->picture_path) {
+            Storage::disk('public')->delete($gate->picture_path);
+            $data['picture_path'] = null;
         }
         $this->gateService->updateGate($gate, $data);
 
@@ -218,7 +242,7 @@ class GateController extends Controller
             ->withQueryString();
 
         return Inertia::render('Gates/Trash', [
-            'gates'   => $gates,
+            'gates' => $gates,
             'filters' => $request->only('search', 'status', 'bays'),
         ]);
     }

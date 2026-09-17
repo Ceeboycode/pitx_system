@@ -32,6 +32,9 @@ class StoreUserRequest extends FormRequest
                 'required',
                 'string',
                 Rule::exists('roles', 'name'),
+                // Commuters self-register through the mobile app and must
+                // never be assignable from this internal admin module.
+                Rule::notIn([Role::NAME_COMMUTER]),
             ],
 
             'company_id' => [
@@ -82,6 +85,7 @@ class StoreUserRequest extends FormRequest
     {
         return [
             'name.regex' => 'Name may only contain letters, spaces, apostrophes, periods, and hyphens.',
+            'role.not_in' => 'Commuter accounts cannot be created here; they self-register through the mobile app.',
         ];
     }
 }

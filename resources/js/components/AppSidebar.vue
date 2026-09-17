@@ -19,7 +19,7 @@ import {
 import { index as dispatchesIndex } from '@/actions/App/Http/Controllers/InternalDispatchController';
 import { dashboard } from '@/routes';
 import { index as companiesIndex } from '@/routes/companies';
-import { index as crmIndex } from '@/routes/crm/threads';
+// import { index as crmIndex } from '@/routes/crm/threads';
 import { index as gateIndex } from '@/routes/gates';
 import { edit as editProfile } from '@/routes/profile';
 import { index as rolesIndex } from '@/routes/roles';
@@ -38,7 +38,7 @@ import {
     RiDashboardHorizontalLine,
     RiHistoryLine,
     RiMoonLine,
-    RiQuestionAnswerLine,
+    // RiQuestionAnswerLine,
     RiQuestionLine,
     RiRoadMapLine,
     RiSettings5Line,
@@ -138,19 +138,19 @@ const mainNavItems: NavItem[] = [
             },
         ],
     },
-    {
-        id: 'crm',
-        title: 'Customer Relations',
-        href: '#',
-        icon: RiQuestionAnswerLine,
-        items: [
-            {
-                id: 'threads',
-                title: 'Reports',
-                href: crmIndex().url,
-            },
-        ],
-    },
+    // {
+    //     id: 'crm',
+    //     title: 'Customer Relations',
+    //     href: '#',
+    //     icon: RiQuestionAnswerLine,
+    //     items: [
+    //         {
+    //             id: 'threads',
+    //             title: 'Reports',
+    //             href: crmIndex().url,
+    //         },
+    //     ],
+    // },
     {
         id: 'system-management',
         title: 'System Management',
@@ -175,6 +175,26 @@ const mainNavItems: NavItem[] = [
                 href: auditLogsIndex().url,
                 permission: 'audit_logs.viewAny',
             },
+        ],
+    },
+    {
+        id: 'platform-configurations',
+        title: 'Platform Configurations',
+        href: '#',
+        icon: RiComputerLine,
+        items: [
+            // {
+            //     id: 'vehicle-type',
+            //     title: 'Vehicle Types',
+            //     href: usersIndex().url,
+            //     permission: 'users.viewAny',
+            // },
+            // {
+            //     id: 'remarks',
+            //     title: 'Roles',
+            //     href: rolesIndex().url,
+            //     permission: 'roles.viewAny',
+            // },
         ],
     },
 ];

@@ -1296,16 +1296,18 @@ onBeforeUnmount(() => {
         <CardDescription>Manage route details.</CardDescription>
       </div>
       <div class="flex flex-row items-center gap-2">
-        <!-- TODO: make the cancel button disabled unless change has been made -->
-        <Button variant="float" @click="form.reset(); form.clearErrors()">
+        <Button
+          :variant="!form.isDirty || form.processing ? 'disabled' : 'float'"
+          :disabled="!form.isDirty || form.processing"
+          @click="form.reset(); form.clearErrors()"
+        >
           Cancel
         </Button>
 
-        <!-- TODO: make the save button disabled unless change has been made -->
         <Button
-          :variant="form.processing ? 'disabled' : 'float-primary'"
+          :variant="!form.isDirty || form.processing ? 'disabled' : 'float-primary'"
           size="icon-text"
-          :disabled="form.processing"
+          :disabled="!form.isDirty || form.processing"
           @click="submit"
         >
           {{ form.processing ? 'Saving...' : 'Save Changes' }}

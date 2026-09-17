@@ -24,14 +24,15 @@ class GateUpdateRequest extends FormRequest
     {
         return [
             'gate_name' => [
-                'required','string','max:80',
-                    Rule::unique('gates', 'gate_name')
-                        ->ignore($this->route('gate')->id),
+                'required', 'string', 'max:80',
+                Rule::unique('gates', 'gate_name')
+                    ->ignore($this->route('gate')->id),
             ],
             'status' => ['required', Rule::in(['active', 'inactive'])],
             'bays' => ['required', 'integer', 'min:0'],
             'location' => ['required', 'string', 'max:255'],
             'picture' => ['nullable', 'image', 'mimes:jpeg,png,webp', 'max:5120'],
+            'remove_picture' => ['sometimes', 'boolean'],
         ];
     }
 }

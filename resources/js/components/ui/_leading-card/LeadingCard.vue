@@ -100,7 +100,7 @@ const emit = defineEmits<{
                         <DropdownMenuTrigger as-child class="m-0">
                             <Button
                                 variant="header-actions"
-                                class="bg-custom-bg-light/10 dark:bg-custom-shadow/10"
+                                class="text-custom-bg-light dark:text-custom-shadow bg-custom-bg-light/10 dark:bg-custom-shadow/10"
                                 size="icon"
                                 aria-label="Open vehicle actions"
                             >
