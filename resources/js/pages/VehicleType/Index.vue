@@ -34,6 +34,7 @@ import {
 import CreateVehicleTypeDialog from '@/components/vehicleType/CreateVehicleTypeDialog.vue';
 import EditVehicleTypeDialog from '@/components/vehicleType/EditVehicleTypeDialog.vue';
 import ToggleVehicleTypeStatusDialog from '@/components/vehicleType/ToggleVehicleTypeStatusDialog.vue';
+import DeleteVehicleTypeDialog from '@/components/vehicleType/DeleteVehicleTypeDialog.vue';
 
 import AppLayout from '@/layouts/AppLayout.vue';
 import { index, edit, show } from '@/routes/vehicle-types';
@@ -48,6 +49,7 @@ import {
     RiAddLine,
     RiShutDownLine,
     RiCloseLine,
+    RiDeleteBinLine,
 } from 'vue-remix-icons';
 
 import { computed, ref } from 'vue';
@@ -73,6 +75,7 @@ const props = withDefaults(
             search: string | null;
             status: string | null;
         };
+        canDelete: boolean;
     }>(),
     { filters: () => ({ search: null, status: null }) },
 );
@@ -128,6 +131,8 @@ const selectedVehicleType = ref<VehicleType | null>(null);
 
 const toggleOpen = ref(false);
 const togglingVehicleType = ref<VehicleType | null>(null);
+const deleteOpen = ref(false);
+const deletingVehicleType = ref<VehicleType | null>(null);
 
 function statusClass(is_active: boolean): string {
     return is_active
@@ -147,6 +152,11 @@ function openEditDialog(vehicleType: VehicleType) {
 function openToggleDialog(vehicleType: VehicleType) {
     togglingVehicleType.value = vehicleType;
     toggleOpen.value = true;
+}
+
+function openDeleteDialog(vehicleType: VehicleType) {
+    deletingVehicleType.value = vehicleType;
+    deleteOpen.value = true;
 }
 </script>
 
@@ -375,6 +385,10 @@ function openToggleDialog(vehicleType: VehicleType) {
                                                         {{ vehicleType.is_active ? 'Set as Inactive' : 'Set as Active' }}
                                                     </span>
                                                 </DropdownMenuItem>
+                                                <DropdownMenuItem v-if="canDelete" class="group cursor-pointer text-destructive" @click="openDeleteDialog(vehicleType)">
+                                                    <RiDeleteBinLine class="h-4 w-4" />
+                                                    Delete
+                                                </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
@@ -416,5 +430,6 @@ function openToggleDialog(vehicleType: VehicleType) {
             :vehicle_type="selectedVehicleType"
         />
         <ToggleVehicleTypeStatusDialog v-model:open="toggleOpen" :vehicle_type="togglingVehicleType" />
+        <DeleteVehicleTypeDialog v-if="deletingVehicleType" v-model:open="deleteOpen" :vehicle_type="deletingVehicleType" />
     </AppLayout>
 </template>

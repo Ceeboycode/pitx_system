@@ -129,7 +129,8 @@ class DashboardController extends Controller
         $recentDispatches = Dispatch::query()
             ->with([
                 'company:id,company_name,company_code',
-                'vehicle:id,plate_number,vehicle_type,route_id',
+                'vehicle:id,plate_number,vehicle_type_id,route_id',
+                'vehicle.vehicleType:id,type_name',
                 'vehicle.route:id,route_name',
                 'gate:id,gate_name',
             ])
@@ -144,7 +145,7 @@ class DashboardController extends Controller
                 ] : null,
                 'vehicle' => $dispatch->vehicle ? [
                     'plate_number' => $dispatch->vehicle->plate_number,
-                    'vehicle_type' => $dispatch->vehicle->vehicle_type,
+                    'vehicle_type' => $dispatch->vehicle->vehicleType?->type_name,
                 ] : null,
                 'route' => $dispatch->vehicle?->route?->route_name,
                 'gate' => $dispatch->gate?->gate_name,
@@ -160,7 +161,8 @@ class DashboardController extends Controller
 
         $expiringVehicleDocuments = VehicleDocument::query()
             ->with([
-                'vehicle:id,company_id,plate_number,vehicle_type',
+                'vehicle:id,company_id,plate_number,vehicle_type_id',
+                'vehicle.vehicleType:id,type_name',
                 'vehicle.company:id,company_name,company_code',
             ])
             ->whereNotNull('expires_at')
@@ -181,7 +183,7 @@ class DashboardController extends Controller
                     'days_left' => $daysLeft,
                     'vehicle' => $document->vehicle ? [
                         'plate_number' => $document->vehicle->plate_number,
-                        'vehicle_type' => $document->vehicle->vehicle_type,
+                        'vehicle_type' => $document->vehicle->vehicleType?->type_name,
                     ] : null,
                     'company' => $document->vehicle?->company ? [
                         'name' => $document->vehicle->company->company_name,

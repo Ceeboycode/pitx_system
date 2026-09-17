@@ -96,7 +96,8 @@ class InternalDispatchController extends Controller
                 'status',
             ])
             ->with([
-                'vehicle:id,route_id,plate_number,vehicle_type,make_model',
+                'vehicle:id,route_id,vehicle_type_id,plate_number,make_model',
+                'vehicle.vehicleType:id,type_name',
                 'vehicle.route:id,route_name,origin_name,destination_name,route_geometry',
                 'vehicle.route.stops:id,route_id,stop_name,stop_order,stop_type,address,latitude,longitude',
                 'gate:id,gate_name',
@@ -111,7 +112,7 @@ class InternalDispatchController extends Controller
                         ->orWhere('remarks', 'like', "%{$search}%")
                         ->orWhere('bay_number', 'like', "%{$search}%")
                         ->orWhereHas('vehicle', fn ($v) => $v->where('plate_number', 'like', "%{$search}%")
-                            ->orWhere('vehicle_type', 'like', "%{$search}%")
+                            ->orWhereHas('vehicleType', fn ($type) => $type->where('type_name', 'like', "%{$search}%"))
                             ->orWhere('make_model', 'like', "%{$search}%")
                         )
                         ->orWhereHas('vehicle.route', fn ($r) => $r->where('route_name', 'like', "%{$search}%")
@@ -223,7 +224,7 @@ class InternalDispatchController extends Controller
 
                     'vehicle' => $dispatch->vehicle ? [
                         'plate_number' => $dispatch->vehicle->plate_number,
-                        'vehicle_type' => $dispatch->vehicle->vehicle_type,
+                        'vehicle_type' => $dispatch->vehicle->vehicleType?->type_name,
                         'make_model' => $dispatch->vehicle->make_model,
                         'route' => $route ? [
                             'route_name' => $route->route_name,
@@ -321,7 +322,8 @@ class InternalDispatchController extends Controller
 
         $dispatches = $company->dispatches()
             ->with([
-                'vehicle:id,route_id,plate_number,vehicle_type,make_model',
+                'vehicle:id,route_id,vehicle_type_id,plate_number,make_model',
+                'vehicle.vehicleType:id,type_name',
                 'vehicle.route:id,route_name,origin_name,destination_name',
                 'gate:id,gate_name',
                 'dispatcher:id,name',
@@ -335,7 +337,7 @@ class InternalDispatchController extends Controller
                         ->orWhere('remarks', 'like', "%{$search}%")
                         ->orWhere('bay_number', 'like', "%{$search}%")
                         ->orWhereHas('vehicle', fn ($v) => $v->where('plate_number', 'like', "%{$search}%")
-                            ->orWhere('vehicle_type', 'like', "%{$search}%")
+                            ->orWhereHas('vehicleType', fn ($type) => $type->where('type_name', 'like', "%{$search}%"))
                             ->orWhere('make_model', 'like', "%{$search}%")
                         )
                         ->orWhereHas('vehicle.route', fn ($r) => $r->where('route_name', 'like', "%{$search}%")
@@ -379,7 +381,7 @@ class InternalDispatchController extends Controller
                 fputcsv($out, [
                     $d->id,
                     $d->vehicle?->plate_number ?? $d->plate_number ?? '',
-                    $d->vehicle?->vehicle_type ?? '',
+                    $d->vehicle?->vehicleType?->type_name ?? '',
                     $d->vehicle?->make_model ?? '',
                     $route
                         ? trim(($route->origin_name ?? '').' to '.($route->destination_name ?? ''))

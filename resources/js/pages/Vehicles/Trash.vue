@@ -17,7 +17,7 @@ import { computed, ref } from 'vue';
 
 type ArchivedVehicle = {
     id: number;
-    vehicle_type?: string | null;
+    vehicle_type?: { id: number; type_name: string } | null;
     plate_number?: string | null;
     body_number?: string | null;
     capacity?: string | number | null;
@@ -35,15 +35,16 @@ const props = withDefaults(defineProps<{
         to: number | null;
         total: number;
     };
-    filters?: { search: string | null; vehicle_type: string | null; company: string | null; route: string | null };
-}>(), { filters: () => ({ search: null, vehicle_type: null, company: null, route: null }) });
+    filters?: { search: string | null; vehicle_type_id: string | null; company: string | null; route: string | null };
+    vehicleTypes: { id: number; type_name: string }[];
+}>(), { filters: () => ({ search: null, vehicle_type_id: null, company: null, route: null }) });
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Vehicles', href: index().url },
     { title: 'Archived Vehicles', href: trash().url },
 ];
 
-const filterVehicleType = ref(props.filters.vehicle_type ?? '');
+const filterVehicleType = ref(props.filters.vehicle_type_id ?? '');
 const filterCompany = ref(props.filters.company ?? '');
 const filterRoute = ref(props.filters.route ?? '');
 const filterOpen = ref(false);
@@ -52,7 +53,7 @@ const activeFilterCount = computed(() => [filterVehicleType.value, filterCompany
 function applyFilters() {
     router.get(trash().url, {
         search: props.filters.search || undefined,
-        vehicle_type: filterVehicleType.value || undefined,
+        vehicle_type_id: filterVehicleType.value || undefined,
         company: filterCompany.value || undefined,
         route: filterRoute.value || undefined,
     }, { preserveScroll: true, preserveState: true, replace: true, only: ['vehicles', 'filters'] });
@@ -74,10 +75,6 @@ function openRestore(vehicle: ArchivedVehicle) {
     restoreOpen.value = true;
 }
 
-function humanize(text?: string | null) {
-    if (!text) return '—';
-    return text.replace(/_/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase());
-}
 </script>
 
 <template>
@@ -94,7 +91,7 @@ function humanize(text?: string | null) {
                     <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
                         <div class="w-full">
                             <SearchInput
-                                :route="`${trash().url}?vehicle_type=${encodeURIComponent(filterVehicleType)}&company=${encodeURIComponent(filterCompany)}&route=${encodeURIComponent(filterRoute)}`"
+                                :route="`${trash().url}?vehicle_type_id=${encodeURIComponent(filterVehicleType)}&company=${encodeURIComponent(filterCompany)}&route=${encodeURIComponent(filterRoute)}`"
                                 :initial-value="props.filters.search"
                                 placeholder="Search archived vehicles..."
                                 :only="['vehicles', 'filters', 'flash']"
@@ -109,7 +106,7 @@ function humanize(text?: string | null) {
                             </PopoverTrigger>
                             <PopoverContent align="end">
                                 <div class="grid gap-y-2">
-                                    <div class="flex flex-col gap-y-1"><p class="text-sm text-custom-shadow/80">Vehicle Type</p><Input v-model="filterVehicleType" placeholder="e.g. bus" class="bg-custom-bg" /></div>
+                                    <div class="flex flex-col gap-y-1"><p class="text-sm text-custom-shadow/80">Vehicle Type</p><select v-model="filterVehicleType" class="h-9 rounded-md border bg-custom-bg px-3 text-sm"><option value="">All types</option><option v-for="vehicleType in vehicleTypes" :key="vehicleType.id" :value="vehicleType.id">{{ vehicleType.type_name }}</option></select></div>
                                     <div class="flex flex-col gap-y-1"><p class="text-sm text-custom-shadow/80">Company</p><Input v-model="filterCompany" placeholder="Enter company name" class="bg-custom-bg" /></div>
                                     <div class="flex flex-col gap-y-1"><p class="text-sm text-custom-shadow/80">Route</p><Input v-model="filterRoute" placeholder="Enter route name" class="bg-custom-bg" /></div>
                                     <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light" />
@@ -135,7 +132,7 @@ function humanize(text?: string | null) {
                             <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
                                 <div v-for="(vehicle, rowIndex) in props.vehicles.data" :key="vehicle.id" :class="['grid grid-cols-[1.5fr_1.2fr_1fr_.6fr_1fr_1fr_5rem] items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light', rowIndex === props.vehicles.data.length - 1 ? 'rounded-b-md border-b-0' : '']">
                                     <div class="flex min-w-0 flex-col py-2 pl-3"><span class="truncate font-semibold capitalize">{{ vehicle.company?.company_name || '—' }}</span><span class="truncate text-xs text-custom-shadow/70">{{ vehicle.route?.route_name || 'No route assigned' }}</span></div>
-                                    <div class="flex min-w-0 flex-col py-2"><span class="truncate text-sm font-medium">{{ humanize(vehicle.vehicle_type) }}</span><span class="truncate text-xs text-custom-shadow/70">{{ vehicle.body_number || '—' }}</span></div>
+                                    <div class="flex min-w-0 flex-col py-2"><span class="truncate text-sm font-medium">{{ vehicle.vehicle_type?.type_name ?? '—' }}</span><span class="truncate text-xs text-custom-shadow/70">{{ vehicle.body_number || '—' }}</span></div>
                                     <div class="flex py-2"><span class="rounded bg-custom-bg px-2 py-0.5 font-mono text-xs font-semibold text-custom-shadow dark:bg-custom-bg-light">{{ vehicle.plate_number || '—' }}</span></div>
                                     <div class="flex py-2 text-sm tabular-nums">{{ vehicle.capacity || '—' }}</div>
                                     <div class="flex py-2 text-sm">{{ vehicle.deleted_at_human || '—' }}</div>

@@ -77,6 +77,7 @@ import {
     RiSpam2Line,
 } from 'vue-remix-icons';
 import { computed, ref } from 'vue';
+import type { AcceptableValue } from 'reka-ui';
 import { PanelLayout } from '@/components/ui/_panels';
 import { destroy, index, show, trash } from '@/routes/vehicles';
 import { type BreadcrumbItem } from '@/types';
@@ -99,8 +100,8 @@ type VehicleItem = {
     id: number;
     status?: string | null;
     verification_status?: string | null;
-    vehicle_type?: string | null;
-    plate_number?: string | null;
+    vehicle_type?: { id: number; type_name: string } | null;
+    plate_number: string | null;
     body_number?: string | null;
     capacity?: string | number | null;
     created_at?: string | null;
@@ -130,6 +131,7 @@ const props = defineProps<{
         sort_dir: SortDir;
     };
     routes: { id: number; route_name: string }[];
+    vehicleTypes: { id: number; type_name: string }[];
 }>();
 
 
@@ -212,7 +214,7 @@ const targetStatus = ref<'active' | 'inactive' | 'suspended'>('suspended');
 
 
 const statusFilter = ref<string>(props.filters.status ?? 'all');
-const vehicleTypeFilter = ref<string>(props.filters.vehicle_type ?? 'all');
+const vehicleTypeFilter = ref<string | number>(props.filters.vehicle_type ?? 'all');
 const routeFilter = ref<string>(props.filters.route_id ?? 'all');
 const sortBy = ref<SortField>(props.filters.sort_by ?? null);
 const sortDir = ref<SortDir>(props.filters.sort_dir ?? 'asc');
@@ -263,16 +265,16 @@ function applyFilters(
     filterOpen.value = false;
 }
 
-function onStatusChange(val: string) {
-    statusFilter.value = val;
+function onStatusChange(val: AcceptableValue) {
+    statusFilter.value = String(val ?? 'all');
 }
 
-function onVehicleTypeChange(val: string) {
-    vehicleTypeFilter.value = val;
+function onVehicleTypeChange(val: AcceptableValue) {
+    vehicleTypeFilter.value = typeof val === 'string' || typeof val === 'number' ? val : 'all';
 }
 
-function onRouteChange(val: string) {
-    routeFilter.value = val;
+function onRouteChange(val: AcceptableValue) {
+    routeFilter.value = String(val ?? 'all');
 }
 
 function toggleSort(field: SortField) {
@@ -515,41 +517,8 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                         >
                                                             All Types
                                                         </SelectItem>
-                                                        <SelectItem
-                                                            value="Bus"
-                                                            class="cursor-pointer text-sm"
-                                                        >
-                                                            Bus
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            value="Mini Bus"
-                                                            class="cursor-pointer text-sm"
-                                                        >
-                                                            Mini Bus
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            value="PUV"
-                                                            class="cursor-pointer text-sm"
-                                                        >
-                                                            PUV
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            value="Jeepney"
-                                                            class="cursor-pointer text-sm"
-                                                        >
-                                                            Jeepney
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            value="Van"
-                                                            class="cursor-pointer text-sm"
-                                                        >
-                                                            Van
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            value="UV Express"
-                                                            class="cursor-pointer text-sm"
-                                                        >
-                                                            UV Express
+                                                        <SelectItem v-for="vehicleType in vehicleTypes" :key="vehicleType.id" :value="vehicleType.id" class="cursor-pointer text-sm">
+                                                            {{ vehicleType.type_name }}
                                                         </SelectItem>
                                                     </SelectContent>
                                                 </Select>
@@ -712,7 +681,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                     </TableData>
 
                                     <TableData class="justify-center flex-col">
-                                        <p class="truncate text-sm font-medium">{{ humanize(vehicle.vehicleType?.type_name) }}</p>
+                                        <p class="truncate text-sm font-medium">{{ vehicle.vehicle_type?.type_name ?? '—' }}</p>
                                         <p class="truncate text-xs text-muted-foreground">{{ vehicle.body_number || '—' }}</p>
                                     </TableData>
 
@@ -956,7 +925,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                         </div>
                         <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Company</span><span class="text-right text-sm">{{ previewedVehicle.company?.company_name || 'Not assigned' }}</span></div>
                         <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Route</span><span class="text-right text-sm">{{ previewedVehicle.route?.route_name || 'Not assigned' }}</span></div>
-                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Vehicle Type</span><span class="text-right text-sm">{{ humanize(previewedVehicle.vehicleType?.type_name) }}</span></div>
+                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Vehicle Type</span><span class="text-right text-sm">{{ previewedVehicle.vehicle_type?.type_name ?? '—' }}</span></div>
                         <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Body Number</span><span class="text-right text-sm">{{ previewedVehicle.body_number || 'Not recorded' }}</span></div>
                         <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Capacity</span><span class="text-right text-sm">{{ previewedVehicle.capacity || 'Not recorded' }}</span></div>
                         <div v-if="previewedVehicle.operator_remark" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Operator Remark</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.operator_remark }}</p></div>

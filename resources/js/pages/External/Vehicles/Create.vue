@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3'
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 
 import ExternalLayout from '@/layouts/ExternalLayout.vue'
 
@@ -87,30 +87,11 @@ const props = defineProps<{
     }
 }>()
 
-const vehicleTypesOld = [
-    'Bus',
-    'Modern Jeepney',
-    'Jeepney',
-    'Mini Bus',
-    'UV Express',
-    'Van',
-]
-
-
-const capacityMap: Record<string, number> = {
-    'Jeepney': 16,
-    'UV Express': 18,
-    'Van': 18,
-    'Modern Jeepney': 25,
-    'Mini Bus': 35,
-    'Bus': 60,
-}
-
 const form = useForm({
     vehicle_type_id: null as number | null,
     plate_number: '',
     body_number: '',
-    capacity: null as number | null,
+    capacity: '',
     color: '',
     engine_number: '',
     chassis_number: '',
@@ -123,18 +104,6 @@ const form = useForm({
         expires_at: '',
     })),
 })
-
-
-watch(
-    () => form.vehicle_type_id,
-    (newType) => {
-        if (capacityMap[newType]) {
-            form.capacity = String(capacityMap[newType])
-        } else {
-            form.capacity = ''
-        }
-    }
-)
 
 const selectedRoute = computed(() =>
     props.routes.find((route) => String(route.id) === String(form.route_id)) ?? null,
@@ -277,7 +246,8 @@ function submit() {
                                 </div>
                                 <div class="p-6">
                                     <VehicleBasicInfoForm
-                                        :form="form"
+                                    :form="form"
+                                    :vehicle-type-name="vehicleTypes.find((type) => type.id === form.vehicle_type_id)?.type_name"
                                         :vehicle-types="vehicleTypes"
                                     />
                                 </div>

@@ -103,7 +103,8 @@ type VehicleItem = {
     id: number;
     company_id: number;
     route_id?: number | null;
-    vehicle_type: string;
+    vehicle_type_id?: number | null;
+    vehicle_type?: { id: number; type_name: string } | null;
     plate_number: string;
     body_number?: string | null;
     capacity?: number | null;
@@ -144,12 +145,13 @@ const props = defineProps<{
     filters: {
         search?: string | null;
         status?: string | null;
-        vehicle_type?: string | null;
+        vehicle_type_id?: string | null;
         route_id?: string | null;
         sort_by?: 'capacity' | 'created_at' | null;
         sort_dir?: 'asc' | 'desc' | null;
     };
     routes: { id: number; route_name: string }[];
+    vehicleTypes: { id: number; type_name: string }[];
 }>();
 
 
@@ -299,7 +301,7 @@ type SortField = 'capacity' | 'created_at' | null;
 type SortDir = 'asc' | 'desc';
 
 const statusFilter = ref<string>(props.filters.status ?? 'all');
-const vehicleTypeFilter = ref<string | number>(props.filters.vehicle_type ?? 'all');
+const vehicleTypeFilter = ref<string | number>(props.filters.vehicle_type_id ?? 'all');
 const routeFilter = ref<string>(props.filters.route_id ?? 'all');
 const filterOpen = ref(false);
 const sortOpen = ref(false);
@@ -342,7 +344,7 @@ function applyFilters(
             search: props.filters.search ?? undefined,
             status:
                 statusFilter.value !== 'all' ? statusFilter.value : undefined,
-            vehicle_type:
+            vehicle_type_id:
                 vehicleTypeFilter.value !== 'all'
                     ? vehicleTypeFilter.value
                     : undefined,
@@ -394,7 +396,7 @@ function clearFilters() {
     routeFilter.value = 'all';
     applyFilters({
         status: undefined,
-        vehicle_type: undefined,
+        vehicle_type_id: undefined,
         route_id: undefined,
     });
 }
@@ -570,12 +572,9 @@ function openActivate(vehicle: VehicleItem) {
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="all" class="cursor-pointer">All Types</SelectItem>
-                                                    <SelectItem value="Bus" class="cursor-pointer">Bus</SelectItem>
-                                                    <SelectItem value="Modern Jeepney" class="cursor-pointer">Modern Jeepney</SelectItem>
-                                                    <SelectItem value="Jeepney" class="cursor-pointer">Jeepney</SelectItem>
-                                                    <SelectItem value="Mini Bus" class="cursor-pointer">Mini Bus</SelectItem>
-                                                    <SelectItem value="UV Express" class="cursor-pointer">UV Express</SelectItem>
-                                                    <SelectItem value="Van" class="cursor-pointer">Van</SelectItem>
+                                                    <SelectItem v-for="vehicleType in vehicleTypes" :key="vehicleType.id" :value="vehicleType.id" class="cursor-pointer">
+                                                        {{ vehicleType.type_name }}
+                                                    </SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -1153,7 +1152,7 @@ function openActivate(vehicle: VehicleItem) {
                             </span>
                         </div>
                         <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Route</span><span class="text-right text-sm">{{ previewedVehicle.route?.route_name || 'Not assigned' }}</span></div>
-                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Vehicle Type</span><span class="text-right text-sm">{{ humanize(previewedVehicle.vehicle_type) }}</span></div>
+                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Vehicle Type</span><span class="text-right text-sm">{{ previewedVehicle.vehicle_type?.type_name ?? '—' }}</span></div>
                         <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Make / Model</span><span class="text-right text-sm">{{ previewedVehicle.make_model || 'Not recorded' }}</span></div>
                         <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Body Number</span><span class="text-right text-sm">{{ previewedVehicle.body_number || 'Not recorded' }}</span></div>
                         <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Capacity</span><span class="text-right text-sm">{{ previewedVehicle.capacity ?? 'Not recorded' }}</span></div>

@@ -2,7 +2,9 @@
 
 namespace App\Services\Vehicle;
 
+use App\Models\Vehicle;
 use App\Models\VehicleType;
+use Illuminate\Validation\ValidationException;
 
 class VehicleTypeService
 {
@@ -24,6 +26,12 @@ class VehicleTypeService
 
     public function deleteVehicleType(VehicleType $vehicleType): void
     {
+        if (Vehicle::withTrashed()->whereBelongsTo($vehicleType)->exists()) {
+            throw ValidationException::withMessages([
+                'vehicle_type' => 'This vehicle type is assigned to one or more vehicles and cannot be deleted. Deactivate it instead.',
+            ]);
+        }
+
         $vehicleType->delete();
     }
 }

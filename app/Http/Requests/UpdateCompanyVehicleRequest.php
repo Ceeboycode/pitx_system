@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Vehicle;
+use App\Models\VehicleType;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
@@ -41,7 +42,7 @@ class UpdateCompanyVehicleRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            
+
             'plate_number' => strtoupper($this->clean($this->plate_number)),
             'body_number' => $this->clean($this->body_number),
             'color' => $this->clean($this->color),
@@ -119,11 +120,24 @@ class UpdateCompanyVehicleRequest extends FormRequest
         ];
     }
 
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            $vehicle = $this->route('vehicle');
+            $currentTypeId = $vehicle instanceof Vehicle ? $vehicle->vehicle_type_id : null;
+            $selectedType = VehicleType::find($this->integer('vehicle_type_id'));
+
+            if ($selectedType && ! $selectedType->is_active && (int) $selectedType->id !== (int) $currentTypeId) {
+                $validator->errors()->add('vehicle_type_id', 'Inactive vehicle types cannot be assigned.');
+            }
+        }];
+    }
+
     public function messages(): array
     {
         return [
-            'vehicle_type.required' => 'Please enter the vehicle type.',
-            'vehicle_type.max' => 'The vehicle type may not exceed 100 characters.',
+            'vehicle_type_id.required' => 'Please select a vehicle type.',
+            'vehicle_type_id.exists' => 'The selected vehicle type is invalid.',
 
             'plate_number.required' => 'Please enter the plate number.',
             'plate_number.max' => 'The plate number may not exceed 20 characters.',

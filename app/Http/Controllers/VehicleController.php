@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Vehicle\VehicleStoreRequest;
+use App\Http\Requests\Vehicle\VehicleUpdateRequest;
+use App\Models\Company;
 use App\Models\Route;
 use App\Models\Vehicle;
 use App\Models\VehicleDocument;
+use App\Models\VehicleType;
 use App\Notifications\External\VehicleApprovedNotification;
 use App\Notifications\External\VehicleDocumentNeedsRevisionNotification;
 use App\Notifications\External\VehicleReactivatedNotification;
@@ -95,6 +99,11 @@ class VehicleController extends Controller
                 'sort_dir' => $sortDir,
             ],
             'routes' => $routes,
+            'vehicleTypes' => VehicleType::query()
+                ->where('is_active', true)
+                ->orWhereHas('vehicles')
+                ->orderBy('type_name')
+                ->get(['id', 'type_name']),
         ]);
     }
 
@@ -107,6 +116,7 @@ class VehicleController extends Controller
 
         $vehicle->load([
             'company:id,company_name,company_code,company_email,company_phone,company_address',
+            'vehicleType:id,type_name,is_active',
             'route:id,route_name,gate_id,origin_name,origin_lat,origin_lng,destination_name,destination_lat,destination_lng,distance_meters,duration_seconds,route_geometry,status,created_by,updated_by,created_at,updated_at',
             'route.gate:id,gate_name',
             'route.stops:id,route_id,stop_name,stop_type,address,latitude,longitude,stop_order',
@@ -119,7 +129,8 @@ class VehicleController extends Controller
         return Inertia::render('Vehicles/Show', [
             'vehicle' => [
                 'id' => $vehicle->id,
-                'vehicle_type' => $vehicle->vehicle_type_id,
+                'vehicle_type_id' => $vehicle->vehicle_type_id,
+                'vehicle_type' => $vehicle->vehicleType?->type_name,
                 'plate_number' => $vehicle->plate_number,
                 'body_number' => $vehicle->body_number,
                 'capacity' => $vehicle->capacity,
@@ -217,6 +228,54 @@ class VehicleController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        Gate::authorize('create', Vehicle::class);
+
+        return Inertia::render('Vehicles/Create', [
+            'companies' => Company::query()->select('id', 'company_name')->orderBy('company_name')->get(),
+            'routes' => Route::query()->select('id', 'route_name')->orderBy('route_name')->get(),
+            'vehicleTypes' => VehicleType::active()->orderBy('type_name')->get(['id', 'type_name']),
+        ]);
+    }
+
+    public function store(VehicleStoreRequest $request): RedirectResponse
+    {
+        Gate::authorize('create', Vehicle::class);
+
+        Vehicle::create([
+            ...$request->validated(),
+            'created_by' => $request->user()->id,
+            'updated_by' => $request->user()->id,
+        ]);
+
+        return to_route('vehicles.index')->with('success', 'Vehicle created successfully.');
+    }
+
+    public function edit(Vehicle $vehicle): Response
+    {
+        Gate::authorize('update', $vehicle);
+
+        return Inertia::render('Vehicles/Edit', [
+            'vehicle' => $vehicle->only(['id', 'plate_number', 'body_number', 'capacity', 'company_id', 'route_id', 'vehicle_type_id']),
+            'companies' => Company::query()->select('id', 'company_name')->orderBy('company_name')->get(),
+            'routes' => Route::query()->select('id', 'route_name')->orderBy('route_name')->get(),
+            'vehicleTypes' => $this->vehicleTypesForSelection($vehicle),
+        ]);
+    }
+
+    public function update(VehicleUpdateRequest $request, Vehicle $vehicle): RedirectResponse
+    {
+        Gate::authorize('update', $vehicle);
+
+        $vehicle->update([
+            ...$request->validated(),
+            'updated_by' => $request->user()->id,
+        ]);
+
+        return to_route('vehicles.index')->with('success', 'Vehicle updated successfully.');
+    }
+
     public function destroy(Vehicle $vehicle): RedirectResponse
     {
         Gate::authorize('delete', $vehicle);
@@ -252,7 +311,7 @@ class VehicleController extends Controller
                 'deleted_by',
             ])
             ->search($search)
-            ->when($request->filled('vehicle_type'), fn ($query) => $query->where('vehicle_type_id', 'like', "%{$request->vehicle_type}%"))
+            ->when($request->filled('vehicle_type_id'), fn ($query) => $query->where('vehicle_type_id', $request->integer('vehicle_type_id')))
             ->when($request->filled('company'), fn ($query) => $query->whereHas(
                 'company',
                 fn ($company) => $company->where('company_name', 'like', "%{$request->company}%")
@@ -269,10 +328,11 @@ class VehicleController extends Controller
             'vehicles' => $vehicles,
             'filters' => [
                 'search' => $search,
-                'vehicle_type' => $request->input('vehicle_type'),
+                'vehicle_type_id' => $request->input('vehicle_type_id'),
                 'company' => $request->input('company'),
                 'route' => $request->input('route'),
             ],
+            'vehicleTypes' => VehicleType::query()->orderBy('type_name')->get(['id', 'type_name']),
         ]);
     }
 
@@ -292,6 +352,15 @@ class VehicleController extends Controller
         $this->vehicleService->forceDeleteVehicle($vehicle);
 
         return back()->with('success', 'Vehicle permanently deleted successfully.');
+    }
+
+    private function vehicleTypesForSelection(Vehicle $vehicle)
+    {
+        return VehicleType::query()
+            ->where('is_active', true)
+            ->orWhereKey($vehicle->vehicle_type_id)
+            ->orderBy('type_name')
+            ->get(['id', 'type_name', 'is_active']);
     }
 
     public function verifyDocument(Request $request, Vehicle $vehicle, VehicleDocument $document): RedirectResponse

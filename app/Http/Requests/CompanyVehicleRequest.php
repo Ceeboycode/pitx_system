@@ -40,7 +40,7 @@ class CompanyVehicleRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            
+
             'plate_number' => strtoupper($this->clean($this->plate_number)),
             'body_number' => $this->clean($this->body_number),
             'color' => $this->clean($this->color),
@@ -75,7 +75,6 @@ class CompanyVehicleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'vehicle_type' => ['required', 'string', 'max:100'],
             'plate_number' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9][A-Z0-9\s-]*$/', 'unique:vehicles,plate_number'],
             'body_number' => ['required', 'string', 'max:50', 'regex:/^[A-Za-z0-9-]+$/'],
             'capacity' => ['required', 'integer', 'min:1', 'max:200'],
@@ -105,7 +104,7 @@ class CompanyVehicleRequest extends FormRequest
             'documents' => ['required', 'array', 'size:5'],
             'vehicle_type_id' => [
                 'required',
-                'exists:vehicle_types,id',
+                Rule::exists('vehicle_types', 'id')->where('is_active', true),
             ],
             'documents.*.document_type' => [
                 'required',
@@ -121,8 +120,8 @@ class CompanyVehicleRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'vehicle_type.required' => 'Please enter the vehicle type.',
-            'vehicle_type.max' => 'The vehicle type may not exceed 100 characters.',
+            'vehicle_type_id.required' => 'Please select a vehicle type.',
+            'vehicle_type_id.exists' => 'The selected vehicle type is inactive or invalid.',
 
             'plate_number.required' => 'Please enter the plate number.',
             'plate_number.max' => 'The plate number may not exceed 20 characters.',

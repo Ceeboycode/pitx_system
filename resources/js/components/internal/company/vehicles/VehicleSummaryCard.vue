@@ -13,11 +13,12 @@ import {
 
 const props = defineProps<{
     form: {
-        vehicle_type: string
+        vehicle_type_id: number | string | null
         processing?: boolean
         documents: Array<{ file: File | null }>
     }
     selectedRouteName?: string | null
+    vehicleTypeName?: string | null
     requiredDocumentsCount: number
     userName: string
     submitLabel?: string
@@ -38,7 +39,7 @@ const uploadedCount = computed(() => {
             <div class="min-w-0">
                 <p class="text-sm font-medium">Vehicle Type</p>
                 <p class="text-sm text-muted-foreground">
-                    {{ form.vehicle_type || 'Not selected' }}
+                    {{ vehicleTypeName || 'Not selected' }}
                 </p>
             </div>
         </div>

@@ -40,11 +40,12 @@ class DispatchController extends Controller
                 'route_id',
                 'plate_number',
                 'body_number',
-                'vehicle_type',
+                'vehicle_type_id',
                 'make_model',
                 'status',
             ])
             ->with([
+                'vehicleType:id,type_name',
                 'route:id,gate_id,route_name,origin_name,destination_name,route_geometry,status',
                 'route.gate:id,gate_name,status',
             ])
@@ -54,7 +55,7 @@ class DispatchController extends Controller
                 'id' => $vehicle->id,
                 'plate_number' => $vehicle->plate_number,
                 'body_number' => $vehicle->body_number,
-                'vehicle_type' => $vehicle->vehicle_type,
+                'vehicle_type' => $vehicle->vehicleType?->type_name,
                 'make_model' => $vehicle->make_model,
                 'status' => $vehicle->status,
                 'route' => $vehicle->route ? [
@@ -73,7 +74,7 @@ class DispatchController extends Controller
                 'label' => trim(implode(' • ', array_filter([
                     $vehicle->plate_number,
                     $vehicle->body_number ? 'Body #'.$vehicle->body_number : null,
-                    $vehicle->vehicle_type,
+                    $vehicle->vehicleType?->type_name,
                 ]))),
             ])
             ->values();
@@ -120,7 +121,8 @@ class DispatchController extends Controller
 
         $dispatches = Dispatch::query()
             ->with([
-                'vehicle:id,route_id,plate_number,body_number,vehicle_type,make_model',
+                'vehicle:id,route_id,vehicle_type_id,plate_number,body_number,make_model',
+                'vehicle.vehicleType:id,type_name',
                 'vehicle.route:id,gate_id,route_name,origin_name,destination_name,route_geometry,status',
                 'dispatcher:id,name,username',
                 'driver:id,name,username',
@@ -175,7 +177,7 @@ class DispatchController extends Controller
                     'route_id' => $dispatch->vehicle->route_id,
                     'plate_number' => $dispatch->vehicle->plate_number,
                     'body_number' => $dispatch->vehicle->body_number,
-                    'vehicle_type' => $dispatch->vehicle->vehicle_type,
+                    'vehicle_type' => $dispatch->vehicle->vehicleType?->type_name,
                     'make_model' => $dispatch->vehicle->make_model,
                     'route' => $dispatch->vehicle->route ? [
                         'id' => $dispatch->vehicle->route->id,
@@ -295,7 +297,8 @@ class DispatchController extends Controller
         abort_unless($dispatch->company_id === $company->id, 403);
 
         $dispatch->load([
-            'vehicle:id,company_id,route_id,plate_number,body_number,vehicle_type,make_model,status',
+            'vehicle:id,company_id,route_id,vehicle_type_id,plate_number,body_number,make_model,status',
+            'vehicle.vehicleType:id,type_name',
             'vehicle.route:id,gate_id,route_name,origin_name,destination_name,route_geometry,status',
             'vehicle.route.gate:id,gate_name',
             'vehicle.route.stops:id,route_id,stop_name,stop_order,stop_type,address,latitude,longitude',
@@ -377,7 +380,7 @@ class DispatchController extends Controller
                     'route_id' => $dispatch->vehicle->route_id,
                     'plate_number' => $dispatch->vehicle->plate_number,
                     'body_number' => $dispatch->vehicle->body_number,
-                    'vehicle_type' => $dispatch->vehicle->vehicle_type,
+                    'vehicle_type' => $dispatch->vehicle->vehicleType?->type_name,
                     'make_model' => $dispatch->vehicle->make_model,
                     'status' => $dispatch->vehicle->status,
                     'route' => $dispatch->vehicle->route ? [

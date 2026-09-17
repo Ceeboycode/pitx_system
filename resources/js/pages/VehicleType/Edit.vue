@@ -111,7 +111,7 @@ function submit() {
                                         <Input
                                             id="type_name"
                                             v-model="form.type_name"
-                                            placeholder="e.g. Mini Bus"
+                                            placeholder="Enter vehicle type name"
                                             required
                                             class="bg-custom-bg-light dark:bg-custom-bg"
                                         />

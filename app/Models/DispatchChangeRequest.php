@@ -175,14 +175,15 @@ class DispatchChangeRequest extends Model
 
         if (! array_key_exists($id, $vehicleLabels)) {
             $vehicle = Vehicle::query()
-                ->select(['id', 'plate_number', 'body_number', 'vehicle_type'])
+                ->select(['id', 'plate_number', 'body_number', 'vehicle_type_id'])
+                ->with('vehicleType:id,type_name')
                 ->find($id);
 
             $vehicleLabels[$id] = $vehicle
                 ? trim(implode(' • ', array_filter([
                     $vehicle->plate_number,
                     $vehicle->body_number ? 'Body #'.$vehicle->body_number : null,
-                    $vehicle->vehicle_type,
+                    $vehicle->vehicleType?->type_name,
                 ])))
                 : null;
         }

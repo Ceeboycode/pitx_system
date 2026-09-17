@@ -6,12 +6,21 @@ use App\Models\Company;
 use App\Models\Route;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Models\VehicleType;
 use Illuminate\Database\Seeder;
 
 class VehicleSeeder extends Seeder
 {
     public function run(): void
     {
+        $vehicleTypeId = VehicleType::active()->orderBy('id')->value('id');
+
+        if (! $vehicleTypeId) {
+            $this->command?->warn('Skipping vehicle seeding: no active vehicle type found.');
+
+            return;
+        }
+
         $vehicles = [
             'NOR' => [
                 [
@@ -117,7 +126,7 @@ class VehicleSeeder extends Seeder
                         ...$data,
                         'company_id' => $company->id,
                         'route_id' => $route->id,
-                        'vehicle_type' => 'Bus',
+                        'vehicle_type_id' => $vehicleTypeId,
                         'status' => 'active',
                         'created_by' => $operator->id,
                         'updated_by' => $operator->id,

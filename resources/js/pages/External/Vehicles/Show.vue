@@ -123,7 +123,8 @@ type VehicleDocument = {
 type Vehicle = {
     id: number;
     route_id: number | string | null;
-    vehicle_type: string;
+    vehicle_type_id: number | null;
+    vehicle_type?: string | null;
     plate_number: string;
     body_number: string;
     capacity: string | number;
@@ -151,6 +152,7 @@ const props = defineProps<{
     gates: GateItem[];
     routes: RouteItem[];
     docTypes: DocTypes;
+    vehicleTypes: Array<{ id: number; type_name: string }>;
     mapConfig: {
         mapboxToken?: string | null;
         defaultCenter: { lng: number; lat: number };
@@ -159,17 +161,8 @@ const props = defineProps<{
 }>();
 
 
-const vehicleTypes = [
-    'Bus',
-    'Modern Jeepney',
-    'Jeepney',
-    'Mini Bus',
-    'UV Express',
-    'Van',
-];
-
 const form = reactive({
-    vehicle_type: props.vehicle.vehicleType?.type_name ?? '',
+    vehicle_type_id: props.vehicle.vehicle_type_id,
     plate_number: props.vehicle.plate_number ?? '',
     body_number: props.vehicle.body_number ?? '',
     capacity: props.vehicle.capacity ?? '',
@@ -638,7 +631,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         <p
                             class="mt-0.5 truncate text-sm font-bold text-slate-900"
                         >
-                            {{ vehicle.vehicleType?.type_name || '—' }}
+                            {{ vehicle.vehicle_type || '—' }}
                         </p>
                     </div>
 
@@ -821,6 +814,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                             <div class="p-6">
                                 <VehicleBasicInfoForm
                                     :form="form"
+                                    :vehicle-type-name="vehicleTypes.find((type) => type.id === form.vehicle_type_id)?.type_name"
                                     :vehicle-types="vehicleTypes"
                                     readonly
                                 />

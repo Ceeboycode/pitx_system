@@ -18,9 +18,10 @@ import {
     Shield,
     Users,
 } from 'lucide-vue-next'
+import type { AcceptableValue } from 'reka-ui'
 
 type VehicleFormShape = {
-    vehicle_type: string
+    vehicle_type_id: number | string | null
     plate_number: string
     body_number: string
     capacity: string | number
@@ -33,7 +34,7 @@ type VehicleFormShape = {
 
 const props = defineProps<{
     form: VehicleFormShape
-    vehicleTypes: string[]
+    vehicleTypes: Array<{ id: number; type_name: string }>
     readonly?: boolean
 }>()
 
@@ -99,8 +100,9 @@ function capacitySelectValue() {
         : 'custom'
 }
 
-function updateCapacity(value: string) {
-    props.form.capacity = value === 'custom' ? '' : value
+function updateCapacity(value: AcceptableValue) {
+    const normalizedValue = String(value ?? '')
+    props.form.capacity = normalizedValue === 'custom' ? '' : normalizedValue
 }
 </script>
 
@@ -146,15 +148,15 @@ function updateCapacity(value: string) {
                 <div class="grid gap-4">
                     <div class="space-y-2">
                         <Label
-                            for="vehicle_type"
+                            for="vehicle_type_id"
                             class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
                         >
                             Vehicle Type
                         </Label>
 
-                        <Select v-model="form.vehicle_type" :disabled="readonly">
+                        <Select v-model="form.vehicle_type_id" :disabled="readonly">
                             <SelectTrigger
-                                id="vehicle_type"
+                                id="vehicle_type_id"
                                 class="h-11 w-full rounded-xl border-muted-foreground/20 bg-background"
                             >
                                 <SelectValue placeholder="Select vehicle type" />
@@ -163,15 +165,15 @@ function updateCapacity(value: string) {
                             <SelectContent>
                                 <SelectItem
                                     v-for="type in vehicleTypes"
-                                    :key="type"
-                                    :value="type"
+                                    :key="type.id"
+                                    :value="type.id"
                                 >
-                                    {{ type }}
+                                    {{ type.type_name }}
                                 </SelectItem>
                             </SelectContent>
                         </Select>
 
-                        <InputError :message="form.errors.vehicle_type" />
+                        <InputError :message="form.errors.vehicle_type_id" />
                     </div>
 
                     <div class="space-y-2">
