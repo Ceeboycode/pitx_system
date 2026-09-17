@@ -21,10 +21,10 @@ class CrmThread extends Model
     ];
 
     protected $casts = [
-        'is_closed'        => 'boolean',
-        'closed_at'        => 'datetime',
-        'last_message_at'  => 'datetime',
-        'details'          => 'array',
+        'is_closed' => 'boolean',
+        'closed_at' => 'datetime',
+        'last_message_at' => 'datetime',
+        'details' => 'array',
     ];
 
     public function company(): BelongsTo

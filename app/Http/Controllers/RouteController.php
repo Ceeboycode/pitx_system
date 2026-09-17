@@ -39,8 +39,7 @@ class RouteController extends Controller
                 $query->where(function ($q) use ($search) {
                     $q->where('route_name', 'like', "%{$search}%")
                         ->orWhere('status', 'like', "%{$search}%")
-                        ->orWhereHas('gate', fn ($g) =>
-                            $g->where('gate_name', 'like', "%{$search}%")
+                        ->orWhereHas('gate', fn ($g) => $g->where('gate_name', 'like', "%{$search}%")
                         );
                 });
             })
@@ -182,8 +181,7 @@ class RouteController extends Controller
                 $query->where(function ($q) use ($search) {
                     $q->where('route_name', 'like', "%{$search}%")
                         ->orWhere('status', 'like', "%{$search}%")
-                        ->orWhereHas('gate', fn ($g) =>
-                            $g->where('gate_name', 'like', "%{$search}%")
+                        ->orWhereHas('gate', fn ($g) => $g->where('gate_name', 'like', "%{$search}%")
                         );
                 });
             })

@@ -15,8 +15,7 @@ class VehicleReactivatedNotification extends Notification implements ShouldQueue
 
     public function __construct(
         public Vehicle $vehicle,
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {

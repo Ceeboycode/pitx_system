@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Route;
 use App\Models\RouteStop;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class RouteStopSeeder extends Seeder

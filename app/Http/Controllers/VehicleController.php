@@ -43,11 +43,12 @@ class VehicleController extends Controller
         $vehicles = Vehicle::query()
             ->with([
                 'company:id,company_name',
+                'vehicleType:id,type_name',
                 'route:id,route_name',
             ])
             ->select([
                 'id',
-                'vehicle_type',
+                'vehicle_type_id',
                 'plate_number',
                 'body_number',
                 'capacity',
@@ -65,7 +66,7 @@ class VehicleController extends Controller
                 $query->where('status', $status);
             })
             ->when($vehicleType && $vehicleType !== 'all', function ($query) use ($vehicleType) {
-                $query->where('vehicle_type', $vehicleType);
+                $query->where('vehicle_type_id', $vehicleType);
             })
             ->when($routeId && $routeId !== 'all', function ($query) use ($routeId) {
                 $query->where('route_id', $routeId);
@@ -118,7 +119,7 @@ class VehicleController extends Controller
         return Inertia::render('Vehicles/Show', [
             'vehicle' => [
                 'id' => $vehicle->id,
-                'vehicle_type' => $vehicle->vehicle_type,
+                'vehicle_type' => $vehicle->vehicle_type_id,
                 'plate_number' => $vehicle->plate_number,
                 'body_number' => $vehicle->body_number,
                 'capacity' => $vehicle->capacity,
@@ -234,12 +235,13 @@ class VehicleController extends Controller
         $vehicles = Vehicle::onlyTrashed()
             ->with([
                 'company:id,company_name',
+                'vehicleType:id,type_name',
                 'route:id,route_name',
                 'deleter:id,name',
             ])
             ->select([
                 'id',
-                'vehicle_type',
+                'vehicle_type_id',
                 'plate_number',
                 'body_number',
                 'capacity',
@@ -250,7 +252,7 @@ class VehicleController extends Controller
                 'deleted_by',
             ])
             ->search($search)
-            ->when($request->filled('vehicle_type'), fn ($query) => $query->where('vehicle_type', 'like', "%{$request->vehicle_type}%"))
+            ->when($request->filled('vehicle_type'), fn ($query) => $query->where('vehicle_type_id', 'like', "%{$request->vehicle_type}%"))
             ->when($request->filled('company'), fn ($query) => $query->whereHas(
                 'company',
                 fn ($company) => $company->where('company_name', 'like', "%{$request->company}%")

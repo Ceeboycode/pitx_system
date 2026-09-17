@@ -8,9 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class AuditableObserver
 {
-    public function __construct(private readonly AuditLogger $auditLogger)
-    {
-    }
+    public function __construct(private readonly AuditLogger $auditLogger) {}
 
     public function created(Model $model): void
     {

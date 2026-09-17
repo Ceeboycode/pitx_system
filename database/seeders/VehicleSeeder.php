@@ -84,6 +84,7 @@ class VehicleSeeder extends Seeder
 
             if (! $company) {
                 $this->command?->warn("Skipping {$companyCode} vehicles: company not found.");
+
                 continue;
             }
 
@@ -94,6 +95,7 @@ class VehicleSeeder extends Seeder
 
             if (! $operator) {
                 $this->command?->warn("Skipping {$companyCode} vehicles: operator account not found.");
+
                 continue;
             }
 
@@ -105,6 +107,7 @@ class VehicleSeeder extends Seeder
 
                 if (! $route) {
                     $this->command?->warn("Skipping {$data['plate_number']}: route {$routeName} not found.");
+
                     continue;
                 }
 

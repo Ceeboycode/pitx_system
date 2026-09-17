@@ -10,7 +10,9 @@ class Dispatch extends Model
     use SoftDeletes;
 
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_ARRIVED = 'arrived';
+
     public const STATUS_DEPARTED = 'departed';
 
     protected $fillable = [
@@ -80,7 +82,7 @@ class Dispatch extends Model
     public function driver()
     {
         return $this->belongsTo(User::class, 'driver_user_id');
-}
+    }
 
     public function creator()
     {

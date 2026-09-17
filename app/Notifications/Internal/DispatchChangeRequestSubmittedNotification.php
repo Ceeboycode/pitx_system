@@ -24,6 +24,7 @@ class DispatchChangeRequestSubmittedNotification extends Notification implements
     public function toDatabase(object $notifiable): array
     {
         $companyName = $this->changeRequest->requestedBy->company?->company_name ?? 'Unknown';
+
         return [
             'type' => 'internal_dispatch_change_request_submitted',
             'title' => 'Dispatch change request submitted',
@@ -45,9 +46,10 @@ class DispatchChangeRequestSubmittedNotification extends Notification implements
     public function toMail(object $notifiable): MailMessage
     {
         $companyName = $this->changeRequest->requestedBy->company?->company_name ?? 'Unknown';
+
         return (new MailMessage)
             ->subject('New Dispatch Change Request')
-            ->greeting('Hello ' . $notifiable->name . ',')
+            ->greeting('Hello '.$notifiable->name.',')
             ->line("A dispatch change request has been submitted by {$this->changeRequest->requestedBy->name} from {$companyName}.")
             ->line("**Dispatch:** {$this->changeRequest->dispatch->plate_number}")
             ->line("**Company:** {$companyName}")

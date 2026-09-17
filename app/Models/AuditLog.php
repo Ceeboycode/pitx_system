@@ -55,11 +55,11 @@ class AuditLog extends Model
         return $query
             ->when($search, function (Builder $q) use ($search) {
                 $q->where(function (Builder $inner) use ($search) {
-                    $inner->where('action', 'like', '%' . $search . '%')
-                        ->orWhere('auditable_type', 'like', '%' . $search . '%')
+                    $inner->where('action', 'like', '%'.$search.'%')
+                        ->orWhere('auditable_type', 'like', '%'.$search.'%')
                         ->orWhereHas('user', fn (Builder $userQuery) => $userQuery
-                            ->where('name', 'like', '%' . $search . '%')
-                            ->orWhere('email', 'like', '%' . $search . '%'));
+                            ->where('name', 'like', '%'.$search.'%')
+                            ->orWhere('email', 'like', '%'.$search.'%'));
                 });
             })
             ->when($action, fn (Builder $q) => $q->where('action', $action))

@@ -23,8 +23,7 @@ class CompanyDocumentController extends Controller
     public function __construct(
         private readonly NotificationService $notificationService,
         private readonly CompanyStatusService $companyStatusService,
-    ) {
-    }
+    ) {}
 
     public function download(Company $company, CompanyDocument $document): mixed
     {
@@ -48,16 +47,23 @@ class CompanyDocumentController extends Controller
         Gate::authorize('view', $company);
         Gate::authorize('viewAny', CompanyDocument::class);
 
+        $timezone = config('app.timezone', 'UTC');
+        $today = now($timezone)->toDateString();
+
         $documents = CompanyDocument::query()
             ->where('company_id', $company->id)
             ->where('status', 'verified')
+            ->where(function ($query) use ($today) {
+                $query->whereNull('expires_at')
+                    ->orWhereDate('expires_at', '>=', $today);
+            })
             ->get();
 
         abort_if($documents->isEmpty(), 404, 'No verified documents found.');
 
-        $tmpPath = tempnam(sys_get_temp_dir(), 'docs_') . '.zip';
+        $tmpPath = tempnam(sys_get_temp_dir(), 'docs_').'.zip';
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         abort_if(
             $zip->open($tmpPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true,
             500,
@@ -84,11 +90,20 @@ class CompanyDocumentController extends Controller
 
         $zip->close();
 
-        abort_if(filesize($tmpPath) === 0, 404, 'No readable verified files found.');
+        if (empty($usedNames) || filesize($tmpPath) === 0) {
+            @unlink($tmpPath);
+            abort(404, 'No readable verified files found.');
+        }
 
-        $zipName = $company->company_code
-            ? "{$company->company_code}-verified-documents.zip"
-            : "company-{$company->id}-verified-documents.zip";
+        $rawCode = trim((string) ($company->company_code ?: "COMPANY-{$company->id}"));
+        $sanitizedCode = preg_replace('/[^A-Za-z0-9_-]+/', '_', $rawCode);
+        $sanitizedCode = trim($sanitizedCode, '._-');
+        if ($sanitizedCode === '') {
+            $sanitizedCode = "COMPANY-{$company->id}";
+        }
+
+        $timestamp = now($timezone)->format('Y-m-d-Hi');
+        $zipName = "{$sanitizedCode}_{$timestamp}_verified.zip";
 
         return response()->streamDownload(function () use ($tmpPath) {
             $handle = fopen($tmpPath, 'rb');

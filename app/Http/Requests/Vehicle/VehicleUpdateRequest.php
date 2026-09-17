@@ -14,7 +14,8 @@ class VehicleUpdateRequest extends FormRequest
 
     public function rules(): array
     {
-        $vehicleId = $this->route('vehicle')->id;
+        $vehicleParam = $this->route('vehicle');
+        $vehicleId = $vehicleParam instanceof \App\Models\Vehicle ? $vehicleParam->id : $vehicleParam;
 
         return [
             'plate_number' => [
@@ -33,6 +34,7 @@ class VehicleUpdateRequest extends FormRequest
             'company_id' => ['required', 'exists:companies,id'],
             'route_id' => ['required', 'exists:routes,id'],
             'vehicle_type_id' => ['required', 'exists:vehicle_types,id'],
+            'vehicle_type' => ['nullable', 'string', 'max:100', 'required_without:vehicle_type_id'],
         ];
     }
 }

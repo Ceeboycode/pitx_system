@@ -88,6 +88,7 @@ class CrmMessageController extends Controller
 
         if ($this->isInternalStaff($user)) {
             abort_unless((int) $thread->assigned_to_user_id === (int) $user->id, 403);
+
             return;
         }
 

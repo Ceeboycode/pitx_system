@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::table('routes', function (Blueprint $table) {
             $table->enum('status', ['active', 'inactive'])
-                  ->default('active')
-                  ->after('route_geometry');
+                ->default('active')
+                ->after('route_geometry');
         });
     }
 

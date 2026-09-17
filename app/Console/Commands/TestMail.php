@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Mail;
 class TestMail extends Command
 {
     protected $signature = 'mail:test {email}';
+
     protected $description = 'Send a test email to verify SMTP configuration';
 
     public function handle()
@@ -19,7 +20,7 @@ class TestMail extends Command
         try {
             Mail::raw('✅ Your Gmail SMTP is working correctly in Laravel!', function ($message) use ($email) {
                 $message->to($email)
-                        ->subject('Laravel SMTP Test');
+                    ->subject('Laravel SMTP Test');
             });
 
             $this->info('✅ Email sent successfully!');

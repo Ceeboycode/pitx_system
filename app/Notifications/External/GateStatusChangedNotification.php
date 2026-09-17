@@ -16,8 +16,7 @@ class GateStatusChangedNotification extends Notification implements ShouldQueue
     public function __construct(
         public Gate $gate,
         public string $status,
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {

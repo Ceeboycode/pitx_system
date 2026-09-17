@@ -25,7 +25,6 @@ return new class extends Migration
             $table->string('authorized_representative_position')->nullable();
             $table->string('authorized_representative_contact')->nullable();
 
-
             $table->enum('status', [
                 'draft',
                 'docs_completed',

@@ -15,7 +15,9 @@ class CompanyProfileChangeRequest extends Model
     use HasFactory, SoftDeletes;
 
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_APPROVED = 'approved';
+
     public const STATUS_REJECTED = 'rejected';
 
     protected $fillable = [
@@ -113,7 +115,7 @@ class CompanyProfileChangeRequest extends Model
 
                     $uniformOriginal = $this->nextUniformOriginalName(
                         companyId: $company->id,
-                        base: $this->companySlugUpper($company->company_name) . '_' . $docType,
+                        base: $this->companySlugUpper($company->company_name).'_'.$docType,
                         ext: $extension,
                         excludingDocumentId: $existing?->id,
                     );
@@ -233,6 +235,7 @@ class CompanyProfileChangeRequest extends Model
     private function companySlugUpper(string $companyName): string
     {
         $clean = preg_replace('/[^A-Za-z0-9]+/', '_', $companyName);
+
         return strtoupper(trim(preg_replace('/_+/', '_', (string) $clean), '_') ?: 'COMPANY');
     }
 

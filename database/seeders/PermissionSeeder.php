@@ -41,6 +41,13 @@ class PermissionSeeder extends Seeder
                 'toggleStatus',
             ],
 
+            'vehicle_types' => [
+                'viewAny',
+                'create',
+                'update',
+                'toggleStatus',
+            ],
+
             'vehicle_documents' => [
                 'verify',
                 'invalidate',

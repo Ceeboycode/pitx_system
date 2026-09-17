@@ -22,6 +22,7 @@ it('applies staged company profile updates only after approval', function (): vo
         'requested_values' => [
             'company_name' => 'Alpha Transit Updated',
             'company_phone' => '09999999999',
+            'registration_number' => 'REG-999',
         ],
         'current_values' => [
             'company_name' => 'Alpha Transit',

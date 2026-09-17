@@ -55,7 +55,7 @@ class CompanyVehicleController extends Controller
                 'id',
                 'company_id',
                 'route_id',
-                'vehicle_type',
+                'vehicle_type_id',
                 'plate_number',
                 'body_number',
                 'capacity',
@@ -70,6 +70,7 @@ class CompanyVehicleController extends Controller
             ])
             ->with([
                 'route:id,route_name',
+                'vehicleType:id,type_name',
                 'documents:id,vehicle_id,document_type,status,expires_at',
             ])
             ->search($request->search);
@@ -121,12 +122,13 @@ class CompanyVehicleController extends Controller
             'filters' => [
                 'search' => $request->search,
                 'status' => $request->status,
-                'vehicle_type' => $request->vehicle_type,
+                'vehicle_type_id' => $request->vehicle_type_id,
                 'route_id' => $request->route_id,
                 'sort_by' => $sortBy,
                 'sort_dir' => $sortDir,
             ],
             'routes' => $routes,
+            'vehicleTypes' => \App\Models\VehicleType::where('is_active', true)->orderBy('type_name')->get(['id', 'type_name']),
         ]);
     }
 
@@ -176,6 +178,7 @@ class CompanyVehicleController extends Controller
             ],
             'gates' => $gates,
             'routes' => $routes,
+            'vehicleTypes' => \App\Models\VehicleType::where('is_active', true)->orderBy('type_name')->get(['id', 'type_name']),
             'docTypes' => self::DOC_TYPES,
             'mapConfig' => [
                 'mapboxToken' => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
@@ -197,7 +200,7 @@ class CompanyVehicleController extends Controller
             $vehicle = Vehicle::create([
                 'company_id' => $company->id,
                 'route_id' => $validated['route_id'],
-                'vehicle_type' => $validated['vehicle_type'],
+                'vehicle_type_id' => $validated['vehicle_type_id'],
                 'plate_number' => $validated['plate_number'],
                 'body_number' => $validated['body_number'],
                 'capacity' => $validated['capacity'],
@@ -311,7 +314,7 @@ class CompanyVehicleController extends Controller
             'vehicle' => [
                 'id' => $vehicle->id,
                 'route_id' => $vehicle->route_id,
-                'vehicle_type' => $vehicle->vehicle_type,
+                'vehicle_type_id' => $vehicle->vehicle_type_id,
                 'plate_number' => $vehicle->plate_number,
                 'body_number' => $vehicle->body_number,
                 'capacity' => $vehicle->capacity,
@@ -370,6 +373,7 @@ class CompanyVehicleController extends Controller
             ],
             'gates' => $gates,
             'routes' => $routes,
+            'vehicleTypes' => \App\Models\VehicleType::where('is_active', true)->orderBy('type_name')->get(['id', 'type_name']),
             'docTypes' => self::DOC_TYPES,
             'mapConfig' => [
                 'mapboxToken' => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
@@ -435,7 +439,7 @@ class CompanyVehicleController extends Controller
             'vehicle' => [
                 'id' => $vehicle->id,
                 'route_id' => $vehicle->route_id,
-                'vehicle_type' => $vehicle->vehicle_type,
+                'vehicle_type_id' => $vehicle->vehicle_type_id,
                 'plate_number' => $vehicle->plate_number,
                 'body_number' => $vehicle->body_number,
                 'capacity' => $vehicle->capacity,
@@ -460,6 +464,7 @@ class CompanyVehicleController extends Controller
             ],
             'gates' => $gates,
             'routes' => $routes,
+            'vehicleTypes' => \App\Models\VehicleType::where('is_active', true)->orderBy('type_name')->get(['id', 'type_name']),
             'docTypes' => self::DOC_TYPES,
             'mapConfig' => [
                 'mapboxToken' => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
@@ -548,7 +553,7 @@ class CompanyVehicleController extends Controller
 
             $vehicle->update([
                 'route_id' => $validated['route_id'],
-                'vehicle_type' => $validated['vehicle_type'],
+                'vehicle_type_id' => $validated['vehicle_type_id'],
                 'plate_number' => strtoupper(trim((string) $validated['plate_number'])),
                 'body_number' => $validated['body_number'],
                 'capacity' => $validated['capacity'],

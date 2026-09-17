@@ -33,24 +33,24 @@ class MapboxService
 
         $coordinates = implode(';', array_map(
             fn (array $wp) => number_format((float) $wp['lng'], 7, '.', '')
-                . ','
-                . number_format((float) $wp['lat'], 7, '.', ''),
+                .','
+                .number_format((float) $wp['lat'], 7, '.', ''),
             $waypoints
         ));
 
         $response = Http::timeout(10)->get(
             "https://api.mapbox.com/directions/v5/mapbox/driving/{$coordinates}",
             [
-                'geometries'   => 'geojson',
-                'overview'     => 'full',
-                'steps'        => 'false',
+                'geometries' => 'geojson',
+                'overview' => 'full',
+                'steps' => 'false',
                 'access_token' => $this->token,
             ]
         );
 
         if (! $response->successful()) {
             throw new RuntimeException(
-                'Mapbox Directions API request failed: HTTP ' . $response->status()
+                'Mapbox Directions API request failed: HTTP '.$response->status()
             );
         }
 

@@ -48,7 +48,7 @@ class DispatchChangeRequestSubmittedNotification extends Notification implements
     {
         return (new MailMessage)
             ->subject('New Dispatch Change Request Submitted')
-            ->greeting('Hello ' . $notifiable->name . ',')
+            ->greeting('Hello '.$notifiable->name.',')
             ->line("{$this->changeRequest->requestedBy->name} from {$this->changeRequest->requestedBy->company->name} submitted a request to change a dispatch.")
             ->line('**Dispatch Details:**')
             ->line("- Plate Number: {$this->changeRequest->dispatch->plate_number}")

@@ -8,11 +8,11 @@ use App\Http\Requests\Dispatch\StoreDispatchChangeRequestRequest;
 use App\Models\Dispatch;
 use App\Models\DispatchChangeRequest;
 use App\Models\User;
-use App\Services\AuditLogger;
-use App\Services\DriverAssignmentValidator;
 use App\Notifications\DispatchChangeRequestApprovedNotification;
 use App\Notifications\DispatchChangeRequestRejectedNotification;
 use App\Notifications\DispatchChangeRequestSubmittedNotification;
+use App\Services\AuditLogger;
+use App\Services\DriverAssignmentValidator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,18 +22,16 @@ use Inertia\Response;
 
 class DispatchChangeRequestController extends Controller
 {
-    public function __construct(private readonly AuditLogger $auditLogger)
-    {
-    }
+    public function __construct(private readonly AuditLogger $auditLogger) {}
 
     /**
      * Display a listing of dispatch change requests
      */
     public function index(Request $request): Response|JsonResponse
     {
-        $user   = auth()->user();
+        $user = auth()->user();
         $allowed = ['pending', 'approved', 'rejected', 'all'];
-        $status  = in_array($request->input('status'), $allowed, true)
+        $status = in_array($request->input('status'), $allowed, true)
             ? $request->input('status')
             : 'pending';
         $search = trim((string) $request->string('search'));
@@ -47,7 +45,7 @@ class DispatchChangeRequestController extends Controller
         // Status counts (before pagination, always across all statuses)
         $allForCounts = (clone $baseQuery)->with([])->select('status');
         $statusCounts = [
-            'pending'  => (clone $allForCounts)->where('status', 'pending')->count(),
+            'pending' => (clone $allForCounts)->where('status', 'pending')->count(),
             'approved' => (clone $allForCounts)->where('status', 'approved')->count(),
             'rejected' => (clone $allForCounts)->where('status', 'rejected')->count(),
         ];
@@ -59,15 +57,13 @@ class DispatchChangeRequestController extends Controller
                 $query->where(function ($q) use ($search) {
                     $q->where('requested_field', 'like', "%{$search}%")
                         ->orWhere('reason', 'like', "%{$search}%")
-                        ->orWhereHas('dispatch', fn ($dispatch) =>
-                            $dispatch->where('plate_number', 'like', "%{$search}%")
+                        ->orWhereHas('dispatch', fn ($dispatch) => $dispatch->where('plate_number', 'like', "%{$search}%")
                         )
                         ->orWhereHas('requestedBy', function ($requester) use ($search) {
                             $requester->where('name', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%")
-                                ->orWhereHas('company', fn ($company) =>
-                                    $company->where('company_name', 'like', "%{$search}%")
-                                        ->orWhere('company_code', 'like', "%{$search}%")
+                                ->orWhereHas('company', fn ($company) => $company->where('company_name', 'like', "%{$search}%")
+                                    ->orWhere('company_code', 'like', "%{$search}%")
                                 );
                         });
                 });
@@ -123,8 +119,8 @@ class DispatchChangeRequestController extends Controller
 
         return Inertia::render('DispatchChangeRequests/Index', [
             'changeRequests' => $changeRequests,
-            'statusCounts'   => $statusCounts,
-            'filters'        => ['status' => $status, 'search' => $search],
+            'statusCounts' => $statusCounts,
+            'filters' => ['status' => $status, 'search' => $search],
         ]);
     }
 
@@ -140,7 +136,7 @@ class DispatchChangeRequestController extends Controller
                 ->whereHas('roles', fn ($query) => $query->where('name', 'driver'))
                 ->findOrFail((int) $request->requested_value);
 
-            $validator = new DriverAssignmentValidator();
+            $validator = new DriverAssignmentValidator;
             if (! $validator->canAssignToday($driver, now(), $dispatch)) {
                 throw ValidationException::withMessages([
                     'requested_value' => $validator->getValidationMessage($driver, now()),
@@ -202,12 +198,13 @@ class DispatchChangeRequestController extends Controller
     public function approve(DispatchChangeRequest $changeRequest, ApproveChangeRequestRequest $request): RedirectResponse|JsonResponse
     {
         // Ensure request is pending
-        if (!$changeRequest->isPending()) {
+        if (! $changeRequest->isPending()) {
             if ($request->wantsJson()) {
                 return response()->json([
                     'message' => 'Only pending requests can be approved.',
                 ], 422);
             }
+
             return redirect()->back()->withErrors(['message' => 'Only pending requests can be approved.']);
         }
 
@@ -229,7 +226,7 @@ class DispatchChangeRequestController extends Controller
                 ->whereHas('roles', fn ($query) => $query->where('name', 'driver'))
                 ->findOrFail($driverId);
 
-            $validator = new DriverAssignmentValidator();
+            $validator = new DriverAssignmentValidator;
             if (! $validator->canAssignToday($driver, now(), $dispatch)) {
                 throw ValidationException::withMessages([
                     'message' => $validator->getValidationMessage($driver, now()),
@@ -274,12 +271,13 @@ class DispatchChangeRequestController extends Controller
     public function reject(DispatchChangeRequest $changeRequest, RejectChangeRequestRequest $request): RedirectResponse|JsonResponse
     {
         // Ensure request is pending
-        if (!$changeRequest->isPending()) {
+        if (! $changeRequest->isPending()) {
             if ($request->wantsJson()) {
                 return response()->json([
                     'message' => 'Only pending requests can be rejected.',
                 ], 422);
             }
+
             return redirect()->back()->withErrors(['message' => 'Only pending requests can be rejected.']);
         }
 

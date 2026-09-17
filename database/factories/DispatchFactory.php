@@ -65,7 +65,7 @@ class DispatchFactory extends Factory
             'gate_id' => $gateId,
             'plate_number' => $vehicle?->plate_number,
             'pax_count' => fake()->numberBetween(0, (int) ($vehicle?->capacity ?? 45)),
-            'bay_number' => 'Bay ' . fake()->numberBetween(1, 10),
+            'bay_number' => 'Bay '.fake()->numberBetween(1, 10),
             'remarks' => fake()->optional()->sentence(),
             'dispatcher_user_id' => $dispatcherId,
             'driver_user_id' => $driverId,

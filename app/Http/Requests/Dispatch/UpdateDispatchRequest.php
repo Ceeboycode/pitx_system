@@ -62,6 +62,7 @@ class UpdateDispatchRequest extends FormRequest
 
                     if ($maxBay < 1) {
                         $fail('The selected gate has no available bays.');
+
                         return;
                     }
 

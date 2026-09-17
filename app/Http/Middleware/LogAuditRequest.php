@@ -9,9 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class LogAuditRequest
 {
-    public function __construct(private readonly AuditLogger $auditLogger)
-    {
-    }
+    public function __construct(private readonly AuditLogger $auditLogger) {}
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -40,7 +38,7 @@ class LogAuditRequest
         }
 
         foreach ($config['excluded_paths'] ?? [] as $excludedPath) {
-            if ($request->is($excludedPath) || $request->is($excludedPath . '/*')) {
+            if ($request->is($excludedPath) || $request->is($excludedPath.'/*')) {
                 return $response;
             }
         }
@@ -67,10 +65,10 @@ class LogAuditRequest
         $routeName = optional($request->route())->getName();
 
         if ($routeName) {
-            return 'request.' . str_replace('.', '_', $routeName);
+            return 'request.'.str_replace('.', '_', $routeName);
         }
 
-        return 'request.' . strtolower($request->method()) . '.' . str_replace('/', '_', $request->path());
+        return 'request.'.strtolower($request->method()).'.'.str_replace('/', '_', $request->path());
     }
 
     private function sanitizeInput(array $input): array
@@ -80,6 +78,7 @@ class LogAuditRequest
         foreach ($input as $key => $value) {
             if (in_array($key, config('audit.sensitive_fields', []), true)) {
                 $sanitized[$key] = '[REDACTED]';
+
                 continue;
             }
 

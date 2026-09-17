@@ -75,15 +75,6 @@ class CompaniesExport implements FromArray, WithHeadings
                 'user_phone_numbers' => $company->users->pluck('phone_number')->filter()->implode(' | '),
                 'user_password_hash' => $company->users->pluck('password')->filter()->implode(' | '),
 
-
-
-
-
-
-
-
-
-
                 'documents_count' => $company->documents->count(),
                 'document_types' => $company->documents->pluck('doc_type')->filter()->implode(' | '),
                 'document_original_names' => $company->documents->pluck('original_name')->filter()->implode(' | '),

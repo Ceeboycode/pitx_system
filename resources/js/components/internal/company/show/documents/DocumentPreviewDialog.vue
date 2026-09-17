@@ -34,6 +34,7 @@ import {
     docStatusClass as statusClass,
     docStatusDot as statusDot,
 } from '@/lib/company-documents';
+import DocumentStatusBadge from '@/components/internal/company/show/documents/DocumentStatusBadge.vue';
 import type { CompanyDocument } from '@/types/company';
 
 const open = defineModel<boolean>('open');
@@ -94,20 +95,7 @@ function onReject() {
                             <span class="text-xs text-muted-foreground">{{
                                 humanize(doc?.doc_type)
                             }}</span>
-                            <Badge
-                                :class="[
-                                    'gap-1.5',
-                                    statusClass(doc?.status),
-                                ]"
-                            >
-                                <span
-                                    :class="[
-                                        'h-1.5 w-1.5 rounded-full',
-                                        statusDot(doc?.status),
-                                    ]"
-                                />
-                                {{ humanize(doc?.status) }}
-                            </Badge>
+                            <DocumentStatusBadge :doc="doc" />
                         </DialogDescription>
                     </div>
                 </div>

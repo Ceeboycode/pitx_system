@@ -16,7 +16,7 @@ class GateFactory extends Factory
     public function definition(): array
     {
         return [
-            'gate_name' => 'Gate ' . fake()->unique()->numberBetween(1, 99),
+            'gate_name' => 'Gate '.fake()->unique()->numberBetween(1, 99),
             'status' => 'active',
             'bays' => fake()->numberBetween(6, 10),
             'created_by' => User::query()->role(['admin', 'it', 'terminal manager'])->value('id')

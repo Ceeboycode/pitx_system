@@ -4,8 +4,8 @@ namespace App\Http\Requests;
 
 use App\Models\Vehicle;
 use Carbon\Carbon;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -21,13 +21,27 @@ class UpdateCompanyVehicleRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return $this->user()?->company !== null;
+        $user = $this->user();
+        if (! $user || ! $user->company) {
+            return false;
+        }
+
+        $vehicle = $this->route('vehicle');
+        if ($vehicle && ! ($vehicle instanceof Vehicle)) {
+            $vehicle = Vehicle::find($vehicle);
+        }
+
+        if ($vehicle instanceof Vehicle && (int) $vehicle->company_id !== (int) $user->company_id) {
+            return false;
+        }
+
+        return true;
     }
 
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'vehicle_type' => $this->clean($this->vehicle_type),
+            
             'plate_number' => strtoupper($this->clean($this->plate_number)),
             'body_number' => $this->clean($this->body_number),
             'color' => $this->clean($this->color),
@@ -65,7 +79,7 @@ class UpdateCompanyVehicleRequest extends FormRequest
         $vehicleId = $vehicleParam instanceof Vehicle ? $vehicleParam->id : $vehicleParam;
 
         return [
-            'vehicle_type' => ['required', 'string', 'max:100'],
+            'vehicle_type_id' => ['required', 'exists:vehicle_types,id'],
             'plate_number' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9][A-Z0-9\s-]*$/', Rule::unique('vehicles', 'plate_number')->ignore($vehicleId)],
             'body_number' => ['required', 'string', 'max:50', 'regex:/^[A-Za-z0-9-]+$/'],
             'capacity' => ['required', 'integer', 'min:1', 'max:200'],

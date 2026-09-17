@@ -24,7 +24,7 @@ class CommuterThreadController extends Controller
             ->where('created_by_user_id', $user->id)
             ->when(
                 filled($filters['search'] ?? null),
-                fn ($query) => $query->where('subject', 'like', '%' . $filters['search'] . '%')
+                fn ($query) => $query->where('subject', 'like', '%'.$filters['search'].'%')
             )
             ->when(
                 filled($filters['category'] ?? null),
@@ -93,10 +93,10 @@ class CommuterThreadController extends Controller
         return response()->json([
             'data' => new CrmThreadResource(
                 $thread->loadCount('messages')
-                       ->loadCount(['messages as staff_replies_count' => fn ($q) => $q
-                           ->where('is_internal', false)
-                           ->whereHas('sender', fn ($u) => $u
-                               ->whereHas('roles', fn ($r) => $r->where('type', 'internal')))])
+                    ->loadCount(['messages as staff_replies_count' => fn ($q) => $q
+                        ->where('is_internal', false)
+                        ->whereHas('sender', fn ($u) => $u
+                            ->whereHas('roles', fn ($r) => $r->where('type', 'internal')))])
             ),
         ]);
     }

@@ -56,7 +56,9 @@ import { canPreview } from '@/lib/files'
 import {
   docStatusClass as statusClass,
   docStatusDot as statusDot,
+  isDocVerified,
 } from '@/lib/company-documents'
+import DocumentStatusBadge from '@/components/internal/company/show/documents/DocumentStatusBadge.vue'
 import type { CompanyDocument } from '@/types/company'
 
 const props = defineProps<{
@@ -97,7 +99,7 @@ const docs = computed(() => props.company.documents ?? []);
 
 const bulkConfirmOpen = ref(false);
 const verifiedCount = computed(
-    () => docs.value.filter((d) => d.status === 'verified').length,
+    () => docs.value.filter((d) => isDocVerified(d)).length,
 );
 
 function openBulkConfirm() {
@@ -283,32 +285,7 @@ function openReject(docId: number) {
                                     >
                                         {{ humanize(doc.doc_type) }}
                                     </p>
-                                    <Badge
-                                        :class="[
-                                            'gap-1.5',
-                                            statusClass(doc.status),
-                                        ]"
-                                    >
-                                        <span
-                                            :class="[
-                                                'h-1.5 w-1.5 rounded-full',
-                                                statusDot(doc.status),
-                                            ]"
-                                        />
-                                        {{ humanize(doc.status) }}
-                                    </Badge>
-                                    <Badge
-                                        v-if="
-                                            isExpired(doc.expires_at) &&
-                                            doc.status !== 'expired'
-                                        "
-                                        class="gap-1.5 border-rose-200 bg-rose-100 text-rose-600"
-                                    >
-                                        <span
-                                            class="h-1.5 w-1.5 rounded-full bg-rose-500"
-                                        />
-                                        Expired
-                                    </Badge>
+                                    <DocumentStatusBadge :doc="doc" />
                                 </div>
 
                                 <div>
@@ -536,32 +513,7 @@ function openReject(docId: number) {
                             >
                                 {{ humanize(doc.doc_type) }}
                             </p>
-                            <Badge
-                                :class="[
-                                    'gap-1.5',
-                                    statusClass(doc.status),
-                                ]"
-                            >
-                                <span
-                                    :class="[
-                                        'h-1.5 w-1.5 rounded-full',
-                                        statusDot(doc.status),
-                                    ]"
-                                />
-                                {{ humanize(doc.status) }}
-                            </Badge>
-                            <Badge
-                                v-if="
-                                    isExpired(doc.expires_at) &&
-                                    doc.status !== 'expired'
-                                "
-                                class="gap-1.5 border-rose-200 bg-rose-100 text-rose-600"
-                            >
-                                <span
-                                    class="h-1.5 w-1.5 rounded-full bg-rose-500"
-                                />
-                                Expired
-                            </Badge>
+                            <DocumentStatusBadge :doc="doc" />
                         </div>
 
                         <div>

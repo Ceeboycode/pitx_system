@@ -13,9 +13,9 @@ class RegistrationOtpMail extends Mailable
     use Queueable, SerializesModels;
 
     /**
-     * @param  string  $otp           Plain-text 6-digit OTP (only for sending, never stored)
-     * @param  string  $purpose       'account' | 'company'
-     * @param  string  $recipientName Name shown in the greeting
+     * @param  string  $otp  Plain-text 6-digit OTP (only for sending, never stored)
+     * @param  string  $purpose  'account' | 'company'
+     * @param  string  $recipientName  Name shown in the greeting
      */
     public function __construct(
         public readonly string $otp,

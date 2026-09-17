@@ -20,7 +20,7 @@ class InternalDispatchController extends Controller
         $minimumDispatches = max(0, $request->integer('minimum_dispatches'));
 
         $allowedSortFields = ['company_name', 'company_code', 'status', 'dispatches_count'];
-        $sortBy  = in_array($request->input('sort_by'), $allowedSortFields, true) ? $request->input('sort_by') : 'company_name';
+        $sortBy = in_array($request->input('sort_by'), $allowedSortFields, true) ? $request->input('sort_by') : 'company_name';
         $sortDir = $request->input('sort_dir') === 'desc' ? 'desc' : 'asc';
 
         $companies = Company::query()
@@ -40,17 +40,17 @@ class InternalDispatchController extends Controller
             ->paginate(10)
             ->withQueryString()
             ->through(fn (Company $company) => [
-                'id'               => $company->id,
-                'company_name'     => $company->company_name,
-                'company_code'     => $company->company_code,
-                'company_email'    => $company->company_email,
-                'company_phone'    => $company->company_phone,
-                'status'           => $company->status,
+                'id' => $company->id,
+                'company_name' => $company->company_name,
+                'company_code' => $company->company_code,
+                'company_email' => $company->company_email,
+                'company_phone' => $company->company_phone,
+                'status' => $company->status,
                 'dispatches_count' => $company->dispatches_count,
             ]);
 
         return Inertia::render('Dispatches/Index', [
-            'filters'   => [
+            'filters' => [
                 'search' => $search,
                 'status' => $status,
                 'minimum_dispatches' => $minimumDispatches ?: null,
@@ -66,8 +66,8 @@ class InternalDispatchController extends Controller
         Gate::authorize('dispatches.view');
 
         $selectedDate = trim((string) $request->string('date'));
-        $search       = trim((string) $request->string('search'));
-        $status       = trim((string) $request->string('status', 'all'));
+        $search = trim((string) $request->string('search'));
+        $status = trim((string) $request->string('status', 'all'));
 
         $allowedStatuses = ['all', 'arrived', 'departed'];
         if (! in_array($status, $allowedStatuses, true)) {
@@ -110,24 +110,19 @@ class InternalDispatchController extends Controller
                     $q->where('plate_number', 'like', "%{$search}%")
                         ->orWhere('remarks', 'like', "%{$search}%")
                         ->orWhere('bay_number', 'like', "%{$search}%")
-                        ->orWhereHas('vehicle', fn ($v) =>
-                            $v->where('plate_number', 'like', "%{$search}%")
-                                ->orWhere('vehicle_type', 'like', "%{$search}%")
-                                ->orWhere('make_model', 'like', "%{$search}%")
+                        ->orWhereHas('vehicle', fn ($v) => $v->where('plate_number', 'like', "%{$search}%")
+                            ->orWhere('vehicle_type', 'like', "%{$search}%")
+                            ->orWhere('make_model', 'like', "%{$search}%")
                         )
-                        ->orWhereHas('vehicle.route', fn ($r) =>
-                            $r->where('route_name', 'like', "%{$search}%")
-                                ->orWhere('origin_name', 'like', "%{$search}%")
-                                ->orWhere('destination_name', 'like', "%{$search}%")
+                        ->orWhereHas('vehicle.route', fn ($r) => $r->where('route_name', 'like', "%{$search}%")
+                            ->orWhere('origin_name', 'like', "%{$search}%")
+                            ->orWhere('destination_name', 'like', "%{$search}%")
                         )
-                        ->orWhereHas('gate', fn ($g) =>
-                            $g->where('gate_name', 'like', "%{$search}%")
+                        ->orWhereHas('gate', fn ($g) => $g->where('gate_name', 'like', "%{$search}%")
                         )
-                        ->orWhereHas('dispatcher', fn ($d) =>
-                            $d->where('name', 'like', "%{$search}%")
+                        ->orWhereHas('dispatcher', fn ($d) => $d->where('name', 'like', "%{$search}%")
                         )
-                        ->orWhereHas('driver', fn ($d) =>
-                            $d->where('name', 'like', "%{$search}%")
+                        ->orWhereHas('driver', fn ($d) => $d->where('name', 'like', "%{$search}%")
                         );
                 });
             });
@@ -139,12 +134,12 @@ class InternalDispatchController extends Controller
         */
         $summaryDispatches = (clone $baseQuery)->get();
 
-        $filteredTotal    = $summaryDispatches->count();
-        $totalPax         = (int) $summaryDispatches->sum(fn ($d) => (int) ($d->pax_count ?? 0));
-        $withPaxCount     = $summaryDispatches->filter(fn ($d) => $d->pax_count !== null)->count();
-        $avgPax           = $withPaxCount > 0 ? (int) round($totalPax / $withPaxCount) : 0;
+        $filteredTotal = $summaryDispatches->count();
+        $totalPax = (int) $summaryDispatches->sum(fn ($d) => (int) ($d->pax_count ?? 0));
+        $withPaxCount = $summaryDispatches->filter(fn ($d) => $d->pax_count !== null)->count();
+        $avgPax = $withPaxCount > 0 ? (int) round($totalPax / $withPaxCount) : 0;
 
-        $dispatchWithGateCount  = $summaryDispatches->filter(fn ($d) => filled($d->gate?->gate_name))->count();
+        $dispatchWithGateCount = $summaryDispatches->filter(fn ($d) => filled($d->gate?->gate_name))->count();
         $dispatchWithRouteCount = $summaryDispatches->filter(fn ($d) => filled($d->vehicle?->route?->route_name))->count();
 
         $routeCoveragePercent = $filteredTotal > 0
@@ -162,8 +157,8 @@ class InternalDispatchController extends Controller
 
                 return [
                     'status' => $statusKey,
-                    'count'  => $count,
-                    'pct'    => $filteredTotal > 0 ? (int) round(($count / $filteredTotal) * 100) : 0,
+                    'count' => $count,
+                    'pct' => $filteredTotal > 0 ? (int) round(($count / $filteredTotal) * 100) : 0,
                 ];
             })
             ->sortByDesc('count')
@@ -174,7 +169,7 @@ class InternalDispatchController extends Controller
             ->map(fn ($items, $label) => [
                 'label' => $label,
                 'count' => $items->count(),
-                'pax'   => (int) $items->sum(fn ($d) => (int) ($d->pax_count ?? 0)),
+                'pax' => (int) $items->sum(fn ($d) => (int) ($d->pax_count ?? 0)),
             ])
             ->sortByDesc('count')
             ->take(5)
@@ -185,19 +180,19 @@ class InternalDispatchController extends Controller
             ->map(fn ($items, $label) => [
                 'label' => $label,
                 'count' => $items->count(),
-                'pax'   => (int) $items->sum(fn ($d) => (int) ($d->pax_count ?? 0)),
+                'pax' => (int) $items->sum(fn ($d) => (int) ($d->pax_count ?? 0)),
             ])
             ->sortByDesc('count')
             ->values();
 
         $baySummary = $summaryDispatches
             ->groupBy(fn ($d) => $d->bay_number !== null && $d->bay_number !== ''
-                ? 'Bay ' . $d->bay_number
+                ? 'Bay '.$d->bay_number
                 : 'No Bay')
             ->map(fn ($items, $label) => [
                 'label' => $label,
                 'count' => $items->count(),
-                'pax'   => (int) $items->sum(fn ($d) => (int) ($d->pax_count ?? 0)),
+                'pax' => (int) $items->sum(fn ($d) => (int) ($d->pax_count ?? 0)),
             ])
             ->sortByDesc('count')
             ->values();
@@ -216,36 +211,36 @@ class InternalDispatchController extends Controller
                 $route = $dispatch->vehicle?->route;
 
                 return [
-                    'id'            => $dispatch->id,
-                    'plate_number'  => $dispatch->plate_number,
-                    'pax_count'     => $dispatch->pax_count,
-                    'bay_number'    => $dispatch->bay_number,
-                    'remarks'       => $dispatch->remarks,
-                    'status'        => $dispatch->status,
+                    'id' => $dispatch->id,
+                    'plate_number' => $dispatch->plate_number,
+                    'pax_count' => $dispatch->pax_count,
+                    'bay_number' => $dispatch->bay_number,
+                    'remarks' => $dispatch->remarks,
+                    'status' => $dispatch->status,
                     'dispatched_at' => $dispatch->dispatched_at?->timezone('Asia/Manila')->format('M d, Y h:i A'),
-                    'arrived_at'    => $dispatch->arrived_at?->timezone('Asia/Manila')->format('M d, Y h:i A'),
-                    'departed_at'   => $dispatch->departed_at?->timezone('Asia/Manila')->format('M d, Y h:i A'),
+                    'arrived_at' => $dispatch->arrived_at?->timezone('Asia/Manila')->format('M d, Y h:i A'),
+                    'departed_at' => $dispatch->departed_at?->timezone('Asia/Manila')->format('M d, Y h:i A'),
 
                     'vehicle' => $dispatch->vehicle ? [
                         'plate_number' => $dispatch->vehicle->plate_number,
                         'vehicle_type' => $dispatch->vehicle->vehicle_type,
-                        'make_model'   => $dispatch->vehicle->make_model,
-                        'route'        => $route ? [
-                            'route_name'       => $route->route_name,
-                            'origin_name'      => $route->origin_name,
+                        'make_model' => $dispatch->vehicle->make_model,
+                        'route' => $route ? [
+                            'route_name' => $route->route_name,
+                            'origin_name' => $route->origin_name,
                             'destination_name' => $route->destination_name,
-                            'route_geometry'   => $route->route_geometry,
-                            'stops'            => $route->stops
+                            'route_geometry' => $route->route_geometry,
+                            'stops' => $route->stops
                                 ->sortBy('stop_order')
                                 ->values()
                                 ->map(fn ($stop) => [
-                                    'id'         => $stop->id,
-                                    'stop_name'  => $stop->stop_name,
+                                    'id' => $stop->id,
+                                    'stop_name' => $stop->stop_name,
                                     'stop_order' => $stop->stop_order,
-                                    'stop_type'  => $stop->stop_type,
-                                    'address'    => $stop->address,
-                                    'latitude'   => $stop->latitude,
-                                    'longitude'  => $stop->longitude,
+                                    'stop_type' => $stop->stop_type,
+                                    'address' => $stop->address,
+                                    'latitude' => $stop->latitude,
+                                    'longitude' => $stop->longitude,
                                 ]),
                         ] : null,
                     ] : null,
@@ -266,35 +261,35 @@ class InternalDispatchController extends Controller
 
         return Inertia::render('Dispatches/Show', [
             'filters' => [
-                'date'   => $selectedDate,
+                'date' => $selectedDate,
                 'search' => $search,
                 'status' => $status,
             ],
             'company' => [
-                'id'            => $company->id,
-                'company_name'  => $company->company_name,
-                'company_code'  => $company->company_code,
+                'id' => $company->id,
+                'company_name' => $company->company_name,
+                'company_code' => $company->company_code,
                 'company_email' => $company->company_email,
                 'company_phone' => $company->company_phone,
-                'status'        => $company->status,
-                'company_logo'  => $company->logo ? asset('storage/' . $company->logo) : null,
+                'status' => $company->status,
+                'company_logo' => $company->logo ? asset('storage/'.$company->logo) : null,
             ],
             'dispatches' => $dispatches,
-            'summary'    => [
-                'filtered_total'         => $filteredTotal,
-                'total_pax'              => $totalPax,
-                'avg_pax'                => $avgPax,
+            'summary' => [
+                'filtered_total' => $filteredTotal,
+                'total_pax' => $totalPax,
+                'avg_pax' => $avgPax,
                 'route_coverage_percent' => $routeCoveragePercent,
-                'gate_coverage_percent'  => $gateCoveragePercent,
-                'status_breakdown'       => $statusBreakdown,
-                'route_summary'          => $routeSummary,
-                'gate_summary'           => $gateSummary,
-                'bay_summary'            => $baySummary,
+                'gate_coverage_percent' => $gateCoveragePercent,
+                'status_breakdown' => $statusBreakdown,
+                'route_summary' => $routeSummary,
+                'gate_summary' => $gateSummary,
+                'bay_summary' => $baySummary,
             ],
             'mapConfig' => [
-                'mapboxToken'   => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
+                'mapboxToken' => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
                 'defaultCenter' => ['lng' => 120.9842, 'lat' => 14.5995],
-                'defaultZoom'   => 11,
+                'defaultZoom' => 11,
             ],
         ]);
     }
@@ -314,8 +309,8 @@ class InternalDispatchController extends Controller
         Gate::authorize('dispatches.view');
 
         $selectedDate = trim((string) $request->string('date'));
-        $search       = trim((string) $request->string('search'));
-        $status       = trim((string) $request->string('status', 'all'));
+        $search = trim((string) $request->string('search'));
+        $status = trim((string) $request->string('status', 'all'));
 
         $allowedStatuses = ['all', 'arrived', 'departed'];
         if (! in_array($status, $allowedStatuses, true)) {
@@ -339,24 +334,19 @@ class InternalDispatchController extends Controller
                     $q->where('plate_number', 'like', "%{$search}%")
                         ->orWhere('remarks', 'like', "%{$search}%")
                         ->orWhere('bay_number', 'like', "%{$search}%")
-                        ->orWhereHas('vehicle', fn ($v) =>
-                            $v->where('plate_number', 'like', "%{$search}%")
-                                ->orWhere('vehicle_type', 'like', "%{$search}%")
-                                ->orWhere('make_model', 'like', "%{$search}%")
+                        ->orWhereHas('vehicle', fn ($v) => $v->where('plate_number', 'like', "%{$search}%")
+                            ->orWhere('vehicle_type', 'like', "%{$search}%")
+                            ->orWhere('make_model', 'like', "%{$search}%")
                         )
-                        ->orWhereHas('vehicle.route', fn ($r) =>
-                            $r->where('route_name', 'like', "%{$search}%")
-                                ->orWhere('origin_name', 'like', "%{$search}%")
-                                ->orWhere('destination_name', 'like', "%{$search}%")
+                        ->orWhereHas('vehicle.route', fn ($r) => $r->where('route_name', 'like', "%{$search}%")
+                            ->orWhere('origin_name', 'like', "%{$search}%")
+                            ->orWhere('destination_name', 'like', "%{$search}%")
                         )
-                        ->orWhereHas('gate', fn ($g) =>
-                            $g->where('gate_name', 'like', "%{$search}%")
+                        ->orWhereHas('gate', fn ($g) => $g->where('gate_name', 'like', "%{$search}%")
                         )
-                        ->orWhereHas('dispatcher', fn ($d) =>
-                            $d->where('name', 'like', "%{$search}%")
+                        ->orWhereHas('dispatcher', fn ($d) => $d->where('name', 'like', "%{$search}%")
                         )
-                        ->orWhereHas('driver', fn ($d) =>
-                            $d->where('name', 'like', "%{$search}%")
+                        ->orWhereHas('driver', fn ($d) => $d->where('name', 'like', "%{$search}%")
                         );
                 });
             })
@@ -370,7 +360,7 @@ class InternalDispatchController extends Controller
             ($status !== 'all') ? $status : null,
         ])->filter()->map(fn ($s) => str_replace(' ', '-', $s))->implode('_');
 
-        $filename = 'dispatches_' . $label . '_' . now()->format('Y-m-d') . '.csv';
+        $filename = 'dispatches_'.$label.'_'.now()->format('Y-m-d').'.csv';
 
         return response()->streamDownload(function () use ($dispatches) {
             $out = fopen('php://output', 'w');
@@ -390,18 +380,18 @@ class InternalDispatchController extends Controller
                     $d->id,
                     $d->vehicle?->plate_number ?? $d->plate_number ?? '',
                     $d->vehicle?->vehicle_type ?? '',
-                    $d->vehicle?->make_model   ?? '',
+                    $d->vehicle?->make_model ?? '',
                     $route
-                        ? trim(($route->origin_name ?? '') . ' to ' . ($route->destination_name ?? ''))
+                        ? trim(($route->origin_name ?? '').' to '.($route->destination_name ?? ''))
                         : '',
-                    $d->bay_number  ?? '',
-                    $d->pax_count   ?? '',
-                    $d->status      ?? '',
-                    $d->driver?->name     ?? '',
+                    $d->bay_number ?? '',
+                    $d->pax_count ?? '',
+                    $d->status ?? '',
+                    $d->driver?->name ?? '',
                     $d->dispatcher?->name ?? '',
-                    $d->gate?->gate_name  ?? '',
-                    $d->arrived_at?->timezone('Asia/Manila')->format('M d, Y h:i A')   ?? '',
-                    $d->departed_at?->timezone('Asia/Manila')->format('M d, Y h:i A')  ?? '',
+                    $d->gate?->gate_name ?? '',
+                    $d->arrived_at?->timezone('Asia/Manila')->format('M d, Y h:i A') ?? '',
+                    $d->departed_at?->timezone('Asia/Manila')->format('M d, Y h:i A') ?? '',
                     $d->dispatched_at?->timezone('Asia/Manila')->format('M d, Y h:i A') ?? '',
                     $d->remarks ?? '',
                 ]);

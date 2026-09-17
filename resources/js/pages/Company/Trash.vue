@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import ForceDeleteCompanyDialog from '@/components/company/ForceDeleteCompanyDialog.vue';
-import RestoreCompanyDialog from '@/components/company/RestoreCompanyDialog.vue';
+import ForceDeleteCompanyDialog from '@/components/internal/company/ForceDeleteCompanyDialog.vue';
+import RestoreCompanyDialog from '@/components/internal/company/RestoreCompanyDialog.vue';
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';

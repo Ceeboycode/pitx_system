@@ -12,9 +12,9 @@ class DriverAssignmentValidator
      * Check if a driver can be assigned on a specific date.
      * A driver cannot be assigned to multiple dispatches on the same day.
      *
-     * @param User $driver The driver user
-     * @param Carbon|string $date The date to check (will use DATE part only)
-     * @param ?Dispatch $excludeDispatch Dispatch to exclude from check (for edit scenarios)
+     * @param  User  $driver  The driver user
+     * @param  Carbon|string  $date  The date to check (will use DATE part only)
+     * @param  ?Dispatch  $excludeDispatch  Dispatch to exclude from check (for edit scenarios)
      * @return bool True if driver can be assigned, false if already assigned on that date
      */
     public function canAssignToday(User $driver, Carbon|string $date, ?Dispatch $excludeDispatch = null): bool

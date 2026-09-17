@@ -47,11 +47,11 @@ class DispatchChangeRequestRejectedNotification extends Notification implements 
     {
         return (new MailMessage)
             ->subject('Dispatch Change Request Rejected')
-            ->greeting('Hello ' . $notifiable->name . ',')
+            ->greeting('Hello '.$notifiable->name.',')
             ->line("Your request to change {$this->changeRequest->field_label} for dispatch {$this->changeRequest->dispatch->plate_number} has been **rejected**.")
             ->line("- Current Value: {$this->changeRequest->old_value_display}")
             ->line("- Requested Value: {$this->changeRequest->requested_value_display}")
-            ->line("**Reason for Rejection:**")
+            ->line('**Reason for Rejection:**')
             ->line($this->changeRequest->rejection_reason)
             ->action('View Request', route('dispatches.show', $this->changeRequest->dispatch->id))
             ->line('Please contact support if you have questions.');

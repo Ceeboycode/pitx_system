@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, reactive, ref } from 'vue';
 
@@ -186,22 +186,19 @@ function vehicleStatusDot(status?: string | null) {
 }
 
 function documentStatusClass(status?: string | null) {
-    if (status === 'approved')
+    if (status === 'verified' || status === 'approved')
         return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-    if (status === 'pending')
+    if (status === 'pending' || status === 'draft' || status === 'for_verification')
         return 'bg-amber-100 text-amber-700 border-amber-200';
-    if (status === 'rejected')
-        return 'bg-rose-100 text-rose-600 border-rose-200';
-    if (status === 'expired')
+    if (status === 'invalid' || status === 'rejected' || status === 'expired' || status === 'needs_revision')
         return 'bg-rose-100 text-rose-600 border-rose-200';
     return 'bg-slate-100 text-slate-500 border-0';
 }
 
 function documentStatusDot(status?: string | null) {
-    if (status === 'approved') return 'bg-emerald-500';
-    if (status === 'pending') return 'bg-amber-500';
-    if (status === 'rejected') return 'bg-rose-500';
-    if (status === 'expired') return 'bg-rose-500';
+    if (status === 'verified' || status === 'approved') return 'bg-emerald-500';
+    if (status === 'pending' || status === 'draft' || status === 'for_verification') return 'bg-amber-500';
+    if (status === 'invalid' || status === 'rejected' || status === 'expired' || status === 'needs_revision') return 'bg-rose-500';
     return 'bg-slate-400';
 }
 
@@ -218,7 +215,7 @@ function isDocExpired(doc?: VehicleDocument) {
 
 function needsResubmission(doc?: VehicleDocument) {
     if (!doc) return false;
-    return doc.status === 'invalid' || isDocExpired(doc);
+    return doc.status === 'invalid' || doc.status === 'needs_revision' || isDocExpired(doc);
 }
 
 
@@ -229,7 +226,7 @@ function isSuspended(status?: string | null) {
 const hasDocuments = (vehicle: VehicleItem) => !!vehicle.documents?.length;
 const hasPendingOrRejected = (vehicle: VehicleItem) =>
     vehicle.documents?.some((doc) =>
-        ['pending', 'rejected'].includes(doc.status),
+        ['pending', 'rejected', 'for_verification', 'draft'].includes(doc.status),
     ) ?? false;
 const hasDocsNeedingResubmission = (vehicle: VehicleItem) =>
     vehicle.documents?.some((doc) => needsResubmission(doc)) ?? false;
@@ -269,7 +266,7 @@ function firstBlockingReason(vehicle: VehicleItem) {
         return 'Suspended vehicles cannot change status.';
     if (!hasDocuments(vehicle)) return 'Upload required documents first.';
     if (hasPendingOrRejected(vehicle))
-        return 'Documents must be approved before activation.';
+        return 'Documents must be verified before activation.';
     if (hasDocsNeedingResubmission(vehicle))
         return 'Resubmit invalid or expired documents before activation.';
     return '';
@@ -302,7 +299,7 @@ type SortField = 'capacity' | 'created_at' | null;
 type SortDir = 'asc' | 'desc';
 
 const statusFilter = ref<string>(props.filters.status ?? 'all');
-const vehicleTypeFilter = ref<string>(props.filters.vehicle_type ?? 'all');
+const vehicleTypeFilter = ref<string | number>(props.filters.vehicle_type ?? 'all');
 const routeFilter = ref<string>(props.filters.route_id ?? 'all');
 const filterOpen = ref(false);
 const sortOpen = ref(false);

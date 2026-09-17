@@ -34,7 +34,7 @@ class CommuterAttachmentController extends Controller
         $file = $validated['file'];
         $disk = 'public';
         $folder = "crm/commuter-{$request->user()->id}/thread-{$thread->id}/message-{$message->id}";
-        $name = Str::uuid()->toString() . '.' . $file->getClientOriginalExtension();
+        $name = Str::uuid()->toString().'.'.$file->getClientOriginalExtension();
 
         $path = $file->storeAs($folder, $name, $disk);
 

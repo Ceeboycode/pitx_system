@@ -1,5 +1,7 @@
 <?php
+
 namespace App\Services\Vehicle;
+
 use App\Models\VehicleType;
 
 class VehicleTypeService
@@ -11,7 +13,8 @@ class VehicleTypeService
         return VehicleType::create($data);
     }
 
-    public function updateVehicleType(VehicleType $vehicleType, array $data): VehicleType {
+    public function updateVehicleType(VehicleType $vehicleType, array $data): VehicleType
+    {
         $data['updated_by'] = auth()->id();
 
         $vehicleType->update($data);
