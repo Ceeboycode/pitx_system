@@ -5,6 +5,16 @@ import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 
 
+import {
+    Table,
+    TableColumn,
+    TableHeader,
+    TableContent,
+    TableRow,
+    TableCard,
+    TableData,
+    TableMoreButton,
+} from '@/components/ui/_table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,6 +54,7 @@ import {
 } from '@/routes/users';
 
 import {
+    ArchiveUserDialog,
     ResetPasswordDialog,
     ToggleUserStatusDialog,
 } from '@/components/internal/users';
@@ -67,7 +78,7 @@ import {
 } from 'vue-remix-icons';
 
 
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 
 import { can } from '@/lib/can';
@@ -76,6 +87,7 @@ const canCreate = can('users.create');
 const canToggle = can('users.toggleStatus');
 const canResetPass = can('users.resetPassword');
 const canViewTrash = can('users.viewTrash');
+const canArchive = can('users.archive');
 
 
 interface Role {
@@ -115,14 +127,14 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Users', href: index().url }];
 const props = defineProps<{
     users: {
         data: User[];
-        links: any;
+        links: { url: string | null; label: string; active: boolean }[];
         from: number | null;
         to: number | null;
         total: number;
     };
     filters: {
         search?: string | null;
-        roles?: string | null;
+        type?: string | null;
         status?: string | null;
         sort_by?: SortField;
         sort_dir?: SortDir;
@@ -133,7 +145,7 @@ const props = defineProps<{
 }>();
 
 
-const roleFilter = ref<string>(props.filters.roles ?? 'all');
+const roleFilter = ref<string>(props.filters.type ?? 'all');
 const statusFilter = ref<string>(props.filters.status ?? 'all');
 const pendingRoleFilter = ref(roleFilter.value);
 const pendingStatusFilter = ref(statusFilter.value);
@@ -155,23 +167,14 @@ const activeFilterCount = computed(() => {
     return count;
 });
 
-const filteredUsers = computed(() => {
-    let users = props.users.data;
-
-    
-    if (roleFilter.value !== 'all') {
-        users = users.filter((user) =>
-            user.roles?.some((role) => role.type === roleFilter.value),
-        );
-    }
-
-    
-    if (statusFilter.value !== 'all') {
-        users = users.filter((user) => user.status === statusFilter.value);
-    }
-
-    return users;
-});
+function currentFilterParams(): Record<string, string | undefined> {
+    return {
+        type: roleFilter.value !== 'all' ? roleFilter.value : undefined,
+        status: statusFilter.value !== 'all' ? statusFilter.value : undefined,
+        sort_by: sortBy.value ?? undefined,
+        sort_dir: sortBy.value ? sortDir.value : undefined,
+    };
+}
 
 function applyFilters(
     overrides: Record<string, string | null | undefined> = {},
@@ -180,11 +183,7 @@ function applyFilters(
         index().url,
         {
             search: props.filters.search ?? undefined,
-            role: roleFilter.value !== 'all' ? roleFilter.value : undefined,
-            status:
-                statusFilter.value !== 'all' ? statusFilter.value : undefined,
-            sort_by: sortBy.value ?? undefined,
-            sort_dir: sortBy.value ? sortDir.value : undefined,
+            ...currentFilterParams(),
             ...overrides,
         },
         {
@@ -305,10 +304,35 @@ function isOwnAccount(user: User) {
 }
 
 const previewedUser = ref<User | null>(null);
+const openMenus = ref<Record<number, boolean>>({});
 
 function openPreview(user: User) {
     previewedUser.value = user;
 }
+
+function selectAdjacentUser(direction: 1 | -1) {
+    if (!previewedUser.value) return;
+
+    const list = props.users.data;
+    const currentIndex = list.findIndex((u) => u.id === previewedUser.value?.id);
+    const nextIndex = currentIndex + direction;
+    if (currentIndex === -1 || nextIndex < 0 || nextIndex >= list.length) return;
+
+    openPreview(list[nextIndex]);
+}
+
+function handleRowNavigationKeydown(event: KeyboardEvent) {
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        selectAdjacentUser(1);
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        selectAdjacentUser(-1);
+    }
+}
+
+onMounted(() => window.addEventListener('keydown', handleRowNavigationKeydown));
+onUnmounted(() => window.removeEventListener('keydown', handleRowNavigationKeydown));
 
 
 const togglingUser = ref<User | null>(null);
@@ -325,6 +349,14 @@ const resetOpen = ref(false);
 function openResetDialog(user: User) {
     resettingUser.value = user;
     resetOpen.value = true;
+}
+
+const archivingUser = ref<User | null>(null);
+const archiveOpen = ref(false);
+
+function openArchiveDialog(user: User) {
+    archivingUser.value = user;
+    archiveOpen.value = true;
 }
 </script>
 
@@ -393,11 +425,11 @@ function openResetDialog(user: User) {
                         </DropdownMenu>
                     </div>
                 </CardHeader>
-                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
                     <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
                         <div class="w-full">
                             <SearchInput
-                                :route="`${index().url}?type=${roleFilter !== 'all' ? roleFilter : ''}&status=${statusFilter !== 'all' ? statusFilter : ''}&sort_by=${sortBy ?? ''}&sort_dir=${sortBy ? sortDir : ''}`"
+                                :route="index().url"
                                 :initial-value="props.filters.search"
                                 placeholder="Search users..."
                                 :only="[
@@ -407,6 +439,7 @@ function openResetDialog(user: User) {
                                     'flash',
                                 ]"
                                 :debounce="350"
+                                :extra-params="currentFilterParams"
                             />
                         </div>
                         <div
@@ -550,25 +583,13 @@ function openResetDialog(user: User) {
                         </div>
                     </div>
 
-                    <Card
-                        :class="[
-                            'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
-                            filteredUsers.length === 0 ? 'border-dashed' : 'border-solid',
-                        ]"
-                    >
-                        <div v-if="filteredUsers.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                            <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                                <div
-                                    :class="[
-                                        'grid gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light',
-                                        showCompanyColumn
-                                            ? 'grid-cols-[minmax(0,2fr)_minmax(0,1.6fr)_minmax(0,0.85fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,0.7fr)_3rem]'
-                                            : 'grid-cols-[minmax(0,2fr)_minmax(0,1.6fr)_minmax(0,0.85fr)_minmax(0,0.75fr)_minmax(0,0.7fr)_3rem]',
-                                    ]"
-                                >
+                    <TableCard :table-data-length="props.users.data.length">
+                        <Table v-if="props.users.data.length > 0">
+                            <TableHeader>
+                                <TableColumn class="p-0">
                                     <button
                                         type="button"
-                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 pl-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('name')"
                                     >
                                         Name & Username
@@ -578,18 +599,15 @@ function openResetDialog(user: User) {
                                             :class="sortIconClass('name')"
                                         />
                                     </button>
+                                </TableColumn>
 
-                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
-                                        Contact Details
-                                    </div>
+                                <TableColumn>Contact Details</TableColumn>
+                                <TableColumn>Verification</TableColumn>
 
-                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
-                                        Verification
-                                    </div>
-
+                                <TableColumn class="p-0">
                                     <button
                                         type="button"
-                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('status')"
                                     >
                                         Status
@@ -599,63 +617,53 @@ function openResetDialog(user: User) {
                                             :class="sortIconClass('status')"
                                         />
                                     </button>
+                                </TableColumn>
 
-                                    <div
-                                        v-if="showCompanyColumn"
-                                        class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80"
-                                    >
-                                        Company
-                                    </div>
+                                <TableColumn v-if="showCompanyColumn">Company</TableColumn>
+                                <TableColumn>Roles</TableColumn>
+                            </TableHeader>
 
-                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
-                                        Roles
-                                    </div>
-
-                                    <div class="col-span-1 flex h-10 items-center justify-end px-0 pr-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
-                                        Actions
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-                                <div
-                                    v-for="(user, index) in filteredUsers"
+                            <TableContent>
+                                <TableRow
+                                    v-for="(user, rowIndex) in props.users.data"
                                     :key="user.id"
                                     :class="[
-                                        'grid cursor-pointer items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
-                                        showCompanyColumn
-                                            ? 'grid-cols-[minmax(0,2fr)_minmax(0,1.6fr)_minmax(0,0.85fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,0.7fr)_3rem]'
-                                            : 'grid-cols-[minmax(0,2fr)_minmax(0,1.6fr)_minmax(0,0.85fr)_minmax(0,0.75fr)_minmax(0,0.7fr)_3rem]',
-                                        index === filteredUsers.length - 1 ? 'rounded-b-md border-b-0' : '',
-                                        previewedUser?.id === user.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
+                                        rowIndex === props.users.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                        previewedUser?.id === user.id ? 'bg-custom-secondary/10' : '',
                                     ]"
-                                    @click="openPreview(user)"
+                                    :status="user.status === 'inactive' ? 'inactive' : 'default'"
+                                    @click.left="openPreview(user)"
+                                    @dblclick="router.visit(show(user.id).url)"
                                 >
-                                    <div class="col-span-1 flex min-w-0 items-center gap-2 py-1.5 pl-3">
-                                        <img
-                                            v-if="user.avatar_url"
-                                            :src="user.avatar_url"
-                                            :alt="`${user.name} avatar`"
-                                            class="h-12 w-12 shrink-0 rounded-full object-cover"
-                                        />
-                                        <div
-                                            v-else
-                                            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-custom-secondary/20 text-xs font-semibold"
-                                        >
-                                            {{ initials(user.name) }}
+                                    <TableData class="pl-3">
+                                        <div class="flex min-w-0 items-center gap-2">
+                                            <img
+                                                v-if="user.avatar_url"
+                                                :src="user.avatar_url"
+                                                :alt="`${user.name} avatar`"
+                                                class="h-12 w-12 shrink-0 rounded-full object-cover"
+                                            />
+                                            <div
+                                                v-else
+                                                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-custom-secondary/20 text-xs font-semibold"
+                                            >
+                                                {{ initials(user.name) }}
+                                            </div>
+                                            <div class="min-w-0">
+                                                <p class="truncate font-semibold capitalize">{{ user.name }}</p>
+                                                <p class="truncate font-mono text-xs text-custom-shadow/70">{{ user.username }}</p>
+                                            </div>
                                         </div>
-                                        <div class="min-w-0">
-                                            <p class="truncate font-semibold capitalize">{{ user.name }}</p>
-                                            <p class="truncate font-mono text-xs text-custom-shadow/70">{{ user.username }}</p>
+                                    </TableData>
+
+                                    <TableData>
+                                        <div class="flex min-w-0 flex-col gap-1 text-sm text-custom-shadow/80">
+                                            <span class="truncate">{{ user.email || '—' }}</span>
+                                            <span class="truncate">{{ user.phone_number || '—' }}</span>
                                         </div>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex min-w-0 flex-col gap-1 py-1.5 text-sm text-custom-shadow/80">
-                                        <span class="truncate">{{ user.email || '—' }}</span>
-                                        <span class="truncate">{{ user.phone_number || '—' }}</span>
-                                    </div>
-
-                                    <div class="col-span-1 flex justify-start py-1.5">
+                                    <TableData>
                                         <Badge
                                             :class="
                                                 emailVerificationBadgeClass(
@@ -670,9 +678,9 @@ function openResetDialog(user: User) {
                                                 )
                                             }}
                                         </Badge>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-start py-1.5">
+                                    <TableData>
                                         <Badge
                                             :class="
                                                 statusBadgeClass(user.status)
@@ -681,12 +689,9 @@ function openResetDialog(user: User) {
                                         >
                                             {{ user.status }}
                                         </Badge>
-                                    </div>
+                                    </TableData>
 
-                                    <div
-                                        v-if="showCompanyColumn"
-                                        class="col-span-1 flex min-w-0 justify-start py-1.5 text-sm text-custom-shadow/70"
-                                    >
+                                    <TableData v-if="showCompanyColumn" class="text-sm text-custom-shadow/70">
                                         <span class="truncate">
                                             {{
                                                 visibleRoles(user).some(
@@ -697,9 +702,9 @@ function openResetDialog(user: User) {
                                                     : '-'
                                             }}
                                         </span>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex min-w-0 justify-start py-1.5">
+                                    <TableData>
                                         <div
                                             class="flex flex-wrap gap-1 capitalize"
                                         >
@@ -723,96 +728,97 @@ function openResetDialog(user: User) {
                                                 -
                                             </span>
                                         </div>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right" @click.stop>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger as-child>
-                                                <Button
-                                                    variant="table-more"
-                                                    size="icon-more"
-                                                >
-                                                    <RiMore2Line
-                                                        class="h-4 w-4"
-                                                    />
-                                                    
-                                                </Button>
-                                            </DropdownMenuTrigger>
+                                    <TableMoreButton
+                                        :open="openMenus[user.id] ?? false"
+                                        @update:open="(value) => (openMenus[user.id] = value)"
+                                    >
+                                        <DropdownMenuLabel class="">
+                                            {{ user.username }}
+                                        </DropdownMenuLabel>
 
-                                            <DropdownMenuContent align="end" class="">
-                                                <DropdownMenuLabel class="">
-                                                    {{ user.username }}
-                                                </DropdownMenuLabel>
+                                        <DropdownMenuItem
+                                            class="group hidden"
+                                            @click="show(user.id).url"
+                                        >
+                                            <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-bg transition-all duration-200" />
+                                            View
+                                        </DropdownMenuItem>
 
-                                                <DropdownMenuItem
-                                                    class="group hidden"
-                                                    @click="show(user.id).url"
-                                                >
-                                                    <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-bg transition-all duration-200" />
-                                                    View
-                                                </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            as-child
+                                            class="group"
+                                        >
+                                            <Link
+                                                :href="
+                                                    show(user.id).url
+                                                "
+                                                class="flex items-center"
+                                            >
+                                                <RiExternalLinkLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                View
+                                            </Link>
+                                        </DropdownMenuItem>
 
-                                                <DropdownMenuItem
-                                                    as-child
-                                                    class="group"
-                                                >
-                                                    <Link
-                                                        :href="
-                                                            show(user.id).url
-                                                        "
-                                                        class="flex items-center"
-                                                    >
-                                                        <RiExternalLinkLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                                                        View
-                                                    </Link>
-                                                </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            v-if="
+                                                canToggle &&
+                                                !isOwnAccount(user)
+                                            "
+                                            class="group"
+                                            @click="
+                                                openToggleDialog(user)
+                                            "
+                                        >
+                                            <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                            <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">{{
+                                                isActive(user)
+                                                    ? 'Set as Inactive'
+                                                    : 'Set as Active'
+                                            }}</span>
+                                        </DropdownMenuItem>
 
-                                                <DropdownMenuItem
-                                                    v-if="
-                                                        canToggle &&
-                                                        !isOwnAccount(user)
-                                                    "
-                                                    class="group"
-                                                    @click="
-                                                        openToggleDialog(user)
-                                                    "
-                                                >
-                                                    <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                                                    <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">{{
-                                                        isActive(user)
-                                                            ? 'Set as Inactive'
-                                                            : 'Set as Active'
-                                                    }}</span>
-                                                </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            v-if="
+                                                canResetPass &&
+                                                !isOwnAccount(user)
+                                            "
+                                            class="group"
+                                            @click="
+                                                openResetDialog(user)
+                                            "
+                                        >
+                                            <RiKey2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                            <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">Reset Password</span>
+                                        </DropdownMenuItem>
 
-                                                <DropdownMenuItem
-                                                    v-if="
-                                                        canResetPass &&
-                                                        !isOwnAccount(user)
-                                                    "
-                                                    class="group"
-                                                    @click="
-                                                        openResetDialog(user)
-                                                    "
-                                                >
-                                                    <RiKey2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                                                    <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">Reset Password</span>
-                                                </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            v-if="
+                                                canArchive &&
+                                                !isOwnAccount(user)
+                                            "
+                                            class="group"
+                                            @click="
+                                                openArchiveDialog(user)
+                                            "
+                                        >
+                                            <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                            <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">Archive</span>
+                                        </DropdownMenuItem>
 
-                                                <Separator v-if="isOwnAccount(user)" class="mt-4"/>
+                                        <Separator v-if="isOwnAccount(user)" class="mt-4"/>
 
-                                                <DropdownMenuItem
-                                                    v-if="isOwnAccount(user)"
-                                                    class="pointer-events-none text-custom-shadow/80 text-xs"
-                                                >
-                                                    You cannot manage your own account here.
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                                        <DropdownMenuItem
+                                            v-if="isOwnAccount(user)"
+                                            class="pointer-events-none text-custom-shadow/80 text-xs"
+                                        >
+                                            You cannot manage your own account here.
+                                        </DropdownMenuItem>
+                                    </TableMoreButton>
+                                </TableRow>
+                            </TableContent>
+                        </Table>
 
                         <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
                             <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
@@ -830,7 +836,7 @@ function openResetDialog(user: User) {
                                 </div>
                             </div>
                         </div>
-                    </Card>
+                    </TableCard>
 
                     <InertiaPagination
                         :links="props.users.links"
@@ -949,11 +955,21 @@ function openResetDialog(user: User) {
 
                     <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
 
-                    <div class="flex items-center justify-end gap-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <Button
+                            v-if="canArchive && !isOwnAccount(previewedUser)"
+                            variant="destructive"
+                            size="icon-text"
+                            @click="openArchiveDialog(previewedUser)"
+                        >
+                            <RiArchive2Line class="h-4 w-4" />
+                            Archive
+                        </Button>
                         <Button
                             as-child
                             variant="float-primary"
                             size="icon"
+                            class="ml-auto"
                         >
                             <Link :href="show(previewedUser.id).url" aria-label="View user profile">
                                 <RiExternalLinkLine class="h-4 w-4" />
@@ -978,5 +994,6 @@ function openResetDialog(user: User) {
 
         <ToggleUserStatusDialog v-model:open="toggleOpen" :user="togglingUser" />
         <ResetPasswordDialog v-model:open="resetOpen" :user="resettingUser" />
+        <ArchiveUserDialog v-model:open="archiveOpen" :user="archivingUser" />
     </AppLayout>
 </template>

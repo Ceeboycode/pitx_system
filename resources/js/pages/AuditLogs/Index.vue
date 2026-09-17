@@ -7,6 +7,7 @@ import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
+import { Input } from '@/components/ui/input';
 import {
     Card,
     CardContent,
@@ -30,12 +31,21 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 import {
-    RiCalendarLine as Calendar,
-    RiCloseLine as X,
-    RiFilter2Line as Filter,
+    RiCalendarLine,
+    RiCloseLine,
+    RiFilter2Line,
 } from 'vue-remix-icons';
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { PanelLayout } from '@/components/ui/_panels';
+import {
+    Table,
+    TableColumn,
+    TableHeader,
+    TableContent,
+    TableRow,
+    TableCard,
+    TableData,
+} from '@/components/ui/_table';
 
 type SortDir = 'asc' | 'desc';
 
@@ -161,6 +171,13 @@ function onCalendarToChange(val: CalendarDate | undefined) {
 
 function onDateFromTextChange() {
     calendarDateFrom.value = parseDateString(dateFrom.value);
+    popoverFromOpen.value = false;
+    applyFilters();
+}
+
+function onDateToTextChange() {
+    calendarDateTo.value = parseDateString(dateTo.value);
+    popoverToOpen.value = false;
     applyFilters();
 }
 
@@ -189,14 +206,11 @@ const hasActiveFilters = computed(
         !!props.filters.search,
 );
 
-function applyFilters(
-    overrides: Record<string, string | number | undefined> = {},
-) {
-    const payload: Record<string, string | number | undefined> = {
-        search: props.filters.search ?? undefined,
+function currentFilterParams(): Record<string, string | undefined> {
+    return {
         action: actionFilter.value !== 'all' ? actionFilter.value : undefined,
         user_id:
-            userFilter.value !== 'all' ? Number(userFilter.value) : undefined,
+            userFilter.value !== 'all' ? userFilter.value : undefined,
         entity_type:
             entityTypeFilter.value !== 'all'
                 ? entityTypeFilter.value
@@ -204,6 +218,15 @@ function applyFilters(
         date_from: dateFrom.value || undefined,
         date_to: dateTo.value || undefined,
         sort_dir: sortDir.value,
+    };
+}
+
+function applyFilters(
+    overrides: Record<string, string | number | undefined> = {},
+) {
+    const payload: Record<string, string | number | undefined> = {
+        search: props.filters.search ?? undefined,
+        ...currentFilterParams(),
         ...overrides,
     };
 
@@ -261,6 +284,30 @@ function openPreview(log: AuditLogRow) {
     previewedLog.value = log;
 }
 
+function selectAdjacentLog(direction: 1 | -1) {
+    if (!previewedLog.value) return;
+
+    const list = props.auditLogs.data;
+    const currentIndex = list.findIndex((l) => l.id === previewedLog.value?.id);
+    const nextIndex = currentIndex + direction;
+    if (currentIndex === -1 || nextIndex < 0 || nextIndex >= list.length) return;
+
+    openPreview(list[nextIndex]);
+}
+
+function handleRowNavigationKeydown(event: KeyboardEvent) {
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        selectAdjacentLog(1);
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        selectAdjacentLog(-1);
+    }
+}
+
+onMounted(() => window.addEventListener('keydown', handleRowNavigationKeydown));
+onUnmounted(() => window.removeEventListener('keydown', handleRowNavigationKeydown));
+
 function formatValue(value: unknown): string {
     if (value === null || value === undefined || value === '') {
         return '—';
@@ -307,13 +354,13 @@ function actionBadgeClass(action: string): string {
                     </CardDescription>
                     </div>
                 </CardHeader>
-                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
                     <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
                         <div class="w-full">
                             <SearchInput
                                 :route="index().url"
                                 :initial-value="filters.search"
-                                placeholder="Search my activity..."
+                                placeholder="Search audit logs..."
                                 :only="[
                                     'auditLogs',
                                     'filters',
@@ -322,6 +369,7 @@ function actionBadgeClass(action: string): string {
                                     'flash',
                                 ]"
                                 :debounce="350"
+                                :extra-params="currentFilterParams"
                             />
                         </div>
                         <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
@@ -338,7 +386,7 @@ function actionBadgeClass(action: string): string {
                                                     : ''
                                             "
                                         >
-                                            <Filter class="h-3.5 w-3.5" />
+                                            <RiFilter2Line class="h-3.5 w-3.5" />
                                             <span class="hidden lg:flex">
                                                 {{ activeFilterCount > 0
                                                     ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
@@ -438,7 +486,7 @@ function actionBadgeClass(action: string): string {
                                             size="icon-text"
                                             class="rounded-full gap-2"
                                         >
-                                            <Calendar class="h-4 w-4 shrink-0" />
+                                            <RiCalendarLine class="h-4 w-4 shrink-0" />
                                             <span class="text-sm">
                                                 {{ dateFrom ? formatDateDisplay(dateFrom) : 'From date' }}
                                             </span>
@@ -450,6 +498,13 @@ function actionBadgeClass(action: string): string {
                                         <p class="mb-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
                                             From Date
                                         </p>
+                                        <Input
+                                            v-model="dateFrom"
+                                            type="text"
+                                            placeholder="YYYY-MM-DD"
+                                            class="mb-2"
+                                            @keydown.enter="onDateFromTextChange"
+                                        />
                                         <CalendarPicker
                                             v-model="calendarDateFrom"
                                             @update:model-value="onCalendarFromChange"
@@ -464,7 +519,7 @@ function actionBadgeClass(action: string): string {
                                             size="icon-text"
                                             class="rounded-full gap-2"
                                         >
-                                            <Calendar class="h-4 w-4 shrink-0" />
+                                            <RiCalendarLine class="h-4 w-4 shrink-0" />
                                             <span class="text-sm">
                                                 {{ dateTo ? formatDateDisplay(dateTo) : 'To date' }}
                                             </span>
@@ -476,6 +531,13 @@ function actionBadgeClass(action: string): string {
                                         <p class="mb-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
                                             To Date
                                         </p>
+                                        <Input
+                                            v-model="dateTo"
+                                            type="text"
+                                            placeholder="YYYY-MM-DD"
+                                            class="mb-2"
+                                            @keydown.enter="onDateToTextChange"
+                                        />
                                         <CalendarPicker
                                             v-model="calendarDateTo"
                                             @update:model-value="onCalendarToChange"
@@ -486,45 +548,37 @@ function actionBadgeClass(action: string): string {
                             </div>
                         </div>
                     </div>
-                    <Card
-                        :class="[
-                            'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
-                            auditLogs.data.length === 0 ? 'border-dashed' : 'border-solid',
-                        ]"
-                    >
-                    <div v-if="auditLogs.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                        <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                            <div class="grid grid-cols-4 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
-                                <div class="flex h-10 items-center justify-start pl-3 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">User</div>
-                                <div class="flex h-10 items-center justify-start text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Action</div>
-                                <div class="flex h-10 items-center justify-start text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Entity</div>
-                                <div class="flex h-10 items-center justify-start text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Timestamp</div>
-                            </div>
-                        </div>
+                    <TableCard :table-data-length="auditLogs.data.length">
+                        <Table v-if="auditLogs.data.length > 0">
+                            <TableHeader hide-actions-column>
+                                <TableColumn>User</TableColumn>
+                                <TableColumn>Action</TableColumn>
+                                <TableColumn>Entity</TableColumn>
+                                <TableColumn>Timestamp</TableColumn>
+                            </TableHeader>
 
-                        <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-                            <div
-                                    v-for="(log, index) in auditLogs.data"
+                            <TableContent>
+                                <TableRow
+                                    v-for="(log, rowIndex) in auditLogs.data"
                                     :key="log.id"
                                     :class="[
-                                        'group grid cursor-pointer grid-cols-4 items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
-                                        index === auditLogs.data.length - 1 ? 'rounded-b-md border-b-0' : '',
-                                        previewedLog?.id === log.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
+                                        rowIndex === auditLogs.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                        previewedLog?.id === log.id ? 'bg-custom-secondary/10' : '',
                                     ]"
-                                    @click="openPreview(log)"
+                                    @click.left="openPreview(log)"
                                 >
-                                    <div class="min-w-0 py-1.5 pl-3">
-                                        <div class="text-sm font-medium">
-                                            {{ log.user?.name ?? 'System' }}
+                                    <TableData class="pl-3">
+                                        <div class="min-w-0">
+                                            <div class="truncate text-sm font-medium">
+                                                {{ log.user?.name ?? 'System' }}
+                                            </div>
+                                            <div class="truncate text-xs text-muted-foreground">
+                                                {{ log.user?.email ?? '—' }}
+                                            </div>
                                         </div>
-                                        <div
-                                            class="text-xs text-muted-foreground"
-                                        >
-                                            {{ log.user?.email ?? '—' }}
-                                        </div>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="py-1.5">
+                                    <TableData>
                                         <Badge
                                             :class="
                                                 actionBadgeClass(log.action)
@@ -532,51 +586,50 @@ function actionBadgeClass(action: string): string {
                                         >
                                             {{ log.action_label }}
                                         </Badge>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="min-w-0 py-1.5">
-                                        <div class="text-sm font-medium">
-                                            {{ log.entity_label }}
+                                    <TableData>
+                                        <div class="min-w-0">
+                                            <div class="truncate text-sm font-medium">
+                                                {{ log.entity_label }}
+                                            </div>
+                                            <div class="truncate text-xs text-muted-foreground">
+                                                {{ log.entity_name ?? '—' }}
+                                            </div>
                                         </div>
-                                        <div
-                                            class="text-xs text-muted-foreground"
-                                        >
-                                            {{ log.entity_name ?? '—' }}
-                                        </div>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="min-w-0 py-1.5">
-                                        <div class="text-sm">
-                                            {{ log.created_at_human ?? '—' }}
+                                    <TableData>
+                                        <div class="min-w-0">
+                                            <div class="truncate text-sm">
+                                                {{ log.created_at_human ?? '—' }}
+                                            </div>
+                                            <div class="truncate text-xs text-muted-foreground">
+                                                {{ log.created_at ?? '—' }}
+                                            </div>
                                         </div>
-                                        <div
-                                            class="text-xs text-muted-foreground"
-                                        >
-                                            {{ log.created_at ?? '—' }}
-                                        </div>
-                                    </div>
+                                    </TableData>
+                                </TableRow>
+                            </TableContent>
+                        </Table>
 
+                        <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                            <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                                <img
+                                    :src="emptyRafikiUrl"
+                                    alt=""
+                                    class="w-1/3 object-contain opacity-90"
+                                    aria-hidden="true"
+                                />
+                                <div class="space-y-1">
+                                    <p class="text-base font-semibold text-custom-shadow">No audit logs found</p>
+                                    <p class="text-sm text-custom-shadow/80">
+                                        {{ hasActiveFilters ? 'Try adjusting your filters or search.' : 'Try adjusting your search.' }}
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
-                        <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
-                            <img
-                                :src="emptyRafikiUrl"
-                                alt=""
-                                class="w-1/3 object-contain opacity-90"
-                                aria-hidden="true"
-                            />
-                            <div class="space-y-1">
-                                <p class="text-base font-semibold text-custom-shadow">No audit logs found</p>
-                                <p class="text-sm text-custom-shadow/80">
-                                    {{ hasActiveFilters ? 'Try adjusting your filters or search.' : 'Try adjusting your search.' }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    </Card>
+                    </TableCard>
 
                     <InertiaPagination
                         :links="auditLogs.links"
@@ -607,7 +660,7 @@ function actionBadgeClass(action: string): string {
                         aria-label="Close audit log preview"
                         @click="previewedLog = null"
                     >
-                        <X class="h-4 w-4" />
+                        <RiCloseLine class="h-4 w-4" />
                     </Button>
                 </CardHeader>
 

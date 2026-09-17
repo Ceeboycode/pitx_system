@@ -48,7 +48,7 @@ export type TableVariants = VariantProps<typeof tableVariants>
 export { default as TableRow } from "./TableRow.vue"
 
 export const tableRowVariants = cva(
-  "grid cursor-pointer items-center border-b border-custom-bg-dark transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light",
+  "cursor-pointer border-b border-custom-bg-dark transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light",
   {
     variants: {
       status: {

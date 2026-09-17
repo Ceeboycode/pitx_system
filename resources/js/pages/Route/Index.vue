@@ -3,6 +3,16 @@ import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 
+import {
+    Table,
+    TableColumn,
+    TableHeader,
+    TableContent,
+    TableRow,
+    TableCard,
+    TableData,
+    TableMoreButton,
+} from '@/components/ui/_table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -64,7 +74,7 @@ import {
 
 import { PanelLayout } from '@/components/ui/_panels';
 
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 const canCreate    = can('routes.create');
 const canUpdate    = can('routes.update');
@@ -129,6 +139,32 @@ function openPreview(route: RouteRow) {
     previewedRoute.value = route;
 }
 
+function selectAdjacentRoute(direction: 1 | -1) {
+    if (!previewedRoute.value) return;
+
+    const list = props.routes.data;
+    const currentIndex = list.findIndex((r) => r.id === previewedRoute.value?.id);
+    const nextIndex = currentIndex + direction;
+    if (currentIndex === -1 || nextIndex < 0 || nextIndex >= list.length) return;
+
+    openPreview(list[nextIndex]);
+}
+
+function handleRowNavigationKeydown(event: KeyboardEvent) {
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        selectAdjacentRoute(1);
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        selectAdjacentRoute(-1);
+    }
+}
+
+onMounted(() => window.addEventListener('keydown', handleRowNavigationKeydown));
+onUnmounted(() => window.removeEventListener('keydown', handleRowNavigationKeydown));
+
+const openMenus = ref<Record<number, boolean>>({});
+
 const hasActiveFilters = computed(() =>
     (statusFilter.value && statusFilter.value !== 'all') ||
     sortBy.value !== null
@@ -140,14 +176,20 @@ const activeFilterCount = computed(() => {
     return count;
 });
 
+function currentFilterParams(): Record<string, string | undefined> {
+    return {
+        status: statusFilter.value !== 'all' ? statusFilter.value : undefined,
+        sort_by: sortBy.value ?? undefined,
+        sort_dir: sortBy.value ? sortDir.value : undefined,
+    };
+}
+
 function applyFilters(overrides: Record<string, string | undefined> = {}) {
     router.get(
         index().url,
         {
             search: props.filters.search ?? undefined,
-            status: statusFilter.value !== 'all' ? statusFilter.value : undefined,
-            sort_by: sortBy.value ?? undefined,
-            sort_dir: sortBy.value ? sortDir.value : undefined,
+            ...currentFilterParams(),
             ...overrides,
         },
         {
@@ -296,7 +338,7 @@ function openToggleDialog(route: RouteRow) {
                     </div>
                 </CardHeader>
 
-                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
                     <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
                         <div class="w-full">
                             <SearchInput
@@ -305,6 +347,7 @@ function openToggleDialog(route: RouteRow) {
                                 placeholder="Search routes..."
                                 :only="['routes', 'filters', 'flash']"
                                 :debounce="350"
+                                :extra-params="currentFilterParams"
                             />
                         </div>
 
@@ -382,7 +425,7 @@ function openToggleDialog(route: RouteRow) {
                                                 <Button
                                                     size="sm"
                                                     variant="float-primary"
-                                                    @click="applyFilters"
+                                                    @click="applyFilters()"
                                                 >
                                                     Apply
                                                 </Button>
@@ -394,18 +437,13 @@ function openToggleDialog(route: RouteRow) {
                         </div>
                     </div>
 
-                    <Card
-                        :class="[
-                            'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
-                            props.routes.data.length === 0 ? 'border-dashed' : 'border-solid',
-                        ]"
-                    >
-                        <div v-if="props.routes.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                            <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                                <div class="grid grid-cols-5 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
+                    <TableCard :table-data-length="props.routes.data.length">
+                        <Table v-if="props.routes.data.length > 0">
+                            <TableHeader>
+                                <TableColumn class="p-0">
                                     <button
                                         type="button"
-                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 pl-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('route_name')"
                                     >
                                         Name
@@ -415,10 +453,12 @@ function openToggleDialog(route: RouteRow) {
                                             :class="sortIconClass('route_name')"
                                         />
                                     </button>
+                                </TableColumn>
 
+                                <TableColumn class="p-0">
                                     <button
                                         type="button"
-                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('gate_name')"
                                     >
                                         Gate
@@ -428,10 +468,12 @@ function openToggleDialog(route: RouteRow) {
                                             :class="sortIconClass('gate_name')"
                                         />
                                     </button>
+                                </TableColumn>
 
+                                <TableColumn class="p-0">
                                     <button
                                         type="button"
-                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('status')"
                                     >
                                         Status
@@ -441,10 +483,12 @@ function openToggleDialog(route: RouteRow) {
                                             :class="sortIconClass('status')"
                                         />
                                     </button>
+                                </TableColumn>
 
+                                <TableColumn class="p-0">
                                     <button
                                         type="button"
-                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('created_at')"
                                     >
                                         Created
@@ -454,103 +498,89 @@ function openToggleDialog(route: RouteRow) {
                                             :class="sortIconClass('created_at')"
                                         />
                                     </button>
+                                </TableColumn>
+                            </TableHeader>
 
-                                    <div class="col-span-1 flex h-10 items-center justify-end px-0 pr-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
-                                        Actions
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-                                <div
-                                    v-for="(routeItem, index) in props.routes.data"
+                            <TableContent>
+                                <TableRow
+                                    v-for="(routeItem, rowIndex) in props.routes.data"
                                     :key="routeItem.id"
                                     :class="[
-                                        'grid cursor-pointer grid-cols-5 items-center border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
-                                        index === props.routes.data.length - 1 ? 'rounded-b-md border-b-0' : '',
-                                        previewedRoute?.id === routeItem.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
+                                        rowIndex === props.routes.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                        previewedRoute?.id === routeItem.id ? 'bg-custom-secondary/10' : '',
                                     ]"
-                                    @click="openPreview(routeItem)"
+                                    :status="routeItem.status === 'inactive' ? 'inactive' : 'default'"
+                                    @click.left="openPreview(routeItem)"
+                                    @dblclick="router.visit(show(routeItem.id).url)"
                                 >
-                                    <div class="col-span-1 flex justify-start py-1.5 pl-3 font-semibold capitalize">
-                                        {{ routeItem.route_name }}
-                                    </div>
+                                    <TableData class="pl-3 font-semibold capitalize">
+                                        <span class="truncate">{{ routeItem.route_name }}</span>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-start py-1.5">
+                                    <TableData>
                                         <span
                                             v-if="routeItem.gate"
-                                            class="rounded bg-custom-bg px-2 py-0.5 font-mono text-xs font-semibold text-custom-shadow dark:bg-custom-bg-light"
+                                            class="truncate rounded bg-custom-bg px-2 py-0.5 font-mono text-xs font-semibold text-custom-shadow dark:bg-custom-bg-light"
                                         >
                                             {{ routeItem.gate.gate_name }}
                                         </span>
                                         <span v-else class="text-sm text-custom-shadow/70">—</span>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-start py-1.5">
+                                    <TableData>
                                         <Badge :class="['gap-1.5', statusClass(routeItem.status)]">
                                             <span :class="['h-1.5 w-1.5 rounded-full', statusDot(routeItem.status)]" />
                                             {{ routeItem.status === 'active' ? 'Active' : 'Inactive' }}
                                         </Badge>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-start py-1.5 text-sm text-custom-shadow/80">
-                                        {{ routeItem.created_at_human ?? '—' }}
-                                    </div>
+                                    <TableData class="text-sm text-custom-shadow/80">
+                                        <span class="truncate">{{ routeItem.created_at_human ?? '—' }}</span>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right" @click.stop>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger as-child>
-                                                <Button
-                                                    variant="table-more"
-                                                    size="icon-more"
-                                                >
-                                                    <RiMore2Line class="h-4 w-4" />
-                                                    
-                                                </Button>
-                                            </DropdownMenuTrigger>
+                                    <TableMoreButton
+                                        :open="openMenus[routeItem.id] ?? false"
+                                        @update:open="(value) => (openMenus[routeItem.id] = value)"
+                                    >
+                                        <DropdownMenuLabel>
+                                            {{ routeItem.route_name }}
+                                        </DropdownMenuLabel>
+                                        <!-- <DropdownMenuItem
+                                            as-child
+                                            class="group"
+                                        >
+                                            <Link :href="show(routeItem.id).url" class="flex items-center">
+                                                <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
+                                                View
+                                            </Link>
+                                        </DropdownMenuItem> -->
 
-                                            <DropdownMenuContent align="end" class="text-custom-shadow">
-                                                <DropdownMenuLabel>
-                                                    {{ routeItem.route_name }}
-                                                </DropdownMenuLabel>
-                                                <!-- <DropdownMenuItem
-                                                    as-child
-                                                    class="group"
-                                                >
-                                                    <Link :href="show(routeItem.id).url" class="flex items-center">
-                                                        <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
-                                                        View
-                                                    </Link>
-                                                </DropdownMenuItem> -->
+                                        <!-- I JUST THINK NAAAA PAG NI VIEW NILA, SAME NA YUN AS HAVING THE TOOLS TO EDIT, KAYA WALA TO -->
 
-                                                <!-- I JUST THINK NAAAA PAG NI VIEW NILA, SAME NA YUN AS HAVING THE TOOLS TO EDIT, KAYA WALA TO -->
+                                        <DropdownMenuItem
+                                            v-if="canUpdate"
+                                            as-child
+                                            class="group"
+                                        >
+                                            <Link :href="edit(routeItem.id).url">
+                                                <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
+                                                <!-- <RiEditLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" /> -->
+                                                View
+                                            </Link>
+                                        </DropdownMenuItem>
 
-                                                <DropdownMenuItem
-                                                    v-if="canUpdate"
-                                                    as-child
-                                                    class="group"
-                                                >
-                                                    <Link :href="edit(routeItem.id).url">
-                                                        <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
-                                                        <!-- <RiEditLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" /> -->
-                                                        View
-                                                    </Link>
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuItem
-                                                    v-if="canToggle"
-                                                    :class="['group', toggleStatusClass(routeItem.status)]"
-                                                    @click="openToggleDialog(routeItem)"
-                                                >
-                                                    <RiShutDownLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
-                                                    <span class="text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200">{{ routeItem.status === 'active' ? 'Inactivate' : 'Activate' }}</span>
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                                        <DropdownMenuItem
+                                            v-if="canToggle"
+                                            :class="['group', toggleStatusClass(routeItem.status)]"
+                                            @click="openToggleDialog(routeItem)"
+                                        >
+                                            <RiShutDownLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
+                                            <span class="text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200">{{ routeItem.status === 'active' ? 'Inactivate' : 'Activate' }}</span>
+                                        </DropdownMenuItem>
+                                    </TableMoreButton>
+                                </TableRow>
+                            </TableContent>
+                        </Table>
 
                         <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
                             <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
@@ -568,7 +598,7 @@ function openToggleDialog(route: RouteRow) {
                                 </div>
                             </div>
                         </div>
-                    </Card>
+                    </TableCard>
 
                     <InertiaPagination
                         :links="props.routes.links"
@@ -592,7 +622,7 @@ function openToggleDialog(route: RouteRow) {
                     </Button>
                 </CardHeader>
 
-                <CardContent v-if="previewedRoute" class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto py-2">
+                <CardContent v-if="previewedRoute" class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto pt-2">
                     <div class="space-y-3 pt-2">
                         <div class="flex items-center justify-between gap-3">
                             <span class="text-sm font-semibold text-custom-shadow">Status</span>

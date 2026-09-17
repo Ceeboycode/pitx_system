@@ -10,10 +10,10 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div
+  <tr
     :data-status="status"
     :class="cn(tableRowVariants({ status }), props.class)"
   >
     <slot />
-  </div>
+  </tr>
 </template>

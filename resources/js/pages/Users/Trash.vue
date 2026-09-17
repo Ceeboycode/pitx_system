@@ -30,6 +30,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { RiArrowLeftSLine, RiFilter2Line, RiMore2Line, RiRestartLine } from 'vue-remix-icons';
 import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
+import { PanelLayout } from '@/components/ui/_panels';
 
 type UserArchive = {
     id: number;
@@ -113,7 +114,7 @@ function confirmRestore() {
     <Head title="Archived Users" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+        <PanelLayout>
             <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader class="flex flex-row items-start gap-3">
                     <Button as-child variant="header-actions" size="icon">
@@ -244,7 +245,7 @@ function confirmRestore() {
                     <InertiaPagination :links="users.links" :meta="{ from: users.from, to: users.to, total: users.total }" />
                 </CardContent>
             </Card>
-        </div>
+        </PanelLayout>
 
         <AlertDialog v-model:open="restoreOpen">
             <AlertDialogContent class="rounded-lg p-4">

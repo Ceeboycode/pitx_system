@@ -107,7 +107,14 @@ class Vehicle extends Model
                 ->orWhere('make_model', 'like', "%{$term}%")
                 ->orWhere('vehicle_type', 'like', "%{$term}%")
                 ->orWhere('status', 'like', "%{$term}%")
-                ->orWhere('verification_status', 'like', "%{$term}%");
+                ->orWhere('verification_status', 'like', "%{$term}%")
+                ->orWhere('capacity', 'like', "%{$term}%")
+                ->orWhereHas('company', function ($companyQuery) use ($term) {
+                    $companyQuery->where('company_name', 'like', "%{$term}%");
+                })
+                ->orWhereHas('route', function ($routeQuery) use ($term) {
+                    $routeQuery->where('route_name', 'like', "%{$term}%");
+                });
         });
     }
 

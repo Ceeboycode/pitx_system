@@ -82,7 +82,7 @@ function confirm() {
                 </DialogDescription>
             </DialogHeader>
             <form class="space-y-3" @submit.prevent="confirm">
-                <div v-if="isSuspending" class="flex flex-col gap-y-2">
+                <div v-if="isSuspending" class="flex flex-col">
                     <Textarea
                         v-model="suspendRemarks"
                         class="min-h-24 border-custom-bg-dark bg-custom-bg p-3 text-sm text-custom-shadow placeholder:text-custom-shadow/50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:bg-white dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5"

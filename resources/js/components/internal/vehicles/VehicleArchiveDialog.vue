@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
-import { destroy } from '@/routes/roles';
+import { destroy } from '@/routes/vehicles';
 
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
+    DialogClose,
     DialogContent,
     DialogDescription,
     DialogFooter,
@@ -15,27 +15,23 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { RiArchive2Line } from 'vue-remix-icons';
 
-type RoleForArchive = {
+type VehicleForArchive = {
     id: number;
-    name: string;
+    plate_number: string | null;
 };
 
 const open = defineModel<boolean>('open');
 
 const props = defineProps<{
-    role: RoleForArchive | null;
+    vehicle: VehicleForArchive | null;
 }>();
 
-const processing = ref(false);
+function confirm() {
+    if (!props.vehicle) return;
 
-function archive() {
-    if (processing.value || !props.role) return;
-
-    processing.value = true;
-    router.delete(destroy({ role: props.role.id }).url, {
+    router.delete(destroy({ vehicle: props.vehicle.id }).url, {
         preserveScroll: true,
-        onFinish: () => {
-            processing.value = false;
+        onSuccess: () => {
             open.value = false;
         },
     });
@@ -46,22 +42,20 @@ function archive() {
     <Dialog v-model:open="open">
         <DialogContent class="max-w-md px-6">
             <DialogHeader class="px-0">
-                <DialogTitle>Archive role</DialogTitle>
+                <DialogTitle>Archive Vehicle</DialogTitle>
                 <DialogDescription>
-                    Are you sure you want to archive
-                    <span class="font-semibold text-custom-accent-3">{{ role?.name }}</span>?
-                    It can be restored later.
+                    You are about to archive
+                    <span class="font-semibold text-custom-accent-3">{{ vehicle?.plate_number || 'this vehicle' }}</span>. You can restore it later from Archived Vehicles.
                 </DialogDescription>
             </DialogHeader>
             <Separator />
             <DialogFooter class="pt-3 gap-2 sm:justify-end">
-                <Button variant="ghost-outline" @click="open = false">Cancel</Button>
-                <Button
-                    :variant="processing ? 'disabled' : 'float-primary'"
-                    @click="archive"
-                >
+                <DialogClose as-child>
+                    <Button type="button" variant="ghost-outline">Cancel</Button>
+                </DialogClose>
+                <Button type="button" variant="destructive" @click="confirm">
                     <RiArchive2Line class="h-4 w-4" />
-                    {{ processing ? 'Archiving...' : 'Archive' }}
+                    Archive
                 </Button>
             </DialogFooter>
         </DialogContent>

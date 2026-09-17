@@ -36,6 +36,7 @@ import {
     RiFilter2Line as Filter,
 } from 'vue-remix-icons';
 import { computed, ref } from 'vue';
+import { PanelLayout } from '@/components/ui/_panels';
 
 interface ChangeLine {
     field: string;
@@ -241,7 +242,7 @@ function actionBadgeClass(action: string): string {
     <Head title="Activity Logs" />
     
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
+        <PanelLayout>
             <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader class="flex flex-row gap-2">
                     <div class="flex flex-col">
@@ -253,7 +254,7 @@ function actionBadgeClass(action: string): string {
                     </CardDescription>
                     </div>
                 </CardHeader>
-                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
                     <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
                         <div class="w-full">
                             <SearchInput
@@ -647,6 +648,6 @@ function actionBadgeClass(action: string): string {
                     </div>
                 </CardContent>
             </Card>
-        </div>
+        </PanelLayout>
     </AppLayout>
 </template>

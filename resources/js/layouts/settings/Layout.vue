@@ -16,6 +16,7 @@ import { edit as editProfile } from '@/routes/profile';
 import { edit as editPassword } from '@/routes/user-password';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
+import { PanelLayout } from '@/components/ui/_panels';
 
 const sidebarNavItems: NavItem[] = [
     {
@@ -36,7 +37,7 @@ const { urlIsActive } = useActiveUrl();
 </script>
 
 <template>
-    <div class="p-6">
+    <PanelLayout class="bg-pink-300">
         <Card class="border h-[80vh]">
             <CardHeader>
                 <CardTitle>Settings</CardTitle>
@@ -77,5 +78,5 @@ const { urlIsActive } = useActiveUrl();
                 </div>
             </CardContent>
         </Card>        
-    </div>
+    </PanelLayout>
 </template>

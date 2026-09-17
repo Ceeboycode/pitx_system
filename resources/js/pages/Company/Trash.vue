@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import ForceDeleteCompanyDialog from '@/components/company/ForceDeleteCompanyDialog.vue';
-import RestoreCompanyDialog from '@/components/company/RestoreCompanyDialog.vue';
+import ForceDeleteCompanyDialog from '@/components/internal/company/ForceDeleteCompanyDialog.vue';
+import RestoreCompanyDialog from '@/components/internal/company/RestoreCompanyDialog.vue';
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
@@ -21,6 +21,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { RiArrowLeftSLine, RiFilter2Line, RiMore2Line, RiRestartLine } from 'vue-remix-icons';
 import { computed, ref } from 'vue';
+import { MainPanel, PanelLayout } from '@/components/ui/_panels';
 
 type Company = {
     id: number;
@@ -115,7 +116,7 @@ function openRestore(company: Company) {
     <Head title="Archived Companies" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+        <PanelLayout>
             <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader class="flex flex-row items-start gap-3">
                     <Button as-child variant="header-actions" size="icon">
@@ -265,6 +266,6 @@ function openRestore(company: Company) {
 
             <RestoreCompanyDialog v-if="selectedCompany" v-model:open="restoreOpen" :company="selectedCompany" />
             <ForceDeleteCompanyDialog v-if="selectedCompany" v-model:open="forceDeleteOpen" :company="selectedCompany" />
-        </div>
+        </PanelLayout>
     </AppLayout>
 </template>

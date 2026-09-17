@@ -54,8 +54,8 @@ const menuStyle = computed(() => {
 </script>
 
 <template>
-  <div
-    :class="cn('col-span-1 flex min-w-0 justify-start py-1.5 pr-3 text-right justify-end text-sm font-medium', props.class)"
+  <td
+    :class="cn('py-1.5 pr-3 text-right align-middle text-sm font-medium', props.class)"
     @click.stop
     @contextmenu.prevent.stop
   >
@@ -90,5 +90,5 @@ const menuStyle = computed(() => {
         <slot />
       </DropdownMenuContent>
     </DropdownMenu>
-  </div>
+  </td>
 </template>

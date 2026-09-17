@@ -49,17 +49,17 @@ function confirm() {
 
 <template>
     <Dialog v-model:open="open">
-        <DialogContent class="px-6">
+        <DialogContent class="max-w-md px-6">
             <DialogHeader class="px-0">
                 <DialogTitle>Set gate status</DialogTitle>
-                <DialogDescription class="mt-4">
+                <DialogDescription>
                     Are you sure you want to set
                     <span class="font-semibold text-custom-accent-3">{{ gate?.gate_name ?? 'this gate' }}</span>
                     as {{ gate?.status === 'active' ? 'inactive' : 'active' }}?
                 </DialogDescription>
             </DialogHeader>
-            <Separator class="mb-4" />
-            <DialogFooter class="gap-2 sm:justify-end">
+            <Separator />
+            <DialogFooter class="pt-3 gap-2 sm:justify-end">
                 <Button variant="ghost-outline" :disabled="processing" @click="open = false">Cancel</Button>
                 <Button
                     :variant="gate?.status === 'active' ? 'destructive' : 'float-primary'"

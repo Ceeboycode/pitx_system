@@ -7,7 +7,6 @@ import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import {
     Table,
     TableColumn,
-    // TableSortColumn,
     TableHeader,
     TableContent,
     TableRow,
@@ -15,16 +14,6 @@ import {
     TableData,
     TableMoreButton,
 } from '@/components/ui/_table';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -53,7 +42,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { VehicleStatusDialog } from '@/components/internal/vehicles';
+import { VehicleArchiveDialog, VehicleStatusDialog } from '@/components/internal/vehicles';
 
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
@@ -76,10 +65,10 @@ import {
     RiShutDownLine,
     RiSpam2Line,
 } from 'vue-remix-icons';
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { PanelLayout } from '@/components/ui/_panels';
 
-import { destroy, index, show, trash } from '@/routes/vehicles';
+import { index, show, trash } from '@/routes/vehicles';
 import { type BreadcrumbItem } from '@/types';
 
 
@@ -139,17 +128,29 @@ function openPreview(vehicle: VehicleItem) {
     previewedVehicle.value = vehicle;
 }
 
-// const openMenus = ref<Record<number, { open: boolean; x: number; y: number }>>({})
+function selectAdjacentVehicle(direction: 1 | -1) {
+    if (!previewedVehicle.value) return;
 
-// function handleRowContextMenu(event: MouseEvent, vehicle: VehicleItem) {
-//     event.preventDefault()
+    const list = props.vehicles.data;
+    const currentIndex = list.findIndex((v) => v.id === previewedVehicle.value?.id);
+    const nextIndex = currentIndex + direction;
+    if (currentIndex === -1 || nextIndex < 0 || nextIndex >= list.length) return;
 
-//     openMenus.value[vehicle.id] = {
-//         open: true,
-//         x: event.clientX,
-//         y: event.clientY,
-//     }
-// }
+    openPreview(list[nextIndex]);
+}
+
+function handleRowNavigationKeydown(event: KeyboardEvent) {
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        selectAdjacentVehicle(1);
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        selectAdjacentVehicle(-1);
+    }
+}
+
+onMounted(() => window.addEventListener('keydown', handleRowNavigationKeydown));
+onUnmounted(() => window.removeEventListener('keydown', handleRowNavigationKeydown));
 
 const openMenus = ref<Record<number, {
   open: boolean
@@ -163,17 +164,6 @@ function setMenuState(vehicleId: number, next: { open: boolean; x: number; y: nu
         ...openMenus.value,
         [vehicleId]: next,
     }
-}
-
-function openRowMenu(event: MouseEvent, vehicle: VehicleItem) {
-    event.preventDefault()
-
-    setMenuState(vehicle.id, {
-        open: true,
-        x: event.clientX,
-        y: event.clientY,
-        mode: 'context',
-    })
 }
 
 function triggerExport() {
@@ -225,6 +215,21 @@ const activeFilterCount = computed(() => {
     return count;
 });
 
+function currentFilterParams(): Record<string, string | undefined> {
+    return {
+        status:
+            statusFilter.value !== 'all' ? statusFilter.value : undefined,
+        vehicle_type:
+            vehicleTypeFilter.value !== 'all'
+                ? vehicleTypeFilter.value
+                : undefined,
+        route_id:
+            routeFilter.value !== 'all' ? routeFilter.value : undefined,
+        sort_by: sortBy.value ?? undefined,
+        sort_dir: sortBy.value ? sortDir.value : undefined,
+    };
+}
+
 function applyFilters(
     overrides: Record<string, string | null | undefined> = {},
 ) {
@@ -232,16 +237,7 @@ function applyFilters(
         index().url,
         {
             search: props.filters.search ?? undefined,
-            status:
-                statusFilter.value !== 'all' ? statusFilter.value : undefined,
-            vehicle_type:
-                vehicleTypeFilter.value !== 'all'
-                    ? vehicleTypeFilter.value
-                    : undefined,
-            route_id:
-                routeFilter.value !== 'all' ? routeFilter.value : undefined,
-            sort_by: sortBy.value ?? undefined,
-            sort_dir: sortBy.value ? sortDir.value : undefined,
+            ...currentFilterParams(),
             ...overrides,
         },
         {
@@ -368,16 +364,6 @@ const openStatusDialog = (
     targetStatus.value = status;
     statusDialogOpen.value = true;
 };
-
-const archiveVehicle = (vehicle: VehicleItem) => {
-    router.delete(destroy({ vehicle: vehicle.id }).url, {
-        preserveScroll: true,
-        onSuccess: () => {
-            archiveDialogOpen.value = false;
-            selectedVehicle.value = null;
-        },
-    });
-};
 </script>
 
 <template>
@@ -438,15 +424,16 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                     </div>
                 </CardHeader>
 
-                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
                     <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
                         <div class="w-full">
                             <SearchInput
                                 :route="index().url"
                                 :initial-value="filters.search"
-                                placeholder="Search vehicles..."
+                                placeholder="Search by company, route, plate, capacity, body number..."
                                 :only="['vehicles', 'filters', 'flash']"
                                 :debounce="350"
+                                :extra-params="currentFilterParams"
                             />
                         </div>
 
@@ -651,7 +638,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                                     <Button
                                                         size="sm"
                                                         variant="float-primary"
-                                                        @click="applyFilters"
+                                                        @click="applyFilters()"
                                                     >
                                                         Apply
                                                     </Button>
@@ -664,10 +651,9 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                     </div>
 
                     <TableCard :table-data-length="vehicles.data.length">
-                        <!-- my attempt at making this into a custom component -->
                         <Table v-if="vehicles.data.length > 0">
-                            <TableHeader class="grid-cols-9">
-                                <TableColumn class="pl-3">
+                            <TableHeader>
+                                <TableColumn>
                                     Company
                                 </TableColumn>
                                 <TableColumn>
@@ -682,31 +668,35 @@ const archiveVehicle = (vehicle: VehicleItem) => {
 
                                 <!-- _TableSortColumn -->
                                 <!-- TODO: make this component work -->
-                                <button
-                                    type="button"
-                                    class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
-                                    @click="toggleSort('capacity')"
-                                >
-                                    Cap.
-                                    <component
-                                        :is="sortIcon('capacity')"
-                                        class="h-3.5 w-3.5"
-                                        :class="sortIconClass('capacity')"
-                                    />
-                                </button>
+                                <TableColumn class="p-0">
+                                    <button
+                                        type="button"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        @click="toggleSort('capacity')"
+                                    >
+                                        Cap.
+                                        <component
+                                            :is="sortIcon('capacity')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('capacity')"
+                                        />
+                                    </button>
+                                </TableColumn>
 
-                                <button
-                                    type="button"
-                                    class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
-                                    @click="toggleSort('status')"
-                                >
-                                    Status
-                                    <component
-                                        :is="sortIcon('status')"
-                                        class="h-3.5 w-3.5"
-                                        :class="sortIconClass('status')"
-                                    />
-                                </button>
+                                <TableColumn class="p-0">
+                                    <button
+                                        type="button"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        @click="toggleSort('status')"
+                                    >
+                                        Status
+                                        <component
+                                            :is="sortIcon('status')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('status')"
+                                        />
+                                    </button>
+                                </TableColumn>
 
                                 <TableColumn>
                                     Operator Remark
@@ -721,14 +711,13 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                     v-for="(vehicle, rowIndex) in vehicles.data"
                                     :key="vehicle.id"
                                     :class="[
-                                        'grid-cols-9',
                                         rowIndex === vehicles.data.length - 1 ? 'rounded-b-md border-b-0' : '',
                                         // make these class things its own attribute for table row:))
                                         previewedVehicle?.id === vehicle.id ? 'bg-custom-secondary/10' : '',
                                     ]"
                                     :status="vehicle.status === 'inactive' ? 'inactive' : 'default'"
                                     @click.left="openPreview(vehicle)"
-                                    @contextmenu.prevent="openRowMenu($event, vehicle)"
+                                    @dblclick="router.visit(show({ vehicle: vehicle.id }).url)"
                                 >
                                     <TableData class="pl-3 font-semibold">
                                         <span class="truncate">{{ vehicle.company?.company_name || '—' }}</span>
@@ -738,7 +727,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                         <span class="truncate">{{ vehicle.route?.route_name || '—' }}</span>
                                     </TableData>
 
-                                    <TableData class="justify-center flex-col">
+                                    <TableData>
                                         <p class="truncate text-sm font-medium">{{ humanize(vehicle.vehicle_type) }}</p>
                                         <p class="truncate text-xs">{{ vehicle.body_number || '—' }}</p>
                                     </TableData>
@@ -858,65 +847,6 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                                             <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Suspend</span>
                                         </DropdownMenuItem>
                                     </TableMoreButton>
-
-                                    <!-- <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right" @click.stop>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger as-child>
-                                                <Button
-                                                    variant="table-more"
-                                                    size="icon-more"
-                                                >
-                                                    <RiMore2Line class="h-4 w-4" />
-
-                                                </Button>
-                                            </DropdownMenuTrigger>
-
-                                            <DropdownMenuContent align="end" class="">
-                                                <DropdownMenuLabel>
-                                                    {{ vehicle.plate_number || 'Vehicle' }}
-                                                </DropdownMenuLabel>
-                                                <DropdownMenuItem as-child class="group cursor-pointer rounded-md">
-                                                    <Link
-                                                        :href="show({ vehicle: vehicle.id }).url"
-                                                        class="flex items-center"
-                                                    >
-                                                        <RiFileCheckLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                        Review
-                                                    </Link>
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuItem
-                                                    v-if="vehicle.status !== 'active'"
-                                                    :disabled="!canToggle(vehicle)"
-                                                    class="group cursor-pointer rounded-md"
-                                                    @click="canToggle(vehicle) && openStatusDialog(vehicle, 'active')"
-                                                >
-                                                    <RiOctagonLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                    <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Set Active</span>
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuItem
-                                                    v-if="vehicle.status !== 'inactive'"
-                                                    :disabled="!canToggle(vehicle)"
-                                                    class="group cursor-pointer rounded-md"
-                                                    @click="canToggle(vehicle) && openStatusDialog(vehicle, 'inactive')"
-                                                >
-                                                    <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                    <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Set Inactive</span>
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuItem
-                                                    v-if="vehicle.status !== 'suspended'"
-                                                    :disabled="!canToggle(vehicle)"
-                                                    class="group cursor-pointer rounded-md"
-                                                    @click="canToggle(vehicle) && openStatusDialog(vehicle, 'suspended')"
-                                                >
-                                                    <RiSpam2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                    <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Suspend</span>
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div> -->
                                 </TableRow>
                             </TableContent>
                         </Table>
@@ -961,7 +891,7 @@ const archiveVehicle = (vehicle: VehicleItem) => {
                     </Button>
                 </CardHeader>
 
-                <CardContent v-if="previewedVehicle" class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto py-2">
+                <CardContent v-if="previewedVehicle" class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto pt-2">
                     <div class="flex aspect-4/3 items-center justify-center rounded-md border border-dashed border-custom-bg-dark bg-custom-bg text-custom-shadow/70 dark:border-none dark:bg-custom-bg-dark">
                         <RiBusLine class="h-16 w-16" />
                     </div>
@@ -1003,36 +933,10 @@ const archiveVehicle = (vehicle: VehicleItem) => {
             </Card>
         </PanelLayout>
 
-        <!-- TODO: use a dialog component here instead -->
-        <AlertDialog v-model:open="archiveDialogOpen">
-            <AlertDialogContent class="rounded-2xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Archive Vehicle</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        You are about to archive
-                        <span class="font-semibold text-foreground">{{
-                            selectedVehicle?.plate_number || 'this vehicle'
-                        }}</span
-                        >. You can restore it later from Archived Vehicles.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel
-                        class="rounded-lg"
-                        @click="selectedVehicle = null"
-                        >Cancel</AlertDialogCancel
-                    >
-                    <AlertDialogAction
-                        class="rounded-lg border-0 bg-rose-600 text-white hover:bg-rose-700"
-                        @click="
-                            selectedVehicle && archiveVehicle(selectedVehicle)
-                        "
-                    >
-                        Archive
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+        <VehicleArchiveDialog
+            v-model:open="archiveDialogOpen"
+            :vehicle="selectedVehicle"
+        />
 
         <VehicleStatusDialog
             v-model:open="statusDialogOpen"

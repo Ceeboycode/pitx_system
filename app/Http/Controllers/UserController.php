@@ -33,6 +33,10 @@ class UserController extends Controller
         $type = $request->input('type');
         $status = $request->input('status');
 
+        $allowedSorts = ['name', 'status'];
+        $sortBy = in_array($request->input('sort_by'), $allowedSorts, true) ? $request->input('sort_by') : null;
+        $sortDir = $request->input('sort_dir') === 'desc' ? 'desc' : 'asc';
+
         $users = User::query()
             ->select([
                 'id',
@@ -58,7 +62,11 @@ class UserController extends Controller
                 $query->where('status', $status);
             })
             ->search($search)
-            ->orderBy('name')
+            ->when($sortBy, function ($query) use ($sortBy, $sortDir) {
+                $query->orderBy($sortBy, $sortDir);
+            }, function ($query) {
+                $query->orderBy('name');
+            })
             ->paginate(10)
             ->withQueryString()
             ->through(function (User $user) {
@@ -100,6 +108,8 @@ class UserController extends Controller
                 'search' => $search,
                 'type' => $type,
                 'status' => $status,
+                'sort_by' => $sortBy,
+                'sort_dir' => $sortDir,
             ],
             'currentUserId' => $request->user()->id,
             'statuses' => ['active', 'inactive'],
