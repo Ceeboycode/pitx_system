@@ -40,7 +40,7 @@ class Vehicle extends Model
     protected $fillable = [
         'company_id',
         'route_id',
-        'vehicle_type',
+        'vehicle_type_id',
         'plate_number',
         'body_number',
         'capacity',
@@ -75,6 +75,11 @@ class Vehicle extends Model
         return $this->belongsTo(Route::class);
     }
 
+    public function vehicleType(): BelongsTo
+    {
+        return $this->belongsTo(VehicleType::class);
+    }
+
     public function documents(): HasMany
     {
         return $this->hasMany(VehicleDocument::class);
@@ -105,7 +110,9 @@ class Vehicle extends Model
             $q->where('plate_number', 'like', "%{$term}%")
                 ->orWhere('body_number', 'like', "%{$term}%")
                 ->orWhere('make_model', 'like', "%{$term}%")
-                ->orWhere('vehicle_type', 'like', "%{$term}%")
+                ->orWhereHas('vehicleType', function ($q2) use ($term) {
+                    $q2->where('type_name', 'like', "%{$term}%");
+                })
                 ->orWhere('status', 'like', "%{$term}%")
                 ->orWhere('verification_status', 'like', "%{$term}%")
                 ->orWhere('capacity', 'like', "%{$term}%")

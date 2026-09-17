@@ -13,7 +13,7 @@ use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 
-class CompaniesImport implements ToCollection, WithHeadingRow, WithValidation, SkipsEmptyRows
+class CompaniesImport implements SkipsEmptyRows, ToCollection, WithHeadingRow, WithValidation
 {
     public function __construct(
         protected ?int $importedBy = null
@@ -32,11 +32,13 @@ class CompaniesImport implements ToCollection, WithHeadingRow, WithValidation, S
 
             if ($companyCode === '') {
                 $this->summary['errors'][] = 'Skipped one row: missing company_code.';
+
                 continue;
             }
 
             if (Company::where('company_code', $companyCode)->withTrashed()->exists()) {
                 $this->summary['skipped'][] = "{$companyCode} — already exists, skipped.";
+
                 continue;
             }
 
@@ -133,7 +135,7 @@ class CompaniesImport implements ToCollection, WithHeadingRow, WithValidation, S
     private function nextUsernameForCode(string $code): string
     {
         $last = DB::table('users')
-            ->where('username', 'like', $code . '-%')
+            ->where('username', 'like', $code.'-%')
             ->orderByDesc('username')
             ->value('username');
 
@@ -143,6 +145,6 @@ class CompaniesImport implements ToCollection, WithHeadingRow, WithValidation, S
             $next = ((int) $m[1]) + 1;
         }
 
-        return $code . '-' . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+        return $code.'-'.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
     }
 }

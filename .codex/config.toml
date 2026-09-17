@@ -1,7 +1,19 @@
 
-[mcp_servers.laravel-boost.tools.search-docs]
-approval_mode = "approve"
+mcp_optional_startup_grace_ms = 0
 
 [mcp_servers.laravel-boost]
 command = "php"
 args = ["artisan", "boost:mcp"]
+cwd = "C:\\xampp\\htdocs\\laravel\\pitx_system"
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+
+[mcp_servers.laravel-boost.tools.search-docs]
+approval_mode = "approve"
+
+[mcp_servers.shadcn]
+command = "npx.cmd"
+args = ["--yes", "shadcn-vue@latest", "mcp"]
+cwd = "C:\\xampp\\htdocs\\laravel\\pitx_system"
+startup_timeout_sec = 120
+tool_timeout_sec = 120

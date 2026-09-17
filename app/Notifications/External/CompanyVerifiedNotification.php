@@ -15,8 +15,7 @@ class CompanyVerifiedNotification extends Notification implements ShouldQueue
 
     public function __construct(
         public Company $company,
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {

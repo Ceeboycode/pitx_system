@@ -9,6 +9,7 @@ class VehicleType extends Model
 {
     //
     use HasFactory;
+
     protected $fillable = [
         'type_name',
         'is_active',
@@ -37,6 +38,11 @@ class VehicleType extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    public function vehicles()
+    {
+        return $this->hasMany(Vehicle::class);
+    }
+
     public function getCreatedAtHumanAttribute()
     {
         return $this->created_at?->diffForHumans();
@@ -46,5 +52,4 @@ class VehicleType extends Model
     {
         return $this->updated_at?->diffForHumans();
     }
-
 }

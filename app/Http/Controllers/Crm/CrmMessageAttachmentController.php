@@ -28,7 +28,7 @@ class CrmMessageAttachmentController extends Controller
         $file = $validated['file'];
         $disk = 'public';
         $folder = "crm/company-{$thread->company_id}/thread-{$thread->id}/message-{$message->id}";
-        $name = Str::uuid()->toString() . '.' . $file->getClientOriginalExtension();
+        $name = Str::uuid()->toString().'.'.$file->getClientOriginalExtension();
         $path = $file->storeAs($folder, $name, $disk);
 
         $attachment = CrmMessageAttachment::create([
@@ -75,6 +75,7 @@ class CrmMessageAttachmentController extends Controller
 
         if ($this->isInternalStaff($user)) {
             abort_unless((int) $thread->assigned_to_user_id === (int) $user->id, 403);
+
             return;
         }
 

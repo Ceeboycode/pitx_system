@@ -12,8 +12,7 @@ class CompanyProfileChangeSubmittedNotification extends Notification
 
     public function __construct(
         public CompanyProfileChangeRequest $changeRequest,
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {

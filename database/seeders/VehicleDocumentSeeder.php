@@ -18,6 +18,7 @@ class VehicleDocumentSeeder extends Seeder
 
         if (! $fallbackUser) {
             $this->command?->warn('No users found. Please seed users first before seeding vehicle documents.');
+
             return;
         }
 
@@ -33,7 +34,7 @@ class VehicleDocumentSeeder extends Seeder
                 $usesDates = $docType !== 'puv_identification_markings';
                 $issuedAt = $usesDates ? now()->subMonths(6)->toDateString() : null;
                 $expiresAt = $usesDates ? now()->addYear()->toDateString() : null;
-                $fileName = Str::slug($vehicle->plate_number . '-' . $docType) . '.pdf';
+                $fileName = Str::slug($vehicle->plate_number.'-'.$docType).'.pdf';
                 $filePath = "vehicle-documents/{$vehicle->id}/{$docType}/{$fileName}";
                 $pdf = $this->samplePdf($vehicle, $docType, $issuedAt, $expiresAt);
 
@@ -73,17 +74,17 @@ class VehicleDocumentSeeder extends Seeder
         $lines = [
             'SAMPLE / SEED DATA - NOT AN OFFICIAL DOCUMENT',
             str_replace('_', ' ', strtoupper($docType)),
-            'Company: ' . $vehicle->company->company_name,
-            'Plate Number: ' . $vehicle->plate_number,
-            'Body Number: ' . ($vehicle->body_number ?? 'N/A'),
+            'Company: '.$vehicle->company->company_name,
+            'Plate Number: '.$vehicle->plate_number,
+            'Body Number: '.($vehicle->body_number ?? 'N/A'),
         ];
 
         if ($issuedAt !== null) {
-            $lines[] = 'Issued: ' . $issuedAt;
+            $lines[] = 'Issued: '.$issuedAt;
         }
 
         if ($expiresAt !== null) {
-            $lines[] = 'Expires: ' . $expiresAt;
+            $lines[] = 'Expires: '.$expiresAt;
         }
 
         $content = "BT\n/F1 16 Tf\n50 760 Td\n";
@@ -101,7 +102,7 @@ class VehicleDocumentSeeder extends Seeder
             1 => '<< /Type /Catalog /Pages 2 0 R >>',
             2 => '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
             3 => '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
-            4 => '<< /Length ' . strlen($content) . ">>\nstream\n{$content}endstream",
+            4 => '<< /Length '.strlen($content).">>\nstream\n{$content}endstream",
             5 => '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
         ];
 
@@ -116,11 +117,11 @@ class VehicleDocumentSeeder extends Seeder
         $xrefOffset = strlen($pdf);
         $pdf .= "xref\n0 6\n0000000000 65535 f \n";
         for ($number = 1; $number <= 5; $number++) {
-            $pdf .= sprintf('%010d 00000 n ', $offsets[$number]) . "\n";
+            $pdf .= sprintf('%010d 00000 n ', $offsets[$number])."\n";
         }
 
         return $pdf
-            . "trailer\n<< /Size 6 /Root 1 0 R >>\n"
-            . "startxref\n{$xrefOffset}\n%%EOF\n";
+            ."trailer\n<< /Size 6 /Root 1 0 R >>\n"
+            ."startxref\n{$xrefOffset}\n%%EOF\n";
     }
 }

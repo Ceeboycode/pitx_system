@@ -67,9 +67,17 @@ import {
 } from 'vue-remix-icons';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { PanelLayout } from '@/components/ui/_panels';
-
-import { index, show, trash } from '@/routes/vehicles';
+import { destroy, index, show, trash } from '@/routes/vehicles';
 import { type BreadcrumbItem } from '@/types';
+import {
+    operationalStatusClass,
+    operationalStatusDot,
+    operationalStatusLabel,
+    verificationStatusClass,
+    verificationStatusDot,
+    verificationStatusLabel,
+    humanize,
+} from '@/lib/vehicle-status';
 
 
 
@@ -87,6 +95,7 @@ type VehicleItem = {
     created_at?: string | null;
     operator_remark?: string | null;
     suspension_remark?: string | null;
+    verification_remark?: string | null;
     company?: { company_name?: string | null } | null;
     route?: { id?: number; route_name?: string | null } | null;
 };
@@ -302,52 +311,7 @@ function sortIconClass(field: SortField) {
 
 
 
-const humanize = (text?: string | null) => {
-    if (!text) return '—';
-    return text.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-};
 
-function statusClass(status?: string | null): string {
-    switch (status) {
-        case 'active':
-        case 'verified':
-            return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-        case 'suspended':
-            return 'bg-orange-100 text-orange-700 border-orange-200';
-        case 'for_verification':
-            return 'bg-violet-100 text-violet-700 border-violet-200';
-        case 'draft':
-        case 'pending':
-            return 'bg-amber-100 text-amber-700 border-amber-200';
-        case 'invalid':
-        case 'inactive':
-        case 'needs_revision':
-            return 'bg-rose-100 text-rose-600 border-rose-200';
-        default:
-            return 'bg-slate-100 text-slate-500 border-0';
-    }
-}
-
-function statusDot(status?: string | null): string {
-    switch (status) {
-        case 'active':
-        case 'verified':
-            return 'bg-emerald-500';
-        case 'suspended':
-            return 'bg-orange-500';
-        case 'for_verification':
-            return 'bg-violet-500';
-        case 'draft':
-        case 'pending':
-            return 'bg-amber-500';
-        case 'invalid':
-        case 'inactive':
-        case 'needs_revision':
-            return 'bg-rose-500';
-        default:
-            return 'bg-slate-400';
-    }
-}
 
 const canToggle = (_vehicle: VehicleItem) => true;
 
@@ -531,8 +495,7 @@ const openStatusDialog = (
                                                             class="flex justify-start"
                                                         />
                                                     </SelectTrigger>
-                                                    <SelectContent
-                                                    >
+                                                    <SelectContent>
                                                         <SelectItem
                                                             value="all"
                                                             class="cursor-pointer text-sm"
@@ -540,31 +503,37 @@ const openStatusDialog = (
                                                             All Types
                                                         </SelectItem>
                                                         <SelectItem
-                                                            value="bus"
+                                                            value="Bus"
                                                             class="cursor-pointer text-sm"
                                                         >
                                                             Bus
                                                         </SelectItem>
                                                         <SelectItem
-                                                            value="minibus"
+                                                            value="Mini Bus"
                                                             class="cursor-pointer text-sm"
                                                         >
-                                                            Minibus
+                                                            Mini Bus
                                                         </SelectItem>
                                                         <SelectItem
-                                                            value="jeepney"
+                                                            value="PUV"
+                                                            class="cursor-pointer text-sm"
+                                                        >
+                                                            PUV
+                                                        </SelectItem>
+                                                        <SelectItem
+                                                            value="Jeepney"
                                                             class="cursor-pointer text-sm"
                                                         >
                                                             Jeepney
                                                         </SelectItem>
                                                         <SelectItem
-                                                            value="van"
+                                                            value="Van"
                                                             class="cursor-pointer text-sm"
                                                         >
                                                             Van
                                                         </SelectItem>
                                                         <SelectItem
-                                                            value="uv_express"
+                                                            value="UV Express"
                                                             class="cursor-pointer text-sm"
                                                         >
                                                             UV Express
@@ -699,6 +668,10 @@ const openStatusDialog = (
                                 </TableColumn>
 
                                 <TableColumn>
+                                    Verification
+                                </TableColumn>
+
+                                <TableColumn>
                                     Operator Remark
                                 </TableColumn>
                                 <TableColumn>
@@ -727,8 +700,8 @@ const openStatusDialog = (
                                         <span class="truncate">{{ vehicle.route?.route_name || '—' }}</span>
                                     </TableData>
 
-                                    <TableData>
-                                        <p class="truncate text-sm font-medium">{{ humanize(vehicle.vehicle_type) }}</p>
+                                    <TableData class="justify-center flex-col">
+                                        <p class="truncate text-sm font-medium">{{ humanize(vehicle.vehicleType?.type_name) }}</p>
                                         <p class="truncate text-xs">{{ vehicle.body_number || '—' }}</p>
                                     </TableData>
 
@@ -745,9 +718,16 @@ const openStatusDialog = (
                                     </TableData>
 
                                     <TableData>
-                                        <Badge :class="['gap-1.5', statusClass(vehicle.status)]">
-                                            <span :class="['h-1.5 w-1.5 rounded-full', statusDot(vehicle.status)]" />
-                                            {{ humanize(vehicle.status) }}
+                                        <Badge :class="['gap-1.5', operationalStatusClass(vehicle.status)]">
+                                            <span :class="['h-1.5 w-1.5 rounded-full', operationalStatusDot(vehicle.status)]" />
+                                            {{ operationalStatusLabel(vehicle.status) }}
+                                        </Badge>
+                                    </TableData>
+
+                                    <TableData>
+                                        <Badge :class="['gap-1.5', verificationStatusClass(vehicle.verification_status)]">
+                                            <span :class="['h-1.5 w-1.5 rounded-full', verificationStatusDot(vehicle.verification_status)]" />
+                                            {{ verificationStatusLabel(vehicle.verification_status) }}
                                         </Badge>
                                     </TableData>
 
@@ -849,7 +829,7 @@ const openStatusDialog = (
                                     </TableMoreButton>
                                 </TableRow>
                             </TableContent>
-                        </Table>
+                        </template>
 
                         <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
                             <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
@@ -897,16 +877,21 @@ const openStatusDialog = (
                     </div>
                     <div class="space-y-3 pt-2">
                         <div class="flex items-center justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Status</span>
-                            <Badge :class="['gap-1.5', statusClass(previewedVehicle.status)]"><span :class="['h-1.5 w-1.5 rounded-full', statusDot(previewedVehicle.status)]" />{{ humanize(previewedVehicle.status) }}</Badge>
+                            <span class="text-sm font-semibold text-custom-shadow">Operational Status</span>
+                            <Badge :class="['gap-1.5', operationalStatusClass(previewedVehicle.status)]"><span :class="['h-1.5 w-1.5 rounded-full', operationalStatusDot(previewedVehicle.status)]" />{{ operationalStatusLabel(previewedVehicle.status) }}</Badge>
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Verification Status</span>
+                            <Badge :class="['gap-1.5', verificationStatusClass(previewedVehicle.verification_status)]"><span :class="['h-1.5 w-1.5 rounded-full', verificationStatusDot(previewedVehicle.verification_status)]" />{{ verificationStatusLabel(previewedVehicle.verification_status) }}</Badge>
                         </div>
                         <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Company</span><span class="text-right text-sm">{{ previewedVehicle.company?.company_name || 'Not assigned' }}</span></div>
                         <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Route</span><span class="text-right text-sm">{{ previewedVehicle.route?.route_name || 'Not assigned' }}</span></div>
-                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Vehicle Type</span><span class="text-right text-sm">{{ humanize(previewedVehicle.vehicle_type) }}</span></div>
+                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Vehicle Type</span><span class="text-right text-sm">{{ humanize(previewedVehicle.vehicleType?.type_name) }}</span></div>
                         <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Body Number</span><span class="text-right text-sm">{{ previewedVehicle.body_number || 'Not recorded' }}</span></div>
                         <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Capacity</span><span class="text-right text-sm">{{ previewedVehicle.capacity || 'Not recorded' }}</span></div>
                         <div v-if="previewedVehicle.operator_remark" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Operator Remark</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.operator_remark }}</p></div>
                         <div v-if="previewedVehicle.suspension_remark" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Admin Remark</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.suspension_remark }}</p></div>
+                        <div v-if="previewedVehicle.verification_remark" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Verification Remark</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.verification_remark }}</p></div>
                     </div>
                     <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
                     <div class="flex flex-wrap items-center justify-between gap-2">

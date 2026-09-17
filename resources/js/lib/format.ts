@@ -38,9 +38,17 @@ export function formatDateTime(date?: string | null): string {
     });
 }
 
-/** True when the given date is in the past. */
+/** True when the given date is in the past (before today). */
 export function isExpired(expiresAt?: string | null): boolean {
     if (!expiresAt) return false;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(expiresAt)) {
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = String(today.getMonth() + 1).padStart(2, '0');
+        const d = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${y}-${m}-${d}`;
+        return expiresAt < todayStr;
+    }
     const d = new Date(expiresAt);
     if (Number.isNaN(d.getTime())) return false;
     return d.getTime() < Date.now();

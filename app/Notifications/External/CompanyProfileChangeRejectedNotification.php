@@ -15,8 +15,7 @@ class CompanyProfileChangeRejectedNotification extends Notification implements S
 
     public function __construct(
         public CompanyProfileChangeRequest $changeRequest,
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {
@@ -46,7 +45,7 @@ class CompanyProfileChangeRejectedNotification extends Notification implements S
             ->subject('Company Profile Update Rejected')
             ->greeting('Hello,')
             ->line('Your pending company profile update was rejected.')
-            ->line('Reason: ' . ($this->changeRequest->rejection_reason ?: 'No remarks provided.'))
+            ->line('Reason: '.($this->changeRequest->rejection_reason ?: 'No remarks provided.'))
             ->action('Review Profile', route('profile'))
             ->line('You may submit a corrected profile update anytime.');
     }

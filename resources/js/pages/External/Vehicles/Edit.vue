@@ -1,13 +1,13 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 import ExternalLayout from '@/layouts/ExternalLayout.vue';
 
-import VehicleBasicInfoForm from '@/components/company/vehicles/VehicleBasicInfoForm.vue';
-import VehicleDocumentsForm from '@/components/company/vehicles/VehicleDocumentsForm.vue';
-import VehicleRouteAssignment from '@/components/company/vehicles/VehicleRouteAssignment.vue';
-import VehicleSummaryCard from '@/components/company/vehicles/VehicleSummaryCard.vue';
+import VehicleBasicInfoForm from '@/components/internal/company/vehicles/VehicleBasicInfoForm.vue';
+import VehicleDocumentsForm from '@/components/internal/company/vehicles/VehicleDocumentsForm.vue';
+import VehicleRouteAssignment from '@/components/internal/company/vehicles/VehicleRouteAssignment.vue';
+import VehicleSummaryCard from '@/components/internal/company/vehicles/VehicleSummaryCard.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -103,7 +103,8 @@ const props = defineProps<{
     vehicle: Vehicle;
     gates: GateItem[];
     routes: RouteItem[];
-    docTypes: DocTypes;
+    docTypes: DocTypes
+    vehicleTypes: Array<{id: number, type_name: string}>;
     mapConfig: {
         mapboxToken?: string | null;
         defaultCenter: {
@@ -114,7 +115,7 @@ const props = defineProps<{
     };
 }>();
 
-const vehicleTypes = [
+const vehicleTypesOld = [
     'Bus',
     'Modern Jeepney',
     'Jeepney',
@@ -211,9 +212,13 @@ function statusClass(status?: string | null) {
             return 'bg-orange-100 text-orange-700 border-orange-200';
         case 'pending':
         case 'for_verification':
+        case 'draft':
             return 'bg-amber-100 text-amber-700 border-amber-200';
         case 'rejected':
         case 'inactive':
+        case 'invalid':
+        case 'expired':
+        case 'needs_revision':
             return 'bg-rose-100 text-rose-600 border-rose-200';
         default:
             return 'bg-slate-100 text-slate-600 border-0';
@@ -230,9 +235,13 @@ function statusDot(status?: string | null) {
             return 'bg-orange-500';
         case 'pending':
         case 'for_verification':
+        case 'draft':
             return 'bg-amber-500';
         case 'rejected':
         case 'inactive':
+        case 'invalid':
+        case 'expired':
+        case 'needs_revision':
             return 'bg-rose-500';
         default:
             return 'bg-slate-400';

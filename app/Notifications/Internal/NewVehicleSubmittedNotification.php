@@ -14,8 +14,7 @@ class NewVehicleSubmittedNotification extends Notification
     public function __construct(
         public Vehicle $vehicle,
         public User $submittedBy,
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {

@@ -24,7 +24,7 @@ class GateStoreRequest extends FormRequest
     {
         return [
             'gate_name' => [
-                'required','string','max:80',
+                'required', 'string', 'max:80',
                 Rule::unique('gates', 'gate_name')
                     ->whereNull('deleted_at'),
             ],

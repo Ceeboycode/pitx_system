@@ -20,10 +20,10 @@ class UserFactory extends Factory
 
         return [
             'name' => $name,
-            'username' => Str::lower(Str::slug($name)) . fake()->unique()->numberBetween(100, 999),
+            'username' => Str::lower(Str::slug($name)).fake()->unique()->numberBetween(100, 999),
             'email' => fake()->unique()->safeEmail(),
             'status' => 'active',
-            'phone_number' => '09' . fake()->numerify('#########'),
+            'phone_number' => '09'.fake()->numerify('#########'),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('admin123'),
             'must_change_password' => false,

@@ -19,15 +19,14 @@ class CompanyProfileChangeRequestController extends Controller
 {
     public function __construct(
         private readonly NotificationService $notificationService,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
         Gate::authorize('viewAny', CompanyProfileChangeRequest::class);
 
         $allowed = ['pending', 'approved', 'rejected', 'all'];
-        $status  = in_array($request->input('status'), $allowed, true)
+        $status = in_array($request->input('status'), $allowed, true)
             ? $request->input('status')
             : 'pending';
 
@@ -106,7 +105,7 @@ class CompanyProfileChangeRequestController extends Controller
 
         return Inertia::render('CompanyProfileChangeRequests/Index', [
             'requests' => $requests,
-            'filters'  => ['status' => $status, 'search' => $request->input('search')],
+            'filters' => ['status' => $status, 'search' => $request->input('search')],
         ]);
     }
 

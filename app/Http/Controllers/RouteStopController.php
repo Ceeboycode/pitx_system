@@ -1,13 +1,13 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Http\Controllers\Controller;
-use App\Services\RouteStop\RouteStopService;
-use App\Models\RouteStop;
+
 use App\Http\Requests\RouteStop\RouteStopStoreRequest;
 use App\Http\Requests\RouteStop\RouteStopUpdateRequest;
-use Inertia\Inertia;
+use App\Models\RouteStop;
+use App\Services\RouteStop\RouteStopService;
 use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 class RouteStopController extends Controller
 {
@@ -17,23 +17,23 @@ class RouteStopController extends Controller
 
     public function index()
     {
-    Gate::authorize('viewAny', RouteStop::class);
+        Gate::authorize('viewAny', RouteStop::class);
 
-    $routeStops = RouteStop::with('route:id,route_name')
-        ->orderBy('route_id')
-        ->orderBy('stop_order')
-        ->paginate(10)
-        ->through(fn ($stop) => [
-            'id' => $stop->id,
-            'stop_name' => $stop->stop_name,
-            'order' => $stop->stop_order,
-            'route_name' => $stop->route?->route_name,
-        ])
-        ->withQueryString();
+        $routeStops = RouteStop::with('route:id,route_name')
+            ->orderBy('route_id')
+            ->orderBy('stop_order')
+            ->paginate(10)
+            ->through(fn ($stop) => [
+                'id' => $stop->id,
+                'stop_name' => $stop->stop_name,
+                'order' => $stop->stop_order,
+                'route_name' => $stop->route?->route_name,
+            ])
+            ->withQueryString();
 
-            return Inertia::render('RouteStops/Index', [
-                'routeStops' => $routeStops,
-            ]);
+        return Inertia::render('RouteStops/Index', [
+            'routeStops' => $routeStops,
+        ]);
     }
 
     public function show(RouteStop $routeStop)
@@ -44,7 +44,6 @@ class RouteStopController extends Controller
             'routeStop' => $routeStop->load('route'),
         ]);
     }
-
 
     public function store(RouteStopStoreRequest $request)
     {

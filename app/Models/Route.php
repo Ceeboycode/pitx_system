@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Route extends Model
 {
-    use SoftDeletes, HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'route_name',
@@ -31,16 +31,16 @@ class Route extends Model
     ];
 
     protected $casts = [
-        'origin_lat'      => 'decimal:7',
-        'origin_lng'      => 'decimal:7',
+        'origin_lat' => 'decimal:7',
+        'origin_lng' => 'decimal:7',
         'destination_lat' => 'decimal:7',
         'destination_lng' => 'decimal:7',
         // Already a JSON string from Mapbox — do NOT cast as array/json.
-        'route_geometry'  => 'string',
-        'status'          => RouteStatus::class,
-        'created_at'      => 'datetime',
-        'updated_at'      => 'datetime',
-        'deleted_at'      => 'datetime',
+        'route_geometry' => 'string',
+        'status' => RouteStatus::class,
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
     protected $appends = [
@@ -98,7 +98,7 @@ class Route extends Model
     public function toggleStatus(): void
     {
         $this->update([
-            'status'     => $this->isActive() ? RouteStatus::Inactive : RouteStatus::Active,
+            'status' => $this->isActive() ? RouteStatus::Inactive : RouteStatus::Active,
             'updated_by' => auth()->id(),
         ]);
     }

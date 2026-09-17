@@ -25,7 +25,7 @@ class RouteStop extends Model
     ];
 
     protected $casts = [
-        'latitude'  => 'decimal:7',
+        'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
     ];
 

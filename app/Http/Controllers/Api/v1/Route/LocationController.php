@@ -26,20 +26,20 @@ class LocationController extends Controller
     public function index(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'q'                    => ['nullable', 'string', 'min:2', 'max:100'],
-            'lat'                  => ['nullable', 'numeric', 'between:-90,90'],
-            'lng'                  => ['nullable', 'numeric', 'between:-180,180'],
-            'origin_stop_id'       => ['nullable', 'integer', 'exists:route_stops,id'],
-            'destination_stop_id'  => ['nullable', 'integer', 'exists:route_stops,id'],
+            'q' => ['nullable', 'string', 'min:2', 'max:100'],
+            'lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'lng' => ['nullable', 'numeric', 'between:-180,180'],
+            'origin_stop_id' => ['nullable', 'integer', 'exists:route_stops,id'],
+            'destination_stop_id' => ['nullable', 'integer', 'exists:route_stops,id'],
         ]);
 
-        $hasQuery       = isset($validated['q']) && strlen($validated['q']) >= 2;
-        $hasCoords      = isset($validated['lat'], $validated['lng']);
-        $originStopId   = $validated['origin_stop_id'] ?? null;
-        $destStopId     = $validated['destination_stop_id'] ?? null;
+        $hasQuery = isset($validated['q']) && strlen($validated['q']) >= 2;
+        $hasCoords = isset($validated['lat'], $validated['lng']);
+        $originStopId = $validated['origin_stop_id'] ?? null;
+        $destStopId = $validated['destination_stop_id'] ?? null;
 
         // Require at least one search criterion
-        if (!$hasQuery && !$hasCoords) {
+        if (! $hasQuery && ! $hasCoords) {
             return response()->json(['data' => []]);
         }
 
@@ -50,17 +50,17 @@ class LocationController extends Controller
 
             // ── Text filter ────────────────────────────────────────────────
             ->when($hasQuery, function ($query) use ($validated) {
-                $like = '%' . $validated['q'] . '%';
+                $like = '%'.$validated['q'].'%';
                 $query->where(function ($q) use ($like) {
                     $q->where('route_stops.stop_name', 'like', $like)
-                      ->orWhere(function ($inner) use ($like) {
-                          $inner->where('route_stops.stop_type', 'origin')
+                        ->orWhere(function ($inner) use ($like) {
+                            $inner->where('route_stops.stop_type', 'origin')
                                 ->where('routes.origin_name', 'like', $like);
-                      })
-                      ->orWhere(function ($inner) use ($like) {
-                          $inner->where('route_stops.stop_type', 'destination')
+                        })
+                        ->orWhere(function ($inner) use ($like) {
+                            $inner->where('route_stops.stop_type', 'destination')
                                 ->where('routes.destination_name', 'like', $like);
-                      });
+                        });
                 });
             })
 
@@ -83,9 +83,9 @@ class LocationController extends Controller
             })
 
             // ── Nearby-only: skip stops without coordinates ────────────────
-            ->when($hasCoords && !$hasQuery, function ($query) {
+            ->when($hasCoords && ! $hasQuery, function ($query) {
                 $query->whereNotNull('route_stops.latitude')
-                      ->whereNotNull('route_stops.longitude');
+                    ->whereNotNull('route_stops.longitude');
             })
 
             ->select(

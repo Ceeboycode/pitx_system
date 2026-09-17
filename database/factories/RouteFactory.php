@@ -33,7 +33,7 @@ class RouteFactory extends Factory
         $gateId = Gate::query()->inRandomOrder()->value('id');
 
         return [
-            'route_name' => 'PITX to ' . $destination['name'],
+            'route_name' => 'PITX to '.$destination['name'],
             'origin_name' => 'PITX',
             'origin_lat' => 14.5096,
             'origin_lng' => 120.9915,

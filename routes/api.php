@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Analytics\RouteFavoriteController;
-use App\Http\Controllers\Api\V2\Driver\Auth\AuthController as DriverAuthController;
 use App\Http\Controllers\Api\V1\Analytics\RouteSearchLogController;
 use App\Http\Controllers\Api\V1\Auth\AuthTokenController;
 use App\Http\Controllers\Api\V1\Crm\CommuterAttachmentController;
@@ -9,6 +8,7 @@ use App\Http\Controllers\Api\V1\Crm\CommuterMessageController;
 use App\Http\Controllers\Api\V1\Crm\CommuterThreadController;
 use App\Http\Controllers\Api\V1\Route\LocationController;
 use App\Http\Controllers\Api\V1\Route\RouteSearchController;
+use App\Http\Controllers\Api\V2\Driver\Auth\AuthController as DriverAuthController;
 use Illuminate\Support\Facades\Route;
 
 // production test endpoint

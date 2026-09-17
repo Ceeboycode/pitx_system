@@ -15,8 +15,7 @@ class CompanyProfileChangeApprovedNotification extends Notification implements S
 
     public function __construct(
         public CompanyProfileChangeRequest $changeRequest,
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {

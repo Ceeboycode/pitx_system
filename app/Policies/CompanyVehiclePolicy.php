@@ -7,9 +7,13 @@ use App\Models\Vehicle;
 
 class CompanyVehiclePolicy
 {
-    public function before(User $user, string $ability): bool
+    public function before(User $user, string $ability): ?bool
     {
-        return $user->hasRole('admin');
+        if ($user->hasRole('admin') || $user->hasRole('super-admin')) {
+            return true;
+        }
+
+        return null;
     }
 
     public function viewAny(User $user): bool

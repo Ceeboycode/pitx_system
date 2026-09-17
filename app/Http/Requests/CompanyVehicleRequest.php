@@ -3,8 +3,8 @@
 namespace App\Http\Requests;
 
 use Carbon\Carbon;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -20,13 +20,27 @@ class CompanyVehicleRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return $this->user()?->company !== null;
+        $user = $this->user();
+        if (! $user || ! $user->company) {
+            return false;
+        }
+
+        $vehicle = $this->route('vehicle');
+        if ($vehicle && ! ($vehicle instanceof \App\Models\Vehicle)) {
+            $vehicle = \App\Models\Vehicle::find($vehicle);
+        }
+
+        if ($vehicle instanceof \App\Models\Vehicle && $vehicle->company_id !== $user->company_id) {
+            return false;
+        }
+
+        return true;
     }
 
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'vehicle_type' => $this->clean($this->vehicle_type),
+            
             'plate_number' => strtoupper($this->clean($this->plate_number)),
             'body_number' => $this->clean($this->body_number),
             'color' => $this->clean($this->color),
@@ -89,6 +103,10 @@ class CompanyVehicleRequest extends FormRequest
             ],
 
             'documents' => ['required', 'array', 'size:5'],
+            'vehicle_type_id' => [
+                'required',
+                'exists:vehicle_types,id',
+            ],
             'documents.*.document_type' => [
                 'required',
                 'string',

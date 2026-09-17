@@ -5,8 +5,8 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class DispatchChangeRequest extends Model
 {
@@ -33,15 +33,22 @@ class DispatchChangeRequest extends Model
 
     // Status constants
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_APPROVED = 'approved';
+
     public const STATUS_REJECTED = 'rejected';
 
     // Field constants
     public const FIELD_DEPARTED_AT = 'departed_at';
+
     public const FIELD_DRIVER_USER_ID = 'driver_user_id';
+
     public const FIELD_PAX_COUNT = 'pax_count';
+
     public const FIELD_VEHICLE_ID = 'vehicle_id';
+
     public const FIELD_GATE_ID = 'gate_id';
+
     public const FIELD_BAY_NUMBER = 'bay_number';
 
     // Relationships
@@ -174,7 +181,7 @@ class DispatchChangeRequest extends Model
             $vehicleLabels[$id] = $vehicle
                 ? trim(implode(' • ', array_filter([
                     $vehicle->plate_number,
-                    $vehicle->body_number ? 'Body #' . $vehicle->body_number : null,
+                    $vehicle->body_number ? 'Body #'.$vehicle->body_number : null,
                     $vehicle->vehicle_type,
                 ])))
                 : null;

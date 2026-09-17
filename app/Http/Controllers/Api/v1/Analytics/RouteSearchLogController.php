@@ -12,13 +12,13 @@ class RouteSearchLogController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'origin'      => ['required', 'string', 'max:255'],
+            'origin' => ['required', 'string', 'max:255'],
             'destination' => ['required', 'string', 'max:255'],
         ]);
 
         RouteSearchLog::create([
-            'user_id'     => $request->user()->id,
-            'origin'      => $validated['origin'],
+            'user_id' => $request->user()->id,
+            'origin' => $validated['origin'],
             'destination' => $validated['destination'],
         ]);
 

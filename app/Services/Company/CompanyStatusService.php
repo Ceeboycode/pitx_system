@@ -22,6 +22,7 @@ class CompanyStatusService
 
         if (! $allUploaded) {
             $company->updateQuietly(['status' => 'draft']);
+
             return;
         }
 
@@ -29,11 +30,13 @@ class CompanyStatusService
 
         if ($statuses->contains('invalid') || $statuses->contains('expired')) {
             $company->updateQuietly(['status' => 'needs_revision']);
+
             return;
         }
 
         if ($statuses->every(fn (string $status): bool => $status === 'verified')) {
             $company->updateQuietly(['status' => 'verified']);
+
             return;
         }
 

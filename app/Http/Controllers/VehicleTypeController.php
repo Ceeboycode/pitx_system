@@ -2,15 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Services\Vehicle\VehicleTypeService;
-use Illuminate\Support\Facades\Gate;
 use App\Http\Requests\VehicleType\VehicleTypeStoreRequest;
 use App\Http\Requests\VehicleType\VehicleTypeUpdateRequest;
 use App\Models\VehicleType;
-use Inertia\Inertia;
+use App\Services\Vehicle\VehicleTypeService;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 class VehicleTypeController extends Controller
 {
@@ -48,7 +46,7 @@ class VehicleTypeController extends Controller
             $request->validated()
         );
 
-        return redirect()->back()->with('success', 'Vehicle type created successfully.');
+        return to_route('vehicle-types.index')->with('success', 'Vehicle type created successfully.');
     }
 
     public function update(VehicleTypeUpdateRequest $request, VehicleType $vehicleType)
@@ -61,6 +59,26 @@ class VehicleTypeController extends Controller
         );
 
         return redirect()->back()->with('success', 'Vehicle type updated successfully.');
+    }
+
+    public function edit(VehicleType $vehicleType)
+    {
+        Gate::authorize('update', $vehicleType);
+
+        return Inertia::render('VehicleType/Edit', [
+            'vehicleType' => $vehicleType->load(['creator:id,name', 'updater:id,name']),
+        ]);
+    }
+
+    public function toggleStatus(VehicleType $vehicleType)
+    {
+        Gate::authorize('update', $vehicleType);
+
+        $vehicleType->update([
+            'is_active' => !$vehicleType->is_active,
+        ]);
+
+        return redirect()->back()->with('success', 'Vehicle type status updated successfully.');
     }
 
     public function destroy(VehicleType $vehicleType)
@@ -80,5 +98,4 @@ class VehicleTypeController extends Controller
             'vehicleType' => $vehicleType->load(['creator', 'updater']),
         ]);
     }
-
 }

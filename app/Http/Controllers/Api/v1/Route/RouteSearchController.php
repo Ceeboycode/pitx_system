@@ -25,15 +25,15 @@ class RouteSearchController extends Controller
     public function search(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'origin_id'      => ['required', 'integer', Rule::exists('route_stops', 'id')->whereNull('deleted_at')],
+            'origin_id' => ['required', 'integer', Rule::exists('route_stops', 'id')->whereNull('deleted_at')],
             'destination_id' => ['required', 'integer', 'different:origin_id', Rule::exists('route_stops', 'id')->whereNull('deleted_at')],
-            'stop_ids'       => ['nullable', 'array', 'max:8'],
-            'stop_ids.*'     => ['integer', Rule::exists('route_stops', 'id')->whereNull('deleted_at')],
+            'stop_ids' => ['nullable', 'array', 'max:8'],
+            'stop_ids.*' => ['integer', Rule::exists('route_stops', 'id')->whereNull('deleted_at')],
         ]);
 
-        $originId      = (int) $validated['origin_id'];
+        $originId = (int) $validated['origin_id'];
         $destinationId = (int) $validated['destination_id'];
-        $stopIds       = array_map('intval', $validated['stop_ids'] ?? []);
+        $stopIds = array_map('intval', $validated['stop_ids'] ?? []);
 
         // Validate no duplicates across all provided IDs
         $allIds = array_merge([$originId], $stopIds, [$destinationId]);
@@ -45,12 +45,12 @@ class RouteSearchController extends Controller
         }
 
         // Fetch stops — preserve client-supplied order for middle stops
-        $origin      = RouteStop::findOrFail($originId);
+        $origin = RouteStop::findOrFail($originId);
         $destination = RouteStop::findOrFail($destinationId);
 
         $middleStops = collect();
         if (! empty($stopIds)) {
-            $stopsById   = RouteStop::findMany($stopIds)->keyBy('id');
+            $stopsById = RouteStop::findMany($stopIds)->keyBy('id');
             $middleStops = collect($stopIds)
                 ->map(fn (int $id) => $stopsById->get($id))
                 ->filter()
@@ -84,11 +84,11 @@ class RouteSearchController extends Controller
 
         return response()->json([
             'data' => [
-                'origin'          => $this->serializeStop($origin),
-                'destination'     => $this->serializeStop($destination),
-                'stops'           => $middleStops->map(fn ($s) => $this->serializeStop($s))->values(),
-                'route_geometry'  => $directions['geometry'],
-                'eta_seconds'     => $directions['duration'],
+                'origin' => $this->serializeStop($origin),
+                'destination' => $this->serializeStop($destination),
+                'stops' => $middleStops->map(fn ($s) => $this->serializeStop($s))->values(),
+                'route_geometry' => $directions['geometry'],
+                'eta_seconds' => $directions['duration'],
                 'distance_meters' => $directions['distance'],
             ],
         ]);
@@ -97,11 +97,11 @@ class RouteSearchController extends Controller
     private function serializeStop(RouteStop $stop): array
     {
         return [
-            'id'        => $stop->id,
+            'id' => $stop->id,
             'stop_name' => $stop->stop_name,
             'stop_type' => $stop->stop_type,
-            'address'   => $stop->address,
-            'latitude'  => $stop->latitude,
+            'address' => $stop->address,
+            'latitude' => $stop->latitude,
             'longitude' => $stop->longitude,
         ];
     }

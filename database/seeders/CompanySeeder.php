@@ -16,6 +16,7 @@ class CompanySeeder extends Seeder
 
         if (! $creator) {
             $this->command?->warn('No users found. Please seed users first before seeding companies.');
+
             return;
         }
 

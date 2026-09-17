@@ -16,8 +16,7 @@ class RouteStatusChangedNotification extends Notification implements ShouldQueue
     public function __construct(
         public Route $route,
         public string $status,
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {

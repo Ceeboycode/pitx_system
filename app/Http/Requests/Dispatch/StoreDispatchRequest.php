@@ -57,6 +57,7 @@ class StoreDispatchRequest extends FormRequest
 
                     if ($maxBay < 1) {
                         $fail('The selected gate has no available bays.');
+
                         return;
                     }
 

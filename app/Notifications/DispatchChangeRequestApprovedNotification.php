@@ -46,7 +46,7 @@ class DispatchChangeRequestApprovedNotification extends Notification implements 
     {
         return (new MailMessage)
             ->subject('Dispatch Change Request Approved')
-            ->greeting('Hello ' . $notifiable->name . ',')
+            ->greeting('Hello '.$notifiable->name.',')
             ->line("Your request to change {$this->changeRequest->field_label} for dispatch {$this->changeRequest->dispatch->plate_number} has been **approved**.")
             ->line("**Change Applied:** {$this->changeRequest->field_label}")
             ->line("- Previous Value: {$this->changeRequest->old_value_display}")

@@ -1,9 +1,8 @@
 <?php
+
 namespace App\Services\RouteStop;
 
 use App\Models\RouteStop;
-
-
 
 class RouteStopService
 {

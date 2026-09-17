@@ -26,12 +26,7 @@ class VehicleFactory extends Factory
         return [
             'company_id' => $companyId,
             'route_id' => $routeId,
-            'vehicle_type' => fake()->randomElement([
-                'Bus',
-                'Modern Jeepney',
-                'Mini Bus',
-                'Van',
-            ]),
+            'vehicle_type_id' => \App\Models\VehicleType::factory(),
             'plate_number' => strtoupper(fake()->unique()->bothify('???####')),
             'body_number' => strtoupper(fake()->unique()->bothify('B-####')),
             'capacity' => fake()->numberBetween(18, 60),

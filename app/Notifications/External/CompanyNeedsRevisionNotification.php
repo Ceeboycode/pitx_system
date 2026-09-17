@@ -18,8 +18,7 @@ class CompanyNeedsRevisionNotification extends Notification implements ShouldQue
         public Company $company,
         public CompanyDocument $document,
         public string $remarks,
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {

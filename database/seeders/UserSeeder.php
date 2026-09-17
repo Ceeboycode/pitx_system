@@ -12,7 +12,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $company = Company::query()->first();
-        
+
         $superAdmin = User::query()->updateOrCreate(
             ['username' => '2026-0001'],
             [

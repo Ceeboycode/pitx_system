@@ -72,7 +72,7 @@ class DispatchController extends Controller
                 ] : null,
                 'label' => trim(implode(' • ', array_filter([
                     $vehicle->plate_number,
-                    $vehicle->body_number ? 'Body #' . $vehicle->body_number : null,
+                    $vehicle->body_number ? 'Body #'.$vehicle->body_number : null,
                     $vehicle->vehicle_type,
                 ]))),
             ])
@@ -90,7 +90,7 @@ class DispatchController extends Controller
                 'name' => $driver->name,
                 'username' => $driver->username,
                 'email' => $driver->email,
-                'label' => $driver->name . ($driver->username ? ' • ' . $driver->username : ''),
+                'label' => $driver->name.($driver->username ? ' • '.$driver->username : ''),
             ])
             ->values();
 
@@ -103,7 +103,7 @@ class DispatchController extends Controller
                 $bayOptions = collect(range(1, max((int) $gate->bays, 0)))
                     ->map(fn (int $bay) => [
                         'value' => $bay,
-                        'label' => 'Bay ' . $bay,
+                        'label' => 'Bay '.$bay,
                     ])
                     ->values();
 
@@ -113,7 +113,7 @@ class DispatchController extends Controller
                     'bays' => (int) $gate->bays,
                     'status' => $gate->status,
                     'bay_options' => $bayOptions,
-                    'label' => $gate->gate_name . ' (' . $gate->bays . ' bays)',
+                    'label' => $gate->gate_name.' ('.$gate->bays.' bays)',
                 ];
             })
             ->values();
@@ -150,7 +150,7 @@ class DispatchController extends Controller
                     );
                 } else {
                     $query->whereRaw(
-                        "DATE(DATE_ADD(arrived_at, INTERVAL 8 HOUR)) = ?",
+                        'DATE(DATE_ADD(arrived_at, INTERVAL 8 HOUR)) = ?',
                         [$date],
                     );
                 }
@@ -470,8 +470,8 @@ class DispatchController extends Controller
                 ->findOrFail($driverId);
 
             // Validate driver availability
-            $validator = new DriverAssignmentValidator();
-            if (!$validator->canAssignToday($driver, now())) {
+            $validator = new DriverAssignmentValidator;
+            if (! $validator->canAssignToday($driver, now())) {
                 throw ValidationException::withMessages([
                     'driver_user_id' => $validator->getValidationMessage($driver, now()),
                 ]);
@@ -561,8 +561,8 @@ class DispatchController extends Controller
                 ->findOrFail($driverId);
 
             // Validate driver availability (exclude current dispatch)
-            $validator = new DriverAssignmentValidator();
-            if (!$validator->canAssignToday($driver, now(), $dispatch)) {
+            $validator = new DriverAssignmentValidator;
+            if (! $validator->canAssignToday($driver, now(), $dispatch)) {
                 throw ValidationException::withMessages([
                     'driver_user_id' => $validator->getValidationMessage($driver, now()),
                 ]);

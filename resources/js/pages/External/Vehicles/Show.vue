@@ -4,9 +4,9 @@ import { computed, reactive, ref } from 'vue';
 
 import ExternalLayout from '@/layouts/ExternalLayout.vue';
 
-import VehicleBasicInfoForm from '@/components/company/vehicles/VehicleBasicInfoForm.vue';
-import VehicleRouteAssignment from '@/components/company/vehicles/VehicleRouteAssignment.vue';
-import VehicleSummaryCard from '@/components/company/vehicles/VehicleSummaryCard.vue';
+import VehicleBasicInfoForm from '@/components/internal/company/vehicles/VehicleBasicInfoForm.vue';
+import VehicleRouteAssignment from '@/components/internal/company/vehicles/VehicleRouteAssignment.vue';
+import VehicleSummaryCard from '@/components/internal/company/vehicles/VehicleSummaryCard.vue';
 
 import {
     AlertDialog,
@@ -169,7 +169,7 @@ const vehicleTypes = [
 ];
 
 const form = reactive({
-    vehicle_type: props.vehicle.vehicle_type ?? '',
+    vehicle_type: props.vehicle.vehicleType?.type_name ?? '',
     plate_number: props.vehicle.plate_number ?? '',
     body_number: props.vehicle.body_number ?? '',
     capacity: props.vehicle.capacity ?? '',
@@ -205,14 +205,19 @@ const uploadedDocumentsCount = computed(() => props.vehicle.documents.length);
 
 const approvedDocumentsCount = computed(
     () =>
-        props.vehicle.documents.filter((doc) => doc.status === 'approved')
-            .length,
+        props.vehicle.documents.filter(
+            (doc) => doc.status === 'verified' || doc.status === 'approved',
+        ).length,
 );
 
 const pendingDocumentsCount = computed(
     () =>
-        props.vehicle.documents.filter((doc) => doc.status === 'pending')
-            .length,
+        props.vehicle.documents.filter(
+            (doc) =>
+                doc.status === 'pending' ||
+                doc.status === 'for_verification' ||
+                doc.status === 'draft',
+        ).length,
 );
 
 const orderedDocuments = computed(() =>
@@ -238,7 +243,7 @@ function isDocumentExpired(doc: VehicleDocument) {
 }
 
 function needsResubmission(doc: VehicleDocument) {
-    return doc.status === 'invalid' || isDocumentExpired(doc);
+    return doc.status === 'invalid' || doc.status === 'needs_revision' || isDocumentExpired(doc);
 }
 
 function hasDocumentsNeedingResubmission(vehicle: Vehicle) {
@@ -250,7 +255,12 @@ function businessCanToggle(vehicle: Vehicle) {
     if (!vehicle.documents?.length) return false;
     if (hasDocumentsNeedingResubmission(vehicle)) return false;
     return !vehicle.documents.some(
-        (doc) => doc.status === 'pending' || doc.status === 'rejected',
+        (doc) =>
+            doc.status === 'pending' ||
+            doc.status === 'for_verification' ||
+            doc.status === 'draft' ||
+            doc.status === 'rejected' ||
+            doc.status === 'invalid',
     );
 }
 
@@ -282,10 +292,14 @@ function vehicleActionNote(vehicle: Vehicle) {
     if (!vehicle.documents?.length) return 'Upload required documents first.';
     if (
         vehicle.documents.some(
-            (doc) => doc.status === 'pending' || doc.status === 'rejected',
+            (doc) =>
+                doc.status === 'pending' ||
+                doc.status === 'for_verification' ||
+                doc.status === 'draft' ||
+                doc.status === 'rejected',
         )
     ) {
-        return 'Documents must be approved before changing status.';
+        return 'Documents must be verified before changing status.';
     }
     if (hasDocumentsNeedingResubmission(vehicle)) {
         return 'Resubmit invalid or expired documents before activation.';
@@ -624,7 +638,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         <p
                             class="mt-0.5 truncate text-sm font-bold text-slate-900"
                         >
-                            {{ vehicle.vehicle_type || '—' }}
+                            {{ vehicle.vehicleType?.type_name || '—' }}
                         </p>
                     </div>
 

@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\CompanyProfileChangeRequest;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,7 +16,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasApiTokens, HasFactory, Notifiable, TwoFactorAuthenticatable, HasRoles, SoftDeletes;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
 
     protected $fillable = [
         'username',
@@ -67,7 +66,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return $query->when(
             filled($search),
             fn (Builder $q) => $q->where(function (Builder $qq) use ($search) {
-                $like = '%' . $search . '%';
+                $like = '%'.$search.'%';
 
                 $qq->where('name', 'like', $like)
                     ->orWhere('username', 'like', $like)

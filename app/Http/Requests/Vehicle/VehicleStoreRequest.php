@@ -22,12 +22,13 @@ class VehicleStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'plate_number' => 'required|string|max:6|unique:vehicles,plate_number',
-            'body_number' => 'required|string|max:200|unique:vehicles,body_number',
-            'capacity' => 'required|integer|min:1',
-            'company_id' => 'required|exists:companies,id',
-            'route_id' => 'required|exists:routes,id',
-            'vehicle_type_id' => 'required|exists:vehicle_types,id',
+            'plate_number' => ['required', 'string', 'max:20', 'unique:vehicles,plate_number'],
+            'body_number' => ['required', 'string', 'max:200', 'unique:vehicles,body_number'],
+            'capacity' => ['required', 'integer', 'min:1'],
+            'company_id' => ['required', 'exists:companies,id'],
+            'route_id' => ['required', 'exists:routes,id'],
+            'vehicle_type_id' => ['required', 'exists:vehicle_types,id'],
+            'vehicle_type' => ['nullable', 'string', 'max:100', 'required_without:vehicle_type_id'],
         ];
     }
 
@@ -36,7 +37,7 @@ class VehicleStoreRequest extends FormRequest
         return [
             'plate_number.required' => 'Plate number is required.',
             'plate_number.unique' => 'This plate number already exists.',
-            'plate_number.max' => 'Plate number must not exceed 6 characters.',
+            'plate_number.max' => 'Plate number must not exceed 20 characters.',
 
             'body_number.required' => 'Body number is required.',
             'body_number.unique' => 'This body number already exists.',
@@ -52,8 +53,9 @@ class VehicleStoreRequest extends FormRequest
             'route_id.required' => 'Please select a route.',
             'route_id.exists' => 'Selected route is invalid.',
 
-            'vehicle_type_id.required' => 'Please select a vehicle type.',
+            'vehicle_type_id.required_without' => 'Please select a vehicle type.',
             'vehicle_type_id.exists' => 'Selected vehicle type is invalid.',
+            'vehicle_type.required_without' => 'Please specify a vehicle type.',
         ];
     }
 }

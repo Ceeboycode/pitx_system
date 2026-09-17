@@ -31,7 +31,7 @@ class CrmThreadController extends Controller
             ])
             ->when(
                 filled($filters['search'] ?? null),
-                fn ($query) => $query->where('subject', 'like', '%' . $filters['search'] . '%')
+                fn ($query) => $query->where('subject', 'like', '%'.$filters['search'].'%')
             )
             ->when(
                 filled($filters['category'] ?? null),
@@ -218,6 +218,7 @@ class CrmThreadController extends Controller
 
         if ($this->isInternalStaff($user)) {
             $query->where('assigned_to_user_id', $user->id);
+
             return;
         }
 
@@ -234,6 +235,7 @@ class CrmThreadController extends Controller
 
         if ($this->isInternalStaff($user)) {
             abort_unless((int) $thread->assigned_to_user_id === (int) $user->id, 403);
+
             return;
         }
 

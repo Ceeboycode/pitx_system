@@ -15,8 +15,7 @@ class CompanyResubmittedReceivedNotification extends Notification implements Sho
 
     public function __construct(
         public Company $company,
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {

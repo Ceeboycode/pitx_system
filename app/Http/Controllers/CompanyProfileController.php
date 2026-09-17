@@ -21,8 +21,7 @@ class CompanyProfileController extends Controller
     public function __construct(
         private readonly NotificationService $notificationService,
         private readonly CompanyStatusService $companyStatusService,
-    ) {
-    }
+    ) {}
 
     /*
     |--------------------------------------------------------------------------
@@ -33,7 +32,7 @@ class CompanyProfileController extends Controller
     {
         Gate::authorize('external_companies_settings.view');
 
-        $user    = $request->user();
+        $user = $request->user();
         $company = $user->company;
 
         $this->companyStatusService->markExpiredDocumentsAndSync(collect([$company]));
@@ -60,18 +59,18 @@ class CompanyProfileController extends Controller
 
         return Inertia::render('External/Settings/CompanyProfile', [
             'company' => [
-                'id'                             => $company->id,
-                'company_name'                   => $company->company_name,
-                'company_code'                   => $company->company_code,
-                'company_email'                  => $company->company_email,
-                'company_phone'                  => $company->company_phone,
-                'company_address'                => $company->company_address,
-                'status'                         => $company->status,
-                'business_type'                  => $company->business_type,
-                'registration_number'            => $company->registration_number,
-                'authorized_representative_name'     => $company->authorized_representative_name,
+                'id' => $company->id,
+                'company_name' => $company->company_name,
+                'company_code' => $company->company_code,
+                'company_email' => $company->company_email,
+                'company_phone' => $company->company_phone,
+                'company_address' => $company->company_address,
+                'status' => $company->status,
+                'business_type' => $company->business_type,
+                'registration_number' => $company->registration_number,
+                'authorized_representative_name' => $company->authorized_representative_name,
                 'authorized_representative_position' => $company->authorized_representative_position,
-                'authorized_representative_contact'  => $company->authorized_representative_contact,
+                'authorized_representative_contact' => $company->authorized_representative_contact,
                 'logo_url' => filled($company->logo)
                     ? Storage::url($company->logo)
                     : null,
@@ -80,10 +79,10 @@ class CompanyProfileController extends Controller
                     ->get(),
             ],
             'user' => [
-                'id'       => $user->id,
-                'name'     => $user->name,
+                'id' => $user->id,
+                'name' => $user->name,
                 'username' => $user->username,
-                'email'    => $user->email,
+                'email' => $user->email,
             ],
             'latest_change_request' => $latestChangeRequest ? [
                 'id' => $latestChangeRequest->id,
@@ -144,7 +143,7 @@ class CompanyProfileController extends Controller
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
             $ext = strtolower($file->getClientOriginalExtension() ?: 'jpg');
-            $logoPublicPath = 'company-logos/pending/' . Str::uuid() . '.' . $ext;
+            $logoPublicPath = 'company-logos/pending/'.Str::uuid().'.'.$ext;
 
             Storage::disk('public')->put(
                 $logoPublicPath,
@@ -172,7 +171,7 @@ class CompanyProfileController extends Controller
             $documentExt = strtolower($documentFile->getClientOriginalExtension() ?: 'pdf');
             $documentPath = $documentFile->storeAs(
                 "company-documents/pending/{$company->id}/{$requiredCertificationType}",
-                Str::uuid() . '.' . $documentExt,
+                Str::uuid().'.'.$documentExt,
                 'public'
             );
 

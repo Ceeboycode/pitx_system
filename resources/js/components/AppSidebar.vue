@@ -25,6 +25,7 @@ import { edit as editProfile } from '@/routes/profile';
 import { index as rolesIndex } from '@/routes/roles';
 import { index as routesIndex } from '@/routes/routes';
 import { index as usersIndex } from '@/routes/users';
+import { index as vehicleTypesIndex } from '@/routes/vehicle-types';
 import { index as vehiclesIndex } from '@/routes/vehicles';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import type { InertiaLinkProps } from '@inertiajs/vue3';
@@ -183,18 +184,18 @@ const mainNavItems: NavItem[] = [
         href: '#',
         icon: RiComputerLine,
         items: [
-            // {
-            //     id: 'vehicle-type',
-            //     title: 'Vehicle Types',
-            //     href: usersIndex().url,
-            //     permission: 'users.viewAny',
-            // },
-            // {
-            //     id: 'remarks',
-            //     title: 'Roles',
-            //     href: rolesIndex().url,
-            //     permission: 'roles.viewAny',
-            // },
+            {
+                id: 'vehicle-type',
+                title: 'Vehicle Types',
+                href: vehicleTypesIndex().url,
+                permission: 'vehicle_types.viewAny',
+            },
+            {
+                id: 'remarks',
+                title: 'Roles',
+                href: rolesIndex().url,
+                permission: 'roles.viewAny',
+            },
         ],
     },
 ];

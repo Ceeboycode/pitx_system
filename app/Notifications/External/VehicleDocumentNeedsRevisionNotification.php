@@ -18,8 +18,7 @@ class VehicleDocumentNeedsRevisionNotification extends Notification implements S
         public Vehicle $vehicle,
         public VehicleDocument $document,
         public string $remarks,
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {

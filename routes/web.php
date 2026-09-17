@@ -395,6 +395,7 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
     });
 
     Route::resource('vehicle-types', VehicleTypeController::class);
+    Route::patch('vehicle-types/{vehicle_type}/toggle-status', [VehicleTypeController::class, 'toggleStatus'])->name('vehicle-types.toggleStatus');
 
     Route::resource('gates', GateController::class);
     Route::patch('gates/{gate}/toggle-status', [GateController::class, 'toggleStatus'])->name('gates.toggleStatus');

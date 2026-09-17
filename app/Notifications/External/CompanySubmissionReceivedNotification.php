@@ -15,8 +15,7 @@ class CompanySubmissionReceivedNotification extends Notification implements Shou
 
     public function __construct(
         public Company $company,
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {

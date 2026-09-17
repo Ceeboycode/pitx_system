@@ -10,10 +10,10 @@ use App\Models\Role;
 use App\Models\Route;
 use App\Models\User;
 use App\Models\Vehicle;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate as GateFacade;
 use Illuminate\Support\Str;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -405,7 +405,7 @@ class AuditLogController extends Controller
     {
         static $cache = [];
 
-        $cacheKey = $field . ':' . $id;
+        $cacheKey = $field.':'.$id;
         if (array_key_exists($cacheKey, $cache)) {
             return $cache[$cacheKey];
         }

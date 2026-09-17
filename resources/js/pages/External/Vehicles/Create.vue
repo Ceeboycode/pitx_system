@@ -1,13 +1,13 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { computed, watch } from 'vue'
 
 import ExternalLayout from '@/layouts/ExternalLayout.vue'
 
-import VehicleBasicInfoForm from '@/components/company/vehicles/VehicleBasicInfoForm.vue'
-import VehicleDocumentsForm from '@/components/company/vehicles/VehicleDocumentsForm.vue'
-import VehicleRouteAssignment from '@/components/company/vehicles/VehicleRouteAssignment.vue'
-import VehicleSummaryCard from '@/components/company/vehicles/VehicleSummaryCard.vue'
+import VehicleBasicInfoForm from '@/components/internal/company/vehicles/VehicleBasicInfoForm.vue'
+import VehicleDocumentsForm from '@/components/internal/company/vehicles/VehicleDocumentsForm.vue'
+import VehicleRouteAssignment from '@/components/internal/company/vehicles/VehicleRouteAssignment.vue'
+import VehicleSummaryCard from '@/components/internal/company/vehicles/VehicleSummaryCard.vue'
 
 import { Button } from '@/components/ui/button'
 
@@ -76,6 +76,7 @@ const props = defineProps<{
     gates: GateItem[]
     routes: RouteItem[]
     docTypes: DocTypes
+    vehicleTypes: Array<{id: number, type_name: string}>
     mapConfig: {
         mapboxToken?: string | null
         defaultCenter: {
@@ -86,7 +87,7 @@ const props = defineProps<{
     }
 }>()
 
-const vehicleTypes = [
+const vehicleTypesOld = [
     'Bus',
     'Modern Jeepney',
     'Jeepney',
@@ -106,10 +107,10 @@ const capacityMap: Record<string, number> = {
 }
 
 const form = useForm({
-    vehicle_type: '',
+    vehicle_type_id: null as number | null,
     plate_number: '',
     body_number: '',
-    capacity: '',
+    capacity: null as number | null,
     color: '',
     engine_number: '',
     chassis_number: '',
@@ -125,7 +126,7 @@ const form = useForm({
 
 
 watch(
-    () => form.vehicle_type,
+    () => form.vehicle_type_id,
     (newType) => {
         if (capacityMap[newType]) {
             form.capacity = String(capacityMap[newType])
