@@ -798,7 +798,7 @@ const openStatusDialog = (
                                     </TableMoreButton>
                                 </TableRow>
                             </TableContent>
-                        </template>
+                        </Table>
 
                         <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
                             <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
