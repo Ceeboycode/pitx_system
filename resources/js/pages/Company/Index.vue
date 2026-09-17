@@ -1,12 +1,24 @@
 <script setup lang="ts">
-// import CreateCompanyDialog from '@/components/internal/company/CreateCompanyDialog.vue';
-import EditCompanyDialog from '@/components/internal/company/EditCompanyDialog.vue';
-import ImportCompanyDialog from '@/components/internal/company/ImportCompanyDialog.vue';
+import {
+    ArchiveCompanyDialog,
+    EditCompanyDialog,
+    ImportCompanyDialog,
+} from '@/components/internal/company';
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import { can } from '@/lib/can';
 
+import {
+    Table,
+    TableColumn,
+    TableHeader,
+    TableContent,
+    TableRow,
+    TableCard,
+    TableData,
+    TableMoreButton,
+} from '@/components/ui/_table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -59,7 +71,7 @@ import {
     RiMore2Line,
 } from 'vue-remix-icons';
 
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 type CompanyStatus =
     | 'draft'
@@ -118,19 +130,50 @@ const canViewCompany = computed(() => can('companies.view'));
 const canUpdateCompany = computed(() => can('companies.update'));
 const canViewProfileChangeRequests = computed(() => can('companies.viewAny'));
 
-// const createOpen = ref(false);
 const editOpen = ref(false);
 const importOpen = ref(false);
 const selectedCompany = ref<Company | null>(null);
 const previewedCompany = ref<Company | null>(null);
+const archiveOpen = ref(false);
+const archivingCompany = ref<Company | null>(null);
+const openMenus = ref<Record<number, boolean>>({});
 
 function openPreview(company: Company) {
     previewedCompany.value = company;
 }
 
+function selectAdjacentCompany(direction: 1 | -1) {
+    if (!previewedCompany.value) return;
+
+    const list = props.companies.data;
+    const currentIndex = list.findIndex((c) => c.id === previewedCompany.value?.id);
+    const nextIndex = currentIndex + direction;
+    if (currentIndex === -1 || nextIndex < 0 || nextIndex >= list.length) return;
+
+    openPreview(list[nextIndex]);
+}
+
+function handleRowNavigationKeydown(event: KeyboardEvent) {
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        selectAdjacentCompany(1);
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        selectAdjacentCompany(-1);
+    }
+}
+
+onMounted(() => window.addEventListener('keydown', handleRowNavigationKeydown));
+onUnmounted(() => window.removeEventListener('keydown', handleRowNavigationKeydown));
+
 function openEdit(company: Company) {
     selectedCompany.value = company;
     editOpen.value = true;
+}
+
+function openArchiveDialog(company: Company) {
+    archivingCompany.value = company;
+    archiveOpen.value = true;
 }
 
 const exporting = ref(false);
@@ -169,15 +212,20 @@ const activeFilterCount = computed(() => {
     return count;
 });
 
+function currentFilterParams(): Record<string, string | undefined> {
+    return {
+        status: statusFilter.value !== 'all' ? statusFilter.value : undefined,
+        sort_by: sortBy.value ?? undefined,
+        sort_dir: sortBy.value ? sortDir.value : undefined,
+    };
+}
+
 function applyFilters(overrides: Record<string, string | null> = {}) {
     router.get(
         index().url,
         {
             search: props.filters.search ?? undefined,
-            status:
-                statusFilter.value !== 'all' ? statusFilter.value : undefined,
-            sort_by: sortBy.value ?? undefined,
-            sort_dir: sortBy.value ? sortDir.value : undefined,
+            ...currentFilterParams(),
             ...overrides,
         },
         {
@@ -376,7 +424,7 @@ function hasVerifiedEmail(company: Company): boolean {
                     </div>
                 </CardHeader>
 
-                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
                     <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
                         <div class="w-full">
                             <SearchInput
@@ -385,6 +433,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                 placeholder="Search companies..."
                                 :only="['companies', 'filters', 'flash']"
                                 :debounce="350"
+                                :extra-params="currentFilterParams"
                             />
                         </div>
 
@@ -460,7 +509,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                                 <Button
                                                     size="sm"
                                                     variant="float-primary"
-                                                    @click="applyFilters"
+                                                    @click="applyFilters()"
                                                 >
                                                     Apply
                                                 </Button>
@@ -472,18 +521,13 @@ function hasVerifiedEmail(company: Company): boolean {
                         </div>
                     </div>
 
-                    <Card
-                        :class="[
-                            'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
-                            props.companies.data.length === 0 ? 'border-dashed' : 'border-solid',
-                        ]"
-                    >
-                        <div v-if="props.companies.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                            <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                                <div class="grid grid-cols-[1.5fr_1fr_1fr_0.9fr_1fr_5rem] gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
+                    <TableCard :table-data-length="props.companies.data.length">
+                        <Table v-if="props.companies.data.length > 0">
+                            <TableHeader>
+                                <TableColumn class="p-0">
                                     <button
                                         type="button"
-                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 pl-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('company_name')"
                                     >
                                         Name and Code
@@ -493,14 +537,14 @@ function hasVerifiedEmail(company: Company): boolean {
                                             :class="sortIconClass('company_name')"
                                         />
                                     </button>
+                                </TableColumn>
 
-                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
-                                        Contact Details
-                                    </div>
+                                <TableColumn>Contact Details</TableColumn>
 
+                                <TableColumn class="p-0">
                                     <button
                                         type="button"
-                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('status')"
                                     >
                                         Verification Status
@@ -510,10 +554,12 @@ function hasVerifiedEmail(company: Company): boolean {
                                             :class="sortIconClass('status')"
                                         />
                                     </button>
+                                </TableColumn>
 
+                                <TableColumn class="p-0">
                                     <button
                                         type="button"
-                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('is_active')"
                                     >
                                         Active Status
@@ -523,10 +569,12 @@ function hasVerifiedEmail(company: Company): boolean {
                                             :class="sortIconClass('is_active')"
                                         />
                                     </button>
+                                </TableColumn>
 
+                                <TableColumn class="p-0">
                                     <button
                                         type="button"
-                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('created_at')"
                                     >
                                         Created
@@ -536,105 +584,95 @@ function hasVerifiedEmail(company: Company): boolean {
                                             :class="sortIconClass('created_at')"
                                         />
                                     </button>
+                                </TableColumn>
+                            </TableHeader>
 
-                                    <div class="col-span-1 flex h-10 items-center justify-end px-0 pr-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
-                                        Actions
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-                                <div
+                            <TableContent>
+                                <TableRow
                                     v-for="(company, rowIndex) in props.companies.data"
                                     :key="company.id"
                                     :class="[
-                                        'grid cursor-pointer grid-cols-[1.5fr_1fr_1fr_0.9fr_1fr_5rem] items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
                                         rowIndex === props.companies.data.length - 1 ? 'rounded-b-md border-b-0' : '',
-                                        previewedCompany?.id === company.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
+                                        previewedCompany?.id === company.id ? 'bg-custom-secondary/10' : '',
                                     ]"
-                                    @click="openPreview(company)"
+                                    :status="!isCompanyActive(company) ? 'inactive' : 'default'"
+                                    @click.left="openPreview(company)"
+                                    @dblclick="router.visit(show({ company: company.id }).url)"
                                 >
-                                    <div class="col-span-1 flex min-w-0 items-center gap-2 py-1.5 pl-3">
-                                        <div class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-custom-bg-dark bg-custom-bg text-xs font-semibold uppercase text-custom-shadow/70 dark:border-custom-bg-light dark:bg-custom-bg-dark">
-                                            <img
-                                                v-if="company.logo_url"
-                                                :src="company.logo_url"
-                                                :alt="`${company.company_name} logo`"
-                                                class="h-full w-full object-cover"
-                                            />
-                                            <span v-else>{{ company.company_name.slice(0, 2) }}</span>
+                                    <TableData class="pl-3">
+                                        <div class="flex min-w-0 items-center gap-2">
+                                            <div class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-custom-bg-dark bg-custom-bg text-xs font-semibold uppercase text-custom-shadow/70 dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                                                <img
+                                                    v-if="company.logo_url"
+                                                    :src="company.logo_url"
+                                                    :alt="`${company.company_name} logo`"
+                                                    class="h-full w-full object-cover"
+                                                />
+                                                <span v-else>{{ company.company_name.slice(0, 2) }}</span>
+                                            </div>
+                                            <div class="flex min-w-0 flex-col">
+                                                <span class="truncate font-semibold capitalize">{{ company.company_name }}</span>
+                                                <span class="truncate font-mono text-xs text-custom-shadow/70">{{ company.company_code }}</span>
+                                            </div>
                                         </div>
-                                        <div class="flex min-w-0 flex-col">
-                                            <span class="truncate font-semibold capitalize">{{ company.company_name }}</span>
-                                            <span class="truncate font-mono text-xs text-custom-shadow/70">{{ company.company_code }}</span>
+                                    </TableData>
+
+                                    <TableData>
+                                        <div class="flex min-w-0 flex-col gap-1 text-sm text-custom-shadow/80">
+                                            <span class="truncate">{{ company.company_email || '—' }}</span>
+                                            <span class="truncate">{{ company.company_phone || '—' }}</span>
                                         </div>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex min-w-0 flex-col gap-1 py-1.5 text-sm text-custom-shadow/80">
-                                        <span class="truncate">{{ company.company_email || '—' }}</span>
-                                        <span class="truncate">{{ company.company_phone || '—' }}</span>
-                                    </div>
-
-                                    <div class="col-span-1 flex justify-start py-1.5">
+                                    <TableData>
                                         <Badge :class="['gap-1.5', statusClass(company.status ?? null)]">
                                             <span :class="['h-1.5 w-1.5 rounded-full', statusDot(company.status ?? null)]" />
                                             {{ humanizeStatus(company.status ?? null) }}
                                         </Badge>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-start py-1.5">
+                                    <TableData>
                                         <Badge :class="['gap-1.5', activeStatusClass(company)]">
                                             <span :class="['h-1.5 w-1.5 rounded-full', activeStatusDot(company)]" />
                                             {{ activeStatusLabel(company) }}
                                         </Badge>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-start py-1.5 text-sm text-custom-shadow/80">
-                                        {{ company.created_at_human ?? '—' }}
-                                    </div>
+                                    <TableData class="text-sm text-custom-shadow/80">
+                                        <span class="truncate">{{ company.created_at_human ?? '—' }}</span>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right" @click.stop>
-                                        <DropdownMenu v-if="canViewCompany">
-                                            <DropdownMenuTrigger as-child>
-                                                <Button
-                                                    variant="table-more"
-                                                    size="icon-more"
-                                                >
-                                                    <RiMore2Line class="h-4 w-4" />
-                                                    
-                                                </Button>
-                                            </DropdownMenuTrigger>
-
-                                            <DropdownMenuContent align="end" class="">
-                                                <DropdownMenuLabel>
-                                                    {{ company.company_name }}
-                                                </DropdownMenuLabel>
-                                                <DropdownMenuItem
-                                                    v-if="canUpdateCompany"
-                                                    class="group cursor-pointer rounded-md"
-                                                    @click="openEdit(company)"
-                                                >
-                                                    <RiEditLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                    Edit
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    as-child
-                                                    class="group cursor-pointer rounded-md"
-                                                >
-                                                    <Link
-                                                        :href="show({ company: company.id }).url"
-                                                        class="flex items-center"
-                                                    >
-                                                        <RiFileCheckLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                        Review Company
-                                                    </Link>
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                                    <TableMoreButton
+                                        v-if="canViewCompany"
+                                        :open="openMenus[company.id] ?? false"
+                                        @update:open="(value) => (openMenus[company.id] = value)"
+                                    >
+                                        <DropdownMenuLabel>
+                                            {{ company.company_name }}
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuItem
+                                            as-child
+                                            class="group cursor-pointer rounded-md"
+                                        >
+                                            <Link
+                                                :href="show({ company: company.id }).url"
+                                                class="flex items-center"
+                                            >
+                                                <RiFileCheckLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                Review Company
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            class="group cursor-pointer rounded-md"
+                                            @click="openArchiveDialog(company)"
+                                        >
+                                            <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                            Archive
+                                        </DropdownMenuItem>
+                                    </TableMoreButton>
+                                </TableRow>
+                            </TableContent>
+                        </Table>
 
                         <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
                             <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
@@ -652,7 +690,7 @@ function hasVerifiedEmail(company: Company): boolean {
                                 </div>
                             </div>
                         </div>
-                    </Card>
+                    </TableCard>
 
                     <InertiaPagination
                         :links="props.companies.links"
@@ -734,11 +772,17 @@ function hasVerifiedEmail(company: Company): boolean {
 
                     <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
 
-                    <div class="flex items-center justify-between gap-2">
-                        <Button v-if="canUpdateCompany" variant="ghost-outline" size="icon-text" @click="openEdit(previewedCompany)">
-                            <RiEditLine class="h-4 w-4" />
-                            Edit
-                        </Button>
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex flex-wrap gap-2">
+                            <Button v-if="canUpdateCompany" variant="ghost-outline" size="icon-text" @click="openEdit(previewedCompany)">
+                                <RiEditLine class="h-4 w-4" />
+                                Edit
+                            </Button>
+                            <Button variant="destructive" size="icon-text" @click="openArchiveDialog(previewedCompany)">
+                                <RiArchive2Line class="h-4 w-4" />
+                                Archive
+                            </Button>
+                        </div>
                         <Button v-if="canViewCompany" as-child variant="float-primary" size="icon-text">
                             <Link :href="show({ company: previewedCompany.id }).url">
                                 <RiFileCheckLine class="h-4 w-4" />
@@ -757,9 +801,6 @@ function hasVerifiedEmail(company: Company): boolean {
             </Card>
         </PanelLayout>
 
-        <!-- TODO: is this dead code? i dont think the superadmin and admin should be allowed to create companies?-->
-        <!-- <CreateCompanyDialog v-model:open="createOpen" /> -->
-
         <EditCompanyDialog
             v-if="selectedCompany"
             v-model:open="editOpen"
@@ -767,5 +808,6 @@ function hasVerifiedEmail(company: Company): boolean {
         />
 
         <ImportCompanyDialog v-model:open="importOpen" @done="onImportDone" />
+        <ArchiveCompanyDialog v-model:open="archiveOpen" :company="archivingCompany" />
     </AppLayout>
 </template>

@@ -5,16 +5,17 @@ import { TableColumn } from "."
 
 const props = defineProps<{
   class?: HTMLAttributes["class"]
+  hideActionsColumn?: boolean
 }>()
 </script>
 
 <template>
-  <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-      <div :class="cn('grid gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light', props.class)">
-        <slot />
-        <TableColumn class="pr-3 justify-end">
-          Actions
-        </TableColumn>
-    </div>
-  </div>
+  <thead class="bg-custom-bg dark:bg-custom-bg-light">
+    <tr :class="cn('border-b border-custom-bg-dark dark:border-custom-bg-light', props.class)">
+      <slot />
+      <TableColumn v-if="!hideActionsColumn" class="pr-3 text-right">
+        Actions
+      </TableColumn>
+    </tr>
+  </thead>
 </template>

@@ -53,6 +53,7 @@ import {
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
+import { MainPanel, PanelLayout } from '@/components/ui/_panels';
 
 
 import { RiArrowLeftSLine, RiFilter2Line, RiMore2Line, RiRestartLine } from 'vue-remix-icons';
@@ -190,7 +191,7 @@ function restoreRoute() {
     <Head title="Archived Routes" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+        <PanelLayout>
             <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader class="flex flex-row items-start gap-3">
                     <Button as-child variant="header-actions" size="icon">
@@ -350,7 +351,7 @@ function restoreRoute() {
                     />
                 </CardContent>
             </Card>
-        </div>
+        </PanelLayout>
     </AppLayout>
 
     <AlertDialog v-if="canRestore" v-model:open="restoreOpen">

@@ -20,12 +20,21 @@ class RoleController extends Controller
         $search = $request->input('search');
         $type = $request->input('type');
 
+        $allowedSorts = ['name', 'type', 'permissions_count', 'created_at'];
+        $sortBy = in_array($request->input('sort_by'), $allowedSorts, true) ? $request->input('sort_by') : null;
+        $sortDir = $request->input('sort_dir') === 'desc' ? 'desc' : 'asc';
+
         $roles = Role::query()
             ->select('id', 'name', 'type', 'created_at', 'updated_at', 'created_by', 'updated_by')
+            ->withCount('permissions')
             ->with(['permissions:id,name', 'creator:id,name', 'updater:id,name'])
             ->when($search, fn ($q) => $q->where('name', 'like', "%{$search}%"))
             ->when($type, fn ($q) => $q->where('type', $type))
-            ->latest()
+            ->when($sortBy, function ($query) use ($sortBy, $sortDir) {
+                $query->orderBy($sortBy, $sortDir);
+            }, function ($query) {
+                $query->latest();
+            })
             ->paginate(20)
             ->withQueryString()
             ->through(fn (Role $role) => [
@@ -51,6 +60,8 @@ class RoleController extends Controller
             'filters' => [
                 'search' => $search,
                 'type' => $type,
+                'sort_by' => $sortBy,
+                'sort_dir' => $sortDir,
             ],
         ]);
     }

@@ -34,6 +34,7 @@ import {
   RiEditLine,
   RiImageAddLine,
   RiCloseLine,
+  RiCircleFill,
 } from 'vue-remix-icons';
 
 type Gate = {
@@ -268,11 +269,18 @@ function submit() {
                       id="gate_status"
                       variant="inline-edit"
                     >
+                      <RiCircleFill :class="['shrink-0 h-2 w-2 size-2 mr-1', form.status === 'active' ? 'text-success' : 'text-custom-shadow']" />
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="active">
+                        <RiCircleFill class="shrink-0 h-2 w-2 size-2 text-success mr-1" />
+                        Active
+                      </SelectItem>
+                      <SelectItem value="inactive">
+                        <RiCircleFill class="shrink-0 h-2 w-2 size-2 text-custom-shadow mr-1" />
+                        Inactive
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </span>

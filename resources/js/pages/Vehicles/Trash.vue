@@ -14,6 +14,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { RiArrowLeftSLine, RiFilter2Line, RiMore2Line, RiRestartLine } from 'vue-remix-icons';
 import { computed, ref } from 'vue';
+import { MainPanel, PanelLayout } from '@/components/ui/_panels';
 
 type ArchivedVehicle = {
     id: number;
@@ -80,7 +81,7 @@ function openRestore(vehicle: ArchivedVehicle) {
 <template>
     <Head title="Archived Vehicles" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4">
+        <PanelLayout>
             <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                 <CardHeader class="flex flex-row items-start gap-3">
                     <Button as-child variant="header-actions" size="icon"><Link :href="index().url" aria-label="Back to vehicles"><RiArrowLeftSLine class="h-4 w-4" /></Link></Button>
@@ -149,7 +150,7 @@ function openRestore(vehicle: ArchivedVehicle) {
                     <InertiaPagination :links="props.vehicles.links" :meta="{ from: props.vehicles.from, to: props.vehicles.to, total: props.vehicles.total }" />
                 </CardContent>
             </Card>
-        </div>
+        </PanelLayout>
         <RestoreVehicleDialog v-if="selectedVehicle" v-model:open="restoreOpen" :vehicle="selectedVehicle" />
     </AppLayout>
 </template>

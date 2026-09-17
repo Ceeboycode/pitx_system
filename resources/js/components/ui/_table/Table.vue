@@ -8,9 +8,9 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div :class="cn('flex min-h-0 flex-1 flex-col overflow-hidden', props.class)">
-  <!-- <div data-slot="table-container" class="no-scrollbar relative w-full overflow-auto"> -->
-    <!-- <table data-slot="table" :class="cn('w-full caption-bottom text-sm', props.class)"> -->
+  <div class="no-scrollbar min-h-0 flex-1 overflow-auto">
+    <table :class="cn('min-w-full border-collapse text-sm', props.class)">
       <slot />
+    </table>
   </div>
 </template>

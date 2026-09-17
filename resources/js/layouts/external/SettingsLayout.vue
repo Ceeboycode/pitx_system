@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useActiveUrl } from '@/composables/useActiveUrl';
 import { Link } from '@inertiajs/vue3';
+import { PanelLayout } from '@/components/ui/_panels';
+import { LeadingCard } from '@/components/ui/_leading-card';
 
 const sidebarNavItems: Array<{ title: string; href: string }> = [
     {
@@ -24,7 +26,10 @@ const { urlIsActive } = useActiveUrl();
 </script>
 
 <template>
-    <div class="px-4 py-6">
+    <PanelLayout class="px-4 py-6">
+        <LeadingCard>
+
+        </LeadingCard>
         <HeadingSmall
             title="Settings"
             description="Manage your profile and account settings"
@@ -63,5 +68,5 @@ const { urlIsActive } = useActiveUrl();
                 </section>
             </div>
         </div>
-    </div>
+    </PanelLayout>
 </template>

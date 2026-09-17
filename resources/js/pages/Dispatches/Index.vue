@@ -3,7 +3,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 
 import InertiaPagination from '@/components/InertiaPagination.vue';
@@ -11,6 +11,15 @@ import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 
 
+import {
+    Table,
+    TableColumn,
+    TableHeader,
+    TableContent,
+    TableRow,
+    TableCard,
+    TableData,
+} from '@/components/ui/_table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,10 +33,8 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import Input from '@/components/ui/input/Input.vue';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PanelLayout } from '@/components/ui/_panels';
@@ -37,10 +44,8 @@ import {
     RiArrowDownSLine,
     RiArrowUpDownLine,
     RiArrowUpSLine,
-    RiBuilding2Line,
     RiClipboardLine,
     RiCloseLine,
-    RiExternalLinkLine,
     RiFileInfoLine,
     RiFilter2Line,
     RiMore2Line,
@@ -51,14 +56,34 @@ import InternalDispatchController from '@/actions/App/Http/Controllers/InternalD
 import { index as changeRequestsIndex } from '@/actions/App/Http/Controllers/DispatchChangeRequestController';
 
 
-type CompanyItem = {
+type DispatchStatus = 'pending' | 'arrived' | 'departed';
+
+type DispatchRoute = {
+    route_name: string | null;
+    origin_name: string | null;
+    destination_name: string | null;
+};
+
+type DispatchVehicle = {
+    plate_number: string | null;
+    vehicle_type: string | null;
+    make_model: string | null;
+    route: DispatchRoute | null;
+};
+
+type DispatchItem = {
     id: number;
-    company_name: string;
-    company_code: string | null;
-    company_email: string | null;
-    company_phone: string | null;
-    status: string | null;
-    dispatches_count: number;
+    status: DispatchStatus;
+    bay_number: string | null;
+    pax_count: number | null;
+    dispatched_at: string | null;
+    arrived_at: string | null;
+    departed_at: string | null;
+    company: { id: number; company_name: string } | null;
+    vehicle: DispatchVehicle | null;
+    gate: { gate_name: string } | null;
+    dispatcher: { name: string } | null;
+    driver: { name: string } | null;
 };
 
 type PaginationLink = {
@@ -67,10 +92,10 @@ type PaginationLink = {
     active: boolean;
 };
 
-type SortField = 'company_name' | 'company_code' | 'status' | 'dispatches_count' | null;
+type SortField = 'company_name' | 'plate_number' | 'status' | 'dispatched_at' | null;
 
-type PaginatedCompanies = {
-    data: CompanyItem[];
+type PaginatedDispatches = {
+    data: DispatchItem[];
     links: PaginationLink[];
     from: number | null;
     to: number | null;
@@ -82,46 +107,72 @@ const props = defineProps<{
     filters: {
         search: string;
         status?: string | null;
-        minimum_dispatches?: number | null;
         sort_by?: SortField;
         sort_dir?: 'asc' | 'desc';
     };
-    companies: PaginatedCompanies;
+    dispatches: PaginatedDispatches;
 }>();
 
 const sortBy  = ref<SortField>(props.filters.sort_by ?? null);
 const sortDir = ref<'asc' | 'desc'>(props.filters.sort_dir ?? 'asc');
 const filterOpen = ref(false);
 const filterStatus = ref(props.filters.status || 'all');
-const filterMinimumDispatches = ref(props.filters.minimum_dispatches ? String(props.filters.minimum_dispatches) : '');
-const previewedCompany = ref<CompanyItem | null>(null);
-const activeFilterCount = computed(() =>
-    Number(filterStatus.value !== 'all') + Number(Boolean(filterMinimumDispatches.value)),
-);
+const previewedDispatch = ref<DispatchItem | null>(null);
+const activeFilterCount = computed(() => Number(filterStatus.value !== 'all'));
 
-function filterParams() {
+function openPreview(dispatch: DispatchItem) {
+    previewedDispatch.value = dispatch;
+}
+
+function selectAdjacentDispatch(direction: 1 | -1) {
+    if (!previewedDispatch.value) return;
+
+    const list = props.dispatches.data;
+    const currentIndex = list.findIndex((d) => d.id === previewedDispatch.value?.id);
+    const nextIndex = currentIndex + direction;
+    if (currentIndex === -1 || nextIndex < 0 || nextIndex >= list.length) return;
+
+    openPreview(list[nextIndex]);
+}
+
+function handleRowNavigationKeydown(event: KeyboardEvent) {
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        selectAdjacentDispatch(1);
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        selectAdjacentDispatch(-1);
+    }
+}
+
+onMounted(() => window.addEventListener('keydown', handleRowNavigationKeydown));
+onUnmounted(() => window.removeEventListener('keydown', handleRowNavigationKeydown));
+
+function currentFilterParams(): Record<string, string | undefined> {
     return {
-        search: props.filters.search || undefined,
         status: filterStatus.value === 'all' ? undefined : filterStatus.value,
-        minimum_dispatches: filterMinimumDispatches.value || undefined,
         sort_by: sortBy.value ?? undefined,
         sort_dir: sortBy.value ? sortDir.value : undefined,
     };
 }
 
 function applyFilters() {
-    router.get(InternalDispatchController.index().url, filterParams(), {
+    router.get(InternalDispatchController.index().url, {
+        search: props.filters.search || undefined,
+        ...currentFilterParams(),
+    }, {
         preserveScroll: true,
         preserveState: true,
         replace: true,
-        only: ['companies', 'filters'],
+        only: ['dispatches', 'filters'],
     });
     filterOpen.value = false;
 }
 
 function clearFilters() {
     filterStatus.value = 'all';
-    filterMinimumDispatches.value = '';
+    sortBy.value = null;
+    sortDir.value = 'asc';
     applyFilters();
 }
 
@@ -132,11 +183,7 @@ function toggleSort(field: SortField) {
         sortBy.value = field;
         sortDir.value = 'asc';
     }
-    router.get(
-        InternalDispatchController.index().url,
-        filterParams(),
-        { preserveScroll: true, preserveState: true, replace: true },
-    );
+    applyFilters();
 }
 
 function sortIcon(field: SortField) {
@@ -162,11 +209,12 @@ function prettyStatus(value: string | null | undefined) {
 
 function statusClass(status: string | null | undefined): string {
     switch (status) {
-        case 'verified':
-        case 'active':
+        case 'arrived':
             return 'bg-emerald-100 text-emerald-700 border-emerald-200';
         case 'pending':
             return 'bg-amber-100 text-amber-700 border-amber-200';
+        case 'departed':
+            return 'bg-slate-100 text-slate-500 border-0';
         default:
             return 'bg-slate-100 text-slate-500 border-0';
     }
@@ -174,14 +222,25 @@ function statusClass(status: string | null | undefined): string {
 
 function statusDot(status: string | null | undefined): string {
     switch (status) {
-        case 'verified':
-        case 'active':
+        case 'arrived':
             return 'bg-emerald-500';
         case 'pending':
             return 'bg-amber-400';
+        case 'departed':
+            return 'bg-slate-400';
         default:
             return 'bg-slate-400';
     }
+}
+
+function routeLabel(vehicle: DispatchVehicle | null): string {
+    const route = vehicle?.route;
+    if (!route) return '—';
+    if (route.route_name) return route.route_name;
+    if (route.origin_name || route.destination_name) {
+        return `${route.origin_name ?? '—'} to ${route.destination_name ?? '—'}`;
+    }
+    return '—';
 }
 </script>
 
@@ -196,7 +255,7 @@ function statusDot(status: string | null | undefined): string {
                         <CardTitle class="flex items-center gap-2">
                             <span class="font-semibold">Dispatches</span>
                         </CardTitle>
-                        <CardDescription>Find a company and view its total dispatch records.</CardDescription>
+                        <CardDescription>View individual dispatch records across all companies.</CardDescription>
                     </div>
                     <div class="flex flex-1 justify-end gap-2 items-center">
                         <DropdownMenu class="w-fit">
@@ -219,15 +278,16 @@ function statusDot(status: string | null | undefined): string {
                     </div>
                 </CardHeader>
 
-                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
                     <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
                         <div class="w-full">
                             <SearchInput
                                 :route="InternalDispatchController.index().url"
-                                placeholder="Search company..."
+                                placeholder="Search by plate, route, gate, dispatcher, driver..."
                                 :initial-value="props.filters.search"
-                                :only="['companies', 'filters', 'flash']"
+                                :only="['dispatches', 'filters']"
                                 :debounce="350"
+                                :extra-params="currentFilterParams"
                             />
                         </div>
                         <Popover v-model:open="filterOpen">
@@ -252,25 +312,18 @@ function statusDot(status: string | null | undefined): string {
                                             <SelectTrigger class="w-full"><SelectValue placeholder="Any status" /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="all">Any status</SelectItem>
-                                                <SelectItem value="verified">Verified</SelectItem>
-                                                <SelectItem value="for_verification">For verification</SelectItem>
-                                                <SelectItem value="docs_completed">Documents completed</SelectItem>
-                                                <SelectItem value="needs_revision">Needs revision</SelectItem>
-                                                <SelectItem value="draft">Draft</SelectItem>
-                                                <SelectItem value="rejected">Rejected</SelectItem>
+                                                <SelectItem value="pending">Pending</SelectItem>
+                                                <SelectItem value="arrived">Arrived</SelectItem>
+                                                <SelectItem value="departed">Departed</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                    </div>
-                                    <div class="flex flex-col gap-y-1">
-                                        <p class="text-sm text-custom-shadow/80">Minimum dispatches</p>
-                                        <Input v-model="filterMinimumDispatches" type="number" min="0" placeholder="e.g. 5" class="bg-custom-bg" />
                                     </div>
                                     <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
                                     <div class="flex items-center justify-between">
                                         <Button v-if="activeFilterCount" variant="destructive" size="sm" @click="clearFilters">Clear</Button>
                                         <div class="ml-auto flex items-center gap-2">
                                             <Button variant="ghost-outline" size="sm" @click="filterOpen = false">Cancel</Button>
-                                            <Button variant="float-primary" size="sm" @click="applyFilters">Apply</Button>
+                                            <Button variant="float-primary" size="sm" @click="applyFilters()">Apply</Button>
                                         </div>
                                     </div>
                                 </div>
@@ -278,159 +331,104 @@ function statusDot(status: string | null | undefined): string {
                         </Popover>
                     </div>
 
-                    <Card
-                        :class="[
-                            'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
-                            companies.data.length === 0 ? 'border-dashed' : 'border-solid',
-                        ]"
-                    >
-                        <div v-if="companies.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                            <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                                <div class="grid grid-cols-7 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
+                    <TableCard :table-data-length="dispatches.data.length">
+                        <Table v-if="dispatches.data.length > 0">
+                            <TableHeader hide-actions-column>
+                                <TableColumn class="p-0">
                                     <button
                                         type="button"
-                                        class="col-span-2 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 pl-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('company_name')"
                                     >
                                         Company
                                         <component :is="sortIcon('company_name')" class="h-3.5 w-3.5" :class="sortIconClass('company_name')" />
                                     </button>
+                                </TableColumn>
 
+                                <TableColumn class="p-0">
                                     <button
                                         type="button"
-                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
-                                        @click="toggleSort('company_code')"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        @click="toggleSort('plate_number')"
                                     >
-                                        Code
-                                        <component :is="sortIcon('company_code')" class="h-3.5 w-3.5" :class="sortIconClass('company_code')" />
+                                        Vehicle
+                                        <component :is="sortIcon('plate_number')" class="h-3.5 w-3.5" :class="sortIconClass('plate_number')" />
                                     </button>
+                                </TableColumn>
 
-                                    <div class="col-span-1 flex h-10 items-center justify-start px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
-                                        Contact
-                                    </div>
+                                <TableColumn>Route</TableColumn>
+                                <TableColumn>Gate</TableColumn>
 
+                                <TableColumn class="p-0">
                                     <button
                                         type="button"
-                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('status')"
                                     >
                                         Status
                                         <component :is="sortIcon('status')" class="h-3.5 w-3.5" :class="sortIconClass('status')" />
                                     </button>
+                                </TableColumn>
 
+                                <TableColumn class="p-0">
                                     <button
                                         type="button"
-                                        class="col-span-1 flex h-10 cursor-pointer select-none items-center justify-start gap-1.5 px-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
-                                        @click="toggleSort('dispatches_count')"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                        @click="toggleSort('dispatched_at')"
                                     >
-                                        Dispatches
-                                        <component :is="sortIcon('dispatches_count')" class="h-3.5 w-3.5" :class="sortIconClass('dispatches_count')" />
+                                        Dispatched At
+                                        <component :is="sortIcon('dispatched_at')" class="h-3.5 w-3.5" :class="sortIconClass('dispatched_at')" />
                                     </button>
+                                </TableColumn>
+                            </TableHeader>
 
-                                    <div class="col-span-1 flex h-10 items-center justify-end px-0 pr-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">
-                                        Actions
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-                                <div
-                                    v-for="(company, rowIndex) in companies.data"
-                                    :key="company.id"
+                            <TableContent>
+                                <TableRow
+                                    v-for="(dispatch, rowIndex) in dispatches.data"
+                                    :key="dispatch.id"
                                     :class="[
-                                        'grid cursor-pointer grid-cols-7 items-center border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
-                                        rowIndex === companies.data.length - 1 ? 'rounded-b-md border-b-0' : '',
-                                        previewedCompany?.id === company.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
+                                        'h-12',
+                                        rowIndex === dispatches.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                        previewedDispatch?.id === dispatch.id ? 'bg-custom-secondary/10' : '',
                                     ]"
-                                    @click="previewedCompany = company"
+                                    :status="dispatch.status === 'departed' ? 'inactive' : 'default'"
+                                    @click.left="openPreview(dispatch)"
                                 >
-                                    <div class="col-span-2 flex min-w-0 justify-start py-1.5 pl-3">
-                                        <div class="flex min-w-0 items-center gap-3">
-                                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-custom-secondary/10 ring-1 ring-custom-bg-dark dark:ring-custom-bg-light">
-                                                <RiBuilding2Line class="h-4 w-4 text-custom-primary" />
-                                            </div>
-                                            <div class="min-w-0">
-                                                <div class="truncate text-sm font-semibold">
-                                                    {{ company.company_name }}
-                                                </div>
-                                                <div class="truncate text-xs text-custom-shadow/70">
-                                                    ID #{{ company.id }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <TableData class="pl-3">
+                                        <span class="truncate font-semibold">{{ dispatch.company?.company_name || '—' }}</span>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-start py-1.5">
+                                    <TableData>
                                         <span
-                                            v-if="company.company_code"
+                                            v-if="dispatch.vehicle?.plate_number"
                                             class="rounded bg-custom-bg px-2 py-0.5 font-mono text-xs font-semibold text-custom-shadow dark:bg-custom-bg-light"
                                         >
-                                            {{ company.company_code }}
+                                            {{ dispatch.vehicle.plate_number }}
                                         </span>
                                         <span v-else class="text-sm text-custom-shadow/70">—</span>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex min-w-0 justify-start py-1.5">
-                                        <div class="min-w-0 space-y-1">
-                                            <div class="flex min-w-0 items-center gap-1.5 text-xs text-custom-shadow/70">
-                                                <span class="max-w-[180px] truncate">
-                                                    {{ company.company_email || '—' }}
-                                                </span>
-                                            </div>
-                                            <div class="flex items-center gap-1.5 text-xs text-custom-shadow/70">
-                                                <span class="truncate">{{ company.company_phone || '—' }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <TableData>
+                                        <span class="truncate">{{ routeLabel(dispatch.vehicle) }}</span>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-start py-1.5">
-                                        <Badge :class="['gap-1.5', statusClass(company.status)]">
-                                            <span :class="['h-1.5 w-1.5 rounded-full', statusDot(company.status)]" />
-                                            {{ prettyStatus(company.status) }}
+                                    <TableData>
+                                        <span class="truncate">{{ dispatch.gate?.gate_name || '—' }}</span>
+                                    </TableData>
+
+                                    <TableData>
+                                        <Badge :class="['gap-1.5', statusClass(dispatch.status)]">
+                                            <span :class="['h-1.5 w-1.5 rounded-full', statusDot(dispatch.status)]" />
+                                            {{ prettyStatus(dispatch.status) }}
                                         </Badge>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-start py-1.5">
-                                        <div class="inline-flex items-center gap-1.5 rounded-full border border-custom-bg-dark bg-custom-bg px-3 py-1 text-xs font-semibold text-custom-shadow dark:border-custom-bg-light dark:bg-custom-bg-light">
-                                            <RiClipboardLine class="h-3.5 w-3.5" />
-                                            {{ company.dispatches_count }}
-                                        </div>
-                                    </div>
-
-                                    <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right" @click.stop>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger as-child>
-                                                <Button
-                                                    variant="table-more"
-                                                    size="icon-more"
-                                                >
-                                                    <RiMore2Line class="h-4 w-4" />
-                                                    
-                                                </Button>
-                                            </DropdownMenuTrigger>
-
-                                            <DropdownMenuContent align="end" class="">
-                                                <DropdownMenuLabel>
-                                                    {{ company.company_name }}
-                                                </DropdownMenuLabel>
-                                                <DropdownMenuItem
-                                                    as-child
-                                                    class="group"
-                                                >
-                                                    <Link
-                                                        :href="InternalDispatchController.show(company.id).url"
-                                                        class="flex items-center"
-                                                    >
-                                                        <RiExternalLinkLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                                                        View
-                                                    </Link>
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                                    <TableData class="text-sm text-custom-shadow/80">
+                                        <span class="truncate">{{ dispatch.dispatched_at || '—' }}</span>
+                                    </TableData>
+                                </TableRow>
+                            </TableContent>
+                        </Table>
 
                         <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
                             <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
@@ -441,31 +439,31 @@ function statusDot(status: string | null | undefined): string {
                                     aria-hidden="true"
                                 />
                                 <div class="space-y-1">
-                                    <p class="text-custom-shadow text-base font-semibold">No companies found</p>
+                                    <p class="text-custom-shadow text-base font-semibold">No dispatches found</p>
                                     <p class="text-custom-shadow/80 text-sm">
                                         {{ activeFilterCount ? 'Try adjusting or clearing your filters.' : 'Try adjusting your search term.' }}
                                     </p>
                                 </div>
                             </div>
                         </div>
-                    </Card>
+                    </TableCard>
 
                     <InertiaPagination
-                        v-if="companies.links?.length"
-                        :links="companies.links"
-                        :meta="{ from: companies.from, to: companies.to, total: companies.total }"
+                        v-if="dispatches.links?.length"
+                        :links="dispatches.links"
+                        :meta="{ from: dispatches.from, to: dispatches.to, total: dispatches.total }"
                     />
                 </CardContent>
             </Card>
 
             <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-100">
                 <CardHeader
-                    v-if="previewedCompany"
+                    v-if="previewedDispatch"
                     class="flex flex-row items-start justify-between gap-3"
                 >
                     <div class="min-w-0">
-                        <CardTitle class="truncate capitalize">
-                            {{ previewedCompany.company_name }}
+                        <CardTitle class="truncate uppercase">
+                            {{ previewedDispatch.vehicle?.plate_number || `Dispatch #${previewedDispatch.id}` }}
                         </CardTitle>
                         <CardDescription>Preview</CardDescription>
                     </div>
@@ -473,82 +471,91 @@ function statusDot(status: string | null | undefined): string {
                         variant="header-actions"
                         size="icon"
                         class="h-8 w-8 shrink-0 rounded-full"
-                        aria-label="Close company preview"
-                        @click="previewedCompany = null"
+                        aria-label="Close dispatch preview"
+                        @click="previewedDispatch = null"
                     >
                         <RiCloseLine class="h-4 w-4" />
                     </Button>
                 </CardHeader>
 
                 <CardContent
-                    v-if="previewedCompany"
+                    v-if="previewedDispatch"
                     class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto py-2"
                 >
                     <div class="flex aspect-4/3 items-center justify-center overflow-hidden rounded-md border border-dashed border-custom-bg-dark bg-custom-bg text-custom-shadow/70 dark:border-none dark:bg-custom-bg-dark">
-                        <RiBuilding2Line class="h-16 w-16" />
+                        <RiClipboardLine class="h-16 w-16" />
                     </div>
 
                     <div class="space-y-2 pt-2">
                         <div class="flex items-center justify-between gap-3">
                             <span class="text-sm font-semibold text-custom-shadow">Status</span>
-                            <Badge :class="['gap-1.5', statusClass(previewedCompany.status)]">
-                                <span :class="['h-1.5 w-1.5 rounded-full', statusDot(previewedCompany.status)]" />
-                                {{ prettyStatus(previewedCompany.status) }}
+                            <Badge :class="['gap-1.5', statusClass(previewedDispatch.status)]">
+                                <span :class="['h-1.5 w-1.5 rounded-full', statusDot(previewedDispatch.status)]" />
+                                {{ prettyStatus(previewedDispatch.status) }}
                             </Badge>
                         </div>
 
                         <div class="flex items-start justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Company Code</span>
-                            <span class="text-right font-mono text-sm">{{ previewedCompany.company_code || '—' }}</span>
+                            <span class="text-sm font-semibold text-custom-shadow">Company</span>
+                            <span class="text-right text-sm">{{ previewedDispatch.company?.company_name || '—' }}</span>
                         </div>
 
-                        <div class="space-y-2">
-                            <div class="flex items-center justify-between gap-3">
-                                <p class="text-sm font-semibold text-custom-shadow">Contact Information</p>
-                            </div>
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-between gap-3 rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">
-                                    <div class="flex min-w-0 items-center gap-2">
-                                        <span class="truncate text-sm">{{ previewedCompany.company_email || 'No email recorded' }}</span>
-                                    </div>
-                                </div>
-                                <div class="flex items-center justify-between gap-3 rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">
-                                    <div class="flex min-w-0 items-center gap-2">
-                                        <span class="truncate text-sm">{{ previewedCompany.company_phone || 'No phone recorded' }}</span>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Vehicle</span>
+                            <span class="text-right text-sm">{{ previewedDispatch.vehicle?.vehicle_type || previewedDispatch.vehicle?.make_model || 'Not recorded' }}</span>
                         </div>
 
-                        <div class="space-y-2">
-                            <div class="flex items-center justify-between gap-3">
-                                <p class="text-sm font-semibold text-custom-shadow">Dispatch Records</p>
-                                <span class="text-sm text-custom-shadow">{{ previewedCompany.dispatches_count }}</span>
-                            </div>
-                            <div class="flex items-center gap-2 rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">
-                                <RiClipboardLine class="h-4 w-4 text-custom-shadow/70" />
-                                <span class="text-sm text-custom-shadow/70">
-                                    {{ previewedCompany.dispatches_count === 1 ? '1 recorded dispatch' : `${previewedCompany.dispatches_count} recorded dispatches` }}
-                                </span>
-                            </div>
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Route</span>
+                            <span class="text-right text-sm">{{ routeLabel(previewedDispatch.vehicle) }}</span>
                         </div>
-                    </div>
 
-                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Gate</span>
+                            <span class="text-right text-sm">{{ previewedDispatch.gate?.gate_name || 'Not assigned' }}</span>
+                        </div>
 
-                    <div class="flex items-center justify-end gap-2">
-                        <Button as-child variant="float-primary" size="icon">
-                            <Link :href="InternalDispatchController.show(previewedCompany.id).url">
-                                <RiExternalLinkLine class="h-4 w-4" />
-                            </Link>
-                        </Button>
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Bay</span>
+                            <span class="text-right text-sm">{{ previewedDispatch.bay_number || 'Not assigned' }}</span>
+                        </div>
+
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">PAX Count</span>
+                            <span class="text-right text-sm">{{ previewedDispatch.pax_count ?? 'Not recorded' }}</span>
+                        </div>
+
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Dispatcher</span>
+                            <span class="text-right text-sm">{{ previewedDispatch.dispatcher?.name || 'Not recorded' }}</span>
+                        </div>
+
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Driver</span>
+                            <span class="text-right text-sm">{{ previewedDispatch.driver?.name || 'Not recorded' }}</span>
+                        </div>
+
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Dispatched At</span>
+                            <span class="text-right text-sm">{{ previewedDispatch.dispatched_at || 'Not recorded' }}</span>
+                        </div>
+
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Arrived At</span>
+                            <span class="text-right text-sm">{{ previewedDispatch.arrived_at || 'Not recorded' }}</span>
+                        </div>
+
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Departed At</span>
+                            <span class="text-right text-sm">{{ previewedDispatch.departed_at || 'Not recorded' }}</span>
+                        </div>
                     </div>
                 </CardContent>
 
                 <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
                     <div class="max-w-60 space-y-1 text-center">
-                        <p class="text-base font-semibold text-custom-shadow">No company selected</p>
-                        <p class="text-sm text-custom-shadow/80">Click on a company to preview.</p>
+                        <p class="text-base font-semibold text-custom-shadow">No dispatch selected</p>
+                        <p class="text-sm text-custom-shadow/80">Click on a dispatch to preview.</p>
                     </div>
                 </CardContent>
             </Card>

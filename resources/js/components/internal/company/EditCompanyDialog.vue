@@ -2,7 +2,7 @@
 import { update } from '@/routes/companies';
 import { useForm } from '@inertiajs/vue3';
 import { watch } from 'vue';
-import { Save } from 'lucide-vue-next';
+import { RiSaveLine } from 'vue-remix-icons';
 
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
@@ -203,7 +203,7 @@ function verificationStatusDot(status?: CompanyStatus | null): string {
                     </Button>
 
                     <Button type="submit" :disabled="form.processing">
-                        <Save class="mr-2 h-4 w-4" />
+                        <RiSaveLine class="mr-2 h-4 w-4" />
                         {{ form.processing ? 'Saving...' : 'Save Changes' }}
                     </Button>
                 </DialogFooter>

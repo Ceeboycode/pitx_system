@@ -15,14 +15,11 @@ import {
 } from '@/components/ui/dialog';
 
 import {
-    AlertCircle,
-    CheckCircle2,
-    XCircle,
-} from 'lucide-vue-next';
-
-import {
     RiArchive2Line,
+    RiCheckboxCircleLine,
+    RiCloseCircleLine,
     RiCloseLine,
+    RiErrorWarningLine,
     RiFileUploadLine,
     RiLoader2Line,
 } from 'vue-remix-icons';
@@ -194,14 +191,14 @@ function handleClose(val: boolean) {
                 </div>
 
                 <div v-if="errorMsg" class="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
-                    <AlertCircle class="mt-0.5 h-4 w-4 shrink-0" />
+                    <RiErrorWarningLine class="mt-0.5 h-4 w-4 shrink-0" />
                     {{ errorMsg }}
                 </div>
 
                 <div v-if="phase === 'done' && summary" class="max-h-56 space-y-2 overflow-y-auto">
                     <div v-if="summary.imported.length" class="rounded-md border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-800 dark:bg-emerald-950/30">
                         <div class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                            <CheckCircle2 class="h-3.5 w-3.5" />
+                            <RiCheckboxCircleLine class="h-3.5 w-3.5" />
                             {{ summary.imported.length }} imported
                         </div>
                         <ul class="space-y-0.5"><li v-for="item in summary.imported" :key="item" class="text-xs text-emerald-700 dark:text-emerald-400">{{ item }}</li></ul>
@@ -209,7 +206,7 @@ function handleClose(val: boolean) {
 
                     <div v-if="summary.skipped.length" class="rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
                         <div class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
-                            <AlertCircle class="h-3.5 w-3.5" />
+                            <RiErrorWarningLine class="h-3.5 w-3.5" />
                             {{ summary.skipped.length }} skipped (already exist)
                         </div>
                         <ul class="space-y-0.5"><li v-for="item in summary.skipped" :key="item" class="text-xs text-amber-700 dark:text-amber-400">{{ item }}</li></ul>
@@ -217,7 +214,7 @@ function handleClose(val: boolean) {
 
                     <div v-if="summary.errors.length" class="rounded-md border border-destructive/30 bg-destructive/5 p-3">
                         <div class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-destructive">
-                            <XCircle class="h-3.5 w-3.5" />
+                            <RiCloseCircleLine class="h-3.5 w-3.5" />
                             {{ summary.errors.length }} failed
                         </div>
                         <ul class="space-y-0.5"><li v-for="item in summary.errors" :key="item" class="text-xs text-destructive">{{ item }}</li></ul>

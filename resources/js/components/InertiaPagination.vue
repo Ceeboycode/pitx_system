@@ -48,6 +48,9 @@ const pageLinks = computed(() => props.links.slice(1, -1));
                 <Link
                     :href="previousLink?.url ?? '#'"
                     preserve-scroll
+                    aria-label="Previous page"
+                    :aria-disabled="!previousLink?.url"
+                    :tabindex="previousLink?.url ? undefined : -1"
                     @click="!previousLink?.url && $event.preventDefault()"
                 >
                     <RiArrowLeftDoubleLine class="h-4 w-4" />
@@ -66,8 +69,9 @@ const pageLinks = computed(() => props.links.slice(1, -1));
                     <Link
                         :href="link.url"
                         preserve-scroll
-                        v-html="link.label"
-                    />
+                    >
+                        <span v-html="link.label" />
+                    </Link>
                 </Button>
 
                 <span
@@ -86,6 +90,9 @@ const pageLinks = computed(() => props.links.slice(1, -1));
                 <Link
                     :href="nextLink?.url ?? '#'"
                     preserve-scroll
+                    aria-label="Next page"
+                    :aria-disabled="!nextLink?.url"
+                    :tabindex="nextLink?.url ? undefined : -1"
                     @click="!nextLink?.url && $event.preventDefault()"
                 >
                     <RiArrowRightDoubleLine class="h-4 w-4" />

@@ -3,6 +3,16 @@ import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 
+import {
+    Table,
+    TableColumn,
+    TableHeader,
+    TableContent,
+    TableRow,
+    TableCard,
+    TableData,
+    TableMoreButton,
+} from '@/components/ui/_table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -34,6 +44,7 @@ import {
 } from '@/components/ui/select';
 
 import {
+    ArchiveGateDialog,
     CreateGateDialog,
     ToggleGateStatusDialog,
 } from '@/components/internal/gate';
@@ -56,7 +67,7 @@ import {
     RiExternalLinkLine,
 } from 'vue-remix-icons';
 
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 interface Gate {
     id: number;
@@ -94,7 +105,7 @@ const props = withDefaults(
     defineProps<{
         gates: {
             data: Gate[];
-            links: any[];
+            links: { url: string | null; label: string; active: boolean }[];
             from: number | null;
             to: number | null;
             total: number;
@@ -121,13 +132,19 @@ const activeFilterCount = computed(() => {
     return count;
 });
 
+function currentFilterParams(): Record<string, string | undefined> {
+    return {
+        status: filterStatus.value === 'all' ? undefined : filterStatus.value,
+        bays: filterBays.value || undefined,
+    };
+}
+
 function applyFilters() {
     router.get(
         index().url,
         {
             search: props.filters?.search || undefined,
-            status: filterStatus.value === 'all' ? undefined : filterStatus.value,
-            bays: filterBays.value || undefined,
+            ...currentFilterParams(),
         },
         {
             preserveScroll: true,
@@ -161,6 +178,9 @@ const createOpen   = ref(false);
 const previewedGate = ref<Gate | null>(null);
 const toggleOpen = ref(false);
 const togglingGate = ref<Gate | null>(null);
+const archiveOpen = ref(false);
+const archivingGate = ref<Gate | null>(null);
+const openMenus = ref<Record<number, boolean>>({});
 
 function statusClass(status: Gate['status']): string {
     return status === 'active'
@@ -176,9 +196,38 @@ function openPreview(gate: Gate) {
     previewedGate.value = gate;
 }
 
+function selectAdjacentGate(direction: 1 | -1) {
+    if (!previewedGate.value) return;
+
+    const list = props.gates.data;
+    const currentIndex = list.findIndex((g) => g.id === previewedGate.value?.id);
+    const nextIndex = currentIndex + direction;
+    if (currentIndex === -1 || nextIndex < 0 || nextIndex >= list.length) return;
+
+    openPreview(list[nextIndex]);
+}
+
+function handleRowNavigationKeydown(event: KeyboardEvent) {
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        selectAdjacentGate(1);
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        selectAdjacentGate(-1);
+    }
+}
+
+onMounted(() => window.addEventListener('keydown', handleRowNavigationKeydown));
+onUnmounted(() => window.removeEventListener('keydown', handleRowNavigationKeydown));
+
 function openToggleDialog(gate: Gate) {
     togglingGate.value = gate;
     toggleOpen.value = true;
+}
+
+function openArchiveDialog(gate: Gate) {
+    archivingGate.value = gate;
+    archiveOpen.value = true;
 }
 
 </script>
@@ -259,7 +308,7 @@ function openToggleDialog(gate: Gate) {
                     </div>
                 </CardHeader>
 
-                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
                     <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
                         <div class="w-full">
                             <SearchInput
@@ -268,6 +317,7 @@ function openToggleDialog(gate: Gate) {
                                 placeholder="Search gates..."
                                 :only="['gates', 'filters']"
                                 :debounce="350"
+                                :extra-params="currentFilterParams"
                             />
                         </div>
 
@@ -361,7 +411,7 @@ function openToggleDialog(gate: Gate) {
                                                 <Button
                                                     size="sm"
                                                     variant="float-primary"
-                                                    @click="applyFilters"
+                                                    @click="applyFilters()"
                                                 >
                                                     Apply
                                                 </Button>
@@ -373,115 +423,86 @@ function openToggleDialog(gate: Gate) {
                         </div>
                     </div>
 
-                    <Card
-                        :class="[
-                            'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark dark:border-custom-bg-light py-0 shadow-none dark:inset-shadow-none',
-                            props.gates.data.length === 0 ? 'border-dashed' : 'border-solid',
-                        ]"
-                    >
-                        <div v-if="props.gates.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                            <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                                <div class="grid grid-cols-4 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
-                                    <div class="col-span-1 flex h-10 font-semibold items-center justify-start px-0 pl-3 text-left text-xs uppercase tracking-widest text-custom-shadow/80">Name</div>
-                                    <div class="col-span-1 flex h-10 font-semibold items-center justify-start px-0 text-left text-xs uppercase tracking-widest text-custom-shadow/80">Status</div>
-                                    <div class="col-span-1 flex h-10 font-semibold items-center justify-start px-0 text-left text-xs uppercase tracking-widest text-custom-shadow/80">Bays</div>
-                                    <!-- CODE: <TableHead class="uppercase tracking-widest">Created By</TableHead> -->
-                                    <div class="col-span-1 flex h-10 font-semibold items-center justify-end px-0 pr-3 text-left text-xs uppercase tracking-widest text-custom-shadow/80">Actions</div>
-                                </div>
-                                <!-- CODE: <TableRow class="border-b-0 hover:bg-transparent">
-                                    <TableHead colspan="5" class="h-auto p-0">
-                                        <hr class="mx-3 border-0 border-t border-custom-bg-dark" />
-                                    </TableHead>
-                                </TableRow> -->
-                            </div>
+                    <TableCard :table-data-length="props.gates.data.length">
+                        <Table v-if="props.gates.data.length > 0">
+                            <TableHeader>
+                                <TableColumn>Name</TableColumn>
+                                <TableColumn>Status</TableColumn>
+                                <TableColumn>Bays</TableColumn>
+                            </TableHeader>
 
-                            <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-                                <template
-                                    v-for="(gate, index) in props.gates.data"
+                            <TableContent>
+                                <TableRow
+                                    v-for="(gate, rowIndex) in props.gates.data"
                                     :key="gate.id"
-                                >
-                                <div
                                     :class="[
-                                        'text-custom-shadow/80 grid grid-cols-4 border-b border-custom-bg-dark dark:border-custom-bg-light transition-colors cursor-pointer hover:bg-custom-secondary/10 hover:text-custom-shadow items-center',
-                                        index === props.gates.data.length - 1 ? 'rounded-b-md border-b-0' : '',
-                                        previewedGate?.id === gate.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
+                                        rowIndex === props.gates.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                        previewedGate?.id === gate.id ? 'bg-custom-secondary/10' : '',
                                     ]"
-                                    @click="openPreview(gate)"
+                                    :status="gate.status === 'inactive' ? 'inactive' : 'default'"
+                                    @click.left="openPreview(gate)"
+                                    @dblclick="router.visit(show(gate.id).url)"
                                 >
-                                    <div class="col-span-1 flex justify-start py-1.5 pl-3 font-semibold capitalize">{{ gate.gate_name }}</div>
+                                    <TableData class="pl-3 font-semibold capitalize">
+                                        {{ gate.gate_name }}
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-start py-1.5">
+                                    <TableData>
                                         <Badge :class="['gap-1.5', statusClass(gate.status)]">
                                             <span :class="['h-1.5 w-1.5 rounded-full', statusDot(gate.status)]" />
                                             {{ gate.status === 'active' ? 'Active' : 'Inactive' }}
                                         </Badge>
-                                    </div>
+                                    </TableData>
 
-                                    <div class="col-span-1 flex justify-start py-1.5 tabular-nums">{{ gate.bays }}</div>
+                                    <TableData>
+                                        <span class="tabular-nums">{{ gate.bays }}</span>
+                                    </TableData>
 
-                                    <!-- CODE: <TableCell class="text-sm text-muted-foreground">{{ gate.creator?.name ?? '—' }}</TableCell> -->
+                                    <TableMoreButton
+                                        :open="openMenus[gate.id] ?? false"
+                                        @update:open="(value) => (openMenus[gate.id] = value)"
+                                    >
+                                        <DropdownMenuLabel>
+                                            {{ gate.gate_name }}
+                                        </DropdownMenuLabel>
 
-                                    <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right" @click.stop>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger as-child>
-                                                <Button
-                                                    variant="table-more"
-                                                    size="icon-more"
-                                                    class=""
-                                                >
-                                                    <RiMore2Line class="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
+                                        <DropdownMenuItem
+                                            class="group hidden"
+                                            @click="openPreview(gate)"
+                                        >
+                                            <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-bg transition-all duration-200" />
+                                            View
+                                        </DropdownMenuItem>
 
-                                            <DropdownMenuContent align="end" class="">
-                                                <DropdownMenuLabel>
-                                                    {{ gate.gate_name }}
-                                                </DropdownMenuLabel>
+                                        <DropdownMenuItem as-child class="group lg:hidden">
+                                            <Link :href="show(gate.id).url" class="flex items-center">
+                                                <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-bg transition-all duration-200" />
+                                                View
+                                            </Link>
+                                        </DropdownMenuItem>
 
-                                                <DropdownMenuItem
-                                                    class="group hidden"
-                                                    @click="openPreview(gate)"
-                                                >
-                                                    <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-bg transition-all duration-200" />
-                                                    View
-                                                </DropdownMenuItem>
+                                        <DropdownMenuItem as-child class="group">
+                                            <Link :href="edit(gate.id).url" class="flex items-center">
+                                                <RiEditLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
+                                                Edit
+                                            </Link>
+                                        </DropdownMenuItem>
 
-                                                <DropdownMenuItem as-child class="group lg:hidden">
-                                                    <Link :href="show(gate.id).url" class="flex items-center">
-                                                        <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-bg transition-all duration-200" />
-                                                        View
-                                                    </Link>
-                                                </DropdownMenuItem>
+                                        <DropdownMenuItem class="group" @click="openToggleDialog(gate)">
+                                            <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                            <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">
+                                                {{ gate.status === 'active' ? 'Set as Inactive' : 'Set as Active' }}
+                                            </span>
+                                        </DropdownMenuItem>
 
-                                                <DropdownMenuItem as-child class="group">
-                                                    <Link :href="edit(gate.id).url" class="flex items-center">
-                                                        <RiEditLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
-                                                        Edit
-                                                    </Link>
-                                                </DropdownMenuItem>
-
-                                                <DropdownMenuItem class="group" @click="openToggleDialog(gate)">
-                                                    <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                                                    <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">
-                                                        {{ gate.status === 'active' ? 'Set as Inactive' : 'Set as Active' }}
-                                                    </span>
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                </div>
-
-                                <!-- CODE: <TableRow
-                                    v-if="index < props.gates.data.length - 1"
-                                    class="border-b-0 hover:bg-transparent"
-                                >
-                                    <TableCell colspan="5" class="py-0">
-                                        <hr class="mx-3 border-0 border-t border-custom-bg-dark" />
-                                    </TableCell>
-                                </TableRow> -->
-                                </template>
-                            </div>
-                        </div>
+                                        <DropdownMenuItem class="group" @click="openArchiveDialog(gate)">
+                                            <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                            <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">Archive</span>
+                                        </DropdownMenuItem>
+                                    </TableMoreButton>
+                                </TableRow>
+                            </TableContent>
+                        </Table>
 
                         <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
                             <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
@@ -499,7 +520,7 @@ function openToggleDialog(gate: Gate) {
                                 </div>
                             </div>
                         </div>
-                    </Card>
+                    </TableCard>
 
                     <InertiaPagination
                         :links="props.gates.links"
@@ -647,17 +668,27 @@ function openToggleDialog(gate: Gate) {
                     <!-- CODE: <hr class="border-custom-bg-dark dark:border-custom-bg-light my-4"> -->
                     <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
 
-                    <div class="flex items-center justify-between gap-2">
-                        <Button
-                            as-child
-                            variant="ghost-outline"
-                            size="icon-text"
-                        >
-                            <Link :href="edit(previewedGate.id).url">
-                                <RiEditLine class="h-4 w-4" />
-                                Edit
-                            </Link>
-                        </Button>
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex flex-wrap gap-2">
+                            <Button
+                                as-child
+                                variant="ghost-outline"
+                                size="icon-text"
+                            >
+                                <Link :href="edit(previewedGate.id).url">
+                                    <RiEditLine class="h-4 w-4" />
+                                    Edit
+                                </Link>
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                size="icon-text"
+                                @click="openArchiveDialog(previewedGate)"
+                            >
+                                <RiArchive2Line class="h-4 w-4" />
+                                Archive
+                            </Button>
+                        </div>
                         <Button
                             as-child
                             variant="float-primary"
@@ -689,25 +720,6 @@ function openToggleDialog(gate: Gate) {
 
         <CreateGateDialog v-model:open="createOpen" />
         <ToggleGateStatusDialog v-model:open="toggleOpen" :gate="togglingGate" />
-
-        <!-- CODE: <AlertDialog v-model:open="archiveOpen">
-            <AlertDialogContent class="rounded-2xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Archive Gate</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Are you sure you want to archive
-                        <span class="font-semibold text-foreground">{{ selectedGate?.gate_name ?? 'this gate' }}</span>?
-                        You can restore it later from the Trash.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg" @click="selectedGate = null">Cancel</AlertDialogCancel>
-                    <AlertDialogAction class="rounded-lg bg-rose-600 text-white hover:bg-rose-700 border-0" @click="archiveGate">
-                        Archive
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog> -->
-
+        <ArchiveGateDialog v-model:open="archiveOpen" :gate="archivingGate" />
     </AppLayout>
 </template>

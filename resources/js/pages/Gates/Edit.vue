@@ -17,9 +17,10 @@ import {
 import { ArchiveGateDialog } from '@/components/internal/gate';
 import Overview from '@/components/internal/gate/edit/OverviewTab.vue';
 import Details from '@/components/internal/gate/edit/DetailsTab.vue';
+import Routes from '@/components/internal/gate/edit/RoutesTab.vue';
 import Dispatches from '@/components/internal/gate/edit/DispatchesTab.vue';
 import History from '@/components/internal/gate/edit/HistoryTab.vue';
-import { RiArchive2Line, RiDashboardHorizontalLine, RiFileListLine, RiRoadMapLine, RiTimeLine } from 'vue-remix-icons';
+import { RiArchive2Line, RiDashboardHorizontalLine, RiFileListLine, RiRoadMapLine, RiRouteLine, RiTimeLine } from 'vue-remix-icons';
 import { can } from '@/lib/can';
 
 type Gate = {
@@ -57,6 +58,12 @@ const tabs = [
         label: 'Details',
         icon: RiFileListLine,
         component: Details,
+    },
+    {
+        value: 'routes',
+        label: 'Routes',
+        icon: RiRouteLine,
+        component: Routes,
     },
     {
         value: 'dispatches',

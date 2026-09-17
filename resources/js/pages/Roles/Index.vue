@@ -3,11 +3,21 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { create, edit, index, trash } from '@/routes/roles';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
+import Button from '@/components/ui/button/Button.vue'
 import { ArchiveRoleDialog } from '@/components/internal/roles';
+import {
+    Table,
+    TableColumn,
+    TableHeader,
+    TableContent,
+    TableRow,
+    TableCard,
+    TableData,
+    TableMoreButton,
+} from '@/components/ui/_table';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
@@ -36,6 +46,7 @@ import {
 } from '@/components/ui/select';
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
+import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import { PanelLayout } from '@/components/ui/_panels';
 
 import { can } from '@/lib/can';
@@ -50,7 +61,6 @@ import {
     RiEditLine,
     RiFilter2Line,
     RiKey2Line,
-    RiMore2Line,
     RiMoreLine,
     RiShieldCheckLine,
 } from 'vue-remix-icons';
@@ -80,7 +90,7 @@ type SortDir = 'asc' | 'desc';
 
 
 const props = defineProps<{
-    roles: { data: Role[]; links: any[]; from: number | null; to: number | null; total: number };
+    roles: { data: Role[]; links: { url: string | null; label: string; active: boolean }[]; from: number | null; to: number | null; total: number };
     filters: {
         search?: string | null;
         type?: string | null;
@@ -93,7 +103,6 @@ const props = defineProps<{
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Roles', href: index().url }];
 
 
-const search = ref(props.filters.search ?? '');
 const roleType = ref(props.filters.type ?? 'all');
 const pendingRoleType = ref(roleType.value);
 const filterOpen = ref(false);
@@ -102,7 +111,6 @@ const sortDir = ref<SortDir>(props.filters.sort_dir ?? 'asc');
 
 const hasActiveFilters = computed(
     () =>
-        !!search.value ||
         (roleType.value && roleType.value !== 'all') ||
         sortBy.value !== null,
 );
@@ -111,16 +119,20 @@ const activeFilterCount = computed(() =>
     roleType.value && roleType.value !== 'all' ? 1 : 0,
 );
 
-let filterTimer: number | null = null;
+function currentFilterParams(): Record<string, string | undefined> {
+    return {
+        type: roleType.value === 'all' ? undefined : roleType.value,
+        sort_by: sortBy.value ?? undefined,
+        sort_dir: sortBy.value ? sortDir.value : undefined,
+    };
+}
 
 function applyFilters() {
     router.get(
         index().url,
         {
-            search: search.value || undefined,
-            type: roleType.value === 'all' ? undefined : roleType.value,
-            sort_by: sortBy.value ?? undefined,
-            sort_dir: sortBy.value ? sortDir.value : undefined,
+            search: props.filters.search ?? undefined,
+            ...currentFilterParams(),
         },
         {
             preserveScroll: true,
@@ -130,15 +142,6 @@ function applyFilters() {
         },
     );
 }
-
-watch(search, () => {
-    if (filterTimer) window.clearTimeout(filterTimer);
-    filterTimer = window.setTimeout(() => applyFilters(), 350);
-});
-
-watch(roleType, () => {
-    applyFilters();
-});
 
 function toggleSort(field: SortField) {
     if (sortBy.value === field) {
@@ -151,7 +154,6 @@ function toggleSort(field: SortField) {
 }
 
 function clearFilters() {
-    search.value = '';
     roleType.value = 'all';
     pendingRoleType.value = 'all';
     sortBy.value = null;
@@ -162,6 +164,7 @@ function clearFilters() {
 
 function applyFilterPopover() {
     roleType.value = pendingRoleType.value;
+    applyFilters();
     filterOpen.value = false;
 }
 
@@ -192,10 +195,35 @@ function typeClass(type: Role['type']): string {
 const deleteOpen = ref(false);
 const selectedRole = ref<Role | null>(null);
 const previewedRole = ref<Role | null>(null);
+const openMenus = ref<Record<number, boolean>>({});
 
 function openPreview(role: Role) {
     previewedRole.value = role;
 }
+
+function selectAdjacentRole(direction: 1 | -1) {
+    if (!previewedRole.value) return;
+
+    const list = props.roles.data;
+    const currentIndex = list.findIndex((r) => r.id === previewedRole.value?.id);
+    const nextIndex = currentIndex + direction;
+    if (currentIndex === -1 || nextIndex < 0 || nextIndex >= list.length) return;
+
+    openPreview(list[nextIndex]);
+}
+
+function handleRowNavigationKeydown(event: KeyboardEvent) {
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        selectAdjacentRole(1);
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        selectAdjacentRole(-1);
+    }
+}
+
+onMounted(() => window.addEventListener('keydown', handleRowNavigationKeydown));
+onUnmounted(() => window.removeEventListener('keydown', handleRowNavigationKeydown));
 
 function openDelete(role: Role) {
     selectedRole.value = role;
@@ -266,7 +294,7 @@ function openDelete(role: Role) {
                         </DropdownMenu>
                     </div>
                 </CardHeader>
-                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
                     <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
                         <div class="w-full">
                             <SearchInput
@@ -275,6 +303,7 @@ function openDelete(role: Role) {
                                 placeholder="Search roles"
                                 :only="['roles', 'filters', 'flash']"
                                 :debounce="350"
+                                :extra-params="currentFilterParams"
                             />
                         </div>
                         <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
@@ -345,123 +374,71 @@ function openDelete(role: Role) {
 
 
 
-                    <Card
-                        :class="[
-                            'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
-                            props.roles.data.length === 0 ? 'border-dashed' : 'border-solid',
-                        ]"
-                    >
-                    <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                        <div v-if="props.roles.data.length" class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                            <div class="grid grid-cols-4 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
-                                    <div
-                                        class="col-span-1 flex h-10 cursor-pointer items-center pl-3 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase select-none transition-colors hover:text-custom-shadow"
+                    <TableCard :table-data-length="props.roles.data.length">
+                        <Table v-if="props.roles.data.length > 0">
+                            <TableHeader>
+                                <TableColumn class="p-0">
+                                    <button
+                                        type="button"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('name')"
                                     >
-                                        <div class="flex items-center gap-1.5">
-                                            Name
-                                            <component
-                                                :is="sortIcon('name')"
-                                                class="h-3.5 w-3.5"
-                                                :class="sortIconClass('name')"
-                                            />
-                                        </div>
-                                    </div>
+                                        Name
+                                        <component
+                                            :is="sortIcon('name')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('name')"
+                                        />
+                                    </button>
+                                </TableColumn>
 
-                                    <div
-                                        class="col-span-1 flex h-10 cursor-pointer items-center text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase select-none transition-colors hover:text-custom-shadow"
+                                <TableColumn class="p-0">
+                                    <button
+                                        type="button"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('type')"
                                     >
-                                        <div class="flex items-center gap-1.5">
-                                            Type
-                                            <component
-                                                :is="sortIcon('type')"
-                                                class="h-3.5 w-3.5"
-                                                :class="sortIconClass('type')"
-                                            />
-                                        </div>
-                                    </div>
+                                        Type
+                                        <component
+                                            :is="sortIcon('type')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('type')"
+                                        />
+                                    </button>
+                                </TableColumn>
 
-                                    <div
-                                        class="col-span-1 flex h-10 cursor-pointer items-center text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase select-none transition-colors hover:text-custom-shadow"
+                                <TableColumn class="p-0">
+                                    <button
+                                        type="button"
+                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
                                         @click="toggleSort('permissions_count')"
                                     >
-                                        <div class="flex items-center gap-1.5">
-                                            Permissions
-                                            <component
-                                                :is="
-                                                    sortIcon(
-                                                        'permissions_count',
-                                                    )
-                                                "
-                                                class="h-3.5 w-3.5"
-                                                :class="
-                                                    sortIconClass(
-                                                        'permissions_count',
-                                                    )
-                                                "
-                                            />
-                                        </div>
-                                    </div>
+                                        Permissions
+                                        <component
+                                            :is="sortIcon('permissions_count')"
+                                            class="h-3.5 w-3.5"
+                                            :class="sortIconClass('permissions_count')"
+                                        />
+                                    </button>
+                                </TableColumn>
+                            </TableHeader>
 
-                                    <div
-                                        class="col-span-1 flex h-10 items-center justify-end pr-3 text-right text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                    >
-                                        Actions
-                                    </div>
-                            </div>
-                        </div>
-
-                        <div v-if="!props.roles.data.length" class="flex flex-1 items-center justify-center p-6 text-center">
-                                        <div
-                                            class="flex flex-col items-center gap-2"
-                                        >
-                                            <div
-                                                class="flex h-14 w-14 items-center justify-center rounded-full bg-custom-bg dark:bg-custom-bg-dark"
-                                            >
-                                                <RiShieldCheckLine
-                                                    class="h-6 w-6 text-muted-foreground/40"
-                                                />
-                                            </div>
-                                            <div>
-                                                <p
-                                                    class="text-base font-semibold text-custom-shadow"
-                                                >
-                                                    No roles found
-                                                </p>
-                                                <p
-                                                    class="mt-1 text-sm text-custom-shadow/80"
-                                                >
-                                                    {{
-                                                        hasActiveFilters
-                                                            ? 'Try adjusting your filters or search.'
-                                                            : 'Try adjusting your search or create a new role.'
-                                                    }}
-                                                </p>
-                                            </div>
-                                        </div>
-                        </div>
-
-                        <div v-else class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-                                <div
+                            <TableContent>
+                                <TableRow
                                     v-for="(role, roleIndex) in props.roles.data"
                                     :key="role.id"
                                     :class="[
-                                        'group grid cursor-pointer grid-cols-4 items-center border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
                                         roleIndex === props.roles.data.length - 1 ? 'rounded-b-md border-b-0' : '',
                                         previewedRole?.id === role.id ? 'bg-custom-secondary/10' : '',
                                     ]"
-                                    @click="openPreview(role)"
+                                    @click.left="openPreview(role)"
+                                    @dblclick="router.visit(edit({ role: role.id }).url)"
                                 >
-                                    
-                                    <div
-                                        class="col-span-1 py-1.5 pl-3 text-sm font-semibold capitalize"
-                                    >
+                                    <TableData class="pl-3 text-sm font-semibold capitalize">
                                         {{ role.name }}
-                                    </div>
+                                    </TableData>
 
-                                    
-                                    <div class="col-span-1 py-1.5">
+                                    <TableData>
                                         <Badge :class="typeClass(role.type)">
                                             {{
                                                 role.type === 'internal'
@@ -469,10 +446,9 @@ function openDelete(role: Role) {
                                                     : 'External'
                                             }}
                                         </Badge>
-                                    </div>
+                                    </TableData>
 
-                                    
-                                    <div class="col-span-1 py-1.5" @click.stop>
+                                    <TableData @click.stop>
                                         <span
                                             v-if="!role.permissions?.length"
                                             class="text-sm text-muted-foreground"
@@ -531,68 +507,74 @@ function openDelete(role: Role) {
                                                 </div>
                                             </PopoverContent>
                                         </Popover>
-                                    </div>
+                                    </TableData>
 
-                                    
-                                    <div class="col-span-1 py-1.5 pr-3 text-right" @click.stop>
-                                        <DropdownMenu
-                                            v-if="canUpdate || canDelete"
+                                    <TableMoreButton
+                                        v-if="canUpdate || canDelete"
+                                        :open="openMenus[role.id] ?? false"
+                                        @update:open="(value) => (openMenus[role.id] = value)"
+                                    >
+                                        <DropdownMenuLabel>
+                                            {{ role.name }}
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuItem
+                                            v-if="canUpdate"
+                                            as-child
+                                            class="group"
                                         >
-                                            <DropdownMenuTrigger as-child>
-                                                <Button
-                                                    variant="table-more"
-                                                    size="icon-more"
-                                                >
-                                                    <RiMore2Line
-                                                        class="h-4 w-4"
-                                                    />
-                                                    
-                                                </Button>
-                                            </DropdownMenuTrigger>
+                                            <Link
+                                                :href="
+                                                    edit({
+                                                        role: role.id,
+                                                    }).url
+                                                "
+                                                class="flex items-center"
+                                            >
+                                                <RiEditLine
+                                                    class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
+                                                />
+                                                Edit
+                                            </Link>
+                                        </DropdownMenuItem>
 
-                                            <DropdownMenuContent align="end" class="">
-                                                <DropdownMenuLabel>
-                                                    {{ role.name }}
-                                                </DropdownMenuLabel>
-                                                <DropdownMenuItem
-                                                    v-if="canUpdate"
-                                                    as-child
-                                                    class="group"
-                                                >
-                                                    <Link
-                                                        :href="
-                                                            edit({
-                                                                role: role.id,
-                                                            }).url
-                                                        "
-                                                        class="flex items-center"
-                                                    >
-                                                        <RiEditLine
-                                                            class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
-                                                        />
-                                                        Edit
-                                                    </Link>
-                                                </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            v-if="canDelete"
+                                            class="group"
+                                            @click="openDelete(role)"
+                                        >
+                                            <RiArchive2Line
+                                                class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
+                                            />
+                                            <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">
+                                                Archive
+                                            </span>
+                                        </DropdownMenuItem>
+                                    </TableMoreButton>
+                                </TableRow>
+                            </TableContent>
+                        </Table>
 
-                                                <DropdownMenuItem
-                                                    v-if="canDelete"
-                                                    class="group"
-                                                    @click="openDelete(role)"
-                                                >
-                                                    <RiArchive2Line
-                                                        class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
-                                                    />
-                                                    <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">
-                                                        Archive
-                                                    </span>
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
+                        <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                            <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                                <img
+                                    :src="emptyRafikiUrl"
+                                    alt=""
+                                    class="w-1/3 object-contain opacity-90"
+                                    aria-hidden="true"
+                                />
+                                <div class="space-y-1">
+                                    <p class="text-custom-shadow text-base font-semibold">No roles found</p>
+                                    <p class="text-custom-shadow/80 text-sm">
+                                        {{
+                                            hasActiveFilters
+                                                ? 'Try adjusting your filters or search.'
+                                                : 'Try adjusting your search or create a new role.'
+                                        }}
+                                    </p>
                                 </div>
+                            </div>
                         </div>
-                    </div>
-                    </Card>
+                    </TableCard>
 
                     <InertiaPagination
                         v-if="roles.links?.length"
