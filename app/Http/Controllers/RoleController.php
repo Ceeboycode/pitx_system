@@ -95,7 +95,10 @@ class RoleController extends Controller
 
     public function edit(Role $role)
     {
-        Gate::authorize('update', $role);
+        // Page access only needs 'view' - Roles/Edit.vue's DetailsTab decides
+        // what's actually editable per field via can('roles.update'), and
+        // update() below still independently authorizes the real write.
+        Gate::authorize('view', $role);
 
         $role->load('permissions:id', 'creator:id,name', 'updater:id,name');
 

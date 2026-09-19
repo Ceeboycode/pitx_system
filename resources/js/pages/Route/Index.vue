@@ -51,7 +51,6 @@ import {
     create,
     edit,
     index,
-    show,
     trash,
 } from '@/actions/App/Http/Controllers/RouteController';
 import { type BreadcrumbItem } from '@/types';
@@ -511,7 +510,7 @@ function openToggleDialog(route: RouteRow) {
                                     ]"
                                     :status="routeItem.status === 'inactive' ? 'inactive' : 'default'"
                                     @click.left="openPreview(routeItem)"
-                                    @dblclick="router.visit(show(routeItem.id).url)"
+                                    @dblclick="router.visit(edit(routeItem.id).url)"
                                 >
                                     <TableData class="pl-3 font-semibold capitalize">
                                         <span class="truncate">{{ routeItem.route_name }}</span>
@@ -659,7 +658,7 @@ function openToggleDialog(route: RouteRow) {
                             {{ previewedRoute.status === 'active' ? 'Inactivate' : 'Activate' }}
                         </Button>
                         <Button as-child variant="float-primary" size="icon">
-                            <Link :href="show(previewedRoute.id).url">
+                            <Link :href="edit(previewedRoute.id).url">
                                 <RiExternalLinkLine class="h-4 w-4" />
                             </Link>
                         </Button>

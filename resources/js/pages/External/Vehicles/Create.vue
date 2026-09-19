@@ -13,14 +13,14 @@ import { Button } from '@/components/ui/button'
 
 import CompanyVehicleController from '@/actions/App/Http/Controllers/CompanyVehicleController'
 
+import { ArrowUp } from 'lucide-vue-next'
 import {
-    ArrowLeft,
-    ArrowUp,
-    Building2,
-    FileText,
-    MapPin,
-    Truck,
-} from 'lucide-vue-next'
+    RiArrowLeftLine,
+    RiBuilding2Line,
+    RiBusLine,
+    RiFileTextLine,
+    RiMapPin2Line,
+} from 'vue-remix-icons'
 
 type Company = {
     id: number
@@ -178,7 +178,7 @@ function submit() {
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
-                            <Building2 class="h-3.5 w-3.5" />
+                            <RiBuilding2Line class="h-3.5 w-3.5 shrink-0" />
                             {{ company.company_code ?? company.company_name }}
                             <span class="text-slate-300">·</span>
                             <span>Vehicles</span>
@@ -187,7 +187,7 @@ function submit() {
                         </div>
                         <div class="flex items-center gap-2.5">
                             <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700">
-                                <Truck class="h-4 w-4 text-white" />
+                                <RiBusLine class="h-4 w-4 shrink-0 text-white" />
                             </div>
                             <h1 class="text-2xl font-bold tracking-tight text-slate-900">Register Vehicle</h1>
                         </div>
@@ -202,7 +202,7 @@ function submit() {
                         class="shrink-0 self-start rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                     >
                         <Link :href="CompanyVehicleController.index().url">
-                            <ArrowLeft class="mr-2 h-4 w-4" />
+                            <RiArrowLeftLine class="mr-2 h-4 w-4 shrink-0" />
                             Back to Vehicles
                         </Link>
                     </Button>
@@ -248,7 +248,7 @@ function submit() {
                                 <div class="border-b border-slate-100 px-6 py-4">
                                     <div class="flex items-center gap-2">
                                         <div class="flex h-6 w-6 items-center justify-center rounded-md bg-sky-100">
-                                            <MapPin class="h-3.5 w-3.5 text-sky-600" />
+                                            <RiMapPin2Line class="h-3.5 w-3.5 shrink-0 text-sky-600" />
                                         </div>
                                         <h2 class="text-base font-semibold text-slate-800">Route Assignment</h2>
                                     </div>
@@ -269,7 +269,7 @@ function submit() {
                                 <div class="border-b border-slate-100 px-6 py-4">
                                     <div class="flex items-center gap-2">
                                         <div class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-100">
-                                            <Truck class="h-3.5 w-3.5 text-blue-700" />
+                                            <RiBusLine class="h-3.5 w-3.5 shrink-0 text-blue-700" />
                                         </div>
                                         <h2 class="text-base font-semibold text-slate-800">Vehicle Information</h2>
                                     </div>
@@ -289,7 +289,7 @@ function submit() {
                                         <div>
                                             <div class="flex items-center gap-2">
                                                 <div class="flex h-6 w-6 items-center justify-center rounded-md bg-violet-100">
-                                                    <FileText class="h-3.5 w-3.5 text-violet-600" />
+                                                    <RiFileTextLine class="h-3.5 w-3.5 shrink-0 text-violet-600" />
                                                 </div>
                                                 <h2 class="text-base font-semibold text-slate-800">Required Documents</h2>
                                             </div>
@@ -309,7 +309,7 @@ function submit() {
                                                 class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                                                 @click="scrollToSummary"
                                             >
-                                                <ArrowUp class="mr-2 h-4 w-4" />
+                                                <ArrowUp class="mr-2 h-4 w-4 shrink-0" />
                                                 View Summary
                                             </Button>
                                         </div>
@@ -331,7 +331,7 @@ function submit() {
                                             class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                                             @click="scrollToSummary"
                                         >
-                                            <ArrowUp class="mr-2 h-4 w-4" />
+                                            <ArrowUp class="mr-2 h-4 w-4 shrink-0" />
                                             Go to Submission Summary
                                         </Button>
                                     </div>
@@ -367,7 +367,7 @@ function submit() {
                                 <div class="divide-y divide-slate-100">
                                     <div class="flex gap-3 px-5 py-4">
                                         <div class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-sky-100">
-                                            <MapPin class="h-3.5 w-3.5 text-sky-600" />
+                                            <RiMapPin2Line class="h-3.5 w-3.5 shrink-0 text-sky-600" />
                                         </div>
                                         <div>
                                             <p class="text-xs font-semibold uppercase tracking-widest text-sky-700">Route Assignment</p>
@@ -379,7 +379,7 @@ function submit() {
 
                                     <div class="flex gap-3 px-5 py-4">
                                         <div class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-violet-100">
-                                            <FileText class="h-3.5 w-3.5 text-violet-600" />
+                                            <RiFileTextLine class="h-3.5 w-3.5 shrink-0 text-violet-600" />
                                         </div>
                                         <div>
                                             <p class="text-xs font-semibold uppercase tracking-widest text-violet-700">Required Documents</p>
@@ -391,7 +391,7 @@ function submit() {
 
                                     <div class="flex gap-3 px-5 py-4">
                                         <div class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-blue-100">
-                                            <Truck class="h-3.5 w-3.5 text-blue-700" />
+                                            <RiBusLine class="h-3.5 w-3.5 shrink-0 text-blue-700" />
                                         </div>
                                         <div>
                                             <p class="text-xs font-semibold uppercase tracking-widest text-blue-700">Vehicle Details</p>

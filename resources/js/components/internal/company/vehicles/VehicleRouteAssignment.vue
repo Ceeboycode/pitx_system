@@ -26,14 +26,14 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import {
-    Check,
-    ChevronsUpDown,
-    ListOrdered,
-    MapPinned,
-    Route as RouteIcon,
-    Search,
-    X,
-} from 'lucide-vue-next'
+    RiCheckLine,
+    RiCloseLine,
+    RiExpandUpDownLine,
+    RiListUnordered,
+    RiMapPin2Line,
+    RiRouteLine,
+    RiSearchLine,
+} from 'vue-remix-icons'
 
 type GateItem = {
     id: number
@@ -408,8 +408,8 @@ onBeforeUnmount(() => destroyMap())
 
                 <div class="relative">
                     <div class="relative">
-                        <Search
-                            class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                        <RiSearchLine
+                            class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 shrink-0 -translate-y-1/2 text-muted-foreground"
                         />
 
                         <Input
@@ -431,7 +431,7 @@ onBeforeUnmount(() => destroyMap())
                             class="absolute right-8 top-1/2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
                             @mousedown.prevent="clearRouteSearch"
                         >
-                            <X class="h-4 w-4" />
+                            <RiCloseLine class="h-4 w-4 shrink-0" />
                         </button>
 
                         <button
@@ -440,11 +440,11 @@ onBeforeUnmount(() => destroyMap())
                             class="absolute right-8 top-1/2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
                             @mousedown.prevent="clearSelectedRoute"
                         >
-                            <X class="h-4 w-4" />
+                            <RiCloseLine class="h-4 w-4 shrink-0" />
                         </button>
 
-                        <ChevronsUpDown
-                            class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                        <RiExpandUpDownLine
+                            class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 shrink-0 -translate-y-1/2 text-muted-foreground"
                         />
                     </div>
 
@@ -460,7 +460,7 @@ onBeforeUnmount(() => destroyMap())
                                 class="flex w-full items-start gap-2 rounded-sm px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground"
                                 @mousedown.prevent="selectRoute(route)"
                             >
-                                <Check
+                                <RiCheckLine
                                     class="mt-0.5 h-4 w-4 shrink-0"
                                     :class="
                                         String(modelValue) === String(route.id)
@@ -516,7 +516,7 @@ onBeforeUnmount(() => destroyMap())
                         <div
                             class="rounded-md border p-2 text-muted-foreground"
                         >
-                            <RouteIcon class="h-4 w-4" />
+                            <RiRouteLine class="h-4 w-4 shrink-0" />
                         </div>
 
                         <div class="min-w-0">
@@ -549,7 +549,7 @@ onBeforeUnmount(() => destroyMap())
                                 variant="outline"
                                 size="sm"
                             >
-                                <MapPinned class="mr-2 h-4 w-4" />
+                                <RiMapPin2Line class="mr-2 h-4 w-4 shrink-0" />
                                 Map
                             </Button>
                         </DialogTrigger>
@@ -589,7 +589,7 @@ onBeforeUnmount(() => destroyMap())
                                 variant="outline"
                                 size="sm"
                             >
-                                <ListOrdered class="mr-2 h-4 w-4" />
+                                <RiListUnordered class="mr-2 h-4 w-4 shrink-0" />
                                 Stops
                             </Button>
                         </DialogTrigger>

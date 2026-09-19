@@ -2,6 +2,8 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { useAppearance } from '@/composables/useAppearance';
+import { can } from '@/lib/can';
+import EditableField from '@/components/ui/_field/EditableField.vue';
 
 import {
   Card,
@@ -135,6 +137,11 @@ const props = defineProps<{
 
 mapboxgl.accessToken = props.mapConfig.mapboxToken;
 
+// Drives every EditableField below, same convention as Gates/edit/DetailsTab.vue:
+// view-only users get the page (server authorizes on 'view'), but only
+// 'routes.update' holders see inputs, map-editing affordances, and Save/Cancel.
+const canEdit = can('routes.update');
+
 const existingIntermediateStops: StopItem[] = props.route.stops
     .filter(
         (stop) =>
@@ -177,10 +184,6 @@ let mapResizeObserver: ResizeObserver | null = null;
 
 const hasDestination = computed(
     () => form.destination_lat !== null && form.destination_lng !== null,
-);
-
-const routeReady = computed(
-    () => hasDestination.value && !!form.route_geometry,
 );
 
 const { copy } = useClipboard({ legacy: true });
@@ -331,7 +334,7 @@ function renderStopMarkers() {
 
         const marker = new mapboxgl.Marker({
             color: markerColor,
-            draggable: true,
+            draggable: canEdit,
         })
             .setLngLat([stop.longitude, stop.latitude])
             .setPopup(
@@ -545,6 +548,7 @@ function initMap() {
             });
 
             map.value!.on('click', `alt-route-hit-${i}`, (e) => {
+                if (!canEdit) return;
                 e.preventDefault();
                 ignoreNextMapClick.value = true;
                 selectAlternativeRouteByLayer(i);
@@ -593,6 +597,8 @@ function initMap() {
         });
 
         map.value!.on('click', 'route-line-layer-hit', async (e) => {
+            if (!canEdit) return;
+
             ignoreNextMapClick.value = true;
 
             if (!hasDestination.value) return;
@@ -601,6 +607,8 @@ function initMap() {
         });
 
         map.value!.on('click', async (e) => {
+            if (!canEdit) return;
+
             if (ignoreNextMapClick.value) {
                 ignoreNextMapClick.value = false;
                 return;
@@ -618,7 +626,7 @@ function initMap() {
         if (form.destination_lat !== null && form.destination_lng !== null) {
             destinationMarker.value = new mapboxgl.Marker({
                 color: '#dc2626',
-                draggable: true,
+                draggable: canEdit,
             })
                 .setLngLat([form.destination_lng, form.destination_lat])
                 .setPopup(new mapboxgl.Popup().setText(form.destination_name))
@@ -691,29 +699,31 @@ function renderWaypointMarkers() {
 
     const marker = new mapboxgl.Marker({
       element: el,
-      draggable: true,
+      draggable: canEdit,
     })
       .setLngLat([wp.lng, wp.lat])
       .addTo(map.value!);
 
-    marker.on('drag', () => {
-      const ll = marker.getLngLat();
-      waypoints.value[index] = { lng: ll.lng, lat: ll.lat };
-    });
+    if (canEdit) {
+      marker.on('drag', () => {
+        const ll = marker.getLngLat();
+        waypoints.value[index] = { lng: ll.lng, lat: ll.lat };
+      });
 
-    marker.on('dragend', async () => {
-      const ll = marker.getLngLat();
-      waypoints.value[index] = { lng: ll.lng, lat: ll.lat };
-      await redrawRoute();
-    });
+      marker.on('dragend', async () => {
+        const ll = marker.getLngLat();
+        waypoints.value[index] = { lng: ll.lng, lat: ll.lat };
+        await redrawRoute();
+      });
 
-    el.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      waypoints.value.splice(index, 1);
-      marker.remove();
-      renderWaypointMarkers();
-      redrawRoute();
-    });
+      el.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        waypoints.value.splice(index, 1);
+        marker.remove();
+        renderWaypointMarkers();
+        redrawRoute();
+      });
+    }
 
     waypointMarkers.value.push(marker);
   });
@@ -871,7 +881,7 @@ async function setDestinationFromSuggestion(item: SearchSuggestion) {
 
   destinationMarker.value = new mapboxgl.Marker({
     color: '#dc2626',
-    draggable: true,
+    draggable: canEdit,
   })
     .setLngLat([item.longitude, item.latitude])
     .setPopup(new mapboxgl.Popup().setText(item.name))
@@ -1293,9 +1303,9 @@ onBeforeUnmount(() => {
     <CardHeader class="flex flex-row items-start justify-between gap-4">
       <div class="flex flex-col">
         <CardTitle>Route</CardTitle>
-        <CardDescription>Manage route details.</CardDescription>
+        <CardDescription>{{ canEdit ? 'Manage route details.' : 'View route details.' }}</CardDescription>
       </div>
-      <div class="flex flex-row items-center gap-2">
+      <div v-if="canEdit" class="flex flex-row items-center gap-2">
         <Button
           :variant="!form.isDirty || form.processing ? 'disabled' : 'float'"
           :disabled="!form.isDirty || form.processing"
@@ -1313,14 +1323,6 @@ onBeforeUnmount(() => {
           {{ form.processing ? 'Saving...' : 'Save Changes' }}
         </Button>
       </div>
-      <!-- <Button
-        :variant="form.processing || !routeReady ? 'disabled' : 'float-primary'"
-        size="icon-text"
-        :disabled="form.processing || !routeReady"
-        @click="submit"
-      >
-        {{ form.processing ? 'Saving...' : 'Save Changes' }}
-      </Button> -->
     </CardHeader>
     <CardContent class="flex flex-row gap-4">
       <div class="flex-1">
@@ -1340,6 +1342,7 @@ onBeforeUnmount(() => {
                     >Destination</CardTitle
                   >
                   <CardDescription
+                    v-if="canEdit"
                     class="text-custom-shadow/80"
                   >
                     {{
@@ -1349,7 +1352,7 @@ onBeforeUnmount(() => {
                   </CardDescription>
                 </CardHeader>
 
-                <CardContent class="relative">
+                <CardContent v-if="canEdit" class="relative">
                   <SearchInput
                     v-model="destinationQuery"
                     placeholder="Search destination..."
@@ -1385,7 +1388,7 @@ onBeforeUnmount(() => {
 
                   <div
                     v-if="
-                      destinationSuggestions.length
+                      canEdit && destinationSuggestions.length
                     "
                     class="mx-6 overflow-hidden"
                   >
@@ -1424,6 +1427,7 @@ onBeforeUnmount(() => {
                 <!-- <p v-else class="text-xs text-custom-shadow/80 pt-2 text-center">Click anywhere on the map to set destination.</p> -->
 
                 <InputError
+                  v-if="canEdit"
                   :message="
                     form.errors.destination_name
                   "
@@ -1440,17 +1444,22 @@ onBeforeUnmount(() => {
                 <RiPhoneLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
                 <Label for="route_name_sidebar">Name</Label>
               </div>
-              <span class="flex flex-row items-center">
-                <Input
-                    id="route_name_sidebar"
-                    :model-value="form.route_name"
-                    placeholder="Enter route name"
-                    variant="inline-edit"
-                    @update:model-value="onRouteNameInput"
-                />
-                <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
-              </span>
-              <InputError :message="form.errors.route_name" />
+              <EditableField :editable="canEdit">
+                <template #edit>
+                  <span class="flex min-w-0 flex-1 flex-row items-center">
+                    <Input
+                        id="route_name_sidebar"
+                        :model-value="form.route_name"
+                        placeholder="Enter route name"
+                        variant="inline-edit"
+                        @update:model-value="onRouteNameInput"
+                    />
+                    <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
+                  </span>
+                </template>
+                <span class="min-w-0 flex-1 truncate text-right text-sm font-medium">{{ route.route_name }}</span>
+              </EditableField>
+              <InputError v-if="canEdit" :message="form.errors.route_name" />
             </div>
 
             <div class="flex flex-row justify-between items-center gap-2 overflow-hidden group">
@@ -1458,28 +1467,33 @@ onBeforeUnmount(() => {
                 <RiPhoneLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
                 <Label for="gate_id_sidebar">Gate</Label>
               </div>
-              <span class="flex flex-row items-center">
-                <Select v-model="form.gate_id">
-                  <SelectTrigger
-                    id="gate_id_sidebar"
-                    variant="inline-edit"
-                  >
-                    <SelectValue
-                      placeholder="Select a gate..."
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem
-                      v-for="gate in gates"
-                      :key="gate.id"
-                      :value="String(gate.id)"
-                    >
-                      {{ gate.gate_name }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </span>
-              <InputError :message="form.errors.gate_id" />
+              <EditableField :editable="canEdit">
+                <template #edit>
+                  <span class="flex flex-row items-center">
+                    <Select v-model="form.gate_id">
+                      <SelectTrigger
+                        id="gate_id_sidebar"
+                        variant="inline-edit"
+                      >
+                        <SelectValue
+                          placeholder="Select a gate..."
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem
+                          v-for="gate in gates"
+                          :key="gate.id"
+                          :value="String(gate.id)"
+                        >
+                          {{ gate.gate_name }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </span>
+                </template>
+                <span class="min-w-0 flex-1 truncate text-right text-sm font-medium">{{ route.gate?.gate_name ?? '—' }}</span>
+              </EditableField>
+              <InputError v-if="canEdit" :message="form.errors.gate_id" />
             </div>
 
             <div class="flex flex-row justify-between items-center">
@@ -1586,9 +1600,10 @@ onBeforeUnmount(() => {
               <div
                 v-for="(stop, index) in form.stops"
                 :key="`${stop.stop_name}-${stop.latitude}-${index}`"
-                :draggable="true"
+                :draggable="canEdit"
                 :class="[
-                  'flex cursor-grab items-start gap-3 rounded-lg p-2 transition-colors select-none',
+                  'flex items-start gap-3 rounded-lg p-2 transition-colors select-none',
+                  canEdit ? 'cursor-grab' : '',
                   dragOverIndex === index
                     ? 'bg-blue-50 ring-1 ring-blue-300'
                     : 'hover:bg-muted/40',
@@ -1596,10 +1611,10 @@ onBeforeUnmount(() => {
                     ? 'opacity-50'
                     : '',
                 ]"
-                @dragstart="onDragStart(index)"
-                @dragover="onDragOver($event, index)"
-                @drop="onDrop(index)"
-                @dragend="onDragEnd"
+                @dragstart="canEdit && onDragStart(index)"
+                @dragover="canEdit && onDragOver($event, index)"
+                @drop="canEdit && onDrop(index)"
+                @dragend="canEdit && onDragEnd()"
               >
                 <div
                   :class="[
@@ -1631,15 +1646,16 @@ onBeforeUnmount(() => {
                   </p>
                 </div>
                 <div
+                  v-if="canEdit"
                   class="flex shrink-0 items-center gap-1"
                 >
-                  <RiDraggable class="h-3.5 w-3.5 text-muted-foreground/50" />
+                  <RiDraggable class="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
                   <button
                     type="button"
                     class="rounded p-0.5 text-muted-foreground/50 hover:text-destructive"
                     @click="removeStop(index)"
                   >
-                    <RiCloseLine class="h-3.5 w-3.5" />
+                    <RiCloseLine class="h-3.5 w-3.5 shrink-0" />
                   </button>
                 </div>
               </div>
@@ -1661,6 +1677,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
+        <template v-if="canEdit">
         <CardSeparator title="Alternative Routes" />
 
         <div class="mt-2 space-y-2">
@@ -1725,7 +1742,7 @@ onBeforeUnmount(() => {
         <div class="mt-2 space-y-2">
           <div class="relative">
             <RiSearchLine
-              class="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+              class="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 shrink-0 -translate-y-1/2 text-muted-foreground"
             />
             <Input
               v-model="stopQuery"
@@ -1742,7 +1759,7 @@ onBeforeUnmount(() => {
                 stopSuggestions = [];
               "
             >
-              <RiCloseLine class="h-3.5 w-3.5" />
+              <RiCloseLine class="h-3.5 w-3.5 shrink-0" />
             </button>
           </div>
 
@@ -1808,7 +1825,7 @@ onBeforeUnmount(() => {
               @click="autoGenerateStops"
             >
               <RiAiGenerate
-                class="text-custom-bg-light dark:text-custom-shadow"
+                class="shrink-0 text-custom-bg-light dark:text-custom-shadow"
               />
               {{ loadingAutoGenerate ? 'Generating...' : 'Generate' }}
             </Button>
@@ -1817,6 +1834,7 @@ onBeforeUnmount(() => {
             This replaces all current stops.
           </p>
         </div>
+        </template>
       </div>
     </CardContent>
   </Card>

@@ -13,7 +13,7 @@ import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
 import { store } from '@/routes/companies'
 import { useForm } from '@inertiajs/vue3'
-import { Save } from 'lucide-vue-next'
+import { RiSaveLine } from 'vue-remix-icons'
 import { toast } from 'vue-sonner'
 
 const open = defineModel<boolean>('open')
@@ -40,7 +40,7 @@ function submit() {
     <Dialog v-model:open="open">
         <DialogContent class="sm:max-w-md">
             <DialogHeader>
-                <DialogTitle>Create Company</DialogTitle>
+                <DialogTitle>Add New Company</DialogTitle>
                 <DialogDescription>
                     Add a new company to your system.
                 </DialogDescription>
@@ -67,7 +67,7 @@ function submit() {
                     </Button>
 
                     <Button type="submit" :disabled="form.processing">
-                        <Save />
+                        <RiSaveLine class="shrink-0" />
                         Save
                     </Button>
                 </DialogFooter>

@@ -18,16 +18,6 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 
-import {
-    ArrowLeft,
-    Building2,
-    Phone,
-    UserCog,
-    UserSquare2,
-    Users,
-} from 'lucide-vue-next';
-
-
 
 type Company = {
     id: number;
@@ -191,7 +181,6 @@ function submit() {
                         <div
                             class="flex items-center gap-2 text-xs font-semibold tracking-widest text-slate-400 uppercase"
                         >
-                            <Building2 class="h-3.5 w-3.5" />
                             {{ company.company_code ?? company.company_name }}
                             <span class="text-slate-300">·</span>
                             <span>Employees</span>
@@ -201,9 +190,7 @@ function submit() {
                         <div class="flex items-center gap-2.5">
                             <div
                                 class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700"
-                            >
-                                <UserCog class="h-4 w-4 text-white" />
-                            </div>
+                            ></div>
                             <h1
                                 class="text-2xl font-bold tracking-tight text-slate-900"
                             >
@@ -221,7 +208,6 @@ function submit() {
                         class="shrink-0 self-start rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                     >
                         <Link href="/employee-users">
-                            <ArrowLeft class="mr-2 h-4 w-4" />
                             Back to Employees
                         </Link>
                     </Button>
@@ -322,9 +308,6 @@ function submit() {
                                             Phone Number
                                         </Label>
                                         <div class="relative">
-                                            <Phone
-                                                class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
-                                            />
                                             <Input
                                                 id="phone_number"
                                                 v-model="form.phone_number"
@@ -437,9 +420,6 @@ function submit() {
                                 <h3
                                     class="flex items-center gap-2 text-sm font-semibold text-slate-800"
                                 >
-                                    <UserSquare2
-                                        class="h-4 w-4 text-blue-700"
-                                    />
                                     Account Summary
                                 </h3>
                             </div>
@@ -512,7 +492,6 @@ function submit() {
                                             roleColor(currentRoleName).badge,
                                         ]"
                                     >
-                                        <Users class="h-3 w-3" />
                                         {{ humanize(currentRoleName) }}
                                     </span>
                                     <span
@@ -532,7 +511,6 @@ function submit() {
                                 <h3
                                     class="flex items-center gap-2 text-sm font-semibold text-slate-800"
                                 >
-                                    <Building2 class="h-4 w-4 text-blue-700" />
                                     Company
                                 </h3>
                             </div>
@@ -595,7 +573,6 @@ function submit() {
                                 <h3
                                     class="flex items-center gap-2 text-sm font-semibold text-slate-800"
                                 >
-                                    <Users class="h-4 w-4 text-blue-700" />
                                     Available Roles
                                 </h3>
                             </div>
@@ -617,12 +594,7 @@ function submit() {
                                     <div
                                         class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
                                         :class="roleColor(role.name).icon"
-                                    >
-                                        <Users
-                                            class="h-3.5 w-3.5"
-                                            :class="roleColor(role.name).text"
-                                        />
-                                    </div>
+                                    ></div>
                                     <p
                                         class="flex-1 text-xs font-semibold"
                                         :class="roleColor(role.name).text"

@@ -216,7 +216,7 @@ function openReject(docId: number) {
                         class="group cursor-pointer"
                         @click="openBulkConfirm()"
                     >
-                        <RiDownloadLine class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                        <RiDownloadLine class="shrink-0 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
                         <span>Download all verified</span>
                     </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -378,7 +378,7 @@ function openReject(docId: number) {
                                                     class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
                                                 >
                                                     <RiMessage2Fill
-                                                        class="h-4 w-4"
+                                                        class="h-4 w-4 shrink-0"
                                                     />
                                                     View Remarks
                                                 </Button>
@@ -606,7 +606,7 @@ function openReject(docId: number) {
                                             class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
                                         >
                                             <RiMessage2Fill
-                                                class="h-4 w-4"
+                                                class="h-4 w-4 shrink-0"
                                             />
                                             View Remarks
                                         </Button>
@@ -659,7 +659,7 @@ function openReject(docId: number) {
                                     "
                                 >
                                     <RiDownloadLine
-                                        class="h-4 w-4"
+                                        class="h-4 w-4 shrink-0"
                                     />Download
                                 </DropdownMenuItem>
                             </DropdownMenuContent>

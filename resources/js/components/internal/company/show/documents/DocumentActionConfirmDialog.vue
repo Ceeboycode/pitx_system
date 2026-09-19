@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
 
+import { Button } from '@/components/ui/button';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 
 import {
     destroy as destroyDoc,
@@ -49,19 +49,35 @@ function confirmTitle() {
     }
 }
 
-function confirmDescription() {
+function confirmDocName() {
     const doc = props.doc;
     if (!doc) return '';
-    const name = doc.original_name ?? humanize(doc.doc_type);
+    return doc.original_name ?? humanize(doc.doc_type);
+}
+
+function confirmDescriptionPrefix() {
     switch (props.action) {
         case 'verify':
-            return `This will mark "${name}" as verified.`;
+            return 'This will mark';
         case 'unverify':
-            return `This will set "${name}" back to pending.`;
+            return 'This will set';
         case 'delete':
-            return `This will permanently remove "${name}" and delete the file.`;
+            return 'This will permanently remove';
         case 'download':
-            return `This will open "${name}" in a new tab.`;
+            return 'This will open';
+    }
+}
+
+function confirmDescriptionSuffix() {
+    switch (props.action) {
+        case 'verify':
+            return 'as verified.';
+        case 'unverify':
+            return 'back to pending.';
+        case 'delete':
+            return 'and delete the file.';
+        case 'download':
+            return 'in a new tab.';
     }
 }
 
@@ -104,31 +120,35 @@ function runConfirmedAction() {
 </script>
 
 <template>
-    <AlertDialog v-model:open="open">
-        <AlertDialogContent class="rounded-lg p-4">
-            <AlertDialogHeader>
-                <AlertDialogTitle>{{ confirmTitle() }}</AlertDialogTitle>
-                <AlertDialogDescription>{{
-                    confirmDescription()
-                }}</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel
-                    variant="outline"
-                    class="rounded-lg cursor-pointer hover:bg-slate-100"
+    <Dialog v-model:open="open">
+        <DialogContent class="max-w-md rounded-lg p-4" :show-close-button="false">
+            <DialogHeader class="px-0">
+                <DialogTitle>{{ confirmTitle() }}</DialogTitle>
+                <DialogDescription>
+                    {{ confirmDescriptionPrefix() }}
+                    <span class="font-semibold text-custom-accent-3">{{
+                        confirmDocName()
+                    }}</span>
+                    {{ confirmDescriptionSuffix() }}
+                </DialogDescription>
+            </DialogHeader>
+            <Separator />
+            <DialogFooter class="pt-3 gap-2 sm:justify-end">
+                <Button
+                    variant="ghost-outline"
                     :disabled="actionForm.processing"
                     @click="open = false"
-                    >Cancel</AlertDialogCancel
                 >
-                <AlertDialogAction
-                    variant="outline"
-                    class="rounded-lg border-0 bg-primary text-white cursor-pointer"
+                    Cancel
+                </Button>
+                <Button
+                    variant="float-primary"
                     :disabled="actionForm.processing"
                     @click="runConfirmedAction"
                 >
-                    {{ actionForm.processing ? 'Processing...' : 'Continue' }}
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
+                    {{ actionForm.processing ? 'Processing...' : 'Confirm' }}
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
 </template>

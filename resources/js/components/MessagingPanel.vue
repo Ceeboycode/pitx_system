@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { usePage } from '@inertiajs/vue3'
-import { ArrowLeft, MessageSquare, Plus, Send } from 'lucide-vue-next'
+import {
+    RiAddLine,
+    RiArrowLeftLine,
+    RiMessage2Line,
+    RiSendPlane2Line,
+} from 'vue-remix-icons'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -189,7 +194,7 @@ function goBack() {
                 size="icon"
                 class="relative h-9 w-9 shrink-0 rounded-full"
             >
-                <MessageSquare class="h-4 w-4" />
+                <RiMessage2Line class="h-4 w-4 shrink-0" />
                 
             </Button>
         </PopoverTrigger>
@@ -205,7 +210,7 @@ function goBack() {
                         class="h-8 gap-1.5 rounded-full px-2 text-xs text-custom-shadow hover:bg-custom-secondary/20"
                         @click="view = 'new'; createError = ''"
                     >
-                        <Plus class="h-3.5 w-3.5" />
+                        <RiAddLine class="h-3.5 w-3.5 shrink-0" />
                         New
                     </Button>
                 </div>
@@ -270,7 +275,7 @@ function goBack() {
                         class="h-7 w-7 shrink-0"
                         @click="goBack"
                     >
-                        <ArrowLeft class="h-4 w-4" />
+                        <RiArrowLeftLine class="h-4 w-4 shrink-0" />
                     </Button>
                     <p class="min-w-0 flex-1 truncate text-sm font-semibold">
                         {{ selectedThread.subject }}
@@ -337,7 +342,7 @@ function goBack() {
                             :disabled="isSending || !replyBody.trim()"
                             @click="sendReply"
                         >
-                            <Send class="h-4 w-4" />
+                            <RiSendPlane2Line class="h-4 w-4 shrink-0" />
                         </Button>
                     </div>
                 </div>
@@ -352,7 +357,7 @@ function goBack() {
                         class="h-7 w-7 shrink-0"
                         @click="view = 'list'"
                     >
-                        <ArrowLeft class="h-4 w-4" />
+                        <RiArrowLeftLine class="h-4 w-4 shrink-0" />
                     </Button>
                     <p class="text-sm font-semibold">New Conversation</p>
                 </div>

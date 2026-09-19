@@ -8,21 +8,13 @@ import VehicleBasicInfoForm from '@/components/internal/company/vehicles/Vehicle
 import VehicleRouteAssignment from '@/components/internal/company/vehicles/VehicleRouteAssignment.vue';
 import VehicleSummaryCard from '@/components/internal/company/vehicles/VehicleSummaryCard.vue';
 
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
@@ -35,24 +27,22 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
+import { CheckCircle2 } from 'lucide-vue-next';
 import {
-    ArrowLeft,
-    Bus,
-    CalendarDays,
-    CarFront,
-    CheckCircle2,
-    Clock3,
-    Download,
-    Eye,
-    FileImage,
-    FileText,
-    MapPinned,
-    MoreHorizontal,
-    Pencil,
-    Power,
-    ShieldCheck,
-    UserCircle2,
-} from 'lucide-vue-next';
+    RiArrowLeftLine,
+    RiBusLine,
+    RiCalendarLine,
+    RiDownloadLine,
+    RiEditLine,
+    RiEyeLine,
+    RiFileTextLine,
+    RiMapPin2Line,
+    RiMore2Line,
+    RiShieldCheckLine,
+    RiShutDownLine,
+    RiTimeLine,
+    RiUserLine,
+} from 'vue-remix-icons';
 
 import CompanyVehicleController from '@/actions/App/Http/Controllers/CompanyVehicleController';
 
@@ -522,7 +512,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                             class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                         >
                             <Link :href="CompanyVehicleController.index().url">
-                                <ArrowLeft class="mr-2 h-4 w-4" />
+                                <RiArrowLeftLine class="mr-2 h-4 w-4 shrink-0" />
                                 Back
                             </Link>
                         </Button>
@@ -533,7 +523,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                 <Button
                                     class="gap-2 rounded-lg border-0 bg-blue-700 text-sm font-semibold text-white shadow-sm hover:bg-blue-800"
                                 >
-                                    <MoreHorizontal class="h-4 w-4" />
+                                    <RiMore2Line class="h-4 w-4 shrink-0" />
                                     Actions
                                 </Button>
                             </DropdownMenuTrigger>
@@ -565,7 +555,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                             ).url
                                         "
                                     >
-                                        <Pencil class="mr-2 h-4 w-4" />
+                                        <RiEditLine class="mr-2 h-4 w-4 shrink-0" />
                                         Resubmit Invalid/Expired Documents
                                     </Link>
                                 </DropdownMenuItem>
@@ -576,7 +566,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                     disabled
                                     class="rounded-lg text-slate-300"
                                 >
-                                    <Pencil class="mr-2 h-4 w-4" />
+                                    <RiEditLine class="mr-2 h-4 w-4 shrink-0" />
                                     Resubmit Invalid/Expired Documents
                                 </DropdownMenuItem>
 
@@ -594,7 +584,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                     ]"
                                     @click="statusDialog.open = true"
                                 >
-                                    <Power class="mr-2 h-4 w-4" />
+                                    <RiShutDownLine class="mr-2 h-4 w-4 shrink-0" />
                                     {{ toggleLabel(vehicle.status) }}
                                 </DropdownMenuItem>
 
@@ -604,7 +594,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                     disabled
                                     class="rounded-lg text-slate-300"
                                 >
-                                    <Power class="mr-2 h-4 w-4" />
+                                    <RiShutDownLine class="mr-2 h-4 w-4 shrink-0" />
                                     {{ toggleLabel(vehicle.status) }}
                                 </DropdownMenuItem>
 
@@ -628,7 +618,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         <div
                             class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700"
                         >
-                            <CarFront class="h-4 w-4 text-white" />
+                            <RiBusLine class="h-4 w-4 shrink-0 text-white" />
                         </div>
                         <p
                             class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
@@ -648,7 +638,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         <div
                             class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600"
                         >
-                            <MapPinned class="h-4 w-4 text-white" />
+                            <RiMapPin2Line class="h-4 w-4 shrink-0 text-white" />
                         </div>
                         <p
                             class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
@@ -670,7 +660,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         <div
                             class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600"
                         >
-                            <FileText class="h-4 w-4 text-white" />
+                            <RiFileTextLine class="h-4 w-4 shrink-0 text-white" />
                         </div>
                         <p
                             class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
@@ -693,7 +683,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         <div
                             class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-slate-600"
                         >
-                            <CalendarDays class="h-4 w-4 text-white" />
+                            <RiCalendarLine class="h-4 w-4 shrink-0 text-white" />
                         </div>
                         <p
                             class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
@@ -937,8 +927,8 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                                     openPreview(document.item)
                                                 "
                                             >
-                                                <Eye
-                                                    class="mr-1.5 h-3.5 w-3.5"
+                                                <RiEyeLine
+                                                    class="mr-1.5 h-3.5 w-3.5 shrink-0"
                                                 />
                                                 Preview
                                             </Button>
@@ -958,8 +948,8 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                                     "
                                                     download
                                                 >
-                                                    <Download
-                                                        class="mr-1.5 h-3.5 w-3.5"
+                                                    <RiDownloadLine
+                                                        class="mr-1.5 h-3.5 w-3.5 shrink-0"
                                                     />
                                                     Download
                                                 </a>
@@ -1123,8 +1113,8 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                         <div
                                             class="flex h-7 w-7 items-center justify-center rounded-md bg-amber-100"
                                         >
-                                            <Clock3
-                                                class="h-3.5 w-3.5 text-amber-700"
+                                            <RiTimeLine
+                                                class="h-3.5 w-3.5 shrink-0 text-amber-700"
                                             />
                                         </div>
                                         <p
@@ -1146,8 +1136,8 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                         <div
                                             class="flex h-7 w-7 items-center justify-center rounded-md bg-blue-100"
                                         >
-                                            <Bus
-                                                class="h-3.5 w-3.5 text-blue-700"
+                                            <RiBusLine
+                                                class="h-3.5 w-3.5 shrink-0 text-blue-700"
                                             />
                                         </div>
                                         <p
@@ -1170,8 +1160,8 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                         <div
                                             class="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100"
                                         >
-                                            <ShieldCheck
-                                                class="h-3.5 w-3.5 text-slate-600"
+                                            <RiShieldCheckLine
+                                                class="h-3.5 w-3.5 shrink-0 text-slate-600"
                                             />
                                         </div>
                                         <p
@@ -1203,8 +1193,8 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                         <div
                                             class="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100"
                                         >
-                                            <UserCircle2
-                                                class="h-3.5 w-3.5 text-slate-600"
+                                            <RiUserLine
+                                                class="h-3.5 w-3.5 shrink-0 text-slate-600"
                                             />
                                         </div>
                                         <p
@@ -1227,20 +1217,19 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
         </div>
 
         
-        <AlertDialog v-model:open="statusDialog.open">
-            <AlertDialogContent class="rounded-2xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>
+        <Dialog v-model:open="statusDialog.open">
+            <DialogContent class="max-w-md px-6" :show-close-button="false">
+                <DialogHeader class="px-0">
+                    <DialogTitle>
                         {{ toggleLabel(vehicle.status) }}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
+                    </DialogTitle>
+                    <DialogDescription>
                         This will update the status of
-                        <span class="font-semibold text-slate-800">{{
+                        <span class="font-semibold text-custom-accent-3">{{
                             vehicle.plate_number
-                        }}</span
-                        >. Are you sure you want to continue?
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
+                        }}</span>. Are you sure you want to continue?
+                    </DialogDescription>
+                </DialogHeader>
                 <div v-if="vehicle.status === 'active'" class="space-y-1.5">
                     <label
                         for="operator-remark"
@@ -1256,20 +1245,21 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         placeholder="Reason for setting this vehicle inactive..."
                     />
                 </div>
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg"
-                        >Cancel</AlertDialogCancel
-                    >
-                    <AlertDialogAction
-                        class="rounded-lg border-0 bg-blue-700 text-white hover:bg-blue-800"
+                <Separator />
+                <DialogFooter class="pt-3 gap-2 sm:justify-end">
+                    <Button variant="ghost-outline" @click="statusDialog.open = false">
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="float-primary"
                         :disabled="vehicle.status === 'active' && !statusDialog.operator_remark.trim()"
                         @click="confirmToggleStatus"
                     >
                         Confirm
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
 
         
         <Dialog v-model:open="previewOpen">
@@ -1345,7 +1335,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         <div
                             class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100"
                         >
-                            <FileText class="h-6 w-6 text-slate-400" />
+                            <RiFileTextLine class="h-6 w-6 shrink-0 text-slate-400" />
                         </div>
                         <div>
                             <p class="text-sm font-semibold text-slate-700">
@@ -1363,7 +1353,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                             class="rounded-lg"
                         >
                             <a :href="documentDownloadUrl(previewDoc)" download>
-                                <Download class="mr-2 h-4 w-4" />
+                                <RiDownloadLine class="mr-2 h-4 w-4 shrink-0" />
                                 Download File
                             </a>
                         </Button>
@@ -1380,7 +1370,7 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                         class="rounded-lg"
                     >
                         <a :href="documentDownloadUrl(previewDoc)" download>
-                            <Download class="mr-2 h-4 w-4" />
+                            <RiDownloadLine class="mr-2 h-4 w-4 shrink-0" />
                             Download
                         </a>
                     </Button>

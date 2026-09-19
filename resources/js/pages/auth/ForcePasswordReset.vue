@@ -15,7 +15,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { logout } from '@/routes'
-import { ShieldAlert, LogOut } from 'lucide-vue-next'
+import { ShieldAlert } from 'lucide-vue-next'
+import { RiLogoutBoxLine } from 'vue-remix-icons'
 
 const props = defineProps<{
     mustChangePassword: boolean
@@ -49,7 +50,7 @@ function submit() {
             <DialogContent class="sm:max-w-md" :show-close-button="false">
                 <DialogHeader>
                     <DialogTitle class="flex items-center gap-2">
-                        <ShieldAlert class="h-5 w-5 text-primary" />
+                        <ShieldAlert class="h-5 w-5 shrink-0 text-primary" />
                         Password change required
                     </DialogTitle>
                     <DialogDescription>
@@ -101,7 +102,7 @@ function submit() {
                                 method="post"
                                 as="button"
                             >
-                                <LogOut class="mr-2 h-4 w-4" />
+                                <RiLogoutBoxLine class="mr-2 h-4 w-4 shrink-0" />
                                 Log Out
                             </Link>
                         </Button>

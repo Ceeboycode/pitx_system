@@ -6,15 +6,14 @@ import ExternalLayout from '@/layouts/ExternalLayout.vue';
 import { can } from '@/lib/can';
 
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -24,24 +23,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Separator } from '@/components/ui/separator';
-
-import {
-    Archive,
-    ArrowLeft,
-    Building2,
-    CalendarDays,
-    Edit,
-    KeyRound,
-    Mail,
-    MoreHorizontal,
-    Phone,
-    Power,
-    Shield,
-    UserCog,
-    UserSquare2,
-    Users,
-} from 'lucide-vue-next';
 
 
 type Company = {
@@ -232,7 +213,6 @@ function confirmArchive() {
                         <div
                             class="flex items-center gap-2 text-xs font-semibold tracking-widest text-slate-400 uppercase"
                         >
-                            <Building2 class="h-3.5 w-3.5" />
                             {{ company.company_code ?? company.company_name }}
                             <span class="text-slate-300">·</span>
                             <span>Employees</span>
@@ -257,7 +237,6 @@ function confirmArchive() {
                             class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                         >
                             <Link href="/employee-users">
-                                <ArrowLeft class="mr-2 h-4 w-4" />
                                 Back
                             </Link>
                         </Button>
@@ -268,7 +247,6 @@ function confirmArchive() {
                                     v-if="!isOwnAccount && hasManageActions"
                                     class="gap-2 rounded-lg border-0 bg-blue-700 text-sm font-semibold text-white shadow-sm hover:bg-blue-800"
                                 >
-                                    <MoreHorizontal class="h-4 w-4" />
                                     Actions
                                 </Button>
                             </DropdownMenuTrigger>
@@ -294,7 +272,6 @@ function confirmArchive() {
                                     <Link
                                         :href="`/employee-users/${employee.id}/edit`"
                                     >
-                                        <Edit class="mr-2 h-4 w-4" />
                                         Edit Details
                                     </Link>
                                 </DropdownMenuItem>
@@ -308,7 +285,6 @@ function confirmArchive() {
                                     ]"
                                     @click="statusDialog.open = true"
                                 >
-                                    <Power class="mr-2 h-4 w-4" />
                                     {{ toggleStatusLabel(employee.status) }}
                                 </DropdownMenuItem>
 
@@ -318,7 +294,6 @@ function confirmArchive() {
                                     class="rounded-lg text-slate-700 focus:bg-blue-50 focus:text-blue-700"
                                     @click="resetPasswordDialog.open = true"
                                 >
-                                    <KeyRound class="mr-2 h-4 w-4" />
                                     Reset Password
                                 </DropdownMenuItem>
 
@@ -339,7 +314,6 @@ function confirmArchive() {
                                     class="rounded-lg text-rose-600 focus:bg-rose-50 focus:text-rose-600"
                                     @click="archiveDialog.open = true"
                                 >
-                                    <Archive class="mr-2 h-4 w-4" />
                                     Archive Account
                                 </DropdownMenuItem>
 
@@ -366,7 +340,6 @@ function confirmArchive() {
                             <div
                                 class="flex items-center gap-2 border-b border-slate-100 px-5 py-4"
                             >
-                                <UserSquare2 class="h-4 w-4 text-blue-700" />
                                 <div>
                                     <h2
                                         class="text-base font-semibold text-slate-800"
@@ -453,7 +426,6 @@ function confirmArchive() {
                                     <div
                                         class="mb-2 flex items-center gap-2 text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
                                     >
-                                        <Users class="h-3.5 w-3.5" />
                                         Full Name
                                     </div>
                                     <p
@@ -469,7 +441,6 @@ function confirmArchive() {
                                     <div
                                         class="mb-2 flex items-center gap-2 text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
                                     >
-                                        <Shield class="h-3.5 w-3.5" />
                                         Username
                                     </div>
                                     <p
@@ -485,7 +456,6 @@ function confirmArchive() {
                                     <div
                                         class="mb-2 flex items-center gap-2 text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
                                     >
-                                        <Mail class="h-3.5 w-3.5" />
                                         Email Address
                                     </div>
                                     <p
@@ -501,7 +471,6 @@ function confirmArchive() {
                                     <div
                                         class="mb-2 flex items-center gap-2 text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
                                     >
-                                        <Phone class="h-3.5 w-3.5" />
                                         Phone Number
                                     </div>
                                     <p
@@ -517,7 +486,6 @@ function confirmArchive() {
                                     <div
                                         class="mb-2 flex items-center gap-2 text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
                                     >
-                                        <UserCog class="h-3.5 w-3.5" />
                                         Assigned Role
                                     </div>
                                     <p
@@ -533,7 +501,6 @@ function confirmArchive() {
                                     <div
                                         class="mb-2 flex items-center gap-2 text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
                                     >
-                                        <CalendarDays class="h-3.5 w-3.5" />
                                         Created At
                                     </div>
                                     <p
@@ -554,7 +521,6 @@ function confirmArchive() {
                             <div
                                 class="flex items-center gap-2 border-b border-slate-100 px-5 py-4"
                             >
-                                <Building2 class="h-4 w-4 text-blue-700" />
                                 <h2
                                     class="text-sm font-semibold text-slate-800"
                                 >
@@ -618,50 +584,45 @@ function confirmArchive() {
         </div>
 
         
-        <AlertDialog
+        <Dialog
             v-if="!isOwnAccount && canToggleEmployee"
             v-model:open="statusDialog.open"
         >
-            <AlertDialogContent class="rounded-2xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>
+            <DialogContent class="max-w-md px-6" :show-close-button="false">
+                <DialogHeader class="px-0">
+                    <DialogTitle>
                         {{ toggleStatusLabel(employee.status) }}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
+                    </DialogTitle>
+                    <DialogDescription>
                         This will update the account status of
-                        <span class="font-semibold text-slate-800">{{
+                        <span class="font-semibold text-custom-accent-3">{{
                             employee.name
-                        }}</span
-                        >. Are you sure you want to continue?
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg"
-                        >Cancel</AlertDialogCancel
-                    >
-                    <AlertDialogAction
-                        class="rounded-lg border-0 bg-blue-700 text-white hover:bg-blue-800"
-                        @click="confirmToggleStatus"
-                    >
+                        }}</span>. Are you sure you want to continue?
+                    </DialogDescription>
+                </DialogHeader>
+                <Separator />
+                <DialogFooter class="pt-3 gap-2 sm:justify-end">
+                    <Button variant="ghost-outline" @click="statusDialog.open = false">
+                        Cancel
+                    </Button>
+                    <Button variant="float-primary" @click="confirmToggleStatus">
                         Confirm
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
 
         
-        <AlertDialog
+        <Dialog
             v-if="!isOwnAccount && canResetEmployee"
             v-model:open="resetPasswordDialog.open"
         >
-            <AlertDialogContent class="rounded-2xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle
-                        >Reset employee password?</AlertDialogTitle
-                    >
-                    <AlertDialogDescription>
+            <DialogContent class="max-w-md px-6" :show-close-button="false">
+                <DialogHeader class="px-0">
+                    <DialogTitle>Reset employee password?</DialogTitle>
+                    <DialogDescription>
                         The password for
-                        <span class="font-semibold text-slate-800">{{
+                        <span class="font-semibold text-custom-accent-3">{{
                             employee.name
                         }}</span>
                         will be reset to
@@ -669,52 +630,46 @@ function confirmArchive() {
                             class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs font-semibold text-slate-700"
                             >pitx@123</code
                         >. They should change it on next login.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg"
-                        >Cancel</AlertDialogCancel
-                    >
-                    <AlertDialogAction
-                        class="rounded-lg border-0 bg-blue-700 text-white hover:bg-blue-800"
-                        @click="confirmResetPassword"
-                    >
+                    </DialogDescription>
+                </DialogHeader>
+                <Separator />
+                <DialogFooter class="pt-3 gap-2 sm:justify-end">
+                    <Button variant="ghost-outline" @click="resetPasswordDialog.open = false">
+                        Cancel
+                    </Button>
+                    <Button variant="float-primary" @click="confirmResetPassword">
                         Reset Password
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
 
         
-        <AlertDialog
+        <Dialog
             v-if="!isOwnAccount && canArchiveEmployee"
             v-model:open="archiveDialog.open"
         >
-            <AlertDialogContent class="rounded-2xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle
-                        >Archive employee account?</AlertDialogTitle
-                    >
-                    <AlertDialogDescription>
-                        <span class="font-semibold text-slate-800">{{
+            <DialogContent class="max-w-md px-6" :show-close-button="false">
+                <DialogHeader class="px-0">
+                    <DialogTitle>Archive employee account?</DialogTitle>
+                    <DialogDescription>
+                        <span class="font-semibold text-custom-accent-3">{{
                             employee.name
                         }}</span>
                         will be archived and removed from the active employee
                         list. This action cannot be undone.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg"
-                        >Cancel</AlertDialogCancel
-                    >
-                    <AlertDialogAction
-                        class="rounded-lg border-0 bg-rose-600 text-white hover:bg-rose-700"
-                        @click="confirmArchive"
-                    >
+                    </DialogDescription>
+                </DialogHeader>
+                <Separator />
+                <DialogFooter class="pt-3 gap-2 sm:justify-end">
+                    <Button variant="ghost-outline" @click="archiveDialog.open = false">
+                        Cancel
+                    </Button>
+                    <Button variant="destructive" @click="confirmArchive">
                         Archive Account
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </ExternalLayout>
 </template>

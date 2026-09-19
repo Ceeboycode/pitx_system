@@ -45,8 +45,8 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
         data-slot="dialog-close"
         class="cursor-pointer ring-offset-background focus:ring-ring data-[state=open]:bg-custom-secondary/20 data-[state=open]:text-custom-shadow absolute top-4 right-4 rounded-md opacity-50 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
       >
-        <RiCloseLine />
-        
+        <RiCloseLine class="shrink-0" />
+
       </DialogClose>
     </DialogContent>
   </DialogPortal>

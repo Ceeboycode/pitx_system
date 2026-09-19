@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import { restore } from '@/routes/companies';
 import { router } from '@inertiajs/vue3';
-import { RotateCcw } from 'lucide-vue-next';
+import { RiRestartLine } from 'vue-remix-icons';
 
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 
 const open = defineModel<boolean>('open');
@@ -41,32 +40,27 @@ function restoreCompany() {
 </script>
 
 <template>
-    <AlertDialog v-model:open="open">
-        <AlertDialogContent class="rounded-lg p-4">
-            <AlertDialogHeader>
-                <AlertDialogTitle>Restore</AlertDialogTitle>
-
-                <AlertDialogDescription>
+    <Dialog v-model:open="open">
+        <DialogContent class="max-w-md px-6" :show-close-button="false">
+            <DialogHeader class="px-0">
+                <DialogTitle>Restore</DialogTitle>
+                <DialogDescription>
                     Are you sure you want to restore
-                    <span class="font-medium">
-                        {{ props.company.company_name }}
-                    </span>
-                    ?
-                    <br />
-                    This company will become active again.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-
-            <AlertDialogFooter>
-                <AlertDialogCancel class="rounded-lg cursor-pointer hover:bg-slate-100">Cancel</AlertDialogCancel>
-
-                <AlertDialogAction as-child class="rounded-lg border-0 cursor-pointer bg-primary hover:bg-primary/90 text-primary-foreground hover:text-primary-foreground">
-                    <Button variant="outline" @click="restoreCompany">
-                        <RotateCcw class="h-4 w-4" />
-                        Restore
-                    </Button>
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
+                    <span class="font-semibold text-custom-accent-3">{{
+                        props.company.company_name
+                    }}</span>? This company will become active again.
+                </DialogDescription>
+            </DialogHeader>
+            <Separator />
+            <DialogFooter class="pt-3 gap-2 sm:justify-end">
+                <Button variant="ghost-outline" @click="open = false">
+                    Cancel
+                </Button>
+                <Button variant="float-primary" @click="restoreCompany">
+                    <RiRestartLine class="h-4 w-4" />
+                    Restore
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
 </template>

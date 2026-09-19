@@ -45,7 +45,7 @@ function archive() {
 
 <template>
     <Dialog v-model:open="open">
-        <DialogContent class="max-w-md px-6">
+        <DialogContent class="max-w-md px-6" :show-close-button="false">
             <DialogHeader class="px-0">
                 <DialogTitle>Archive User</DialogTitle>
                 <DialogDescription>
@@ -69,7 +69,7 @@ function archive() {
                     :disabled="processing"
                     @click="archive"
                 >
-                    <RiArchive2Line class="h-4 w-4" />
+                    <RiArchive2Line class="h-4 w-4 shrink-0" />
                     {{ processing ? 'Archiving...' : 'Archive' }}
                 </Button>
             </DialogFooter>

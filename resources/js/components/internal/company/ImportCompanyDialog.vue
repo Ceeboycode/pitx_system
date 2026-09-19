@@ -145,7 +145,7 @@ function handleClose(val: boolean) {
                         class="flex cursor-pointer items-center gap-3 rounded-md border border-dashed border-custom-bg-dark p-3 transition-colors hover:bg-custom-bg dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5"
                     >
                         <div class="flex h-24 w-24 shrink-0 items-center justify-center rounded-md border border-dashed border-custom-bg-dark dark:border-custom-bg-light">
-                            <RiFileUploadLine class="h-7 w-7 text-custom-shadow/80" />
+                            <RiFileUploadLine class="h-7 w-7 shrink-0 text-custom-shadow/80" />
                         </div>
                         <div class="space-y-1">
                             <!-- CODE: <p class="text-sm font-semibold text-custom-shadow">Select a backup file</p> -->
@@ -162,7 +162,7 @@ function handleClose(val: boolean) {
                         class="flex items-center gap-3 rounded-md border border-dashed border-custom-bg-dark p-3 dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5"
                     >
                         <div class="flex h-24 w-24 shrink-0 items-center justify-center rounded-md bg-custom-bg dark:bg-custom-bg-light">
-                            <RiArchive2Line class="h-7 w-7 text-custom-shadow/80" />
+                            <RiArchive2Line class="h-7 w-7 shrink-0 text-custom-shadow/80" />
                         </div>
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm font-semibold text-custom-shadow">{{ file!.name }}</p>
@@ -175,7 +175,7 @@ function handleClose(val: boolean) {
                             class="flex h-7 w-7 shrink-0 cursor-pointer items-center rounded-full border border-custom-shadow/50 text-custom-shadow transition-all duration-200 hover:border-destructive hover:bg-destructive/20 hover:text-destructive"
                             @click="clearFile"
                         >
-                            <RiCloseLine class="h-4 w-4" />
+                            <RiCloseLine class="h-4 w-4 shrink-0" />
                         </Button>
                     </div>
                 </div>
@@ -198,7 +198,7 @@ function handleClose(val: boolean) {
                 <div v-if="phase === 'done' && summary" class="max-h-56 space-y-2 overflow-y-auto">
                     <div v-if="summary.imported.length" class="rounded-md border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-800 dark:bg-emerald-950/30">
                         <div class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                            <RiCheckboxCircleLine class="h-3.5 w-3.5" />
+                            <RiCheckboxCircleLine class="h-3.5 w-3.5 shrink-0" />
                             {{ summary.imported.length }} imported
                         </div>
                         <ul class="space-y-0.5"><li v-for="item in summary.imported" :key="item" class="text-xs text-emerald-700 dark:text-emerald-400">{{ item }}</li></ul>
@@ -206,7 +206,7 @@ function handleClose(val: boolean) {
 
                     <div v-if="summary.skipped.length" class="rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
                         <div class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
-                            <RiErrorWarningLine class="h-3.5 w-3.5" />
+                            <RiErrorWarningLine class="h-3.5 w-3.5 shrink-0" />
                             {{ summary.skipped.length }} skipped (already exist)
                         </div>
                         <ul class="space-y-0.5"><li v-for="item in summary.skipped" :key="item" class="text-xs text-amber-700 dark:text-amber-400">{{ item }}</li></ul>
@@ -214,7 +214,7 @@ function handleClose(val: boolean) {
 
                     <div v-if="summary.errors.length" class="rounded-md border border-destructive/30 bg-destructive/5 p-3">
                         <div class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-destructive">
-                            <RiCloseCircleLine class="h-3.5 w-3.5" />
+                            <RiCloseCircleLine class="h-3.5 w-3.5 shrink-0" />
                             {{ summary.errors.length }} failed
                         </div>
                         <ul class="space-y-0.5"><li v-for="item in summary.errors" :key="item" class="text-xs text-destructive">{{ item }}</li></ul>
@@ -231,8 +231,8 @@ function handleClose(val: boolean) {
                         {{ phase === 'done' ? 'Close' : 'Cancel' }}
                     </Button>
                     <Button v-if="phase !== 'done'" type="submit" variant="float-primary" :disabled="!hasFile || isProcessing">
-                        <RiLoader2Line v-if="isProcessing" class="h-4 w-4 animate-spin" />
-                        <RiFileUploadLine v-else class="h-4 w-4" />
+                        <RiLoader2Line v-if="isProcessing" class="h-4 w-4 shrink-0 animate-spin" />
+                        <RiFileUploadLine v-else class="h-4 w-4 shrink-0" />
                         {{ isProcessing ? 'Importing...' : 'Import' }}
                     </Button>
                     <Button v-else type="button" variant="float-primary" @click="clearFile(); phase = 'idle'">

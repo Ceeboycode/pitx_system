@@ -40,7 +40,7 @@ function confirm() {
 
 <template>
     <Dialog v-model:open="open">
-        <DialogContent class="max-w-md px-6">
+        <DialogContent class="max-w-md px-6" :show-close-button="false">
             <DialogHeader class="px-0">
                 <DialogTitle>Archive Vehicle</DialogTitle>
                 <DialogDescription>
@@ -54,7 +54,7 @@ function confirm() {
                     <Button type="button" variant="ghost-outline">Cancel</Button>
                 </DialogClose>
                 <Button type="button" variant="destructive" @click="confirm">
-                    <RiArchive2Line class="h-4 w-4" />
+                    <RiArchive2Line class="h-4 w-4 shrink-0" />
                     Archive
                 </Button>
             </DialogFooter>

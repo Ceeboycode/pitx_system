@@ -50,7 +50,7 @@ import {
 } from '@/components/internal/gate';
 
 import AppLayout from '@/layouts/AppLayout.vue';
-import { edit, index, show, trash } from '@/routes/gates';
+import { edit, index, trash } from '@/routes/gates';
 import { type BreadcrumbItem, type User } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { PanelLayout } from '@/components/ui/_panels';
@@ -441,7 +441,7 @@ function openArchiveDialog(gate: Gate) {
                                     ]"
                                     :status="gate.status === 'inactive' ? 'inactive' : 'default'"
                                     @click.left="openPreview(gate)"
-                                    @dblclick="router.visit(show(gate.id).url)"
+                                    @dblclick="router.visit(edit(gate.id).url)"
                                 >
                                     <TableData class="pl-3 font-semibold capitalize">
                                         {{ gate.gate_name }}
@@ -472,13 +472,6 @@ function openArchiveDialog(gate: Gate) {
                                         >
                                             <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-bg transition-all duration-200" />
                                             View
-                                        </DropdownMenuItem>
-
-                                        <DropdownMenuItem as-child class="group lg:hidden">
-                                            <Link :href="show(gate.id).url" class="flex items-center">
-                                                <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-bg transition-all duration-200" />
-                                                View
-                                            </Link>
                                         </DropdownMenuItem>
 
                                         <DropdownMenuItem as-child class="group">
@@ -694,7 +687,7 @@ function openArchiveDialog(gate: Gate) {
                             variant="float-primary"
                             size="icon"
                         >
-                            <Link :href="show(previewedGate.id).url">
+                            <Link :href="edit(previewedGate.id).url">
                                 <RiExternalLinkLine class="h-4 w-4" />
                             </Link>
                         </Button>

@@ -19,14 +19,13 @@ import { Badge } from '@/components/ui/_badge';
 
 import { download as downloadCompanyDocument } from '@/routes/companies/documents';
 
+import { CheckCircle2, XCircle } from 'lucide-vue-next';
 import {
-    CheckCircle2,
-    Download,
-    Ellipsis,
-    Eye,
-    FileText,
-    XCircle,
-} from 'lucide-vue-next';
+    RiDownloadLine,
+    RiEyeLine,
+    RiFileTextLine,
+    RiMore2Line,
+} from 'vue-remix-icons';
 
 import { formatDate, formatDateTime, humanize } from '@/lib/format';
 import { fileUrl, isImage, isPdf } from '@/lib/files';
@@ -131,7 +130,7 @@ function onReject() {
                         v-else
                         class="flex h-full flex-col items-center justify-center"
                     >
-                        <FileText class="h-12 w-12 opacity-30" />
+                        <RiFileTextLine class="h-12 w-12 shrink-0 opacity-30" />
                         <p class="text-sm">
                             Your browser cannot preview this PDF inline.
                         </p>
@@ -145,7 +144,7 @@ function onReject() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                             >
-                                <Eye class="mr-2 h-4 w-4" />Open in new tab
+                                <RiEyeLine class="mr-2 h-4 w-4 shrink-0" />Open in new tab
                             </a>
                         </Button>
                     </div>
@@ -173,7 +172,7 @@ function onReject() {
                                 variant="outline"
                                 class="rounded-lg cursor-pointer hover:bg-slate-100"
                             >
-                                <Ellipsis class="h-4 w-4" />
+                                <RiMore2Line class="h-4 w-4 shrink-0" />
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent
@@ -185,7 +184,7 @@ function onReject() {
                                 class="cursor-pointer flex items-center gap-2 rounded-lg px-4 py-2 text-sm hover:bg-slate-100"
                                 @click="onVerify"
                             >
-                                <CheckCircle2 class="h-4 w-4" />
+                                <CheckCircle2 class="h-4 w-4 shrink-0" />
                                 Verify
                             </div>
                             <div
@@ -193,7 +192,7 @@ function onReject() {
                                 class="cursor-pointer flex items-center gap-2 rounded-lg px-4 py-2 text-sm hover:bg-slate-100"
                                 @click="onReject"
                             >
-                                <XCircle class="h-4 w-4" />
+                                <XCircle class="h-4 w-4 shrink-0" />
                                 Mark as Invalid
                             </div>
                             <a
@@ -207,7 +206,7 @@ function onReject() {
                                 rel="noopener noreferrer"
                                 class="cursor-pointer flex items-center gap-2 rounded-lg px-4 py-2 text-sm hover:bg-slate-100"
                             >
-                                <Download class="h-4 w-4" />
+                                <RiDownloadLine class="h-4 w-4 shrink-0" />
                                 Download
                             </a>
                         </PopoverContent>

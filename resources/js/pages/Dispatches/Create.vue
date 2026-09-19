@@ -42,7 +42,7 @@ const props = defineProps<{
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dispatches', href: index().url },
     {
-        title: `Create - ${props.company.code}`,
+        title: `Add New - ${props.company.code}`,
         href: create({ company: props.company.id }).url,
     },
 ];
@@ -60,13 +60,13 @@ function submit() {
 </script>
 
 <template>
-    <Head title="Create Dispatch" />
+    <Head title="Add New Dispatch" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <Card class="mx-5">
                     <CardHeader>
-                        <CardTitle>Create Dispatch</CardTitle>
+                        <CardTitle>Add New Dispatch</CardTitle>
                         <CardDescription>
                             Company:
                             <span class="font-medium">
@@ -193,7 +193,7 @@ function submit() {
                                         form.processing || !form.vehicle_id
                                     "
                                 >
-                                    Save Dispatch
+                                    Add Dispatch
                                 </Button>
                             </div>
                         </form>

@@ -14,7 +14,7 @@ import Label from '@/components/ui/label/Label.vue'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { store } from '@/routes/vehicle-types'
 import { useForm } from '@inertiajs/vue3'
-import { Save } from 'lucide-vue-next'
+import { RiSaveLine } from 'vue-remix-icons'
 import { toast } from 'vue-sonner'
 const open = defineModel<boolean>('open')
 
@@ -41,7 +41,7 @@ function submit() {
     <Dialog v-model:open="open">
         <DialogContent class="sm:max-w-md">
             <DialogHeader>
-                <DialogTitle>Create Vehicle Type</DialogTitle>
+                <DialogTitle>Add New Vehicle Type</DialogTitle>
                 <DialogDescription>
                     Add a new vehicle type to your system.
                 </DialogDescription>
@@ -97,7 +97,7 @@ function submit() {
                     </Button>
 
                     <Button type="submit" :disabled="form.processing">
-                        <Save />
+                        <RiSaveLine class="shrink-0" />
                         Save
                     </Button>
                 </DialogFooter>

@@ -4,22 +4,31 @@ import { Head, Link } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { dashboard, login } from '@/routes';
 import {
-    ArrowRight, ArrowLeft, ScrollText, Users, ShieldAlert,
-    Gavel, ClipboardList, LogIn, TriangleAlert, RefreshCw, Phone
+    ArrowRight, ShieldAlert,
 } from 'lucide-vue-next';
+import {
+    RiAlertLine,
+    RiArrowLeftLine,
+    RiBubbleChartFill,
+    RiClipboardLine,
+    RiGroupLine,
+    RiLoginBoxLine,
+    RiPhoneLine,
+    RiRefreshLine,
+} from 'vue-remix-icons';
 
 withDefaults(defineProps<{ canRegister?: boolean }>(), { canRegister: true });
 
 const sections = [
     {
         id: 'acceptance',
-        icon: ScrollText,
+        icon: RiBubbleChartFill,
         title: '1. Acceptance of Terms',
         content: `By accessing or using the PITX Centralized Transport System ("the System"), you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions. These terms apply to all users of the System, including Super Administrators, Dispatchers, and Operators. If you do not agree with any part of these terms, you must discontinue use of the System immediately and notify your System Administrator.`,
     },
     {
         id: 'eligibility',
-        icon: Users,
+        icon: RiGroupLine,
         title: '2. User Eligibility & Account Responsibility',
         content: `Access to the System is granted exclusively to authorized PITX personnel. As a user, you are responsible for:`,
         list: [
@@ -32,7 +41,7 @@ const sections = [
     },
     {
         id: 'rules',
-        icon: ClipboardList,
+        icon: RiClipboardLine,
         title: '3. Rules & Regulations',
         content: `All users must comply with the following rules when using the System:`,
         list: [
@@ -60,7 +69,7 @@ const sections = [
     },
     {
         id: 'agreements',
-        icon: Gavel,
+        icon: RiBubbleChartFill,
         title: '5. Agreements & Consent',
         content: `By using the System, you expressly agree to the following:`,
         list: [
@@ -73,7 +82,7 @@ const sections = [
     },
     {
         id: 'access-termination',
-        icon: LogIn,
+        icon: RiLoginBoxLine,
         title: '6. Access Termination',
         content: `PITX reserves the right to suspend or permanently terminate a user's access to the System under the following circumstances:`,
         list: [
@@ -86,19 +95,19 @@ const sections = [
     },
     {
         id: 'liability',
-        icon: TriangleAlert,
+        icon: RiAlertLine,
         title: '7. Limitation of Liability',
         content: `PITX shall not be held liable for any operational disruptions, data loss, or damages arising from user negligence, unauthorized use, or events beyond the control of PITX management. Users acknowledge that the System is provided as a tool for operational efficiency and that its use does not guarantee uninterrupted availability. Scheduled and emergency maintenance windows may result in temporary system downtime.`,
     },
     {
         id: 'amendments',
-        icon: RefreshCw,
+        icon: RiRefreshLine,
         title: '8. Amendments to These Terms',
         content: `PITX reserves the right to update or amend these Terms and Conditions at any time without prior notice. Any changes will be effective immediately upon publication within the System. Continued use of the System after an update constitutes your acceptance of the revised terms. Users are encouraged to review this document periodically to stay informed of any changes.`,
     },
     {
         id: 'contact',
-        icon: Phone,
+        icon: RiPhoneLine,
         title: '9. Contact & Enforcement',
         content: `For questions, clarifications, or concerns regarding these Terms and Conditions, please contact your designated PITX System Administrator through official PITX communication channels. Violations of these Terms will be handled in accordance with PITX's internal disciplinary procedures and applicable Philippine laws and regulations.`,
     },
@@ -130,7 +139,7 @@ const sections = [
                         <Button as-child class="rounded-lg bg-[#c0392b] px-5 text-sm text-white hover:bg-[#a93226]">
                             <Link :href="dashboard()">
                                 Dashboard
-                                <ArrowRight class="ml-1 inline h-4 w-4" />
+                                <ArrowRight class="ml-1 inline h-4 w-4 shrink-0" />
                             </Link>
                         </Button>
                     </template>
@@ -150,7 +159,7 @@ const sections = [
             <div class="relative z-10 mx-auto max-w-7xl px-6">
                 <div class="flex items-center gap-3 mb-4">
                     <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c0392b]/20 border border-[#c0392b]/30">
-                        <ScrollText class="h-5 w-5 text-[#e74c3c]" />
+                        <RiBubbleChartFill class="h-5 w-5 shrink-0 text-[#e74c3c]" />
                     </div>
                     <p class="text-xs font-bold uppercase tracking-widest text-red-400">Legal Document</p>
                 </div>
@@ -202,7 +211,7 @@ const sections = [
                 >
                     <div class="flex items-center gap-3 mb-4">
                         <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1a3a6b]/8 border border-[#1a3a6b]/10">
-                            <component :is="s.icon" class="h-4.5 w-4.5 text-[#1a3a6b]" />
+                            <component :is="s.icon" class="h-4.5 w-4.5 shrink-0 text-[#1a3a6b]" />
                         </div>
                         <h2 class="text-base font-bold text-[#1a1a2e]">{{ s.title }}</h2>
                     </div>
@@ -225,7 +234,7 @@ const sections = [
                 <div class="pt-2 flex items-center justify-between">
                     <Button variant="ghost" as-child class="text-sm text-gray-500 hover:text-[#c0392b] gap-2 pl-0">
                         <Link href="/">
-                            <ArrowLeft class="h-4 w-4" />
+                            <RiArrowLeftLine class="h-4 w-4 shrink-0" />
                             Back to Home
                         </Link>
                     </Button>

@@ -13,7 +13,7 @@ import {
     TabsList,
     TabsTrigger,
 } from '@/components/ui/_tabs';
-import { RiDashboardHorizontalLine, RiSave3Line } from 'vue-remix-icons';
+import { RiDashboardHorizontalLine, RiLoader2Line } from 'vue-remix-icons';
 import { can } from '@/lib/can';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -138,8 +138,8 @@ function submit() {
                                             variant="float-primary"
                                             :disabled="form.processing"
                                         >
-                                            <RiSave3Line class="mr-2 h-4 w-4" />
-                                            Save Changes
+                                            <RiLoader2Line v-if="form.processing" class="mr-2 h-4 w-4 shrink-0 animate-spin" />
+                                            {{ form.processing ? 'Saving...' : 'Save Changes' }}
                                         </Button>
                                     </div>
                                 </form>

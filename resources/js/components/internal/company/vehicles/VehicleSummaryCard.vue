@@ -4,12 +4,12 @@ import { computed } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import {
-    Bus,
-    Route as RouteIcon,
-    Save,
-    ShieldCheck,
-    UserCircle2,
-} from 'lucide-vue-next'
+    RiBusLine,
+    RiRouteLine,
+    RiSaveLine,
+    RiShieldCheckLine,
+    RiUserLine,
+} from 'vue-remix-icons'
 
 const props = defineProps<{
     form: {
@@ -33,7 +33,7 @@ const uploadedCount = computed(() => {
     <div class="space-y-4">
         <div class="flex items-start gap-3">
             <div class="rounded-md border p-2 text-muted-foreground">
-                <Bus class="h-4 w-4" />
+                <RiBusLine class="h-4 w-4 shrink-0" />
             </div>
             <div class="min-w-0">
                 <p class="text-sm font-medium">Vehicle Type</p>
@@ -45,7 +45,7 @@ const uploadedCount = computed(() => {
 
         <div class="flex items-start gap-3">
             <div class="rounded-md border p-2 text-muted-foreground">
-                <RouteIcon class="h-4 w-4" />
+                <RiRouteLine class="h-4 w-4 shrink-0" />
             </div>
             <div class="min-w-0">
                 <p class="text-sm font-medium">Assigned Route</p>
@@ -57,7 +57,7 @@ const uploadedCount = computed(() => {
 
         <div class="flex items-start gap-3">
             <div class="rounded-md border p-2 text-muted-foreground">
-                <ShieldCheck class="h-4 w-4" />
+                <RiShieldCheckLine class="h-4 w-4 shrink-0" />
             </div>
             <div class="min-w-0">
                 <p class="text-sm font-medium">Documents</p>
@@ -69,7 +69,7 @@ const uploadedCount = computed(() => {
 
         <div class="flex items-start gap-3">
             <div class="rounded-md border p-2 text-muted-foreground">
-                <UserCircle2 class="h-4 w-4" />
+                <RiUserLine class="h-4 w-4 shrink-0" />
             </div>
             <div class="min-w-0">
                 <p class="text-sm font-medium">Submitted By</p>
@@ -87,7 +87,7 @@ const uploadedCount = computed(() => {
             class="w-full bg-blue-600 text-white hover:bg-blue-900"
             :disabled="form.processing"
         >
-            <Save class="mr-2 h-4 w-4 " />
+            <RiSaveLine class="mr-2 h-4 w-4 shrink-0" />
             {{ form.processing ? 'Saving...' : (submitLabel || 'Save Vehicle') }}
         </Button>
     </div>

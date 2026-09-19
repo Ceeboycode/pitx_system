@@ -22,8 +22,7 @@ import DialogDescription from '@/components/ui/dialog/DialogDescription.vue';
 import DialogFooter from '@/components/ui/dialog/DialogFooter.vue';
 import DialogHeader from '@/components/ui/dialog/DialogHeader.vue';
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue';
-import { Archive, ArchiveX } from 'lucide-vue-next';
-import { RiArrowLeftLine } from 'vue-remix-icons';
+import { RiArchive2Line, RiArrowLeftLine } from 'vue-remix-icons';
 // import Separator from '@/components/ui/separator/Separator.vue'
 import { Separator } from '@/components/ui/separator';
 import { LeadPanel } from '@/components/ui/_panels';
@@ -92,7 +91,7 @@ function formatDate(value?: string | null): string {
                 <CardHeader class="flex flex-row items-start gap-3">
                     <Button as-child variant="header-actions" size="icon">
                         <Link :href="index().url" aria-label="Back to gates">
-                            <RiArrowLeftLine class="h-4 w-4" />
+                            <RiArrowLeftLine class="h-4 w-4 shrink-0" />
                         </Link>
                     </Button>
                     <div class="flex min-w-0 flex-1 flex-col">
@@ -254,7 +253,7 @@ function formatDate(value?: string | null): string {
                             variant="destructive"
                             size="icon-text"
                             @click="archiveOpen = true"
-                            ><Archive class="h-4 w-4" />Archive</Button
+                            ><RiArchive2Line class="h-4 w-4 shrink-0" />Archive</Button
                         >
                     </div>
                 </CardContent>
@@ -285,7 +284,7 @@ function formatDate(value?: string | null): string {
                         variant="destructive"
                         @click="archiveGate"
                     >
-                        <ArchiveX class="h-4 w-4" />
+                        <RiArchive2Line class="h-4 w-4 shrink-0" />
                         Archive
                     </Button>
                 </DialogFooter>

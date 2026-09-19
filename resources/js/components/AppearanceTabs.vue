@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { useAppearance } from '@/composables/useAppearance';
-import { Monitor, Moon, Sun } from 'lucide-vue-next';
+import { RiComputerLine, RiMoonLine, RiSunLine } from 'vue-remix-icons';
 
 const { appearance, updateAppearance } = useAppearance();
 
 const tabs = [
-    { value: 'light', Icon: Sun, label: 'Light' },
-    { value: 'dark', Icon: Moon, label: 'Dark' },
-    { value: 'system', Icon: Monitor, label: 'System' },
+    { value: 'light', Icon: RiSunLine, label: 'Light' },
+    { value: 'dark', Icon: RiMoonLine, label: 'Dark' },
+    { value: 'system', Icon: RiComputerLine, label: 'System' },
 ] as const;
 </script>
 
@@ -26,7 +26,7 @@ const tabs = [
                     : 'text-neutral-500 hover:bg-neutral-200/60 hover:text-black dark:text-neutral-400 dark:hover:bg-neutral-700/60',
             ]"
         >
-            <component :is="Icon" class="-ml-1 h-4 w-4" />
+            <component :is="Icon" class="-ml-1 h-4 w-4 shrink-0" />
             <span class="ml-1.5 text-sm">{{ label }}</span>
         </button>
     </div>

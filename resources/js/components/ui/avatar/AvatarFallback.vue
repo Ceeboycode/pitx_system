@@ -24,6 +24,6 @@ const delegatedProps = reactiveOmit(props, "class")
     :data-variant="props.variant"
   >
     <slot v-if="props.variant ==='current-user'"/>
-    <RiUser3Fill v-else class="text-custom-shadow/20 h-[60%] w-[60%]"/>
+    <RiUser3Fill v-else class="text-custom-shadow/20 h-[60%] w-[60%] shrink-0"/>
   </AvatarFallback>
 </template>

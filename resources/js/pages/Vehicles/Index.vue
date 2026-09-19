@@ -54,7 +54,6 @@ import {
     RiFileAddLine,
     RiFileCheckLine,
     RiFileUploadLine,
-    RiFileSearchLine,
     RiFileTextLine,
     RiFilter2Line,
     RiLoaderLine,
@@ -829,7 +828,7 @@ const openStatusDialog = (
                                     </TableMoreButton>
                                 </TableRow>
                             </TableContent>
-                        </template>
+                        </Table>
 
                         <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
                             <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
@@ -909,7 +908,7 @@ const openStatusDialog = (
                                 <RiArchive2Line class="h-4 w-4" />Archive
                             </Button>
                         </div>
-                        <Button as-child variant="float-primary" size="icon-text"><Link :href="show({ vehicle: previewedVehicle.id }).url"><RiFileSearchLine class="h-4 w-4" />Review</Link></Button>
+                        <Button as-child variant="float-primary" size="icon-text"><Link :href="show({ vehicle: previewedVehicle.id }).url"><RiFileCheckLine class="h-4 w-4 shrink-0" />Review</Link></Button>
                     </div>
                 </CardContent>
                 <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">

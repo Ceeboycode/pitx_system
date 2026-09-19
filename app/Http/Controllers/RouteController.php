@@ -118,7 +118,10 @@ class RouteController extends Controller
 
     public function edit(Route $route): Response
     {
-        Gate::authorize('update', $route);
+        // Page access only needs 'view' - Route/Edit.vue's DetailsTab decides
+        // what's actually editable per field via can('routes.update'), and
+        // update() below still independently authorizes the real write.
+        Gate::authorize('view', $route);
 
         $route->load([
             'gate:id,gate_name',

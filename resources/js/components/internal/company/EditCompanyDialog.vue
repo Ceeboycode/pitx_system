@@ -203,7 +203,7 @@ function verificationStatusDot(status?: CompanyStatus | null): string {
                     </Button>
 
                     <Button type="submit" :disabled="form.processing">
-                        <RiSaveLine class="mr-2 h-4 w-4" />
+                        <RiSaveLine class="mr-2 h-4 w-4 shrink-0" />
                         {{ form.processing ? 'Saving...' : 'Save Changes' }}
                     </Button>
                 </DialogFooter>

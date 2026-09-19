@@ -150,7 +150,10 @@ class GateController extends Controller
 
     public function edit(GateModel $gate)
     {
-        Gate::authorize('update', $gate);
+        // Page access only needs 'view' - Gates/Edit.vue's DetailsTab decides
+        // what's actually editable per field via can('gates.update'), and
+        // update() below still independently authorizes the real write.
+        Gate::authorize('view', $gate);
 
         $gate->load(['creator:id,name', 'updater:id,name']);
 

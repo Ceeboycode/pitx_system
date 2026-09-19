@@ -425,9 +425,9 @@ function handleLogout() {
                                 >
                                     <RiArrowDownSLine
                                         v-if="isItemExpanded(item)"
-                                        class="size-4"
+                                        class="size-4 shrink-0"
                                     />
-                                    <RiArrowRightSLine v-else class="size-4" />
+                                    <RiArrowRightSLine v-else class="size-4 shrink-0" />
                                 </span>
                             </component>
 
@@ -478,8 +478,8 @@ function handleLogout() {
                         )"
                         @click="toggleTheme"
                     >
-                        <RiSunLine class="hidden size-4 dark:block" aria-hidden="true" />
-                        <RiMoonLine class="size-4 dark:hidden" aria-hidden="true" />
+                        <RiSunLine class="hidden size-4 shrink-0 dark:block" aria-hidden="true" />
+                        <RiMoonLine class="size-4 shrink-0 dark:hidden" aria-hidden="true" />
                         <span :class="cn('truncate pl-1', isCollapsed && 'hidden')">
                             Theme
                         </span>
@@ -548,7 +548,7 @@ function handleLogout() {
                                 class="flex cursor-pointer flex-row items-center gap-3 px-3 py-2 text-custom-shadow"
                                 @click="closeMobileSidebar"
                             >
-                                <RiSettings5Line class="size-4 text-custom-shadow" />
+                                <RiSettings5Line class="size-4 shrink-0 text-custom-shadow" />
                                 <span>Settings</span>
                             </Link>
                         </DropdownMenuItem>
@@ -561,7 +561,7 @@ function handleLogout() {
                                 data-test="logout-button"
                                 @click="handleLogout"
                             >
-                                <RiLogoutBoxLine class="size-4 hover:text-destructive" />
+                                <RiLogoutBoxLine class="size-4 shrink-0 hover:text-destructive" />
                                 <span>Log out</span>
                             </Link>
                         </DropdownMenuItem>

@@ -801,7 +801,7 @@ watch(confirmDepartOpen, (open) => {
                         @click="openCreateDialog"
                     >
                         <RiAddLine class="h-4 w-4 shrink-0" />
-                        <span>Add Dispatch</span>
+                        <span>Dispatch Vehicle</span>
                     </Button>
                 </div>
             </CardHeader>

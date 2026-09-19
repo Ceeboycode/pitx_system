@@ -11,15 +11,14 @@ import VehicleSummaryCard from '@/components/internal/company/vehicles/VehicleSu
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { AlertCircle, ArrowUp } from 'lucide-vue-next';
 import {
-    AlertCircle,
-    ArrowLeft,
-    ArrowUp,
-    Eye,
-    FileText,
-    Hash,
-    MapPin,
-} from 'lucide-vue-next';
+    RiArrowLeftLine,
+    RiEyeLine,
+    RiFileTextLine,
+    RiHashtag,
+    RiMapPin2Line,
+} from 'vue-remix-icons';
 
 import CompanyVehicleController from '@/actions/App/Http/Controllers/CompanyVehicleController';
 
@@ -362,7 +361,7 @@ function statusDot(status?: string | null) {
                                             CompanyVehicleController.index().url
                                         "
                                     >
-                                        <ArrowLeft class="mr-2 h-4 w-4" />
+                                        <RiArrowLeftLine class="mr-2 h-4 w-4 shrink-0" />
                                         Back
                                     </Link>
                                 </Button>
@@ -375,7 +374,7 @@ function statusDot(status?: string | null) {
                                             ).url
                                         "
                                     >
-                                        <Eye class="mr-2 h-4 w-4" />
+                                        <RiEyeLine class="mr-2 h-4 w-4 shrink-0" />
                                         View Vehicle
                                     </Link>
                                 </Button>
@@ -392,7 +391,7 @@ function statusDot(status?: string | null) {
                         <div
                             class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700"
                         >
-                            <Hash class="h-4 w-4 text-white" />
+                            <RiHashtag class="h-4 w-4 shrink-0 text-white" />
                         </div>
                         <p
                             class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
@@ -412,7 +411,7 @@ function statusDot(status?: string | null) {
                         <div
                             class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600"
                         >
-                            <MapPin class="h-4 w-4 text-white" />
+                            <RiMapPin2Line class="h-4 w-4 shrink-0 text-white" />
                         </div>
                         <p
                             class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
@@ -434,7 +433,7 @@ function statusDot(status?: string | null) {
                         <div
                             class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600"
                         >
-                            <FileText class="h-4 w-4 text-white" />
+                            <RiFileTextLine class="h-4 w-4 shrink-0 text-white" />
                         </div>
                         <p
                             class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
@@ -457,7 +456,7 @@ function statusDot(status?: string | null) {
                         <div
                             class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500"
                         >
-                            <AlertCircle class="h-4 w-4 text-white" />
+                            <AlertCircle class="h-4 w-4 shrink-0 text-white" />
                         </div>
                         <p
                             class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
@@ -639,7 +638,7 @@ function statusDot(status?: string | null) {
                                                 class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                                                 @click="scrollToSummary"
                                             >
-                                                <ArrowUp class="mr-2 h-4 w-4" />
+                                                <ArrowUp class="mr-2 h-4 w-4 shrink-0" />
                                                 View Summary
                                             </Button>
                                         </div>
@@ -659,7 +658,7 @@ function statusDot(status?: string | null) {
                                             class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                                             @click="scrollToSummary"
                                         >
-                                            <ArrowUp class="mr-2 h-4 w-4" />
+                                            <ArrowUp class="mr-2 h-4 w-4 shrink-0" />
                                             Go to Update Summary
                                         </Button>
                                     </div>
@@ -723,8 +722,8 @@ function statusDot(status?: string | null) {
                                         <div
                                             class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-blue-100"
                                         >
-                                            <MapPin
-                                                class="h-3.5 w-3.5 text-blue-700"
+                                            <RiMapPin2Line
+                                                class="h-3.5 w-3.5 shrink-0 text-blue-700"
                                             />
                                         </div>
                                         <div>
@@ -747,8 +746,8 @@ function statusDot(status?: string | null) {
                                         <div
                                             class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-amber-100"
                                         >
-                                            <FileText
-                                                class="h-3.5 w-3.5 text-amber-700"
+                                            <RiFileTextLine
+                                                class="h-3.5 w-3.5 shrink-0 text-amber-700"
                                             />
                                         </div>
                                         <div>

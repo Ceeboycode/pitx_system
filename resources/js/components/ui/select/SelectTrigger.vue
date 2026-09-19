@@ -27,7 +27,7 @@ const dataSize = computed(() => (props.variant === "inline-edit" ? undefined : p
 const iconClass = computed(() =>
   props.variant === "inline-edit"
     ? "shrink-0 size-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:size-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:size-4 group-focus-within:ml-2 group-focus-within:opacity-100 group-data-[state=open]:size-4 group-data-[state=open]:ml-2 group-data-[state=open]:opacity-100 group-data-[state=open]:rotate-180"
-    : "size-4 transition-transform duration-200 ease-out group-data-[state=open]:rotate-180",
+    : "size-4 shrink-0 transition-transform duration-200 ease-out group-data-[state=open]:rotate-180",
 )
 </script>
 

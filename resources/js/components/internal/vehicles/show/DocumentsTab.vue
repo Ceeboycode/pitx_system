@@ -17,15 +17,14 @@ import {
     DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import {
     Popover,
     PopoverTrigger,
@@ -291,7 +290,7 @@ function submitConfirm() {
                                 class="group cursor-pointer"
                                 @click="downloadAllVerified()"
                             >
-                                <RiDownloadLine class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                <RiDownloadLine class="shrink-0 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
                                 <span>Download all verified</span>
                             </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -425,7 +424,7 @@ function submitConfirm() {
                                                             class="rounded-lg gap-1.5"
                                                             @click.stop
                                                         >
-                                                            <RiMessage2Fill class="h-3.5 w-3.5" />
+                                                            <RiMessage2Fill class="h-3.5 w-3.5 shrink-0" />
                                                             View Remarks
                                                         </Button>
                                                     </PopoverTrigger>
@@ -468,7 +467,7 @@ function submitConfirm() {
                                         class="cursor-pointer gap-2"
                                         @click="openPreview(doc)"
                                     >
-                                        <RiEyeLine class="h-4 w-4" /> Preview
+                                        <RiEyeLine class="h-4 w-4 shrink-0" /> Preview
                                     </DropdownMenuItem>
 
                                     <DropdownMenuItem
@@ -476,7 +475,7 @@ function submitConfirm() {
                                         class="cursor-pointer gap-2 text-emerald-600 focus:text-emerald-700"
                                         @click="openConfirm('verify', doc)"
                                     >
-                                        <RiCheckLine class="h-4 w-4" /> Verify
+                                        <RiCheckLine class="h-4 w-4 shrink-0" /> Verify
                                     </DropdownMenuItem>
 
                                     <DropdownMenuItem
@@ -484,7 +483,7 @@ function submitConfirm() {
                                         class="cursor-pointer gap-2 text-amber-600 focus:text-amber-700"
                                         @click="openConfirm('unverify', doc)"
                                     >
-                                        <RiRestartLine class="h-4 w-4" /> Move to Pending
+                                        <RiRestartLine class="h-4 w-4 shrink-0" /> Move to Pending
                                     </DropdownMenuItem>
 
                                     <DropdownMenuItem
@@ -492,7 +491,7 @@ function submitConfirm() {
                                         class="cursor-pointer gap-2 text-rose-600 focus:text-rose-700"
                                         @click="openInvalidate(doc)"
                                     >
-                                        <RiCloseCircleLine class="h-4 w-4" /> Mark Invalid
+                                        <RiCloseCircleLine class="h-4 w-4 shrink-0" /> Mark Invalid
                                     </DropdownMenuItem>
 
                                     <DropdownMenuItem
@@ -500,7 +499,7 @@ function submitConfirm() {
                                         class="cursor-pointer gap-2"
                                         @click="downloadDoc(doc)"
                                     >
-                                        <RiDownloadLine class="h-4 w-4" /> Download
+                                        <RiDownloadLine class="h-4 w-4 shrink-0" /> Download
                                     </DropdownMenuItem>
                                 </DocumentTableMoreButton>
                             </DocumentTableRow>
@@ -547,34 +546,38 @@ function submitConfirm() {
         />
 
         <!-- Verify / Unverify Confirm Dialog -->
-        <AlertDialog v-model:open="confirmOpen">
-            <AlertDialogContent class="rounded-2xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>
+        <Dialog v-model:open="confirmOpen">
+            <DialogContent class="max-w-md px-6" :show-close-button="false">
+                <DialogHeader class="px-0">
+                    <DialogTitle>
                         {{ actionType === 'verify' ? 'Verify document?' : 'Move back to pending?' }}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                        {{
-                            actionType === 'verify'
-                                ? `This will mark "${humanize(actionDoc?.document_type)}" as verified.`
-                                : `This will revert "${humanize(actionDoc?.document_type)}" back to pending review.`
-                        }}
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-
-                <AlertDialogFooter>
-                    <AlertDialogCancel :disabled="actionForm.processing">
-                        Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction
+                    </DialogTitle>
+                    <DialogDescription>
+                        {{ actionType === 'verify' ? 'This will mark' : 'This will revert' }}
+                        <span class="font-semibold text-custom-accent-3">{{
+                            humanize(actionDoc?.document_type)
+                        }}</span>
+                        {{ actionType === 'verify' ? 'as verified.' : 'back to pending review.' }}
+                    </DialogDescription>
+                </DialogHeader>
+                <Separator />
+                <DialogFooter class="pt-3 gap-2 sm:justify-end">
+                    <Button
+                        variant="ghost-outline"
                         :disabled="actionForm.processing"
-                        :class="actionType === 'verify' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'"
+                        @click="confirmOpen = false"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        :variant="actionType === 'verify' ? 'float-primary' : 'destructive'"
+                        :disabled="actionForm.processing"
                         @click="submitConfirm"
                     >
                         {{ actionForm.processing ? 'Processing...' : 'Confirm' }}
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </div>
 </template>

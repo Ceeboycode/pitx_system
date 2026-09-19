@@ -101,7 +101,7 @@ function submit() {
     <Dialog v-model:open="open">
         <DialogContent class="">
             <DialogHeader>
-                <DialogTitle>Add Gate</DialogTitle>
+                <DialogTitle>Add New Gate</DialogTitle>
             </DialogHeader>
             <form class="flex flex-col gap-y-2 px-6" @submit.prevent="submit">
                 <div class="relative space-y-1">
@@ -180,9 +180,9 @@ function submit() {
                     <div class="flex items-center gap-3 rounded-md border border-dashed border-custom-bg-dark p-3 dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5">
                         <div role="button" tabindex="0" :aria-label="picturePreview ? 'Change gate picture' : 'Upload gate picture'" class="group relative h-24 w-24 shrink-0 cursor-pointer overflow-hidden rounded-md border transition-colors" :class="picturePreview ? 'border-none' : 'border-dashed border-custom-bg-dark dark:border-custom-bg-light'" @click="pictureInputRef?.click()" @keydown.enter.prevent="pictureInputRef?.click()" @keydown.space.prevent="pictureInputRef?.click()">
                             <img v-if="picturePreview" :src="picturePreview" alt="Gate picture preview" class="h-full w-full object-cover transition duration-200 group-hover:brightness-30" />
-                            <div v-if="picturePreview" class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"><RiImageAddLine class="h-7 w-7 text-custom-shadow" /></div>
-                            <div v-else class="flex h-full w-full items-center justify-center"><RiImageAddLine class="h-6 w-6 text-custom-shadow/80" /></div>
-                            <Button v-if="picturePreview" type="button" aria-label="Remove gate picture" class="absolute right-1 top-1 z-10 flex h-6 w-6 cursor-pointer items-center rounded-full border border-custom-shadow/50 text-custom-shadow transition-all duration-200 hover:border-destructive hover:bg-destructive/20 hover:text-destructive" @click.stop="removePicture"><RiCloseLine class="h-4 w-4" /></Button>
+                            <div v-if="picturePreview" class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"><RiImageAddLine class="h-7 w-7 shrink-0 text-custom-shadow" /></div>
+                            <div v-else class="flex h-full w-full items-center justify-center"><RiImageAddLine class="h-6 w-6 shrink-0 text-custom-shadow/80" /></div>
+                            <Button v-if="picturePreview" type="button" aria-label="Remove gate picture" class="absolute right-1 top-1 z-10 flex h-6 w-6 cursor-pointer items-center rounded-full border border-custom-shadow/50 text-custom-shadow transition-all duration-200 hover:border-destructive hover:bg-destructive/20 hover:text-destructive" @click.stop="removePicture"><RiCloseLine class="h-4 w-4 shrink-0" /></Button>
                         </div>
                         <div class="space-y-1">
                             <p class="text-sm text-custom-shadow/80"><span class="font-semibold">File format: </span>.jpg, .png or .webp<br /><span class="font-semibold">Max. file size: </span>2 MB<br /><span class="font-semibold">Recommended: </span>landscape image</p>
@@ -196,8 +196,8 @@ function submit() {
                 <DialogFooter class="gap-2">
                     <Button variant="ghost-outline" type="button" @click="open = false">Cancel</Button>
                     <Button type="submit" variant="float-primary" :disabled="form.processing">
-                        <RiLoaderLine v-if="form.processing" class="h-4 w-4 animate-spin" />
-                        {{ form.processing ? 'Adding...' : 'Add' }}
+                        <RiLoaderLine v-if="form.processing" class="h-4 w-4 shrink-0 animate-spin" />
+                        {{ form.processing ? 'Adding...' : 'Add Gate' }}
                     </Button>
                 </DialogFooter>
             </form>

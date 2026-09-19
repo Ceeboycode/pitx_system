@@ -2,7 +2,7 @@
 import type { NavigationMenuTriggerProps } from "reka-ui"
 import type { HTMLAttributes } from "vue"
 import { reactiveOmit } from "@vueuse/core"
-import { ChevronDown } from "lucide-vue-next"
+import { RiArrowDownSLine } from "vue-remix-icons"
 import {
   NavigationMenuTrigger,
   useForwardProps,
@@ -24,8 +24,8 @@ const forwardedProps = useForwardProps(delegatedProps)
     :class="cn(navigationMenuTriggerStyle(), 'group', props.class)"
   >
     <slot />
-    <ChevronDown
-      class="relative top-[1px] ml-1 size-3 transition duration-200 group-data-[state=open]:rotate-180"
+    <RiArrowDownSLine
+      class="relative top-[1px] ml-1 size-3 shrink-0 transition duration-200 group-data-[state=open]:rotate-180"
       aria-hidden="true"
     />
   </NavigationMenuTrigger>

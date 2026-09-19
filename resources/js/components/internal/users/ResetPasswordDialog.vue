@@ -45,7 +45,7 @@ function confirm() {
 
 <template>
     <Dialog v-model:open="open">
-        <DialogContent class="max-w-md px-6">
+        <DialogContent class="max-w-md px-6" :show-close-button="false">
             <DialogHeader class="px-0">
                 <DialogTitle>Reset Password</DialogTitle>
                 <DialogDescription>
@@ -62,8 +62,8 @@ function confirm() {
                     Cancel
                 </Button>
                 <Button variant="float-primary" @click="confirm">
-                    <RiKey2Line class="h-4 w-4" />
-                    Send Temporary Password
+                    <RiKey2Line class="h-4 w-4 shrink-0" />
+                    Reset Password
                 </Button>
             </DialogFooter>
         </DialogContent>

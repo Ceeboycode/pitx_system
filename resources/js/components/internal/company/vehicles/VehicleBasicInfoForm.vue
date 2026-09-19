@@ -10,14 +10,14 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import {
-    BadgeCheck,
-    Bus,
-    Hash,
-    Palette,
-    Settings2,
-    Shield,
-    Users,
-} from 'lucide-vue-next'
+    RiBusLine,
+    RiGroupLine,
+    RiHashtag,
+    RiPaletteLine,
+    RiSettings5Line,
+    RiShieldLine,
+    RiVerifiedBadgeLine,
+} from 'vue-remix-icons'
 
 type VehicleFormShape = {
     vehicle_type: string
@@ -121,7 +121,7 @@ function updateCapacity(value: string) {
                     v-if="readonly"
                     class="inline-flex w-fit items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground"
                 >
-                    <BadgeCheck class="h-3.5 w-3.5" />
+                    <RiVerifiedBadgeLine class="h-3.5 w-3.5 shrink-0" />
                     Read only
                 </div>
             </div>
@@ -131,7 +131,7 @@ function updateCapacity(value: string) {
             <div class="rounded-2xl border bg-background p-4 shadow-sm md:p-5">
                 <div class="mb-4 flex items-center gap-2">
                     <div class="rounded-xl bg-red-50 p-2 text-red-600 ring-1 ring-red-100">
-                        <Bus class="h-4 w-4" />
+                        <RiBusLine class="h-4 w-4 shrink-0" />
                     </div>
                     <div>
                         <p class="text-sm font-semibold text-foreground">
@@ -183,8 +183,8 @@ function updateCapacity(value: string) {
                         </Label>
 
                         <div class="relative">
-                            <Hash
-                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                            <RiHashtag
+                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 shrink-0 -translate-y-1/2 text-muted-foreground"
                             />
                             <Input
                                 id="plate_number"
@@ -208,8 +208,8 @@ function updateCapacity(value: string) {
                         </Label>
 
                         <div class="relative">
-                            <Hash
-                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                            <RiHashtag
+                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 shrink-0 -translate-y-1/2 text-muted-foreground"
                             />
                             <Input
                                 id="body_number"
@@ -257,8 +257,8 @@ function updateCapacity(value: string) {
                             v-if="capacitySelectValue() === 'custom'"
                             class="relative"
                         >
-                            <Users
-                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                            <RiGroupLine
+                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 shrink-0 -translate-y-1/2 text-muted-foreground"
                             />
                             <Input
                                 id="custom_capacity"
@@ -279,7 +279,7 @@ function updateCapacity(value: string) {
             <div class="rounded-2xl border bg-background p-4 shadow-sm md:p-5">
                 <div class="mb-4 flex items-center gap-2">
                     <div class="rounded-xl bg-blue-50 p-2 text-blue-700 ring-1 ring-blue-100">
-                        <Settings2 class="h-4 w-4" />
+                        <RiSettings5Line class="h-4 w-4 shrink-0" />
                     </div>
                     <div>
                         <p class="text-sm font-semibold text-foreground">
@@ -301,8 +301,8 @@ function updateCapacity(value: string) {
                         </Label>
 
                         <div class="relative">
-                            <Palette
-                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                            <RiPaletteLine
+                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 shrink-0 -translate-y-1/2 text-muted-foreground"
                             />
                             <Input
                                 id="color"
@@ -326,8 +326,8 @@ function updateCapacity(value: string) {
                         </Label>
 
                         <div class="relative">
-                            <Bus
-                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                            <RiBusLine
+                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 shrink-0 -translate-y-1/2 text-muted-foreground"
                             />
                             <Input
                                 id="make_model"
@@ -351,8 +351,8 @@ function updateCapacity(value: string) {
                         </Label>
 
                         <div class="relative">
-                            <Shield
-                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                            <RiShieldLine
+                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 shrink-0 -translate-y-1/2 text-muted-foreground"
                             />
                             <Input
                                 id="engine_number"
@@ -376,8 +376,8 @@ function updateCapacity(value: string) {
                         </Label>
 
                         <div class="relative">
-                            <Shield
-                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                            <RiShieldLine
+                                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 shrink-0 -translate-y-1/2 text-muted-foreground"
                             />
                             <Input
                                 id="chassis_number"

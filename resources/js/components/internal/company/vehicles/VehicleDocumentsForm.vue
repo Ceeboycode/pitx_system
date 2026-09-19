@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { FileText, Image as ImageIcon } from 'lucide-vue-next';
+import { RiFileTextLine, RiImageLine } from 'vue-remix-icons';
 
 type VehicleDocumentItem = {
     document_type: string;
@@ -77,11 +77,11 @@ function isEditableDate(status?: string | null) {
             <div class="flex items-center justify-between gap-3 p-4">
                 <div class="flex items-center gap-3">
                     <div class="rounded-md border p-2 text-muted-foreground">
-                        <ImageIcon
+                        <RiImageLine
                             v-if="isPhotoDocument(document.document_type)"
-                            class="h-4 w-4"
+                            class="h-4 w-4 shrink-0"
                         />
-                        <FileText v-else class="h-4 w-4" />
+                        <RiFileTextLine v-else class="h-4 w-4 shrink-0" />
                     </div>
 
                     <div>

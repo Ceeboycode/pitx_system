@@ -49,7 +49,7 @@ function confirm() {
 
 <template>
     <Dialog v-model:open="open">
-        <DialogContent class="px-6">
+        <DialogContent class="px-6" :show-close-button="false">
             <DialogHeader class="px-0">
                 <DialogTitle>Set vehicle type status</DialogTitle>
                 <DialogDescription class="mt-4">

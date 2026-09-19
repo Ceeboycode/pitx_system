@@ -2,7 +2,7 @@
 import PitxLogo from '@/components/assets/PITX.png';
 import { home } from '@/routes';
 import { Head, Link } from '@inertiajs/vue3';
-import { Mail, MapPin, Phone, Clock } from 'lucide-vue-next';
+import { RiMailLine, RiMapPin2Line, RiPhoneLine, RiTimeLine } from 'vue-remix-icons';
 </script>
 
 <template>
@@ -29,7 +29,7 @@ import { Mail, MapPin, Phone, Clock } from 'lucide-vue-next';
                 
                 <div class="flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                     <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1a3a6b]/10">
-                        <MapPin class="h-5 w-5 text-[#1a3a6b]" />
+                        <RiMapPin2Line class="h-5 w-5 shrink-0 text-[#1a3a6b]" />
                     </div>
                     <div>
                         <p class="text-xs font-bold uppercase tracking-widest text-gray-400">Address</p>
@@ -41,7 +41,7 @@ import { Mail, MapPin, Phone, Clock } from 'lucide-vue-next';
                 
                 <div class="flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                     <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#c0392b]/10">
-                        <Mail class="h-5 w-5 text-[#c0392b]" />
+                        <RiMailLine class="h-5 w-5 shrink-0 text-[#c0392b]" />
                     </div>
                     <div>
                         <p class="text-xs font-bold uppercase tracking-widest text-gray-400">Email</p>
@@ -53,7 +53,7 @@ import { Mail, MapPin, Phone, Clock } from 'lucide-vue-next';
                 
                 <div class="flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                     <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1a3a6b]/10">
-                        <Phone class="h-5 w-5 text-[#1a3a6b]" />
+                        <RiPhoneLine class="h-5 w-5 shrink-0 text-[#1a3a6b]" />
                     </div>
                     <div>
                         <p class="text-xs font-bold uppercase tracking-widest text-gray-400">Phone</p>
@@ -65,7 +65,7 @@ import { Mail, MapPin, Phone, Clock } from 'lucide-vue-next';
                 
                 <div class="flex items-start gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                     <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#c0392b]/10">
-                        <Clock class="h-5 w-5 text-[#c0392b]" />
+                        <RiTimeLine class="h-5 w-5 shrink-0 text-[#c0392b]" />
                     </div>
                     <div>
                         <p class="text-xs font-bold uppercase tracking-widest text-gray-400">Office Hours</p>

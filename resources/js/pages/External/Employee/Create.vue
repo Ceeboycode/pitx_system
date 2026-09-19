@@ -18,18 +18,6 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 
-import {
-    ArrowLeft,
-    Building2,
-    KeyRound,
-    Loader2,
-    Phone,
-    ShieldCheck,
-    UserPlus,
-    Users,
-} from 'lucide-vue-next';
-
-
 
 type Company = {
     id: number;
@@ -146,7 +134,7 @@ function submit() {
 </script>
 
 <template>
-    <Head title="Create Employee" />
+    <Head title="Add New Employee" />
 
     <ExternalLayout :company="company" :user="user">
         <div class="min-h-screen bg-slate-50/60">
@@ -159,19 +147,16 @@ function submit() {
                         <div
                             class="flex items-center gap-2 text-xs font-semibold tracking-widest text-slate-400 uppercase"
                         >
-                            <Building2 class="h-3.5 w-3.5" />
                             {{ company.company_code ?? company.company_name }}
                             <span class="text-slate-300">·</span>
                             <span>Employees</span>
                             <span class="text-slate-300">·</span>
-                            <span>Create</span>
+                            <span>Add New</span>
                         </div>
                         <div class="flex items-center gap-2.5">
                             <div
                                 class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700"
-                            >
-                                <UserPlus class="h-4 w-4 text-white" />
-                            </div>
+                            ></div>
                             <h1
                                 class="text-2xl font-bold tracking-tight text-slate-900"
                             >
@@ -190,7 +175,6 @@ function submit() {
                         class="shrink-0 self-start rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                     >
                         <Link href="/employee-users">
-                            <ArrowLeft class="mr-2 h-4 w-4" />
                             Back to Employees
                         </Link>
                     </Button>
@@ -203,9 +187,7 @@ function submit() {
                     >
                         <div
                             class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700"
-                        >
-                            <UserPlus class="h-4 w-4 text-white" />
-                        </div>
+                        ></div>
                         <p
                             class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
                         >
@@ -222,9 +204,7 @@ function submit() {
                     >
                         <div
                             class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500"
-                        >
-                            <ShieldCheck class="h-4 w-4 text-white" />
-                        </div>
+                        ></div>
                         <p
                             class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
                         >
@@ -251,9 +231,7 @@ function submit() {
                     >
                         <div
                             class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-slate-600"
-                        >
-                            <KeyRound class="h-4 w-4 text-white" />
-                        </div>
+                        ></div>
                         <p
                             class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
                         >
@@ -271,9 +249,7 @@ function submit() {
                     >
                         <div
                             class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600"
-                        >
-                            <Users class="h-4 w-4 text-white" />
-                        </div>
+                        ></div>
                         <p
                             class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
                         >
@@ -358,9 +334,6 @@ function submit() {
                                             Phone Number
                                         </Label>
                                         <div class="relative">
-                                            <Phone
-                                                class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
-                                            />
                                             <Input
                                                 id="phone_number"
                                                 v-model="form.phone_number"
@@ -503,15 +476,10 @@ function submit() {
                                         :disabled="form.processing"
                                         class="rounded-lg border-0 bg-blue-700 font-semibold text-white shadow-sm hover:bg-blue-800 disabled:opacity-60"
                                     >
-                                        <Loader2
-                                            v-if="form.processing"
-                                            class="mr-2 h-4 w-4 animate-spin"
-                                        />
-                                        <UserPlus v-else class="mr-2 h-4 w-4" />
                                         {{
                                             form.processing
-                                                ? 'Creating...'
-                                                : 'Create Employee'
+                                                ? 'Adding...'
+                                                : 'Add Employee'
                                         }}
                                     </Button>
                                 </div>
@@ -530,9 +498,6 @@ function submit() {
                                     <h3
                                         class="flex items-center gap-2 text-sm font-semibold text-slate-800"
                                     >
-                                        <Building2
-                                            class="h-4 w-4 text-blue-700"
-                                        />
                                         Company
                                     </h3>
                                 </div>
@@ -597,7 +562,6 @@ function submit() {
                                     <h3
                                         class="flex items-center gap-2 text-sm font-semibold text-slate-800"
                                     >
-                                        <Users class="h-4 w-4 text-blue-700" />
                                         Available Roles
                                     </h3>
                                     <p class="mt-0.5 text-xs text-slate-400">
@@ -625,14 +589,7 @@ function submit() {
                                         <div
                                             class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
                                             :class="roleColor(role.name).icon"
-                                        >
-                                            <Users
-                                                class="h-3.5 w-3.5"
-                                                :class="
-                                                    roleColor(role.name).text
-                                                "
-                                            />
-                                        </div>
+                                        ></div>
                                         <div class="min-w-0 flex-1">
                                             <div
                                                 class="mb-0.5 flex items-center gap-2"
@@ -689,9 +646,6 @@ function submit() {
                                     <h3
                                         class="flex items-center gap-2 text-sm font-semibold text-slate-800"
                                     >
-                                        <KeyRound
-                                            class="h-4 w-4 text-blue-700"
-                                        />
                                         Account Notes
                                     </h3>
                                 </div>
@@ -699,11 +653,7 @@ function submit() {
                                     <div class="flex gap-3 px-5 py-4">
                                         <div
                                             class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-emerald-100"
-                                        >
-                                            <ShieldCheck
-                                                class="h-3.5 w-3.5 text-emerald-600"
-                                            />
-                                        </div>
+                                        ></div>
                                         <div>
                                             <p
                                                 class="text-xs font-semibold tracking-widest text-emerald-700 uppercase"
@@ -723,11 +673,7 @@ function submit() {
                                     <div class="flex gap-3 px-5 py-4">
                                         <div
                                             class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-blue-100"
-                                        >
-                                            <Phone
-                                                class="h-3.5 w-3.5 text-blue-700"
-                                            />
-                                        </div>
+                                        ></div>
                                         <div>
                                             <p
                                                 class="text-xs font-semibold tracking-widest text-blue-700 uppercase"
@@ -749,11 +695,7 @@ function submit() {
                                         <div class="flex gap-3">
                                             <div
                                                 class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-100"
-                                            >
-                                                <KeyRound
-                                                    class="h-3.5 w-3.5 text-slate-600"
-                                                />
-                                            </div>
+                                            ></div>
                                             <div>
                                                 <p
                                                     class="text-xs font-semibold tracking-widest text-slate-500 uppercase"

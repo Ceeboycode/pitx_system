@@ -26,6 +26,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -42,28 +51,6 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { can } from '@/lib/can';
 
-import {
-    Archive,
-    ArrowLeft,
-    CheckCircle2,
-    CircleHelp,
-    Download,
-    Eye,
-    File,
-    FileText,
-    ListChecks,
-    Mail,
-    Map,
-    MapPin,
-    MessageSquareText,
-    MoreHorizontal,
-    Phone,
-    RotateCcw,
-    Route as RouteIcon,
-    Truck,
-    X,
-    XCircle,
-} from 'lucide-vue-next';
 import {
     RiArchive2Line,
     RiCloseLine,
@@ -622,7 +609,7 @@ const tabs = [
             >
                 <DropdownMenuItem as-child class="group cursor-pointer">
                     <Button v-if="canArchiveVehicle" variant="dropdown" @click="archiveOpen = true">
-                        <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
+                        <RiArchive2Line class="h-4 w-4 shrink-0 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
                         <span>Archive {{ vehicle.plate_number || `Vehicle #${vehicle.id}` }}</span>
                     </Button>
                     <!-- <Button
@@ -639,7 +626,7 @@ const tabs = [
             <Tabs default-value="details">
                 <TabsList>
                     <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value">
-                        <component :is="tab.icon" class="h-4 w-4"/>
+                        <component :is="tab.icon" class="h-4 w-4 shrink-0"/>
                         <span>{{ tab.label }}</span>
                     </TabsTrigger>
                 </TabsList>
@@ -677,32 +664,28 @@ const tabs = [
         />
 
 
-        <AlertDialog v-model:open="archiveOpen">
-            <AlertDialogContent class="rounded-2xl">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Archive Vehicle</AlertDialogTitle>
-                    <AlertDialogDescription>
+        <Dialog v-model:open="archiveOpen">
+            <DialogContent class="max-w-md px-6" :show-close-button="false">
+                <DialogHeader class="px-0">
+                    <DialogTitle>Archive Vehicle</DialogTitle>
+                    <DialogDescription>
                         Are you sure you want to archive
-                        <span class="font-semibold text-foreground">{{
+                        <span class="font-semibold text-custom-accent-3">{{
                             vehicle.plate_number || `Vehicle #${vehicle.id}`
-                        }}</span
-                        >? You can restore it later from Archived Vehicles.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="rounded-lg"
-                        >Cancel</AlertDialogCancel
-                    >
-                    <AlertDialogAction
-                        class="rounded-lg border-0 bg-rose-600 text-white hover:bg-rose-700"
-                        @click="archiveVehicle"
-                    >
+                        }}</span>? You can restore it later from Archived Vehicles.
+                    </DialogDescription>
+                </DialogHeader>
+                <Separator />
+                <DialogFooter class="pt-3 gap-2 sm:justify-end">
+                    <Button variant="ghost-outline" @click="archiveOpen = false">
+                        Cancel
+                    </Button>
+                    <Button variant="destructive" @click="archiveVehicle">
                         Archive
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
 
         <AlertDialog v-model:open="confirmOpen">
             <AlertDialogContent>

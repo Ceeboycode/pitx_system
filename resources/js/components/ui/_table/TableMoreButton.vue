@@ -71,7 +71,7 @@ const menuStyle = computed(() => {
               @click.stop="emit('update:open', true)"
               @contextmenu.prevent.stop
           >
-              <RiMore2Line class="h-4 w-4" />
+              <RiMore2Line class="h-4 w-4 shrink-0" />
           </Button>
       </DropdownMenuTrigger>
 

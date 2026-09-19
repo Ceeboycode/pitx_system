@@ -3,15 +3,14 @@ import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -247,24 +246,27 @@ function confirmRestore() {
             </Card>
         </PanelLayout>
 
-        <AlertDialog v-model:open="restoreOpen">
-            <AlertDialogContent class="rounded-lg p-4">
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Restore User</AlertDialogTitle>
-                    <AlertDialogDescription>
+        <Dialog v-model:open="restoreOpen">
+            <DialogContent class="max-w-md px-6" :show-close-button="false">
+                <DialogHeader class="px-0">
+                    <DialogTitle>Restore User</DialogTitle>
+                    <DialogDescription>
                         Are you sure you want to restore
-                        <span class="font-semibold text-foreground">{{ restoringUser?.name ?? 'this user' }}</span>?
+                        <span class="font-semibold text-custom-accent-3">{{ restoringUser?.name ?? 'this user' }}</span>?
                         They will be moved back to the active users list.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel class="cursor-pointer rounded-lg hover:bg-slate-100" @click="restoringUser = null">Cancel</AlertDialogCancel>
-                    <AlertDialogAction class="cursor-pointer rounded-lg border-0 bg-primary text-white hover:bg-primary/90" @click="confirmRestore">
+                    </DialogDescription>
+                </DialogHeader>
+                <Separator />
+                <DialogFooter class="pt-3 gap-2 sm:justify-end">
+                    <Button variant="ghost-outline" @click="restoringUser = null; restoreOpen = false">
+                        Cancel
+                    </Button>
+                    <Button variant="float-primary" @click="confirmRestore">
                         <RiRestartLine class="h-4 w-4" />
                         Restore
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>

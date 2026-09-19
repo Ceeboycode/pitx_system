@@ -15,18 +15,17 @@ import {
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
+import { ArrowRight } from 'lucide-vue-next';
 import {
-    Activity,
-    AlertTriangle,
-    ArrowRight,
-    Building2,
-    Bus,
-    MapPin,
-    Route as RouteIcon,
-    ShieldCheck,
-    Truck,
-    Users,
-} from 'lucide-vue-next';
+    RiAlertLine,
+    RiBubbleChartFill,
+    RiBuilding2Line,
+    RiBusLine,
+    RiGroupLine,
+    RiMapPin2Line,
+    RiRouteLine,
+    RiShieldCheckLine,
+} from 'vue-remix-icons';
 
 const props = defineProps<{
     company: {
@@ -190,28 +189,28 @@ const primaryKpis = computed(() => [
         title: 'Dispatches Today',
         value: props.stats.total_dispatches,
         meta: `${props.stats.pending_dispatches} pending`,
-        icon: Truck,
+        icon: RiBusLine,
         accent: 'blue',
     },
     {
         title: 'Fleet Readiness',
         value: `${props.stats.fleet_readiness_rate}%`,
         meta: `${props.stats.active_vehicles} active vehicles`,
-        icon: Bus,
+        icon: RiBusLine,
         accent: 'blue',
     },
     {
         title: 'Route Coverage',
         value: `${props.stats.route_coverage_rate}%`,
         meta: `${props.stats.assigned_vehicles} assigned`,
-        icon: RouteIcon,
+        icon: RiRouteLine,
         accent: 'blue',
     },
     {
         title: 'Needs Attention',
         value: props.stats.attention_count,
         meta: 'open items',
-        icon: AlertTriangle,
+        icon: RiAlertLine,
         accent: props.stats.attention_count > 0 ? 'red' : 'blue',
     },
 ]);
@@ -335,28 +334,28 @@ const documentChartData = computed(() => {
                         <div class="grid gap-2 sm:grid-cols-4">
                             <Button as-child variant="outline">
                                 <Link href="/company/dispatches">
-                                    <Truck class="mr-2 h-4 w-4" />
+                                    <RiBusLine class="mr-2 h-4 w-4 shrink-0" />
                                     Dispatches
                                 </Link>
                             </Button>
 
                             <Button as-child variant="outline">
                                 <Link href="/company/vehicles">
-                                    <Bus class="mr-2 h-4 w-4" />
+                                    <RiBusLine class="mr-2 h-4 w-4 shrink-0" />
                                     Vehicles
                                 </Link>
                             </Button>
 
                             <Button as-child variant="outline">
                                 <Link href="/employee-users">
-                                    <Users class="mr-2 h-4 w-4" />
+                                    <RiGroupLine class="mr-2 h-4 w-4 shrink-0" />
                                     Employees
                                 </Link>
                             </Button>
 
                             <Button as-child>
                                 <Link href="/profile">
-                                    <Building2 class="mr-2 h-4 w-4" />
+                                    <RiBuilding2Line class="mr-2 h-4 w-4 shrink-0" />
                                     Company Profile
                                 </Link>
                             </Button>
@@ -408,7 +407,7 @@ const documentChartData = computed(() => {
                                         : 'bg-blue-50 text-blue-600'
                                 "
                             >
-                                <component :is="item.icon" class="h-5 w-5" />
+                                <component :is="item.icon" class="h-5 w-5 shrink-0" />
                             </div>
                         </div>
                     </CardContent>
@@ -433,7 +432,7 @@ const documentChartData = computed(() => {
                     <div
                         class="mt-0.5 shrink-0 rounded-lg bg-amber-100 p-2 text-amber-700"
                     >
-                        <AlertTriangle class="h-4 w-4" />
+                        <RiAlertLine class="h-4 w-4 shrink-0" />
                     </div>
                     <div>
                         <p class="text-sm font-semibold text-amber-900">
@@ -490,7 +489,7 @@ const documentChartData = computed(() => {
                             <div
                                 class="rounded-md bg-blue-50 p-1.5 text-blue-600"
                             >
-                                <Activity class="h-4 w-4" />
+                                <RiBubbleChartFill class="h-4 w-4 shrink-0" />
                             </div>
                             <div>
                                 <CardTitle class="text-base"
@@ -677,7 +676,7 @@ const documentChartData = computed(() => {
                             <div
                                 class="rounded-md bg-blue-50 p-1.5 text-blue-600"
                             >
-                                <ShieldCheck class="h-4 w-4" />
+                                <RiShieldCheckLine class="h-4 w-4 shrink-0" />
                             </div>
                             <div>
                                 <CardTitle class="text-base"
@@ -781,7 +780,7 @@ const documentChartData = computed(() => {
                                 <div
                                     class="rounded-md bg-blue-50 p-1.5 text-blue-600"
                                 >
-                                    <Truck class="h-4 w-4" />
+                                    <RiBusLine class="h-4 w-4 shrink-0" />
                                 </div>
                                 <div>
                                     <CardTitle class="text-base"
@@ -800,7 +799,7 @@ const documentChartData = computed(() => {
                             >
                                 <Link href="/company/dispatches">
                                     View all
-                                    <ArrowRight class="ml-1.5 h-3.5 w-3.5" />
+                                    <ArrowRight class="ml-1.5 h-3.5 w-3.5 shrink-0" />
                                 </Link>
                             </Button>
                         </div>
@@ -868,7 +867,7 @@ const documentChartData = computed(() => {
                                                 v-if="dispatch.route?.gate_name"
                                                 class="flex items-center gap-1"
                                             >
-                                                <MapPin class="h-3 w-3" />
+                                                <RiMapPin2Line class="h-3 w-3 shrink-0" />
                                                 {{ dispatch.route.gate_name }}
                                             </span>
                                         </div>
@@ -957,7 +956,7 @@ const documentChartData = computed(() => {
                             <div
                                 class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-50"
                             >
-                                <Truck class="h-6 w-6 text-blue-400" />
+                                <RiBusLine class="h-6 w-6 shrink-0 text-blue-400" />
                             </div>
                             <p class="text-sm font-medium">No dispatches yet</p>
                             <p class="mt-1 text-xs text-muted-foreground">
@@ -977,7 +976,7 @@ const documentChartData = computed(() => {
                                 <div
                                     class="rounded-md bg-blue-50 p-1.5 text-blue-600"
                                 >
-                                    <Bus class="h-4 w-4" />
+                                    <RiBusLine class="h-4 w-4 shrink-0" />
                                 </div>
                                 <div>
                                     <CardTitle class="text-base"
@@ -1078,7 +1077,7 @@ const documentChartData = computed(() => {
                                     <div
                                         class="rounded-md bg-blue-50 p-1.5 text-blue-600"
                                     >
-                                        <RouteIcon class="h-4 w-4" />
+                                        <RiRouteLine class="h-4 w-4 shrink-0" />
                                     </div>
                                     <div>
                                         <CardTitle class="text-base"
@@ -1098,7 +1097,7 @@ const documentChartData = computed(() => {
                                 >
                                     <Link href="/company/routes">
                                         All
-                                        <ArrowRight class="ml-1 h-3 w-3" />
+                                        <ArrowRight class="ml-1 h-3 w-3 shrink-0" />
                                     </Link>
                                 </Button>
                             </div>
@@ -1136,7 +1135,7 @@ const documentChartData = computed(() => {
                                                 v-if="route.gate_name"
                                                 class="flex items-center gap-1 text-xs text-muted-foreground"
                                             >
-                                                <MapPin class="h-2.5 w-2.5" />
+                                                <RiMapPin2Line class="h-2.5 w-2.5 shrink-0" />
                                                 {{ route.gate_name }}
                                             </p>
                                         </div>
@@ -1169,8 +1168,8 @@ const documentChartData = computed(() => {
                                 v-else
                                 class="rounded-xl border border-dashed p-6 text-center"
                             >
-                                <RouteIcon
-                                    class="mx-auto mb-2 h-7 w-7 text-muted-foreground"
+                                <RiRouteLine
+                                    class="mx-auto mb-2 h-7 w-7 shrink-0 text-muted-foreground"
                                 />
                                 <p class="text-sm font-medium">
                                     No routes assigned

@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { CheckCircle2, XCircle } from 'lucide-vue-next';
 import {
-    CheckCircle2,
-    Download,
-    Ellipsis,
-    Eye,
-    FileText,
-    RotateCcw,
-    XCircle,
-} from 'lucide-vue-next';
+    RiDownloadLine,
+    RiEyeLine,
+    RiFileTextLine,
+    RiMore2Line,
+    RiRestartLine,
+} from 'vue-remix-icons';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -206,7 +205,7 @@ function emitAndClose(
                         v-else
                         class="flex h-full flex-col items-center justify-center"
                     >
-                        <FileText class="h-12 w-12 opacity-30" />
+                        <RiFileTextLine class="h-12 w-12 shrink-0 opacity-30" />
                         <p class="text-sm">
                             Your browser cannot preview this PDF inline.
                         </p>
@@ -216,7 +215,7 @@ function emitAndClose(
                                 target="_blank"
                                 rel="noopener noreferrer"
                             >
-                                <Eye class="mr-2 h-4 w-4" />Open in new tab
+                                <RiEyeLine class="mr-2 h-4 w-4 shrink-0" />Open in new tab
                             </a>
                         </Button>
                     </div>
@@ -245,7 +244,7 @@ function emitAndClose(
                                 variant="outline"
                                 class="rounded-lg cursor-pointer hover:bg-slate-100"
                             >
-                                <Ellipsis class="h-4 w-4" />
+                                <RiMore2Line class="h-4 w-4 shrink-0" />
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent
@@ -257,7 +256,7 @@ function emitAndClose(
                                 class="cursor-pointer flex items-center gap-2 rounded-lg px-4 py-2 text-sm hover:bg-slate-100"
                                 @click="emitAndClose('verify')"
                             >
-                                <CheckCircle2 class="h-4 w-4" />
+                                <CheckCircle2 class="h-4 w-4 shrink-0" />
                                 Verify
                             </div>
                             <div
@@ -265,7 +264,7 @@ function emitAndClose(
                                 class="cursor-pointer flex items-center gap-2 rounded-lg px-4 py-2 text-sm hover:bg-slate-100"
                                 @click="emitAndClose('unverify')"
                             >
-                                <RotateCcw class="h-4 w-4" />
+                                <RiRestartLine class="h-4 w-4 shrink-0" />
                                 Move to Pending
                             </div>
                             <div
@@ -273,7 +272,7 @@ function emitAndClose(
                                 class="cursor-pointer flex items-center gap-2 rounded-lg px-4 py-2 text-sm hover:bg-slate-100"
                                 @click="emitAndClose('invalidate')"
                             >
-                                <XCircle class="h-4 w-4" />
+                                <XCircle class="h-4 w-4 shrink-0" />
                                 Mark Invalid
                             </div>
                             <a
@@ -284,7 +283,7 @@ function emitAndClose(
                                 download
                                 class="cursor-pointer flex items-center gap-2 rounded-lg px-4 py-2 text-sm hover:bg-slate-100"
                             >
-                                <Download class="h-4 w-4" />
+                                <RiDownloadLine class="h-4 w-4 shrink-0" />
                                 Download
                             </a>
                         </PopoverContent>

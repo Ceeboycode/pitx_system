@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from "vue"
-import { PanelLeftClose, PanelLeftOpen } from "lucide-vue-next"
+import { RiSidebarFoldLine, RiSidebarUnfoldLine } from "vue-remix-icons"
 import { cn } from "@/lib/utils"
 import { Button } from '@/components/ui/button'
 import { useSidebar } from "./utils"
@@ -21,8 +21,8 @@ const { isMobile, state, toggleSidebar } = useSidebar()
     :class="cn('h-7 w-7', props.class)"
     @click="toggleSidebar"
   >
-    <PanelLeftOpen v-if="isMobile || state === 'collapsed'" />
-    <PanelLeftClose v-else />
-    
+    <RiSidebarUnfoldLine v-if="isMobile || state === 'collapsed'" class="shrink-0" />
+    <RiSidebarFoldLine v-else class="shrink-0" />
+
   </Button>
 </template>

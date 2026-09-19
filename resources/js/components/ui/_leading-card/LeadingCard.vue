@@ -61,8 +61,8 @@ const emit = defineEmits<{
                             {'bg-custom-shadow/10 px-2 py-0.5': props.status === 'inactive'},
                         )"
                     >
-                        <RiCircleFill v-if="props.status === 'active'" class="h-2 w-2 text-success" />
-                        <RiCircleLine v-else-if="props.status === 'inactive'" class="h-2 w-2 text-custom-shadow" />
+                        <RiCircleFill v-if="props.status === 'active'" class="h-2 w-2 shrink-0 text-success" />
+                        <RiCircleLine v-else-if="props.status === 'inactive'" class="h-2 w-2 shrink-0 text-custom-shadow" />
                         <span v-if="props.status === 'active'" class="text-success text-sm">
                             Active
                         </span>
@@ -89,7 +89,7 @@ const emit = defineEmits<{
                 <div class="lg:flex items-center gap-2 sm:justify-end">
                     <Button as-child variant="header-actions" size="icon" class="text-custom-bg-light dark:text-custom-shadow bg-custom-bg-light/10 dark:bg-custom-shadow/10 hidden lg:flex">
                         <Link :href="props.back" :aria-label="`Back to ${props.entity} list`">
-                            <RiArrowLeftLine class="h-4 w-4" />
+                            <RiArrowLeftLine class="h-4 w-4 shrink-0" />
                         </Link>
                     </Button>
 
@@ -117,7 +117,7 @@ const emit = defineEmits<{
                             >
                                 <!-- <Button variant="dropdown" size="dropdown"> -->
                                     <Link :href="props.back" :aria-label="`Back to ${props.entity} list`" class="transition-all duration-200 flex flex-row gap-2 w-full justify-start rounded-md text-custom-shadow group-hover:bg-custom-secondary/20 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow items-center cursor-pointer">
-                                        <RiArrowLeftLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                        <RiArrowLeftLine class="h-4 w-4 shrink-0 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
                                         Back
                                     </Link>
                                 <!-- </Button> -->

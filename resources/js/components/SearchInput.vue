@@ -71,7 +71,7 @@ const clear = () => {
 <template>
     <div class="relative w-full">
         <RiSearchLine
-            class="size-4 pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-custom-shadow/80"
+            class="size-4 shrink-0 pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-custom-shadow/80"
         />
 
         <Input
@@ -87,7 +87,7 @@ const clear = () => {
             @click="clear"
             aria-label="Clear search"
         >
-            <RiCloseLine class="size-4" aria-hidden="true" />
+            <RiCloseLine class="size-4 shrink-0" aria-hidden="true" />
         </button>
     </div>
 </template>

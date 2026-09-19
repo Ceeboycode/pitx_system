@@ -33,8 +33,8 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 
-import { Archive, ArchiveX, CheckCircle2, MapPinned } from 'lucide-vue-next';
-import { RiArrowLeftLine, RiEditLine } from 'vue-remix-icons';
+import { CheckCircle2 } from 'lucide-vue-next';
+import { RiArchive2Line, RiArrowLeftLine, RiEditLine, RiMapPin2Line } from 'vue-remix-icons';
 
 import { edit, index } from '@/actions/App/Http/Controllers/RouteController';
 import type { BreadcrumbItem } from '@/types';
@@ -324,7 +324,7 @@ onBeforeUnmount(() => {
                 <CardHeader class="flex flex-row items-start gap-3">
                     <Button as-child variant="header-actions" size="icon-text">
                         <Link :href="index().url" aria-label="Back to routes">
-                            <RiArrowLeftLine class="h-4 w-4" />
+                            <RiArrowLeftLine class="h-4 w-4 shrink-0" />
                         </Link>
                     </Button>
                     <div class="flex min-w-0 flex-1 flex-col">
@@ -341,7 +341,7 @@ onBeforeUnmount(() => {
                             :href="edit(route.id).url"
                             aria-label="Edit route"
                         >
-                            <RiEditLine class="h-4 w-4" />
+                            <RiEditLine class="h-4 w-4 shrink-0" />
                             <span>Edit</span>
                         </Link>
                     </Button>
@@ -370,7 +370,7 @@ onBeforeUnmount(() => {
                                     <div
                                         class="flex items-center justify-between gap-2 rounded-md border border-custom-accent-3 bg-custom-accent-3/10 px-3 py-2"
                                     >
-                                        <MapPinned
+                                        <RiMapPin2Line
                                             class="h-4 w-4 shrink-0 text-custom-accent-3"
                                         />
                                         <span
@@ -597,14 +597,14 @@ onBeforeUnmount(() => {
                         <div class="flex items-center justify-end gap-2">
                             <Button as-child variant="float" size="icon-text"
                                 ><Link :href="edit(route.id).url"
-                                    ><RiEditLine class="h-4 w-4" />Edit</Link
+                                    ><RiEditLine class="h-4 w-4 shrink-0" />Edit</Link
                                 ></Button
                             >
                             <Button
                                 variant="destructive"
                                 size="icon-text"
                                 @click="openArchiveDialog"
-                                ><Archive class="h-4 w-4" />Archive</Button
+                                ><RiArchive2Line class="h-4 w-4 shrink-0" />Archive</Button
                             >
                         </div>
                     </section>
@@ -629,7 +629,7 @@ onBeforeUnmount(() => {
                             >Cancel</Button
                         >
                         <Button variant="destructive" @click="archiveRoute"
-                            ><ArchiveX class="h-4 w-4" />Archive</Button
+                            ><RiArchive2Line class="h-4 w-4 shrink-0" />Archive</Button
                         >
                     </DialogFooter>
                 </DialogContent>

@@ -1,14 +1,14 @@
 <script setup lang="ts">
+import { Button } from '@/components/ui/button';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 
 import { downloadBulk } from '@/routes/companies/documents';
 
@@ -48,37 +48,32 @@ function runBulkDownload() {
 </script>
 
 <template>
-    <AlertDialog v-model:open="open">
-        <AlertDialogContent class="rounded-lg p-4">
-            <AlertDialogHeader>
-                <AlertDialogTitle
-                    >Download verified documents?</AlertDialogTitle
-                >
-                <AlertDialogDescription>
+    <Dialog v-model:open="open">
+        <DialogContent class="max-w-md px-6" :show-close-button="false">
+            <DialogHeader class="px-0">
+                <DialogTitle>Download verified documents?</DialogTitle>
+                <DialogDescription>
                     This will download a ZIP containing only verified
                     documents for this company.
                     <span v-if="verifiedCount > 0"
                         >({{ verifiedCount }} verified)</span
                     >
                     <span v-else> No verified documents found.</span>
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel
-                    variant="outline"
-                    class="rounded-lg"
-                    @click="open = false"
-                    >Cancel</AlertDialogCancel
-                >
-                <AlertDialogAction
-                    variant="outline"
-                    class="rounded-lg border-0 bg-primary text-white cursor-pointer hover:bg-slate-100"
+                </DialogDescription>
+            </DialogHeader>
+            <Separator />
+            <DialogFooter class="pt-3 gap-2 sm:justify-end">
+                <Button variant="ghost-outline" @click="open = false">
+                    Cancel
+                </Button>
+                <Button
+                    variant="float-primary"
                     :disabled="verifiedCount === 0"
                     @click="runBulkDownload"
                 >
-                    Continue
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
+                    Confirm
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
 </template>

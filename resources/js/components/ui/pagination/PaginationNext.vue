@@ -3,7 +3,7 @@ import type { PaginationNextProps } from "reka-ui"
 import type { HTMLAttributes } from "vue"
 import type { ButtonVariants } from '@/components/ui/button'
 import { reactiveOmit } from "@vueuse/core"
-import { ChevronRightIcon } from "lucide-vue-next"
+import { RiArrowRightSLine } from "vue-remix-icons"
 import { PaginationNext, useForwardProps } from "reka-ui"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from '@/components/ui/button'
@@ -27,7 +27,7 @@ const forwarded = useForwardProps(delegatedProps)
   >
     <slot>
       <span class="hidden sm:block">Next</span>
-      <ChevronRightIcon />
+      <RiArrowRightSLine class="shrink-0" />
     </slot>
   </PaginationNext>
 </template>

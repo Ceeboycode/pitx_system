@@ -1,5 +1,5 @@
 import { InertiaLinkProps } from '@inertiajs/vue3';
-import type { LucideIcon } from 'lucide-vue-next';
+import type { Component } from 'vue';
 
 export interface Auth {
     user: User;
@@ -21,7 +21,7 @@ export interface NavItem {
     id: string;
     title: string;
     href: NonNullable<InertiaLinkProps['href']>;
-    icon?: LucideIcon;
+    icon?: Component;
     permission?: string;
     items: Item[];
 }
@@ -29,7 +29,7 @@ export interface NavItem {
 export interface NavFooterItem {
     title: string;
     href: NonNullable<InertiaLinkProps['href']>;
-    icon: LucideIcon;
+    icon: Component;
 }
 
 export type AppPageProps<

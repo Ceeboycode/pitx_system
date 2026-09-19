@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { HTMLAttributes } from "vue"
-import { ChevronRight } from "lucide-vue-next"
+import { RiArrowRightSLine } from "vue-remix-icons"
 import { cn } from "@/lib/utils"
 
 const props = defineProps<{
@@ -16,7 +16,7 @@ const props = defineProps<{
     :class="cn('[&>svg]:size-3.5', props.class)"
   >
     <slot>
-      <ChevronRight />
+      <RiArrowRightSLine class="shrink-0" />
     </slot>
   </li>
 </template>

@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableRow, TableCell } from '@/components/ui/table';
-import { ArrowLeft } from 'lucide-vue-next';
+import { RiArrowLeftLine } from 'vue-remix-icons';
 
 import { index, show } from '@/routes/vehicle-types';
 
@@ -58,7 +58,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                         <CardAction>
                             <Button as-child variant="link" size="sm">
                                 <Link :href="index().url" class="cursor-pointer">
-                                    <ArrowLeft class="mr-2 h-4 w-4" />
+                                    <RiArrowLeftLine class="mr-2 h-4 w-4 shrink-0" />
                                     Back to Vehicle Types
                                 </Link>
                             </Button>

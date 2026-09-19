@@ -23,7 +23,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { create, index, store } from '@/routes/vehicles';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { Save } from 'lucide-vue-next';
+import { RiSaveLine } from 'vue-remix-icons';
 import { computed, ref } from 'vue';
 
 type NamedOption = {
@@ -73,7 +73,7 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: index().url,
     },
     {
-        title: 'Create Vehicle',
+        title: 'Add New Vehicle',
         href: create().url,
     },
 ];
@@ -98,7 +98,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Create Vehicle" />
+    <Head title="Add New Vehicle" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
@@ -106,7 +106,7 @@ const submit = () => {
         >
             <Card class="mx-5">
                 <CardHeader>
-                    <CardTitle>Create Vehicle</CardTitle>
+                    <CardTitle>Add New Vehicle</CardTitle>
                     <CardDescription>
                         Fill in the details below. Fields marked with
                         <span class="font-medium text-red-500">*</span>
@@ -333,11 +333,11 @@ const submit = () => {
                                 :disabled="form.processing"
                                 class="cursor-pointer"
                             >
-                                <Save class="mr-2 h-4 w-4" />
+                                <RiSaveLine class="mr-2 h-4 w-4 shrink-0" />
                                 {{
                                     form.processing
-                                        ? 'Creating...'
-                                        : 'Create Vehicle'
+                                        ? 'Adding...'
+                                        : 'Add Vehicle'
                                 }}
                             </Button>
                         </div>

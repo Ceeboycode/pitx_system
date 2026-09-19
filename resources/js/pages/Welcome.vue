@@ -9,15 +9,13 @@ import { Head, Link } from '@inertiajs/vue3';
 import { onMounted, onUnmounted, ref } from 'vue';
 import {
     ArrowRight,
-    ShieldCheck,
-    Radio,
-    BarChart3,
-    MapPin,
     CheckCircle2,
 } from 'lucide-vue-next';
 import {
     RiFacebookCircleFill,
     RiInstagramFill,
+    RiMapPin2Line,
+    RiShieldCheckLine,
     RiSpotifyFill,
     RiTiktokFill,
 } from 'vue-remix-icons';
@@ -30,7 +28,7 @@ const features = [
         subtitle: 'Granular dashboards per user type.',
         description:
             'Dedicated views for Super Admins, Dispatchers, and Operators — each scoped to exactly what they need.',
-        icon: ShieldCheck,
+        icon: RiShieldCheckLine,
         iconBg: 'bg-[#1a3a6b]/10 group-hover:bg-[#1a3a6b]/20',
         iconColor: 'text-[#1a3a6b]',
         borderHover: 'hover:border-[#1a3a6b]/30',
@@ -42,7 +40,6 @@ const features = [
         subtitle: 'One system, multiple gates.',
         description:
             'Control multiple gates and dispatcher teams from a single unified interface — no silos, no confusion.',
-        icon: Radio,
         iconBg: 'bg-[#c0392b]/10 group-hover:bg-[#c0392b]/20',
         iconColor: 'text-[#c0392b]',
         borderHover: 'hover:border-[#c0392b]/50',
@@ -54,7 +51,6 @@ const features = [
         subtitle: 'Live visibility across the terminal.',
         description:
             'Track routes, vehicles, and terminal activity as it happens — enabling faster decisions.',
-        icon: BarChart3,
         iconBg: 'bg-[#1a3a6b]/10 group-hover:bg-[#1a3a6b]/20',
         iconColor: 'text-[#1a3a6b]',
         borderHover: 'hover:border-[#1a3a6b]/30',
@@ -197,7 +193,7 @@ onUnmounted(() => {
 
     <div
         id="navbar"
-        class="sticky top-0 z-50 bg-custom-bg-light flex flex-row justify-between items-center transition-transform duration-300 ease-out"
+        class="sticky top-0 z-50 bg-custom-bg-light flex flex-row justify-between items-center transition-all duration-300 ease-out"
         :class="[
             showNavbar ? 'translate-y-0' : '-translate-y-full',
             isAtTop ? 'py-4 px-32' : 'py-4 px-6 top-0 mx-26 rounded-b-md shadow-sm',
@@ -210,7 +206,7 @@ onUnmounted(() => {
                 <span class="text-custom-shadow">Dispatch Management System</span>
             </div>
         </div>
-        <div class="flex flex-row gap-4 items-center text-sm text-custom-shadow/80">
+        <div class="flex flex-row gap-6 items-center text-sm text-custom-shadow/80">
             <a href="#about" class="mt-1 relative group uppercase pb-1 hover:text-custom-shadow">
                 About
                 <span class="absolute inset-x-0 -bottom-1 h-1 origin-left scale-x-0 bg-welcome-red transition-transform duration-100 ease-out group-hover:scale-x-100"></span>
@@ -239,8 +235,61 @@ onUnmounted(() => {
     </div>
 
     <div id="hero" class="min-h-screen bg-custom-bg-light">
-        <!-- <span>SAMPLE HERO</span>
-        test test -->
+        <div class="absolute inset-0 z-0 overflow-hidden">
+            <img
+                src="../components/assets/pitx-main3.jpg"
+                alt="PITX Terminal"
+                class="h-full w-full object-cover object-center-right blur-sm"
+            />
+            <div class="absolute inset-0 bg-gradient-to-r from-black/35 to-transparent/50"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-custom-primary/30 to-transparent"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-black/35 via-custom-primary/50 to-black/20"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+            <div class="absolute -top-50 -left-50 h-120 w-120 rounded-full bg-custom-accent-1/30 blur-3xl"></div>
+            <div class="absolute -bottom-10 -right-50 h-100 w-100 rounded-full bg-custom-accent-1/30 blur-3xl"></div>
+        </div>
+
+        <div class="relative z-10 mx-auto px-32 py-24 md:py-36">
+                <div class="mx-auto gap-y-4 flex flex-col justify-center items-center">
+
+                    
+                    <h1 class="text-5xl text-center font-extrabold leading-[1.1] tracking-wide text-custom-bg-light md:text-7xl">
+                        <!-- <span class="text-custom-primary">PITX</span> -->
+                        Terminal Dispatch
+                        <br/>
+                        <span class="text-custom-accent-1">Management System</span>
+                    </h1>
+
+                    
+                    <p class="max-w-xl text-base leading-relaxed text-custom-bg-light/80 text-center md:text-lg">
+                        A integrated system for PITX administrators, dispatchers, and operators to manage
+                        gates, routes, and vehicle dispatch in real time — from one powerful platform.
+                    </p>
+
+                    
+                    <div class="flex flex-wrap gap-4 pt-2">
+                        <Button
+                            size="lg"
+                            variant="float"
+                            as-child
+                            class="rounded-full hover:bg-custom-bg/60 dark:hover:bg-custom-bg-light/60"
+                        >
+                            <a href="#features">Learn More</a>
+                        </Button>
+                        <Button
+                            size="lg"
+                            as-child
+                            variant="float-red"
+                            class="rounded-full"
+                        >
+                            <Link :href="show()">
+                                Get Started
+                                <ArrowRight class="ml-0 shrink-0 h-4 w-4" />
+                            </Link>
+                        </Button>
+                    </div>
+                </div>
+        </div>
     </div>
 
     <!-- <div id="about">
@@ -266,122 +315,9 @@ onUnmounted(() => {
     <!-- maybe add the live dispatch schedule, and a prompt for commuters, to start searching. -->
     <!-- add a testimonial part that takes up the whole screen like in antigravity website -->
 
-    <div id="cta">
+    <!-- <div id="cta">
 
-    </div>
-
-    <div class="flex min-h-screen flex-col bg-[#f4f5f7] text-[#1a1a2e]">
-        <section class="relative overflow-hidden">
-            <div class="absolute inset-0 z-0">
-                <img
-                    src="../components/assets/pitx-main3.jpg"
-                    alt="PITX Terminal"
-                    class="h-full w-full object-cover object-center"
-                />
-                <div class="absolute inset-0 bg-gradient-to-r from-[#0d1b2a]/95 via-[#0d1b2a]/80 to-[#0d1b2a]/50"></div>
-                <div class="absolute inset-0 bg-gradient-to-t from-[#0d1b2a]/60 via-transparent to-transparent"></div>
-                <div class="absolute -top-20 -left-20 h-96 w-96 rounded-full bg-[#c0392b]/20 blur-3xl"></div>
-                <div class="absolute top-10 right-1/3 h-72 w-72 rounded-full bg-[#1a3a6b]/25 blur-3xl"></div>
-            </div>
-
-            <div class="relative z-10 mx-auto max-w-7xl px-6 py-24 md:py-36">
-                <div class="mx-auto max-w-3xl space-y-8">
-
-                    
-                    <h1 class="text-5xl font-extrabold leading-[1.1] tracking-tight text-white md:text-7xl">
-                        Centralized<br />
-                        Terminal<br />
-                        <span class="text-[#e74c3c]">Operations.</span>
-                    </h1>
-
-                    
-                    <p class="max-w-xl text-base leading-relaxed text-white/70 md:text-lg">
-                        A integrated system for PITX administrators, dispatchers, and operators to manage
-                        gates, routes, and vehicle dispatch in real time — from one powerful platform.
-                    </p>
-
-                    
-                    <div class="flex flex-wrap gap-3 pt-2">
-                        <Button
-                            size="lg"
-                            as-child
-                            class="rounded-xl bg-[#c0392b] px-8 text-base font-semibold text-white shadow-lg shadow-red-900/30 hover:bg-[#a93226]"
-                        >
-                            <Link :href="show()">
-                                Get Started
-                                <ArrowRight class="ml-2 h-4 w-4" />
-                            </Link>
-                        </Button>
-
-                        <Button
-                            size="lg"
-                            variant="outline"
-                            as-child
-                            class="rounded-xl border-white/30 bg-white/10 px-8 text-base font-semibold text-white backdrop-blur-sm hover:bg-white/20"
-                        >
-                            <a href="#features">Learn More</a>
-                        </Button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="features" class="mx-auto max-w-7xl px-6 py-16 pt-20">
-            <div class="mb-10 text-center">
-                <p class="mb-2 text-xs font-bold uppercase tracking-widest text-[#c0392b]">Core Capabilities</p>
-                <h2 class="text-2xl font-extrabold tracking-tight text-[#1a1a2e] md:text-3xl">
-                    Optimized for Large Transport Terminals
-                </h2>
-                <p class="mx-auto mt-3 max-w-xl text-sm text-gray-500">
-                    Every feature is crafted to simplify complex operations, from dispatch to compliance, tailored for terminals like PITX.
-                </p>
-            </div>
-
-            <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                <Card
-                    v-for="(feature, i) in features"
-                    :key="i"
-                    :class="[
-                        'group relative overflow-hidden rounded-2xl border p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl',
-                        feature.cardClass,
-                        feature.borderHover,
-                    ]"
-                >
-                    <CardHeader class="p-0">
-                        <div
-                            :class="[
-                                'mb-4 flex h-12 w-12 items-center justify-center rounded-xl transition-colors',
-                                feature.iconBg,
-                            ]"
-                        >
-                            <component :is="feature.icon" class="h-6 w-6" :class="feature.iconColor" />
-                        </div>
-
-                        <CardTitle class="text-base font-bold text-[#1a1a2e]">
-                            {{ feature.title }}
-                        </CardTitle>
-
-                        <p class="mt-1 text-sm font-medium text-gray-400">
-                            {{ feature.subtitle }}
-                        </p>
-                    </CardHeader>
-
-                    <CardContent class="p-0 pt-3">
-                        <p class="text-sm leading-relaxed text-gray-500">
-                            {{ feature.description }}
-                        </p>
-                    </CardContent>
-
-                    <div
-                        :class="[
-                            'absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r opacity-0 transition-opacity group-hover:opacity-100',
-                            feature.line,
-                        ]"
-                    ></div>
-                </Card>
-            </div>
-        </section>
-
+    </div> -->
 
         <section class="mx-auto max-w-7xl px-6 pb-16">
             <Card class="relative overflow-hidden rounded-2xl border-0 bg-gradient-to-r from-[#1a3a6b] to-[#0d1b2a] px-6 py-10 text-center shadow-xl sm:px-8 sm:py-12">
@@ -401,7 +337,7 @@ onUnmounted(() => {
                         <Button as-child class="rounded-xl bg-[#c0392b] px-8 py-3 font-semibold text-white shadow-lg hover:bg-[#a93226]">
                             <Link :href="show()">
                                 Get Started
-                                <ArrowRight class="ml-2 h-4 w-4" />
+                                <ArrowRight class="ml-2 h-4 w-4 shrink-0" />
                             </Link>
                         </Button>
 
@@ -416,7 +352,6 @@ onUnmounted(() => {
                 </CardContent>
             </Card>
         </section>
-    </div>
 
     <div id="footer" class="flex flex-col">
         <div class="w-full px-32 bg-welcome-grey text-custom-bg-dark dark:text-custom-shadow py-16 flex flex-col gap-4">

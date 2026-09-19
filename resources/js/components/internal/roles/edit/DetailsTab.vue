@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useForm } from '@inertiajs/vue3';
-import { index, update } from '@/routes/roles';
+import { update } from '@/routes/roles';
+import { can } from '@/lib/can';
+import EditableField from '@/components/ui/_field/EditableField.vue';
 
 import {
   Card,
@@ -61,6 +63,11 @@ const form = useForm({
     type: props.role.type ?? 'internal',
     permissions: (props.rolePermissionIds ?? []) as number[],
 });
+
+// Drives every EditableField below, same convention as Gates/edit/DetailsTab.vue:
+// view-only users get the page (server authorizes on 'view'), but only
+// 'roles.update' holders see inputs, permission checkboxes, and Save/Cancel.
+const canEdit = can('roles.update');
 
 const collapsedModules = ref<Record<string, boolean>>({});
 
@@ -199,9 +206,9 @@ function submit() {
     <CardHeader class="flex flex-row items-start justify-between gap-4">
       <div class="flex flex-col">
         <CardTitle>Role</CardTitle>
-        <CardDescription>Manage role details.</CardDescription>
+        <CardDescription>{{ canEdit ? 'Manage role details.' : 'View role details.' }}</CardDescription>
       </div>
-      <div class="flex flex-row items-center gap-2">
+      <div v-if="canEdit" class="flex flex-row items-center gap-2">
         <Button
           :variant="!form.isDirty || form.processing ? 'disabled' : 'float'"
           :disabled="!form.isDirty || form.processing"
@@ -230,48 +237,58 @@ function submit() {
             <div class="flex flex-row justify-between items-center gap-2 overflow-hidden group">
               <div class="inline-flex gap-2 items-center">
                 <RiPhoneLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
-                <Label for="route_name_sidebar">Name</Label>
+                <Label for="role_name_sidebar">Name</Label>
               </div>
-              <span class="flex flex-row items-center">
-                <Input
-                    id="route_name_sidebar"
-                    :model-value="role.name"
-                    placeholder="Enter route name"
-                    variant="inline-edit"
-                />
-                <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
-              </span>
-              <InputError :message="form.errors.name" />
+              <EditableField :editable="canEdit">
+                <template #edit>
+                  <span class="flex min-w-0 flex-1 flex-row items-center">
+                    <Input
+                        id="role_name_sidebar"
+                        v-model="form.name"
+                        placeholder="Enter role name"
+                        variant="inline-edit"
+                    />
+                    <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
+                  </span>
+                </template>
+                <span class="min-w-0 flex-1 truncate text-right text-sm font-medium">{{ role.name }}</span>
+              </EditableField>
+              <InputError v-if="canEdit" :message="form.errors.name" />
             </div>
 
             <div class="flex flex-row justify-between items-center gap-2 overflow-hidden group">
               <div class="inline-flex gap-2 items-center">
                 <RiPhoneLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
-                <Label for="gate_id_sidebar">Type</Label>
+                <Label for="role_type_sidebar">Type</Label>
               </div>
-              <span class="flex flex-row items-center">
-                <Select v-model="form.type">
-                  <SelectTrigger
-                    id="gate_id_sidebar"
-                    variant="inline-edit"
-                  >
-                    <SelectValue
-                      placeholder="Select a role type..."
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem
-                      v-for="type in props.roleTypes"
-                      :key="type"
-                      :value="type"
-                      class="capitalize"
-                    >
-                      {{ role.type }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </span>
-              <InputError :message="form.errors.type" />
+              <EditableField :editable="canEdit">
+                <template #edit>
+                  <span class="flex flex-row items-center">
+                    <Select v-model="form.type">
+                      <SelectTrigger
+                        id="role_type_sidebar"
+                        variant="inline-edit"
+                      >
+                        <SelectValue
+                          placeholder="Select a role type..."
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem
+                          v-for="type in props.roleTypes"
+                          :key="type"
+                          :value="type"
+                          class="capitalize"
+                        >
+                          {{ type }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </span>
+                </template>
+                <span class="min-w-0 flex-1 truncate text-right text-sm font-medium capitalize">{{ role.type }}</span>
+              </EditableField>
+              <InputError v-if="canEdit" :message="form.errors.type" />
             </div>
           </div>
 
@@ -338,8 +355,8 @@ function submit() {
 
         </div> -->
 
-        <div class="space-y-4"> 
-          <div class="flex items-center justify-between">
+        <div class="space-y-4">
+          <div v-if="canEdit" class="flex items-center justify-between">
             <label class="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors hover:bg-muted">
               <input
                 type="checkbox"
@@ -353,7 +370,7 @@ function submit() {
             </label>
           </div>
 
-          <InputError :message="form.errors.permissions" />
+          <InputError v-if="canEdit" :message="form.errors.permissions" />
 
           
           <Tabs default-value="internal" class="w-full">
@@ -413,6 +430,7 @@ function submit() {
                       class="h-4 w-4 cursor-pointer rounded border accent-primary"
                       :checked="moduleChecked(moduleKey)"
                       :indeterminate="moduleSomeChecked(moduleKey)"
+                      :disabled="!canEdit"
                       @click.stop
                       @change="toggleModule(moduleKey, ($event.target as HTMLInputElement).checked)"
                     />
@@ -456,6 +474,7 @@ function submit() {
                       type="checkbox"
                       class="mt-0.5 h-4 w-4 cursor-pointer rounded border accent-primary"
                       :checked="form.permissions.includes(p.id)"
+                      :disabled="!canEdit"
                       @change="togglePermission(p.id, ($event.target as HTMLInputElement).checked)"
                     />
                     <div class="min-w-0 flex-1">
@@ -496,6 +515,7 @@ function submit() {
                         class="h-4 w-4 cursor-pointer rounded border accent-primary"
                         :checked="moduleChecked(moduleKey)"
                         :indeterminate="moduleSomeChecked(moduleKey)"
+                        :disabled="!canEdit"
                         @click.stop
                         @change="toggleModule(moduleKey, ($event.target as HTMLInputElement).checked)"
                       />
@@ -538,6 +558,7 @@ function submit() {
                         type="checkbox"
                         class="mt-0.5 h-4 w-4 cursor-pointer rounded border accent-primary"
                         :checked="form.permissions.includes(p.id)"
+                        :disabled="!canEdit"
                         @change="togglePermission(p.id, ($event.target as HTMLInputElement).checked)"
                       />
                       <div class="min-w-0 flex-1">

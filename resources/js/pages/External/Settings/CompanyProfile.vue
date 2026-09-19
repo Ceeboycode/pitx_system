@@ -2,19 +2,19 @@
 import { can } from '@/lib/can';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import {
-    Building2,
-    CalendarClock,
-    Eye,
-    FileCheck2,
-    FileWarning,
-    ImageIcon,
-    Lock,
-    Mail,
-    MapPin,
-    Phone,
-    ShieldCheck,
-    User,
-} from 'lucide-vue-next';
+    RiBuilding2Line,
+    RiCalendarLine,
+    RiEyeLine,
+    RiFileCheckLine,
+    RiFileWarningLine,
+    RiImageLine,
+    RiLockLine,
+    RiMailLine,
+    RiMapPin2Line,
+    RiPhoneLine,
+    RiShieldCheckLine,
+    RiUserLine,
+} from 'vue-remix-icons';
 import { computed, ref } from 'vue';
 
 import { Badge } from '@/components/ui/badge';
@@ -341,7 +341,7 @@ function openRequestDetails(requestId: number | string): void {
                     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div class="space-y-2">
                             <div class="inline-flex items-center gap-1.5 rounded-md border bg-muted/50 px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                                <Building2 class="h-3 w-3" />
+                                <RiBuilding2Line class="h-3 w-3 shrink-0" />
                                 {{ company.company_code || 'No company code' }}
                             </div>
                             <h1 class="text-2xl font-semibold tracking-tight">Company Profile</h1>
@@ -350,7 +350,7 @@ function openRequestDetails(requestId: number | string): void {
                             </p>
                         </div>
                         <div class="flex shrink-0 items-center gap-2">
-                            <ShieldCheck class="h-4 w-4 text-muted-foreground" />
+                            <RiShieldCheckLine class="h-4 w-4 shrink-0 text-muted-foreground" />
                             <Badge :class="statusClass(company.status)">
                                 {{ humanize(company.status) }}
                             </Badge>
@@ -367,7 +367,7 @@ function openRequestDetails(requestId: number | string): void {
                             <p class="text-xs font-medium text-emerald-700">Verified</p>
                             <p class="mt-1 text-2xl font-semibold text-emerald-800">{{ verifiedDocsCount }}</p>
                         </div>
-                        <FileCheck2 class="h-5 w-5 text-emerald-600" />
+                        <RiFileCheckLine class="h-5 w-5 shrink-0 text-emerald-600" />
                     </CardContent>
                 </Card>
 
@@ -377,7 +377,7 @@ function openRequestDetails(requestId: number | string): void {
                             <p class="text-xs font-medium text-amber-700">Under review</p>
                             <p class="mt-1 text-2xl font-semibold text-amber-800">{{ pendingDocsCount }}</p>
                         </div>
-                        <Building2 class="h-5 w-5 text-amber-600" />
+                        <RiBuilding2Line class="h-5 w-5 shrink-0 text-amber-600" />
                     </CardContent>
                 </Card>
 
@@ -387,7 +387,7 @@ function openRequestDetails(requestId: number | string): void {
                             <p class="text-xs font-medium text-rose-700">Needs action</p>
                             <p class="mt-1 text-2xl font-semibold text-rose-800">{{ flaggedDocsCount }}</p>
                         </div>
-                        <FileWarning class="h-5 w-5 text-rose-600" />
+                        <RiFileWarningLine class="h-5 w-5 shrink-0 text-rose-600" />
                     </CardContent>
                 </Card>
             </div>
@@ -409,7 +409,7 @@ function openRequestDetails(requestId: number | string): void {
 
                             
                             <div class="flex items-start gap-3 rounded-md border border-blue-200 bg-blue-50 p-3 md:col-span-2">
-                                <ShieldCheck class="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                                <RiShieldCheckLine class="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
                                 <div>
                                     <p class="text-xs font-medium text-blue-800">Before you submit</p>
                                     <p class="mt-0.5 text-xs text-blue-700">
@@ -422,7 +422,7 @@ function openRequestDetails(requestId: number | string): void {
                             
                             <div class="flex items-center gap-3 md:col-span-2">
                                 <div class="flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-muted-foreground">
-                                    <Lock class="h-3 w-3" />
+                                    <RiLockLine class="h-3 w-3 shrink-0" />
                                     Read-only identity
                                 </div>
                                 <div class="h-px flex-1 bg-border" />
@@ -431,7 +431,7 @@ function openRequestDetails(requestId: number | string): void {
 
                             <div class="space-y-2">
                                 <Label for="company_name" class="inline-flex items-center gap-1.5">
-                                    <Building2 class="h-3.5 w-3.5" /> Company name
+                                    <RiBuilding2Line class="h-3.5 w-3.5 shrink-0" /> Company name
                                 </Label>
                                 <Input
                                     id="company_name"
@@ -446,7 +446,7 @@ function openRequestDetails(requestId: number | string): void {
 
                             <div class="space-y-2">
                                 <Label for="company_email" class="inline-flex items-center gap-1.5">
-                                    <Mail class="h-3.5 w-3.5" /> Company email
+                                    <RiMailLine class="h-3.5 w-3.5 shrink-0" /> Company email
                                 </Label>
                                 <Input id="company_email" type="email" v-model="form.company_email" />
                                 <p v-if="form.errors.company_email" class="text-xs text-destructive">
@@ -456,7 +456,7 @@ function openRequestDetails(requestId: number | string): void {
 
                             <div class="space-y-2">
                                 <Label for="registration_number" class="inline-flex items-center gap-1.5">
-                                    <FileCheck2 class="h-3.5 w-3.5" /> Registration number
+                                    <RiFileCheckLine class="h-3.5 w-3.5 shrink-0" /> Registration number
                                 </Label>
                                 <Input
                                     id="registration_number"
@@ -471,7 +471,7 @@ function openRequestDetails(requestId: number | string): void {
 
                             <div class="space-y-2">
                                 <Label for="business_type" class="inline-flex items-center gap-1.5">
-                                    <Building2 class="h-3.5 w-3.5" /> Business type
+                                    <RiBuilding2Line class="h-3.5 w-3.5 shrink-0" /> Business type
                                 </Label>
                                 <select
                                     id="business_type"
@@ -488,7 +488,7 @@ function openRequestDetails(requestId: number | string): void {
                             
                             <div class="flex items-center gap-3 md:col-span-2">
                                 <div class="flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-emerald-700">
-                                    <ShieldCheck class="h-3 w-3" />
+                                    <RiShieldCheckLine class="h-3 w-3 shrink-0" />
                                     Editable details
                                 </div>
                                 <div class="h-px flex-1 bg-border" />
@@ -499,48 +499,48 @@ function openRequestDetails(requestId: number | string): void {
 
                             <div class="space-y-2">
                                 <Label for="company_phone" class="inline-flex items-center gap-1.5">
-                                    <Phone class="h-3.5 w-3.5" /> Phone
+                                    <RiPhoneLine class="h-3.5 w-3.5 shrink-0" /> Phone
                                 </Label>
                                 <Input id="company_phone" v-model="form.company_phone" />
                             </div>
 
                             <div class="space-y-2">
                                 <Label for="authorized_representative_name" class="inline-flex items-center gap-1.5">
-                                    <User class="h-3.5 w-3.5" /> Authorized representative
+                                    <RiUserLine class="h-3.5 w-3.5 shrink-0" /> Authorized representative
                                 </Label>
                                 <Input id="authorized_representative_name" v-model="form.authorized_representative_name" />
                             </div>
 
                             <div class="space-y-2">
                                 <Label for="authorized_representative_position" class="inline-flex items-center gap-1.5">
-                                    <ShieldCheck class="h-3.5 w-3.5" /> Representative position
+                                    <RiShieldCheckLine class="h-3.5 w-3.5 shrink-0" /> Representative position
                                 </Label>
                                 <Input id="authorized_representative_position" v-model="form.authorized_representative_position" />
                             </div>
 
                             <div class="space-y-2">
                                 <Label for="authorized_representative_contact" class="inline-flex items-center gap-1.5">
-                                    <Phone class="h-3.5 w-3.5" /> Representative contact
+                                    <RiPhoneLine class="h-3.5 w-3.5 shrink-0" /> Representative contact
                                 </Label>
                                 <Input id="authorized_representative_contact" v-model="form.authorized_representative_contact" />
                             </div>
 
                             <div class="space-y-2 md:col-span-2">
                                 <Label for="company_address" class="inline-flex items-center gap-1.5">
-                                    <MapPin class="h-3.5 w-3.5" /> Company address
+                                    <RiMapPin2Line class="h-3.5 w-3.5 shrink-0" /> Company address
                                 </Label>
                                 <Textarea id="company_address" v-model="form.company_address" rows="3" />
                             </div>
 
                             <div class="space-y-2 md:col-span-2">
                                 <Label for="logo" class="inline-flex items-center gap-1.5">
-                                    <ImageIcon class="h-3.5 w-3.5" /> Company logo
+                                    <RiImageLine class="h-3.5 w-3.5 shrink-0" /> Company logo
                                 </Label>
                                 <label
                                     for="logo"
                                     class="flex cursor-pointer items-center justify-center rounded-md border border-dashed px-4 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted/40"
                                 >
-                                    <ImageIcon class="mr-2 h-4 w-4 shrink-0" />
+                                    <RiImageLine class="mr-2 h-4 w-4 shrink-0" />
                                     Click to upload — JPG, PNG, or WEBP up to 2MB
                                     <input
                                         id="logo"
@@ -564,7 +564,7 @@ function openRequestDetails(requestId: number | string): void {
                                 class="space-y-3 rounded-md border border-amber-200 bg-amber-50 p-3 md:col-span-2"
                             >
                                 <div class="flex items-start gap-2">
-                                    <FileWarning class="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+                                    <RiFileWarningLine class="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
                                     <div>
                                         <p class="text-xs font-medium text-amber-800">Major change detected</p>
                                         <p class="text-xs text-amber-700">
@@ -575,7 +575,7 @@ function openRequestDetails(requestId: number | string): void {
 
                                 <div class="space-y-2">
                                     <Label for="compliance_document_file" class="inline-flex items-center gap-1.5 text-amber-800">
-                                        <FileCheck2 class="h-3.5 w-3.5" /> {{ requiredComplianceDocType }} file
+                                        <RiFileCheckLine class="h-3.5 w-3.5 shrink-0" /> {{ requiredComplianceDocType }} file
                                     </Label>
                                     <input
                                         id="compliance_document_file"
@@ -593,7 +593,7 @@ function openRequestDetails(requestId: number | string): void {
                                 <div class="grid gap-3 md:grid-cols-2">
                                     <div class="space-y-2">
                                         <Label for="compliance_document_issued_at" class="inline-flex items-center gap-1.5 text-amber-800">
-                                            <CalendarClock class="h-3.5 w-3.5" /> Issue date
+                                            <RiCalendarLine class="h-3.5 w-3.5 shrink-0" /> Issue date
                                         </Label>
                                         <Input id="compliance_document_issued_at" type="date" v-model="form.compliance_document_issued_at" />
                                         <p v-if="form.errors.compliance_document_issued_at" class="text-xs text-destructive">
@@ -602,7 +602,7 @@ function openRequestDetails(requestId: number | string): void {
                                     </div>
                                     <div class="space-y-2">
                                         <Label for="compliance_document_expires_at" class="inline-flex items-center gap-1.5 text-amber-800">
-                                            <CalendarClock class="h-3.5 w-3.5" /> Expiry date
+                                            <RiCalendarLine class="h-3.5 w-3.5 shrink-0" /> Expiry date
                                         </Label>
                                         <Input id="compliance_document_expires_at" type="date" v-model="form.compliance_document_expires_at" />
                                         <p v-if="form.errors.compliance_document_expires_at" class="text-xs text-destructive">
@@ -637,7 +637,7 @@ function openRequestDetails(requestId: number | string): void {
                                 v-if="businessTypeRequiresRegistrationUpdate"
                                 class="flex items-start gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 md:col-span-2"
                             >
-                                <FileWarning class="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-700" />
+                                <RiFileWarningLine class="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-700" />
                                 <p class="text-xs text-rose-800">
                                     Update the registration number to match your new business type before submitting.
                                 </p>
@@ -647,7 +647,7 @@ function openRequestDetails(requestId: number | string): void {
                                 v-if="requiresComplianceDocument && !hasComplianceDocumentInputsComplete"
                                 class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 md:col-span-2"
                             >
-                                <CalendarClock class="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-700" />
+                                <RiCalendarLine class="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-700" />
                                 <p class="text-xs text-amber-800">
                                     Upload {{ requiredComplianceDocType }} and complete the issue and expiry dates.
                                 </p>
@@ -657,7 +657,7 @@ function openRequestDetails(requestId: number | string): void {
                                 v-if="!canSubmitChanges"
                                 class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 md:col-span-2"
                             >
-                                <CalendarClock class="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-700" />
+                                <RiCalendarLine class="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-700" />
                                 <p class="text-xs text-amber-800">
                                     You already have a pending profile request. Wait for admin action before submitting again.
                                 </p>
@@ -677,7 +677,7 @@ function openRequestDetails(requestId: number | string): void {
                     <Card>
                         <CardHeader>
                             <CardTitle class="flex items-center gap-2">
-                                <ImageIcon class="h-4 w-4" /> Brand preview
+                                <RiImageLine class="h-4 w-4 shrink-0" /> Brand preview
                             </CardTitle>
                             <CardDescription>Current company identity snapshot.</CardDescription>
                         </CardHeader>
@@ -716,7 +716,7 @@ function openRequestDetails(requestId: number | string): void {
                                     {{ humanize(latest_change_request.status) }}
                                 </Badge>
                                 <Button variant="outline" class="cursor-pointer" size="sm" @click="requestDialogOpen = true">
-                                    <Eye class="mr-1.5 h-3.5 w-3.5" /> View details
+                                    <RiEyeLine class="mr-1.5 h-3.5 w-3.5 shrink-0" /> View details
                                 </Button>
                             </div>
 
@@ -726,17 +726,17 @@ function openRequestDetails(requestId: number | string): void {
                             </div>
 
                             <div v-if="latest_change_request.status === 'pending'" class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                                <CalendarClock class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                <RiCalendarLine class="mt-0.5 h-3.5 w-3.5 shrink-0" />
                                 Your request is under review. You can submit again once admins finish processing.
                             </div>
 
                             <div v-if="latest_change_request.status === 'approved'" class="flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
-                                <FileCheck2 class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                <RiFileCheckLine class="mt-0.5 h-3.5 w-3.5 shrink-0" />
                                 Your latest profile change request was approved.
                             </div>
 
                             <div v-if="latest_change_request.status === 'rejected'" class="flex items-start gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
-                                <FileWarning class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                <RiFileWarningLine class="mt-0.5 h-3.5 w-3.5 shrink-0" />
                                 {{ latest_change_request.rejection_reason || 'No reason provided.' }}
                             </div>
                         </CardContent>
@@ -784,7 +784,7 @@ function openRequestDetails(requestId: number | string): void {
                     </div>
 
                     <div v-if="hasExpiredDocument" class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                        <FileWarning class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <RiFileWarningLine class="mt-0.5 h-3.5 w-3.5 shrink-0" />
                         One or more documents are expired. Reupload them in the registration status page.
                     </div>
                 </CardContent>
@@ -796,7 +796,7 @@ function openRequestDetails(requestId: number | string): void {
             <DialogContent class="max-h-[85vh] overflow-hidden sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle class="flex items-center gap-2">
-                        <CalendarClock class="h-4 w-4" /> Profile change request history
+                        <RiCalendarLine class="h-4 w-4 shrink-0" /> Profile change request history
                     </DialogTitle>
                     <DialogDescription>
                         Click "View changes" to open a detailed breakdown of each request.
@@ -845,7 +845,7 @@ function openRequestDetails(requestId: number | string): void {
             <DialogContent class="max-h-[85vh] overflow-hidden sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle class="flex items-center gap-2">
-                        <CalendarClock class="h-4 w-4" /> Request #{{ selectedRequest?.id }} details
+                        <RiCalendarLine class="h-4 w-4 shrink-0" /> Request #{{ selectedRequest?.id }} details
                     </DialogTitle>
                     <DialogDescription>
                         Complete summary of requested changes and important details.
@@ -863,7 +863,7 @@ function openRequestDetails(requestId: number | string): void {
                             </p>
                         </div>
                         <div v-if="selectedRequest.status === 'rejected'" class="mt-2 flex items-start gap-2 rounded-md border border-rose-200 bg-rose-50 px-2 py-1.5 text-xs text-rose-800">
-                            <FileWarning class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                            <RiFileWarningLine class="mt-0.5 h-3.5 w-3.5 shrink-0" />
                             {{ selectedRequest.rejection_reason || 'No reason provided.' }}
                         </div>
                     </div>

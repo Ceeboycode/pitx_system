@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/accordion'
 
 
-import { Info, User, Truck, HelpCircle } from 'lucide-vue-next'
+import { RiBusLine, RiInformationLine, RiQuestionLine, RiUserLine } from 'vue-remix-icons'
 
 
 const breadcrumbs = [{ title: 'FAQ', href: '/faq' }]
@@ -36,7 +36,7 @@ const sections = ref<FaqSection[]>([
   {
     key: 'general',
     title: 'General',
-    icon: Info,
+    icon: RiInformationLine,
     items: [
       {
         q: 'What is this system for?',
@@ -51,7 +51,7 @@ const sections = ref<FaqSection[]>([
   {
     key: 'accounts',
     title: 'Accounts & Access',
-    icon: User,
+    icon: RiUserLine,
     items: [
       {
         q: 'Who can access the system?',
@@ -70,7 +70,7 @@ const sections = ref<FaqSection[]>([
   {
     key: 'vehicles',
     title: 'Vehicles & Operations',
-    icon: Truck,
+    icon: RiBusLine,
     items: [
       {
         q: 'How do I add a vehicle?',
@@ -85,7 +85,7 @@ const sections = ref<FaqSection[]>([
   {
     key: 'support',
     title: 'Support & Troubleshooting',
-    icon: HelpCircle,
+    icon: RiQuestionLine,
     items: [
       {
         q: 'What should I do if something doesn’t work?',
@@ -159,7 +159,7 @@ const accordionType = computed(() =>
           <div class="flex items-center gap-2">
             <component
               :is="section.icon"
-              class="h-5 w-5 text-muted-foreground"
+              class="h-5 w-5 shrink-0 text-muted-foreground"
             />
             <h2 class="text-lg font-semibold">
               {{ section.title }}

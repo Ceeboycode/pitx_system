@@ -5,16 +5,6 @@ import { computed, onUnmounted, ref, watch } from 'vue';
 
 import AuthLayout from '@/layouts/AuthLayout.vue';
 
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import { Card, CardTitle } from '@/components/ui/card';
@@ -22,6 +12,7 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
@@ -2072,15 +2063,15 @@ onUnmounted(() => {
             </div>
         </Card>
 
-        <AlertDialog v-model:open="confirmStep3Open">
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Submit Documents</AlertDialogTitle>
-                    <AlertDialogDescription>
+        <Dialog v-model:open="confirmStep3Open">
+            <DialogContent class="max-w-md px-6" :show-close-button="false">
+                <DialogHeader class="px-0">
+                    <DialogTitle>Submit Documents</DialogTitle>
+                    <DialogDescription>
                         These documents will be sent for company registration
                         review.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
+                    </DialogDescription>
+                </DialogHeader>
                 <div
                     class="max-h-56 space-y-2 overflow-auto text-sm text-custom-shadow"
                 >
@@ -2107,9 +2098,13 @@ onUnmounted(() => {
                         No files are selected yet.
                     </p>
                 </div>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
+                <Separator />
+                <DialogFooter class="pt-3 gap-2 sm:justify-end">
+                    <Button variant="ghost-outline" @click="confirmStep3Open = false">
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="float-primary"
                         :disabled="
                             !selectedSubmissionDocuments.length ||
                             step3.processing
@@ -2117,10 +2112,10 @@ onUnmounted(() => {
                         @click="submitStep3"
                     >
                         Submit
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
 
         <Dialog v-model:open="previewOpen">
             <DialogContent

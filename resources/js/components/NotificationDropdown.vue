@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
-import { Bell } from 'lucide-vue-next'
+import { RiNotification3Line } from 'vue-remix-icons'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -64,7 +64,7 @@ const markAllAsRead = () => {
                 size="icon"
                 class="relative h-9 w-9 shrink-0 rounded-full"
             >
-                <Bell class="h-4 w-4" />
+                <RiNotification3Line class="h-4 w-4 shrink-0" />
                 
 
                 <Badge

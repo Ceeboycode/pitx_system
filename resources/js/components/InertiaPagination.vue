@@ -53,7 +53,7 @@ const pageLinks = computed(() => props.links.slice(1, -1));
                     :tabindex="previousLink?.url ? undefined : -1"
                     @click="!previousLink?.url && $event.preventDefault()"
                 >
-                    <RiArrowLeftDoubleLine class="h-4 w-4" />
+                    <RiArrowLeftDoubleLine class="h-4 w-4 shrink-0" />
                 </Link>
             </Button>
 
@@ -95,7 +95,7 @@ const pageLinks = computed(() => props.links.slice(1, -1));
                     :tabindex="nextLink?.url ? undefined : -1"
                     @click="!nextLink?.url && $event.preventDefault()"
                 >
-                    <RiArrowRightDoubleLine class="h-4 w-4" />
+                    <RiArrowRightDoubleLine class="h-4 w-4 shrink-0" />
                 </Link>
             </Button>
         </div>

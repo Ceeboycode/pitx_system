@@ -1361,7 +1361,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 </script>
 
 <template>
-    <Head title="Add Route" />
+    <Head title="Add New Route" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
@@ -1373,7 +1373,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                         </Link>
                     </Button>
                     <div class="flex min-w-0 flex-col">
-                        <CardTitle class="font-semibold">Add Route</CardTitle>
+                        <CardTitle class="font-semibold">Add New Route</CardTitle>
                         <CardDescription>
                             Define the route, map its path, and organize its stops.
                         </CardDescription>

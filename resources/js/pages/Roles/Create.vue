@@ -4,15 +4,15 @@ import { create, index, store } from '@/routes/roles';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import {
-    ArrowLeft,
-    CheckSquare,
-    ChevronDown,
-    ChevronRight,
-    KeyRound,
-    Save,
-    Shield,
-    Users,
-} from 'lucide-vue-next';
+    RiArrowDownSLine,
+    RiArrowLeftLine,
+    RiArrowRightSLine,
+    RiBubbleChartFill,
+    RiGroupLine,
+    RiKey2Line,
+    RiSaveLine,
+    RiShieldLine,
+} from 'vue-remix-icons';
 import { computed, ref } from 'vue';
 
 import InputError from '@/components/InputError.vue';
@@ -193,7 +193,7 @@ function submit() {
 </script>
 
 <template>
-    <Head title="Create Role" />
+    <Head title="Add New Role" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
@@ -203,13 +203,13 @@ function submit() {
                         <div
                             class="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border-2 bg-primary shadow-sm flex items-center justify-center"
                         >
-                            <Shield class="h-10 w-10 text-white" />
+                            <RiShieldLine class="h-10 w-10 shrink-0 text-white" />
                         </div>
 
                         <div class="gap-2 w-full">
                             <div class="flex flex-row gap-2 pb-2 w-full items-center">
                                 <h1 class="text-2xl leading-tight font-bold tracking-tight">
-                                    Create Role
+                                    Add New Role
                                 </h1>
                                 <div class="ml-2 flex flex-1 items-center">
                                     <hr class="h-px w-full border border-rose-500" />
@@ -231,7 +231,7 @@ function submit() {
                                         class="rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
                                     >
                                         <Link :href="index().url">
-                                            <ArrowLeft class="h-4 w-4" />
+                                            <RiArrowLeftLine class="h-4 w-4 shrink-0" />
                                         </Link>
                                     </Button>
                                 </div>
@@ -375,17 +375,17 @@ function submit() {
                                             </Badge>
                                         </div>
 
-                                        <ChevronDown
+                                        <RiArrowDownSLine
                                             v-if="!isCollapsed(moduleKey)"
                                             class="h-4 w-4 shrink-0 text-muted-foreground"
                                         />
-                                        <ChevronRight
+                                        <RiArrowRightSLine
                                             v-else
                                             class="h-4 w-4 shrink-0 text-muted-foreground"
                                         />
                                     </button>
 
-                                    
+
                                     <div
                                         v-if="!isCollapsed(moduleKey)"
                                         class="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3"
@@ -419,7 +419,7 @@ function submit() {
                                 </div>
                             </TabsContent>
 
-                            
+
                             <TabsContent value="external" class="mt-0 space-y-3">
                                 <p
                                     v-if="groupedExternal.length === 0"
@@ -458,11 +458,11 @@ function submit() {
                                             </Badge>
                                         </div>
 
-                                        <ChevronDown
+                                        <RiArrowDownSLine
                                             v-if="!isCollapsed(moduleKey)"
                                             class="h-4 w-4 shrink-0 text-muted-foreground"
                                         />
-                                        <ChevronRight
+                                        <RiArrowRightSLine
                                             v-else
                                             class="h-4 w-4 shrink-0 text-muted-foreground"
                                         />
@@ -510,8 +510,8 @@ function submit() {
                     </Button>
 
                     <Button :disabled="form.processing" @click="submit" variant="outline" class="cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg hover:text-primary-foreground">
-                        <Save class="h-4 w-4" />
-                        {{ form.processing ? 'Saving...' : 'Create Role' }}
+                        <RiSaveLine class="h-4 w-4 shrink-0" />
+                        {{ form.processing ? 'Adding...' : 'Add Role' }}
                     </Button>
                 </CardFooter>
             </Card>

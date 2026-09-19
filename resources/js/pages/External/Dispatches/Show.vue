@@ -8,21 +8,21 @@ import RouteSelectorWithPreview from '@/components/routes/RouteSelectorWithPrevi
 
 import { Button } from '@/components/ui/button'
 
+import { CheckCircle2 } from 'lucide-vue-next'
 import {
-    ArrowLeft,
-    Building2,
-    Bus,
-    CalendarClock,
-    CheckCircle2,
-    FileText,
-    Fingerprint,
-    LogIn,
-    LogOut,
-    MapPin,
-    Route as RouteIcon,
-    UserRound,
-    Users,
-} from 'lucide-vue-next'
+    RiArrowLeftLine,
+    RiBuilding2Line,
+    RiBusLine,
+    RiCalendarLine,
+    RiFileTextLine,
+    RiFingerprintLine,
+    RiGroupLine,
+    RiLoginBoxLine,
+    RiLogoutBoxLine,
+    RiMapPin2Line,
+    RiRouteLine,
+    RiUserLine,
+} from 'vue-remix-icons'
 
 
 type GateItem = {
@@ -158,19 +158,19 @@ const timeline = computed(() => [
     {
         label: 'Dispatched',
         time: props.dispatch.dispatched_at_formatted,
-        icon: CalendarClock,
+        icon: RiCalendarLine,
         done: !!props.dispatch.dispatched_at_formatted,
     },
     {
         label: 'Arrived',
         time: props.dispatch.arrived_at_formatted,
-        icon: LogIn,
+        icon: RiLoginBoxLine,
         done: !!props.dispatch.arrived_at_formatted,
     },
     {
         label: 'Departed',
         time: props.dispatch.departed_at_formatted,
-        icon: LogOut,
+        icon: RiLogoutBoxLine,
         done: !!props.dispatch.departed_at_formatted,
     },
 ])
@@ -187,7 +187,7 @@ const timeline = computed(() => [
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
-                            <Building2 class="h-3.5 w-3.5" />
+                            <RiBuilding2Line class="h-3.5 w-3.5 shrink-0" />
                             Dispatches
                             <span class="text-slate-300">·</span>
                             <span class="font-mono">{{ dispatch.plate_number }}</span>
@@ -221,7 +221,7 @@ const timeline = computed(() => [
                         class="shrink-0 self-start rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                     >
                         <Link :href="DispatchController.index().url">
-                            <ArrowLeft class="mr-2 h-4 w-4" />
+                            <RiArrowLeftLine class="mr-2 h-4 w-4 shrink-0" />
                             Back to Dispatches
                         </Link>
                     </Button>
@@ -249,13 +249,13 @@ const timeline = computed(() => [
                             >
                                 <component
                                     :is="step.icon"
-                                    class="h-4 w-4"
+                                    class="h-4 w-4 shrink-0"
                                     :class="step.done ? 'text-emerald-600' : 'text-slate-400'"
                                 />
-                                
+
                                 <CheckCircle2
                                     v-if="step.done"
-                                    class="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-white text-emerald-500"
+                                    class="absolute -right-1 -top-1 h-4 w-4 shrink-0 rounded-full bg-white text-emerald-500"
                                 />
                             </div>
 
@@ -285,7 +285,7 @@ const timeline = computed(() => [
                         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
                                 <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100">
-                                    <Bus class="h-3.5 w-3.5 text-blue-700" />
+                                    <RiBusLine class="h-3.5 w-3.5 shrink-0 text-blue-700" />
                                 </div>
                                 <h2 class="text-sm font-semibold text-slate-800">Vehicle</h2>
                             </div>
@@ -328,7 +328,7 @@ const timeline = computed(() => [
                         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
                                 <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-100">
-                                    <MapPin class="h-3.5 w-3.5 text-sky-700" />
+                                    <RiMapPin2Line class="h-3.5 w-3.5 shrink-0 text-sky-700" />
                                 </div>
                                 <h2 class="text-sm font-semibold text-slate-800">Dispatch Info</h2>
                             </div>
@@ -345,7 +345,7 @@ const timeline = computed(() => [
                                 <div class="flex items-center justify-between py-3">
                                     <span class="text-xs font-semibold uppercase tracking-widest text-slate-400">Passengers</span>
                                     <div class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                                        <Users class="h-3 w-3" />
+                                        <RiGroupLine class="h-3 w-3 shrink-0" />
                                         {{ dispatch.pax_count }}
                                     </div>
                                 </div>
@@ -356,7 +356,7 @@ const timeline = computed(() => [
                         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
                                 <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100">
-                                    <Users class="h-3.5 w-3.5 text-violet-700" />
+                                    <RiGroupLine class="h-3.5 w-3.5 shrink-0 text-violet-700" />
                                 </div>
                                 <h2 class="text-sm font-semibold text-slate-800">Personnel</h2>
                             </div>
@@ -368,7 +368,7 @@ const timeline = computed(() => [
                                         <template v-if="dispatch.driver">
                                             {{ initials(dispatch.driver.name) }}
                                         </template>
-                                        <UserRound v-else class="h-4 w-4 text-slate-400" />
+                                        <RiUserLine v-else class="h-4 w-4 shrink-0 text-slate-400" />
                                     </div>
                                     <div class="min-w-0">
                                         <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Driver</p>
@@ -390,7 +390,7 @@ const timeline = computed(() => [
                                         <template v-if="dispatch.dispatcher">
                                             {{ initials(dispatch.dispatcher.name) }}
                                         </template>
-                                        <Fingerprint v-else class="h-4 w-4 text-slate-400" />
+                                        <RiFingerprintLine v-else class="h-4 w-4 shrink-0 text-slate-400" />
                                     </div>
                                     <div class="min-w-0">
                                         <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Dispatcher</p>
@@ -413,7 +413,7 @@ const timeline = computed(() => [
                         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
                                 <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100">
-                                    <RouteIcon class="h-3.5 w-3.5 text-emerald-700" />
+                                    <RiRouteLine class="h-3.5 w-3.5 shrink-0 text-emerald-700" />
                                 </div>
                                 <div>
                                     <h2 class="text-sm font-semibold text-slate-800">Route</h2>
@@ -467,7 +467,7 @@ const timeline = computed(() => [
                                     v-else
                                     class="flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/70 py-8 text-center"
                                 >
-                                    <RouteIcon class="h-6 w-6 text-slate-300" />
+                                    <RiRouteLine class="h-6 w-6 shrink-0 text-slate-300" />
                                     <p class="text-sm font-medium text-slate-500">No route assigned to this vehicle.</p>
                                 </div>
                             </div>
@@ -477,7 +477,7 @@ const timeline = computed(() => [
                         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
                                 <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
-                                    <MapPin class="h-3.5 w-3.5 text-slate-600" />
+                                    <RiMapPin2Line class="h-3.5 w-3.5 shrink-0 text-slate-600" />
                                 </div>
                                 <div>
                                     <h2 class="text-sm font-semibold text-slate-800">Route Map</h2>
@@ -500,7 +500,7 @@ const timeline = computed(() => [
                         <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
                             <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
                                 <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100">
-                                    <FileText class="h-3.5 w-3.5 text-amber-700" />
+                                    <RiFileTextLine class="h-3.5 w-3.5 shrink-0 text-amber-700" />
                                 </div>
                                 <h2 class="text-sm font-semibold text-slate-800">Remarks</h2>
                             </div>

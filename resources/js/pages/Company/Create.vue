@@ -28,7 +28,7 @@ import { Textarea } from '@/components/ui/textarea';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Companies', href: index().url },
-    { title: 'Create Company', href: create().url },
+    { title: 'Add New Company', href: create().url },
 ];
 
 type BusinessType = 'corporate' | 'sole_proprietorship';
@@ -83,7 +83,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Create Company" />
+    <Head title="Add New Company" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
@@ -93,7 +93,7 @@ const submit = () => {
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <h1 class="text-2xl leading-tight font-semibold">
-                        Create Company
+                        Add New Company
                     </h1>
                     <p class="text-sm text-muted-foreground">
                         Encode company details and submit required documents

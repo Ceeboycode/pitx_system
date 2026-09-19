@@ -6,16 +6,6 @@ import AllTheDataRafikiUrl from '@/components/assets/All-the-data-rafiki.svg';
 import BusDriverRafikiUrl from '@/components/assets/Bus-driver-rafiki.svg';
 import FilingSystemRafikiUrl from '@/components/assets/Filing-system-rafiki.svg';
 import WarningRafikiUrl from '@/components/assets/Warning-rafiki.svg';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar as CalendarPicker } from '@/components/ui/calendar';
@@ -23,6 +13,7 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
@@ -263,6 +254,13 @@ function resubmitError(field: string): string | undefined {
     return (resubmitForm.errors as Record<string, string>)[field];
 }
 
+const canAddSupportingDocument = computed(() => {
+    const documents = resubmitForm.supporting_documents;
+    if (documents.length === 0) return true;
+
+    return documents[documents.length - 1].file !== null;
+});
+
 function addSupportingDocument() {
     supportingDocumentId += 1;
     resubmitForm.supporting_documents.push({
@@ -433,11 +431,11 @@ onUnmounted(() => {
             </p>
         </div>
 
-        <div v-if="allDocs.length" class="mt-2 space-y-2">
+        <div v-if="allDocs.length" class="mt-2 space-y-2 max-w-full">
             <section
                 v-for="doc in allDocs"
                 :key="doc.id"
-                class="rounded-md border p-3 transition-colors"
+                class="rounded-md border p-3 transition-colors max-w-full"
                 :class="{
                     'border-custom-accent-3 bg-custom-accent-3/10':
                         doc.status === 'verified',
@@ -447,7 +445,7 @@ onUnmounted(() => {
                         doc.status === 'expired' || doc.status === 'invalid',
                 }"
             >
-                <div class="min-w-0 flex-1">
+                <div class="min-w-0 max-w-full">
                     <div class="flex items-center justify-between gap-2">
                         <p
                             class="truncate text-sm font-semibold text-custom-shadow"
@@ -472,7 +470,7 @@ onUnmounted(() => {
                     </div>
                     <p
                         v-if="doc.original_name"
-                        class="truncate text-custom-shadow/80"
+                        class="truncate max-w-full text-custom-shadow/80 overflow-auto"
                     >
                         {{ doc.original_name }}
                     </p>
@@ -494,7 +492,7 @@ onUnmounted(() => {
                                 @click="openUploadedDocumentPreview(doc)"
                             >
                                 <RiEyeLine class="h-4 w-4" />
-                                Preview
+                                View Document
                             </Button>
                             <Button
                                 v-else-if="doc.download_url"
@@ -794,6 +792,7 @@ onUnmounted(() => {
                         type="button"
                         variant="ghost-outline"
                         size="icon-text"
+                        :disabled="!canAddSupportingDocument"
                         @click="addSupportingDocument"
                     >
                         <RiAddLine class="h-4 w-4" />
@@ -982,15 +981,15 @@ onUnmounted(() => {
             </a>
         </p>
 
-        <AlertDialog v-model:open="confirmResubmissionOpen">
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Resubmit Documents</AlertDialogTitle>
-                    <AlertDialogDescription>
+        <Dialog v-model:open="confirmResubmissionOpen">
+            <DialogContent class="max-w-md px-6" :show-close-button="false">
+                <DialogHeader class="px-0">
+                    <DialogTitle>Resubmit Documents</DialogTitle>
+                    <DialogDescription>
                         These documents will be sent back to the verification
                         team.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
+                    </DialogDescription>
+                </DialogHeader>
                 <div
                     class="max-h-56 space-y-2 overflow-auto text-sm text-custom-shadow"
                 >
@@ -1017,9 +1016,13 @@ onUnmounted(() => {
                         No files are selected yet.
                     </p>
                 </div>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
+                <Separator />
+                <DialogFooter class="pt-3 gap-2 sm:justify-end">
+                    <Button variant="ghost-outline" @click="confirmResubmissionOpen = false">
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="float-primary"
                         :disabled="
                             !selectedResubmissionDocuments.length ||
                             resubmitForm.processing
@@ -1027,10 +1030,10 @@ onUnmounted(() => {
                         @click="submitResubmission"
                     >
                         Submit
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
 
         <Dialog v-model:open="previewOpen">
             <DialogContent

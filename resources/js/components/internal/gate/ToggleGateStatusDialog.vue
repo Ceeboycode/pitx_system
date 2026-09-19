@@ -49,7 +49,7 @@ function confirm() {
 
 <template>
     <Dialog v-model:open="open">
-        <DialogContent class="max-w-md px-6">
+        <DialogContent class="max-w-md px-6" :show-close-button="false">
             <DialogHeader class="px-0">
                 <DialogTitle>Set gate status</DialogTitle>
                 <DialogDescription>
@@ -66,7 +66,7 @@ function confirm() {
                     :disabled="processing"
                     @click="confirm"
                 >
-                    <RiShutDownLine class="h-4 w-4" />
+                    <RiShutDownLine class="h-4 w-4 shrink-0" />
                     {{ gate?.status === 'active' ? 'Inactivate' : 'Activate' }}
                 </Button>
             </DialogFooter>

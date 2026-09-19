@@ -22,7 +22,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { edit, index, update } from '@/routes/companies';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { Save } from 'lucide-vue-next';
+import { RiSaveLine } from 'vue-remix-icons';
 
 type CompanyStatus =
     | 'draft'
@@ -187,7 +187,7 @@ function verificationStatusDot(status?: CompanyStatus | null): string {
 
                 <div class="flex items-center gap-2">
                     <Button type="submit" :disabled="form.processing">
-                        <Save class="h-4 w-4" />
+                        <RiSaveLine class="h-4 w-4 shrink-0" />
                         {{ form.processing ? 'Saving...' : 'Save Changes' }}
                     </Button>
 

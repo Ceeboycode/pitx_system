@@ -66,7 +66,7 @@ const emit = defineEmits<{
                 <div class="lg:flex items-center gap-2 sm:justify-end">
                     <Button as-child variant="header-actions" size="icon">
                         <Link :href="props.back" :aria-label="`Back to ${props.entity} list`">
-                            <RiArrowLeftLine class="h-4 w-4" />
+                            <RiArrowLeftLine class="h-4 w-4 shrink-0" />
                         </Link>
                     </Button>
 

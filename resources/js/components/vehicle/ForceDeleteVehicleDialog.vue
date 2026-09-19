@@ -58,7 +58,7 @@ function deletePermanently() {
     <Dialog v-model:open="open">
         <DialogTrigger as-child>
             <Button variant="destructive" size="sm" class="cursor-pointer">
-                <Trash2 class="mr-2 h-4 w-4" />
+                <Trash2 class="mr-2 h-4 w-4 shrink-0" />
                 Delete Permanently
             </Button>
         </DialogTrigger>
@@ -123,7 +123,7 @@ function deletePermanently() {
                             : 'cursor-pointer'
                     "
                 >
-                    <Trash2 class="mr-2 h-4 w-4" />
+                    <Trash2 class="mr-2 h-4 w-4 shrink-0" />
                     {{ processing ? 'Deleting...' : 'Delete Permanently' }}
                 </Button>
             </DialogFooter>

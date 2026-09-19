@@ -25,13 +25,13 @@ import { edit, index, update } from '@/routes/vehicles';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import {
-    ArrowLeft,
-    Bus,
-    Building2,
-    Loader2,
-    Route as RouteIcon,
-    Save,
-} from 'lucide-vue-next';
+    RiArrowLeftLine,
+    RiBuilding2Line,
+    RiBusLine,
+    RiLoader2Line,
+    RiRouteLine,
+    RiSaveLine,
+} from 'vue-remix-icons';
 import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
 
@@ -95,7 +95,7 @@ const submit = () => {
             <div class="mx-5 flex items-start justify-between gap-4">
                 <div class="space-y-1">
                     <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                        <Bus class="h-3.5 w-3.5" />
+                        <RiBusLine class="h-3.5 w-3.5 shrink-0" />
                         Vehicles · Edit
                     </div>
                     <h1 class="text-2xl font-bold tracking-tight">Edit Vehicle</h1>
@@ -111,7 +111,7 @@ const submit = () => {
                     class="shrink-0 rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
                 >
                     <Link :href="index().url">
-                        <ArrowLeft class="mr-2 h-4 w-4" />
+                        <RiArrowLeftLine class="mr-2 h-4 w-4 shrink-0" />
                         Back to Vehicles
                     </Link>
                 </Button>
@@ -124,7 +124,7 @@ const submit = () => {
                     
                     <CardHeader class="border-b border-slate-100 pb-4">
                         <CardTitle class="flex items-center gap-2 text-base">
-                            <Building2 class="h-4 w-4 text-blue-700" />
+                            <RiBuilding2Line class="h-4 w-4 shrink-0 text-blue-700" />
                             Assignment
                         </CardTitle>
                         <CardDescription>
@@ -262,7 +262,7 @@ const submit = () => {
                         
                         <div class="space-y-1.5">
                             <div class="flex items-center gap-2">
-                                <Bus class="h-4 w-4 text-blue-700" />
+                                <RiBusLine class="h-4 w-4 shrink-0 text-blue-700" />
                                 <p class="text-sm font-semibold text-foreground">Vehicle Details</p>
                             </div>
                             <p class="text-xs text-muted-foreground">Registration and identification details.</p>
@@ -336,8 +336,8 @@ const submit = () => {
                                 :disabled="form.processing"
                                 class="rounded-lg bg-blue-700 text-white hover:bg-blue-800 border-0 shadow-sm font-semibold disabled:opacity-60"
                             >
-                                <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
-                                <Save v-else class="mr-2 h-4 w-4" />
+                                <RiLoader2Line v-if="form.processing" class="mr-2 h-4 w-4 shrink-0 animate-spin" />
+                                <RiSaveLine v-else class="mr-2 h-4 w-4 shrink-0" />
                                 {{ form.processing ? 'Saving...' : 'Update Vehicle' }}
                             </Button>
                         </div>

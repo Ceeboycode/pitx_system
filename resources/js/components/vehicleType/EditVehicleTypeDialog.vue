@@ -2,7 +2,7 @@
 import { update } from '@/routes/vehicle-types';
 import { useForm } from '@inertiajs/vue3';
 import { watch } from 'vue';
-import { Save } from 'lucide-vue-next';
+import { RiSaveLine } from 'vue-remix-icons';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -104,7 +104,7 @@ function submit() {
                         Cancel
                     </Button>
                     <Button type="submit" :disabled="form.processing">
-                        <Save class="mr-2 h-4 w-4" />
+                        <RiSaveLine class="mr-2 h-4 w-4 shrink-0" />
                         Save
                     </Button>
                 </DialogFooter>

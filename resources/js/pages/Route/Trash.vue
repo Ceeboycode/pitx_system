@@ -6,15 +6,14 @@ import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 
 
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -354,32 +353,27 @@ function restoreRoute() {
         </PanelLayout>
     </AppLayout>
 
-    <AlertDialog v-if="canRestore" v-model:open="restoreOpen">
-        <AlertDialogContent class="rounded-lg p-4">
-            <AlertDialogHeader>
-                <AlertDialogTitle class="flex items-center gap-2">
-                    Restore
-                </AlertDialogTitle>
-                <AlertDialogDescription>
+    <Dialog v-if="canRestore" v-model:open="restoreOpen">
+        <DialogContent class="max-w-md px-6" :show-close-button="false">
+            <DialogHeader class="px-0">
+                <DialogTitle>Restore</DialogTitle>
+                <DialogDescription>
                     Are you sure you want to restore
-                    <span class="font-medium text-foreground">
-                        {{ selectedRoute?.route_name ?? 'this route' }} </span
-                    >? It will be moved back to the active routes list.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-
-            <AlertDialogFooter>
-                <AlertDialogCancel class="rounded-lg cursor-pointer hover:bg-slate-100" @click="closeRestoreDialog"
-                    >Cancel</AlertDialogCancel
-                >
-                <AlertDialogAction
-                    class="rounded-lg border-0 text-white cursor-pointer bg-primary hover:bg-primary/90"
-                    @click="restoreRoute"
-                >
+                    <span class="font-semibold text-custom-accent-3">{{
+                        selectedRoute?.route_name ?? 'this route'
+                    }}</span>? It will be moved back to the active routes list.
+                </DialogDescription>
+            </DialogHeader>
+            <Separator />
+            <DialogFooter class="pt-3 gap-2 sm:justify-end">
+                <Button variant="ghost-outline" @click="closeRestoreDialog">
+                    Cancel
+                </Button>
+                <Button variant="float-primary" @click="restoreRoute">
                     <RiRestartLine class="h-4 w-4" />
                     Restore
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
 </template>

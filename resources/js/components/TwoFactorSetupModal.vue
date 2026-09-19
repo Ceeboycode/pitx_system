@@ -20,7 +20,7 @@ import { useTwoFactorAuth } from '@/composables/useTwoFactorAuth';
 import { confirm } from '@/routes/two-factor';
 import { Form } from '@inertiajs/vue3';
 import { useClipboard } from '@vueuse/core';
-import { Check, Copy, ScanLine } from 'lucide-vue-next';
+import { RiCheckLine, RiFileCopyLine, RiQrScan2Line } from 'vue-remix-icons';
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue';
 
 interface Props {
@@ -139,8 +139,8 @@ watch(
                                 class="border-b border-border last:border-b-0"
                             />
                         </div>
-                        <ScanLine
-                            class="relative z-20 size-6 text-foreground"
+                        <RiQrScan2Line
+                            class="relative z-20 size-6 shrink-0 text-foreground"
                         />
                     </div>
                 </div>
@@ -226,11 +226,11 @@ watch(
                                         @click="copy(manualSetupKey || '')"
                                         class="relative block h-auto border-l border-border px-3 hover:bg-muted"
                                     >
-                                        <Check
+                                        <RiCheckLine
                                             v-if="copied"
-                                            class="w-4 text-green-500"
+                                            class="w-4 shrink-0 text-green-500"
                                         />
-                                        <Copy v-else class="w-4" />
+                                        <RiFileCopyLine v-else class="w-4 shrink-0" />
                                     </button>
                                 </template>
                             </div>

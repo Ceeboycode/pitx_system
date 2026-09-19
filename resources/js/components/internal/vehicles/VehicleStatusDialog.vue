@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { RiOctagonLine, RiSpam2Line } from 'vue-remix-icons';
+import { RiShutDownLine, RiSpam2Line } from 'vue-remix-icons';
 
 type VehicleForStatus = {
     id: number;
@@ -37,9 +37,9 @@ const isSuspending = computed(() => props.targetStatus === 'suspended');
 
 const statusActionLabel = (status: string) =>
     status === 'active'
-        ? 'Set Active'
+        ? 'Activate'
         : status === 'inactive'
-          ? 'Set Inactive'
+          ? 'Inactivate'
           : 'Suspend';
 
 watch(open, (isOpen) => {
@@ -70,7 +70,7 @@ function confirm() {
 
 <template>
     <Dialog v-model:open="open">
-        <DialogContent class="max-w-md px-6">
+        <DialogContent class="max-w-md px-6" :show-close-button="false">
             <DialogHeader class="px-0">
                 <DialogTitle>{{ statusActionLabel(targetStatus) }}</DialogTitle>
                 <DialogDescription>
@@ -101,8 +101,8 @@ function confirm() {
                         :variant="isSuspending ? 'destructive' : 'float-primary'"
                         :disabled="isSuspending && !suspendRemarks.trim()"
                     >
-                        <RiSpam2Line v-if="isSuspending" class="h-4 w-4" />
-                        <RiOctagonLine v-else class="h-4 w-4" />
+                        <RiSpam2Line v-if="isSuspending" class="h-4 w-4 shrink-0" />
+                        <RiShutDownLine v-else class="h-4 w-4 shrink-0" />
                         {{ statusActionLabel(targetStatus) }}
                     </Button>
                 </DialogFooter>

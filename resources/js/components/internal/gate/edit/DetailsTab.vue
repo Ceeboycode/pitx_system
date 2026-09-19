@@ -176,10 +176,10 @@ function submit() {
                     class="h-full w-full object-cover transition duration-200 group-hover:brightness-80"
                   />
                   <div v-if="picturePreview" class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
-                    <RiImageAddLine class="h-7 w-7 text-custom-bg-light dark:text-custom-shadow" />
+                    <RiImageAddLine class="h-7 w-7 shrink-0 text-custom-bg-light dark:text-custom-shadow" />
                   </div>
                   <div v-else class="flex h-full w-full items-center justify-center bg-custom-primary/10 dark:bg-custom-secondary/10 text-sm text-custom-shadow">
-                    <RiImageAddLine class="h-6 w-6 text-custom-shadow/80" />
+                    <RiImageAddLine class="h-6 w-6 shrink-0 text-custom-shadow/80" />
                   </div>
                   <Button
                     v-if="picturePreview"
@@ -188,7 +188,7 @@ function submit() {
                     class="absolute right-1 top-1 z-10 flex h-6 w-6 cursor-pointer items-center rounded-full border border-custom-bg-light/50 dark:border-custom-shadow/50 text-custom-shadow transition-all duration-200 hover:border-destructive hover:bg-destructive/20 hover:text-destructive"
                     @click.stop="removePicture"
                   >
-                    <RiCloseLine class="text-custom-bg-light dark:text-custom-shadow h-4 w-4" />
+                    <RiCloseLine class="text-custom-bg-light dark:text-custom-shadow h-4 w-4 shrink-0" />
                   </Button>
                 </div>
                 <input
