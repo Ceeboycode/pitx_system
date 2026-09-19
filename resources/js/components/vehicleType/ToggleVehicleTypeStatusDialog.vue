@@ -18,7 +18,7 @@ import { RiShutDownLine } from 'vue-remix-icons';
 type VehicleTypeForToggle = {
     id: number;
     type_name: string;
-    status: boolean;
+    is_active: boolean;
 };
 
 const open = defineModel<boolean>('open');

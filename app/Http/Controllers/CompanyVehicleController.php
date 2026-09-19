@@ -8,6 +8,7 @@ use App\Models\Gate as GateModel;
 use App\Models\Route;
 use App\Models\Vehicle;
 use App\Models\VehicleDocument;
+use App\Models\VehicleType;
 use App\Notifications\Internal\NewVehicleSubmittedNotification;
 use App\Notifications\Internal\VehicleResubmittedNotification;
 use App\Services\NotificationService;
@@ -79,8 +80,8 @@ class CompanyVehicleController extends Controller
             $query->where('status', $request->status);
         }
 
-        if ($request->filled('vehicle_type')) {
-            $query->where('vehicle_type', $request->vehicle_type);
+        if ($request->filled('vehicle_type_id')) {
+            $query->where('vehicle_type_id', $request->integer('vehicle_type_id'));
         }
 
         if ($request->filled('route_id')) {
@@ -128,7 +129,11 @@ class CompanyVehicleController extends Controller
                 'sort_dir' => $sortDir,
             ],
             'routes' => $routes,
-            'vehicleTypes' => \App\Models\VehicleType::where('is_active', true)->orderBy('type_name')->get(['id', 'type_name']),
+            'vehicleTypes' => VehicleType::query()
+                ->where('is_active', true)
+                ->orWhereHas('vehicles', fn ($query) => $query->where('company_id', $company->id))
+                ->orderBy('type_name')
+                ->get(['id', 'type_name']),
         ]);
     }
 
@@ -178,7 +183,7 @@ class CompanyVehicleController extends Controller
             ],
             'gates' => $gates,
             'routes' => $routes,
-            'vehicleTypes' => \App\Models\VehicleType::where('is_active', true)->orderBy('type_name')->get(['id', 'type_name']),
+            'vehicleTypes' => VehicleType::active()->orderBy('type_name')->get(['id', 'type_name']),
             'docTypes' => self::DOC_TYPES,
             'mapConfig' => [
                 'mapboxToken' => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
@@ -268,6 +273,7 @@ class CompanyVehicleController extends Controller
         $this->syncExpiredDocumentsForVehicle($vehicle, $user->id);
 
         $vehicle->load([
+            'vehicleType:id,type_name,is_active',
             'route:id,gate_id,route_name,origin_name,destination_name,route_geometry',
             'route.gate:id,gate_name',
             'route.stops:id,route_id,stop_name,stop_order,stop_type,address,latitude,longitude',
@@ -315,6 +321,7 @@ class CompanyVehicleController extends Controller
                 'id' => $vehicle->id,
                 'route_id' => $vehicle->route_id,
                 'vehicle_type_id' => $vehicle->vehicle_type_id,
+                'vehicle_type' => $vehicle->vehicleType?->type_name,
                 'plate_number' => $vehicle->plate_number,
                 'body_number' => $vehicle->body_number,
                 'capacity' => $vehicle->capacity,
@@ -373,7 +380,7 @@ class CompanyVehicleController extends Controller
             ],
             'gates' => $gates,
             'routes' => $routes,
-            'vehicleTypes' => \App\Models\VehicleType::where('is_active', true)->orderBy('type_name')->get(['id', 'type_name']),
+            'vehicleTypes' => $this->vehicleTypesForSelection($vehicle),
             'docTypes' => self::DOC_TYPES,
             'mapConfig' => [
                 'mapboxToken' => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
@@ -396,6 +403,7 @@ class CompanyVehicleController extends Controller
         $this->syncExpiredDocumentsForVehicle($vehicle, $user->id);
 
         $vehicle->load([
+            'vehicleType:id,type_name,is_active',
             'documents:id,vehicle_id,document_type,file_name,status,issued_at,expires_at,created_at',
         ]);
 
@@ -440,6 +448,7 @@ class CompanyVehicleController extends Controller
                 'id' => $vehicle->id,
                 'route_id' => $vehicle->route_id,
                 'vehicle_type_id' => $vehicle->vehicle_type_id,
+                'vehicle_type' => $vehicle->vehicleType?->type_name,
                 'plate_number' => $vehicle->plate_number,
                 'body_number' => $vehicle->body_number,
                 'capacity' => $vehicle->capacity,
@@ -464,7 +473,7 @@ class CompanyVehicleController extends Controller
             ],
             'gates' => $gates,
             'routes' => $routes,
-            'vehicleTypes' => \App\Models\VehicleType::where('is_active', true)->orderBy('type_name')->get(['id', 'type_name']),
+            'vehicleTypes' => $this->vehicleTypesForSelection($vehicle),
             'docTypes' => self::DOC_TYPES,
             'mapConfig' => [
                 'mapboxToken' => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
@@ -695,6 +704,15 @@ class CompanyVehicleController extends Controller
         $value = preg_replace('/_+/', '_', $value);
 
         return trim($value ?? '', '_') ?: 'FILE';
+    }
+
+    private function vehicleTypesForSelection(Vehicle $vehicle)
+    {
+        return VehicleType::query()
+            ->where('is_active', true)
+            ->orWhereKey($vehicle->vehicle_type_id)
+            ->orderBy('type_name')
+            ->get(['id', 'type_name']);
     }
 
     private function usesDocumentDates(string $documentType): bool

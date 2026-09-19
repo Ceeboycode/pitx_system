@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Role;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class RolePermissionSeeder extends Seeder
@@ -16,7 +16,6 @@ class RolePermissionSeeder extends Seeder
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $allPermissions = Permission::query()->pluck('name')->all();
         $internalPermissions = Permission::query()
             ->where('name', 'not like', 'external_%')
             ->pluck('name')
@@ -31,17 +30,9 @@ class RolePermissionSeeder extends Seeder
                     ->orWhere('name', 'like', 'vehicle_types.%')
                     ->orWhere('name', 'like', 'gates.%')
                     ->orWhere('name', 'like', 'routes.%')
+                    ->orWhere('name', 'like', 'route_stop.%')
                     ->orWhere('name', 'like', 'dispatches.%')
                     ->orWhere('name', 'audit_logs.viewOwn');
-            })
-            ->pluck('name')
-            ->all();
-
-        $itPermissions = Permission::query()
-            ->where(function ($query) {
-                $query->where('name', 'like', 'roles.%')
-                    ->orWhere('name', 'like', 'users.%')
-                    ->orWhere('name', 'like', 'audit_logs.%');
             })
             ->pluck('name')
             ->all();
@@ -102,7 +93,7 @@ class RolePermissionSeeder extends Seeder
             ->where('type', 'external')
             ->firstOrFail();
 
-        $superAdmin->syncPermissions($allPermissions);
+        $superAdmin->syncPermissions($internalPermissions);
         $admin->syncPermissions($internalPermissions);
 
         // $it->syncPermissions($itPermissions);

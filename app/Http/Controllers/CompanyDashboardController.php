@@ -113,7 +113,8 @@ class CompanyDashboardController extends Controller
 
         $recentDispatches = $company->dispatches()
             ->with([
-                'vehicle:id,route_id,plate_number,body_number,vehicle_type',
+                'vehicle:id,route_id,vehicle_type_id,plate_number,body_number',
+                'vehicle.vehicleType:id,type_name',
                 'vehicle.route:id,gate_id,route_name,origin_name,destination_name,status',
                 'vehicle.route.gate:id,gate_name',
                 'gate:id,gate_name',
@@ -139,7 +140,7 @@ class CompanyDashboardController extends Controller
                         'id' => $dispatch->vehicle->id,
                         'plate_number' => $dispatch->vehicle->plate_number,
                         'body_number' => $dispatch->vehicle->body_number,
-                        'vehicle_type' => $dispatch->vehicle->vehicle_type,
+                        'vehicle_type' => $dispatch->vehicle->vehicleType?->type_name,
                     ] : null,
                     'gate' => $dispatch->gate ? [
                         'id' => $dispatch->gate->id,

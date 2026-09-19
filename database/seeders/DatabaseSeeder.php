@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Schema;
 
 class DatabaseSeeder extends Seeder
 {
@@ -12,21 +11,18 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        Schema::disableForeignKeyConstraints();
-
         $this->call([
             PermissionSeeder::class,
             RoleSeeder::class,
             RolePermissionSeeder::class,
-
-            UserSeeder::class,
-            CompanySeeder::class,
-            CompanyDocumentSeeder::class,
-            GateSeeder::class,
-            RouteSeeder::class,
-            VehicleTypeSeeder::class,
         ]);
 
-        Schema::enableForeignKeyConstraints();
+        if (! app()->environment(['local', 'testing'])) {
+            $this->command?->warn('Demo data is only seeded in local and testing environments.');
+
+            return;
+        }
+
+        $this->call(DemoDataSeeder::class);
     }
 }

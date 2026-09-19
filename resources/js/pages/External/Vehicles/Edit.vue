@@ -80,7 +80,7 @@ type VehicleDocument = {
 type Vehicle = {
     id: number;
     route_id: number | string | null;
-    vehicle_type: string;
+    vehicle_type_id: number | null;
     plate_number: string;
     body_number: string;
     capacity: string | number;
@@ -114,17 +114,8 @@ const props = defineProps<{
     };
 }>();
 
-const vehicleTypesOld = [
-    'Bus',
-    'Modern Jeepney',
-    'Jeepney',
-    'Mini Bus',
-    'UV Express',
-    'Van',
-];
-
 const form = useForm({
-    vehicle_type: props.vehicle.vehicle_type ?? '',
+    vehicle_type_id: props.vehicle.vehicle_type_id,
     plate_number: props.vehicle.plate_number ?? '',
     body_number: props.vehicle.body_number ?? '',
     capacity: props.vehicle.capacity ?? '',
@@ -592,7 +583,8 @@ function statusDot(status?: string | null) {
                                 </div>
                                 <div class="p-6">
                                     <VehicleBasicInfoForm
-                                        :form="form"
+                                    :form="form"
+                                    :vehicle-type-name="vehicleTypes.find((type) => type.id === form.vehicle_type_id)?.type_name"
                                         :vehicle-types="vehicleTypes"
                                     />
                                 </div>

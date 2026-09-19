@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Company;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -11,114 +10,52 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        $company = Company::query()->first();
+        foreach ($this->internalUsers() as $attributes) {
+            $role = $attributes['role'];
+            unset($attributes['role']);
 
-        $superAdmin = User::query()->updateOrCreate(
-            ['username' => '2026-0001'],
-            [
-                'name' => 'Cedric Heyrosa',
-                'email' => 'cedric_heyrosa@gmail.com',
-                'phone_number' => '+639226789012',
-                'status' => 'active',
-                'email_verified_at' => now(),
-                'password' => Hash::make('admin123'),
-                'must_change_password' => false,
-                'company_id' => null,
-            ]
-        );
-        $superAdmin->syncRoles(['super-admin']);
+            $user = User::withTrashed()->firstOrCreate(
+                ['username' => $attributes['username']],
+                $attributes,
+            );
 
-        // ADMIN ACCT FOR DEVELOPMENT, WAG TATANGGALIN ======================================
-        // $admin = User::query()->updateOrCreate(
-        //     ['username' => 'admin'],
-        //     [
-        //         'name' => 'Admin User',
-        //         'email' => 'admin@gmail.com',
-        //         'phone_number' => '+639123456788',
-        //         'status' => 'active',
-        //         'email_verified_at' => now(),
-        //         'password' => Hash::make('admin123'),
-        //         'must_change_password' => false,
-        //         'company_id' => null,
-        //     ]
-        // );
-        // $admin->syncRoles(['admin']);
+            if ($user->trashed()) {
+                $user->restore();
+            }
 
-        $admin1 = User::query()->updateOrCreate(
-            ['username' => '2026-0002'],
-            [
-                'name' => 'Pat Vicuna',
-                'email' => 'pat_vicuna@gmail.com',
-                'phone_number' => '+639237890123',
-                'status' => 'active',
-                'email_verified_at' => now(),
-                'password' => Hash::make('admin123'),
-                'must_change_password' => false,
-                'company_id' => null,
-            ]
-        );
-        $admin1->syncRoles(['admin']);
+            $this->fillMissingProfileAttributes($user, $attributes);
 
-        // TERMINAL MANAGER ACCT FOR DEVELOPMENT, WAG TATANGGALIN ======================================
-        // $terminalManager = User::query()->updateOrCreate(
-        //     ['username' => 'terminalmanager'],
-        //     [
-        //         'name' => 'Terminal Manager',
-        //         'email' => 'terminalmanager@gmail.com',
-        //         'phone_number' => '09123456786',
-        //         'status' => 'active',
-        //         'email_verified_at' => now(),
-        //         'password' => Hash::make('admin123'),
-        //         'must_change_password' => false,
-        //         'company_id' => null,
-        //     ]
-        // );
-        // $terminalManager->syncRoles(['terminal manager']);
+            if (! $user->hasRole($role)) {
+                $user->assignRole($role);
+            }
+        }
+    }
 
-        $terminalManager1 = User::query()->updateOrCreate(
-            ['username' => '2026-0003'],
-            [
-                'name' => 'Terminal Manager 1',
-                'email' => 'terminalmanager1@gmail.com',
-                'phone_number' => '+639171234567',
-                'status' => 'active',
-                'email_verified_at' => now(),
-                'password' => Hash::make('admin123'),
-                'must_change_password' => false,
-                'company_id' => null,
-            ]
-        );
-        $terminalManager1->syncRoles(['terminal manager']);
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function internalUsers(): array
+    {
+        return [
+            ['username' => '2026-0001', 'name' => 'Cedric Heyrosa', 'email' => 'cedric_heyrosa@gmail.com', 'phone_number' => '+639226789012', 'status' => 'active', 'email_verified_at' => now(), 'password' => Hash::make('admin123'), 'must_change_password' => false, 'company_id' => null, 'role' => 'super-admin'],
+            ['username' => '2026-0002', 'name' => 'Pat Vicuna', 'email' => 'pat_vicuna@gmail.com', 'phone_number' => '+639237890123', 'status' => 'active', 'email_verified_at' => now(), 'password' => Hash::make('admin123'), 'must_change_password' => false, 'company_id' => null, 'role' => 'admin'],
+            ['username' => '2026-0003', 'name' => 'Terminal Manager 1', 'email' => 'terminalmanager1@gmail.com', 'phone_number' => '+639171234567', 'status' => 'active', 'email_verified_at' => now(), 'password' => Hash::make('admin123'), 'must_change_password' => false, 'company_id' => null, 'role' => 'terminal manager'],
+            ['username' => '2026-0004', 'name' => 'Terminal Manager 2', 'email' => 'terminalmanager2@gmail.com', 'phone_number' => '+639182345678', 'status' => 'active', 'email_verified_at' => now(), 'password' => Hash::make('admin123'), 'must_change_password' => false, 'company_id' => null, 'role' => 'terminal manager'],
+        ];
+    }
 
-        $terminalManager2 = User::query()->updateOrCreate(
-            ['username' => '2026-0004'],
-            [
-                'name' => 'Terminal Manager 2',
-                'email' => 'terminalmanager2@gmail.com',
-                'phone_number' => '+639182345678',
-                'status' => 'active',
-                'email_verified_at' => now(),
-                'password' => Hash::make('admin123'),
-                'must_change_password' => false,
-                'company_id' => null,
-            ]
-        );
-        $terminalManager2->syncRoles(['terminal manager']);
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function fillMissingProfileAttributes(User $user, array $attributes): void
+    {
+        $missing = collect($attributes)
+            ->except(['username', 'password', 'company_id'])
+            ->filter(fn (mixed $value, string $attribute): bool => blank($user->getAttribute($attribute)) && filled($value))
+            ->all();
 
-        $commuter1 = User::query()->updateOrCreate(
-            ['username' => 'janrey_u'],
-            [
-                'name' => 'Jan Ulopani',
-                'email' => 'jan_ulopani@gmail.com',
-                'phone_number' => '+639248901234',
-                'status' => 'active',
-                'email_verified_at' => now(),
-                'password' => Hash::make('admin123'),
-                'must_change_password' => false,
-                'company_id' => null,
-            ]
-        );
-        $commuter1->syncRoles(['commuter']);
-
+        if ($missing !== []) {
+            $user->fill($missing)->save();
+        }
     }
 }

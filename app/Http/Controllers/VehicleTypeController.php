@@ -6,6 +6,7 @@ use App\Http\Requests\VehicleType\VehicleTypeStoreRequest;
 use App\Http\Requests\VehicleType\VehicleTypeUpdateRequest;
 use App\Models\VehicleType;
 use App\Services\Vehicle\VehicleTypeService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -22,9 +23,12 @@ class VehicleTypeController extends Controller
         Gate::authorize('viewAny', VehicleType::class);
 
         $vehicleTypes = VehicleType::query()
-            ->select('id', 'type_name', 'is_active')
+            ->select('id', 'type_name', 'is_active', 'created_at')
             ->when($request->search, function ($query, $search) {
                 $query->where('type_name', 'like', "%{$search}%");
+            })
+            ->when($request->filled('status') && $request->status !== 'all', function ($query) use ($request) {
+                $query->where('is_active', $request->status === 'active');
             })
             ->latest()
             ->paginate(10)
@@ -34,11 +38,13 @@ class VehicleTypeController extends Controller
             'vehicleTypes' => $vehicleTypes,
             'filters' => [
                 'search' => $request->search,
+                'status' => $request->input('status'),
             ],
+            'canDelete' => $request->user()->can('vehicle_types.delete'),
         ]);
     }
 
-    public function store(VehicleTypeStoreRequest $request)
+    public function store(VehicleTypeStoreRequest $request): RedirectResponse
     {
         Gate::authorize('create', VehicleType::class);
 
@@ -49,7 +55,7 @@ class VehicleTypeController extends Controller
         return to_route('vehicle-types.index')->with('success', 'Vehicle type created successfully.');
     }
 
-    public function update(VehicleTypeUpdateRequest $request, VehicleType $vehicleType)
+    public function update(VehicleTypeUpdateRequest $request, VehicleType $vehicleType): RedirectResponse
     {
         Gate::authorize('update', $vehicleType);
 
@@ -70,24 +76,25 @@ class VehicleTypeController extends Controller
         ]);
     }
 
-    public function toggleStatus(VehicleType $vehicleType)
+    public function toggleStatus(VehicleType $vehicleType): RedirectResponse
     {
         Gate::authorize('update', $vehicleType);
 
         $vehicleType->update([
-            'is_active' => !$vehicleType->is_active,
+            'is_active' => ! $vehicleType->is_active,
+            'updated_by' => request()->user()->id,
         ]);
 
         return redirect()->back()->with('success', 'Vehicle type status updated successfully.');
     }
 
-    public function destroy(VehicleType $vehicleType)
+    public function destroy(VehicleType $vehicleType): RedirectResponse
     {
         Gate::authorize('delete', $vehicleType);
 
         $this->vehicleTypeService->deleteVehicleType($vehicleType);
 
-        return redirect()->back()->with('success', 'Vehicle type deleted successfully.');
+        return to_route('vehicle-types.index')->with('success', 'Vehicle type deleted successfully.');
     }
 
     public function show(VehicleType $vehicleType)

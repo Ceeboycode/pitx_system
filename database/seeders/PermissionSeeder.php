@@ -17,13 +17,16 @@ class PermissionSeeder extends Seeder
             'companies' => [
                 'viewAny',
                 'view',
+                'create',
                 'update',
                 'archive',
                 'restore',
+                'forceDelete',
             ],
 
             'company_documents' => [
                 'viewAny',
+                'view',
                 'download',
                 'verify',
                 'update',
@@ -38,6 +41,7 @@ class PermissionSeeder extends Seeder
                 'update',
                 'archive',
                 'restore',
+                'forceDelete',
                 'toggleStatus',
             ],
 
@@ -46,12 +50,23 @@ class PermissionSeeder extends Seeder
                 'create',
                 'update',
                 'toggleStatus',
+                'delete',
             ],
 
             'vehicle_documents' => [
                 'verify',
                 'invalidate',
                 'unverify',
+            ],
+
+            'route_stop' => [
+                'viewAny',
+                'view',
+                'create',
+                'update',
+                'archive',
+                'restore',
+                'forceDelete',
             ],
 
             'gates' => [
@@ -62,6 +77,7 @@ class PermissionSeeder extends Seeder
                 'archive',
                 'restore',
                 'viewTrash',
+                'forceDelete',
             ],
 
             'routes' => [
@@ -148,14 +164,6 @@ class PermissionSeeder extends Seeder
             ],
 
         ];
-
-        Permission::query()
-            ->where(function ($query) {
-                $query->where('name', 'like', '%.delete')
-                    ->orWhere('name', 'like', '%.forceDelete')
-                    ->orWhere('name', 'like', 'external_companies.%');
-            })
-            ->delete();
 
         foreach ($modules as $module => $actions) {
             foreach ($actions as $action) {

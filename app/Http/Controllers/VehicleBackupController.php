@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Vehicle;
 use App\Models\VehicleDocument;
+use App\Models\VehicleType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +31,7 @@ class VehicleBackupController extends Controller
         $vehicles = Vehicle::with([
             'company:id,company_name',
             'route:id,route_name',
+            'vehicleType:id,type_name',
         ])->orderBy('plate_number')->get();
 
         $filename = 'vehicles-'.now()->format('Y-m-d').'.csv';
@@ -53,7 +55,7 @@ class VehicleBackupController extends Controller
                     $v->id,
                     $v->plate_number ?? '',
                     $v->body_number ?? '',
-                    $v->vehicle_type ?? '',
+                    $v->vehicleType?->type_name ?? '',
                     $v->make_model ?? '',
                     $v->capacity ?? '',
                     $v->color ?? '',
@@ -160,7 +162,7 @@ class VehicleBackupController extends Controller
                     $vehicle = Vehicle::create([
                         'plate_number' => $entry['plate_number'],
                         'body_number' => $entry['body_number'] ?? null,
-                        'vehicle_type' => $entry['vehicle_type'] ?? null,
+                        'vehicle_type_id' => $this->resolveVehicleTypeId($entry['vehicle_type'] ?? null, $importedBy),
                         'capacity' => $entry['capacity'] ?? null,
                         'color' => $entry['color'] ?? null,
                         'engine_number' => $entry['engine_number'] ?? null,
@@ -248,5 +250,25 @@ class VehicleBackupController extends Controller
         }
 
         rmdir($dir);
+    }
+
+    private function resolveVehicleTypeId(?string $typeName, ?int $userId): ?int
+    {
+        $normalizedName = Str::squish((string) $typeName);
+
+        if ($normalizedName === '') {
+            return null;
+        }
+
+        $vehicleType = VehicleType::firstOrCreate(
+            ['type_name' => $normalizedName],
+            ['is_active' => true, 'created_by' => $userId, 'updated_by' => $userId],
+        );
+
+        if (! $vehicleType->is_active) {
+            throw new \InvalidArgumentException("Vehicle type '{$normalizedName}' is inactive.");
+        }
+
+        return $vehicleType->id;
     }
 }

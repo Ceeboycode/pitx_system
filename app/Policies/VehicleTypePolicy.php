@@ -10,17 +10,12 @@ class VehicleTypePolicy
     /**
      * Handle all abilities before checking specific methods.
      */
-    public function before(User $user, string $ability): bool
-    {
-        return $user->hasRole('admin');
-    }
-
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('vehicle_type.viewAny');
+        return $user->can('vehicle_types.viewAny');
     }
 
     /**
@@ -28,7 +23,7 @@ class VehicleTypePolicy
      */
     public function view(User $user, VehicleType $vehicleType): bool
     {
-        return $user->can('vehicle_type.view');
+        return $user->can('vehicle_types.viewAny');
     }
 
     /**
@@ -36,7 +31,7 @@ class VehicleTypePolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('vehicle_type.create');
+        return $user->can('vehicle_types.create');
     }
 
     /**
@@ -44,7 +39,7 @@ class VehicleTypePolicy
      */
     public function update(User $user, VehicleType $vehicleType): bool
     {
-        return $user->can('vehicle_type.update');
+        return $user->can('vehicle_types.update');
     }
 
     /**
@@ -52,7 +47,7 @@ class VehicleTypePolicy
      */
     public function delete(User $user, VehicleType $vehicleType): bool
     {
-        return $user->can('vehicle_type.archive');
+        return $user->can('vehicle_types.delete');
     }
 
     /**
@@ -60,7 +55,7 @@ class VehicleTypePolicy
      */
     public function restore(User $user, VehicleType $vehicleType): bool
     {
-        return $user->can('vehicle_type.restore');
+        return false;
     }
 
     /**
@@ -68,6 +63,6 @@ class VehicleTypePolicy
      */
     public function forceDelete(User $user, VehicleType $vehicleType): bool
     {
-        return $user->can('vehicle_type.forceDelete');
+        return false;
     }
 }

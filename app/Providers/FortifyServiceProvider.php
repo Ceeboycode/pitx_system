@@ -67,7 +67,7 @@ class FortifyServiceProvider extends ServiceProvider
             $loginLower = Str::lower($login);
 
             $user = User::query()
-                ->with('roles')
+                ->with(['company:id,is_active', 'roles'])
                 ->where(function ($query) use ($loginLower) {
                     $query->whereRaw('LOWER(username) = ?', [$loginLower])
                         ->orWhereRaw('LOWER(email) = ?', [$loginLower]);
@@ -83,6 +83,10 @@ class FortifyServiceProvider extends ServiceProvider
             }
 
             if (in_array($user->status, ['inactive', 'suspended'], true)) {
+                return null;
+            }
+
+            if ($user->company_id !== null && ! $user->company?->is_active) {
                 return null;
             }
 

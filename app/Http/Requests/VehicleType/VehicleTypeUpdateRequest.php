@@ -3,6 +3,7 @@
 namespace App\Http\Requests\VehicleType;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class VehicleTypeUpdateRequest extends FormRequest
@@ -32,5 +33,12 @@ class VehicleTypeUpdateRequest extends FormRequest
             ],
             'is_active' => ['sometimes', 'boolean'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'type_name' => Str::squish((string) $this->input('type_name')),
+        ]);
     }
 }

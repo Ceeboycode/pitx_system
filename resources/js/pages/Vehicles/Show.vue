@@ -121,6 +121,7 @@ type RouteData = {
 
 type VehicleModel = {
     id: number;
+    vehicle_type_id?: number | null;
     vehicle_type?: string | null;
     plate_number?: string | null;
     body_number?: string | null;
@@ -233,7 +234,7 @@ const docHealthSummary = computed(() => {
 });
 
 const vehicleMeta = computed(() => [
-    { label: 'Vehicle Type', value: humanize(vehicle.value.vehicle_type) },
+    { label: 'Vehicle Type', value: vehicle.value.vehicle_type ?? '—' },
     { label: 'Plate Number', value: vehicle.value.plate_number || '—' },
     { label: 'Body Number', value: vehicle.value.body_number || '—' },
     { label: 'Capacity', value: vehicle.value.capacity || '—' },

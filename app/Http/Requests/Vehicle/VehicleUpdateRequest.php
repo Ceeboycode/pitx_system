@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Vehicle;
 
+use App\Models\VehicleType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class VehicleUpdateRequest extends FormRequest
 {
@@ -34,7 +36,19 @@ class VehicleUpdateRequest extends FormRequest
             'company_id' => ['required', 'exists:companies,id'],
             'route_id' => ['required', 'exists:routes,id'],
             'vehicle_type_id' => ['required', 'exists:vehicle_types,id'],
-            'vehicle_type' => ['nullable', 'string', 'max:100', 'required_without:vehicle_type_id'],
         ];
+    }
+
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            $vehicle = $this->route('vehicle');
+            $currentTypeId = $vehicle instanceof \App\Models\Vehicle ? $vehicle->vehicle_type_id : null;
+            $selectedType = VehicleType::find($this->integer('vehicle_type_id'));
+
+            if ($selectedType && ! $selectedType->is_active && (int) $selectedType->id !== (int) $currentTypeId) {
+                $validator->errors()->add('vehicle_type_id', 'Inactive vehicle types cannot be assigned.');
+            }
+        }];
     }
 }
