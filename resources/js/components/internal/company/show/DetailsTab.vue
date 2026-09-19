@@ -92,20 +92,20 @@ function openInMaps(value?: string | null) {
 </script>
 
 <template>
-  <div class="grid lg:grid-cols-3 gap-4 w-full h-full">
-    <Card class="lg:col-span-2">
+  <div class="flex flex-col gap-4 w-full h-full">
+    <Card class="">
       <CardHeader>
         <CardTitle>Company</CardTitle>
         <CardDescription>View company details.</CardDescription>
       </CardHeader>
       <CardContent class="flex flex-row gap-4">
-        <div class="flex-1">
+        <div class="flex-1 max-w-1/3">
           <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
             <div class="flex flex-col gap-2 justify-center items-start">
               <Logo class="rounded-md">
                 <LogoImage
                   v-if="company.logo"
-                  :src="company.logo"
+                  :src="company.logo_url"
                   :alt="company.company_name"
                 />
                 <LogoFallback>
@@ -113,50 +113,62 @@ function openInMaps(value?: string | null) {
                 </LogoFallback>
               </Logo>
             </div>
-            <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
-              <div class="inline-flex gap-2 items-start">
-                <RiBuildingLine class="shrink-0 mt-0.5 h-4 w-4 text-custom-shadow/80 0"/>
-                <span
-                  role="button"
-                  tabindex="0"
-                  title="Copy to clipboard"
-                  @click="copyToClipboard(company.company_name, 'Company Name')"
-                  @keydown.enter.prevent="copyToClipboard(company.company_name, 'Company Name')"
-                  @keydown.space.prevent="copyToClipboard(company.company_name, 'Company Name')"
-                  class="cursor-pointer"
-                >
-                  {{ company.company_name || '—' }}
-                  <span
-                    role="button"
-                    tabindex="0"
-                    title="Copy to clipboard"
-                    @click="copyToClipboard(company.company_code, 'Company Code')"
-                    @keydown.enter.prevent="copyToClipboard(company.company_code, 'Company Code')"
-                    @keydown.space.prevent="copyToClipboard(company.company_code, 'Company Code')"
-                    class="cursor-pointer tracking-widest bg-custom-bg dark:bg-custom-bg-light px-2 rounded-md font-mono mr-1 font-normal"
-                  >
-                    {{ company.company_code || '—' }}
-                  </span>
-                <!-- {{ company.company_name || '—' }} -->
-                </span>
-              </div>
+          </div>
 
-              <div class="inline-flex gap-2 items-start">
-                <RiMapPin2Line class="shrink-0 mt-0.5 h-4 w-4 text-custom-shadow/80 0"/>
-                <span
-                  role="button"
-                  tabindex="0"
-                  title="Open in Google Maps"
-                  @click="openInMaps(company.company_address)"
-                  @keydown.enter.prevent="openInMaps(company.company_address)"
-                  @keydown.space.prevent="openInMaps(company.company_address)"
-                  class="cursor-pointer"
-                >
-                  {{ company.company_address || '—' }}
-                </span>
+          <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
+            <div class="flex flex-row justify-between items-center gap-2 overflow-hidden group">
+              <div class="inline-flex gap-2 items-center">
+                <RiPhoneLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
+                <Label for="route_name_sidebar">Name</Label>
               </div>
+              <span
+                role="button"
+                tabindex="0"
+                title="Copy to clipboard"
+                @click="copyToClipboard(company.company_name, 'Company Name')"
+                @keydown.enter.prevent="copyToClipboard(company.company_name, 'Company Name')"
+                @keydown.space.prevent="copyToClipboard(company.company_name, 'Company Name')"
+                class="cursor-pointer"
+              >
+                {{ company.company_name || '—' }}
+              </span>
             </div>
 
+            <div class="flex flex-row justify-between items-center gap-2 overflow-hidden">
+              <div class="inline-flex gap-2 items-center">
+                <RiBuildingLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
+                <span>Code</span>
+              </div>
+              <span
+                role="button"
+                tabindex="0"
+                title="Copy to clipboard"
+                @click="copyToClipboard(company.company_code, 'Company Code')"
+                @keydown.enter.prevent="copyToClipboard(company.company_code, 'Company Code')"
+                @keydown.space.prevent="copyToClipboard(company.company_code, 'Company Code')"
+                class="cursor-pointer tracking-widest bg-custom-bg dark:bg-custom-bg-light px-2 rounded-md font-mono mr-1 font-normal"
+              >
+                {{ company.company_code || '—' }}
+              </span>
+            </div>
+
+            <div class="inline-flex gap-2 items-start">
+              <div class="inline-flex gap-2 items-center">
+                <RiMapPin2Line class="shrink-0 mt-0.5 h-4 w-4 text-custom-shadow/80 0"/>
+                <span>Address</span>
+              </div>
+              <span
+                role="button"
+                tabindex="0"
+                title="Open in Google Maps"
+                @click="openInMaps(company.company_address)"
+                @keydown.enter.prevent="openInMaps(company.company_address)"
+                @keydown.space.prevent="openInMaps(company.company_address)"
+                class="cursor-pointer text-end"
+              >
+                {{ company.company_address || '—' }}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -249,7 +261,7 @@ function openInMaps(value?: string | null) {
               </div>
               <span class="line-clamp-1 text-ellipsis">
                 {{ formatDate(company.created_at) }}
-                <span v-if="company.creator?.name" class="text-custom-accent-3"> • </span>
+                <span class="text-custom-accent-3"> • </span>
                 {{ company.creator?.name ?? '—' }}
               </span>
             </div>
@@ -260,8 +272,8 @@ function openInMaps(value?: string | null) {
                 <span>Updated</span>
               </div>
               <span class="line-clamp-1 text-ellipsis">
-                {{ company.updated_at_human }}
-                <span v-if="company.updater?.name" class="text-custom-accent-3"> • </span>
+                {{ company.updated_at_human ?? '—' }}
+                <span class="text-custom-accent-3"> • </span>
                 {{ company.updater?.name ?? '—' }}
               </span>
             </div>
@@ -269,11 +281,12 @@ function openInMaps(value?: string | null) {
         </div>
       </CardContent>
     </Card>
-    <div class="lg:col-span-1 flex flex-col gap-4 h-full">
-      <Card>
+
+    <div class="flex flex-col lg:flex-row gap-4 h-full pb-6">
+      <Card class="w-full">
         <CardHeader>
           <CardTitle>Representative</CardTitle>
-          <CardDescription>Authorized representative for contact purposes.</CardDescription>
+          <CardDescription>Authorized company contact.</CardDescription>
         </CardHeader>
         <CardContent>
           <div class="mt-2 flex flex-col gap-0.5 text-sm text-custom-shadow overflow-hidden">
@@ -313,7 +326,8 @@ function openInMaps(value?: string | null) {
           </div>
         </CardContent>
       </Card>
-      <Card>
+
+      <Card class="w-full">
         <CardHeader>
           <CardTitle>Operator</CardTitle>
           <CardDescription>Person in charge of company operations.</CardDescription>
@@ -350,61 +364,6 @@ function openInMaps(value?: string | null) {
               <Button variant="float" size="icon">
                 <RiChat4Line class="shrink-0 h-4 w-4 text-custom-shadow/80"/>
               </Button>
-            </div>
-          </div>
-
-          <CardSeparator title="Contact Info" />
-
-          <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
-            <div class="flex flex-row justify-between items-center">
-              <div class="inline-flex gap-2 items-center">
-                <RiPhoneLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
-                <span>Phone</span>
-              </div>
-              <span
-                role="button"
-                tabindex="0"
-                title="Copy to clipboard"
-                @click="copyToClipboard(company.operator?.phone, 'Phone')"
-                @keydown.enter.prevent="copyToClipboard(company.operator?.phone, 'Phone')"
-                @keydown.space.prevent="copyToClipboard(company.operator?.phone, 'Phone')"
-                class="cursor-pointer line-clamp-1 text-ellipsis"
-              >
-                {{ company.operator?.phone || '—' }}
-              </span>
-            </div>
-
-            <div class="flex flex-row justify-between items-center gap-2">
-              <div class="inline-flex gap-2 items-center">
-                <RiMailLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
-                <span>Email</span>
-              </div>
-              <span class="inline-flex items-center overflow-hidden">
-                <span
-                  role="button"
-                  tabindex="0"
-                  title="Copy to clipboard"
-                  @click="copyToClipboard(company.operator?.email, 'Email')"
-                  @keydown.enter.prevent="copyToClipboard(company.operator?.email, 'Email')"
-                  @keydown.space.prevent="copyToClipboard(company.operator?.email, 'Email')"
-                  class="cursor-pointer text-ellipsis line-clamp-1 mr-2"
-                >
-                  {{ company.operator?.email || '—' }}
-                </span>
-                <RiVerifiedBadgeLine :v-if="company.operator?.email_verified" class="shrink-0 h-4 w-4 text-custom-shadow/80 text-custom-accent-3"/>
-              </span>
-            </div>
-          </div>
-
-          <CardSeparator title="Others" />
-
-          <div class="mt-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
-            <div class="flex flex-row justify-between items-center">
-              <div class="inline-flex gap-2 items-center">
-                <RiCalendarLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
-                <span>Joined</span>
-              </div>
-              <span class="text-ellipsis line-clamp-1">{{ formatDate(company.operator?.created_at) }}</span>
             </div>
           </div>
         </CardContent>

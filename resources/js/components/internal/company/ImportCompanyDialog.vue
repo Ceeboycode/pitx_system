@@ -16,7 +16,7 @@ import {
 
 import {
     RiArchive2Line,
-    RiCheckboxCircleLine,
+    RiCheckLine,
     RiCloseCircleLine,
     RiCloseLine,
     RiErrorWarningLine,
@@ -198,7 +198,7 @@ function handleClose(val: boolean) {
                 <div v-if="phase === 'done' && summary" class="max-h-56 space-y-2 overflow-y-auto">
                     <div v-if="summary.imported.length" class="rounded-md border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-800 dark:bg-emerald-950/30">
                         <div class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                            <RiCheckboxCircleLine class="h-3.5 w-3.5 shrink-0" />
+                            <RiCheckLine class="h-3.5 w-3.5 shrink-0" />
                             {{ summary.imported.length }} imported
                         </div>
                         <ul class="space-y-0.5"><li v-for="item in summary.imported" :key="item" class="text-xs text-emerald-700 dark:text-emerald-400">{{ item }}</li></ul>

@@ -381,7 +381,6 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
         Route::get('create', [CompanyController::class, 'create'])->name('create');
         Route::post('/', [CompanyController::class, 'store'])->name('store');
         Route::get('{company}', [CompanyController::class, 'show'])->name('show');
-        Route::get('{company}/edit', [CompanyController::class, 'edit'])->name('edit');
         Route::put('{company}', [CompanyController::class, 'update'])->name('update');
         Route::delete('{company}', [CompanyController::class, 'destroy'])->name('destroy');
 
@@ -394,10 +393,13 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
             ->name('forceDelete');
     });
 
-    Route::resource('vehicle-types', VehicleTypeController::class);
+    Route::resource('vehicle-types', VehicleTypeController::class)->except(['show']);
     Route::patch('vehicle-types/{vehicle_type}/toggle-status', [VehicleTypeController::class, 'toggleStatus'])->name('vehicle-types.toggleStatus');
+    Route::get('vehicle-types-trash', [VehicleTypeController::class, 'trash'])->name('vehicle-types.trash');
+    Route::post('vehicle-types/{vehicle_type}/restore', [VehicleTypeController::class, 'restore'])->withTrashed()->name('vehicle-types.restore');
+    Route::delete('vehicle-types/{vehicle_type}/force-delete', [VehicleTypeController::class, 'forceDelete'])->withTrashed()->name('vehicle-types.forceDelete');
 
-    Route::resource('gates', GateController::class);
+    Route::resource('gates', GateController::class)->except(['show']);
     Route::patch('gates/{gate}/toggle-status', [GateController::class, 'toggleStatus'])->name('gates.toggleStatus');
     Route::get('gates-trash', [GateController::class, 'trash'])->name('gates.trash');
     Route::post('gates/{gate}/restore', [GateController::class, 'restore'])->name('gates.restore');
@@ -408,7 +410,7 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
     Route::post('route-stops/{route_stop}/restore', [RouteStopController::class, 'restore'])->name('route-stops.restore');
     Route::delete('route-stops/{route_stop}/force-delete', [RouteStopController::class, 'forceDelete'])->name('route-stops.forceDelete');
 
-    Route::resource('routes', RouteController::class);
+    Route::resource('routes', RouteController::class)->except(['show']);
     Route::get('routes-trash', [RouteController::class, 'trash'])->name('routes.trash');
     Route::patch('routes/{route}/restore', [RouteController::class, 'restore'])->withTrashed()->name('routes.restore');
     Route::delete('routes/{route}/force-delete', [RouteController::class, 'forceDelete'])->withTrashed()->name('routes.forceDelete');

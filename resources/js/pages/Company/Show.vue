@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ArchiveCompanyDialog from '@/components/internal/company/ArchiveCompanyDialog.vue';
+import ToggleCompanyStatusDialog from '@/components/internal/company/ToggleCompanyStatusDialog.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 import type { CompanyDocument, Operator } from '@/types/company';
@@ -21,8 +22,9 @@ import {
     RiRoadMapLine,
     RiAlertLine,
     RiArchive2Line,
+    RiShutDownLine,
 } from 'vue-remix-icons';
-import { LeadPanel } from '@/components/ui/_panels';
+import { LeadPanel, PanelLayout, SidePanel } from '@/components/ui/_panels';
 import { LeadingCard } from '@/components/ui/_leading-card';
 import { 
     Tabs,
@@ -49,6 +51,7 @@ const props = defineProps<{
         business_type?: 'corporate' | 'sole_proprietorship' | null;
         registration_number?: string | null;
         status?: string | null;
+        is_active?: boolean | number | null;
         created_at?: string | null;
         updated_at_human?: string | null;
         creator?: { name: string } | null;
@@ -67,6 +70,7 @@ const props = defineProps<{
 const company = computed(() => props.company);
 
 const canArchiveCompany = computed(() => can('companies.archive'));
+const canUpdateCompany = computed(() => can('companies.update'));
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Companies', href: index().url },
@@ -74,6 +78,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const archiveOpen = ref(false);
+const toggleOpen = ref(false);
 
 const tabs = [
     {
@@ -155,38 +160,58 @@ const tabs = [
     <Head :title="company.company_name" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <LeadPanel>
-            <LeadingCard 
-                :title="company.company_name"
-                description="Review and manage company documents."
-                variant="entity-details"
-                :back="index().url"
-            >
-                <DropdownMenuItem
-                    class="group cursor-pointer"
-                    :disabled="!canArchiveCompany"
-                    @click="archiveOpen = true"
+        <PanelLayout>
+            <LeadPanel>
+                <LeadingCard
+                    :title="company.company_name"
+                    description="Review and manage company documents."
+                    variant="entity-details"
+                    :status="company.is_active ? 'active' : 'inactive'"
+                    :back="index().url"
                 >
-                    <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                    Archive
-                </DropdownMenuItem>
-            </LeadingCard>
-            <Tabs default-value="documents">
-                <TabsList>
-                    <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value">
-                        <component :is="tab.icon" class="h-4 w-4"/>
-                        <span>{{ tab.label }}</span>
-                    </TabsTrigger>
-                </TabsList>
-                <TabsContent v-for="tab in tabs" :key="tab.value" :value="tab.value">
-                    <component :is="tab.component" :company="company" />
-                </TabsContent>
-            </Tabs>
-        </LeadPanel>
+                    <DropdownMenuItem
+                        class="group cursor-pointer"
+                        :disabled="!canUpdateCompany"
+                        @click="toggleOpen = true"
+                    >
+                        <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                        {{ company.is_active ? 'Inactivate' : 'Activate' }}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        class="group cursor-pointer"
+                        :disabled="!canArchiveCompany"
+                        @click="archiveOpen = true"
+                    >
+                        <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                        Archive
+                    </DropdownMenuItem>
+                </LeadingCard>
+                <Tabs default-value="documents">
+                    <TabsList>
+                        <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value">
+                            <component :is="tab.icon" class="h-4 w-4"/>
+                            <span>{{ tab.label }}</span>
+                        </TabsTrigger>
+                    </TabsList>
+                    <TabsContent v-for="tab in tabs" :key="tab.value" :value="tab.value">
+                        <component :is="tab.component" :company="company" />
+                    </TabsContent>
+                </Tabs>
+            </LeadPanel>
+            <SidePanel>
+                
+            </SidePanel>
+        </PanelLayout>
         
         <ArchiveCompanyDialog
             v-if="canArchiveCompany"
             v-model:open="archiveOpen"
+            :company="company"
+        />
+
+        <ToggleCompanyStatusDialog
+            v-if="canUpdateCompany"
+            v-model:open="toggleOpen"
             :company="company"
         />
     </AppLayout>

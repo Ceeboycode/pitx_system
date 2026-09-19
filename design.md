@@ -50,7 +50,7 @@ elsewhere in the app for the same concept:
 | EyeOff | RiEyeOffLine |
 | RefreshCw | RiRefreshLine |
 | KeyRound / LockKeyhole | RiKey2Line |
-| MessageSquare / MessageSquareText | RiMessage2Line |
+| MessageSquare / MessageSquareText | RiChat4Line |
 | Send | RiSendPlane2Line |
 | Plus | RiAddLine |
 | MapPin / MapPinned | RiMapPin2Line |

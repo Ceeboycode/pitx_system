@@ -139,15 +139,6 @@ class GateController extends Controller
         return (int) $matches[0];
     }
 
-    public function show(GateModel $gate)
-    {
-        Gate::authorize('view', $gate);
-
-        return Inertia::render('Gates/Show', [
-            'gate' => $gate->load(['creator', 'updater']),
-        ]);
-    }
-
     public function edit(GateModel $gate)
     {
         // Page access only needs 'view' - Gates/Edit.vue's DetailsTab decides

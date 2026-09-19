@@ -71,25 +71,6 @@ class RouteController extends Controller
         ]);
     }
 
-    public function show(Route $route): Response
-    {
-        Gate::authorize('view', $route);
-
-        $route->load([
-            'gate:id,gate_name',
-            'stops',
-            'creator:id,name',
-            'updater:id,name',
-        ]);
-
-        return Inertia::render('Route/Show', [
-            'route' => $route,
-            'mapConfig' => [
-                'mapboxToken' => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
-            ],
-        ]);
-    }
-
     public function create(): Response
     {
         Gate::authorize('create', Route::class);

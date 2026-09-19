@@ -23,7 +23,7 @@ class VehicleTypePolicy
      */
     public function view(User $user, VehicleType $vehicleType): bool
     {
-        return $user->can('vehicle_types.viewAny');
+        return $user->can('vehicle_types.view');
     }
 
     /**
@@ -43,11 +43,11 @@ class VehicleTypePolicy
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * Determine whether the user can archive the model.
      */
     public function delete(User $user, VehicleType $vehicleType): bool
     {
-        return $user->can('vehicle_types.delete');
+        return $user->can('vehicle_types.archive');
     }
 
     /**
@@ -55,7 +55,7 @@ class VehicleTypePolicy
      */
     public function restore(User $user, VehicleType $vehicleType): bool
     {
-        return false;
+        return $user->can('vehicle_types.restore');
     }
 
     /**
@@ -63,6 +63,14 @@ class VehicleTypePolicy
      */
     public function forceDelete(User $user, VehicleType $vehicleType): bool
     {
-        return false;
+        return $user->can('vehicle_types.forceDelete');
+    }
+
+    /**
+     * Determine whether the user can view the trash listing.
+     */
+    public function viewTrash(User $user): bool
+    {
+        return $user->can('vehicle_types.viewTrash');
     }
 }

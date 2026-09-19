@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useForm } from '@inertiajs/vue3';
-import { update } from '@/routes/gates';
+import { can } from '@/lib/can';
+import EditableField from '@/components/ui/_field/EditableField.vue';
 
 import {
   Card,
@@ -15,57 +16,53 @@ import { Separator } from '@/components/ui/separator';
 import { CardSeparator } from '@/components/ui/_card-separator';
 import Button from '@/components/ui/button/Button.vue';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import InputError from '@/components/InputError.vue';
-import EditableField from '@/components/ui/_field/EditableField.vue';
-import { can } from '@/lib/can';
 
 import {
-  RiBuildingLine,
+  RiBusLine,
   RiCalendarLine,
-  RiTimeLine,
-  RiEditLine,
-  RiImageAddLine,
   RiCloseLine,
+  RiEditLine,
+  RiFileTextLine,
+  RiImageAddLine,
+  RiTimeLine,
 } from 'vue-remix-icons';
 
-type Gate = {
+import { update } from '@/actions/App/Http/Controllers/VehicleTypeController';
+
+type VehicleType = {
     id: number;
-    gate_name: string;
-    status: 'active' | 'inactive';
-    bays: number;
-    location: string | null;
+    type_name: string;
+    description: string | null;
     picture_url: string | null;
+    is_active: boolean;
     created_at_human: string | null;
     updated_at_human: string | null;
     creator: { name: string } | null;
     updater: { name: string } | null;
 };
 
-const props = defineProps<{ gate: Gate }>();
+const props = defineProps<{ vehicleType: VehicleType }>();
 
-// Drives every EditableField below, same convention as Users/Edit.vue: view-only
-// roles (no `gates.update` permission) see static text instead of inputs, and
-// never see the Save/Cancel actions or validation errors.
-const canEdit = can('gates.update');
+// Drives every EditableField below, same convention as Gates/edit/DetailsTab.vue:
+// view-only users get the page (server authorizes on 'view'), but only
+// 'vehicle_types.update' holders see inputs and Save/Cancel.
+const canEdit = can('vehicle_types.update');
 
 const pictureInputRef = ref<HTMLInputElement | null>(null);
-const picturePreview = ref<string | null>(props.gate.picture_url);
+const picturePreview = ref<string | null>(props.vehicleType.picture_url);
 
-// `form.isDirty` (from useForm) compares against a lodash `cloneDeep` snapshot
-// of the initial data - `File` objects clone down to `{}`, so it can't reliably
-// detect picture-only changes. Tracked separately and OR'd into the Save/Cancel
-// `disabled` checks below.
+// Same reasoning as Gates/edit/DetailsTab.vue: `form.isDirty` can't reliably
+// detect picture-only changes (a `File` clones down to `{}`), so it's
+// tracked separately and OR'd into the Save/Cancel `disabled` checks below.
 const pictureChanged = ref(false);
 
 const form = useForm({
-    gate_name: props.gate.gate_name ?? '',
-    status: props.gate.status ?? 'active',
-    bays: props.gate.bays ?? '',
-    location: props.gate.location ?? '',
+    type_name: props.vehicleType.type_name ?? '',
+    description: props.vehicleType.description ?? '',
     picture: null as File | null,
-    // The backend only touches `picture_path` when a new file is uploaded, so
-    // clearing the picture needs an explicit signal to actually persist.
     remove_picture: false,
 });
 
@@ -77,7 +74,7 @@ function selectPicture(event: Event) {
     if (picturePreview.value?.startsWith('blob:')) {
         URL.revokeObjectURL(picturePreview.value);
     }
-    picturePreview.value = file ? URL.createObjectURL(file) : props.gate.picture_url;
+    picturePreview.value = file ? URL.createObjectURL(file) : props.vehicleType.picture_url;
 }
 
 function removePicture() {
@@ -98,14 +95,14 @@ function resetForm() {
     if (picturePreview.value?.startsWith('blob:')) {
         URL.revokeObjectURL(picturePreview.value);
     }
-    picturePreview.value = props.gate.picture_url;
+    picturePreview.value = props.vehicleType.picture_url;
     if (pictureInputRef.value) pictureInputRef.value.value = '';
 }
 
 function submit() {
     form
         .transform((data) => ({ ...data, _method: 'put' }))
-        .post(update(props.gate.id).url, {
+        .post(update(props.vehicleType.id).url, {
             forceFormData: true,
             preserveScroll: true,
             onSuccess: () => {
@@ -123,8 +120,8 @@ function submit() {
   <Card class="lg:col-span-2">
     <CardHeader class="flex flex-row items-start justify-between gap-4">
       <div class="flex flex-col">
-        <CardTitle>Gate</CardTitle>
-        <CardDescription>{{ canEdit ? 'Manage gate details.' : 'View gate details.' }}</CardDescription>
+        <CardTitle>Vehicle Type</CardTitle>
+        <CardDescription>{{ canEdit ? 'Manage vehicle type details.' : 'View vehicle type details.' }}</CardDescription>
       </div>
       <div v-if="canEdit" class="flex flex-row items-center gap-2">
         <Button
@@ -154,7 +151,7 @@ function submit() {
                 <div
                   role="button"
                   tabindex="0"
-                  :aria-label="picturePreview ? 'Change gate picture' : 'Upload gate picture'"
+                  :aria-label="picturePreview ? 'Change vehicle type picture' : 'Upload vehicle type picture'"
                   class="group w-full aspect-video relative flex shrink-0 cursor-pointer overflow-hidden rounded-md transition-colors"
                   :class="picturePreview ? '' : 'border border-dashed border-custom-primary/60 dark:border-custom-secondary/60'"
                   @click="pictureInputRef?.click()"
@@ -164,7 +161,7 @@ function submit() {
                   <img
                     v-if="picturePreview"
                     :src="picturePreview"
-                    alt="Gate picture preview"
+                    alt="Vehicle type picture preview"
                     class="h-full w-full object-cover transition duration-200 group-hover:brightness-80"
                   />
                   <div v-if="picturePreview" class="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
@@ -176,7 +173,7 @@ function submit() {
                   <Button
                     v-if="picturePreview"
                     type="button"
-                    aria-label="Remove gate picture"
+                    aria-label="Remove vehicle type picture"
                     class="absolute right-1 top-1 z-10 flex h-6 w-6 cursor-pointer items-center rounded-full border border-custom-bg-light/50 dark:border-custom-shadow/50 text-custom-shadow transition-all duration-200 hover:border-destructive hover:bg-destructive/20 hover:text-destructive"
                     @click.stop="removePicture"
                   >
@@ -184,7 +181,7 @@ function submit() {
                   </Button>
                 </div>
                 <input
-                  id="gate_picture"
+                  id="vehicle_type_picture"
                   ref="pictureInputRef"
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
@@ -194,9 +191,9 @@ function submit() {
               </template>
               <Logo class="rounded-md">
                 <LogoImage
-                  v-if="gate.picture_url"
-                  :src="gate.picture_url"
-                  :alt="gate.gate_name"
+                  v-if="vehicleType.picture_url"
+                  :src="vehicleType.picture_url"
+                  :alt="vehicleType.type_name"
                 />
                 <LogoFallback>
                   No picture uploaded.
@@ -205,19 +202,29 @@ function submit() {
             </EditableField>
             <InputError v-if="canEdit" :message="form.errors.picture" />
           </div>
-
-          <!-- <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
-            <div class="flex flex-row justify-between items-center gap-2 overflow-hidden">
-              <div class="inline-flex gap-2 items-center">
-                <RiBuildingLine class="shrink-0 h-4 w-4 text-custom-shadow/80"/>
-                <span>Gate ID</span>
-              </div>
-              <span class="tracking-widest bg-custom-bg dark:bg-custom-bg-light px-2 rounded-md font-mono mr-1 font-normal">
-                #{{ gate.id }}
-              </span>
-            </div>
-          </div> -->
         </div>
+
+        <!-- <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow"> -->
+          <!-- <div class="flex flex-row justify-between items-start gap-2 overflow-hidden group">
+            <div class="inline-flex shrink-0 gap-2 items-center pt-0.5">
+              <RiFileTextLine class="shrink-0 h-4 w-4 text-custom-shadow/80"/>
+            </div>
+            <EditableField :editable="canEdit">
+              <template #edit>
+                <div class="relative min-w-0 flex-1">
+                  <Textarea
+                      id="description"
+                      v-model="form.description"
+                      placeholder="Describe this vehicle type..."
+                      variant="inline-edit"
+                  />
+                </div>
+              </template>
+              <span class="min-w-0 flex-1 whitespace-pre-line text-right text-sm font-medium">{{ vehicleType.description || 'No description provided.' }}</span>
+            </EditableField>
+            <InputError v-if="canEdit" :message="form.errors.description" />
+          </div> -->
+        <!-- </div> -->
       </div>
 
       <Separator orientation="vertical"/>
@@ -228,69 +235,47 @@ function submit() {
         <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
           <div class="flex flex-row justify-between items-center gap-2 overflow-hidden group">
             <div class="inline-flex shrink-0 gap-2 items-center">
-              <RiBuildingLine class="shrink-0 h-4 w-4 text-custom-shadow/80"/>
-              <Label for="gate_name">Name</Label>
+              <RiBusLine class="shrink-0 h-4 w-4 text-custom-shadow/80"/>
+              <Label for="type_name">Name</Label>
             </div>
             <EditableField :editable="canEdit">
               <template #edit>
                 <span class="flex min-w-0 flex-1 flex-row items-center">
                   <Input
-                      id="gate_name"
-                      v-model="form.gate_name"
-                      placeholder="Enter gate name"
+                      id="type_name"
+                      v-model="form.type_name"
+                      placeholder="Enter vehicle type name"
                       variant="inline-edit"
                   />
                   <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
                 </span>
               </template>
-              <span class="min-w-0 flex-1 truncate text-right text-sm font-medium">{{ gate.gate_name }}</span>
+              <span class="min-w-0 flex-1 truncate text-right text-sm font-medium capitalize">{{ vehicleType.type_name }}</span>
             </EditableField>
-            <InputError v-if="canEdit" :message="form.errors.gate_name" />
+            <InputError v-if="canEdit" :message="form.errors.type_name" />
           </div>
 
-          <div class="flex flex-row justify-between items-center gap-2 overflow-hidden group">
-            <div class="inline-flex shrink-0 gap-2 items-center">
-              <RiBuildingLine class="shrink-0 h-4 w-4 text-custom-shadow/80"/>
-              <Label for="gate_bays">Bays</Label>
+          <div class="flex flex-row justify-between items-start gap-2 overflow-hidden group">
+            <div class="inline-flex shrink-0 gap-2 items-center pt-0.5">
+              <RiFileTextLine class="shrink-0 h-4 w-4 text-custom-shadow/80"/>
+              <Label for="description">Description</Label>
             </div>
             <EditableField :editable="canEdit">
               <template #edit>
-                <span class="flex min-w-0 flex-1 flex-row items-center">
-                  <Input
-                      id="gate_bays"
-                      v-model="form.bays"
-                      inputmode="numeric"
-                      placeholder="Number of bays"
+                <div class="relative min-w-0 flex-1">
+                  <Textarea
+                      id="description"
+                      v-model="form.description"
+                      placeholder="Describe this vehicle type..."
                       variant="inline-edit"
+                      class="text-end no-scrollbar min-h-fit"
                   />
-                  <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
-                </span>
+                  <!-- <RiEditLine class="pointer-events-none absolute top-1 right-1 h-4 w-4 shrink-0 text-custom-shadow/80 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 group-focus-within:opacity-100"/> -->
+                </div>
               </template>
-              <span class="min-w-0 flex-1 truncate text-right text-sm font-medium">{{ gate.bays }}</span>
+              <span class="min-w-0 flex-1 whitespace-pre-line text-right text-sm font-medium">{{ vehicleType.description || 'No description provided.' }}</span>
             </EditableField>
-            <InputError v-if="canEdit" :message="form.errors.bays" />
-          </div>
-
-          <div class="flex flex-row justify-between items-center gap-2 overflow-hidden group">
-            <div class="inline-flex shrink-0 gap-2 items-center">
-              <RiBuildingLine class="shrink-0 h-4 w-4 text-custom-shadow/80"/>
-              <Label for="gate_location">Location</Label>
-            </div>
-            <EditableField :editable="canEdit">
-              <template #edit>
-                <span class="flex min-w-0 flex-1 flex-row items-center">
-                  <Input
-                      id="gate_location"
-                      v-model="form.location"
-                      placeholder="e.g. Ground Floor boarding concourse"
-                      variant="inline-edit"
-                  />
-                  <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
-                </span>
-              </template>
-              <span class="min-w-0 flex-1 truncate text-right text-sm font-medium">{{ gate.location || 'Location not configured' }}</span>
-            </EditableField>
-            <InputError v-if="canEdit" :message="form.errors.location" />
+            <InputError v-if="canEdit" :message="form.errors.description" />
           </div>
         </div>
 
@@ -303,9 +288,9 @@ function submit() {
               <span>Created</span>
             </div>
             <span class="min-w-0 flex-1 truncate text-right">
-              {{ gate.created_at_human ?? '—' }}
+              {{ vehicleType.created_at_human ?? '—' }}
               <span class="text-custom-accent-3"> • </span>
-              {{ gate.creator?.name ?? '—' }}
+              {{ vehicleType.creator?.name ?? '' }}
             </span>
           </div>
 
@@ -315,9 +300,9 @@ function submit() {
               <span>Updated</span>
             </div>
             <span class="min-w-0 flex-1 truncate text-right">
-              {{ gate.updated_at_human ?? '—' }}
+              {{ vehicleType.updated_at_human ?? '—' }}
               <span class="text-custom-accent-3"> • </span>
-              {{ gate.updater?.name ?? '—' }}
+              {{ vehicleType.updater?.name ?? '' }}
             </span>
           </div>
         </div>

@@ -8,12 +8,12 @@ import RouteSelectorWithPreview from '@/components/routes/RouteSelectorWithPrevi
 
 import { Button } from '@/components/ui/button'
 
-import { CheckCircle2 } from 'lucide-vue-next'
 import {
     RiArrowLeftLine,
     RiBuilding2Line,
     RiBusLine,
     RiCalendarLine,
+    RiCheckLine,
     RiFileTextLine,
     RiFingerprintLine,
     RiGroupLine,
@@ -253,7 +253,7 @@ const timeline = computed(() => [
                                     :class="step.done ? 'text-emerald-600' : 'text-slate-400'"
                                 />
 
-                                <CheckCircle2
+                                <RiCheckLine
                                     v-if="step.done"
                                     class="absolute -right-1 -top-1 h-4 w-4 shrink-0 rounded-full bg-white text-emerald-500"
                                 />

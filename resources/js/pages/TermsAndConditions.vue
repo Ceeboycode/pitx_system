@@ -4,17 +4,16 @@ import { Head, Link } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { dashboard, login } from '@/routes';
 import {
-    ArrowRight, ShieldAlert,
-} from 'lucide-vue-next';
-import {
     RiAlertLine,
     RiArrowLeftLine,
+    RiArrowRightLine,
     RiBubbleChartFill,
     RiClipboardLine,
     RiGroupLine,
     RiLoginBoxLine,
     RiPhoneLine,
     RiRefreshLine,
+    RiShieldLine,
 } from 'vue-remix-icons';
 
 withDefaults(defineProps<{ canRegister?: boolean }>(), { canRegister: true });
@@ -55,7 +54,7 @@ const sections = [
     },
     {
         id: 'prohibited',
-        icon: ShieldAlert,
+        icon: RiShieldLine,
         title: '4. Prohibited Activities',
         content: `The following activities are strictly prohibited and may result in immediate account suspension and legal action:`,
         list: [
@@ -139,7 +138,7 @@ const sections = [
                         <Button as-child class="rounded-lg bg-[#c0392b] px-5 text-sm text-white hover:bg-[#a93226]">
                             <Link :href="dashboard()">
                                 Dashboard
-                                <ArrowRight class="ml-1 inline h-4 w-4 shrink-0" />
+                                <RiArrowRightLine class="ml-1 inline h-4 w-4 shrink-0" />
                             </Link>
                         </Button>
                     </template>

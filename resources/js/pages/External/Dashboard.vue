@@ -15,9 +15,9 @@ import {
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
-import { ArrowRight } from 'lucide-vue-next';
 import {
     RiAlertLine,
+    RiArrowRightLine,
     RiBubbleChartFill,
     RiBuilding2Line,
     RiBusLine,
@@ -799,7 +799,7 @@ const documentChartData = computed(() => {
                             >
                                 <Link href="/company/dispatches">
                                     View all
-                                    <ArrowRight class="ml-1.5 h-3.5 w-3.5 shrink-0" />
+                                    <RiArrowRightLine class="ml-1.5 h-3.5 w-3.5 shrink-0" />
                                 </Link>
                             </Button>
                         </div>
@@ -883,7 +883,7 @@ const documentChartData = computed(() => {
                                                 dispatch.route?.origin_name ??
                                                 '—'
                                             }}</span>
-                                            <ArrowRight
+                                            <RiArrowRightLine
                                                 class="h-3 w-3 shrink-0 text-slate-400"
                                             />
                                             <span>{{
@@ -1097,7 +1097,7 @@ const documentChartData = computed(() => {
                                 >
                                     <Link href="/company/routes">
                                         All
-                                        <ArrowRight class="ml-1 h-3 w-3 shrink-0" />
+                                        <RiArrowRightLine class="ml-1 h-3 w-3 shrink-0" />
                                     </Link>
                                 </Button>
                             </div>

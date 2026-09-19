@@ -326,7 +326,7 @@ function submit() {
               </div>
               <span class="line-clamp-1 text-ellipsis">
                 {{ role.created_at_human ?? '—' }}
-                <span v-if="role.creator?.name" class="text-custom-accent-3"> • </span>
+                <span class="text-custom-accent-3"> • </span>
                 {{ role.creator?.name ?? '—' }}
               </span>
             </div>
@@ -338,7 +338,7 @@ function submit() {
               </div>
               <span class="line-clamp-1 text-ellipsis">
                 {{ role.updated_at_human ?? '—' }}
-                <span v-if="role.updater?.name" class="text-custom-accent-3"> • </span>
+                <span class="text-custom-accent-3"> • </span>
                 {{ role.updater?.name ?? '—' }}
               </span>
             </div>

@@ -52,7 +52,7 @@ import { index as companyProfileChangeRequestsIndex } from '@/routes/company-pro
 import { index, show, trash } from '@/routes/companies';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { PanelLayout } from '@/components/ui/_panels';
+import { PanelLayout, MainPanel, SidePanel } from '@/components/ui/_panels';
 
 import {
     RiArchive2Line,
@@ -351,454 +351,458 @@ function hasVerifiedEmail(company: Company): boolean {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <PanelLayout>
-            <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
-                <CardHeader class="flex flex-row gap-2">
-                    <div class="flex flex-col">
-                        <CardTitle class="flex items-center gap-2">
-                            <span class="font-semibold">Companies</span>
-                        </CardTitle>
-                        <CardDescription>
-                            Review, manage, and monitor company records.
-                        </CardDescription>
-                    </div>
-                    <div class="flex flex-1 justify-end gap-2">
-                        <div class="lg:flex items-center gap-2 sm:justify-end">
-                            <DropdownMenu class="w-fit">
-                                <DropdownMenuTrigger as-child class="m-0">
-                                    <div class="inline-flex">
-                                        <Button
-                                            variant="header-actions"
-                                            class="text-custom-shadow"
-                                            size="icon"
-                                            aria-label="Open company actions"
-                                        >
-                                            <RiMore2Line class="h-4 w-4 shrink-0" />
-                                        </Button>
-                                    </div>
-                                </DropdownMenuTrigger>
-
-                                <DropdownMenuContent align="end" class="w-fit">
-                                    <DropdownMenuItem
-                                        class="group cursor-pointer"
-                                        @click="importOpen = true"
-                                    >
-                                        <RiFileAddLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                                        Import
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        class="group cursor-pointer"
-                                        :disabled="exporting"
-                                        @click="triggerExport"
-                                    >
-                                        <RiLoaderLine v-if="exporting" class="h-4 w-4 animate-spin text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                                        <RiFileUploadLine v-else class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                                        {{ exporting ? 'Exporting...' : 'Export' }}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        v-if="canViewProfileChangeRequests"
-                                        as-child
-                                        class="group cursor-pointer"
-                                    >
-                                        <Link
-                                            :href="companyProfileChangeRequestsIndex().url"
-                                            class="flex items-center"
-                                        >
-                                            <RiFileInfoLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                                            Change Requests
-                                        </Link>
-                                    </DropdownMenuItem>
-
-                                    <DropdownMenuItem
-                                        v-if="canViewArchived"
-                                        as-child
-                                        class="group cursor-pointer"
-                                    >
-                                        <Link :href="trash().url" class="flex items-center">
-                                            <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
-                                            Archives
-                                        </Link>
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+            <MainPanel class="">
+                <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
+                    <CardHeader class="flex flex-row gap-2">
+                        <div class="flex flex-col">
+                            <CardTitle class="flex items-center gap-2">
+                                <span class="font-semibold">Companies</span>
+                            </CardTitle>
+                            <CardDescription>
+                                Review, manage, and monitor company records.
+                            </CardDescription>
                         </div>
-                    </div>
-                </CardHeader>
-
-                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
-                    <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
-                        <div class="w-full">
-                            <SearchInput
-                                :route="index().url"
-                                :initial-value="props.filters.search"
-                                placeholder="Search companies..."
-                                :only="['companies', 'filters', 'flash']"
-                                :debounce="350"
-                                :extra-params="currentFilterParams"
-                            />
-                        </div>
-
-                        <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
-                            <Popover v-model:open="filterOpen">
-                                <PopoverTrigger as-child>
-                                    <Button
-                                        variant="header-actions"
-                                        size="icon-text"
-                                        class="rounded-full"
-                                        :class="
-                                            activeFilterCount > 0
-                                                ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-200 dark:hover:text-custom-shadow'
-                                                : ''
-                                        "
-                                    >
-                                        <RiFilter2Line class="h-3.5 w-3.5" />
-                                        <span class="hidden lg:flex">
-                                            {{
-                                                activeFilterCount > 0
-                                                    ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
-                                                    : 'Filter'
-                                            }}
-                                        </span>
-                                    </Button>
-                                </PopoverTrigger>
-
-                                <PopoverContent align="end">
-                                    <div class="grid gap-y-2">
-                                        <div class="flex flex-col gap-y-1">
-                                            <p class="text-sm text-custom-shadow/80">
-                                                Status
-                                            </p>
-                                            <Select
-                                                :model-value="statusFilter"
-                                                @update:model-value="onStatusChange"
-                                            >
-                                                <SelectTrigger class="w-full">
-                                                    <SelectValue placeholder="Any status" class="flex justify-start" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all" class="cursor-pointer">Any status</SelectItem>
-                                                    <SelectItem value="draft" class="cursor-pointer">Draft</SelectItem>
-                                                    <SelectItem value="docs_completed" class="cursor-pointer">Docs Completed</SelectItem>
-                                                    <SelectItem value="for_verification" class="cursor-pointer">For Verification</SelectItem>
-                                                    <SelectItem value="verified" class="cursor-pointer">Verified</SelectItem>
-                                                    <SelectItem value="needs_revision" class="cursor-pointer">Needs Revision</SelectItem>
-                                                    <SelectItem value="rejected" class="cursor-pointer">Rejected</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <hr class="my-1 h-px border-0 bg-custom-bg-dark">
-
-                                        <div class="flex w-full flex-row items-center justify-between">
+                        <div class="flex flex-1 justify-end gap-2">
+                            <div class="lg:flex items-center gap-2 sm:justify-end">
+                                <DropdownMenu class="w-fit">
+                                    <DropdownMenuTrigger as-child class="m-0">
+                                        <div class="inline-flex">
                                             <Button
-                                                v-if="hasActiveFilters"
-                                                size="sm"
-                                                variant="destructive"
-                                                @click="clearFilters"
+                                                variant="header-actions"
+                                                class="text-custom-shadow"
+                                                size="icon"
+                                                aria-label="Open company actions"
                                             >
-                                                Clear
+                                                <RiMore2Line class="h-4 w-4 shrink-0" />
                                             </Button>
-
-                                            <div class="ml-auto flex items-center gap-2">
-                                                <Button
-                                                    variant="ghost-outline"
-                                                    size="sm"
-                                                    @click="filterOpen = false"
-                                                >
-                                                    Cancel
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="float-primary"
-                                                    @click="applyFilters()"
-                                                >
-                                                    Apply
-                                                </Button>
-                                            </div>
                                         </div>
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-                    </div>
+                                    </DropdownMenuTrigger>
 
-                    <TableCard :table-data-length="props.companies.data.length">
-                        <Table v-if="props.companies.data.length > 0">
-                            <TableHeader>
-                                <TableColumn class="p-0">
-                                    <button
-                                        type="button"
-                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
-                                        @click="toggleSort('company_name')"
-                                    >
-                                        Name and Code
-                                        <component
-                                            :is="sortIcon('company_name')"
-                                            class="h-3.5 w-3.5"
-                                            :class="sortIconClass('company_name')"
-                                        />
-                                    </button>
-                                </TableColumn>
-
-                                <TableColumn>Contact Details</TableColumn>
-
-                                <TableColumn class="p-0">
-                                    <button
-                                        type="button"
-                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
-                                        @click="toggleSort('status')"
-                                    >
-                                        Verification Status
-                                        <component
-                                            :is="sortIcon('status')"
-                                            class="h-3.5 w-3.5"
-                                            :class="sortIconClass('status')"
-                                        />
-                                    </button>
-                                </TableColumn>
-
-                                <TableColumn class="p-0">
-                                    <button
-                                        type="button"
-                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
-                                        @click="toggleSort('is_active')"
-                                    >
-                                        Active Status
-                                        <component
-                                            :is="sortIcon('is_active')"
-                                            class="h-3.5 w-3.5"
-                                            :class="sortIconClass('is_active')"
-                                        />
-                                    </button>
-                                </TableColumn>
-
-                                <TableColumn class="p-0">
-                                    <button
-                                        type="button"
-                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
-                                        @click="toggleSort('created_at')"
-                                    >
-                                        Created
-                                        <component
-                                            :is="sortIcon('created_at')"
-                                            class="h-3.5 w-3.5"
-                                            :class="sortIconClass('created_at')"
-                                        />
-                                    </button>
-                                </TableColumn>
-                            </TableHeader>
-
-                            <TableContent>
-                                <TableRow
-                                    v-for="(company, rowIndex) in props.companies.data"
-                                    :key="company.id"
-                                    :class="[
-                                        rowIndex === props.companies.data.length - 1 ? 'rounded-b-md border-b-0' : '',
-                                        previewedCompany?.id === company.id ? 'bg-custom-secondary/10' : '',
-                                    ]"
-                                    :status="!isCompanyActive(company) ? 'inactive' : 'default'"
-                                    @click.left="openPreview(company)"
-                                    @dblclick="router.visit(show({ company: company.id }).url)"
-                                >
-                                    <TableData class="pl-3">
-                                        <div class="flex min-w-0 items-center gap-2">
-                                            <div class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-custom-bg-dark bg-custom-bg text-xs font-semibold uppercase text-custom-shadow/70 dark:border-custom-bg-light dark:bg-custom-bg-dark">
-                                                <img
-                                                    v-if="company.logo_url"
-                                                    :src="company.logo_url"
-                                                    :alt="`${company.company_name} logo`"
-                                                    class="h-full w-full object-cover"
-                                                />
-                                                <span v-else>{{ company.company_name.slice(0, 2) }}</span>
-                                            </div>
-                                            <div class="flex min-w-0 flex-col">
-                                                <span class="truncate font-semibold capitalize">{{ company.company_name }}</span>
-                                                <span class="truncate font-mono text-xs text-custom-shadow/70">{{ company.company_code }}</span>
-                                            </div>
-                                        </div>
-                                    </TableData>
-
-                                    <TableData>
-                                        <div class="flex min-w-0 flex-col gap-1 text-sm text-custom-shadow/80">
-                                            <span class="truncate">{{ company.company_email || '—' }}</span>
-                                            <span class="truncate">{{ company.company_phone || '—' }}</span>
-                                        </div>
-                                    </TableData>
-
-                                    <TableData>
-                                        <Badge :class="['gap-1.5', statusClass(company.status ?? null)]">
-                                            <span :class="['h-1.5 w-1.5 rounded-full', statusDot(company.status ?? null)]" />
-                                            {{ humanizeStatus(company.status ?? null) }}
-                                        </Badge>
-                                    </TableData>
-
-                                    <TableData>
-                                        <Badge :class="['gap-1.5', activeStatusClass(company)]">
-                                            <span :class="['h-1.5 w-1.5 rounded-full', activeStatusDot(company)]" />
-                                            {{ activeStatusLabel(company) }}
-                                        </Badge>
-                                    </TableData>
-
-                                    <TableData class="text-sm text-custom-shadow/80">
-                                        <span class="truncate">{{ company.created_at_human ?? '—' }}</span>
-                                    </TableData>
-
-                                    <TableMoreButton
-                                        v-if="canViewCompany"
-                                        :open="openMenus[company.id] ?? false"
-                                        @update:open="(value) => (openMenus[company.id] = value)"
-                                    >
-                                        <DropdownMenuLabel>
-                                            {{ company.company_name }}
-                                        </DropdownMenuLabel>
+                                    <DropdownMenuContent align="end" class="w-fit">
                                         <DropdownMenuItem
+                                            class="group cursor-pointer"
+                                            @click="importOpen = true"
+                                        >
+                                            <RiFileAddLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                            Import
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            class="group cursor-pointer"
+                                            :disabled="exporting"
+                                            @click="triggerExport"
+                                        >
+                                            <RiLoaderLine v-if="exporting" class="h-4 w-4 animate-spin text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                            <RiFileUploadLine v-else class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                            {{ exporting ? 'Exporting...' : 'Export' }}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            v-if="canViewProfileChangeRequests"
                                             as-child
-                                            class="group cursor-pointer rounded-md"
+                                            class="group cursor-pointer"
                                         >
                                             <Link
-                                                :href="show({ company: company.id }).url"
+                                                :href="companyProfileChangeRequestsIndex().url"
                                                 class="flex items-center"
                                             >
-                                                <RiFileCheckLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                Review Company
+                                                <RiFileInfoLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                Profile Update Requests
                                             </Link>
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                            class="group cursor-pointer rounded-md"
-                                            @click="openArchiveDialog(company)"
-                                        >
-                                            <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                            Archive
-                                        </DropdownMenuItem>
-                                    </TableMoreButton>
-                                </TableRow>
-                            </TableContent>
-                        </Table>
 
-                        <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
-                            <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
-                                <img
-                                    :src="emptyRafikiUrl"
-                                    alt=""
-                                    class="w-1/3 object-contain opacity-90"
-                                    aria-hidden="true"
+                                        <DropdownMenuItem
+                                            v-if="canViewArchived"
+                                            as-child
+                                            class="group cursor-pointer"
+                                        >
+                                            <Link :href="trash().url" class="flex items-center">
+                                                <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
+                                                Archives
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </div>
+                    </CardHeader>
+
+                    <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
+                        <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
+                            <div class="w-full">
+                                <SearchInput
+                                    :route="index().url"
+                                    :initial-value="props.filters.search"
+                                    placeholder="Search companies..."
+                                    :only="['companies', 'filters', 'flash']"
+                                    :debounce="350"
+                                    :extra-params="currentFilterParams"
                                 />
-                                <div class="space-y-1">
-                                    <p class="text-custom-shadow text-base font-semibold">No companies found</p>
-                                    <p class="text-custom-shadow/80 text-sm">
-                                        {{ hasActiveFilters ? 'Try adjusting or clearing your filters.' : 'Try adjusting your search.' }}
+                            </div>
+
+                            <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
+                                <Popover v-model:open="filterOpen">
+                                    <PopoverTrigger as-child>
+                                        <Button
+                                            variant="header-actions"
+                                            size="icon-text"
+                                            class="rounded-full"
+                                            :class="
+                                                activeFilterCount > 0
+                                                    ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-200 dark:hover:text-custom-shadow'
+                                                    : ''
+                                            "
+                                        >
+                                            <RiFilter2Line class="h-3.5 w-3.5" />
+                                            <span class="hidden lg:flex">
+                                                {{
+                                                    activeFilterCount > 0
+                                                        ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
+                                                        : 'Filter'
+                                                }}
+                                            </span>
+                                        </Button>
+                                    </PopoverTrigger>
+
+                                    <PopoverContent align="end">
+                                        <div class="grid gap-y-2">
+                                            <div class="flex flex-col gap-y-1">
+                                                <p class="text-sm text-custom-shadow/80">
+                                                    Status
+                                                </p>
+                                                <Select
+                                                    :model-value="statusFilter"
+                                                    @update:model-value="onStatusChange"
+                                                >
+                                                    <SelectTrigger class="w-full">
+                                                        <SelectValue placeholder="Any status" class="flex justify-start" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all" class="cursor-pointer">Any status</SelectItem>
+                                                        <SelectItem value="draft" class="cursor-pointer">Draft</SelectItem>
+                                                        <SelectItem value="docs_completed" class="cursor-pointer">Docs Completed</SelectItem>
+                                                        <SelectItem value="for_verification" class="cursor-pointer">For Verification</SelectItem>
+                                                        <SelectItem value="verified" class="cursor-pointer">Verified</SelectItem>
+                                                        <SelectItem value="needs_revision" class="cursor-pointer">Needs Revision</SelectItem>
+                                                        <SelectItem value="rejected" class="cursor-pointer">Rejected</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <hr class="my-1 h-px border-0 bg-custom-bg-dark">
+
+                                            <div class="flex w-full flex-row items-center justify-between">
+                                                <Button
+                                                    v-if="hasActiveFilters"
+                                                    size="sm"
+                                                    variant="destructive"
+                                                    @click="clearFilters"
+                                                >
+                                                    Clear
+                                                </Button>
+
+                                                <div class="ml-auto flex items-center gap-2">
+                                                    <Button
+                                                        variant="ghost-outline"
+                                                        size="sm"
+                                                        @click="filterOpen = false"
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="float-primary"
+                                                        @click="applyFilters()"
+                                                    >
+                                                        Apply
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        </div>
+
+                        <TableCard :table-data-length="props.companies.data.length">
+                            <Table v-if="props.companies.data.length > 0">
+                                <TableHeader>
+                                    <TableColumn class="p-0">
+                                        <button
+                                            type="button"
+                                            class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                            @click="toggleSort('company_name')"
+                                        >
+                                            Name and Code
+                                            <component
+                                                :is="sortIcon('company_name')"
+                                                class="h-3.5 w-3.5"
+                                                :class="sortIconClass('company_name')"
+                                            />
+                                        </button>
+                                    </TableColumn>
+
+                                    <TableColumn>Contact Details</TableColumn>
+
+                                    <TableColumn class="p-0">
+                                        <button
+                                            type="button"
+                                            class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                            @click="toggleSort('status')"
+                                        >
+                                            Verification Status
+                                            <component
+                                                :is="sortIcon('status')"
+                                                class="h-3.5 w-3.5"
+                                                :class="sortIconClass('status')"
+                                            />
+                                        </button>
+                                    </TableColumn>
+
+                                    <TableColumn class="p-0">
+                                        <button
+                                            type="button"
+                                            class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                            @click="toggleSort('is_active')"
+                                        >
+                                            Active Status
+                                            <component
+                                                :is="sortIcon('is_active')"
+                                                class="h-3.5 w-3.5"
+                                                :class="sortIconClass('is_active')"
+                                            />
+                                        </button>
+                                    </TableColumn>
+
+                                    <TableColumn class="p-0">
+                                        <button
+                                            type="button"
+                                            class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                            @click="toggleSort('created_at')"
+                                        >
+                                            Created
+                                            <component
+                                                :is="sortIcon('created_at')"
+                                                class="h-3.5 w-3.5"
+                                                :class="sortIconClass('created_at')"
+                                            />
+                                        </button>
+                                    </TableColumn>
+                                </TableHeader>
+
+                                <TableContent>
+                                    <TableRow
+                                        v-for="(company, rowIndex) in props.companies.data"
+                                        :key="company.id"
+                                        :class="[
+                                            rowIndex === props.companies.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                            previewedCompany?.id === company.id ? 'bg-custom-secondary/10' : '',
+                                        ]"
+                                        :status="!isCompanyActive(company) ? 'inactive' : 'default'"
+                                        @click.left="openPreview(company)"
+                                        @dblclick="router.visit(show({ company: company.id }).url)"
+                                    >
+                                        <TableData class="pl-3">
+                                            <div class="flex min-w-0 items-center gap-2">
+                                                <div class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-custom-bg-dark bg-custom-bg text-xs font-semibold uppercase text-custom-shadow/70 dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                                                    <img
+                                                        v-if="company.logo_url"
+                                                        :src="company.logo_url"
+                                                        :alt="`${company.company_name} logo`"
+                                                        class="h-full w-full object-cover"
+                                                    />
+                                                    <span v-else>{{ company.company_name.slice(0, 2) }}</span>
+                                                </div>
+                                                <div class="flex min-w-0 flex-col">
+                                                    <span class="truncate font-semibold capitalize">{{ company.company_name }}</span>
+                                                    <span class="truncate font-mono text-xs text-custom-shadow/70">{{ company.company_code }}</span>
+                                                </div>
+                                            </div>
+                                        </TableData>
+
+                                        <TableData>
+                                            <div class="flex min-w-0 flex-col gap-1 text-sm text-custom-shadow/80">
+                                                <span class="truncate">{{ company.company_email || '—' }}</span>
+                                                <span class="truncate">{{ company.company_phone || '—' }}</span>
+                                            </div>
+                                        </TableData>
+
+                                        <TableData>
+                                            <Badge :class="['gap-1.5', statusClass(company.status ?? null)]">
+                                                <span :class="['h-1.5 w-1.5 rounded-full', statusDot(company.status ?? null)]" />
+                                                {{ humanizeStatus(company.status ?? null) }}
+                                            </Badge>
+                                        </TableData>
+
+                                        <TableData>
+                                            <Badge :class="['gap-1.5', activeStatusClass(company)]">
+                                                <span :class="['h-1.5 w-1.5 rounded-full', activeStatusDot(company)]" />
+                                                {{ activeStatusLabel(company) }}
+                                            </Badge>
+                                        </TableData>
+
+                                        <TableData class="text-sm text-custom-shadow/80">
+                                            <span class="truncate">{{ company.created_at_human ?? '—' }}</span>
+                                        </TableData>
+
+                                        <TableMoreButton
+                                            v-if="canViewCompany"
+                                            :open="openMenus[company.id] ?? false"
+                                            @update:open="(value) => (openMenus[company.id] = value)"
+                                        >
+                                            <DropdownMenuLabel>
+                                                {{ company.company_name }}
+                                            </DropdownMenuLabel>
+                                            <DropdownMenuItem
+                                                as-child
+                                                class="group cursor-pointer rounded-md"
+                                            >
+                                                <Link
+                                                    :href="show({ company: company.id }).url"
+                                                    class="flex items-center"
+                                                >
+                                                    <RiFileCheckLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                    Review Company
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                class="group cursor-pointer rounded-md"
+                                                @click="openArchiveDialog(company)"
+                                            >
+                                                <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                Archive
+                                            </DropdownMenuItem>
+                                        </TableMoreButton>
+                                    </TableRow>
+                                </TableContent>
+                            </Table>
+
+                            <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                                <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                                    <img
+                                        :src="emptyRafikiUrl"
+                                        alt=""
+                                        class="w-1/3 object-contain opacity-90"
+                                        aria-hidden="true"
+                                    />
+                                    <div class="space-y-1">
+                                        <p class="text-custom-shadow text-base font-semibold">No companies found</p>
+                                        <p class="text-custom-shadow/80 text-sm">
+                                            {{ hasActiveFilters ? 'Try adjusting or clearing your filters.' : 'Try adjusting your search.' }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </TableCard>
+
+                        <InertiaPagination
+                            :links="props.companies.links"
+                            :meta="{
+                                from: props.companies.from,
+                                to: props.companies.to,
+                                total: props.companies.total,
+                            }"
+                        />
+                    </CardContent>
+                </Card>
+            </MainPanel>
+            
+            <SidePanel>
+                <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-full">
+                    <CardHeader v-if="previewedCompany" class="flex flex-row items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <CardTitle class="truncate capitalize">{{ previewedCompany.company_name }}</CardTitle>
+                            <CardDescription>Preview</CardDescription>
+                        </div>
+                        <Button variant="header-actions" size="icon" class="h-8 w-8 shrink-0 rounded-full" @click="previewedCompany = null">
+                            <RiCloseLine class="h-4 w-4" />
+                        </Button>
+                    </CardHeader>
+
+                    <CardContent v-if="previewedCompany" class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto py-2">
+                        <div class="flex aspect-4/3 items-center justify-center overflow-hidden rounded-md border border-dashed border-custom-bg-dark bg-custom-bg text-custom-shadow/70 dark:border-none dark:bg-custom-bg-dark">
+                            <img
+                                v-if="previewedCompany.logo_url"
+                                :src="previewedCompany.logo_url"
+                                :alt="`${previewedCompany.company_name} logo`"
+                                class="h-full w-full object-contain"
+                            />
+                            <div v-else class="flex flex-col items-center gap-1 text-center">
+                                <RiImageAddLine class="h-6 w-6" />
+                                <span class="text-sm">No company logo</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 pt-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-sm font-semibold text-custom-shadow">Verification Status</span>
+                                <Badge :class="['gap-1.5', statusClass(previewedCompany.status ?? null)]">
+                                    <span :class="['h-1.5 w-1.5 rounded-full', statusDot(previewedCompany.status ?? null)]" />
+                                    {{ humanizeStatus(previewedCompany.status ?? null) }}
+                                </Badge>
+                            </div>
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-sm font-semibold text-custom-shadow">Active Status</span>
+                                <Badge :class="['gap-1.5', activeStatusClass(previewedCompany)]">
+                                    <span :class="['h-1.5 w-1.5 rounded-full', activeStatusDot(previewedCompany)]" />
+                                    {{ activeStatusLabel(previewedCompany) }}
+                                </Badge>
+                            </div>
+                            <div class="flex items-start justify-between gap-3">
+                                <span class="text-sm font-semibold text-custom-shadow">Company Code</span>
+                                <span class="rounded bg-custom-bg px-2 py-0.5 font-mono text-xs font-semibold text-custom-shadow dark:bg-custom-bg-light">{{ previewedCompany.company_code }}</span>
+                            </div>
+                            <div class="flex items-start justify-between gap-3">
+                                <span class="text-sm font-semibold text-custom-shadow">Business Type</span>
+                                <span class="text-right text-sm capitalize">{{ previewedCompany.business_type || 'Not recorded' }}</span>
+                            </div>
+                            <div class="flex items-start justify-between gap-3">
+                                <span class="text-sm font-semibold text-custom-shadow">Email</span>
+                                <div class="min-w-0 text-right">
+                                    <p class="truncate text-sm">{{ previewedCompany.company_email || 'Not recorded' }}</p>
+                                    <p v-if="previewedCompany.company_email" class="text-xs text-custom-shadow/70">
+                                        {{ hasVerifiedEmail(previewedCompany) ? 'Verified' : 'Not verified' }}
                                     </p>
                                 </div>
                             </div>
-                        </div>
-                    </TableCard>
-
-                    <InertiaPagination
-                        :links="props.companies.links"
-                        :meta="{
-                            from: props.companies.from,
-                            to: props.companies.to,
-                            total: props.companies.total,
-                        }"
-                    />
-                </CardContent>
-            </Card>
-
-            <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-100">
-                <CardHeader v-if="previewedCompany" class="flex flex-row items-start justify-between gap-3">
-                    <div class="min-w-0">
-                        <CardTitle class="truncate capitalize">{{ previewedCompany.company_name }}</CardTitle>
-                        <CardDescription>Preview</CardDescription>
-                    </div>
-                    <Button variant="header-actions" size="icon" class="h-8 w-8 shrink-0 rounded-full" @click="previewedCompany = null">
-                        <RiCloseLine class="h-4 w-4" />
-                    </Button>
-                </CardHeader>
-
-                <CardContent v-if="previewedCompany" class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto py-2">
-                    <div class="flex aspect-4/3 items-center justify-center overflow-hidden rounded-md border border-dashed border-custom-bg-dark bg-custom-bg text-custom-shadow/70 dark:border-none dark:bg-custom-bg-dark">
-                        <img
-                            v-if="previewedCompany.logo_url"
-                            :src="previewedCompany.logo_url"
-                            :alt="`${previewedCompany.company_name} logo`"
-                            class="h-full w-full object-contain"
-                        />
-                        <div v-else class="flex flex-col items-center gap-1 text-center">
-                            <RiImageAddLine class="h-6 w-6" />
-                            <span class="text-sm">No company logo</span>
-                        </div>
-                    </div>
-
-                    <div class="space-y-3 pt-2">
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Verification Status</span>
-                            <Badge :class="['gap-1.5', statusClass(previewedCompany.status ?? null)]">
-                                <span :class="['h-1.5 w-1.5 rounded-full', statusDot(previewedCompany.status ?? null)]" />
-                                {{ humanizeStatus(previewedCompany.status ?? null) }}
-                            </Badge>
-                        </div>
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Active Status</span>
-                            <Badge :class="['gap-1.5', activeStatusClass(previewedCompany)]">
-                                <span :class="['h-1.5 w-1.5 rounded-full', activeStatusDot(previewedCompany)]" />
-                                {{ activeStatusLabel(previewedCompany) }}
-                            </Badge>
-                        </div>
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Company Code</span>
-                            <span class="rounded bg-custom-bg px-2 py-0.5 font-mono text-xs font-semibold text-custom-shadow dark:bg-custom-bg-light">{{ previewedCompany.company_code }}</span>
-                        </div>
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Business Type</span>
-                            <span class="text-right text-sm capitalize">{{ previewedCompany.business_type || 'Not recorded' }}</span>
-                        </div>
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Email</span>
-                            <div class="min-w-0 text-right">
-                                <p class="truncate text-sm">{{ previewedCompany.company_email || 'Not recorded' }}</p>
-                                <p v-if="previewedCompany.company_email" class="text-xs text-custom-shadow/70">
-                                    {{ hasVerifiedEmail(previewedCompany) ? 'Verified' : 'Not verified' }}
-                                </p>
+                            <div class="flex items-start justify-between gap-3">
+                                <span class="text-sm font-semibold text-custom-shadow">Phone</span>
+                                <span class="text-right text-sm">{{ previewedCompany.company_phone || 'Not recorded' }}</span>
+                            </div>
+                            <div class="flex items-start justify-between gap-3">
+                                <span class="text-sm font-semibold text-custom-shadow">Created</span>
+                                <span class="text-right text-sm">{{ previewedCompany.created_at_human || 'Not recorded' }}</span>
                             </div>
                         </div>
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Phone</span>
-                            <span class="text-right text-sm">{{ previewedCompany.company_phone || 'Not recorded' }}</span>
-                        </div>
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Created</span>
-                            <span class="text-right text-sm">{{ previewedCompany.created_at_human || 'Not recorded' }}</span>
-                        </div>
-                    </div>
 
-                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+                        <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
 
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <div class="flex flex-wrap gap-2">
-                            <Button v-if="canUpdateCompany" variant="ghost-outline" size="icon-text" @click="openEdit(previewedCompany)">
-                                <RiEditLine class="h-4 w-4" />
-                                Edit
-                            </Button>
-                            <Button variant="destructive" size="icon-text" @click="openArchiveDialog(previewedCompany)">
-                                <RiArchive2Line class="h-4 w-4" />
-                                Archive
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex flex-wrap gap-2">
+                                <Button v-if="canUpdateCompany" variant="ghost-outline" size="icon-text" @click="openEdit(previewedCompany)">
+                                    <RiEditLine class="h-4 w-4" />
+                                    Edit
+                                </Button>
+                                <Button variant="destructive" size="icon-text" @click="openArchiveDialog(previewedCompany)">
+                                    <RiArchive2Line class="h-4 w-4" />
+                                    Archive
+                                </Button>
+                            </div>
+                            <Button v-if="canViewCompany" as-child variant="float-primary" size="icon-text">
+                                <Link :href="show({ company: previewedCompany.id }).url">
+                                    <RiFileCheckLine class="h-4 w-4" />
+                                    Review Company
+                                </Link>
                             </Button>
                         </div>
-                        <Button v-if="canViewCompany" as-child variant="float-primary" size="icon-text">
-                            <Link :href="show({ company: previewedCompany.id }).url">
-                                <RiFileCheckLine class="h-4 w-4" />
-                                Review Company
-                            </Link>
-                        </Button>
-                    </div>
-                </CardContent>
+                    </CardContent>
 
-                <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
-                    <div class="max-w-60 space-y-1 text-center">
-                        <p class="text-base font-semibold text-custom-shadow">No company selected</p>
-                        <p class="text-sm text-custom-shadow/80">Click on a company to preview.</p>
-                    </div>
-                </CardContent>
-            </Card>
+                    <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
+                        <div class="max-w-60 space-y-1 text-center">
+                            <p class="text-base font-semibold text-custom-shadow">No company selected</p>
+                            <p class="text-sm text-custom-shadow/80">Click on a company to preview.</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </SidePanel>
         </PanelLayout>
 
         <EditCompanyDialog

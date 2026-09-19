@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import type { ToasterProps } from "vue-sonner"
-import { CircleCheckIcon } from "lucide-vue-next"
-import { RiAlertLine, RiCloseCircleLine, RiCloseLine, RiInformationLine, RiLoader2Line } from "vue-remix-icons"
+import { RiAlertLine, RiCheckboxCircleLine, RiCloseCircleLine, RiCloseLine, RiInformationLine, RiLoader2Line } from "vue-remix-icons"
 import { Toaster as Sonner } from "vue-sonner"
 import { cn } from "@/lib/utils"
 
@@ -27,7 +26,7 @@ const props = defineProps<ToasterProps>()
     }"
   >
     <template #success-icon>
-      <CircleCheckIcon class="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+      <RiCheckboxCircleLine class="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
     </template>
     <template #info-icon>
       <RiInformationLine class="size-4 shrink-0 text-sky-600 dark:text-sky-400" />

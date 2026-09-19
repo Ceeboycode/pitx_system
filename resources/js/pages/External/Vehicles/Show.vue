@@ -27,11 +27,11 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-import { CheckCircle2 } from 'lucide-vue-next';
 import {
     RiArrowLeftLine,
     RiBusLine,
     RiCalendarLine,
+    RiCheckLine,
     RiDownloadLine,
     RiEditLine,
     RiEyeLine,
@@ -1084,8 +1084,8 @@ function documentDownloadUrl(doc?: VehicleDocument | null) {
                                         <div
                                             class="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-100"
                                         >
-                                            <CheckCircle2
-                                                class="h-3.5 w-3.5 text-emerald-700"
+                                            <RiCheckLine
+                                                class="h-3.5 w-3.5 shrink-0 text-emerald-700"
                                             />
                                         </div>
                                         <p

@@ -13,9 +13,9 @@ import { Button } from '@/components/ui/button'
 
 import CompanyVehicleController from '@/actions/App/Http/Controllers/CompanyVehicleController'
 
-import { ArrowUp } from 'lucide-vue-next'
 import {
     RiArrowLeftLine,
+    RiArrowUpLine,
     RiBuilding2Line,
     RiBusLine,
     RiFileTextLine,
@@ -279,7 +279,7 @@ function submit() {
                                                 class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                                                 @click="scrollToSummary"
                                             >
-                                                <ArrowUp class="mr-2 h-4 w-4 shrink-0" />
+                                                <RiArrowUpLine class="mr-2 h-4 w-4 shrink-0" />
                                                 View Summary
                                             </Button>
                                         </div>
@@ -301,7 +301,7 @@ function submit() {
                                             class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                                             @click="scrollToSummary"
                                         >
-                                            <ArrowUp class="mr-2 h-4 w-4 shrink-0" />
+                                            <RiArrowUpLine class="mr-2 h-4 w-4 shrink-0" />
                                             Go to Submission Summary
                                         </Button>
                                     </div>

@@ -46,7 +46,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import {
-    RiCheckboxCircleLine as CheckCircle2,
+    RiCheckLine as CheckCircle2,
     RiCloseCircleLine as XCircle,
     RiExternalLinkLine as ExternalLink,
     RiEyeLine as Eye,
@@ -58,10 +58,11 @@ import {
 import { type BreadcrumbItem } from '@/types';
 import { index } from '@/routes/companies';
 import Separator from '@/components/ui/separator/Separator.vue';
+import { PanelLayout, MainPanel, SidePanel } from '@/components/ui/_panels';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Companies', href: index().url },
-    { title: 'Change Requests', href: '/company-profile-change-requests' },
+    { title: 'Update Requests', href: '/company-profile-change-requests' },
 ];
 
 type ChangeRequest = {
@@ -277,206 +278,208 @@ function canTakePreviewAction(): boolean {
 </script>
 
 <template>
-    <Head title="Change Requests" />
+    <Head title="Update Requests" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row">
-            <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
-                <CardHeader class="flex flex-row gap-2">
-                    <div class="flex flex-col">
-                        <CardTitle class="flex items-center gap-2"><span class="font-semibold">Change Requests</span></CardTitle>
-                        <CardDescription>Review and approve external company profile updates.</CardDescription>
-                    </div>
-                </CardHeader>
+        <PanelLayout>
+            <MainPanel>
+                <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
+                    <CardHeader class="flex flex-row gap-2">
+                        <div class="flex flex-col">
+                            <CardTitle class="flex items-center gap-2"><span class="font-semibold">Requests</span></CardTitle>
+                            <CardDescription>Review and manage company profile updates.</CardDescription>
+                        </div>
+                    </CardHeader>
 
-                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
-                    <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
-                        <div class="w-full">
-                            <SearchInput
-                                :route="`/company-profile-change-requests?status=${selectedStatus === 'all' ? '' : selectedStatus}`"
-                                :initial-value="props.filters.search"
-                                placeholder="Search companies or requesters..."
-                                :only="['requests', 'filters', 'flash']"
-                                :debounce="350"
-                            />
+                    <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                        <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
+                            <div class="w-full">
+                                <SearchInput
+                                    :route="`/company-profile-change-requests?status=${selectedStatus === 'all' ? '' : selectedStatus}`"
+                                    :initial-value="props.filters.search"
+                                    placeholder="Search companies or requesters..."
+                                    :only="['requests', 'filters', 'flash']"
+                                    :debounce="350"
+                                />
+                            </div>
+
+                            <Popover v-model:open="filterOpen">
+                                <PopoverTrigger as-child>
+                                    <Button
+                                        variant="header-actions"
+                                        size="icon-text"
+                                        class="rounded-full"
+                                        :class="activeFilterCount > 0 ? 'bg-custom-secondary/20 transition-all duration-200 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''"
+                                    >
+                                        <Filter class="h-3.5 w-3.5" />
+                                        <span class="hidden lg:flex">{{ activeFilterCount ? '1 filter active' : 'Filter' }}</span>
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent align="end">
+                                    <div class="grid gap-y-2">
+                                        <div class="flex flex-col gap-y-1">
+                                            <p class="text-sm text-custom-shadow/80">Status</p>
+                                            <Select v-model="selectedStatus">
+                                                <SelectTrigger class="w-full"><SelectValue placeholder="Any status" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">Any status</SelectItem>
+                                                    <SelectItem value="pending">Pending</SelectItem>
+                                                    <SelectItem value="approved">Approved</SelectItem>
+                                                    <SelectItem value="rejected">Rejected</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light" />
+                                        <div class="flex items-center justify-between">
+                                            <Button v-if="activeFilterCount" size="sm" variant="destructive" @click="clearFilters">Clear</Button>
+                                            <div class="ml-auto flex gap-2">
+                                                <Button size="sm" variant="ghost-outline" @click="filterOpen = false">Cancel</Button>
+                                                <Button size="sm" variant="float-primary" @click="applyFilters">Apply</Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
                         </div>
 
-                        <Popover v-model:open="filterOpen">
-                            <PopoverTrigger as-child>
-                                <Button
-                                    variant="header-actions"
-                                    size="icon-text"
-                                    class="rounded-full"
-                                    :class="activeFilterCount > 0 ? 'bg-custom-secondary/20 transition-all duration-200 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''"
-                                >
-                                    <Filter class="h-3.5 w-3.5" />
-                                    <span class="hidden lg:flex">{{ activeFilterCount ? '1 filter active' : 'Filter' }}</span>
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent align="end">
-                                <div class="grid gap-y-2">
-                                    <div class="flex flex-col gap-y-1">
-                                        <p class="text-sm text-custom-shadow/80">Status</p>
-                                        <Select v-model="selectedStatus">
-                                            <SelectTrigger class="w-full"><SelectValue placeholder="Any status" /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">Any status</SelectItem>
-                                                <SelectItem value="pending">Pending</SelectItem>
-                                                <SelectItem value="approved">Approved</SelectItem>
-                                                <SelectItem value="rejected">Rejected</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                        <Card :class="['flex min-h-0 max-h-fit flex-1 flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none', requests.data.length ? 'border-solid' : 'border-dashed']">
+                            <div v-if="requests.data.length" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+                                <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
+                                    <div class="grid grid-cols-[1.4fr_1.2fr_.8fr_2fr_5rem] gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
+                                        <div class="flex h-10 items-center pl-3 text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Company</div>
+                                        <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Requester</div>
+                                        <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Status</div>
+                                        <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Requested Changes</div>
+                                        <div class="flex h-10 items-center justify-end pr-3 text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Actions</div>
                                     </div>
-                                    <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light" />
-                                    <div class="flex items-center justify-between">
-                                        <Button v-if="activeFilterCount" size="sm" variant="destructive" @click="clearFilters">Clear</Button>
-                                        <div class="ml-auto flex gap-2">
-                                            <Button size="sm" variant="ghost-outline" @click="filterOpen = false">Cancel</Button>
-                                            <Button size="sm" variant="float-primary" @click="applyFilters">Apply</Button>
+                                </div>
+
+                                <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+                                    <div
+                                        v-for="(item, rowIndex) in requests.data"
+                                        :key="item.id"
+                                        :class="['grid cursor-pointer grid-cols-[1.4fr_1.2fr_.8fr_2fr_5rem] items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light', rowIndex === requests.data.length - 1 ? 'rounded-b-md border-b-0' : '', previewedRequest?.id === item.id ? 'bg-custom-secondary/10 text-custom-shadow' : '']"
+                                        @click="previewedRequest = item"
+                                    >
+                                        <div class="flex min-w-0 flex-col py-2 pl-3">
+                                            <span class="truncate font-semibold capitalize">{{ item.company.company_name }}</span>
+                                            <span class="truncate font-mono text-xs text-custom-shadow/70">{{ item.company.company_code ?? '—' }}</span>
+                                        </div>
+                                        <div class="flex min-w-0 flex-col py-2">
+                                            <span class="truncate text-sm">{{ item.requester?.name ?? '—' }}</span>
+                                            <span class="truncate text-xs text-custom-shadow/70">{{ item.requester?.email ?? '—' }}</span>
+                                        </div>
+                                        <div class="flex py-2"><Badge :variant="badgeVariant(item.status)" class="capitalize">{{ item.status }}</Badge></div>
+                                        <div class="flex min-w-0 flex-wrap gap-1 py-2 text-xs">
+                                            <span v-for="(_, key) in item.requested_values" :key="key" class="rounded bg-custom-bg px-2 py-1 text-custom-shadow dark:bg-custom-bg-light">{{ normalizeFieldName(String(key)) }}</span>
+                                            <span v-if="item.logo_change?.has_change" class="rounded bg-blue-100 px-2 py-1 text-blue-700">Company Logo</span>
+                                            <span v-for="(doc, index) in item.supporting_documents ?? []" :key="index" class="rounded bg-rose-100 px-2 py-1 text-rose-700">{{ humanize(doc.doc_type) }}</span>
+                                            <span v-if="!Object.keys(item.requested_values).length && !item.logo_change?.has_change && !(item.supporting_documents ?? []).length">—</span>
+                                        </div>
+                                        <div class="flex justify-end py-2 pr-3" @click.stop>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger as-child><Button variant="table-more" size="icon-more"><MoreHorizontal class="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>{{ item.company.company_name }}</DropdownMenuLabel>
+                                                    <DropdownMenuItem class="group" @click="previewedRequest = item"><Eye class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light" />Preview Request</DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem v-if="item.company.show_url" as-child class="group"><a :href="item.company.show_url"><ExternalLink class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light" />View Company</a></DropdownMenuItem>
+                                                    <DropdownMenuItem v-if="primaryPreviewDoc(item)" class="group" @click="openPrimaryPreview(item)"><Eye class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light" />Preview Document</DropdownMenuItem>
+                                                    <DropdownMenuItem v-if="primaryPreviewDoc(item)" class="group" @click="downloadPrimary(item)"><FileDown class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light" />Download</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                     </div>
                                 </div>
-                            </PopoverContent>
-                        </Popover>
-                    </div>
+                            </div>
 
-                    <Card :class="['flex min-h-0 max-h-fit flex-1 flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none', requests.data.length ? 'border-solid' : 'border-dashed']">
-                        <div v-if="requests.data.length" class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                            <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                                <div class="grid grid-cols-[1.4fr_1.2fr_.8fr_2fr_5rem] gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
-                                    <div class="flex h-10 items-center pl-3 text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Company</div>
-                                    <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Requester</div>
-                                    <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Status</div>
-                                    <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Requested Changes</div>
-                                    <div class="flex h-10 items-center justify-end pr-3 text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Actions</div>
+                            <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                                <div class="flex w-full max-w-md flex-col items-center gap-2">
+                                    <img :src="emptyRafikiUrl" alt="" class="w-1/3 object-contain opacity-90" aria-hidden="true" />
+                                    <div class="space-y-1"><p class="text-base font-semibold text-custom-shadow">No change requests found</p><p class="text-sm text-custom-shadow/80">Try adjusting your search or filters.</p></div>
                                 </div>
                             </div>
+                        </Card>
 
-                            <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-                                <div
-                                    v-for="(item, rowIndex) in requests.data"
-                                    :key="item.id"
-                                    :class="['grid cursor-pointer grid-cols-[1.4fr_1.2fr_.8fr_2fr_5rem] items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light', rowIndex === requests.data.length - 1 ? 'rounded-b-md border-b-0' : '', previewedRequest?.id === item.id ? 'bg-custom-secondary/10 text-custom-shadow' : '']"
-                                    @click="previewedRequest = item"
-                                >
-                                    <div class="flex min-w-0 flex-col py-2 pl-3">
-                                        <span class="truncate font-semibold capitalize">{{ item.company.company_name }}</span>
-                                        <span class="truncate font-mono text-xs text-custom-shadow/70">{{ item.company.company_code ?? '—' }}</span>
-                                    </div>
-                                    <div class="flex min-w-0 flex-col py-2">
-                                        <span class="truncate text-sm">{{ item.requester?.name ?? '—' }}</span>
-                                        <span class="truncate text-xs text-custom-shadow/70">{{ item.requester?.email ?? '—' }}</span>
-                                    </div>
-                                    <div class="flex py-2"><Badge :variant="badgeVariant(item.status)" class="capitalize">{{ item.status }}</Badge></div>
-                                    <div class="flex min-w-0 flex-wrap gap-1 py-2 text-xs">
-                                        <span v-for="(_, key) in item.requested_values" :key="key" class="rounded bg-custom-bg px-2 py-1 text-custom-shadow dark:bg-custom-bg-light">{{ normalizeFieldName(String(key)) }}</span>
-                                        <span v-if="item.logo_change?.has_change" class="rounded bg-blue-100 px-2 py-1 text-blue-700">Company Logo</span>
-                                        <span v-for="(doc, index) in item.supporting_documents ?? []" :key="index" class="rounded bg-rose-100 px-2 py-1 text-rose-700">{{ humanize(doc.doc_type) }}</span>
-                                        <span v-if="!Object.keys(item.requested_values).length && !item.logo_change?.has_change && !(item.supporting_documents ?? []).length">—</span>
-                                    </div>
-                                    <div class="flex justify-end py-2 pr-3" @click.stop>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger as-child><Button variant="table-more" size="icon-more"><MoreHorizontal class="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuLabel>{{ item.company.company_name }}</DropdownMenuLabel>
-                                                <DropdownMenuItem class="group" @click="previewedRequest = item"><Eye class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light" />Preview Request</DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem v-if="item.company.show_url" as-child class="group"><a :href="item.company.show_url"><ExternalLink class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light" />View Company</a></DropdownMenuItem>
-                                                <DropdownMenuItem v-if="primaryPreviewDoc(item)" class="group" @click="openPrimaryPreview(item)"><Eye class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light" />Preview Document</DropdownMenuItem>
-                                                <DropdownMenuItem v-if="primaryPreviewDoc(item)" class="group" @click="downloadPrimary(item)"><FileDown class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light" />Download</DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                </div>
-                            </div>
+                        <InertiaPagination v-if="requests.links?.length" :links="requests.links" :meta="{ from: requests.from, to: requests.to, total: requests.total }" />
+                    </CardContent>
+                </Card>
+            </MainPanel>
+            <SidePanel>
+                <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-full">
+                    <CardHeader v-if="previewedRequest" class="flex flex-row items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <CardTitle class="truncate">{{ previewedRequest.company.company_name }}</CardTitle>
+                            <CardDescription>Request preview</CardDescription>
                         </div>
-
-                        <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
-                            <div class="flex w-full max-w-md flex-col items-center gap-2">
-                                <img :src="emptyRafikiUrl" alt="" class="w-1/3 object-contain opacity-90" aria-hidden="true" />
-                                <div class="space-y-1"><p class="text-base font-semibold text-custom-shadow">No change requests found</p><p class="text-sm text-custom-shadow/80">Try adjusting your search or filters.</p></div>
-                            </div>
-                        </div>
-                    </Card>
-
-                    <InertiaPagination v-if="requests.links?.length" :links="requests.links" :meta="{ from: requests.from, to: requests.to, total: requests.total }" />
-                </CardContent>
-            </Card>
-
-            <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-100">
-                <CardHeader v-if="previewedRequest" class="flex flex-row items-start justify-between gap-3">
-                    <div class="min-w-0">
-                        <CardTitle class="truncate">{{ previewedRequest.company.company_name }}</CardTitle>
-                        <CardDescription>Change request preview</CardDescription>
-                    </div>
-                    <Button variant="header-actions" size="icon" class="h-8 w-8 shrink-0 rounded-full" aria-label="Close request preview" @click="previewedRequest = null">
-                        <X class="h-4 w-4" />
-                    </Button>
-                </CardHeader>
-
-                <CardContent v-if="previewedRequest" class="no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto py-2">
-                    <div class="flex items-center justify-between gap-3">
-                        <span class="text-sm font-semibold text-custom-shadow">Status</span>
-                        <Badge :variant="badgeVariant(previewedRequest.status)" class="capitalize">{{ previewedRequest.status }}</Badge>
-                    </div>
-                    <div class="flex items-start justify-between gap-3">
-                        <span class="text-sm font-semibold text-custom-shadow">Requester</span>
-                        <div class="min-w-0 text-right">
-                            <p class="truncate text-sm text-custom-shadow/80">{{ previewedRequest.requester?.name ?? '—' }}</p>
-                            <p class="truncate text-xs text-custom-shadow/60">{{ previewedRequest.requester?.email ?? '—' }}</p>
-                        </div>
-                    </div>
-
-                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light" />
-
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Requested changes</span>
-                            <span class="text-sm text-custom-shadow/80">{{ Object.keys(previewedRequest.requested_values).length }}</span>
-                        </div>
-                        <div v-if="Object.keys(previewedRequest.requested_values).length" class="space-y-2">
-                            <div v-for="(value, field) in previewedRequest.requested_values" :key="`${previewedRequest.id}-${field}`" class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">
-                                <p class="text-sm font-medium text-custom-shadow">{{ normalizeFieldName(String(field)) }}</p>
-                                <p class="break-words text-xs text-custom-shadow/70">{{ formatValue(previewedRequest.current_values?.[field]) }} → {{ formatValue(value) }}</p>
-                            </div>
-                        </div>
-                        <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">No profile field changes requested.</p>
-                    </div>
-
-                    <div v-if="previewedRequest.logo_change?.has_change" class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">
-                        <p class="text-sm font-medium text-custom-shadow">Company Logo</p>
-                        <p class="text-xs text-custom-shadow/70">{{ previewedRequest.logo_change.is_remove ? 'Remove current logo' : 'Replace current logo' }}</p>
-                        <Button v-if="primaryPreviewDoc(previewedRequest)" variant="link" size="sm" class="h-auto px-0" @click="openPrimaryPreview(previewedRequest)">Preview logo</Button>
-                    </div>
-
-                    <div v-if="previewedRequest.supporting_documents?.length" class="space-y-2">
-                        <span class="text-sm font-semibold text-custom-shadow">Supporting documents</span>
-                        <button v-for="(doc, index) in previewedRequest.supporting_documents" :key="index" type="button" class="flex w-full items-center justify-between rounded-md bg-custom-bg px-3 py-2 text-left dark:bg-custom-bg-dark" @click="doc.preview_url && openPreviewDoc(doc, previewedRequest)">
-                            <span class="min-w-0 truncate text-sm">{{ doc.original_name ?? humanize(doc.doc_type) }}</span>
-                            <Eye v-if="doc.preview_url" class="h-4 w-4 shrink-0" />
-                        </button>
-                    </div>
-
-                    <Separator/>
-
-                    <div v-if="previewedRequest.status === 'pending'" class="flex gap-2 justify-end">
-                        <Button variant="destructive" @click="openReject(previewedRequest)">Reject</Button>
-                        <Button variant="float-primary" size="icon-text" :disabled="approvingId === previewedRequest.id" @click="approveRequest(previewedRequest)">
-                            {{ approvingId === previewedRequest.id ? 'Approving...' : 'Approve' }}
+                        <Button variant="header-actions" size="icon" class="h-8 w-8 shrink-0 rounded-full" aria-label="Close request preview" @click="previewedRequest = null">
+                            <X class="h-4 w-4" />
                         </Button>
-                    </div>
-                </CardContent>
+                    </CardHeader>
 
-                <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
-                    <div class="max-w-60 space-y-1 text-center">
-                        <p class="text-base font-semibold text-custom-shadow">No request selected</p>
-                        <p class="text-sm text-custom-shadow/80">Click on a request to preview its details.</p>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
+                    <CardContent v-if="previewedRequest" class="no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto py-2">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Status</span>
+                            <Badge :variant="badgeVariant(previewedRequest.status)" class="capitalize">{{ previewedRequest.status }}</Badge>
+                        </div>
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Requester</span>
+                            <div class="min-w-0 text-right">
+                                <p class="truncate text-sm text-custom-shadow/80">{{ previewedRequest.requester?.name ?? '—' }}</p>
+                                <p class="truncate text-xs text-custom-shadow/60">{{ previewedRequest.requester?.email ?? '—' }}</p>
+                            </div>
+                        </div>
 
-        
+                        <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light" />
+
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-sm font-semibold text-custom-shadow">Requested changes</span>
+                                <span class="text-sm text-custom-shadow/80">{{ Object.keys(previewedRequest.requested_values).length }}</span>
+                            </div>
+                            <div v-if="Object.keys(previewedRequest.requested_values).length" class="space-y-2">
+                                <div v-for="(value, field) in previewedRequest.requested_values" :key="`${previewedRequest.id}-${field}`" class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">
+                                    <p class="text-sm font-medium text-custom-shadow">{{ normalizeFieldName(String(field)) }}</p>
+                                    <p class="break-words text-xs text-custom-shadow/70">{{ formatValue(previewedRequest.current_values?.[field]) }} → {{ formatValue(value) }}</p>
+                                </div>
+                            </div>
+                            <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">No profile field changes requested.</p>
+                        </div>
+
+                        <div v-if="previewedRequest.logo_change?.has_change" class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">
+                            <p class="text-sm font-medium text-custom-shadow">Company Logo</p>
+                            <p class="text-xs text-custom-shadow/70">{{ previewedRequest.logo_change.is_remove ? 'Remove current logo' : 'Replace current logo' }}</p>
+                            <Button v-if="primaryPreviewDoc(previewedRequest)" variant="link" size="sm" class="h-auto px-0" @click="openPrimaryPreview(previewedRequest)">Preview logo</Button>
+                        </div>
+
+                        <div v-if="previewedRequest.supporting_documents?.length" class="space-y-2">
+                            <span class="text-sm font-semibold text-custom-shadow">Supporting documents</span>
+                            <button v-for="(doc, index) in previewedRequest.supporting_documents" :key="index" type="button" class="flex w-full items-center justify-between rounded-md bg-custom-bg px-3 py-2 text-left dark:bg-custom-bg-dark" @click="doc.preview_url && openPreviewDoc(doc, previewedRequest)">
+                                <span class="min-w-0 truncate text-sm">{{ doc.original_name ?? humanize(doc.doc_type) }}</span>
+                                <Eye v-if="doc.preview_url" class="h-4 w-4 shrink-0" />
+                            </button>
+                        </div>
+
+                        <Separator/>
+
+                        <div v-if="previewedRequest.status === 'pending'" class="flex gap-2 justify-end">
+                            <Button variant="destructive" @click="openReject(previewedRequest)">Reject</Button>
+                            <Button variant="float-primary" size="icon-text" :disabled="approvingId === previewedRequest.id" @click="approveRequest(previewedRequest)">
+                                {{ approvingId === previewedRequest.id ? 'Approving...' : 'Approve' }}
+                            </Button>
+                        </div>
+                    </CardContent>
+
+                    <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
+                        <div class="max-w-60 space-y-1 text-center">
+                            <p class="text-base font-semibold text-custom-shadow">No request selected</p>
+                            <p class="text-sm text-custom-shadow/80">Click on a request to preview its details.</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </SidePanel>
+        </PanelLayout>
+
         <Dialog :open="rejectModalOpen" @update:open="rejectModalOpen = $event">
             <DialogContent class="sm:max-w-md px-6">
                 <DialogHeader class="px-0">

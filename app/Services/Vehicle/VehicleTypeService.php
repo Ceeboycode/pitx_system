@@ -24,14 +24,32 @@ class VehicleTypeService
         return $vehicleType;
     }
 
-    public function deleteVehicleType(VehicleType $vehicleType): void
+    public function archiveVehicleType(VehicleType $vehicleType): void
     {
-        if (Vehicle::withTrashed()->whereBelongsTo($vehicleType)->exists()) {
+        if (Vehicle::whereBelongsTo($vehicleType)->exists()) {
             throw ValidationException::withMessages([
-                'vehicle_type' => 'This vehicle type is assigned to one or more vehicles and cannot be deleted. Deactivate it instead.',
+                'vehicle_type' => 'This vehicle type is assigned to one or more vehicles and cannot be archived. Deactivate it instead.',
             ]);
         }
 
+        $vehicleType->update(['deleted_by' => auth()->id()]);
         $vehicleType->delete();
+    }
+
+    public function restoreVehicleType(VehicleType $vehicleType): void
+    {
+        $vehicleType->update(['deleted_by' => null, 'updated_by' => auth()->id()]);
+        $vehicleType->restore();
+    }
+
+    public function forceDeleteVehicleType(VehicleType $vehicleType): void
+    {
+        if (Vehicle::withTrashed()->whereBelongsTo($vehicleType)->exists()) {
+            throw ValidationException::withMessages([
+                'vehicle_type' => 'This vehicle type is assigned to one or more vehicles and cannot be permanently deleted.',
+            ]);
+        }
+
+        $vehicleType->forceDelete();
     }
 }

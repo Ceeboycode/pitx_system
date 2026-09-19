@@ -29,7 +29,7 @@ import type { BreadcrumbItem } from '@/types';
 import {
     RiAiGenerate,
     RiArrowLeftLine,
-    RiCheckboxCircleLine,
+    RiCheckLine,
     RiCloseLine,
     RiDraggable,
     RiMapPin2Line,
@@ -1440,7 +1440,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                                         </span>
                                                     </div>
                                                     
-                                                    <RiCheckboxCircleLine class="h-4 w-4 shrink-0 text-custom-accent-3" />
+                                                    <RiCheckLine class="h-4 w-4 shrink-0 text-custom-accent-3" />
                                                 </div>
 
                                                 <div

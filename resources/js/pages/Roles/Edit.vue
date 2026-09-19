@@ -11,7 +11,7 @@ import {
     RiGroupLine,
 } from 'vue-remix-icons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/_tabs';
-import { LeadPanel } from '@/components/ui/_panels';
+import { LeadPanel, PanelLayout, SidePanel } from '@/components/ui/_panels';
 import { LeadingCard } from '@/components/ui/_leading-card';
 import Details from '@/components/internal/roles/edit/DetailsTab.vue';
 import Users from '@/components/internal/roles/edit/UsersTab.vue';
@@ -198,283 +198,46 @@ const tabs = [
     <Head title="Edit Role" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <LeadPanel>
-            <LeadingCard
-                :title="role.name"
-                description="Update the role name, type, and permissions."
-                variant="entity-details"
-                :back="index().url"
-                :more="false"
-            >
-                <!-- <DropdownMenuItem
-                    class="group cursor-pointer"
-                    :disabled="!canArchiveRoute"
-                    @click="archiveOpen = true"
+        <PanelLayout>
+            <LeadPanel>
+                <LeadingCard
+                    :title="role.name"
+                    description="Update the role name, type, and permissions."
+                    variant="entity-details"
+                    :back="index().url"
+                    :more="false"
                 >
-                    <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                    Archive
-                </DropdownMenuItem> -->
-            </LeadingCard>
-            <Tabs default-value="details">
-                <TabsList>
-                    <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value">
-                        <component :is="tab.icon" class="h-4 w-4"/>
-                        <span>{{ tab.label }}</span>
-                    </TabsTrigger>
-                </TabsList>
-                <TabsContent v-for="tab in tabs" :key="tab.value" :value="tab.value">
-                    <component
-                        :is="tab.component"
-                        :role="role"
-                        :permissions="permissions"
-                        :role-permission-ids="rolePermissionIds"
-                        :role-types="roleTypes"
-                    />
-                </TabsContent>
-            </Tabs>
-        <!-- </LeadPanel> -->
+                    <!-- <DropdownMenuItem
+                        class="group cursor-pointer"
+                        :disabled="!canArchiveRoute"
+                        @click="archiveOpen = true"
+                    >
+                        <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                        Archive
+                    </DropdownMenuItem> -->
+                </LeadingCard>
+                <Tabs default-value="details">
+                    <TabsList>
+                        <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value">
+                            <component :is="tab.icon" class="h-4 w-4"/>
+                            <span>{{ tab.label }}</span>
+                        </TabsTrigger>
+                    </TabsList>
+                    <TabsContent v-for="tab in tabs" :key="tab.value" :value="tab.value">
+                        <component
+                            :is="tab.component"
+                            :role="role"
+                            :permissions="permissions"
+                            :role-permission-ids="rolePermissionIds"
+                            :role-types="roleTypes"
+                        />
+                    </TabsContent>
+                </Tabs>
+            </LeadPanel>
+            
+            <SidePanel>
 
-        <!-- <Card class=""> -->
-
-                <!-- <CardContent class="space-y-8 pt-6 border-t border-slate-100">
-                    <div class="space-y-4">
-                        
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm font-semibold">Permissions</p>
-                                <p class="text-xs text-muted-foreground">
-                                    {{ form.permissions.length }} of
-                                    {{ props.permissions.length }} selected
-                                </p>
-                            </div>
-
-                            <label class="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors hover:bg-muted">
-                                <input
-                                    type="checkbox"
-                                    class="h-4 w-4 cursor-pointer rounded border accent-primary"
-                                    :checked="allChecked"
-                                    :indeterminate="someChecked"
-                                    @change="toggleAll(($event.target as HTMLInputElement).checked)"
-                                /> -->
-                                <!-- CODE: <CheckSquare class="h-3.5 w-3.5 text-muted-foreground" /> -->
-                                <!-- <span>Select all</span>
-                            </label>
-                        </div>
-
-                        <InputError :message="form.errors.permissions" />
-
-                        
-                        <Tabs default-value="internal" class="w-full">
-                            <TabsList class="mb-4 w-full">
-                                <TabsTrigger
-                                    value="internal"
-                                    class="flex flex-1 cursor-pointer items-center gap-2"
-                                >
-                                    Internal
-                                    <Badge
-                                        v-if="tabSelectedCount(internalPermissions) > 0"
-                                        variant="secondary"
-                                        class="ml-1 h-5 px-1.5 text-xs"
-                                    >
-                                        {{ tabSelectedCount(internalPermissions) }}
-                                    </Badge>
-                                </TabsTrigger>
-
-                                <TabsTrigger
-                                    value="external"
-                                    class="flex flex-1 cursor-pointer items-center gap-2"
-                                >
-                                    External
-                                    <Badge
-                                        v-if="tabSelectedCount(externalPermissions) > 0"
-                                        variant="secondary"
-                                        class="ml-1 h-5 px-1.5 text-xs"
-                                    >
-                                        {{ tabSelectedCount(externalPermissions) }}
-                                    </Badge>
-                                </TabsTrigger>
-                            </TabsList>
-
-                            
-                            <TabsContent value="internal" class="mt-0 space-y-3">
-                                <p
-                                    v-if="groupedInternal.length === 0"
-                                    class="py-6 text-center text-sm text-muted-foreground"
-                                >
-                                    No internal permissions found.
-                                </p>
-
-                                <div
-                                    v-for="[moduleKey, perms] in groupedInternal"
-                                    :key="moduleKey"
-                                    class="overflow-hidden rounded-lg border"
-                                >
-                                    
-                                    <button
-                                        type="button"
-                                        class="flex w-full cursor-pointer items-center justify-between gap-3 bg-muted/40 px-4 py-3 transition-colors hover:bg-muted/70"
-                                        @click="toggleCollapse(moduleKey)"
-                                    >
-                                        <div class="flex items-center gap-3">
-                                            <input
-                                                type="checkbox"
-                                                class="h-4 w-4 cursor-pointer rounded border accent-primary"
-                                                :checked="moduleChecked(moduleKey)"
-                                                :indeterminate="moduleSomeChecked(moduleKey)"
-                                                @click.stop
-                                                @change="toggleModule(moduleKey, ($event.target as HTMLInputElement).checked)"
-                                            />
-                                            <span class="text-sm font-semibold">
-                                                {{ moduleLabel(moduleKey) }}
-                                            </span>
-                                            <Badge
-                                                variant="outline"
-                                                class="h-5 px-1.5 text-xs"
-                                            >
-                                                {{ moduleSelectedCount(moduleKey) }}/{{ perms.length }}
-                                            </Badge>
-                                        </div>
-
-                                        <ChevronDown
-                                            v-if="!isCollapsed(moduleKey)"
-                                            class="h-4 w-4 shrink-0 text-muted-foreground"
-                                        />
-                                        <ChevronRight
-                                            v-else
-                                            class="h-4 w-4 shrink-0 text-muted-foreground"
-                                        />
-                                    </button>
-
-                                    
-                                    <div
-                                        v-if="!isCollapsed(moduleKey)"
-                                        class="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3"
-                                    >
-                                        <label
-                                            v-for="p in perms"
-                                            :key="p.id"
-                                            class="flex cursor-pointer items-start gap-2.5 rounded-md border p-3 transition-colors hover:bg-muted/40"
-                                            :class="
-                                                form.permissions.includes(p.id)
-                                                    ? 'border-primary/30 bg-primary/5'
-                                                    : ''
-                                            "
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                class="mt-0.5 h-4 w-4 cursor-pointer rounded border accent-primary"
-                                                :checked="form.permissions.includes(p.id)"
-                                                @change="togglePermission(p.id, ($event.target as HTMLInputElement).checked)"
-                                            />
-                                            <div class="min-w-0 flex-1">
-                                                <p class="text-sm font-medium leading-none">
-                                                    {{ actionLabel(p.name) }}
-                                                </p>
-                                                <p class="mt-1 truncate text-xs text-muted-foreground">
-                                                    {{ p.name }}
-                                                </p>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-                            </TabsContent>
-
-                            
-                            <TabsContent value="external" class="mt-0 space-y-3">
-                                <p
-                                    v-if="groupedExternal.length === 0"
-                                    class="py-6 text-center text-sm text-muted-foreground"
-                                >
-                                    No external permissions found.
-                                </p>
-
-                                <div
-                                    v-for="[moduleKey, perms] in groupedExternal"
-                                    :key="moduleKey"
-                                    class="overflow-hidden rounded-lg border"
-                                >
-                                    <button
-                                        type="button"
-                                        class="flex w-full cursor-pointer items-center justify-between gap-3 bg-muted/40 px-4 py-3 transition-colors hover:bg-muted/70"
-                                        @click="toggleCollapse(moduleKey)"
-                                    >
-                                        <div class="flex items-center gap-3">
-                                            <input
-                                                type="checkbox"
-                                                class="h-4 w-4 cursor-pointer rounded border accent-primary"
-                                                :checked="moduleChecked(moduleKey)"
-                                                :indeterminate="moduleSomeChecked(moduleKey)"
-                                                @click.stop
-                                                @change="toggleModule(moduleKey, ($event.target as HTMLInputElement).checked)"
-                                            />
-                                            <span class="text-sm font-semibold">
-                                                {{ moduleLabel(moduleKey) }}
-                                            </span>
-                                            <Badge
-                                                variant="outline"
-                                                class="h-5 px-1.5 text-xs"
-                                            >
-                                                {{ moduleSelectedCount(moduleKey) }}/{{ perms.length }}
-                                            </Badge>
-                                        </div>
-
-                                        <ChevronDown
-                                            v-if="!isCollapsed(moduleKey)"
-                                            class="h-4 w-4 shrink-0 text-muted-foreground"
-                                        />
-                                        <ChevronRight
-                                            v-else
-                                            class="h-4 w-4 shrink-0 text-muted-foreground"
-                                        />
-                                    </button>
-
-                                    <div
-                                        v-if="!isCollapsed(moduleKey)"
-                                        class="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3"
-                                    >
-                                        <label
-                                            v-for="p in perms"
-                                            :key="p.id"
-                                            class="flex cursor-pointer items-start gap-2.5 rounded-md border p-3 transition-colors hover:bg-muted/40"
-                                            :class="
-                                                form.permissions.includes(p.id)
-                                                    ? 'border-primary/30 bg-primary/5'
-                                                    : ''
-                                            "
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                class="mt-0.5 h-4 w-4 cursor-pointer rounded border accent-primary"
-                                                :checked="form.permissions.includes(p.id)"
-                                                @change="togglePermission(p.id, ($event.target as HTMLInputElement).checked)"
-                                            />
-                                            <div class="min-w-0 flex-1">
-                                                <p class="text-sm font-medium leading-none">
-                                                    {{ actionLabel(p.name) }}
-                                                </p>
-                                                <p class="mt-1 truncate text-xs text-muted-foreground">
-                                                    {{ p.name }}
-                                                </p>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-                            </TabsContent>
-                        </Tabs>
-                    </div>
-                </CardContent> -->
-
-                <!-- <CardFooter class="flex flex-wrap justify-end gap-2 border-t border-slate-100">
-                    <Button variant="outline" as-child class="cursor-pointer">
-                        <Link :href="index().url">Cancel</Link>
-                    </Button>
-
-                    <Button :disabled="form.processing" @click="submit" variant="outline" class="cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg hover:text-primary-foreground">
-                        <Save class="h-4 w-4" />
-                        {{ form.processing ? 'Saving...' : 'Save Changes' }}
-                    </Button>
-                </CardFooter> -->
-            <!-- </Card> -->
-        </LeadPanel>
+            </SidePanel>
+        </PanelLayout>
     </AppLayout>
 </template>

@@ -4,7 +4,7 @@ import { usePage } from '@inertiajs/vue3'
 import {
     RiAddLine,
     RiArrowLeftLine,
-    RiMessage2Line,
+    RiChat4Line,
     RiSendPlane2Line,
 } from 'vue-remix-icons'
 
@@ -194,7 +194,7 @@ function goBack() {
                 size="icon"
                 class="relative h-9 w-9 shrink-0 rounded-full"
             >
-                <RiMessage2Line class="h-4 w-4 shrink-0" />
+                <RiChat4Line class="h-4 w-4 shrink-0" />
                 
             </Button>
         </PopoverTrigger>

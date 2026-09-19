@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-vue-next';
+import { RiErrorWarningLine } from 'vue-remix-icons';
 import { computed } from 'vue';
 
 interface Props {
@@ -17,7 +17,7 @@ const uniqueErrors = computed(() => Array.from(new Set(props.errors)));
 
 <template>
     <Alert variant="destructive">
-        <AlertCircle class="size-4 shrink-0" />
+        <RiErrorWarningLine class="size-4 shrink-0" />
         <AlertTitle>{{ title }}</AlertTitle>
         <AlertDescription>
             <ul class="list-inside list-disc text-sm">

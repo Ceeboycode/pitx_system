@@ -9,7 +9,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div :class="cn('flex h-full min-h-0 w-full flex-1 flex-row gap-6 p-6 overflow-y-auto no-scrollbar', props.class)">
+  <div :class="cn('flex h-full min-h-0 w-full flex-1 flex-row p-0 pr-3 overflow-y-auto no-scrollbar', props.class)">
     <slot/>
   </div>
 </template>

@@ -1,31 +1,32 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { index, update } from '@/routes/vehicle-types';
+import { index } from '@/routes/vehicle-types';
 import type { BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 
-import { LeadPanel } from '@/components/ui/_panels';
+import { LeadPanel, PanelLayout, SidePanel } from '@/components/ui/_panels';
 import { LeadingCard } from '@/components/ui/_leading-card';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import {
     Tabs,
     TabsContent,
     TabsList,
     TabsTrigger,
 } from '@/components/ui/_tabs';
-import { RiDashboardHorizontalLine, RiLoader2Line } from 'vue-remix-icons';
+import ArchiveVehicleTypeDialog from '@/components/internal/vehicleType/ArchiveVehicleTypeDialog.vue';
+import ToggleVehicleTypeStatusDialog from '@/components/internal/vehicleType/ToggleVehicleTypeStatusDialog.vue';
+import Overview from '@/components/internal/vehicleType/edit/OverviewTab.vue';
+import Details from '@/components/internal/vehicleType/edit/DetailsTab.vue';
+import History from '@/components/internal/vehicleType/edit/HistoryTab.vue';
+import { RiArchive2Line, RiDashboardHorizontalLine, RiFileListLine, RiHistoryLine, RiShutDownLine } from 'vue-remix-icons';
 import { can } from '@/lib/can';
-
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import InputError from '@/components/InputError.vue';
 
 type VehicleType = {
     id: number;
     type_name: string;
+    description: string | null;
+    picture_url: string | null;
     is_active: boolean;
     created_at_human: string | null;
     updated_at_human: string | null;
@@ -33,7 +34,34 @@ type VehicleType = {
     updater: { name: string } | null;
 };
 
-const props = defineProps<{ vehicleType: VehicleType }>();
+type RecentVehicle = {
+    id: number;
+    plate_number: string | null;
+    body_number: string | null;
+    status: string | null;
+    company_name: string | null;
+};
+
+type AuditLogEntry = {
+    id: number;
+    action: string;
+    action_label: string;
+    user_name: string | null;
+    created_at_human: string | null;
+    changes: { field: string; label: string; old: unknown; new: unknown }[];
+};
+
+const props = defineProps<{
+    vehicleType: VehicleType;
+    vehicleStats: { total: number; active: number; inactive: number; suspended: number };
+    recentVehicles: RecentVehicle[];
+    auditLogs: AuditLogEntry[];
+}>();
+
+const canArchiveVehicleType = can('vehicle_types.archive');
+const canUpdateVehicleType = can('vehicle_types.update');
+const archiveOpen = ref(false);
+const toggleOpen = ref(false);
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Vehicle Types', href: index().url },
@@ -45,109 +73,82 @@ const tabs = [
         value: 'overview',
         label: 'Overview',
         icon: RiDashboardHorizontalLine,
+        component: Overview,
     },
-];
+    {
+        value: 'details',
+        label: 'Details',
+        icon: RiFileListLine,
+        component: Details,
+    },
+    {
+        value: 'history',
+        label: 'History',
+        icon: RiHistoryLine,
+        component: History,
+    },
+] as const;
 
-const form = useForm({
-    type_name: props.vehicleType.type_name,
-    is_active: props.vehicleType.is_active ? 1 : 0,
-});
-
-function submit() {
-    form.put(update({ vehicle_type: props.vehicleType.id }).url, {
-        preserveScroll: true,
-    });
-}
+// Each tab only needs a slice of the page's props - binding them explicitly
+// per tab (rather than spreading everything onto every <component>) keeps
+// unused props from leaking onto a tab's root element as DOM attributes.
+const tabProps = computed(() => ({
+    overview: { vehicleStats: props.vehicleStats, recentVehicles: props.recentVehicles },
+    details: { vehicleType: props.vehicleType },
+    history: { auditLogs: props.auditLogs },
+}));
 </script>
 
 <template>
-    <Head :title="`Edit ${vehicleType.type_name}`" />
+    <Head :title="`Vehicle Type — ${vehicleType.type_name}`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <LeadPanel>
-            <template #leading>
+        <PanelLayout>
+            <LeadPanel>
                 <LeadingCard
                     :title="vehicleType.type_name"
-                    subtitle="Vehicle Type"
+                    description="Review and manage vehicle type details."
+                    variant="entity-details"
+                    :back="index().url"
                     :status="vehicleType.is_active ? 'active' : 'inactive'"
-                    :attributes="[
-                        { label: 'Created By', value: vehicleType.creator?.name ?? '—' },
-                        { label: 'Created At', value: vehicleType.created_at_human ?? '—' },
-                        { label: 'Updated By', value: vehicleType.updater?.name ?? '—' },
-                        { label: 'Updated At', value: vehicleType.updated_at_human ?? '—' },
-                    ]"
                 >
+                    <DropdownMenuItem
+                        class="group cursor-pointer"
+                        :disabled="!canUpdateVehicleType"
+                        @click="toggleOpen = true"
+                    >
+                        <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                        {{ vehicleType.is_active ? 'Inactivate' : 'Activate' }}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        class="group cursor-pointer"
+                        :disabled="!canArchiveVehicleType"
+                        @click="archiveOpen = true"
+                    >
+                        <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                        Archive
+                    </DropdownMenuItem>
                 </LeadingCard>
-            </template>
 
-            <Tabs default-value="overview" class="flex min-h-0 flex-1 flex-col">
-                <div class="px-6 pt-4 shrink-0 overflow-x-auto no-scrollbar border-b border-custom-bg-dark dark:border-custom-bg-light">
-                    <TabsList class="inline-flex h-auto w-auto justify-start gap-6 bg-transparent p-0 pb-3">
-                        <TabsTrigger
-                            v-for="tab in tabs"
-                            :key="tab.value"
-                            :value="tab.value"
-                            class="inline-flex items-center gap-2 rounded-none border-b-2 border-transparent p-0 text-sm font-medium text-custom-shadow/60 hover:text-custom-shadow data-[state=active]:border-custom-primary data-[state=active]:text-custom-shadow data-[state=active]:shadow-none data-[state=active]:bg-transparent"
-                        >
-                            <component :is="tab.icon" class="h-4 w-4" />
-                            {{ tab.label }}
+                <Tabs default-value="details">
+                    <TabsList>
+                        <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value">
+                            <component :is="tab.icon" class="h-4 w-4 shrink-0"/>
+                            <span>{{ tab.label }}</span>
                         </TabsTrigger>
                     </TabsList>
-                </div>
-                
-                <div class="flex-1 overflow-y-auto p-6 bg-custom-bg dark:bg-custom-bg-dark">
-                    <TabsContent value="overview" class="m-0 border-0 p-0 h-full">
-                        <Card class="shadow-none border-none max-w-2xl bg-transparent">
-                            <CardHeader class="px-0">
-                                <CardTitle>Edit Vehicle Type Details</CardTitle>
-                                <CardDescription>
-                                    Update the information for this vehicle type.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent class="px-0">
-                                <form @submit.prevent="submit" class="space-y-4">
-                                    <div class="grid gap-2">
-                                        <Label for="type_name">Type Name <span class="text-rose-500">*</span></Label>
-                                        <Input
-                                            id="type_name"
-                                            v-model="form.type_name"
-                                            placeholder="Enter vehicle type name"
-                                            required
-                                            class="bg-custom-bg-light dark:bg-custom-bg"
-                                        />
-                                        <InputError :message="form.errors.type_name" />
-                                    </div>
-
-                                    <div class="grid gap-2">
-                                        <Label for="is_active">Status <span class="text-rose-500">*</span></Label>
-                                        <Select v-model="form.is_active" required>
-                                            <SelectTrigger id="is_active" class="bg-custom-bg-light dark:bg-custom-bg w-full">
-                                                <SelectValue placeholder="Select status" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem :value="1">Active</SelectItem>
-                                                <SelectItem :value="0">Inactive</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <InputError :message="form.errors.is_active" />
-                                    </div>
-                                    
-                                    <div class="flex pt-4">
-                                        <Button
-                                            type="submit"
-                                            variant="float-primary"
-                                            :disabled="form.processing"
-                                        >
-                                            <RiLoader2Line v-if="form.processing" class="mr-2 h-4 w-4 shrink-0 animate-spin" />
-                                            {{ form.processing ? 'Saving...' : 'Save Changes' }}
-                                        </Button>
-                                    </div>
-                                </form>
-                            </CardContent>
-                        </Card>
+                    <TabsContent v-for="tab in tabs" :key="tab.value" :value="tab.value">
+                        <component :is="tab.component" v-bind="tabProps[tab.value]" />
                     </TabsContent>
-                </div>
-            </Tabs>
-        </LeadPanel>
+                </Tabs>
+            </LeadPanel>
+
+            <SidePanel>
+
+            </SidePanel>
+        </PanelLayout>
+
+        <ArchiveVehicleTypeDialog v-model:open="archiveOpen" :vehicle-type="vehicleType" />
+        <ToggleVehicleTypeStatusDialog v-model:open="toggleOpen" :vehicle_type="vehicleType" />
     </AppLayout>
 </template>

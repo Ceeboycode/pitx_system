@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
 import { router } from '@inertiajs/vue3';
-import { ArchiveX } from 'lucide-vue-next';
+import { RiArchive2Line } from 'vue-remix-icons';
 import { ref } from 'vue';
 
 import {
@@ -46,7 +46,7 @@ function archive() {
     <AlertDialog>
         <AlertDialogTrigger as-child>
             <Button variant="archive" size="sm" class="cursor-pointer">
-                <ArchiveX class="mr-2 h-4 w-4" />
+                <RiArchive2Line class="mr-2 h-4 w-4 shrink-0" />
                 Archive
             </Button>
         </AlertDialogTrigger>
@@ -86,7 +86,7 @@ function archive() {
                     @click="archive"
                     class="cursor-pointer"
                 >
-                    <ArchiveX class="mr-2 h-4 w-4" />
+                    <RiArchive2Line class="mr-2 h-4 w-4 shrink-0" />
                     {{ processing ? 'Archiving...' : 'Yes, Archive Vehicle' }}
                 </AlertDialogAction>
             </AlertDialogFooter>

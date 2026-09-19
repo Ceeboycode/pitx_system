@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { forceDelete } from '@/routes/vehicles';
 import { router } from '@inertiajs/vue3';
-import { Trash2 } from 'lucide-vue-next';
+import { RiDeleteBin7Line } from 'vue-remix-icons';
 import { computed, ref, watch } from 'vue';
 
 import { Button } from '@/components/ui/button';
@@ -58,7 +58,7 @@ function deletePermanently() {
     <Dialog v-model:open="open">
         <DialogTrigger as-child>
             <Button variant="destructive" size="sm" class="cursor-pointer">
-                <Trash2 class="mr-2 h-4 w-4 shrink-0" />
+                <RiDeleteBin7Line class="mr-2 h-4 w-4 shrink-0" />
                 Delete Permanently
             </Button>
         </DialogTrigger>
@@ -123,7 +123,7 @@ function deletePermanently() {
                             : 'cursor-pointer'
                     "
                 >
-                    <Trash2 class="mr-2 h-4 w-4 shrink-0" />
+                    <RiDeleteBin7Line class="mr-2 h-4 w-4 shrink-0" />
                     {{ processing ? 'Deleting...' : 'Delete Permanently' }}
                 </Button>
             </DialogFooter>

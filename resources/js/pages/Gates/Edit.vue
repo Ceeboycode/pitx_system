@@ -5,7 +5,7 @@ import type { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
-import { LeadPanel } from '@/components/ui/_panels';
+import { LeadPanel, SidePanel, PanelLayout } from '@/components/ui/_panels';
 import { LeadingCard } from '@/components/ui/_leading-card';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import {
@@ -14,13 +14,13 @@ import {
     TabsList,
     TabsTrigger,
 } from '@/components/ui/_tabs';
-import { ArchiveGateDialog } from '@/components/internal/gate';
+import { ArchiveGateDialog, ToggleGateStatusDialog } from '@/components/internal/gate';
 import Overview from '@/components/internal/gate/edit/OverviewTab.vue';
 import Details from '@/components/internal/gate/edit/DetailsTab.vue';
 import Routes from '@/components/internal/gate/edit/RoutesTab.vue';
 import Dispatches from '@/components/internal/gate/edit/DispatchesTab.vue';
 import History from '@/components/internal/gate/edit/HistoryTab.vue';
-import { RiArchive2Line, RiDashboardHorizontalLine, RiFileListLine, RiRoadMapLine, RiRouteLine, RiTimeLine } from 'vue-remix-icons';
+import { RiArchive2Line, RiDashboardHorizontalLine, RiFileListLine, RiRoadMapLine, RiRouteLine, RiShutDownLine, RiTimeLine } from 'vue-remix-icons';
 import { can } from '@/lib/can';
 
 type Gate = {
@@ -39,7 +39,9 @@ type Gate = {
 const props = defineProps<{ gate: Gate }>();
 
 const canArchiveGate = can('gates.archive');
+const canUpdateGate = can('gates.update');
 const archiveOpen = ref(false);
+const toggleOpen = ref(false);
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Gates', href: index().url },
@@ -84,37 +86,52 @@ const tabs = [
     <Head :title="`Gate — ${gate.gate_name}`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <LeadPanel>
-            <LeadingCard
-                :title="gate.gate_name"
-                description="Review and manage gate details."
-                variant="entity-details"
-                :back="index().url"
-                :status="gate.status"
-            >
-                <DropdownMenuItem
-                    class="group cursor-pointer"
-                    :disabled="!canArchiveGate"
-                    @click="archiveOpen = true"
+        <PanelLayout>
+            <LeadPanel>
+                <LeadingCard
+                    :title="gate.gate_name"
+                    description="Review and manage gate details."
+                    variant="entity-details"
+                    :back="index().url"
+                    :status="gate.status"
                 >
-                    <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                    Archive
-                </DropdownMenuItem>
-            </LeadingCard>
+                    <DropdownMenuItem
+                        class="group cursor-pointer"
+                        :disabled="!canUpdateGate"
+                        @click="toggleOpen = true"
+                    >
+                        <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                        {{ gate.status === 'active' ? 'Inactivate' : 'Activate' }}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        class="group cursor-pointer"
+                        :disabled="!canArchiveGate"
+                        @click="archiveOpen = true"
+                    >
+                        <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                        Archive
+                    </DropdownMenuItem>
+                </LeadingCard>
 
-            <Tabs default-value="details">
-                <TabsList>
-                    <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value">
-                        <component :is="tab.icon" class="h-4 w-4"/>
-                        <span>{{ tab.label }}</span>
-                    </TabsTrigger>
-                </TabsList>
-                <TabsContent v-for="tab in tabs" :key="tab.value" :value="tab.value">
-                    <component :is="tab.component" :gate="gate" />
-                </TabsContent>
-            </Tabs>
-        </LeadPanel>
+                <Tabs default-value="details">
+                    <TabsList>
+                        <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value">
+                            <component :is="tab.icon" class="h-4 w-4"/>
+                            <span>{{ tab.label }}</span>
+                        </TabsTrigger>
+                    </TabsList>
+                    <TabsContent v-for="tab in tabs" :key="tab.value" :value="tab.value">
+                        <component :is="tab.component" :gate="gate" />
+                    </TabsContent>
+                </Tabs>
+            </LeadPanel>
 
+            <SidePanel>
+
+            </SidePanel>
+        </PanelLayout>
+        
         <ArchiveGateDialog v-model:open="archiveOpen" :gate="gate" />
+        <ToggleGateStatusDialog v-model:open="toggleOpen" :gate="gate" />
     </AppLayout>
 </template>

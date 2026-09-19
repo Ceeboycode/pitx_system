@@ -13,12 +13,13 @@ import {
 } from '@/components/ui/dialog';
 
 import {
-    AlertCircle,
-    CheckCircle2,
-    UploadCloud,
-    XCircle,
-} from 'lucide-vue-next';
-import { RiArchive2Line, RiCloseLine, RiLoader2Line } from 'vue-remix-icons';
+    RiArchive2Line,
+    RiCheckLine,
+    RiCloseLine,
+    RiErrorWarningLine,
+    RiLoader2Line,
+    RiUploadLine,
+} from 'vue-remix-icons';
 
 
 
@@ -152,7 +153,7 @@ function handleClose(val: boolean) {
                         for="vehicle_backup_file"
                         class="flex cursor-pointer flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border bg-muted/30 px-6 py-10 transition-colors hover:border-primary/50 hover:bg-muted/50"
                     >
-                        <UploadCloud class="h-10 w-10 shrink-0 text-muted-foreground/50" />
+                        <RiUploadLine class="h-10 w-10 shrink-0 text-muted-foreground/50" />
                         <div class="text-center">
                             <p class="text-sm font-medium">Click to select a backup file</p>
                             <p class="text-xs text-muted-foreground">ZIP files only · Max 100 MB</p>
@@ -208,7 +209,7 @@ function handleClose(val: boolean) {
                     v-if="errorMsg"
                     class="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive"
                 >
-                    <AlertCircle class="mt-0.5 h-4 w-4 shrink-0" />
+                    <RiErrorWarningLine class="mt-0.5 h-4 w-4 shrink-0" />
                     {{ errorMsg }}
                 </div>
 
@@ -218,7 +219,7 @@ function handleClose(val: boolean) {
                     
                     <div v-if="summary.imported.length" class="rounded-md border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-800 dark:bg-emerald-950/30">
                         <div class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                            <CheckCircle2 class="h-3.5 w-3.5 shrink-0" />
+                            <RiCheckLine class="h-3.5 w-3.5 shrink-0" />
                             {{ summary.imported.length }} imported
                         </div>
                         <ul class="space-y-0.5">
@@ -235,7 +236,7 @@ function handleClose(val: boolean) {
                     
                     <div v-if="summary.skipped.length" class="rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
                         <div class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
-                            <AlertCircle class="h-3.5 w-3.5 shrink-0" />
+                            <RiErrorWarningLine class="h-3.5 w-3.5 shrink-0" />
                             {{ summary.skipped.length }} skipped (already exist)
                         </div>
                         <ul class="space-y-0.5">
@@ -252,7 +253,7 @@ function handleClose(val: boolean) {
                     
                     <div v-if="summary.errors.length" class="rounded-md border border-destructive/30 bg-destructive/5 p-3">
                         <div class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-destructive">
-                            <XCircle class="h-3.5 w-3.5 shrink-0" />
+                            <RiCloseLine class="h-3.5 w-3.5 shrink-0" />
                             {{ summary.errors.length }} failed
                         </div>
                         <ul class="space-y-0.5">
@@ -287,7 +288,7 @@ function handleClose(val: boolean) {
                     @click="submit"
                 >
                     <RiLoader2Line v-if="isProcessing" class="mr-2 h-4 w-4 shrink-0 animate-spin" />
-                    <UploadCloud v-else class="mr-2 h-4 w-4 shrink-0" />
+                    <RiUploadLine v-else class="mr-2 h-4 w-4 shrink-0" />
                     {{ isProcessing ? 'Importing...' : 'Import Backup' }}
                 </Button>
                 <Button v-else variant="default" @click="clearFile(); phase = 'idle'">

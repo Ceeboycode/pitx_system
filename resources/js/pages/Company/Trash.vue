@@ -21,7 +21,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { RiArrowLeftSLine, RiFilter2Line, RiMore2Line, RiRestartLine } from 'vue-remix-icons';
 import { computed, ref } from 'vue';
-import { MainPanel, PanelLayout } from '@/components/ui/_panels';
+import { MainPanel, PanelLayout, SidePanel } from '@/components/ui/_panels';
 
 type Company = {
     id: number;
@@ -117,155 +117,160 @@ function openRestore(company: Company) {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <PanelLayout>
-            <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
-                <CardHeader class="flex flex-row items-start gap-3">
-                    <Button as-child variant="header-actions" size="icon">
-                        <Link :href="index().url" aria-label="Back to companies">
-                            <RiArrowLeftSLine class="h-4 w-4" />
-                        </Link>
-                    </Button>
-                    <div class="flex min-w-0 flex-col">
-                        <CardTitle class="font-semibold">Archived Companies</CardTitle>
-                        <CardDescription>Restore archived companies to the companies list.</CardDescription>
-                    </div>
-                </CardHeader>
+            <MainPanel>
+                <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
+                    <CardHeader class="flex flex-row items-start gap-3">
+                        <Button as-child variant="header-actions" size="icon">
+                            <Link :href="index().url" aria-label="Back to companies">
+                                <RiArrowLeftSLine class="h-4 w-4" />
+                            </Link>
+                        </Button>
+                        <div class="flex min-w-0 flex-col">
+                            <CardTitle class="font-semibold">Archived Companies</CardTitle>
+                            <CardDescription>Restore archived companies to the companies list.</CardDescription>
+                        </div>
+                    </CardHeader>
 
-                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
-                    <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
-                        <div class="w-full">
-                            <SearchInput
-                                :route="`${trash().url}?business_type=${encodeURIComponent(filterBusinessType)}&archived_by=${encodeURIComponent(filterArchivedBy)}`"
-                                :initial-value="props.filters.search"
-                                placeholder="Search archived companies..."
-                                :only="['companies', 'filters', 'flash']"
-                                :debounce="350"
-                            />
+                    <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
+                        <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
+                            <div class="w-full">
+                                <SearchInput
+                                    :route="`${trash().url}?business_type=${encodeURIComponent(filterBusinessType)}&archived_by=${encodeURIComponent(filterArchivedBy)}`"
+                                    :initial-value="props.filters.search"
+                                    placeholder="Search archived companies..."
+                                    :only="['companies', 'filters', 'flash']"
+                                    :debounce="350"
+                                />
+                            </div>
+
+                            <Popover v-model:open="filterOpen">
+                                <PopoverTrigger as-child>
+                                    <Button
+                                        variant="header-actions"
+                                        size="icon-text"
+                                        class="rounded-full"
+                                        :class="activeFilterCount > 0 ? 'bg-custom-secondary/20 transition-all duration-200 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''"
+                                    >
+                                        <RiFilter2Line class="h-3.5 w-3.5" />
+                                        <span class="hidden lg:flex">
+                                            {{ activeFilterCount > 0
+                                                ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
+                                                : 'Filter' }}
+                                        </span>
+                                    </Button>
+                                </PopoverTrigger>
+
+                                <PopoverContent align="end">
+                                    <div class="grid gap-y-2">
+                                        <div class="flex flex-col gap-y-1">
+                                            <p class="text-sm text-custom-shadow/80">Business Type</p>
+                                            <Input v-model="filterBusinessType" placeholder="e.g. Bus operator" class="bg-custom-bg" />
+                                        </div>
+                                        <div class="flex flex-col gap-y-1">
+                                            <p class="text-sm text-custom-shadow/80">Archived By</p>
+                                            <Input v-model="filterArchivedBy" placeholder="Enter a user name" class="bg-custom-bg" />
+                                        </div>
+
+                                        <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light" />
+
+                                        <div class="flex w-full flex-row items-center justify-between">
+                                            <Button v-if="activeFilterCount > 0" size="sm" variant="destructive" @click="clearFilters">
+                                                Clear
+                                            </Button>
+                                            <div class="ml-auto flex items-center gap-2">
+                                                <Button variant="ghost-outline" size="sm" @click="filterOpen = false">Cancel</Button>
+                                                <Button size="sm" variant="float-primary" @click="applyFilters">Apply</Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
                         </div>
 
-                        <Popover v-model:open="filterOpen">
-                            <PopoverTrigger as-child>
-                                <Button
-                                    variant="header-actions"
-                                    size="icon-text"
-                                    class="rounded-full"
-                                    :class="activeFilterCount > 0 ? 'bg-custom-secondary/20 transition-all duration-200 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''"
-                                >
-                                    <RiFilter2Line class="h-3.5 w-3.5" />
-                                    <span class="hidden lg:flex">
-                                        {{ activeFilterCount > 0
-                                            ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
-                                            : 'Filter' }}
-                                    </span>
-                                </Button>
-                            </PopoverTrigger>
-
-                            <PopoverContent align="end">
-                                <div class="grid gap-y-2">
-                                    <div class="flex flex-col gap-y-1">
-                                        <p class="text-sm text-custom-shadow/80">Business Type</p>
-                                        <Input v-model="filterBusinessType" placeholder="e.g. Bus operator" class="bg-custom-bg" />
+                        <Card
+                            :class="[
+                                'flex min-h-0 max-h-fit flex-1 flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
+                                props.companies.data.length === 0 ? 'border-dashed' : 'border-solid',
+                            ]"
+                        >
+                            <div v-if="props.companies.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+                                <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
+                                    <div class="grid grid-cols-[1.5fr_1fr_1fr_1fr_5rem] gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
+                                        <div class="flex h-10 items-center justify-start pl-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Name and Code</div>
+                                        <div class="flex h-10 items-center justify-start text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Business Type</div>
+                                        <div class="flex h-10 items-center justify-start text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Archived At</div>
+                                        <div class="flex h-10 items-center justify-start text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Archived By</div>
+                                        <div class="flex h-10 items-center justify-end pr-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Actions</div>
                                     </div>
-                                    <div class="flex flex-col gap-y-1">
-                                        <p class="text-sm text-custom-shadow/80">Archived By</p>
-                                        <Input v-model="filterArchivedBy" placeholder="Enter a user name" class="bg-custom-bg" />
-                                    </div>
+                                </div>
 
-                                    <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light" />
-
-                                    <div class="flex w-full flex-row items-center justify-between">
-                                        <Button v-if="activeFilterCount > 0" size="sm" variant="destructive" @click="clearFilters">
-                                            Clear
-                                        </Button>
-                                        <div class="ml-auto flex items-center gap-2">
-                                            <Button variant="ghost-outline" size="sm" @click="filterOpen = false">Cancel</Button>
-                                            <Button size="sm" variant="float-primary" @click="applyFilters">Apply</Button>
+                                <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+                                    <div
+                                        v-for="(company, rowIndex) in props.companies.data"
+                                        :key="company.id"
+                                        :class="[
+                                            'grid grid-cols-[1.5fr_1fr_1fr_1fr_5rem] items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                            rowIndex === props.companies.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                        ]"
+                                    >
+                                        <div class="flex min-w-0 flex-col justify-start py-1.5 pl-3">
+                                            <span class="truncate font-semibold capitalize">{{ company.company_name }}</span>
+                                            <span class="truncate font-mono text-xs text-custom-shadow/70">{{ company.company_code }}</span>
+                                        </div>
+                                        <div class="flex min-w-0 justify-start py-1.5 text-sm capitalize">
+                                            <span class="truncate">{{ company.business_type || '—' }}</span>
+                                        </div>
+                                        <div class="flex justify-start py-1.5 text-sm">{{ company.deleted_at_human ?? '—' }}</div>
+                                        <div class="flex min-w-0 justify-start py-1.5 text-sm capitalize">
+                                            <span class="truncate">{{ company.deleter?.name ?? '—' }}</span>
+                                        </div>
+                                        <div class="flex justify-end py-1.5 pr-3 text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger as-child>
+                                                    <Button variant="table-more" size="icon-more">
+                                                        <RiMore2Line class="h-4 w-4" />
+                                                        
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>{{ company.company_name }}</DropdownMenuLabel>
+                                                    <DropdownMenuItem class="group" @click="openRestore(company)">
+                                                        <RiRestartLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                        Restore
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                     </div>
                                 </div>
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-
-                    <Card
-                        :class="[
-                            'flex min-h-0 max-h-fit flex-1 flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
-                            props.companies.data.length === 0 ? 'border-dashed' : 'border-solid',
-                        ]"
-                    >
-                        <div v-if="props.companies.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                            <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                                <div class="grid grid-cols-[1.5fr_1fr_1fr_1fr_5rem] gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
-                                    <div class="flex h-10 items-center justify-start pl-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Name and Code</div>
-                                    <div class="flex h-10 items-center justify-start text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Business Type</div>
-                                    <div class="flex h-10 items-center justify-start text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Archived At</div>
-                                    <div class="flex h-10 items-center justify-start text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Archived By</div>
-                                    <div class="flex h-10 items-center justify-end pr-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Actions</div>
-                                </div>
                             </div>
 
-                            <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-                                <div
-                                    v-for="(company, rowIndex) in props.companies.data"
-                                    :key="company.id"
-                                    :class="[
-                                        'grid grid-cols-[1.5fr_1fr_1fr_1fr_5rem] items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
-                                        rowIndex === props.companies.data.length - 1 ? 'rounded-b-md border-b-0' : '',
-                                    ]"
-                                >
-                                    <div class="flex min-w-0 flex-col justify-start py-1.5 pl-3">
-                                        <span class="truncate font-semibold capitalize">{{ company.company_name }}</span>
-                                        <span class="truncate font-mono text-xs text-custom-shadow/70">{{ company.company_code }}</span>
-                                    </div>
-                                    <div class="flex min-w-0 justify-start py-1.5 text-sm capitalize">
-                                        <span class="truncate">{{ company.business_type || '—' }}</span>
-                                    </div>
-                                    <div class="flex justify-start py-1.5 text-sm">{{ company.deleted_at_human ?? '—' }}</div>
-                                    <div class="flex min-w-0 justify-start py-1.5 text-sm capitalize">
-                                        <span class="truncate">{{ company.deleter?.name ?? '—' }}</span>
-                                    </div>
-                                    <div class="flex justify-end py-1.5 pr-3 text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger as-child>
-                                                <Button variant="table-more" size="icon-more">
-                                                    <RiMore2Line class="h-4 w-4" />
-                                                    
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuLabel>{{ company.company_name }}</DropdownMenuLabel>
-                                                <DropdownMenuItem class="group" @click="openRestore(company)">
-                                                    <RiRestartLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                    Restore
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                            <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                                <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                                    <img :src="emptyRafikiUrl" alt="" class="w-1/3 object-contain opacity-90" aria-hidden="true" />
+                                    <div class="space-y-1">
+                                        <p class="text-base font-semibold text-custom-shadow">No archived companies found</p>
+                                        <p class="text-sm text-custom-shadow/80">
+                                            {{ props.filters.search || activeFilterCount > 0 ? 'Try adjusting your search or filters.' : 'Nothing has been archived yet.' }}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </Card>
 
-                        <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
-                            <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
-                                <img :src="emptyRafikiUrl" alt="" class="w-1/3 object-contain opacity-90" aria-hidden="true" />
-                                <div class="space-y-1">
-                                    <p class="text-base font-semibold text-custom-shadow">No archived companies found</p>
-                                    <p class="text-sm text-custom-shadow/80">
-                                        {{ props.filters.search || activeFilterCount > 0 ? 'Try adjusting your search or filters.' : 'Nothing has been archived yet.' }}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </Card>
+                        <InertiaPagination
+                            :links="props.companies.links"
+                            :meta="{ from: props.companies.from, to: props.companies.to, total: props.companies.total }"
+                        />
+                    </CardContent>
+                </Card>
+            </MainPanel>
+            
+            <SidePanel>
 
-                    <InertiaPagination
-                        :links="props.companies.links"
-                        :meta="{ from: props.companies.from, to: props.companies.to, total: props.companies.total }"
-                    />
-                </CardContent>
-            </Card>
-
+            </SidePanel>
+        </PanelLayout>
             <RestoreCompanyDialog v-if="selectedCompany" v-model:open="restoreOpen" :company="selectedCompany" />
             <ForceDeleteCompanyDialog v-if="selectedCompany" v-model:open="forceDeleteOpen" :company="selectedCompany" />
-        </PanelLayout>
     </AppLayout>
 </template>

@@ -6,7 +6,7 @@ import { Head } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 // import { Badge } from '@/components/ui/badge';
-import { LeadPanel } from '@/components/ui/_panels';
+import { LeadPanel, PanelLayout, SidePanel } from '@/components/ui/_panels';
 import { LeadingCard } from '@/components/ui/_leading-card';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import {
@@ -150,48 +150,55 @@ const breadcrumbs: BreadcrumbItem[] = [
     <Head :title="user.name" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <LeadPanel>
-            <LeadingCard
-                :title="user.name"
-                description="Review and manage user details."
-                variant="entity-details"
-                :back="index().url"
-                :status="user.status === 'active' || user.status === 'inactive' ? user.status : null"
-            >
-                <DropdownMenuItem
-                    class="group cursor-pointer"
-                    :disabled="!canArchiveUser || isOwnAccount"
-                    @click="archiveOpen = true"
+        <PanelLayout>
+            <LeadPanel>
+                <LeadingCard
+                    :title="user.name"
+                    description="Review and manage user details."
+                    variant="entity-details"
+                    :back="index().url"
+                    :status="user.status === 'active' || user.status === 'inactive' ? user.status : null"
                 >
-                    <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                    Archive
-                </DropdownMenuItem>
-            </LeadingCard>
-            <Tabs default-value="details">
-                <TabsList>
-                    <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value">
-                        <component :is="tab.icon" class="h-4 w-4"/>
-                        <span>{{ tab.label }}</span>
-                    </TabsTrigger>
-                </TabsList>
-                <TabsContent v-for="tab in tabs" :key="tab.value" :value="tab.value">
-                    <!-- `props.selectedRole` (explicit prefix) forwards the raw role-name
-                         string this page received from the backend. DetailsTab.vue has its
-                         own local `selectedRole` computed (the full Role object it looks up
-                         from that string) - naming both "selectedRole" is fine because they
-                         live in separate components with separate scopes. -->
-                    <component
-                        :is="tab.component"
-                        :user="user"
-                        :roles="roles"
-                        :companies="companies"
-                        :selected-role="props.selectedRole"
-                        :can-manage-external-users="canManageExternalUsers"
-                        :can-manage-external-dispatches="canManageExternalDispatches"
-                    />
-                </TabsContent>
-            </Tabs>
-        </LeadPanel>
+                    <DropdownMenuItem
+                        class="group cursor-pointer"
+                        :disabled="!canArchiveUser || isOwnAccount"
+                        @click="archiveOpen = true"
+                    >
+                        <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                        Archive
+                    </DropdownMenuItem>
+                </LeadingCard>
+                <Tabs default-value="details">
+                    <TabsList>
+                        <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value">
+                            <component :is="tab.icon" class="h-4 w-4"/>
+                            <span>{{ tab.label }}</span>
+                        </TabsTrigger>
+                    </TabsList>
+                    <TabsContent v-for="tab in tabs" :key="tab.value" :value="tab.value">
+                        <!-- `props.selectedRole` (explicit prefix) forwards the raw role-name
+                            string this page received from the backend. DetailsTab.vue has its
+                            own local `selectedRole` computed (the full Role object it looks up
+                            from that string) - naming both "selectedRole" is fine because they
+                            live in separate components with separate scopes. -->
+                        <component
+                            :is="tab.component"
+                            :user="user"
+                            :roles="roles"
+                            :companies="companies"
+                            :selected-role="props.selectedRole"
+                            :can-manage-external-users="canManageExternalUsers"
+                            :can-manage-external-dispatches="canManageExternalDispatches"
+                        />
+                    </TabsContent>
+                </Tabs>
+            </LeadPanel>
+
+            <SidePanel>
+
+            </SidePanel>
+        </PanelLayout>
+        
 
         <ArchiveUserDialog v-model:open="archiveOpen" :user="user" />
     </AppLayout>

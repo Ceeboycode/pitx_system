@@ -9,7 +9,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
-use Inertia\Response;
 
 class CompanyController extends Controller
 {
@@ -149,20 +148,6 @@ class CompanyController extends Controller
     public function create()
     {
         return Inertia::render('Company/Create');
-    }
-
-    public function edit(Company $company): Response
-    {
-        Gate::authorize('update', $company);
-
-        return Inertia::render('Company/Edit', [
-            'company' => $company->only([
-                'id',
-                'company_name',
-                'status',
-                'is_active',
-            ]),
-        ]);
     }
 
     public function update(CompanyUpdateRequest $request, Company $company): RedirectResponse

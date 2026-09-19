@@ -24,6 +24,8 @@ class VehicleTypeStoreRequest extends FormRequest
     {
         return [
             'type_name' => ['required', 'string', 'max:100', 'unique:vehicle_types,type_name'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'picture' => ['nullable', 'image', 'mimes:jpeg,png,webp', 'max:5120'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

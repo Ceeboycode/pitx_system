@@ -41,7 +41,7 @@ import {
   RiCheckboxMultipleBlankLine,
   RiCheckboxMultipleLine,
   RiDownloadLine,
-  RiMessage2Fill,
+  RiChat4Line,
   RiFile2Fill,
 
 } from 'vue-remix-icons'
@@ -377,7 +377,7 @@ function openReject(docId: number) {
                                                     variant="outline"
                                                     class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
                                                 >
-                                                    <RiMessage2Fill
+                                                    <RiChat4Line
                                                         class="h-4 w-4 shrink-0"
                                                     />
                                                     View Remarks
@@ -605,7 +605,7 @@ function openReject(docId: number) {
                                             variant="outline"
                                             class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
                                         >
-                                            <RiMessage2Fill
+                                            <RiChat4Line
                                                 class="h-4 w-4 shrink-0"
                                             />
                                             View Remarks

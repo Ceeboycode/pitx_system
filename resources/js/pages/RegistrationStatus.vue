@@ -33,7 +33,7 @@ import {
     RiCalendarLine,
     RiCloseLine,
     RiDashboardHorizontalLine,
-    RiDeleteBinLine,
+    RiDeleteBin7Line,
     RiDownloadLine,
     RiEyeLine,
     RiFileTextLine,
@@ -818,7 +818,7 @@ onUnmounted(() => {
                             aria-label="Remove supporting document"
                             @click="removeSupportingDocument(index)"
                         >
-                            <RiDeleteBinLine class="h-4 w-4" />
+                            <RiDeleteBin7Line class="h-4 w-4 shrink-0" />
                         </Button>
                     </div>
 

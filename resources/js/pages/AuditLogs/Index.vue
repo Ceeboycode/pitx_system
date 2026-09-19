@@ -36,7 +36,7 @@ import {
     RiFilter2Line,
 } from 'vue-remix-icons';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { PanelLayout } from '@/components/ui/_panels';
+import { PanelLayout, MainPanel, SidePanel } from '@/components/ui/_panels';
 import {
     Table,
     TableColumn,
@@ -343,401 +343,405 @@ function actionBadgeClass(action: string): string {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <PanelLayout>
-            <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
-                <CardHeader class="flex flex-row gap-2">
-                    <div class="flex flex-col">
-                    <CardTitle class="flex items-center gap-2">
-                        <span class="font-semibold">Audit Logs</span>
-                    </CardTitle>
-                    <CardDescription>
-                        Track internal actions, approvals, and authentication events.
-                    </CardDescription>
-                    </div>
-                </CardHeader>
-                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
-                    <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
-                        <div class="w-full">
-                            <SearchInput
-                                :route="index().url"
-                                :initial-value="filters.search"
-                                placeholder="Search audit logs..."
-                                :only="[
-                                    'auditLogs',
-                                    'filters',
-                                    'actions',
-                                    'entityTypes',
-                                    'flash',
-                                ]"
-                                :debounce="350"
-                                :extra-params="currentFilterParams"
-                            />
+            <MainPanel>
+                <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
+                    <CardHeader class="flex flex-row gap-2">
+                        <div class="flex flex-col">
+                        <CardTitle class="flex items-center gap-2">
+                            <span class="font-semibold">Audit Logs</span>
+                        </CardTitle>
+                        <CardDescription>
+                            Track internal actions, approvals, and authentication events.
+                        </CardDescription>
                         </div>
-                        <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
-                            <div class="flex flex-row items-center gap-2">
-                                <Popover v-model:open="filterOpen">
-                                    <PopoverTrigger as-child>
-                                        <Button
-                                            variant="header-actions"
-                                            size="icon-text"
-                                            class="rounded-full"
-                                            :class="
-                                                activeFilterCount > 0
-                                                    ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-200 dark:hover:text-custom-shadow'
-                                                    : ''
-                                            "
+                    </CardHeader>
+                    <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
+                        <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
+                            <div class="w-full">
+                                <SearchInput
+                                    :route="index().url"
+                                    :initial-value="filters.search"
+                                    placeholder="Search audit logs..."
+                                    :only="[
+                                        'auditLogs',
+                                        'filters',
+                                        'actions',
+                                        'entityTypes',
+                                        'flash',
+                                    ]"
+                                    :debounce="350"
+                                    :extra-params="currentFilterParams"
+                                />
+                            </div>
+                            <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
+                                <div class="flex flex-row items-center gap-2">
+                                    <Popover v-model:open="filterOpen">
+                                        <PopoverTrigger as-child>
+                                            <Button
+                                                variant="header-actions"
+                                                size="icon-text"
+                                                class="rounded-full"
+                                                :class="
+                                                    activeFilterCount > 0
+                                                        ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-200 dark:hover:text-custom-shadow'
+                                                        : ''
+                                                "
+                                            >
+                                                <RiFilter2Line class="h-3.5 w-3.5" />
+                                                <span class="hidden lg:flex">
+                                                    {{ activeFilterCount > 0
+                                                        ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
+                                                        : 'Filter' }}
+                                                </span>
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent
+                                            align="end"
                                         >
-                                            <RiFilter2Line class="h-3.5 w-3.5" />
-                                            <span class="hidden lg:flex">
-                                                {{ activeFilterCount > 0
-                                                    ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
-                                                    : 'Filter' }}
-                                            </span>
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                        align="end"
-                                    >
-                                        <div class="grid gap-y-2">
-                                            <div class="flex flex-col gap-y-1">
-                                                <p
-                                                    class="text-sm text-custom-shadow/80"
-                                                >
-                                                    Action
-                                                </p>
-                                                <Select v-model="pendingActionFilter">
-                                                    <SelectTrigger
-                                                        class="w-full"
+                                            <div class="grid gap-y-2">
+                                                <div class="flex flex-col gap-y-1">
+                                                    <p
+                                                        class="text-sm text-custom-shadow/80"
                                                     >
-                                                        <SelectValue
-                                                            placeholder="All Actions"
-                                                            class="flex justify-start"
-                                                        />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="all" class="cursor-pointer text-sm">
-                                                            All Actions
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            v-for="action in actions"
-                                                            :key="action.value"
-                                                            :value="action.value"
-                                                            class="cursor-pointer text-sm">
-                                                            {{ action.label }}
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-
-                                            <div class="flex flex-col gap-y-1">
-                                                <p
-                                                    class="text-sm text-custom-shadow/80"
-                                                >
-                                                    Entity Type
-                                                </p>
-                                                <Select v-model="pendingEntityTypeFilter">
-                                                    <SelectTrigger
-                                                        class="w-full"
-                                                    >
-                                                        <SelectValue
-                                                            placeholder="All Types"
-                                                            class="flex justify-start"
-                                                        />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="all" class="cursor-pointer text-sm">
-                                                            All Entities
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            v-for="entity in entityTypes"
-                                                            :key="entity.value"
-                                                            :value="entity.value"
+                                                        Action
+                                                    </p>
+                                                    <Select v-model="pendingActionFilter">
+                                                        <SelectTrigger
+                                                            class="w-full"
                                                         >
-                                                            {{ entity.label }}
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-                                            <div class="flex w-full items-center justify-between">
-                                                <Button
-                                                    v-if="hasCategoryFilters"
-                                                    size="sm"
-                                                    variant="destructive"
-                                                    @click="clearFilters"
-                                                >
-                                                    Clear
-                                                </Button>
-                                                <div class="ml-auto flex items-center gap-2">
-                                                    <Button variant="ghost-outline" size="sm" @click="cancelFilterPopover">
-                                                        Cancel
+                                                            <SelectValue
+                                                                placeholder="All Actions"
+                                                                class="flex justify-start"
+                                                            />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="all" class="cursor-pointer text-sm">
+                                                                All Actions
+                                                            </SelectItem>
+                                                            <SelectItem
+                                                                v-for="action in actions"
+                                                                :key="action.value"
+                                                                :value="action.value"
+                                                                class="cursor-pointer text-sm">
+                                                                {{ action.label }}
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                <div class="flex flex-col gap-y-1">
+                                                    <p
+                                                        class="text-sm text-custom-shadow/80"
+                                                    >
+                                                        Entity Type
+                                                    </p>
+                                                    <Select v-model="pendingEntityTypeFilter">
+                                                        <SelectTrigger
+                                                            class="w-full"
+                                                        >
+                                                            <SelectValue
+                                                                placeholder="All Types"
+                                                                class="flex justify-start"
+                                                            />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="all" class="cursor-pointer text-sm">
+                                                                All Entities
+                                                            </SelectItem>
+                                                            <SelectItem
+                                                                v-for="entity in entityTypes"
+                                                                :key="entity.value"
+                                                                :value="entity.value"
+                                                            >
+                                                                {{ entity.label }}
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+                                                <div class="flex w-full items-center justify-between">
+                                                    <Button
+                                                        v-if="hasCategoryFilters"
+                                                        size="sm"
+                                                        variant="destructive"
+                                                        @click="clearFilters"
+                                                    >
+                                                        Clear
                                                     </Button>
-                                                    <Button variant="float-primary" size="sm" @click="applyFilterPopover">
-                                                        Apply
-                                                    </Button>
+                                                    <div class="ml-auto flex items-center gap-2">
+                                                        <Button variant="ghost-outline" size="sm" @click="cancelFilterPopover">
+                                                            Cancel
+                                                        </Button>
+                                                        <Button variant="float-primary" size="sm" @click="applyFilterPopover">
+                                                            Apply
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
-                                <Popover v-model:open="popoverFromOpen">
-                                    <PopoverTrigger as-child class="h-full">
-                                        <Button
-                                            variant="header-actions"
-                                            size="icon-text"
-                                            class="rounded-full gap-2"
+                                        </PopoverContent>
+                                    </Popover>
+                                    <Popover v-model:open="popoverFromOpen">
+                                        <PopoverTrigger as-child class="h-full">
+                                            <Button
+                                                variant="header-actions"
+                                                size="icon-text"
+                                                class="rounded-full gap-2"
+                                            >
+                                                <RiCalendarLine class="h-4 w-4 shrink-0" />
+                                                <span class="text-sm">
+                                                    {{ dateFrom ? formatDateDisplay(dateFrom) : 'From date' }}
+                                                </span>
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent
+                                            align="start"
                                         >
-                                            <RiCalendarLine class="h-4 w-4 shrink-0" />
-                                            <span class="text-sm">
-                                                {{ dateFrom ? formatDateDisplay(dateFrom) : 'From date' }}
-                                            </span>
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                        align="start"
-                                    >
-                                        <p class="mb-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-                                            From Date
-                                        </p>
-                                        <Input
-                                            v-model="dateFrom"
-                                            type="text"
-                                            placeholder="YYYY-MM-DD"
-                                            class="mb-2"
-                                            @keydown.enter="onDateFromTextChange"
-                                        />
-                                        <CalendarPicker
-                                            v-model="calendarDateFrom"
-                                            @update:model-value="onCalendarFromChange"
-                                            class="px-0 pb-0"
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                                <Popover v-model:open="popoverToOpen">
-                                    <PopoverTrigger as-child class="h-full">
-                                        <Button
-                                            variant="header-actions"
-                                            size="icon-text"
-                                            class="rounded-full gap-2"
+                                            <p class="mb-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                                                From Date
+                                            </p>
+                                            <Input
+                                                v-model="dateFrom"
+                                                type="text"
+                                                placeholder="YYYY-MM-DD"
+                                                class="mb-2"
+                                                @keydown.enter="onDateFromTextChange"
+                                            />
+                                            <CalendarPicker
+                                                v-model="calendarDateFrom"
+                                                @update:model-value="onCalendarFromChange"
+                                                class="px-0 pb-0"
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                    <Popover v-model:open="popoverToOpen">
+                                        <PopoverTrigger as-child class="h-full">
+                                            <Button
+                                                variant="header-actions"
+                                                size="icon-text"
+                                                class="rounded-full gap-2"
+                                            >
+                                                <RiCalendarLine class="h-4 w-4 shrink-0" />
+                                                <span class="text-sm">
+                                                    {{ dateTo ? formatDateDisplay(dateTo) : 'To date' }}
+                                                </span>
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent
+                                            align="start"
                                         >
-                                            <RiCalendarLine class="h-4 w-4 shrink-0" />
-                                            <span class="text-sm">
-                                                {{ dateTo ? formatDateDisplay(dateTo) : 'To date' }}
-                                            </span>
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                        align="start"
-                                    >
-                                        <p class="mb-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-                                            To Date
-                                        </p>
-                                        <Input
-                                            v-model="dateTo"
-                                            type="text"
-                                            placeholder="YYYY-MM-DD"
-                                            class="mb-2"
-                                            @keydown.enter="onDateToTextChange"
-                                        />
-                                        <CalendarPicker
-                                            v-model="calendarDateTo"
-                                            @update:model-value="onCalendarToChange"
-                                            class="px-0 pb-0"
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                        </div>
-                    </div>
-                    <TableCard :table-data-length="auditLogs.data.length">
-                        <Table v-if="auditLogs.data.length > 0">
-                            <TableHeader hide-actions-column>
-                                <TableColumn>User</TableColumn>
-                                <TableColumn>Action</TableColumn>
-                                <TableColumn>Entity</TableColumn>
-                                <TableColumn>Timestamp</TableColumn>
-                            </TableHeader>
-
-                            <TableContent>
-                                <TableRow
-                                    v-for="(log, rowIndex) in auditLogs.data"
-                                    :key="log.id"
-                                    :class="[
-                                        rowIndex === auditLogs.data.length - 1 ? 'rounded-b-md border-b-0' : '',
-                                        previewedLog?.id === log.id ? 'bg-custom-secondary/10' : '',
-                                    ]"
-                                    @click.left="openPreview(log)"
-                                >
-                                    <TableData class="pl-3">
-                                        <div class="min-w-0">
-                                            <div class="truncate text-sm font-medium">
-                                                {{ log.user?.name ?? 'System' }}
-                                            </div>
-                                            <div class="truncate text-xs text-muted-foreground">
-                                                {{ log.user?.email ?? '—' }}
-                                            </div>
-                                        </div>
-                                    </TableData>
-
-                                    <TableData>
-                                        <Badge
-                                            :class="
-                                                actionBadgeClass(log.action)
-                                            "
-                                        >
-                                            {{ log.action_label }}
-                                        </Badge>
-                                    </TableData>
-
-                                    <TableData>
-                                        <div class="min-w-0">
-                                            <div class="truncate text-sm font-medium">
-                                                {{ log.entity_label }}
-                                            </div>
-                                            <div class="truncate text-xs text-muted-foreground">
-                                                {{ log.entity_name ?? '—' }}
-                                            </div>
-                                        </div>
-                                    </TableData>
-
-                                    <TableData>
-                                        <div class="min-w-0">
-                                            <div class="truncate text-sm">
-                                                {{ log.created_at_human ?? '—' }}
-                                            </div>
-                                            <div class="truncate text-xs text-muted-foreground">
-                                                {{ log.created_at ?? '—' }}
-                                            </div>
-                                        </div>
-                                    </TableData>
-                                </TableRow>
-                            </TableContent>
-                        </Table>
-
-                        <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
-                            <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
-                                <img
-                                    :src="emptyRafikiUrl"
-                                    alt=""
-                                    class="w-1/3 object-contain opacity-90"
-                                    aria-hidden="true"
-                                />
-                                <div class="space-y-1">
-                                    <p class="text-base font-semibold text-custom-shadow">No audit logs found</p>
-                                    <p class="text-sm text-custom-shadow/80">
-                                        {{ hasActiveFilters ? 'Try adjusting your filters or search.' : 'Try adjusting your search.' }}
-                                    </p>
+                                            <p class="mb-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                                                To Date
+                                            </p>
+                                            <Input
+                                                v-model="dateTo"
+                                                type="text"
+                                                placeholder="YYYY-MM-DD"
+                                                class="mb-2"
+                                                @keydown.enter="onDateToTextChange"
+                                            />
+                                            <CalendarPicker
+                                                v-model="calendarDateTo"
+                                                @update:model-value="onCalendarToChange"
+                                                class="px-0 pb-0"
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
                                 </div>
                             </div>
                         </div>
-                    </TableCard>
+                        <TableCard :table-data-length="auditLogs.data.length">
+                            <Table v-if="auditLogs.data.length > 0">
+                                <TableHeader hide-actions-column>
+                                    <TableColumn>User</TableColumn>
+                                    <TableColumn>Action</TableColumn>
+                                    <TableColumn>Entity</TableColumn>
+                                    <TableColumn>Timestamp</TableColumn>
+                                </TableHeader>
 
-                    <InertiaPagination
-                        :links="auditLogs.links"
-                        :meta="{
-                            from: auditLogs.from,
-                            to: auditLogs.to,
-                            total: auditLogs.total,
-                        }"
-                    />
-                </CardContent>
-            </Card>
+                                <TableContent>
+                                    <TableRow
+                                        v-for="(log, rowIndex) in auditLogs.data"
+                                        :key="log.id"
+                                        :class="[
+                                            rowIndex === auditLogs.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                            previewedLog?.id === log.id ? 'bg-custom-secondary/10' : '',
+                                        ]"
+                                        @click.left="openPreview(log)"
+                                    >
+                                        <TableData class="pl-3">
+                                            <div class="min-w-0">
+                                                <div class="truncate text-sm font-medium">
+                                                    {{ log.user?.name ?? 'System' }}
+                                                </div>
+                                                <div class="truncate text-xs text-muted-foreground">
+                                                    {{ log.user?.email ?? '—' }}
+                                                </div>
+                                            </div>
+                                        </TableData>
 
-            <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-100">
-                <CardHeader
-                    v-if="previewedLog"
-                    class="flex flex-row items-start justify-between gap-3"
-                >
-                    <div class="min-w-0">
-                        <CardTitle class="truncate">
-                            {{ previewedLog.action_label }}
-                        </CardTitle>
-                        <CardDescription>Preview</CardDescription>
-                    </div>
-                    <Button
-                        variant="header-actions"
-                        size="icon"
-                        class="h-8 w-8 shrink-0 rounded-full"
-                        aria-label="Close audit log preview"
-                        @click="previewedLog = null"
+                                        <TableData>
+                                            <Badge
+                                                :class="
+                                                    actionBadgeClass(log.action)
+                                                "
+                                            >
+                                                {{ log.action_label }}
+                                            </Badge>
+                                        </TableData>
+
+                                        <TableData>
+                                            <div class="min-w-0">
+                                                <div class="truncate text-sm font-medium">
+                                                    {{ log.entity_label }}
+                                                </div>
+                                                <div class="truncate text-xs text-muted-foreground">
+                                                    {{ log.entity_name ?? '—' }}
+                                                </div>
+                                            </div>
+                                        </TableData>
+
+                                        <TableData>
+                                            <div class="min-w-0">
+                                                <div class="truncate text-sm">
+                                                    {{ log.created_at_human ?? '—' }}
+                                                </div>
+                                                <div class="truncate text-xs text-muted-foreground">
+                                                    {{ log.created_at ?? '—' }}
+                                                </div>
+                                            </div>
+                                        </TableData>
+                                    </TableRow>
+                                </TableContent>
+                            </Table>
+
+                            <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                                <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                                    <img
+                                        :src="emptyRafikiUrl"
+                                        alt=""
+                                        class="w-1/3 object-contain opacity-90"
+                                        aria-hidden="true"
+                                    />
+                                    <div class="space-y-1">
+                                        <p class="text-base font-semibold text-custom-shadow">No audit logs found</p>
+                                        <p class="text-sm text-custom-shadow/80">
+                                            {{ hasActiveFilters ? 'Try adjusting your filters or search.' : 'Try adjusting your search.' }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </TableCard>
+
+                        <InertiaPagination
+                            :links="auditLogs.links"
+                            :meta="{
+                                from: auditLogs.from,
+                                to: auditLogs.to,
+                                total: auditLogs.total,
+                            }"
+                        />
+                    </CardContent>
+                </Card>
+            </MainPanel>
+            
+            <SidePanel>
+                <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-full">
+                    <CardHeader
+                        v-if="previewedLog"
+                        class="flex flex-row items-start justify-between gap-3"
                     >
-                        <RiCloseLine class="h-4 w-4" />
-                    </Button>
-                </CardHeader>
-
-                <CardContent
-                    v-if="previewedLog"
-                    class="no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto py-2"
-                >
-                    <div class="flex items-center justify-between gap-3">
-                        <span class="text-sm font-semibold text-custom-shadow">Action</span>
-                        <Badge :class="actionBadgeClass(previewedLog.action)">
-                            {{ previewedLog.action_label }}
-                        </Badge>
-                    </div>
-                    <div class="flex items-start justify-between gap-3">
-                        <span class="text-sm font-semibold text-custom-shadow">Entity</span>
-                        <div class="min-w-0 text-right">
-                            <p class="truncate text-sm text-custom-shadow/80">{{ previewedLog.entity_label }}</p>
-                            <p class="truncate text-xs text-custom-shadow/60">{{ previewedLog.entity_name ?? '—' }}</p>
+                        <div class="min-w-0">
+                            <CardTitle class="truncate">
+                                {{ previewedLog.action_label }}
+                            </CardTitle>
+                            <CardDescription>Preview</CardDescription>
                         </div>
-                    </div>
-                    <div class="flex items-start justify-between gap-3">
-                        <span class="text-sm font-semibold text-custom-shadow">Timestamp</span>
-                        <div class="text-right">
-                            <p class="text-sm text-custom-shadow/80">{{ previewedLog.created_at_human ?? '—' }}</p>
-                            <p class="text-xs text-custom-shadow/60">{{ previewedLog.created_at ?? '—' }}</p>
-                        </div>
-                    </div>
+                        <Button
+                            variant="header-actions"
+                            size="icon"
+                            class="h-8 w-8 shrink-0 rounded-full"
+                            aria-label="Close audit log preview"
+                            @click="previewedLog = null"
+                        >
+                            <RiCloseLine class="h-4 w-4" />
+                        </Button>
+                    </CardHeader>
 
-                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-
-                    <div class="space-y-2">
+                    <CardContent
+                        v-if="previewedLog"
+                        class="no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto py-2"
+                    >
                         <div class="flex items-center justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Changed fields</span>
-                            <span class="text-sm text-custom-shadow/80">{{ previewedLog.changes.length }}</span>
+                            <span class="text-sm font-semibold text-custom-shadow">Action</span>
+                            <Badge :class="actionBadgeClass(previewedLog.action)">
+                                {{ previewedLog.action_label }}
+                            </Badge>
                         </div>
-                        <div v-if="previewedLog.changes.length" class="space-y-2">
-                            <div
-                                v-for="change in previewedLog.changes"
-                                :key="`${previewedLog.id}-preview-${change.field}`"
-                                class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark"
-                            >
-                                <p class="text-sm font-medium text-custom-shadow">{{ change.label }}</p>
-                                <p class="break-words text-xs text-custom-shadow/70">
-                                    {{ formatValue(change.old) }} → {{ formatValue(change.new) }}
-                                </p>
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Entity</span>
+                            <div class="min-w-0 text-right">
+                                <p class="truncate text-sm text-custom-shadow/80">{{ previewedLog.entity_label }}</p>
+                                <p class="truncate text-xs text-custom-shadow/60">{{ previewedLog.entity_name ?? '—' }}</p>
                             </div>
                         </div>
-                        <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">
-                            No field-level changes recorded.
-                        </p>
-                    </div>
-
-                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-
-                    <div class="space-y-2 text-sm text-custom-shadow/80">
-                        <div class="flex justify-between gap-3">
-                            <span class="font-semibold text-custom-shadow">IP</span>
-                            <span>{{ previewedLog.ip_address ?? '—' }}</span>
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Timestamp</span>
+                            <div class="text-right">
+                                <p class="text-sm text-custom-shadow/80">{{ previewedLog.created_at_human ?? '—' }}</p>
+                                <p class="text-xs text-custom-shadow/60">{{ previewedLog.created_at ?? '—' }}</p>
+                            </div>
                         </div>
-                        <div class="flex justify-between gap-3">
-                            <span class="font-semibold text-custom-shadow">Method</span>
-                            <span>{{ previewedLog.request_method ?? '—' }}</span>
-                        </div>
-                        <div class="space-y-1">
-                            <span class="font-semibold text-custom-shadow">URL</span>
-                            <p class="break-all text-xs">{{ previewedLog.request_url ?? '—' }}</p>
-                        </div>
-                    </div>
-                </CardContent>
 
-                <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
-                    <div class="max-w-60 space-y-1 text-center">
-                        <p class="text-base font-semibold text-custom-shadow">No audit log selected</p>
-                        <p class="text-sm text-custom-shadow/80">Click on a log to preview.</p>
-                    </div>
-                </CardContent>
-            </Card>
+                        <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-sm font-semibold text-custom-shadow">Changed fields</span>
+                                <span class="text-sm text-custom-shadow/80">{{ previewedLog.changes.length }}</span>
+                            </div>
+                            <div v-if="previewedLog.changes.length" class="space-y-2">
+                                <div
+                                    v-for="change in previewedLog.changes"
+                                    :key="`${previewedLog.id}-preview-${change.field}`"
+                                    class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark"
+                                >
+                                    <p class="text-sm font-medium text-custom-shadow">{{ change.label }}</p>
+                                    <p class="break-words text-xs text-custom-shadow/70">
+                                        {{ formatValue(change.old) }} → {{ formatValue(change.new) }}
+                                    </p>
+                                </div>
+                            </div>
+                            <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">
+                                No field-level changes recorded.
+                            </p>
+                        </div>
+
+                        <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                        <div class="space-y-2 text-sm text-custom-shadow/80">
+                            <div class="flex justify-between gap-3">
+                                <span class="font-semibold text-custom-shadow">IP</span>
+                                <span>{{ previewedLog.ip_address ?? '—' }}</span>
+                            </div>
+                            <div class="flex justify-between gap-3">
+                                <span class="font-semibold text-custom-shadow">Method</span>
+                                <span>{{ previewedLog.request_method ?? '—' }}</span>
+                            </div>
+                            <div class="space-y-1">
+                                <span class="font-semibold text-custom-shadow">URL</span>
+                                <p class="break-all text-xs">{{ previewedLog.request_url ?? '—' }}</p>
+                            </div>
+                        </div>
+                    </CardContent>
+
+                    <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
+                        <div class="max-w-60 space-y-1 text-center">
+                            <p class="text-base font-semibold text-custom-shadow">No audit log selected</p>
+                            <p class="text-sm text-custom-shadow/80">Click on a log to preview.</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </SidePanel>
         </PanelLayout>
     </AppLayout>
 </template>

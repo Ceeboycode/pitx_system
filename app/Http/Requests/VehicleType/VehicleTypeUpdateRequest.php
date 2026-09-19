@@ -31,6 +31,9 @@ class VehicleTypeUpdateRequest extends FormRequest
                 Rule::unique('vehicle_types', 'type_name')
                     ->ignore($this->route('vehicle_type')->id),
             ],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'picture' => ['nullable', 'image', 'mimes:jpeg,png,webp', 'max:5120'],
+            'remove_picture' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

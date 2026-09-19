@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { CheckCircle2, XCircle } from 'lucide-vue-next';
 import {
+    RiCheckLine,
+    RiCloseLine,
     RiDownloadLine,
     RiEyeLine,
     RiFileTextLine,
@@ -256,7 +257,7 @@ function emitAndClose(
                                 class="cursor-pointer flex items-center gap-2 rounded-lg px-4 py-2 text-sm hover:bg-slate-100"
                                 @click="emitAndClose('verify')"
                             >
-                                <CheckCircle2 class="h-4 w-4 shrink-0" />
+                                <RiCheckLine class="h-4 w-4 shrink-0" />
                                 Verify
                             </div>
                             <div
@@ -272,7 +273,7 @@ function emitAndClose(
                                 class="cursor-pointer flex items-center gap-2 rounded-lg px-4 py-2 text-sm hover:bg-slate-100"
                                 @click="emitAndClose('invalidate')"
                             >
-                                <XCircle class="h-4 w-4 shrink-0" />
+                                <RiCloseLine class="h-4 w-4 shrink-0" />
                                 Mark Invalid
                             </div>
                             <a

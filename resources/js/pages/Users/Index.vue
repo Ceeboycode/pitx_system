@@ -60,7 +60,7 @@ import {
 } from '@/components/internal/users';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { PanelLayout } from '@/components/ui/_panels';
+import { PanelLayout, MainPanel, SidePanel } from '@/components/ui/_panels';
 
 
 import {
@@ -365,631 +365,637 @@ function openArchiveDialog(user: User) {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <PanelLayout>
-            <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
-                <CardHeader class="flex flex-row gap-2">
-                    <div class="flex flex-col">
-                        <CardTitle class="flex items-center gap-2">
-                            <span class="font-semibold">Users</span>
-                        </CardTitle>
-                        <CardDescription>
-                            Manage users, assign roles, and control access.
-                        </CardDescription>
-                    </div>
-                    <div class="flex flex-1 items-center justify-end gap-2">
-                        <Button
-                            v-if="canCreate"
-                            variant="float-primary"
-                            class="hidden lg:flex"
-                            as-child
-                        >
-                            <Link :href="create().url" class="flex items-center">
-                                <RiAddLine class="h-4 w-4 shrink-0" />
-                                <span>Add User</span>
-                            </Link>
-                        </Button>
-                        <DropdownMenu v-if="canCreate || canViewTrash" class="w-fit">
-                            <DropdownMenuTrigger as-child class="m-0">
-                                <div class="inline-flex">
-                                    <Button
-                                        variant="header-actions"
-                                        class="text-custom-shadow"
-                                        size="icon"
-                                        aria-label="Open user actions"
-                                    >
-                                        <RiMore2Line class="h-4 w-4 shrink-0" />
-                                    </Button>
-                                </div>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" class="w-fit">
-                                <DropdownMenuItem
-                                    v-if="canCreate"
-                                    as-child
-                                    class="cursor-pointer lg:hidden"
-                                >
-                                    <Link :href="create().url" class="flex items-center">
-                                        <RiAddLine class="h-4 w-4" />
-                                        Add User
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    v-if="canViewTrash"
-                                    as-child
-                                    class="cursor-pointer group"
-                                >
-                                    <Link :href="trash().url" class="flex items-center">
-                                        <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
-                                        Archives
-                                    </Link>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </CardHeader>
-                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
-                    <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
-                        <div class="w-full">
-                            <SearchInput
-                                :route="index().url"
-                                :initial-value="props.filters.search"
-                                placeholder="Search users..."
-                                :only="[
-                                    'users',
-                                    'filters',
-                                    'statuses',
-                                    'flash',
-                                ]"
-                                :debounce="350"
-                                :extra-params="currentFilterParams"
-                            />
+            <MainPanel>
+                <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
+                    <CardHeader class="flex flex-row gap-2">
+                        <div class="flex flex-col">
+                            <CardTitle class="flex items-center gap-2">
+                                <span class="font-semibold">Users</span>
+                            </CardTitle>
+                            <CardDescription>
+                                Manage users, assign roles, and control access.
+                            </CardDescription>
                         </div>
-                        <div
-                            class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between"
-                        >
-                            <div class="flex flex-wrap items-center gap-2">
-                                <Popover v-model:open="filterOpen">
-                                    <PopoverTrigger
-                                        as-child
-                                    >
+                        <div class="flex flex-1 items-center justify-end gap-2">
+                            <Button
+                                v-if="canCreate"
+                                variant="float-primary"
+                                class="hidden lg:flex"
+                                as-child
+                            >
+                                <Link :href="create().url" class="flex items-center">
+                                    <RiAddLine class="h-4 w-4 shrink-0" />
+                                    <span>Add User</span>
+                                </Link>
+                            </Button>
+                            <DropdownMenu v-if="canCreate || canViewTrash" class="w-fit">
+                                <DropdownMenuTrigger as-child class="m-0">
+                                    <div class="inline-flex">
                                         <Button
                                             variant="header-actions"
-                                            size="icon-text"
-                                            class="rounded-full"
-                                            :class="
-                                                activeFilterCount > 0
-                                                    ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-200 dark:hover:text-custom-shadow'
-                                                    : ''
-                                            "
+                                            class="text-custom-shadow"
+                                            size="icon"
+                                            aria-label="Open user actions"
                                         >
-                                            <RiFilter2Line class="h-3.5 w-3.5" />
-                                            <span class="hidden lg:flex">
-                                                {{
-                                                    activeFilterCount > 0
-                                                        ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
-                                                        : 'Filter'
-                                                }}
-                                            </span>
+                                            <RiMore2Line class="h-4 w-4 shrink-0" />
                                         </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent align="end">
-                                        <div class="grid gap-y-2">
-                                            <div class="flex flex-col gap-y-1">
-                                                <p
-                                                    class="text-sm text-custom-shadow/80"
-                                                >
-                                                    Type
-                                                </p>
-                                                <Select v-model="pendingRoleFilter">
-                                                    <SelectTrigger
-                                                        class="w-full"
+                                    </div>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" class="w-fit">
+                                    <DropdownMenuItem
+                                        v-if="canCreate"
+                                        as-child
+                                        class="cursor-pointer lg:hidden"
+                                    >
+                                        <Link :href="create().url" class="flex items-center">
+                                            <RiAddLine class="h-4 w-4" />
+                                            Add User
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        v-if="canViewTrash"
+                                        as-child
+                                        class="cursor-pointer group"
+                                    >
+                                        <Link :href="trash().url" class="flex items-center">
+                                            <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
+                                            Archives
+                                        </Link>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </CardHeader>
+                    <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
+                        <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
+                            <div class="w-full">
+                                <SearchInput
+                                    :route="index().url"
+                                    :initial-value="props.filters.search"
+                                    placeholder="Search users..."
+                                    :only="[
+                                        'users',
+                                        'filters',
+                                        'statuses',
+                                        'flash',
+                                    ]"
+                                    :debounce="350"
+                                    :extra-params="currentFilterParams"
+                                />
+                            </div>
+                            <div
+                                class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between"
+                            >
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <Popover v-model:open="filterOpen">
+                                        <PopoverTrigger
+                                            as-child
+                                        >
+                                            <Button
+                                                variant="header-actions"
+                                                size="icon-text"
+                                                class="rounded-full"
+                                                :class="
+                                                    activeFilterCount > 0
+                                                        ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-200 dark:hover:text-custom-shadow'
+                                                        : ''
+                                                "
+                                            >
+                                                <RiFilter2Line class="h-3.5 w-3.5" />
+                                                <span class="hidden lg:flex">
+                                                    {{
+                                                        activeFilterCount > 0
+                                                            ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
+                                                            : 'Filter'
+                                                    }}
+                                                </span>
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent align="end">
+                                            <div class="grid gap-y-2">
+                                                <div class="flex flex-col gap-y-1">
+                                                    <p
+                                                        class="text-sm text-custom-shadow/80"
                                                     >
-                                                        <SelectValue
-                                                            placeholder="All Roles"
-                                                            class="flex justify-start"
-                                                        />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem
-                                                            value="all"
-                                                            class="cursor-pointer text-sm"
+                                                        Type
+                                                    </p>
+                                                    <Select v-model="pendingRoleFilter">
+                                                        <SelectTrigger
+                                                            class="w-full"
                                                         >
-                                                            All Types
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            value="internal"
-                                                            class="cursor-pointer text-sm"
-                                                        >
-                                                            Internal
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            value="external"
-                                                            class="cursor-pointer text-sm"
-                                                        >
-                                                            External
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
+                                                            <SelectValue
+                                                                placeholder="All Roles"
+                                                                class="flex justify-start"
+                                                            />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem
+                                                                value="all"
+                                                                class="cursor-pointer text-sm"
+                                                            >
+                                                                All Types
+                                                            </SelectItem>
+                                                            <SelectItem
+                                                                value="internal"
+                                                                class="cursor-pointer text-sm"
+                                                            >
+                                                                Internal
+                                                            </SelectItem>
+                                                            <SelectItem
+                                                                value="external"
+                                                                class="cursor-pointer text-sm"
+                                                            >
+                                                                External
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
 
-                                            <div class="flex flex-col gap-y-1">
-                                                <p
-                                                    class="text-sm text-custom-shadow/80"
-                                                >
-                                                    Status
-                                                </p>
-                                                <Select v-model="pendingStatusFilter">
-                                                    <SelectTrigger
-                                                        class="w-full"
+                                                <div class="flex flex-col gap-y-1">
+                                                    <p
+                                                        class="text-sm text-custom-shadow/80"
                                                     >
-                                                        <SelectValue
-                                                            placeholder="All Statuses"
-                                                            class="flex justify-start"
-                                                        />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem
-                                                            value="all"
-                                                            class="cursor-pointer text-sm"
+                                                        Status
+                                                    </p>
+                                                    <Select v-model="pendingStatusFilter">
+                                                        <SelectTrigger
+                                                            class="w-full"
                                                         >
-                                                            All Statuses
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            value="active"
-                                                            class="cursor-pointer text-sm"
-                                                        >
-                                                            Active
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            value="inactive"
-                                                            class="cursor-pointer text-sm"
-                                                        >
-                                                            Inactive
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+                                                            <SelectValue
+                                                                placeholder="All Statuses"
+                                                                class="flex justify-start"
+                                                            />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem
+                                                                value="all"
+                                                                class="cursor-pointer text-sm"
+                                                            >
+                                                                All Statuses
+                                                            </SelectItem>
+                                                            <SelectItem
+                                                                value="active"
+                                                                class="cursor-pointer text-sm"
+                                                            >
+                                                                Active
+                                                            </SelectItem>
+                                                            <SelectItem
+                                                                value="inactive"
+                                                                class="cursor-pointer text-sm"
+                                                            >
+                                                                Inactive
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
 
-                                            <div class="flex w-full flex-row items-center justify-between">
-                                                <Button
-                                                    v-if="activeFilterCount > 0"
-                                                    size="sm"
-                                                    variant="destructive"
-                                                    @click="clearFilters"
-                                                >
-                                                    Clear
-                                                </Button>
-                                                <div class="ml-auto flex items-center gap-2">
+                                                <div class="flex w-full flex-row items-center justify-between">
                                                     <Button
-                                                        variant="ghost-outline"
+                                                        v-if="activeFilterCount > 0"
                                                         size="sm"
-                                                        @click="cancelFilterPopover"
+                                                        variant="destructive"
+                                                        @click="clearFilters"
                                                     >
-                                                        Cancel
+                                                        Clear
                                                     </Button>
-                                                    <Button
-                                                        variant="float-primary"
-                                                        size="sm"
-                                                        @click="applyFilterPopover"
-                                                    >
-                                                        Apply
-                                                    </Button>
+                                                    <div class="ml-auto flex items-center gap-2">
+                                                        <Button
+                                                            variant="ghost-outline"
+                                                            size="sm"
+                                                            @click="cancelFilterPopover"
+                                                        >
+                                                            Cancel
+                                                        </Button>
+                                                        <Button
+                                                            variant="float-primary"
+                                                            size="sm"
+                                                            @click="applyFilterPopover"
+                                                        >
+                                                            Apply
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+                                
                             </div>
-                            
                         </div>
-                    </div>
 
-                    <TableCard :table-data-length="props.users.data.length">
-                        <Table v-if="props.users.data.length > 0">
-                            <TableHeader>
-                                <TableColumn class="p-0">
-                                    <button
-                                        type="button"
-                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
-                                        @click="toggleSort('name')"
-                                    >
-                                        Name & Username
-                                        <component
-                                            :is="sortIcon('name')"
-                                            class="h-3.5 w-3.5"
-                                            :class="sortIconClass('name')"
-                                        />
-                                    </button>
-                                </TableColumn>
-
-                                <TableColumn>Contact Details</TableColumn>
-                                <TableColumn>Verification</TableColumn>
-
-                                <TableColumn class="p-0">
-                                    <button
-                                        type="button"
-                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
-                                        @click="toggleSort('status')"
-                                    >
-                                        Status
-                                        <component
-                                            :is="sortIcon('status')"
-                                            class="h-3.5 w-3.5"
-                                            :class="sortIconClass('status')"
-                                        />
-                                    </button>
-                                </TableColumn>
-
-                                <TableColumn v-if="showCompanyColumn">Company</TableColumn>
-                                <TableColumn>Roles</TableColumn>
-                            </TableHeader>
-
-                            <TableContent>
-                                <TableRow
-                                    v-for="(user, rowIndex) in props.users.data"
-                                    :key="user.id"
-                                    :class="[
-                                        rowIndex === props.users.data.length - 1 ? 'rounded-b-md border-b-0' : '',
-                                        previewedUser?.id === user.id ? 'bg-custom-secondary/10' : '',
-                                    ]"
-                                    :status="user.status === 'inactive' ? 'inactive' : 'default'"
-                                    @click.left="openPreview(user)"
-                                    @dblclick="router.visit(show(user.id).url)"
-                                >
-                                    <TableData class="pl-3">
-                                        <div class="flex min-w-0 items-center gap-2">
-                                            <img
-                                                v-if="user.avatar_url"
-                                                :src="user.avatar_url"
-                                                :alt="`${user.name} avatar`"
-                                                class="h-12 w-12 shrink-0 rounded-full object-cover"
+                        <TableCard :table-data-length="props.users.data.length">
+                            <Table v-if="props.users.data.length > 0">
+                                <TableHeader>
+                                    <TableColumn class="p-0">
+                                        <button
+                                            type="button"
+                                            class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                            @click="toggleSort('name')"
+                                        >
+                                            Name & Username
+                                            <component
+                                                :is="sortIcon('name')"
+                                                class="h-3.5 w-3.5"
+                                                :class="sortIconClass('name')"
                                             />
-                                            <div
-                                                v-else
-                                                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-custom-secondary/20 text-xs font-semibold"
-                                            >
-                                                {{ initials(user.name) }}
+                                        </button>
+                                    </TableColumn>
+
+                                    <TableColumn>Contact Details</TableColumn>
+                                    <TableColumn>Verification</TableColumn>
+
+                                    <TableColumn class="p-0">
+                                        <button
+                                            type="button"
+                                            class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                            @click="toggleSort('status')"
+                                        >
+                                            Status
+                                            <component
+                                                :is="sortIcon('status')"
+                                                class="h-3.5 w-3.5"
+                                                :class="sortIconClass('status')"
+                                            />
+                                        </button>
+                                    </TableColumn>
+
+                                    <TableColumn v-if="showCompanyColumn">Company</TableColumn>
+                                    <TableColumn>Roles</TableColumn>
+                                </TableHeader>
+
+                                <TableContent>
+                                    <TableRow
+                                        v-for="(user, rowIndex) in props.users.data"
+                                        :key="user.id"
+                                        :class="[
+                                            rowIndex === props.users.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                            previewedUser?.id === user.id ? 'bg-custom-secondary/10' : '',
+                                        ]"
+                                        :status="user.status === 'inactive' ? 'inactive' : 'default'"
+                                        @click.left="openPreview(user)"
+                                        @dblclick="router.visit(show(user.id).url)"
+                                    >
+                                        <TableData class="pl-3">
+                                            <div class="flex min-w-0 items-center gap-2">
+                                                <img
+                                                    v-if="user.avatar_url"
+                                                    :src="user.avatar_url"
+                                                    :alt="`${user.name} avatar`"
+                                                    class="h-12 w-12 shrink-0 rounded-full object-cover"
+                                                />
+                                                <div
+                                                    v-else
+                                                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-custom-secondary/20 text-xs font-semibold"
+                                                >
+                                                    {{ initials(user.name) }}
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <p class="truncate font-semibold capitalize">{{ user.name }}</p>
+                                                    <p class="truncate font-mono text-xs text-custom-shadow/70">{{ user.username }}</p>
+                                                </div>
                                             </div>
-                                            <div class="min-w-0">
-                                                <p class="truncate font-semibold capitalize">{{ user.name }}</p>
-                                                <p class="truncate font-mono text-xs text-custom-shadow/70">{{ user.username }}</p>
+                                        </TableData>
+
+                                        <TableData>
+                                            <div class="flex min-w-0 flex-col gap-1 text-sm text-custom-shadow/80">
+                                                <span class="truncate">{{ user.email || '—' }}</span>
+                                                <span class="truncate">{{ user.phone_number || '—' }}</span>
                                             </div>
-                                        </div>
-                                    </TableData>
+                                        </TableData>
 
-                                    <TableData>
-                                        <div class="flex min-w-0 flex-col gap-1 text-sm text-custom-shadow/80">
-                                            <span class="truncate">{{ user.email || '—' }}</span>
-                                            <span class="truncate">{{ user.phone_number || '—' }}</span>
-                                        </div>
-                                    </TableData>
-
-                                    <TableData>
-                                        <Badge
-                                            :class="
-                                                emailVerificationBadgeClass(
-                                                    user.email_verified_at,
-                                                )
-                                            "
-                                            class="border"
-                                        >
-                                            {{
-                                                emailVerificationLabel(
-                                                    user.email_verified_at,
-                                                )
-                                            }}
-                                        </Badge>
-                                    </TableData>
-
-                                    <TableData>
-                                        <Badge
-                                            :class="
-                                                statusBadgeClass(user.status)
-                                            "
-                                            class="border capitalize"
-                                        >
-                                            {{ user.status }}
-                                        </Badge>
-                                    </TableData>
-
-                                    <TableData v-if="showCompanyColumn" class="text-sm text-custom-shadow/70">
-                                        <span class="truncate">
-                                            {{
-                                                visibleRoles(user).some(
-                                                    (r) => r.type === 'external',
-                                                )
-                                                    ? (user.company?.company_name ??
-                                                      '-')
-                                                    : '-'
-                                            }}
-                                        </span>
-                                    </TableData>
-
-                                    <TableData>
-                                        <div
-                                            class="flex flex-wrap gap-1 capitalize"
-                                        >
+                                        <TableData>
                                             <Badge
-                                                v-for="role in visibleRoles(
-                                                    user,
-                                                )"
-                                                :key="role.id"
-                                                :class="roleBadgeClass(role)"
+                                                :class="
+                                                    emailVerificationBadgeClass(
+                                                        user.email_verified_at,
+                                                    )
+                                                "
                                                 class="border"
                                             >
-                                                {{ role.name }}
+                                                {{
+                                                    emailVerificationLabel(
+                                                        user.email_verified_at,
+                                                    )
+                                                }}
                                             </Badge>
-                                            <span
-                                                v-if="
-                                                    visibleRoles(user)
-                                                        .length === 0
+                                        </TableData>
+
+                                        <TableData>
+                                            <Badge
+                                                :class="
+                                                    statusBadgeClass(user.status)
                                                 "
-                                                class="text-sm text-custom-shadow/70"
+                                                class="border capitalize"
                                             >
-                                                -
+                                                {{ user.status }}
+                                            </Badge>
+                                        </TableData>
+
+                                        <TableData v-if="showCompanyColumn" class="text-sm text-custom-shadow/70">
+                                            <span class="truncate">
+                                                {{
+                                                    visibleRoles(user).some(
+                                                        (r) => r.type === 'external',
+                                                    )
+                                                        ? (user.company?.company_name ??
+                                                        '-')
+                                                        : '-'
+                                                }}
                                             </span>
-                                        </div>
-                                    </TableData>
+                                        </TableData>
 
-                                    <TableMoreButton
-                                        :open="openMenus[user.id] ?? false"
-                                        @update:open="(value) => (openMenus[user.id] = value)"
-                                    >
-                                        <DropdownMenuLabel class="">
-                                            {{ user.username }}
-                                        </DropdownMenuLabel>
-
-                                        <DropdownMenuItem
-                                            class="group hidden"
-                                            @click="show(user.id).url"
-                                        >
-                                            <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-bg transition-all duration-200" />
-                                            View
-                                        </DropdownMenuItem>
-
-                                        <DropdownMenuItem
-                                            as-child
-                                            class="group"
-                                        >
-                                            <Link
-                                                :href="
-                                                    show(user.id).url
-                                                "
-                                                class="flex items-center"
+                                        <TableData>
+                                            <div
+                                                class="flex flex-wrap gap-1 capitalize"
                                             >
-                                                <RiExternalLinkLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                <Badge
+                                                    v-for="role in visibleRoles(
+                                                        user,
+                                                    )"
+                                                    :key="role.id"
+                                                    :class="roleBadgeClass(role)"
+                                                    class="border"
+                                                >
+                                                    {{ role.name }}
+                                                </Badge>
+                                                <span
+                                                    v-if="
+                                                        visibleRoles(user)
+                                                            .length === 0
+                                                    "
+                                                    class="text-sm text-custom-shadow/70"
+                                                >
+                                                    -
+                                                </span>
+                                            </div>
+                                        </TableData>
+
+                                        <TableMoreButton
+                                            :open="openMenus[user.id] ?? false"
+                                            @update:open="(value) => (openMenus[user.id] = value)"
+                                        >
+                                            <DropdownMenuLabel class="">
+                                                {{ user.username }}
+                                            </DropdownMenuLabel>
+
+                                            <DropdownMenuItem
+                                                class="group hidden"
+                                                @click="show(user.id).url"
+                                            >
+                                                <RiExternalLinkLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-bg transition-all duration-200" />
                                                 View
-                                            </Link>
-                                        </DropdownMenuItem>
+                                            </DropdownMenuItem>
 
-                                        <DropdownMenuItem
-                                            v-if="
-                                                canToggle &&
-                                                !isOwnAccount(user)
-                                            "
-                                            class="group"
-                                            @click="
-                                                openToggleDialog(user)
-                                            "
-                                        >
-                                            <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                                            <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">{{
-                                                isActive(user)
-                                                    ? 'Set as Inactive'
-                                                    : 'Set as Active'
-                                            }}</span>
-                                        </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                as-child
+                                                class="group"
+                                            >
+                                                <Link
+                                                    :href="
+                                                        show(user.id).url
+                                                    "
+                                                    class="flex items-center"
+                                                >
+                                                    <RiExternalLinkLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                    View
+                                                </Link>
+                                            </DropdownMenuItem>
 
-                                        <DropdownMenuItem
-                                            v-if="
-                                                canResetPass &&
-                                                !isOwnAccount(user)
-                                            "
-                                            class="group"
-                                            @click="
-                                                openResetDialog(user)
-                                            "
-                                        >
-                                            <RiKey2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                                            <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">Reset Password</span>
-                                        </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                v-if="
+                                                    canToggle &&
+                                                    !isOwnAccount(user)
+                                                "
+                                                class="group"
+                                                @click="
+                                                    openToggleDialog(user)
+                                                "
+                                            >
+                                                <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">{{
+                                                    isActive(user)
+                                                        ? 'Inactivate'
+                                                        : 'Activate'
+                                                }}</span>
+                                            </DropdownMenuItem>
 
-                                        <DropdownMenuItem
-                                            v-if="
-                                                canArchive &&
-                                                !isOwnAccount(user)
-                                            "
-                                            class="group"
-                                            @click="
-                                                openArchiveDialog(user)
-                                            "
-                                        >
-                                            <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                                            <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">Archive</span>
-                                        </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                v-if="
+                                                    canResetPass &&
+                                                    !isOwnAccount(user)
+                                                "
+                                                class="group"
+                                                @click="
+                                                    openResetDialog(user)
+                                                "
+                                            >
+                                                <RiKey2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">Reset Password</span>
+                                            </DropdownMenuItem>
 
-                                        <Separator v-if="isOwnAccount(user)" class="mt-4"/>
+                                            <DropdownMenuItem
+                                                v-if="
+                                                    canArchive &&
+                                                    !isOwnAccount(user)
+                                                "
+                                                class="group"
+                                                @click="
+                                                    openArchiveDialog(user)
+                                                "
+                                            >
+                                                <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow">Archive</span>
+                                            </DropdownMenuItem>
 
-                                        <DropdownMenuItem
-                                            v-if="isOwnAccount(user)"
-                                            class="pointer-events-none text-custom-shadow/80 text-xs"
-                                        >
-                                            You cannot manage your own account here.
-                                        </DropdownMenuItem>
-                                    </TableMoreButton>
-                                </TableRow>
-                            </TableContent>
-                        </Table>
+                                            <Separator v-if="isOwnAccount(user)" class="mt-4"/>
 
-                        <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
-                            <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
-                                <img
-                                    :src="emptyRafikiUrl"
-                                    alt=""
-                                    class="w-1/3 object-contain opacity-90"
-                                    aria-hidden="true"
-                                />
-                                <div class="space-y-1">
-                                    <p class="text-custom-shadow text-base font-semibold">No users found</p>
-                                    <p class="text-custom-shadow/80 text-sm">
-                                        {{ hasActiveFilters ? 'Try adjusting your filters or search.' : 'Try adjusting your search.' }}
-                                    </p>
+                                            <DropdownMenuItem
+                                                v-if="isOwnAccount(user)"
+                                                class="pointer-events-none text-custom-shadow/80 text-xs"
+                                            >
+                                                You cannot manage your own account here.
+                                            </DropdownMenuItem>
+                                        </TableMoreButton>
+                                    </TableRow>
+                                </TableContent>
+                            </Table>
+
+                            <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                                <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                                    <img
+                                        :src="emptyRafikiUrl"
+                                        alt=""
+                                        class="w-1/3 object-contain opacity-90"
+                                        aria-hidden="true"
+                                    />
+                                    <div class="space-y-1">
+                                        <p class="text-custom-shadow text-base font-semibold">No users found</p>
+                                        <p class="text-custom-shadow/80 text-sm">
+                                            {{ hasActiveFilters ? 'Try adjusting your filters or search.' : 'Try adjusting your search.' }}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </TableCard>
+                        </TableCard>
 
-                    <InertiaPagination
-                        :links="props.users.links"
-                        :meta="{
-                            from: props.users.from,
-                            to: props.users.to,
-                            total: props.users.total,
-                        }"
-                    />
-                </CardContent>
-            </Card>
-
-            <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-100">
-                <CardHeader
-                    v-if="previewedUser"
-                    class="flex flex-row items-start justify-between gap-3"
-                >
-                    <div class="min-w-0">
-                        <CardTitle class="truncate capitalize">
-                            {{ previewedUser.name }}
-                        </CardTitle>
-                        <CardDescription>Preview</CardDescription>
-                    </div>
-                    <Button
-                        variant="header-actions"
-                        size="icon"
-                        class="h-8 w-8 shrink-0 rounded-full"
-                        aria-label="Close user preview"
-                        @click="previewedUser = null"
-                    >
-                        <RiCloseLine class="h-4 w-4" />
-                    </Button>
-                </CardHeader>
-
-                <CardContent
-                    v-if="previewedUser"
-                    class="no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto py-2"
-                >
-                    <div class="flex flex-col items-center gap-3 rounded-md border border-dashed border-custom-bg-dark bg-custom-bg p-4 dark:border-custom-bg-light dark:bg-custom-bg-dark">
-                        <img
-                            v-if="previewedUser.avatar_url"
-                            :src="previewedUser.avatar_url"
-                            :alt="`${previewedUser.name} avatar`"
-                            class="h-20 w-20 rounded-full object-cover"
+                        <InertiaPagination
+                            :links="props.users.links"
+                            :meta="{
+                                from: props.users.from,
+                                to: props.users.to,
+                                total: props.users.total,
+                            }"
                         />
-                        <div
-                            v-else
-                            class="flex h-20 w-20 items-center justify-center rounded-full bg-custom-primary text-xl font-semibold text-white"
-                        >
-                            {{ initials(previewedUser.name) }}
-                        </div>
-                        <div class="min-w-0 text-center">
-                            <p class="truncate font-semibold text-custom-shadow">
+                    </CardContent>
+                </Card>
+            </MainPanel>
+           
+            <SidePanel>
+                <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-full">
+                    <CardHeader
+                        v-if="previewedUser"
+                        class="flex flex-row items-start justify-between gap-3"
+                    >
+                        <div class="min-w-0">
+                            <CardTitle class="truncate capitalize">
                                 {{ previewedUser.name }}
-                            </p>
-                            <p class="truncate text-sm text-custom-shadow/70">
-                                @{{ previewedUser.username }}
-                            </p>
+                            </CardTitle>
+                            <CardDescription>Preview</CardDescription>
                         </div>
-                    </div>
+                        <Button
+                            variant="header-actions"
+                            size="icon"
+                            class="h-8 w-8 shrink-0 rounded-full"
+                            aria-label="Close user preview"
+                            @click="previewedUser = null"
+                        >
+                            <RiCloseLine class="h-4 w-4" />
+                        </Button>
+                    </CardHeader>
 
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Status</span>
-                            <Badge :class="statusBadgeClass(previewedUser.status)" class="border capitalize">
-                                {{ previewedUser.status }}
-                            </Badge>
-                        </div>
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Verification</span>
-                            <Badge :class="emailVerificationBadgeClass(previewedUser.email_verified_at)" class="border">
-                                {{ emailVerificationLabel(previewedUser.email_verified_at) }}
-                            </Badge>
-                        </div>
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Email</span>
-                            <span class="min-w-0 truncate text-right text-sm text-custom-shadow/80">
-                                {{ previewedUser.email }}
-                            </span>
-                        </div>
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Phone</span>
-                            <span class="text-right text-sm text-custom-shadow/80">
-                                {{ previewedUser.phone_number ?? 'Not provided' }}
-                            </span>
-                        </div>
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Company</span>
-                            <span class="min-w-0 truncate text-right text-sm text-custom-shadow/80">
-                                {{ previewedUser.company?.company_name ?? 'Not assigned' }}
-                            </span>
-                        </div>
-
-                        <div class="space-y-2">
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Roles</span>
-                                <span class="text-sm text-custom-shadow/80">
-                                    {{ visibleRoles(previewedUser).length }}
-                                </span>
+                    <CardContent
+                        v-if="previewedUser"
+                        class="no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto py-2"
+                    >
+                        <div class="flex flex-col items-center gap-3 rounded-md border border-dashed border-custom-bg-dark bg-custom-bg p-4 dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                            <img
+                                v-if="previewedUser.avatar_url"
+                                :src="previewedUser.avatar_url"
+                                :alt="`${previewedUser.name} avatar`"
+                                class="h-20 w-20 rounded-full object-cover"
+                            />
+                            <div
+                                v-else
+                                class="flex h-20 w-20 items-center justify-center rounded-full bg-custom-primary text-xl font-semibold text-white"
+                            >
+                                {{ initials(previewedUser.name) }}
                             </div>
-                            <div v-if="visibleRoles(previewedUser).length" class="flex flex-wrap gap-1.5">
-                                <Badge
-                                    v-for="role in visibleRoles(previewedUser)"
-                                    :key="role.id"
-                                    :class="roleBadgeClass(role)"
-                                    class="border capitalize"
-                                >
-                                    {{ role.name }}
+                            <div class="min-w-0 text-center">
+                                <p class="truncate font-semibold text-custom-shadow">
+                                    {{ previewedUser.name }}
+                                </p>
+                                <p class="truncate text-sm text-custom-shadow/70">
+                                    @{{ previewedUser.username }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-sm font-semibold text-custom-shadow">Status</span>
+                                <Badge :class="statusBadgeClass(previewedUser.status)" class="border capitalize">
+                                    {{ previewedUser.status }}
                                 </Badge>
                             </div>
-                            <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">
-                                No roles assigned.
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-sm font-semibold text-custom-shadow">Verification</span>
+                                <Badge :class="emailVerificationBadgeClass(previewedUser.email_verified_at)" class="border">
+                                    {{ emailVerificationLabel(previewedUser.email_verified_at) }}
+                                </Badge>
+                            </div>
+                            <div class="flex items-start justify-between gap-3">
+                                <span class="text-sm font-semibold text-custom-shadow">Email</span>
+                                <span class="min-w-0 truncate text-right text-sm text-custom-shadow/80">
+                                    {{ previewedUser.email }}
+                                </span>
+                            </div>
+                            <div class="flex items-start justify-between gap-3">
+                                <span class="text-sm font-semibold text-custom-shadow">Phone</span>
+                                <span class="text-right text-sm text-custom-shadow/80">
+                                    {{ previewedUser.phone_number ?? 'Not provided' }}
+                                </span>
+                            </div>
+                            <div class="flex items-start justify-between gap-3">
+                                <span class="text-sm font-semibold text-custom-shadow">Company</span>
+                                <span class="min-w-0 truncate text-right text-sm text-custom-shadow/80">
+                                    {{ previewedUser.company?.company_name ?? 'Not assigned' }}
+                                </span>
+                            </div>
+
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="text-sm font-semibold text-custom-shadow">Roles</span>
+                                    <span class="text-sm text-custom-shadow/80">
+                                        {{ visibleRoles(previewedUser).length }}
+                                    </span>
+                                </div>
+                                <div v-if="visibleRoles(previewedUser).length" class="flex flex-wrap gap-1.5">
+                                    <Badge
+                                        v-for="role in visibleRoles(previewedUser)"
+                                        :key="role.id"
+                                        :class="roleBadgeClass(role)"
+                                        class="border capitalize"
+                                    >
+                                        {{ role.name }}
+                                    </Badge>
+                                </div>
+                                <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">
+                                    No roles assigned.
+                                </p>
+                            </div>
+                        </div>
+
+                        <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <Button
+                                v-if="canArchive && !isOwnAccount(previewedUser)"
+                                variant="destructive"
+                                size="icon-text"
+                                @click="openArchiveDialog(previewedUser)"
+                            >
+                                <RiArchive2Line class="h-4 w-4" />
+                                Archive
+                            </Button>
+                            <Button
+                                as-child
+                                variant="float-primary"
+                                size="icon"
+                                class="ml-auto"
+                            >
+                                <Link :href="show(previewedUser.id).url" aria-label="View user profile">
+                                    <RiExternalLinkLine class="h-4 w-4" />
+                                </Link>
+                            </Button>
+                        </div>
+                    </CardContent>
+
+                    <CardContent
+                        v-else
+                        class="flex min-h-0 flex-1 items-center justify-center"
+                    >
+                        <div class="max-w-60 space-y-1 text-center">
+                            <p class="text-base font-semibold text-custom-shadow">No user selected</p>
+                            <p class="text-sm text-custom-shadow/80">
+                                Click on a user to preview.
                             </p>
                         </div>
-                    </div>
+                    </CardContent>
+                </Card>
+            </SidePanel>
 
-                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <Button
-                            v-if="canArchive && !isOwnAccount(previewedUser)"
-                            variant="destructive"
-                            size="icon-text"
-                            @click="openArchiveDialog(previewedUser)"
-                        >
-                            <RiArchive2Line class="h-4 w-4" />
-                            Archive
-                        </Button>
-                        <Button
-                            as-child
-                            variant="float-primary"
-                            size="icon"
-                            class="ml-auto"
-                        >
-                            <Link :href="show(previewedUser.id).url" aria-label="View user profile">
-                                <RiExternalLinkLine class="h-4 w-4" />
-                            </Link>
-                        </Button>
-                    </div>
-                </CardContent>
-
-                <CardContent
-                    v-else
-                    class="flex min-h-0 flex-1 items-center justify-center"
-                >
-                    <div class="max-w-60 space-y-1 text-center">
-                        <p class="text-base font-semibold text-custom-shadow">No user selected</p>
-                        <p class="text-sm text-custom-shadow/80">
-                            Click on a user to preview.
-                        </p>
-                    </div>
-                </CardContent>
-            </Card>
+            
         </PanelLayout>
 
         <ToggleUserStatusDialog v-model:open="toggleOpen" :user="togglingUser" />

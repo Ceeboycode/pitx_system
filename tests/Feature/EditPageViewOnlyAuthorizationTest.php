@@ -4,6 +4,7 @@ use App\Models\Gate;
 use App\Models\Role;
 use App\Models\Route;
 use App\Models\User;
+use App\Models\VehicleType;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -15,7 +16,12 @@ beforeEach(function (): void {
         Role::query()->firstOrCreate(['name' => $name, 'guard_name' => 'web'], ['type' => 'internal']);
     }
 
-    foreach (['gates.view', 'gates.update', 'routes.view', 'routes.update', 'roles.view', 'roles.update'] as $name) {
+    foreach ([
+        'gates.view', 'gates.update',
+        'routes.view', 'routes.update',
+        'roles.view', 'roles.update',
+        'vehicle_types.view', 'vehicle_types.update',
+    ] as $name) {
         Permission::query()->firstOrCreate(['name' => $name, 'guard_name' => 'web']);
     }
 });
@@ -109,6 +115,22 @@ test('a roles.view-only user can load the role edit page but cannot update it', 
         ->put(route('roles.update', $role), [
             'name' => 'target-role',
             'type' => 'internal',
+        ])
+        ->assertForbidden();
+});
+
+test('a vehicle_types.view-only user can load the vehicle type edit page but cannot update it', function (): void {
+    $viewer = makeViewOnlyUser('vehicle_types.view');
+    $vehicleType = VehicleType::factory()->create();
+
+    $this->actingAs($viewer)
+        ->get(route('vehicle-types.edit', $vehicleType))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->component('VehicleType/Edit'));
+
+    $this->actingAs($viewer)
+        ->put(route('vehicle-types.update', $vehicleType), [
+            'type_name' => 'Some Other Type Name',
         ])
         ->assertForbidden();
 });

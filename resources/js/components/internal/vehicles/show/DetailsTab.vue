@@ -413,7 +413,7 @@ async function copyToClipboard(value?: string | null, label = 'Value') {
               </div>
               <span class="line-clamp-1 text-ellipsis">
                 {{ formatDate(vehicle.created_at) }}
-                <span v-if="vehicle.creator?.name" class="text-custom-accent-3"> • </span>
+                <span class="text-custom-accent-3"> • </span>
                 {{ vehicle.creator?.name ?? '—' }}
               </span>
             </div>
@@ -425,7 +425,7 @@ async function copyToClipboard(value?: string | null, label = 'Value') {
               </div>
               <span class="line-clamp-1 text-ellipsis">
                 {{ vehicle.updated_at ? formatDate(vehicle.updated_at) : '—' }}
-                <span v-if="vehicle.updater?.name" class="text-custom-accent-3"> • </span>
+                <span class="text-custom-accent-3"> • </span>
                 {{ vehicle.updater?.name ?? '—' }}
               </span>
             </div>

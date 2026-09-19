@@ -47,10 +47,14 @@ class PermissionSeeder extends Seeder
 
             'vehicle_types' => [
                 'viewAny',
+                'view',
                 'create',
                 'update',
                 'toggleStatus',
-                'delete',
+                'archive',
+                'restore',
+                'viewTrash',
+                'forceDelete',
             ],
 
             'vehicle_documents' => [

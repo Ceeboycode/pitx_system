@@ -26,16 +26,15 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import {
-    Check,
-    ChevronsUpDown,
-    ListOrdered,
-    MapPin,
-    MapPinned,
-    Navigation,
-    Route as RouteIcon,
-    Search,
-    X,
-} from 'lucide-vue-next'
+    RiCheckLine,
+    RiCloseLine,
+    RiCompass3Line,
+    RiExpandUpDownLine,
+    RiListUnordered,
+    RiMapPin2Line,
+    RiRouteLine,
+    RiSearchLine,
+} from 'vue-remix-icons'
 
 type GateItem = {
     id: number
@@ -334,7 +333,7 @@ onBeforeUnmount(() => destroyMap())
 
                 <div class="relative">
                     <div class="relative">
-                        <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <RiSearchLine class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 shrink-0 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             id="route_id"
                             :model-value="routeInputDisplay"
@@ -351,7 +350,7 @@ onBeforeUnmount(() => destroyMap())
                             class="absolute right-8 top-1/2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
                             @mousedown.prevent="clearRouteSearch"
                         >
-                            <X class="h-4 w-4" />
+                            <RiCloseLine class="h-4 w-4 shrink-0" />
                         </button>
                         <button
                             v-else-if="selectedRoute && !readonly"
@@ -359,9 +358,9 @@ onBeforeUnmount(() => destroyMap())
                             class="absolute right-8 top-1/2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
                             @mousedown.prevent="clearSelectedRoute"
                         >
-                            <X class="h-4 w-4" />
+                            <RiCloseLine class="h-4 w-4 shrink-0" />
                         </button>
-                        <ChevronsUpDown class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <RiExpandUpDownLine class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 shrink-0 -translate-y-1/2 text-muted-foreground" />
                     </div>
 
                     
@@ -377,7 +376,7 @@ onBeforeUnmount(() => destroyMap())
                                 class="flex w-full items-start gap-2.5 rounded-md px-3 py-2.5 text-left transition-colors hover:bg-accent hover:text-accent-foreground"
                                 @mousedown.prevent="selectRoute(route)"
                             >
-                                <Check
+                                <RiCheckLine
                                     class="mt-0.5 h-4 w-4 shrink-0 text-primary"
                                     :class="String(modelValue) === String(route.id) ? 'opacity-100' : 'opacity-0'"
                                 />
@@ -398,7 +397,7 @@ onBeforeUnmount(() => destroyMap())
                             </button>
                         </div>
                         <div v-else class="flex flex-col items-center gap-1.5 px-3 py-6 text-center text-muted-foreground">
-                            <Search class="h-5 w-5 opacity-40" />
+                            <RiSearchLine class="h-5 w-5 shrink-0 opacity-40" />
                             <p class="text-sm">No routes found.</p>
                             <p class="text-xs">Try adjusting your search or gate filter.</p>
                         </div>
@@ -424,13 +423,13 @@ onBeforeUnmount(() => destroyMap())
             <div class="flex flex-col gap-4 bg-muted/30 p-4 md:flex-row md:items-center md:justify-between">
                 <div class="flex items-center gap-3 min-w-0">
                     <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-background shadow-sm">
-                        <RouteIcon class="h-5 w-5 text-muted-foreground" />
+                        <RiRouteLine class="h-5 w-5 shrink-0 text-muted-foreground" />
                     </div>
                     <div class="min-w-0">
                         <p class="truncate font-semibold text-sm">{{ routeSummary.name }}</p>
                         <p class="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
                             <span class="text-emerald-600 font-medium">{{ routeSummary.origin }}</span>
-                            <Navigation class="h-3 w-3 shrink-0 rotate-90" />
+                            <RiCompass3Line class="h-3 w-3 shrink-0 rotate-90" />
                             <span class="text-red-500 font-medium">{{ routeSummary.destination }}</span>
                         </p>
                     </div>
@@ -438,11 +437,11 @@ onBeforeUnmount(() => destroyMap())
 
                 <div class="flex flex-wrap items-center gap-2">
                     <Badge variant="secondary" class="gap-1.5">
-                        <ListOrdered class="h-3 w-3" />
+                        <RiListUnordered class="h-3 w-3 shrink-0" />
                         {{ routeSummary.totalStops }} stops
                     </Badge>
                     <Badge variant="outline" class="gap-1.5">
-                        <MapPin class="h-3 w-3" />
+                        <RiMapPin2Line class="h-3 w-3 shrink-0" />
                         {{ routeSummary.gateName }}
                     </Badge>
 
@@ -450,7 +449,7 @@ onBeforeUnmount(() => destroyMap())
                     <Dialog v-model:open="stopsDialogOpen">
                         <DialogTrigger as-child>
                             <Button type="button" variant="outline" size="sm" class="h-7 gap-1.5 text-xs">
-                                <ListOrdered class="h-3.5 w-3.5" />
+                                <RiListUnordered class="h-3.5 w-3.5 shrink-0" />
                                 View Stops
                             </Button>
                         </DialogTrigger>
@@ -536,7 +535,7 @@ onBeforeUnmount(() => destroyMap())
                     <Dialog v-model:open="mapDialogOpen">
                         <DialogTrigger as-child>
                             <Button type="button" variant="outline" size="sm" class="h-7 gap-1.5 text-xs">
-                                <MapPinned class="h-3.5 w-3.5" />
+                                <RiMapPin2Line class="h-3.5 w-3.5 shrink-0" />
                                 View Map
                             </Button>
                         </DialogTrigger>

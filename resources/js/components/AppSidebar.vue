@@ -94,12 +94,6 @@ const mainNavItems: NavItem[] = [
         icon: RiBuildingLine,
         items: [
             {
-                id: 'gates',
-                title: 'Gates',
-                href: gateIndex().url,
-                permission: 'gates.viewAny',
-            },
-            {
                 id: 'routes',
                 title: 'Routes',
                 href: routesIndex().url,
@@ -165,12 +159,6 @@ const mainNavItems: NavItem[] = [
                 permission: 'users.viewAny',
             },
             {
-                id: 'roles',
-                title: 'Roles',
-                href: rolesIndex().url,
-                permission: 'roles.viewAny',
-            },
-            {
                 id: 'audit-logs',
                 title: 'Audit Logs',
                 href: auditLogsIndex().url,
@@ -184,6 +172,18 @@ const mainNavItems: NavItem[] = [
         href: '#',
         icon: RiComputerLine,
         items: [
+            {
+                id: 'roles',
+                title: 'Roles',
+                href: rolesIndex().url,
+                permission: 'roles.viewAny',
+            },
+            {
+                id: 'gates',
+                title: 'Gates',
+                href: gateIndex().url,
+                permission: 'gates.viewAny',
+            },
             {
                 id: 'vehicle-type',
                 title: 'Vehicle Types',

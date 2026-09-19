@@ -117,8 +117,8 @@ function roleClass(role?: string | null) {
 }
 
 function toggleStatusLabel(status?: string | null) {
-    if (status === 'active') return 'Set as Inactive';
-    if (status === 'inactive') return 'Set as Active';
+    if (status === 'active') return 'Inactivate';
+    if (status === 'inactive') return 'Activate';
     if (status === 'pending') return 'Activate Account';
     if (status === 'suspended') return 'Set Active';
     return 'Update Status';

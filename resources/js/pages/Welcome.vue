@@ -8,10 +8,7 @@ import { show } from '@/routes/company-registration';
 import { Head, Link } from '@inertiajs/vue3';
 import { onMounted, onUnmounted, ref } from 'vue';
 import {
-    ArrowRight,
-    CheckCircle2,
-} from 'lucide-vue-next';
-import {
+    RiArrowRightLine,
     RiFacebookCircleFill,
     RiInstagramFill,
     RiMapPin2Line,
@@ -284,7 +281,7 @@ onUnmounted(() => {
                         >
                             <Link :href="show()">
                                 Get Started
-                                <ArrowRight class="ml-0 shrink-0 h-4 w-4" />
+                                <RiArrowRightLine class="ml-0 shrink-0 h-4 w-4" />
                             </Link>
                         </Button>
                     </div>
@@ -337,7 +334,7 @@ onUnmounted(() => {
                         <Button as-child class="rounded-xl bg-[#c0392b] px-8 py-3 font-semibold text-white shadow-lg hover:bg-[#a93226]">
                             <Link :href="show()">
                                 Get Started
-                                <ArrowRight class="ml-2 h-4 w-4 shrink-0" />
+                                <RiArrowRightLine class="ml-2 h-4 w-4 shrink-0" />
                             </Link>
                         </Button>
 

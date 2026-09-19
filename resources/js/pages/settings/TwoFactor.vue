@@ -10,7 +10,7 @@ import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { disable, enable, show } from '@/routes/two-factor';
 import { BreadcrumbItem } from '@/types';
 import { Form, Head } from '@inertiajs/vue3';
-import { ShieldBan, ShieldCheck } from 'lucide-vue-next';
+import { RiShieldCheckLine, RiShieldLine } from 'vue-remix-icons';
 import { onUnmounted, ref } from 'vue';
 
 interface Props {
@@ -69,7 +69,7 @@ onUnmounted(() => {
                             v-if="hasSetupData"
                             @click="showSetupModal = true"
                         >
-                            <ShieldCheck />Continue Setup
+                            <RiShieldCheckLine class="shrink-0" />Continue Setup
                         </Button>
                         <Form
                             v-else
@@ -78,7 +78,7 @@ onUnmounted(() => {
                             #default="{ processing }"
                         >
                             <Button type="submit" :disabled="processing">
-                                <ShieldCheck />Enable 2FA</Button
+                                <RiShieldCheckLine class="shrink-0" />Enable 2FA</Button
                             ></Form
                         >
                     </div>
@@ -106,7 +106,7 @@ onUnmounted(() => {
                                 type="submit"
                                 :disabled="processing"
                             >
-                                <ShieldBan />
+                                <RiShieldLine class="shrink-0" />
                                 Disable 2FA
                             </Button>
                         </Form>

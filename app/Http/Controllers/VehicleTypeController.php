@@ -4,11 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\VehicleType\VehicleTypeStoreRequest;
 use App\Http\Requests\VehicleType\VehicleTypeUpdateRequest;
+use App\Models\AuditLog;
+use App\Models\Vehicle;
 use App\Models\VehicleType;
 use App\Services\Vehicle\VehicleTypeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class VehicleTypeController extends Controller
@@ -40,7 +44,6 @@ class VehicleTypeController extends Controller
                 'search' => $request->search,
                 'status' => $request->input('status'),
             ],
-            'canDelete' => $request->user()->can('vehicle_types.delete'),
         ]);
     }
 
@@ -48,9 +51,12 @@ class VehicleTypeController extends Controller
     {
         Gate::authorize('create', VehicleType::class);
 
-        $this->vehicleTypeService->createVehicleType(
-            $request->validated()
-        );
+        $data = $request->safe()->except('picture');
+        if ($request->hasFile('picture')) {
+            $data['picture_path'] = $request->file('picture')->store('vehicle-types', 'public');
+        }
+
+        $this->vehicleTypeService->createVehicleType($data);
 
         return to_route('vehicle-types.index')->with('success', 'Vehicle type created successfully.');
     }
@@ -59,21 +65,123 @@ class VehicleTypeController extends Controller
     {
         Gate::authorize('update', $vehicleType);
 
-        $this->vehicleTypeService->updateVehicleType(
-            $vehicleType,
-            $request->validated()
-        );
+        $data = $request->safe()->except(['picture', 'remove_picture']);
+        if ($request->hasFile('picture')) {
+            if ($vehicleType->picture_path) {
+                Storage::disk('public')->delete($vehicleType->picture_path);
+            }
+            $data['picture_path'] = $request->file('picture')->store('vehicle-types', 'public');
+        } elseif ($request->boolean('remove_picture') && $vehicleType->picture_path) {
+            Storage::disk('public')->delete($vehicleType->picture_path);
+            $data['picture_path'] = null;
+        }
+
+        $this->vehicleTypeService->updateVehicleType($vehicleType, $data);
 
         return redirect()->back()->with('success', 'Vehicle type updated successfully.');
     }
 
     public function edit(VehicleType $vehicleType)
     {
-        Gate::authorize('update', $vehicleType);
+        // Page access only needs 'view' - VehicleType/Edit.vue decides what's
+        // actually editable via can('vehicle_types.update'), and update()
+        // below still independently authorizes the real write.
+        Gate::authorize('view', $vehicleType);
+
+        $vehicleType->load(['creator:id,name', 'updater:id,name']);
 
         return Inertia::render('VehicleType/Edit', [
-            'vehicleType' => $vehicleType->load(['creator:id,name', 'updater:id,name']),
+            'vehicleType' => [
+                'id' => $vehicleType->id,
+                'type_name' => $vehicleType->type_name,
+                'description' => $vehicleType->description,
+                'picture_url' => $vehicleType->picture_path ? Storage::disk('public')->url($vehicleType->picture_path) : null,
+                'is_active' => $vehicleType->is_active,
+                'created_at_human' => $vehicleType->created_at_human,
+                'updated_at_human' => $vehicleType->updated_at_human,
+                'creator' => $vehicleType->creator ? ['name' => $vehicleType->creator->name] : null,
+                'updater' => $vehicleType->updater ? ['name' => $vehicleType->updater->name] : null,
+            ],
+            'vehicleStats' => $this->vehicleStats($vehicleType),
+            'recentVehicles' => $this->recentVehicles($vehicleType),
+            'auditLogs' => $this->auditHistory($vehicleType),
         ]);
+    }
+
+    private function vehicleStats(VehicleType $vehicleType): array
+    {
+        $vehicles = $vehicleType->vehicles();
+
+        return [
+            'total' => (clone $vehicles)->count(),
+            'active' => (clone $vehicles)->where('status', Vehicle::STATUS_ACTIVE)->count(),
+            'inactive' => (clone $vehicles)->where('status', Vehicle::STATUS_INACTIVE)->count(),
+            'suspended' => (clone $vehicles)->where('status', Vehicle::STATUS_SUSPENDED)->count(),
+        ];
+    }
+
+    private function recentVehicles(VehicleType $vehicleType): array
+    {
+        return $vehicleType->vehicles()
+            ->select('id', 'company_id', 'plate_number', 'body_number', 'status')
+            ->with('company:id,company_name')
+            ->latest()
+            ->limit(10)
+            ->get()
+            ->map(fn (Vehicle $vehicle) => [
+                'id' => $vehicle->id,
+                'plate_number' => $vehicle->plate_number,
+                'body_number' => $vehicle->body_number,
+                'status' => $vehicle->status,
+                'company_name' => $vehicle->company?->company_name,
+            ])
+            ->all();
+    }
+
+    private function auditHistory(VehicleType $vehicleType): array
+    {
+        // Actor is already surfaced via `user_name`, so the audit-trail
+        // fields below are hidden from the diff to avoid redundant noise.
+        $hiddenFields = ['created_by', 'updated_by', 'deleted_by'];
+
+        return AuditLog::query()
+            ->where('auditable_type', VehicleType::class)
+            ->where('auditable_id', $vehicleType->id)
+            ->with('user:id,name')
+            ->latest()
+            ->limit(20)
+            ->get()
+            ->map(fn (AuditLog $log) => [
+                'id' => $log->id,
+                'action' => $log->action,
+                'action_label' => Str::headline($log->action),
+                'user_name' => $log->user?->name,
+                'created_at_human' => $log->created_at?->diffForHumans(),
+                'changes' => collect($log->changed_fields ?? [])
+                    ->reject(fn ($value, $field) => in_array($field, $hiddenFields, true))
+                    ->map(fn ($value, $field) => [
+                        'field' => $field,
+                        'label' => Str::headline((string) $field),
+                        'old' => $this->formatAuditValue($field, $value['old'] ?? null),
+                        'new' => $this->formatAuditValue($field, $value['new'] ?? null),
+                    ])
+                    ->values()
+                    ->all(),
+            ])
+            ->all();
+    }
+
+    private function formatAuditValue(string $field, mixed $value): mixed
+    {
+        if ($field === 'picture_path') {
+            return $value ? 'Picture updated' : null;
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'Yes' : 'No';
+        }
+
+        return $value;
     }
 
     public function toggleStatus(VehicleType $vehicleType): RedirectResponse
@@ -92,17 +200,46 @@ class VehicleTypeController extends Controller
     {
         Gate::authorize('delete', $vehicleType);
 
-        $this->vehicleTypeService->deleteVehicleType($vehicleType);
+        $this->vehicleTypeService->archiveVehicleType($vehicleType);
 
-        return to_route('vehicle-types.index')->with('success', 'Vehicle type deleted successfully.');
+        return to_route('vehicle-types.index')->with('success', 'Vehicle type archived successfully.');
     }
 
-    public function show(VehicleType $vehicleType)
+    public function trash(Request $request)
     {
-        Gate::authorize('view', $vehicleType);
+        Gate::authorize('viewTrash', VehicleType::class);
 
-        return Inertia::render('VehicleType/Show', [
-            'vehicleType' => $vehicleType->load(['creator', 'updater']),
+        $vehicleTypes = VehicleType::onlyTrashed()
+            ->select('id', 'type_name', 'is_active', 'deleted_at', 'deleted_by')
+            ->with('deleter:id,name')
+            ->when($request->search, fn ($query, $search) => $query->where('type_name', 'like', "%{$search}%"))
+            ->latest('deleted_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return Inertia::render('VehicleType/Trash', [
+            'vehicleTypes' => $vehicleTypes,
+            'filters' => [
+                'search' => $request->search,
+            ],
         ]);
+    }
+
+    public function restore(VehicleType $vehicleType): RedirectResponse
+    {
+        Gate::authorize('restore', $vehicleType);
+
+        $this->vehicleTypeService->restoreVehicleType($vehicleType);
+
+        return redirect()->back()->with('success', 'Vehicle type restored successfully.');
+    }
+
+    public function forceDelete(VehicleType $vehicleType): RedirectResponse
+    {
+        Gate::authorize('forceDelete', $vehicleType);
+
+        $this->vehicleTypeService->forceDeleteVehicleType($vehicleType);
+
+        return redirect()->back()->with('success', 'Vehicle type permanently deleted.');
     }
 }

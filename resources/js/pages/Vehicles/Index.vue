@@ -66,7 +66,7 @@ import {
 } from 'vue-remix-icons';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import type { AcceptableValue } from 'reka-ui';
-import { PanelLayout } from '@/components/ui/_panels';
+import { PanelLayout, MainPanel, SidePanel } from '@/components/ui/_panels';
 import { destroy, index, show, trash } from '@/routes/vehicles';
 import { type BreadcrumbItem } from '@/types';
 import {
@@ -336,554 +336,558 @@ const openStatusDialog = (
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <PanelLayout>
-            <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
-                <CardHeader class="flex flex-row gap-2">
-                    <div class="flex flex-col">
-                        <CardTitle class="flex items-center gap-2">
-                            <span class="font-semibold">Vehicles</span>
-                        </CardTitle>
-                        <CardDescription>List of all vehicles in the system.</CardDescription>
-                    </div>
-                    <div class="flex flex-1 justify-end gap-2">
-                        <div class="lg:flex items-center gap-2 sm:justify-end">
-                            <DropdownMenu class="w-fit">
-                                <DropdownMenuTrigger as-child class="m-0">
-                                    <div class="inline-flex">
+            <MainPanel>
+                <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
+                    <CardHeader class="flex flex-row gap-2">
+                        <div class="flex flex-col">
+                            <CardTitle class="flex items-center gap-2">
+                                <span class="font-semibold">Vehicles</span>
+                            </CardTitle>
+                            <CardDescription>List of all vehicles in the system.</CardDescription>
+                        </div>
+                        <div class="flex flex-1 justify-end gap-2">
+                            <div class="lg:flex items-center gap-2 sm:justify-end">
+                                <DropdownMenu class="w-fit">
+                                    <DropdownMenuTrigger as-child class="m-0">
+                                        <div class="inline-flex">
+                                            <Button
+                                                variant="header-actions"
+                                                class="text-custom-shadow"
+                                                size="icon"
+                                                aria-label="Open vehicle actions"
+                                            >
+                                                <RiMore2Line class="h-4 w-4 shrink-0" />
+                                            </Button>
+                                        </div>
+                                    </DropdownMenuTrigger>
+
+                                    <DropdownMenuContent align="end" class="w-fit">
+                                        <DropdownMenuItem
+                                            class="group cursor-pointer"
+                                            @click="importOpen = true"
+                                        >
+                                            <RiFileAddLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                            Import
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            class="group cursor-pointer"
+                                            :disabled="exporting"
+                                            @click="triggerExport"
+                                        >
+                                            <RiLoaderLine v-if="exporting" class="h-4 w-4 animate-spin text-custom-shadow" />
+                                            <RiFileUploadLine v-else class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                            {{ exporting ? 'Exporting...' : 'Export' }}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem as-child class="group cursor-pointer">
+                                            <Link :href="trash().url" class="flex items-center">
+                                                <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
+                                                Archives
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </div>
+                    </CardHeader>
+
+                    <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
+                        <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
+                            <div class="w-full">
+                                <SearchInput
+                                    :route="index().url"
+                                    :initial-value="filters.search"
+                                    placeholder="Search by company, route, plate, capacity, body number..."
+                                    :only="['vehicles', 'filters', 'flash']"
+                                    :debounce="350"
+                                    :extra-params="currentFilterParams"
+                                />
+                            </div>
+
+                            <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
+                                <Popover v-model:open="filterOpen">
+                                    <PopoverTrigger as-child>
                                         <Button
                                             variant="header-actions"
-                                            class="text-custom-shadow"
-                                            size="icon"
-                                            aria-label="Open vehicle actions"
-                                        >
-                                            <RiMore2Line class="h-4 w-4 shrink-0" />
-                                        </Button>
-                                    </div>
-                                </DropdownMenuTrigger>
-
-                                <DropdownMenuContent align="end" class="w-fit">
-                                    <DropdownMenuItem
-                                        class="group cursor-pointer"
-                                        @click="importOpen = true"
-                                    >
-                                        <RiFileAddLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                                        Import
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        class="group cursor-pointer"
-                                        :disabled="exporting"
-                                        @click="triggerExport"
-                                    >
-                                        <RiLoaderLine v-if="exporting" class="h-4 w-4 animate-spin text-custom-shadow" />
-                                        <RiFileUploadLine v-else class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                                        {{ exporting ? 'Exporting...' : 'Export' }}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem as-child class="group cursor-pointer">
-                                        <Link :href="trash().url" class="flex items-center">
-                                            <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
-                                            Archives
-                                        </Link>
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                    </div>
-                </CardHeader>
-
-                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
-                    <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
-                        <div class="w-full">
-                            <SearchInput
-                                :route="index().url"
-                                :initial-value="filters.search"
-                                placeholder="Search by company, route, plate, capacity, body number..."
-                                :only="['vehicles', 'filters', 'flash']"
-                                :debounce="350"
-                                :extra-params="currentFilterParams"
-                            />
-                        </div>
-
-                        <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
-                            <Popover v-model:open="filterOpen">
-                                <PopoverTrigger as-child>
-                                    <Button
-                                        variant="header-actions"
-                                        size="icon-text"
-                                        class="rounded-full"
-                                        :class="
-                                            activeFilterCount > 0
-                                                ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-200 dark:hover:text-custom-shadow'
-                                                : ''
-                                        "
-                                    >
-                                        <RiFilter2Line class="h-3.5 w-3.5" />
-                                        <span class="hidden lg:flex">
-                                            {{
+                                            size="icon-text"
+                                            class="rounded-full"
+                                            :class="
                                                 activeFilterCount > 0
-                                                    ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
-                                                    : 'Filter'
-                                            }}
-                                        </span>
-                                    </Button>
-                                </PopoverTrigger>
+                                                    ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-200 dark:hover:text-custom-shadow'
+                                                    : ''
+                                            "
+                                        >
+                                            <RiFilter2Line class="h-3.5 w-3.5" />
+                                            <span class="hidden lg:flex">
+                                                {{
+                                                    activeFilterCount > 0
+                                                        ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
+                                                        : 'Filter'
+                                                }}
+                                            </span>
+                                        </Button>
+                                    </PopoverTrigger>
 
-                                <PopoverContent align="start">
-                                    <div class="grid gap-y-2">
-                                            <div class="flex flex-col gap-y-1">
-                                                <p class="text-sm text-custom-shadow/80">
-                                                    Status
-                                                </p>
-                                                <Select
-                                                    :model-value="statusFilter"
-                                                    @update:model-value="
-                                                        onStatusChange
-                                                    "
-                                                >
-                                                    <SelectTrigger
-                                                        class="w-full"
+                                    <PopoverContent align="start">
+                                        <div class="grid gap-y-2">
+                                                <div class="flex flex-col gap-y-1">
+                                                    <p class="text-sm text-custom-shadow/80">
+                                                        Status
+                                                    </p>
+                                                    <Select
+                                                        :model-value="statusFilter"
+                                                        @update:model-value="
+                                                            onStatusChange
+                                                        "
                                                     >
-                                                        <SelectValue
-                                                            placeholder="All Statuses"
-                                                            class="flex justify-start"
-                                                        />
-                                                    </SelectTrigger>
-                                                    <SelectContent
+                                                        <SelectTrigger
+                                                            class="w-full"
+                                                        >
+                                                            <SelectValue
+                                                                placeholder="All Statuses"
+                                                                class="flex justify-start"
+                                                            />
+                                                        </SelectTrigger>
+                                                        <SelectContent
+                                                        >
+                                                            <SelectItem
+                                                                value="all"
+                                                                class="cursor-pointer text-sm"
+                                                            >
+                                                                All Statuses
+                                                            </SelectItem>
+                                                            <SelectItem
+                                                                value="active"
+                                                                class="cursor-pointer text-sm"
+                                                            >
+                                                                Active
+                                                            </SelectItem>
+                                                            <SelectItem
+                                                                value="inactive"
+                                                                class="cursor-pointer text-sm"
+                                                            >
+                                                                Inactive
+                                                            </SelectItem>
+                                                            <SelectItem
+                                                                value="suspended"
+                                                                class="cursor-pointer text-sm"
+                                                            >
+                                                                Suspended
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                <div class="flex flex-col gap-y-1">
+                                                    <p class="text-sm text-custom-shadow/80">
+                                                        Vehicle Type
+                                                    </p>
+                                                    <Select
+                                                        :model-value="
+                                                            vehicleTypeFilter
+                                                        "
+                                                        @update:model-value="
+                                                            onVehicleTypeChange
+                                                        "
                                                     >
-                                                        <SelectItem
-                                                            value="all"
-                                                            class="cursor-pointer text-sm"
+                                                        <SelectTrigger
+                                                            class="w-full"
                                                         >
-                                                            All Statuses
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            value="active"
-                                                            class="cursor-pointer text-sm"
+                                                            <SelectValue
+                                                                placeholder="All Types"
+                                                                class="flex justify-start"
+                                                            />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem
+                                                                value="all"
+                                                                class="cursor-pointer text-sm"
+                                                            >
+                                                                All Types
+                                                            </SelectItem>
+                                                            <SelectItem v-for="vehicleType in vehicleTypes" :key="vehicleType.id" :value="vehicleType.id" class="cursor-pointer text-sm">
+                                                                {{ vehicleType.type_name }}
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                <div class="flex flex-col gap-y-1">
+                                                    <p class="text-sm text-custom-shadow/80">
+                                                        Route
+                                                    </p>
+                                                    <Select
+                                                        :model-value="routeFilter"
+                                                        @update:model-value="
+                                                            onRouteChange
+                                                        "
+                                                    >
+                                                        <SelectTrigger
+                                                            class="w-full"
                                                         >
-                                                            Active
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            value="inactive"
-                                                            class="cursor-pointer text-sm"
+                                                            <SelectValue
+                                                                placeholder="All Routes"
+                                                                class="flex justify-start"
+                                                            />
+                                                        </SelectTrigger>
+                                                        <SelectContent
                                                         >
-                                                            Inactive
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            value="suspended"
-                                                            class="cursor-pointer text-sm"
+                                                            <SelectItem
+                                                                value="all"
+                                                                class="cursor-pointer text-sm"
+                                                            >
+                                                                All Routes
+                                                            </SelectItem>
+                                                            <SelectItem
+                                                                v-for="route in props.routes"
+                                                                :key="route.id"
+                                                                :value="
+                                                                    String(route.id)
+                                                                "
+                                                                class="cursor-pointer text-sm"
+                                                            >
+                                                                {{
+                                                                    route.route_name
+                                                                }}
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                <hr class="my-1 h-px border-0 bg-custom-bg-dark">
+
+                                                <div class="flex w-full flex-row items-center justify-between">
+                                                    <Button
+                                                        v-if="hasActiveFilters"
+                                                        size="sm"
+                                                        variant="destructive"
+                                                        @click="clearFilters"
+                                                    >
+                                                        Clear
+                                                    </Button>
+
+                                                    <div class="ml-auto flex items-center gap-2">
+                                                        <Button
+                                                            variant="ghost-outline"
+                                                            size="sm"
+                                                            @click="filterOpen = false"
                                                         >
-                                                            Suspended
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
+                                                            Cancel
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="float-primary"
+                                                            @click="applyFilters()"
+                                                        >
+                                                            Apply
+                                                        </Button>
+                                                    </div>
+                                                </div>
                                             </div>
+                                        </PopoverContent>
+                                    </Popover>
+                            </div>
+                        </div>
 
-                                            <div class="flex flex-col gap-y-1">
-                                                <p class="text-sm text-custom-shadow/80">
-                                                    Vehicle Type
-                                                </p>
-                                                <Select
-                                                    :model-value="
-                                                        vehicleTypeFilter
-                                                    "
-                                                    @update:model-value="
-                                                        onVehicleTypeChange
-                                                    "
-                                                >
-                                                    <SelectTrigger
-                                                        class="w-full"
-                                                    >
-                                                        <SelectValue
-                                                            placeholder="All Types"
-                                                            class="flex justify-start"
-                                                        />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem
-                                                            value="all"
-                                                            class="cursor-pointer text-sm"
-                                                        >
-                                                            All Types
-                                                        </SelectItem>
-                                                        <SelectItem v-for="vehicleType in vehicleTypes" :key="vehicleType.id" :value="vehicleType.id" class="cursor-pointer text-sm">
-                                                            {{ vehicleType.type_name }}
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
+                        <TableCard :table-data-length="vehicles.data.length">
+                            <Table v-if="vehicles.data.length > 0">
+                                <TableHeader>
+                                    <TableColumn>
+                                        Company
+                                    </TableColumn>
+                                    <TableColumn>
+                                        Route
+                                    </TableColumn>
+                                    <TableColumn>
+                                        Vehicle
+                                    </TableColumn>
+                                    <TableColumn>
+                                        Plate
+                                    </TableColumn>
 
-                                            <div class="flex flex-col gap-y-1">
-                                                <p class="text-sm text-custom-shadow/80">
-                                                    Route
-                                                </p>
-                                                <Select
-                                                    :model-value="routeFilter"
-                                                    @update:model-value="
-                                                        onRouteChange
-                                                    "
-                                                >
-                                                    <SelectTrigger
-                                                        class="w-full"
-                                                    >
-                                                        <SelectValue
-                                                            placeholder="All Routes"
-                                                            class="flex justify-start"
-                                                        />
-                                                    </SelectTrigger>
-                                                    <SelectContent
-                                                    >
-                                                        <SelectItem
-                                                            value="all"
-                                                            class="cursor-pointer text-sm"
-                                                        >
-                                                            All Routes
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            v-for="route in props.routes"
-                                                            :key="route.id"
-                                                            :value="
-                                                                String(route.id)
-                                                            "
-                                                            class="cursor-pointer text-sm"
-                                                        >
-                                                            {{
-                                                                route.route_name
-                                                            }}
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
+                                    <!-- _TableSortColumn -->
+                                    <!-- TODO: make this component work -->
+                                    <TableColumn class="p-0">
+                                        <button
+                                            type="button"
+                                            class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                            @click="toggleSort('capacity')"
+                                        >
+                                            Cap.
+                                            <component
+                                                :is="sortIcon('capacity')"
+                                                class="h-3.5 w-3.5"
+                                                :class="sortIconClass('capacity')"
+                                            />
+                                        </button>
+                                    </TableColumn>
 
-                                            <hr class="my-1 h-px border-0 bg-custom-bg-dark">
+                                    <TableColumn class="p-0">
+                                        <button
+                                            type="button"
+                                            class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
+                                            @click="toggleSort('status')"
+                                        >
+                                            Status
+                                            <component
+                                                :is="sortIcon('status')"
+                                                class="h-3.5 w-3.5"
+                                                :class="sortIconClass('status')"
+                                            />
+                                        </button>
+                                    </TableColumn>
 
-                                            <div class="flex w-full flex-row items-center justify-between">
-                                                <Button
-                                                    v-if="hasActiveFilters"
-                                                    size="sm"
-                                                    variant="destructive"
-                                                    @click="clearFilters"
-                                                >
-                                                    Clear
-                                                </Button>
+                                    <TableColumn>
+                                        Verification
+                                    </TableColumn>
 
-                                                <div class="ml-auto flex items-center gap-2">
+                                    <TableColumn>
+                                        Operator Remark
+                                    </TableColumn>
+                                    <TableColumn>
+                                        Admin Remark
+                                    </TableColumn>
+                                </TableHeader>
+
+                                <TableContent>
+                                    <TableRow
+                                        v-for="(vehicle, rowIndex) in vehicles.data"
+                                        :key="vehicle.id"
+                                        :class="[
+                                            rowIndex === vehicles.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                            // make these class things its own attribute for table row:))
+                                            previewedVehicle?.id === vehicle.id ? 'bg-custom-secondary/10' : '',
+                                        ]"
+                                        :status="vehicle.status === 'inactive' ? 'inactive' : 'default'"
+                                        @click.left="openPreview(vehicle)"
+                                        @dblclick="router.visit(show({ vehicle: vehicle.id }).url)"
+                                    >
+                                        <TableData class="pl-3 font-semibold">
+                                            <span class="truncate">{{ vehicle.company?.company_name || '—' }}</span>
+                                        </TableData>
+
+                                        <TableData>
+                                            <span class="truncate">{{ vehicle.route?.route_name || '—' }}</span>
+                                        </TableData>
+
+                                        <TableData class="justify-center flex-col">
+                                            <p class="truncate text-sm font-medium">{{ vehicle.vehicle_type?.type_name ?? '—' }}</p>
+                                            <p class="truncate text-xs">{{ vehicle.body_number || '—' }}</p>
+                                        </TableData>
+
+                                        <TableData>
+                                            <span class="rounded bg-custom-bg px-2 py-0.5 font-mono text-xs font-semibold dark:bg-custom-bg-light">
+                                                {{ vehicle.plate_number || '—' }}
+                                            </span>
+                                        </TableData>
+
+                                        <TableData>
+                                            <span class="tabular-nums">
+                                                {{ vehicle.capacity || '—' }}
+                                            </span>
+                                        </TableData>
+
+                                        <TableData>
+                                            <Badge :class="['gap-1.5', operationalStatusClass(vehicle.status)]">
+                                                <span :class="['h-1.5 w-1.5 rounded-full', operationalStatusDot(vehicle.status)]" />
+                                                {{ operationalStatusLabel(vehicle.status) }}
+                                            </Badge>
+                                        </TableData>
+
+                                        <TableData>
+                                            <Badge :class="['gap-1.5', verificationStatusClass(vehicle.verification_status)]">
+                                                <span :class="['h-1.5 w-1.5 rounded-full', verificationStatusDot(vehicle.verification_status)]" />
+                                                {{ verificationStatusLabel(vehicle.verification_status) }}
+                                            </Badge>
+                                        </TableData>
+
+                                        <TableData>
+                                            <Popover v-if="vehicle.operator_remark">
+                                                <PopoverTrigger as-child>
                                                     <Button
                                                         variant="ghost-outline"
                                                         size="sm"
-                                                        @click="filterOpen = false"
+                                                        class="h-7 px-2 text-xs"
                                                     >
-                                                        Cancel
+                                                        <RiFileTextLine class="h-3.5 w-3.5" />
+                                                        View
                                                     </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent class="w-64 p-3 text-sm">
+                                                    {{ vehicle.operator_remark }}
+                                                </PopoverContent>
+                                            </Popover>
+                                            <span v-else class="text-xs text-custom-shadow/70">—</span>
+                                        </TableData>
+
+                                        <TableData>
+                                            <Popover v-if="vehicle.suspension_remark">
+                                                <PopoverTrigger as-child>
                                                     <Button
+                                                        variant="ghost-outline"
                                                         size="sm"
-                                                        variant="float-primary"
-                                                        @click="applyFilters()"
+                                                        class="h-7 px-2 text-xs"
                                                     >
-                                                        Apply
+                                                        <RiFileTextLine class="h-3.5 w-3.5" />
+                                                        View
                                                     </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
-                        </div>
-                    </div>
+                                                </PopoverTrigger>
+                                                <PopoverContent class="w-64 p-3 text-sm">
+                                                    {{ vehicle.suspension_remark }}
+                                                </PopoverContent>
+                                            </Popover>
+                                            <span v-else class="text-xs text-custom-shadow/70">—</span>
+                                        </TableData>
 
-                    <TableCard :table-data-length="vehicles.data.length">
-                        <Table v-if="vehicles.data.length > 0">
-                            <TableHeader>
-                                <TableColumn>
-                                    Company
-                                </TableColumn>
-                                <TableColumn>
-                                    Route
-                                </TableColumn>
-                                <TableColumn>
-                                    Vehicle
-                                </TableColumn>
-                                <TableColumn>
-                                    Plate
-                                </TableColumn>
+                                        <TableMoreButton
+                                            :open="openMenus[vehicle.id]?.open ?? false"
+                                            :x="openMenus[vehicle.id]?.x ?? 0"
+                                            :y="openMenus[vehicle.id]?.y ?? 0"
+                                            :mode="openMenus[vehicle.id]?.mode ?? 'trigger'"
+                                            @update:open="(value) => {
+                                                const current = openMenus[vehicle.id] ?? { open: false, x: 0, y: 0, mode: 'trigger' }
 
-                                <!-- _TableSortColumn -->
-                                <!-- TODO: make this component work -->
-                                <TableColumn class="p-0">
-                                    <button
-                                        type="button"
-                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
-                                        @click="toggleSort('capacity')"
-                                    >
-                                        Cap.
-                                        <component
-                                            :is="sortIcon('capacity')"
-                                            class="h-3.5 w-3.5"
-                                            :class="sortIconClass('capacity')"
-                                        />
-                                    </button>
-                                </TableColumn>
-
-                                <TableColumn class="p-0">
-                                    <button
-                                        type="button"
-                                        class="flex h-10 w-full cursor-pointer select-none items-center justify-start gap-1.5 pl-3 pr-0 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80 transition-colors hover:text-custom-shadow"
-                                        @click="toggleSort('status')"
-                                    >
-                                        Status
-                                        <component
-                                            :is="sortIcon('status')"
-                                            class="h-3.5 w-3.5"
-                                            :class="sortIconClass('status')"
-                                        />
-                                    </button>
-                                </TableColumn>
-
-                                <TableColumn>
-                                    Verification
-                                </TableColumn>
-
-                                <TableColumn>
-                                    Operator Remark
-                                </TableColumn>
-                                <TableColumn>
-                                    Admin Remark
-                                </TableColumn>
-                            </TableHeader>
-
-                            <TableContent>
-                                <TableRow
-                                    v-for="(vehicle, rowIndex) in vehicles.data"
-                                    :key="vehicle.id"
-                                    :class="[
-                                        rowIndex === vehicles.data.length - 1 ? 'rounded-b-md border-b-0' : '',
-                                        // make these class things its own attribute for table row:))
-                                        previewedVehicle?.id === vehicle.id ? 'bg-custom-secondary/10' : '',
-                                    ]"
-                                    :status="vehicle.status === 'inactive' ? 'inactive' : 'default'"
-                                    @click.left="openPreview(vehicle)"
-                                    @dblclick="router.visit(show({ vehicle: vehicle.id }).url)"
-                                >
-                                    <TableData class="pl-3 font-semibold">
-                                        <span class="truncate">{{ vehicle.company?.company_name || '—' }}</span>
-                                    </TableData>
-
-                                    <TableData>
-                                        <span class="truncate">{{ vehicle.route?.route_name || '—' }}</span>
-                                    </TableData>
-
-                                    <TableData class="justify-center flex-col">
-                                        <p class="truncate text-sm font-medium">{{ vehicle.vehicle_type?.type_name ?? '—' }}</p>
-                                        <p class="truncate text-xs">{{ vehicle.body_number || '—' }}</p>
-                                    </TableData>
-
-                                    <TableData>
-                                        <span class="rounded bg-custom-bg px-2 py-0.5 font-mono text-xs font-semibold dark:bg-custom-bg-light">
-                                            {{ vehicle.plate_number || '—' }}
-                                        </span>
-                                    </TableData>
-
-                                    <TableData>
-                                        <span class="tabular-nums">
-                                            {{ vehicle.capacity || '—' }}
-                                        </span>
-                                    </TableData>
-
-                                    <TableData>
-                                        <Badge :class="['gap-1.5', operationalStatusClass(vehicle.status)]">
-                                            <span :class="['h-1.5 w-1.5 rounded-full', operationalStatusDot(vehicle.status)]" />
-                                            {{ operationalStatusLabel(vehicle.status) }}
-                                        </Badge>
-                                    </TableData>
-
-                                    <TableData>
-                                        <Badge :class="['gap-1.5', verificationStatusClass(vehicle.verification_status)]">
-                                            <span :class="['h-1.5 w-1.5 rounded-full', verificationStatusDot(vehicle.verification_status)]" />
-                                            {{ verificationStatusLabel(vehicle.verification_status) }}
-                                        </Badge>
-                                    </TableData>
-
-                                    <TableData>
-                                        <Popover v-if="vehicle.operator_remark">
-                                            <PopoverTrigger as-child>
-                                                <Button
-                                                    variant="ghost-outline"
-                                                    size="sm"
-                                                    class="h-7 px-2 text-xs"
+                                                setMenuState(vehicle.id, {
+                                                    ...current,
+                                                    open: value,
+                                                    mode: value ? current.mode : 'trigger',
+                                                })
+                                            }"
+                                        >
+                                            <DropdownMenuLabel>
+                                                <span>{{ vehicle.plate_number }}</span>
+                                            </DropdownMenuLabel>
+                                            <DropdownMenuItem as-child class="group cursor-pointer">
+                                                <Link
+                                                    :href="show({ vehicle: vehicle.id }).url"
+                                                    class="flex items-center"
                                                 >
-                                                    <RiFileTextLine class="h-3.5 w-3.5" />
-                                                    View
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent class="w-64 p-3 text-sm">
-                                                {{ vehicle.operator_remark }}
-                                            </PopoverContent>
-                                        </Popover>
-                                        <span v-else class="text-xs text-custom-shadow/70">—</span>
-                                    </TableData>
+                                                    <RiFileCheckLine class="h-4 w-4 shrink-0 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                    Review
+                                                </Link>
+                                            </DropdownMenuItem>
 
-                                    <TableData>
-                                        <Popover v-if="vehicle.suspension_remark">
-                                            <PopoverTrigger as-child>
-                                                <Button
-                                                    variant="ghost-outline"
-                                                    size="sm"
-                                                    class="h-7 px-2 text-xs"
-                                                >
-                                                    <RiFileTextLine class="h-3.5 w-3.5" />
-                                                    View
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent class="w-64 p-3 text-sm">
-                                                {{ vehicle.suspension_remark }}
-                                            </PopoverContent>
-                                        </Popover>
-                                        <span v-else class="text-xs text-custom-shadow/70">—</span>
-                                    </TableData>
-
-                                    <TableMoreButton
-                                        :open="openMenus[vehicle.id]?.open ?? false"
-                                        :x="openMenus[vehicle.id]?.x ?? 0"
-                                        :y="openMenus[vehicle.id]?.y ?? 0"
-                                        :mode="openMenus[vehicle.id]?.mode ?? 'trigger'"
-                                        @update:open="(value) => {
-                                            const current = openMenus[vehicle.id] ?? { open: false, x: 0, y: 0, mode: 'trigger' }
-
-                                            setMenuState(vehicle.id, {
-                                                ...current,
-                                                open: value,
-                                                mode: value ? current.mode : 'trigger',
-                                            })
-                                        }"
-                                    >
-                                        <DropdownMenuLabel>
-                                            <span>{{ vehicle.plate_number }}</span>
-                                        </DropdownMenuLabel>
-                                        <DropdownMenuItem as-child class="group cursor-pointer">
-                                            <Link
-                                                :href="show({ vehicle: vehicle.id }).url"
-                                                class="flex items-center"
+                                            <DropdownMenuItem
+                                                v-if="vehicle.status !== 'active'"
+                                                :disabled="!canToggle(vehicle)"
+                                                class="group cursor-pointer rounded-md"
+                                                @click="canToggle(vehicle) && openStatusDialog(vehicle, 'active')"
                                             >
-                                                <RiFileCheckLine class="h-4 w-4 shrink-0 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                Review
-                                            </Link>
-                                        </DropdownMenuItem>
+                                                <RiOctagonLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Set Active</span>
+                                            </DropdownMenuItem>
 
-                                        <DropdownMenuItem
-                                            v-if="vehicle.status !== 'active'"
-                                            :disabled="!canToggle(vehicle)"
-                                            class="group cursor-pointer rounded-md"
-                                            @click="canToggle(vehicle) && openStatusDialog(vehicle, 'active')"
-                                        >
-                                            <RiOctagonLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                            <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Set Active</span>
-                                        </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                v-if="vehicle.status !== 'inactive'"
+                                                :disabled="!canToggle(vehicle)"
+                                                class="group cursor-pointer rounded-md"
+                                                @click="canToggle(vehicle) && openStatusDialog(vehicle, 'inactive')"
+                                            >
+                                                <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Set Inactive</span>
+                                            </DropdownMenuItem>
 
-                                        <DropdownMenuItem
-                                            v-if="vehicle.status !== 'inactive'"
-                                            :disabled="!canToggle(vehicle)"
-                                            class="group cursor-pointer rounded-md"
-                                            @click="canToggle(vehicle) && openStatusDialog(vehicle, 'inactive')"
-                                        >
-                                            <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                            <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Set Inactive</span>
-                                        </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                v-if="vehicle.status !== 'suspended'"
+                                                :disabled="!canToggle(vehicle)"
+                                                class="group cursor-pointer rounded-md"
+                                                @click="canToggle(vehicle) && openStatusDialog(vehicle, 'suspended')"
+                                            >
+                                                <RiSpam2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Suspend</span>
+                                            </DropdownMenuItem>
+                                        </TableMoreButton>
+                                    </TableRow>
+                                </TableContent>
+                            </Table>
 
-                                        <DropdownMenuItem
-                                            v-if="vehicle.status !== 'suspended'"
-                                            :disabled="!canToggle(vehicle)"
-                                            class="group cursor-pointer rounded-md"
-                                            @click="canToggle(vehicle) && openStatusDialog(vehicle, 'suspended')"
-                                        >
-                                            <RiSpam2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                            <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Suspend</span>
-                                        </DropdownMenuItem>
-                                    </TableMoreButton>
-                                </TableRow>
-                            </TableContent>
-                        </Table>
-
-                        <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
-                            <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
-                                <img
-                                    :src="emptyRafikiUrl"
-                                    alt=""
-                                    class="w-1/3 object-contain opacity-90"
-                                    aria-hidden="true"
-                                />
-                                <div class="space-y-1">
-                                    <p class="text-custom-shadow text-base font-semibold">No vehicles found</p>
-                                    <p class="text-custom-shadow/80 text-sm">
-                                        {{ hasActiveFilters ? 'Try adjusting or clearing your filters.' : 'Try adjusting your search.' }}
-                                    </p>
+                            <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                                <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                                    <img
+                                        :src="emptyRafikiUrl"
+                                        alt=""
+                                        class="w-1/3 object-contain opacity-90"
+                                        aria-hidden="true"
+                                    />
+                                    <div class="space-y-1">
+                                        <p class="text-custom-shadow text-base font-semibold">No vehicles found</p>
+                                        <p class="text-custom-shadow/80 text-sm">
+                                            {{ hasActiveFilters ? 'Try adjusting or clearing your filters.' : 'Try adjusting your search.' }}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </TableCard>
+                        </TableCard>
 
-                    <InertiaPagination
-                        :links="vehicles.links"
-                        :meta="{
-                            from: vehicles.from,
-                            to: vehicles.to,
-                            total: vehicles.total,
-                        }"
-                    />
-                </CardContent>
-            </Card>
+                        <InertiaPagination
+                            :links="vehicles.links"
+                            :meta="{
+                                from: vehicles.from,
+                                to: vehicles.to,
+                                total: vehicles.total,
+                            }"
+                        />
+                    </CardContent>
+                </Card>
+            </MainPanel>
 
-            <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-100">
-                <CardHeader v-if="previewedVehicle" class="flex flex-row items-start justify-between gap-3">
-                    <div class="min-w-0">
-                        <CardTitle class="truncate uppercase">{{ previewedVehicle.plate_number || 'Vehicle' }}</CardTitle>
-                        <CardDescription>Preview</CardDescription>
-                    </div>
-                    <Button variant="header-actions" size="icon" class="h-8 w-8 shrink-0 rounded-full" @click="previewedVehicle = null">
-                        <RiCloseLine class="h-4 w-4" />
-                    </Button>
-                </CardHeader>
+            <SidePanel>
+                <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-full">
+                    <CardHeader v-if="previewedVehicle" class="flex flex-row items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <CardTitle class="truncate uppercase">{{ previewedVehicle.plate_number || 'Vehicle' }}</CardTitle>
+                            <CardDescription>Preview</CardDescription>
+                        </div>
+                        <Button variant="header-actions" size="icon" class="h-8 w-8 shrink-0 rounded-full" @click="previewedVehicle = null">
+                            <RiCloseLine class="h-4 w-4" />
+                        </Button>
+                    </CardHeader>
 
-                <CardContent v-if="previewedVehicle" class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto pt-2">
-                    <div class="flex aspect-4/3 items-center justify-center rounded-md border border-dashed border-custom-bg-dark bg-custom-bg text-custom-shadow/70 dark:border-none dark:bg-custom-bg-dark">
-                        <RiBusLine class="h-16 w-16" />
-                    </div>
-                    <div class="space-y-3 pt-2">
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Operational Status</span>
-                            <Badge :class="['gap-1.5', operationalStatusClass(previewedVehicle.status)]"><span :class="['h-1.5 w-1.5 rounded-full', operationalStatusDot(previewedVehicle.status)]" />{{ operationalStatusLabel(previewedVehicle.status) }}</Badge>
+                    <CardContent v-if="previewedVehicle" class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto pt-2">
+                        <div class="flex aspect-4/3 items-center justify-center rounded-md border border-dashed border-custom-bg-dark bg-custom-bg text-custom-shadow/70 dark:border-none dark:bg-custom-bg-dark">
+                            <RiBusLine class="h-16 w-16" />
                         </div>
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Verification Status</span>
-                            <Badge :class="['gap-1.5', verificationStatusClass(previewedVehicle.verification_status)]"><span :class="['h-1.5 w-1.5 rounded-full', verificationStatusDot(previewedVehicle.verification_status)]" />{{ verificationStatusLabel(previewedVehicle.verification_status) }}</Badge>
+                        <div class="space-y-3 pt-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-sm font-semibold text-custom-shadow">Operational Status</span>
+                                <Badge :class="['gap-1.5', operationalStatusClass(previewedVehicle.status)]"><span :class="['h-1.5 w-1.5 rounded-full', operationalStatusDot(previewedVehicle.status)]" />{{ operationalStatusLabel(previewedVehicle.status) }}</Badge>
+                            </div>
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-sm font-semibold text-custom-shadow">Verification Status</span>
+                                <Badge :class="['gap-1.5', verificationStatusClass(previewedVehicle.verification_status)]"><span :class="['h-1.5 w-1.5 rounded-full', verificationStatusDot(previewedVehicle.verification_status)]" />{{ verificationStatusLabel(previewedVehicle.verification_status) }}</Badge>
+                            </div>
+                            <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Company</span><span class="text-right text-sm">{{ previewedVehicle.company?.company_name || 'Not assigned' }}</span></div>
+                            <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Route</span><span class="text-right text-sm">{{ previewedVehicle.route?.route_name || 'Not assigned' }}</span></div>
+                            <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Vehicle Type</span><span class="text-right text-sm">{{ previewedVehicle.vehicle_type?.type_name ?? '—' }}</span></div>
+                            <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Body Number</span><span class="text-right text-sm">{{ previewedVehicle.body_number || 'Not recorded' }}</span></div>
+                            <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Capacity</span><span class="text-right text-sm">{{ previewedVehicle.capacity || 'Not recorded' }}</span></div>
+                            <div v-if="previewedVehicle.operator_remark" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Operator Remark</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.operator_remark }}</p></div>
+                            <div v-if="previewedVehicle.suspension_remark" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Admin Remark</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.suspension_remark }}</p></div>
+                            <div v-if="previewedVehicle.verification_remark" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Verification Remark</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.verification_remark }}</p></div>
                         </div>
-                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Company</span><span class="text-right text-sm">{{ previewedVehicle.company?.company_name || 'Not assigned' }}</span></div>
-                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Route</span><span class="text-right text-sm">{{ previewedVehicle.route?.route_name || 'Not assigned' }}</span></div>
-                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Vehicle Type</span><span class="text-right text-sm">{{ previewedVehicle.vehicle_type?.type_name ?? '—' }}</span></div>
-                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Body Number</span><span class="text-right text-sm">{{ previewedVehicle.body_number || 'Not recorded' }}</span></div>
-                        <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Capacity</span><span class="text-right text-sm">{{ previewedVehicle.capacity || 'Not recorded' }}</span></div>
-                        <div v-if="previewedVehicle.operator_remark" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Operator Remark</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.operator_remark }}</p></div>
-                        <div v-if="previewedVehicle.suspension_remark" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Admin Remark</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.suspension_remark }}</p></div>
-                        <div v-if="previewedVehicle.verification_remark" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Verification Remark</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.verification_remark }}</p></div>
-                    </div>
-                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <div class="flex flex-wrap gap-2">
-                            <Button v-if="canToggle(previewedVehicle) && previewedVehicle.status !== 'active'" variant="ghost-outline" size="icon-text" @click="openStatusDialog(previewedVehicle, 'active')">
-                                <RiOctagonLine class="h-4 w-4" />Set Active
-                            </Button>
-                            <Button v-if="canToggle(previewedVehicle) && previewedVehicle.status !== 'inactive'" variant="ghost-outline" size="icon-text" @click="openStatusDialog(previewedVehicle, 'inactive')">
-                                <RiShutDownLine class="h-4 w-4" />Set Inactive
-                            </Button>
-                            <Button v-if="canToggle(previewedVehicle) && previewedVehicle.status !== 'suspended'" variant="ghost-outline" size="icon-text" @click="openStatusDialog(previewedVehicle, 'suspended')">
-                                <RiSpam2Line class="h-4 w-4" />Suspend
-                            </Button>
-                            <Button variant="destructive" size="icon-text" @click="openArchiveDialog(previewedVehicle)">
-                                <RiArchive2Line class="h-4 w-4" />Archive
-                            </Button>
+                        <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex flex-wrap gap-2">
+                                <Button v-if="canToggle(previewedVehicle) && previewedVehicle.status !== 'active'" variant="ghost-outline" size="icon-text" @click="openStatusDialog(previewedVehicle, 'active')">
+                                    <RiOctagonLine class="h-4 w-4" />Set Active
+                                </Button>
+                                <Button v-if="canToggle(previewedVehicle) && previewedVehicle.status !== 'inactive'" variant="ghost-outline" size="icon-text" @click="openStatusDialog(previewedVehicle, 'inactive')">
+                                    <RiShutDownLine class="h-4 w-4" />Set Inactive
+                                </Button>
+                                <Button v-if="canToggle(previewedVehicle) && previewedVehicle.status !== 'suspended'" variant="ghost-outline" size="icon-text" @click="openStatusDialog(previewedVehicle, 'suspended')">
+                                    <RiSpam2Line class="h-4 w-4" />Suspend
+                                </Button>
+                                <Button variant="destructive" size="icon-text" @click="openArchiveDialog(previewedVehicle)">
+                                    <RiArchive2Line class="h-4 w-4" />Archive
+                                </Button>
+                            </div>
+                            <Button as-child variant="float-primary" size="icon-text"><Link :href="show({ vehicle: previewedVehicle.id }).url"><RiFileCheckLine class="h-4 w-4 shrink-0" />Review</Link></Button>
                         </div>
-                        <Button as-child variant="float-primary" size="icon-text"><Link :href="show({ vehicle: previewedVehicle.id }).url"><RiFileCheckLine class="h-4 w-4 shrink-0" />Review</Link></Button>
-                    </div>
-                </CardContent>
-                <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
-                    <div class="max-w-60 space-y-1 text-center"><p class="text-base font-semibold text-custom-shadow">No vehicle selected</p><p class="text-sm text-custom-shadow/80">Click on a vehicle to preview.</p></div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                    <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
+                        <div class="max-w-60 space-y-1 text-center"><p class="text-base font-semibold text-custom-shadow">No vehicle selected</p><p class="text-sm text-custom-shadow/80">Click on a vehicle to preview.</p></div>
+                    </CardContent>
+                </Card>
+            </SidePanel>
         </PanelLayout>
 
         <VehicleArchiveDialog

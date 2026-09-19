@@ -260,7 +260,7 @@ function canToggleVehicle(vehicle: VehicleItem) {
 }
 
 function toggleLabel(status?: string | null) {
-    return status === 'active' ? 'Set as Inactive' : 'Set as Active';
+    return status === 'active' ? 'Inactivate' : 'Activate';
 }
 
 function firstBlockingReason(vehicle: VehicleItem) {
@@ -1056,7 +1056,7 @@ function openActivate(vehicle: VehicleItem) {
                                                 "
                                             >
                                                 <RiShutDownLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Set as Inactive</span>
+                                                <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Inactivate</span>
                                             </DropdownMenuItem>
 
                                             <DropdownMenuItem
@@ -1163,7 +1163,7 @@ function openActivate(vehicle: VehicleItem) {
                     <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <Button v-if="canToggleVehicle(previewedVehicle)" variant="ghost-outline" size="icon-text" @click="previewedVehicle.status === 'active' ? openDeactivate(previewedVehicle) : openActivate(previewedVehicle)">
-                            <RiShutDownLine class="h-4 w-4" />{{ previewedVehicle.status === 'active' ? 'Set as Inactive' : toggleLabel(previewedVehicle.status) }}
+                            <RiShutDownLine class="h-4 w-4" />{{ previewedVehicle.status === 'active' ? 'Inactivate' : toggleLabel(previewedVehicle.status) }}
                         </Button>
                         <Button as-child variant="float-primary" size="icon-text"><Link :href="CompanyVehicleController.show(previewedVehicle.id).url"><RiFileCheckLine class="h-4 w-4" />Review</Link></Button>
                     </div>

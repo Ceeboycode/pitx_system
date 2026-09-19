@@ -308,12 +308,13 @@ function submit() {
 
             <EditableField :editable="canEdit">
               <template #edit>
-                <span class="inline-flex items-center overflow-hidden">
+                <span class="inline-flex items-center w-full">
                   <Input
                       id="route_name_sidebar"
                       v-model="form.email"
                       placeholder="Enter email"
                       variant="inline-edit"
+                      class="truncate line-clamp-1"
                   />
                   <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
                   <TooltipProvider v-if="user.email_verified_at">
@@ -463,7 +464,7 @@ function submit() {
                       />
                     </SelectTrigger>
                     <SelectContent>
-                      <div class="p-2 relative w-full">
+                      <div class="pb-2 relative w-full">
                         <SearchInput
                           id="company_search"
                           ref="companySearchInputRef"
@@ -474,7 +475,7 @@ function submit() {
                       </div>
                       <span
                         v-if="filteredCompanies.length === 0"
-                          class="px-2 pb-3 text-sm text-custom-shadow"
+                          class="text-sm text-custom-shadow"
                       >
                         No companies found.
                       </span>
@@ -512,7 +513,7 @@ function submit() {
             </div>
             <span class="line-clamp-1 text-ellipsis">
               {{ formatDate(user.created_at) }}
-              <!-- <span v-if="user.creator?.name" class="text-custom-accent-3"> • </span>
+              <!-- <span class="text-custom-accent-3"> • </span>
               {{ user.creator?.name ?? '—' }} -->
             </span>
           </div>
@@ -524,7 +525,7 @@ function submit() {
             </div>
             <span class="line-clamp-1 text-ellipsis">
               {{ user.updated_at_human }}
-              <!-- <span v-if="user.updater?.name" class="text-custom-accent-3"> • </span>
+              <!-- <span class="text-custom-accent-3"> • </span>
               {{ user.updater?.name ?? '—' }} -->
             </span>
           </div>

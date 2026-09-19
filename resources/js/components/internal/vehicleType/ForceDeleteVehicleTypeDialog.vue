@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { destroy } from '@/routes/vehicle-types';
+import { forceDelete } from '@/routes/vehicle-types';
 import { router } from '@inertiajs/vue3';
-import { Trash2 } from 'lucide-vue-next';
+import { RiDeleteBin7Line } from 'vue-remix-icons';
 import { computed, ref, watch } from 'vue';
 
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 const open = defineModel<boolean>('open');
 
 const props = defineProps<{
-    vehicle_type: {
+    vehicleType: {
         id: number;
         type_name: string;
     };
@@ -38,7 +38,7 @@ watch(open, (value) => {
 function deletePermanently() {
     if (!canDelete.value) return;
 
-    router.delete(destroy({ vehicle_type: props.vehicle_type.id }).url, {
+    router.delete(forceDelete(props.vehicleType.id).url, {
         preserveScroll: true,
         onSuccess: () => {
             confirmation.value = '';
@@ -58,7 +58,7 @@ function deletePermanently() {
                     <p>
                         This action cannot be undone. It will permanently delete
                         <span class="font-medium">
-                            {{ props.vehicle_type.type_name }}
+                            {{ props.vehicleType.type_name }}
                         </span>
                         and remove it from the system.
                     </p>
@@ -90,11 +90,10 @@ function deletePermanently() {
                     :disabled="!canDelete"
                     @click="deletePermanently"
                 >
-                    <Trash2 class="mr-2 h-4 w-4 shrink-0" />
+                    <RiDeleteBin7Line class="mr-2 h-4 w-4 shrink-0" />
                     Delete Permanently
                 </Button>
             </DialogFooter>
         </DialogContent>
     </Dialog>
 </template>
-

@@ -48,7 +48,7 @@ import {
     RiCheckboxMultipleBlankLine,
     RiCheckboxMultipleLine,
     RiDownloadLine,
-    RiMessage2Fill,
+    RiChat4Line,
     RiFile2Fill,
     RiCheckLine,
     RiRestartLine,
@@ -424,7 +424,7 @@ function submitConfirm() {
                                                             class="rounded-lg gap-1.5"
                                                             @click.stop
                                                         >
-                                                            <RiMessage2Fill class="h-3.5 w-3.5 shrink-0" />
+                                                            <RiChat4Line class="h-3.5 w-3.5 shrink-0" />
                                                             View Remarks
                                                         </Button>
                                                     </PopoverTrigger>

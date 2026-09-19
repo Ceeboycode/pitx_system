@@ -11,9 +11,10 @@ import VehicleSummaryCard from '@/components/internal/company/vehicles/VehicleSu
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle, ArrowUp } from 'lucide-vue-next';
 import {
     RiArrowLeftLine,
+    RiArrowUpLine,
+    RiErrorWarningLine,
     RiEyeLine,
     RiFileTextLine,
     RiHashtag,
@@ -447,7 +448,7 @@ function statusDot(status?: string | null) {
                         <div
                             class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500"
                         >
-                            <AlertCircle class="h-4 w-4 shrink-0 text-white" />
+                            <RiErrorWarningLine class="h-4 w-4 shrink-0 text-white" />
                         </div>
                         <p
                             class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
@@ -630,7 +631,7 @@ function statusDot(status?: string | null) {
                                                 class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                                                 @click="scrollToSummary"
                                             >
-                                                <ArrowUp class="mr-2 h-4 w-4 shrink-0" />
+                                                <RiArrowUpLine class="mr-2 h-4 w-4 shrink-0" />
                                                 View Summary
                                             </Button>
                                         </div>
@@ -650,7 +651,7 @@ function statusDot(status?: string | null) {
                                             class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                                             @click="scrollToSummary"
                                         >
-                                            <ArrowUp class="mr-2 h-4 w-4 shrink-0" />
+                                            <RiArrowUpLine class="mr-2 h-4 w-4 shrink-0" />
                                             Go to Update Summary
                                         </Button>
                                     </div>

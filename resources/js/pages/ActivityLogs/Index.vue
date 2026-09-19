@@ -36,7 +36,7 @@ import {
     RiFilter2Line as Filter,
 } from 'vue-remix-icons';
 import { computed, ref } from 'vue';
-import { PanelLayout } from '@/components/ui/_panels';
+import { PanelLayout, MainPanel, SidePanel } from '@/components/ui/_panels';
 
 interface ChangeLine {
     field: string;
@@ -243,411 +243,415 @@ function actionBadgeClass(action: string): string {
     
     <AppLayout :breadcrumbs="breadcrumbs">
         <PanelLayout>
-            <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
-                <CardHeader class="flex flex-row gap-2">
-                    <div class="flex flex-col">
-                    <CardTitle class="flex items-center gap-2">
-                        <span class="font-semibold">Activity Logs</span>
-                    </CardTitle>
-                    <CardDescription>
-                        Review recent actions and account activity.
-                    </CardDescription>
-                    </div>
-                </CardHeader>
-                <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
-                    <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
-                        <div class="w-full">
-                            <SearchInput
-                                :route="myActivity().url"
-                                :initial-value="filters.search"
-                                placeholder="Search my activity..."
-                                :only="[
-                                    'auditLogs',
-                                    'filters',
-                                    'actions',
-                                    'entityTypes',
-                                    'flash',
-                                ]"
-                                :debounce="350"
-                            />
+            <MainPanel>
+                <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
+                    <CardHeader class="flex flex-row gap-2">
+                        <div class="flex flex-col">
+                        <CardTitle class="flex items-center gap-2">
+                            <span class="font-semibold">Activity Logs</span>
+                        </CardTitle>
+                        <CardDescription>
+                            Review recent actions and account activity.
+                        </CardDescription>
                         </div>
-                        <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
-                            <div class="flex flex-row items-center gap-2">
-                                <Popover>
-                                    <PopoverTrigger as-child>
-                                        <Button
-                                            variant="header-actions"
-                                            size="icon-text"
-                                            class="rounded-full"
-                                            :class="
-                                                hasCategoryFilters
-                                                    ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-200 dark:hover:text-custom-shadow'
-                                                    : ''
-                                            "
-                                        >
-                                            <Filter class="h-3.5 w-3.5" />
-                                            {{
-                                                hasCategoryFilters
-                                                    ? 'Filters Active'
-                                                    : 'Filters'
-                                            }}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                        align="start"
-                                    >
-                                        <div class="grid gap-y-2">
-                                            <div class="flex flex-col gap-y-1">
-                                                <p
-                                                    class="text-sm text-custom-shadow/80"
-                                                >
-                                                    Action
-                                                </p>
-                                                <Select
-                                                    :model-value="actionFilter"
-                                                    @update:model-value="onActionChange"
-                                                >
-                                                    <SelectTrigger
-                                                        class="w-full"
-                                                    >
-                                                        <SelectValue
-                                                            placeholder="All Actions"
-                                                            class="flex justify-start"
-                                                        />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="all" class="cursor-pointer text-sm">
-                                                            All Actions
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            v-for="action in actions"
-                                                            :key="action.value"
-                                                            :value="action.value"
-                                                            class="cursor-pointer text-sm">
-                                                            {{ action.label }}
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-
-                                            <div class="flex flex-col gap-y-1">
-                                                <p
-                                                    class="text-sm text-custom-shadow/80"
-                                                >
-                                                    Entity Type
-                                                </p>
-                                                <Select
-                                                    :model-value="entityTypeFilter"
-                                                    @update:model-value="onEntityTypeChange"
-                                                >
-                                                    <SelectTrigger
-                                                        class="w-full"
-                                                    >
-                                                        <SelectValue
-                                                            placeholder="All Types"
-                                                            class="flex justify-start"
-                                                        />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="all" class="cursor-pointer text-sm">
-                                                            All Entities
-                                                        </SelectItem>
-                                                        <SelectItem
-                                                            v-for="entity in entityTypes"
-                                                            :key="entity.value"
-                                                            :value="entity.value"
-                                                        >
-                                                            {{ entity.label }}
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <div class="flex justify-end">
-                                                <Button
-                                                    v-if="hasCategoryFilters"
-                                                    size="sm"
-                                                    variant="destructive"
-                                                    @click="clearFilters"
-                                                >
-                                                    <X class="mr-1 h-3.5 w-3.5" />
-                                                    Clear filters
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
-                                <Popover v-model:open="popoverFromOpen">
-                                    <PopoverTrigger as-child class="h-full">
-                                        <Button
-                                            variant="header-actions"
-                                            size="icon-text"
-                                            class="rounded-full gap-2"
-                                        >
-                                            <Calendar class="h-4 w-4 shrink-0" />
-                                            <span class="text-sm">
-                                                {{ dateFrom ? formatDateDisplay(dateFrom) : 'From date' }}
-                                            </span>
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                        align="start"
-                                    >
-                                        <p class="mb-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-                                            From Date
-                                        </p>
-                                        <CalendarPicker
-                                            v-model="calendarDateFrom"
-                                            @update:model-value="onCalendarFromChange"
-                                            class="px-0 pb-0"
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                                <Popover v-model:open="popoverToOpen">
-                                    <PopoverTrigger as-child class="h-full">
-                                        <Button
-                                            variant="header-actions"
-                                            size="icon-text"
-                                            class="rounded-full gap-2"
-                                        >
-                                            <Calendar class="h-4 w-4 shrink-0" />
-                                            <span class="text-sm">
-                                                {{ dateTo ? formatDateDisplay(dateTo) : 'To date' }}
-                                            </span>
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                        align="start"
-                                    >
-                                        <p class="mb-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-                                            To Date
-                                        </p>
-                                        <CalendarPicker
-                                            v-model="calendarDateTo"
-                                            @update:model-value="onCalendarToChange"
-                                            class="px-0 pb-0"
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                        </div>
-                    </div>
-                    <Card
-                        :class="[
-                            'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
-                            auditLogs.data.length === 0 ? 'border-dashed' : 'border-solid',
-                        ]"
-                    >
-                    <div v-if="auditLogs.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                        <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                            <div class="grid grid-cols-4 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
-                                <div class="flex h-10 items-center justify-start pl-3 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Action</div>
-                                <div class="flex h-10 items-center justify-start text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Entity</div>
-                                <div class="flex h-10 items-center justify-start text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Changes</div>
-                                <div class="flex h-10 items-center justify-start pr-3 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Timestamp</div>
-                            </div>
-                        </div>
-
-                        <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-                                <div
-                                    v-for="(log, index) in auditLogs.data"
-                                    :key="log.id"
-                                    :class="[
-                                        'group grid cursor-pointer grid-cols-4 items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
-                                        index === auditLogs.data.length - 1 ? 'rounded-b-md border-b-0' : '',
-                                        previewedLog?.id === log.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
+                    </CardHeader>
+                    <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
+                        <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
+                            <div class="w-full">
+                                <SearchInput
+                                    :route="myActivity().url"
+                                    :initial-value="filters.search"
+                                    placeholder="Search my activity..."
+                                    :only="[
+                                        'auditLogs',
+                                        'filters',
+                                        'actions',
+                                        'entityTypes',
+                                        'flash',
                                     ]"
-                                    @click="openPreview(log)"
-                                >
-                                    <div class="py-1.5 pl-3">
-                                        <Badge
-                                            :class="
-                                                actionBadgeClass(log.action)
-                                            "
-                                        >
-                                            {{ log.action_label }}
-                                        </Badge>
-                                    </div>
-
-                                    <div class="min-w-0 py-1.5">
-                                        <div class="text-sm font-medium">
-                                            {{ log.entity_label }}
-                                        </div>
-                                        <div
-                                            class="text-xs text-muted-foreground"
-                                        >
-                                            {{ log.entity_name ?? '—' }}
-                                        </div>
-                                    </div>
-
-                                    <div class="min-w-0 py-1.5">
-                                        <div class="space-y-1">
-                                            <div
-                                                v-for="change in log.changes.slice(
-                                                    0,
-                                                    2,
-                                                )"
-                                                :key="`${log.id}-${change.field}`"
-                                                class="text-xs text-muted-foreground break-words whitespace-normal"
+                                    :debounce="350"
+                                />
+                            </div>
+                            <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
+                                <div class="flex flex-row items-center gap-2">
+                                    <Popover>
+                                        <PopoverTrigger as-child>
+                                            <Button
+                                                variant="header-actions"
+                                                size="icon-text"
+                                                class="rounded-full"
+                                                :class="
+                                                    hasCategoryFilters
+                                                        ? 'bg-custom-secondary/20 hover:bg-custom-secondary/80 hover:text-custom-bg-light transition-all duration-200 dark:hover:text-custom-shadow'
+                                                        : ''
+                                                "
                                             >
-                                                <span
-                                                    class="font-medium text-foreground"
-                                                    >{{ change.label }}:</span
-                                                >
-                                                {{ formatValue(change.old) }} to
-                                                {{ formatValue(change.new) }}
+                                                <Filter class="h-3.5 w-3.5" />
+                                                {{
+                                                    hasCategoryFilters
+                                                        ? 'Filters Active'
+                                                        : 'Filters'
+                                                }}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent
+                                            align="start"
+                                        >
+                                            <div class="grid gap-y-2">
+                                                <div class="flex flex-col gap-y-1">
+                                                    <p
+                                                        class="text-sm text-custom-shadow/80"
+                                                    >
+                                                        Action
+                                                    </p>
+                                                    <Select
+                                                        :model-value="actionFilter"
+                                                        @update:model-value="onActionChange"
+                                                    >
+                                                        <SelectTrigger
+                                                            class="w-full"
+                                                        >
+                                                            <SelectValue
+                                                                placeholder="All Actions"
+                                                                class="flex justify-start"
+                                                            />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="all" class="cursor-pointer text-sm">
+                                                                All Actions
+                                                            </SelectItem>
+                                                            <SelectItem
+                                                                v-for="action in actions"
+                                                                :key="action.value"
+                                                                :value="action.value"
+                                                                class="cursor-pointer text-sm">
+                                                                {{ action.label }}
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                <div class="flex flex-col gap-y-1">
+                                                    <p
+                                                        class="text-sm text-custom-shadow/80"
+                                                    >
+                                                        Entity Type
+                                                    </p>
+                                                    <Select
+                                                        :model-value="entityTypeFilter"
+                                                        @update:model-value="onEntityTypeChange"
+                                                    >
+                                                        <SelectTrigger
+                                                            class="w-full"
+                                                        >
+                                                            <SelectValue
+                                                                placeholder="All Types"
+                                                                class="flex justify-start"
+                                                            />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="all" class="cursor-pointer text-sm">
+                                                                All Entities
+                                                            </SelectItem>
+                                                            <SelectItem
+                                                                v-for="entity in entityTypes"
+                                                                :key="entity.value"
+                                                                :value="entity.value"
+                                                            >
+                                                                {{ entity.label }}
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div class="flex justify-end">
+                                                    <Button
+                                                        v-if="hasCategoryFilters"
+                                                        size="sm"
+                                                        variant="destructive"
+                                                        @click="clearFilters"
+                                                    >
+                                                        <X class="mr-1 h-3.5 w-3.5" />
+                                                        Clear filters
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
+                                    <Popover v-model:open="popoverFromOpen">
+                                        <PopoverTrigger as-child class="h-full">
+                                            <Button
+                                                variant="header-actions"
+                                                size="icon-text"
+                                                class="rounded-full gap-2"
+                                            >
+                                                <Calendar class="h-4 w-4 shrink-0" />
+                                                <span class="text-sm">
+                                                    {{ dateFrom ? formatDateDisplay(dateFrom) : 'From date' }}
+                                                </span>
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent
+                                            align="start"
+                                        >
+                                            <p class="mb-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                                                From Date
+                                            </p>
+                                            <CalendarPicker
+                                                v-model="calendarDateFrom"
+                                                @update:model-value="onCalendarFromChange"
+                                                class="px-0 pb-0"
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                    <Popover v-model:open="popoverToOpen">
+                                        <PopoverTrigger as-child class="h-full">
+                                            <Button
+                                                variant="header-actions"
+                                                size="icon-text"
+                                                class="rounded-full gap-2"
+                                            >
+                                                <Calendar class="h-4 w-4 shrink-0" />
+                                                <span class="text-sm">
+                                                    {{ dateTo ? formatDateDisplay(dateTo) : 'To date' }}
+                                                </span>
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent
+                                            align="start"
+                                        >
+                                            <p class="mb-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                                                To Date
+                                            </p>
+                                            <CalendarPicker
+                                                v-model="calendarDateTo"
+                                                @update:model-value="onCalendarToChange"
+                                                class="px-0 pb-0"
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+                            </div>
+                        </div>
+                        <Card
+                            :class="[
+                                'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
+                                auditLogs.data.length === 0 ? 'border-dashed' : 'border-solid',
+                            ]"
+                        >
+                        <div v-if="auditLogs.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+                            <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
+                                <div class="grid grid-cols-4 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
+                                    <div class="flex h-10 items-center justify-start pl-3 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Action</div>
+                                    <div class="flex h-10 items-center justify-start text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Entity</div>
+                                    <div class="flex h-10 items-center justify-start text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Changes</div>
+                                    <div class="flex h-10 items-center justify-start pr-3 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase">Timestamp</div>
+                                </div>
+                            </div>
+
+                            <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
+                                    <div
+                                        v-for="(log, index) in auditLogs.data"
+                                        :key="log.id"
+                                        :class="[
+                                            'group grid cursor-pointer grid-cols-4 items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
+                                            index === auditLogs.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                            previewedLog?.id === log.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
+                                        ]"
+                                        @click="openPreview(log)"
+                                    >
+                                        <div class="py-1.5 pl-3">
+                                            <Badge
+                                                :class="
+                                                    actionBadgeClass(log.action)
+                                                "
+                                            >
+                                                {{ log.action_label }}
+                                            </Badge>
+                                        </div>
+
+                                        <div class="min-w-0 py-1.5">
+                                            <div class="text-sm font-medium">
+                                                {{ log.entity_label }}
                                             </div>
                                             <div
-                                                v-if="log.changes.length > 2"
                                                 class="text-xs text-muted-foreground"
                                             >
-                                                +{{
-                                                    log.changes.length - 2
-                                                }}
-                                                more
+                                                {{ log.entity_name ?? '—' }}
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div class="min-w-0 py-1.5 pr-3">
-                                        <div class="text-sm">
-                                            {{ log.created_at_human ?? '—' }}
+                                        <div class="min-w-0 py-1.5">
+                                            <div class="space-y-1">
+                                                <div
+                                                    v-for="change in log.changes.slice(
+                                                        0,
+                                                        2,
+                                                    )"
+                                                    :key="`${log.id}-${change.field}`"
+                                                    class="text-xs text-muted-foreground break-words whitespace-normal"
+                                                >
+                                                    <span
+                                                        class="font-medium text-foreground"
+                                                        >{{ change.label }}:</span
+                                                    >
+                                                    {{ formatValue(change.old) }} to
+                                                    {{ formatValue(change.new) }}
+                                                </div>
+                                                <div
+                                                    v-if="log.changes.length > 2"
+                                                    class="text-xs text-muted-foreground"
+                                                >
+                                                    +{{
+                                                        log.changes.length - 2
+                                                    }}
+                                                    more
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div
-                                            class="text-xs text-muted-foreground"
-                                        >
-                                            {{ log.created_at ?? '—' }}
-                                        </div>
-                                    </div>
 
+                                        <div class="min-w-0 py-1.5 pr-3">
+                                            <div class="text-sm">
+                                                {{ log.created_at_human ?? '—' }}
+                                            </div>
+                                            <div
+                                                class="text-xs text-muted-foreground"
+                                            >
+                                                {{ log.created_at ?? '—' }}
+                                            </div>
+                                        </div>
+
+                                    </div>
+                            </div>
+                        </div>
+
+                        <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                            <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                                <img
+                                    :src="emptyRafikiUrl"
+                                    alt=""
+                                    class="w-1/3 object-contain opacity-90"
+                                    aria-hidden="true"
+                                />
+                                <div class="space-y-1">
+                                    <p class="text-base font-semibold text-custom-shadow">No activity logs found</p>
+                                    <p class="text-sm text-custom-shadow/80">
+                                        {{ hasActiveFilters ? 'Try adjusting your filters or search.' : 'Try adjusting your search.' }}
+                                    </p>
                                 </div>
-                        </div>
-                    </div>
-
-                    <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
-                        <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
-                            <img
-                                :src="emptyRafikiUrl"
-                                alt=""
-                                class="w-1/3 object-contain opacity-90"
-                                aria-hidden="true"
-                            />
-                            <div class="space-y-1">
-                                <p class="text-base font-semibold text-custom-shadow">No activity logs found</p>
-                                <p class="text-sm text-custom-shadow/80">
-                                    {{ hasActiveFilters ? 'Try adjusting your filters or search.' : 'Try adjusting your search.' }}
-                                </p>
                             </div>
                         </div>
-                    </div>
-                    </Card>
+                        </Card>
 
-                    <InertiaPagination
-                        :links="auditLogs.links"
-                        :meta="{
-                            from: auditLogs.from,
-                            to: auditLogs.to,
-                            total: auditLogs.total,
-                        }"
-                    />
-                </CardContent>
-            </Card>
-
-            <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-100">
-                <CardHeader
-                    v-if="previewedLog"
-                    class="flex flex-row items-start justify-between gap-3"
-                >
-                    <div class="min-w-0">
-                        <CardTitle class="truncate">
-                            {{ previewedLog.action_label }}
-                        </CardTitle>
-                        <CardDescription>Preview</CardDescription>
-                    </div>
-                    <Button
-                        variant="header-actions"
-                        size="icon"
-                        class="h-8 w-8 shrink-0 rounded-full"
-                        aria-label="Close activity log preview"
-                        @click="previewedLog = null"
+                        <InertiaPagination
+                            :links="auditLogs.links"
+                            :meta="{
+                                from: auditLogs.from,
+                                to: auditLogs.to,
+                                total: auditLogs.total,
+                            }"
+                        />
+                    </CardContent>
+                </Card>
+            </MainPanel>
+            
+            <SidePanel>
+                <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-full">
+                    <CardHeader
+                        v-if="previewedLog"
+                        class="flex flex-row items-start justify-between gap-3"
                     >
-                        <X class="h-4 w-4" />
-                    </Button>
-                </CardHeader>
-
-                <CardContent
-                    v-if="previewedLog"
-                    class="no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto py-2"
-                >
-                    <div class="flex items-center justify-between gap-3">
-                        <span class="text-sm font-semibold text-custom-shadow">Action</span>
-                        <Badge :class="actionBadgeClass(previewedLog.action)">
-                            {{ previewedLog.action_label }}
-                        </Badge>
-                    </div>
-                    <div class="flex items-start justify-between gap-3">
-                        <span class="text-sm font-semibold text-custom-shadow">Entity</span>
-                        <div class="min-w-0 text-right">
-                            <p class="truncate text-sm text-custom-shadow/80">{{ previewedLog.entity_label }}</p>
-                            <p class="truncate text-xs text-custom-shadow/60">{{ previewedLog.entity_name ?? '—' }}</p>
+                        <div class="min-w-0">
+                            <CardTitle class="truncate">
+                                {{ previewedLog.action_label }}
+                            </CardTitle>
+                            <CardDescription>Preview</CardDescription>
                         </div>
-                    </div>
-                    <div class="flex items-start justify-between gap-3">
-                        <span class="text-sm font-semibold text-custom-shadow">Timestamp</span>
-                        <div class="text-right">
-                            <p class="text-sm text-custom-shadow/80">{{ previewedLog.created_at_human ?? '—' }}</p>
-                            <p class="text-xs text-custom-shadow/60">{{ previewedLog.created_at ?? '—' }}</p>
-                        </div>
-                    </div>
+                        <Button
+                            variant="header-actions"
+                            size="icon"
+                            class="h-8 w-8 shrink-0 rounded-full"
+                            aria-label="Close activity log preview"
+                            @click="previewedLog = null"
+                        >
+                            <X class="h-4 w-4" />
+                        </Button>
+                    </CardHeader>
 
-                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-
-                    <div class="space-y-2">
+                    <CardContent
+                        v-if="previewedLog"
+                        class="no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto py-2"
+                    >
                         <div class="flex items-center justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Changed fields</span>
-                            <span class="text-sm text-custom-shadow/80">{{ previewedLog.changes.length }}</span>
+                            <span class="text-sm font-semibold text-custom-shadow">Action</span>
+                            <Badge :class="actionBadgeClass(previewedLog.action)">
+                                {{ previewedLog.action_label }}
+                            </Badge>
                         </div>
-                        <div v-if="previewedLog.changes.length" class="space-y-2">
-                            <div
-                                v-for="change in previewedLog.changes"
-                                :key="`${previewedLog.id}-preview-${change.field}`"
-                                class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark"
-                            >
-                                <p class="text-sm font-medium text-custom-shadow">{{ change.label }}</p>
-                                <p class="break-words text-xs text-custom-shadow/70">
-                                    {{ formatValue(change.old) }} → {{ formatValue(change.new) }}
-                                </p>
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Entity</span>
+                            <div class="min-w-0 text-right">
+                                <p class="truncate text-sm text-custom-shadow/80">{{ previewedLog.entity_label }}</p>
+                                <p class="truncate text-xs text-custom-shadow/60">{{ previewedLog.entity_name ?? '—' }}</p>
                             </div>
                         </div>
-                        <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">
-                            No field-level changes recorded.
-                        </p>
-                    </div>
-
-                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-
-                    <div class="space-y-2 text-sm text-custom-shadow/80">
-                        <div class="flex justify-between gap-3">
-                            <span class="font-semibold text-custom-shadow">IP</span>
-                            <span>{{ previewedLog.ip_address ?? '—' }}</span>
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="text-sm font-semibold text-custom-shadow">Timestamp</span>
+                            <div class="text-right">
+                                <p class="text-sm text-custom-shadow/80">{{ previewedLog.created_at_human ?? '—' }}</p>
+                                <p class="text-xs text-custom-shadow/60">{{ previewedLog.created_at ?? '—' }}</p>
+                            </div>
                         </div>
-                        <div class="flex justify-between gap-3">
-                            <span class="font-semibold text-custom-shadow">Method</span>
-                            <span>{{ previewedLog.request_method ?? '—' }}</span>
-                        </div>
-                        <div class="space-y-1">
-                            <span class="font-semibold text-custom-shadow">URL</span>
-                            <p class="break-all text-xs">{{ previewedLog.request_url ?? '—' }}</p>
-                        </div>
-                    </div>
-                </CardContent>
 
-                <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
-                    <div class="max-w-60 space-y-1 text-center">
-                        <p class="text-base font-semibold text-custom-shadow">No activity log selected</p>
-                        <p class="text-sm text-custom-shadow/80">Click on a log to preview.</p>
-                    </div>
-                </CardContent>
-            </Card>
+                        <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-sm font-semibold text-custom-shadow">Changed fields</span>
+                                <span class="text-sm text-custom-shadow/80">{{ previewedLog.changes.length }}</span>
+                            </div>
+                            <div v-if="previewedLog.changes.length" class="space-y-2">
+                                <div
+                                    v-for="change in previewedLog.changes"
+                                    :key="`${previewedLog.id}-preview-${change.field}`"
+                                    class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark"
+                                >
+                                    <p class="text-sm font-medium text-custom-shadow">{{ change.label }}</p>
+                                    <p class="break-words text-xs text-custom-shadow/70">
+                                        {{ formatValue(change.old) }} → {{ formatValue(change.new) }}
+                                    </p>
+                                </div>
+                            </div>
+                            <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">
+                                No field-level changes recorded.
+                            </p>
+                        </div>
+
+                        <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                        <div class="space-y-2 text-sm text-custom-shadow/80">
+                            <div class="flex justify-between gap-3">
+                                <span class="font-semibold text-custom-shadow">IP</span>
+                                <span>{{ previewedLog.ip_address ?? '—' }}</span>
+                            </div>
+                            <div class="flex justify-between gap-3">
+                                <span class="font-semibold text-custom-shadow">Method</span>
+                                <span>{{ previewedLog.request_method ?? '—' }}</span>
+                            </div>
+                            <div class="space-y-1">
+                                <span class="font-semibold text-custom-shadow">URL</span>
+                                <p class="break-all text-xs">{{ previewedLog.request_url ?? '—' }}</p>
+                            </div>
+                        </div>
+                    </CardContent>
+
+                    <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
+                        <div class="max-w-60 space-y-1 text-center">
+                            <p class="text-base font-semibold text-custom-shadow">No activity log selected</p>
+                            <p class="text-sm text-custom-shadow/80">Click on a log to preview.</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </SidePanel>
         </PanelLayout>
     </AppLayout>
 </template>

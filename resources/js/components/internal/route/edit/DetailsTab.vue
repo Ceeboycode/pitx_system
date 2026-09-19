@@ -35,7 +35,7 @@ import {
   RiPhoneLine,
   RiMapPin2Line,
   RiEditLine,
-  RiCheckboxCircleLine,
+  RiCheckLine,
   RiTimeLine,
   RiCalendarLine,
   RiCloseLine,
@@ -1381,7 +1381,7 @@ onBeforeUnmount(() => {
                           </span>
                       </div>
 
-                      <RiCheckboxCircleLine
+                      <RiCheckLine
                           class="h-4 w-4 shrink-0 text-custom-accent-3"
                       />
                   </div>
@@ -1542,8 +1542,8 @@ onBeforeUnmount(() => {
                 <span>Created</span>
               </div>
               <span class="line-clamp-1 text-ellipsis">
-                {{ route.created_at_human}}
-                <span v-if="route.creator?.name" class="text-custom-accent-3"> • </span>
+                {{ route.created_at_human ?? '—'}}
+                <span class="text-custom-accent-3"> • </span>
                 {{ route.creator?.name ?? '—' }}
               </span>
             </div>
@@ -1554,8 +1554,8 @@ onBeforeUnmount(() => {
                 <span>Updated</span>
               </div>
               <span class="line-clamp-1 text-ellipsis">
-                {{ route.updated_at_human}}
-                <span v-if="route.updater?.name" class="text-custom-accent-3"> • </span>
+                {{ route.updated_at_human ?? '—'}}
+                <span class="text-custom-accent-3"> • </span>
                 {{ route.updater?.name ?? '—' }}
               </span>
             </div>
