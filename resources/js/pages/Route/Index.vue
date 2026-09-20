@@ -63,8 +63,6 @@ import {
     RiArrowDownSLine,
     RiArrowUpDownLine,
     RiArrowUpSLine,
-    RiCloseLine,
-    RiEditLine,
     RiExternalLinkLine,
     RiFilter2Line,
     RiMore2Line,
@@ -72,6 +70,7 @@ import {
 } from 'vue-remix-icons';
 
 import { PanelLayout, MainPanel, SidePanel } from '@/components/ui/_panels';
+import { RoutePreviewCard } from '@/components/internal/preview-cards';
 
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 
@@ -577,6 +576,15 @@ function openToggleDialog(route: RouteRow) {
                                                 <RiShutDownLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
                                                 <span class="text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200">{{ routeItem.status === 'active' ? 'Inactivate' : 'Activate' }}</span>
                                             </DropdownMenuItem>
+
+                                            <DropdownMenuItem
+                                                v-if="canDelete"
+                                                class="group"
+                                                @click="openArchiveDialog(routeItem)"
+                                            >
+                                                <RiArchive2Line class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
+                                                <span class="text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200">Archive</span>
+                                            </DropdownMenuItem>
                                         </TableMoreButton>
                                     </TableRow>
                                 </TableContent>
@@ -612,69 +620,8 @@ function openToggleDialog(route: RouteRow) {
                 </Card>
             </MainPanel>
 
-            <SidePanel>
-                <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-full">
-                    <CardHeader v-if="previewedRoute" class="flex flex-row items-start justify-between gap-3">
-                        <div class="min-w-0">
-                            <CardTitle class="truncate capitalize">{{ previewedRoute.route_name }}</CardTitle>
-                            <CardDescription>Preview</CardDescription>
-                        </div>
-                        <Button variant="header-actions" size="icon" class="h-8 w-8 shrink-0 rounded-full" @click="previewedRoute = null">
-                            <RiCloseLine class="h-4 w-4" />
-                        </Button>
-                    </CardHeader>
-
-                    <CardContent v-if="previewedRoute" class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto pt-2">
-                        <div class="space-y-3 pt-2">
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Status</span>
-                                <Badge :class="['gap-1.5', statusClass(previewedRoute.status)]">
-                                    <span :class="['h-1.5 w-1.5 rounded-full', statusDot(previewedRoute.status)]" />
-                                    {{ previewedRoute.status === 'active' ? 'Active' : 'Inactive' }}
-                                </Badge>
-                            </div>
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Gate</span>
-                                <span class="text-right text-sm">{{ previewedRoute.gate?.gate_name || 'Not assigned' }}</span>
-                            </div>
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Created</span>
-                                <span class="text-right text-sm">{{ previewedRoute.created_at_human || 'Not recorded' }}</span>
-                            </div>
-                        </div>
-
-                        <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-
-                        <div class="flex flex-wrap items-center gap-2">
-                            <Button v-if="canUpdate" as-child variant="ghost-outline" size="icon-text">
-                                <Link :href="edit(previewedRoute.id).url">
-                                    <RiEditLine class="h-4 w-4" />
-                                    Edit
-                                </Link>
-                            </Button>
-                            <Button v-if="canDelete" variant="destructive" size="icon-text" @click="openArchiveDialog(previewedRoute)">
-                                <RiArchive2Line class="h-4 w-4" />
-                                Archive
-                            </Button>
-                            <Button v-if="canToggle" :variant="previewedRoute.status === 'active' ? 'destructive' : 'ghost-outline'" size="icon-text" @click="openToggleDialog(previewedRoute)">
-                                <RiShutDownLine class="h-4 w-4" />
-                                {{ previewedRoute.status === 'active' ? 'Inactivate' : 'Activate' }}
-                            </Button>
-                            <Button as-child variant="float-primary" size="icon">
-                                <Link :href="edit(previewedRoute.id).url">
-                                    <RiExternalLinkLine class="h-4 w-4" />
-                                </Link>
-                            </Button>
-                        </div>
-                    </CardContent>
-
-                    <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
-                        <div class="max-w-60 space-y-1 text-center">
-                            <p class="text-base font-semibold text-custom-shadow">No route selected</p>
-                            <p class="text-sm text-custom-shadow/80">Click on a route to preview.</p>
-                        </div>
-                    </CardContent>
-                </Card>
+            <SidePanel v-if="previewedRoute" class="hidden lg:flex">
+                <RoutePreviewCard :route="previewedRoute" @close="previewedRoute = null" />
             </SidePanel>
         </PanelLayout>
 

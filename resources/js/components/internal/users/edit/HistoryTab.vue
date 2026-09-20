@@ -46,7 +46,8 @@ import {
 
 } from 'vue-remix-icons'
 
-import DocumentPreviewDialog from '@/components/internal/company/show/documents/DocumentPreviewDialog.vue'
+import DocumentPreviewDialog from '@/components/internal/documents/DocumentPreviewDialog.vue'
+import { companyDocumentPreview, companyPreviewActions } from '@/lib/document-preview'
 import DocumentRejectDialog from '@/components/internal/company/show/documents/DocumentRejectDialog.vue'
 import DocumentActionConfirmDialog, { type ConfirmAction } from '@/components/internal/company/show/documents/DocumentActionConfirmDialog.vue'
 import DownloadVerifiedDocumentsDialog from '@/components/internal/company/show/documents/DownloadVerifiedDocumentsDialog.vue'
@@ -673,10 +674,9 @@ function openReject(docId: number) {
 
 <DocumentPreviewDialog
     v-model:open="previewOpen"
-    :doc="previewDoc"
-    :company-id="company.id"
-    @verify="(doc) => openConfirm('verify', doc)"
-    @reject="(id) => openReject(id)"
+    :doc="companyDocumentPreview(previewDoc, company.id)"
+    :actions="companyPreviewActions(previewDoc)"
+    @action="(key) => previewDoc && (key === 'verify' ? openConfirm('verify', previewDoc) : openReject(previewDoc.id))"
 />
 
 <DocumentRejectDialog

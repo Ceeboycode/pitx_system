@@ -190,10 +190,15 @@ class UserController extends Controller
     {
         Gate::authorize('view', $user);
 
+        // Archived users open read-only, and only for whoever may open the Archives page.
+        if ($user->trashed()) {
+            Gate::authorize('viewTrash', User::class);
+        }
+
         $user->load([
             'roles:id,name,type',
             // Also pull each loaded role's permissions (id + name only) so
-            // hasAllPermissionsInGroup() below doesn't need extra queries.
+            // hasAnyPermissionInGroup() below doesn't need extra queries.
             'roles.permissions:id,name',
             'company:id,company_name,company_code',
         ]);
@@ -201,6 +206,7 @@ class UserController extends Controller
         $selectedRole = $user->roles->first();
 
         return Inertia::render('Users/Edit', [
+            'isArchived' => $user->trashed(),
             'currentUserId' => Auth::id(),
             'user' => [
                 'id' => $user->id,
@@ -226,16 +232,32 @@ class UserController extends Controller
                 ->orderBy('name')
                 ->get(),
             'selectedRole' => $selectedRole?->name,
-            // Drive which tabs Users/Edit.vue shows: the edited user's role
-            // must hold every permission in the group, not just some of
-            // them. `?->` short-circuits to null (then `?? false`) if the
-            // user has no role at all.
-            'canManageExternalUsers' => $selectedRole?->hasAllPermissionsInGroup('external_users') ?? false,
-            'canManageExternalDispatches' => $selectedRole?->hasAllPermissionsInGroup('external_dispatches') ?? false,
+            'tabAccess' => $this->tabAccessFor($selectedRole),
             'companies' => Company::query()
                 ->orderBy('company_name')
                 ->get(['id', 'company_name', 'company_code']),
         ]);
+    }
+
+    /**
+     * Which permission-gated tabs Users/Edit.vue shows for the viewed user's
+     * role. A tab appears when the role holds any permission in its group,
+     * so roles created later follow their own permissions with no changes
+     * here. Drivers hold no permissions but are dispatched and assigned to
+     * vehicles, so they always get the Vehicles and Dispatches tabs (also
+     * when they have no dispatches yet, so it's visible that there are none).
+     *
+     * @return array{vehicles: bool, dispatches: bool, employees: bool}
+     */
+    private function tabAccessFor(?Role $role): array
+    {
+        $isDriver = $role?->name === Role::NAME_DRIVER;
+
+        return [
+            'vehicles' => $isDriver || ($role?->hasAnyPermissionInGroup('external_vehicles') ?? false),
+            'dispatches' => $isDriver || ($role?->hasAnyPermissionInGroup('external_dispatches') ?? false),
+            'employees' => $role?->hasAnyPermissionInGroup('external_users') ?? false,
+        ];
     }
 
     public function update(UpdateUserRequest $request, User $user): RedirectResponse

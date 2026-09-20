@@ -32,11 +32,11 @@ import type { BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 import {
     RiCalendarLine,
-    RiCloseLine,
     RiFilter2Line,
 } from 'vue-remix-icons';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { PanelLayout, MainPanel, SidePanel } from '@/components/ui/_panels';
+import { LogPreviewCard } from '@/components/internal/preview-cards';
 import {
     Table,
     TableColumn,
@@ -307,22 +307,6 @@ function handleRowNavigationKeydown(event: KeyboardEvent) {
 
 onMounted(() => window.addEventListener('keydown', handleRowNavigationKeydown));
 onUnmounted(() => window.removeEventListener('keydown', handleRowNavigationKeydown));
-
-function formatValue(value: unknown): string {
-    if (value === null || value === undefined || value === '') {
-        return '—';
-    }
-
-    if (typeof value === 'boolean') {
-        return value ? 'Yes' : 'No';
-    }
-
-    if (Array.isArray(value) || typeof value === 'object') {
-        return JSON.stringify(value);
-    }
-
-    return String(value);
-}
 
 function actionBadgeClass(action: string): string {
     if (action === 'created')
@@ -644,103 +628,8 @@ function actionBadgeClass(action: string): string {
                 </Card>
             </MainPanel>
             
-            <SidePanel>
-                <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-full">
-                    <CardHeader
-                        v-if="previewedLog"
-                        class="flex flex-row items-start justify-between gap-3"
-                    >
-                        <div class="min-w-0">
-                            <CardTitle class="truncate">
-                                {{ previewedLog.action_label }}
-                            </CardTitle>
-                            <CardDescription>Preview</CardDescription>
-                        </div>
-                        <Button
-                            variant="header-actions"
-                            size="icon"
-                            class="h-8 w-8 shrink-0 rounded-full"
-                            aria-label="Close audit log preview"
-                            @click="previewedLog = null"
-                        >
-                            <RiCloseLine class="h-4 w-4" />
-                        </Button>
-                    </CardHeader>
-
-                    <CardContent
-                        v-if="previewedLog"
-                        class="no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto py-2"
-                    >
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Action</span>
-                            <Badge :class="actionBadgeClass(previewedLog.action)">
-                                {{ previewedLog.action_label }}
-                            </Badge>
-                        </div>
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Entity</span>
-                            <div class="min-w-0 text-right">
-                                <p class="truncate text-sm text-custom-shadow/80">{{ previewedLog.entity_label }}</p>
-                                <p class="truncate text-xs text-custom-shadow/60">{{ previewedLog.entity_name ?? '—' }}</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Timestamp</span>
-                            <div class="text-right">
-                                <p class="text-sm text-custom-shadow/80">{{ previewedLog.created_at_human ?? '—' }}</p>
-                                <p class="text-xs text-custom-shadow/60">{{ previewedLog.created_at ?? '—' }}</p>
-                            </div>
-                        </div>
-
-                        <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-
-                        <div class="space-y-2">
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Changed fields</span>
-                                <span class="text-sm text-custom-shadow/80">{{ previewedLog.changes.length }}</span>
-                            </div>
-                            <div v-if="previewedLog.changes.length" class="space-y-2">
-                                <div
-                                    v-for="change in previewedLog.changes"
-                                    :key="`${previewedLog.id}-preview-${change.field}`"
-                                    class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark"
-                                >
-                                    <p class="text-sm font-medium text-custom-shadow">{{ change.label }}</p>
-                                    <p class="break-words text-xs text-custom-shadow/70">
-                                        {{ formatValue(change.old) }} → {{ formatValue(change.new) }}
-                                    </p>
-                                </div>
-                            </div>
-                            <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">
-                                No field-level changes recorded.
-                            </p>
-                        </div>
-
-                        <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-
-                        <div class="space-y-2 text-sm text-custom-shadow/80">
-                            <div class="flex justify-between gap-3">
-                                <span class="font-semibold text-custom-shadow">IP</span>
-                                <span>{{ previewedLog.ip_address ?? '—' }}</span>
-                            </div>
-                            <div class="flex justify-between gap-3">
-                                <span class="font-semibold text-custom-shadow">Method</span>
-                                <span>{{ previewedLog.request_method ?? '—' }}</span>
-                            </div>
-                            <div class="space-y-1">
-                                <span class="font-semibold text-custom-shadow">URL</span>
-                                <p class="break-all text-xs">{{ previewedLog.request_url ?? '—' }}</p>
-                            </div>
-                        </div>
-                    </CardContent>
-
-                    <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
-                        <div class="max-w-60 space-y-1 text-center">
-                            <p class="text-base font-semibold text-custom-shadow">No audit log selected</p>
-                            <p class="text-sm text-custom-shadow/80">Click on a log to preview.</p>
-                        </div>
-                    </CardContent>
-                </Card>
+            <SidePanel v-if="previewedLog" class="hidden lg:flex">
+                <LogPreviewCard :log="previewedLog" @close="previewedLog = null" />
             </SidePanel>
         </PanelLayout>
     </AppLayout>

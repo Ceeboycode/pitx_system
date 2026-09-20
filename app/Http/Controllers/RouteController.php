@@ -104,6 +104,11 @@ class RouteController extends Controller
         // update() below still independently authorizes the real write.
         Gate::authorize('view', $route);
 
+        // Archived routes open read-only, and only for whoever may open the Archives page.
+        if ($route->trashed()) {
+            Gate::authorize('viewTrash', Route::class);
+        }
+
         $route->load([
             'gate:id,gate_name',
             'stops',
@@ -112,6 +117,7 @@ class RouteController extends Controller
         ]);
 
         return Inertia::render('Route/Edit', [
+            'isArchived' => $route->trashed(),
             'route' => $route,
             'gates' => GateModel::select('id', 'gate_name')->orderBy('gate_name')->get(),
             'mapConfig' => [

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { AppDialog } from '@/components/ui/_app-dialog';
 import { update } from '@/routes/companies';
 import { useForm } from '@inertiajs/vue3';
 import { watch } from 'vue';
@@ -7,14 +8,6 @@ import { RiSaveLine } from 'vue-remix-icons';
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -143,71 +136,69 @@ function verificationStatusDot(status?: CompanyStatus | null): string {
 </script>
 
 <template>
-    <Dialog v-model:open="open">
-        <DialogContent class="sm:max-w-md">
-            <DialogHeader>
-                <DialogTitle>Edit Company</DialogTitle>
-                <DialogDescription>
-                    Update the company's active status.
-                </DialogDescription>
-            </DialogHeader>
+    <AppDialog
+        v-model:open="open"
+        title="Edit Company"
+        description="Update the company's active status."
+        size="md"
+        form
+        @submit="submit"
+    >
+        <div class="space-y-5">
+            <div class="space-y-2">
+                <Label>Company Name</Label>
+                <Input
+                    :model-value="props.company.company_name"
+                    readonly
+                    class="bg-custom-bg text-custom-shadow/80 dark:bg-custom-bg-dark"
+                />
+            </div>
 
-            <form class="space-y-5 py-1 px-6" @submit.prevent="submit">
-                <div class="space-y-2">
-                    <Label>Company Name</Label>
-                    <Input
-                        :model-value="props.company.company_name"
-                        readonly
-                        class="bg-custom-bg text-custom-shadow/80 dark:bg-custom-bg-dark"
-                    />
+            <div class="space-y-2">
+                <Label>Verification Status</Label>
+                <div class="flex h-10 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 dark:border-custom-bg-light dark:bg-custom-bg-dark">
+                    <Badge :class="['gap-1.5', verificationStatusClass(props.company.status ?? null)]">
+                        <span :class="['h-1.5 w-1.5 rounded-full', verificationStatusDot(props.company.status ?? null)]" />
+                        {{ humanizeStatus(props.company.status ?? null) }}
+                    </Badge>
                 </div>
+            </div>
 
-                <div class="space-y-2">
-                    <Label>Verification Status</Label>
-                    <div class="flex h-10 items-center rounded-md border border-custom-bg-dark bg-custom-bg px-3 dark:border-custom-bg-light dark:bg-custom-bg-dark">
-                        <Badge :class="['gap-1.5', verificationStatusClass(props.company.status ?? null)]">
-                            <span :class="['h-1.5 w-1.5 rounded-full', verificationStatusDot(props.company.status ?? null)]" />
-                            {{ humanizeStatus(props.company.status ?? null) }}
-                        </Badge>
-                    </div>
-                </div>
+            <div class="space-y-2">
+                <Label for="edit_is_active">Active Status</Label>
+                <Select v-model="form.is_active" :disabled="form.processing">
+                    <SelectTrigger id="edit_is_active">
+                        <SelectValue placeholder="Select active status" />
+                    </SelectTrigger>
 
-                <div class="space-y-2">
-                    <Label for="edit_is_active">Active Status</Label>
-                    <Select v-model="form.is_active" :disabled="form.processing">
-                        <SelectTrigger id="edit_is_active">
-                            <SelectValue placeholder="Select active status" />
-                        </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem
+                            v-for="option in ACTIVE_STATUS_OPTIONS"
+                            :key="option.value"
+                            :value="option.value"
+                        >
+                            {{ option.label }}
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
+                <InputError :message="form.errors.is_active" />
+            </div>
+        </div>
 
-                        <SelectContent>
-                            <SelectItem
-                                v-for="option in ACTIVE_STATUS_OPTIONS"
-                                :key="option.value"
-                                :value="option.value"
-                            >
-                                {{ option.label }}
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <InputError :message="form.errors.is_active" />
-                </div>
+        <template #footer>
+            <Button
+                type="button"
+                variant="float"
+                :disabled="form.processing"
+                @click="open = false"
+            >
+                Cancel
+            </Button>
 
-                <DialogFooter class="gap-2 sm:gap-0">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        :disabled="form.processing"
-                        @click="open = false"
-                    >
-                        Cancel
-                    </Button>
-
-                    <Button type="submit" :disabled="form.processing">
-                        <RiSaveLine class="mr-2 h-4 w-4 shrink-0" />
-                        {{ form.processing ? 'Saving...' : 'Save Changes' }}
-                    </Button>
-                </DialogFooter>
-            </form>
-        </DialogContent>
-    </Dialog>
+            <Button type="submit" variant="float-primary" :disabled="form.processing">
+                <RiSaveLine class="mr-2 h-4 w-4 shrink-0" />
+                {{ form.processing ? 'Saving...' : 'Save Changes' }}
+            </Button>
+        </template>
+    </AppDialog>
 </template>

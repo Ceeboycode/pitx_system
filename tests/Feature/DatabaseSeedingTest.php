@@ -48,7 +48,8 @@ it('creates role-specific permissions with the web guard and keeps external acce
         ->and($superAdmin->can('companies.forceDelete'))->toBeTrue()
         ->and($superAdmin->getAllPermissions()->pluck('name'))->not->toContain('external_vehicles.create')
         ->and($operator->can('external_vehicles.create'))->toBeTrue()
-        ->and($operator->can('vehicles.create'))->toBeFalse()
+        ->and($superAdmin->getAllPermissions()->pluck('name'))->not->toContain('vehicles.create')
+        ->and(Permission::query()->where('name', 'vehicles.create')->exists())->toBeFalse()
         ->and($driver->getAllPermissions())->toBeEmpty();
 });
 

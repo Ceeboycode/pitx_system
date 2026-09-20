@@ -21,8 +21,6 @@ import {
 } from '@/components/ui/select';
 import AppLayout from '@/layouts/AppLayout.vue';
 
-import { useClipboard } from '@vueuse/core';
-import { toast } from 'vue-sonner';
 
 import { create, index, store } from '@/routes/users';
 import { type BreadcrumbItem } from '@/types';
@@ -30,10 +28,10 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import { LeadPanel, MainPanel, SidePanel, PanelLayout } from '@/components/ui/_panels';
 import { LeadingCard } from '@/components/ui/_leading-card';
+import { UserReviewCard } from '@/components/internal/preview-cards';
 import Separator from '@/components/ui/separator/Separator.vue';
 
 import {
-    RiFileCheckLine,
 } from 'vue-remix-icons';
 
 type Company = {
@@ -63,8 +61,6 @@ const roleSearch = ref('');
 
 const includesText = (value: string, query: string) =>
     value.toLowerCase().includes(query.trim().toLowerCase());
-
-const { copy } = useClipboard({ legacy: true });
 
 const form = useForm({
     name: '',
@@ -111,17 +107,6 @@ watch(
         }
     },
 );
-
-async function copyToClipboard(value?: string | null, label = 'Value') {
-  const text = (value ?? '').trim();
-  if (!text || text === '—') return;
-  try {
-    await copy(text);
-    toast.success(`${label} copied to clipboard.`);
-  } catch {
-    toast.error(`Could not copy ${label.toLowerCase()}.`);
-  }
-}
 
 function submit() {
     form.post(store().url, {
@@ -359,160 +344,7 @@ const requiredMark = '*';
             </MainPanel>
 
             <SidePanel>
-                <Card class="min-h-0 lg:flex lg:h-full lg:w-full">
-                    <CardHeader>
-                        <CardTitle>Review</CardTitle>
-                        <CardDescription>Review new user details before confirming.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <CardSeparator title="Account Info" />
-
-                        <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
-                            <div class="flex flex-row justify-between items-center">
-                                <div class="inline-flex gap-2 items-center">
-                                    <RiFileCheckLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
-                                    <span>Name</span>
-                                </div>
-                                <span class="inline-flex gap-2 items-center overflow-hidden">
-                                    <span
-                                        role="button"
-                                        tabindex="0"
-                                        title="Copy to clipboard"
-                                        @click="copyToClipboard(form.name, 'Name')"
-                                        @keydown.enter.prevent="copyToClipboard(form.name, 'Name')"
-                                        @keydown.space.prevent="copyToClipboard(form.name, 'Name')"
-                                        class="cursor-pointer line-clamp-1 text-ellipsis"
-                                    >
-                                        {{ form.name || '—' }}
-                                    </span>
-                                </span>
-                            </div>
-
-                            <div class="flex flex-row justify-between items-center">
-                                <div class="inline-flex gap-2 items-center">
-                                    <RiFileCheckLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
-                                    <span>Email</span>
-                                </div>
-                                <span class="inline-flex gap-2 items-center overflow-hidden">
-                                    <span
-                                        role="button"
-                                        tabindex="0"
-                                        title="Copy to clipboard"
-                                        @click="copyToClipboard(form.email, 'Email')"
-                                        @keydown.enter.prevent="copyToClipboard(form.email, 'Email')"
-                                        @keydown.space.prevent="copyToClipboard(form.email, 'Email')"
-                                        class="cursor-pointer line-clamp-1 text-ellipsis"
-                                    >
-                                        {{ form.email || '—' }}
-                                    </span>
-                                </span>
-                            </div>
-
-                            <div class="flex flex-row justify-between items-center">
-                                <div class="inline-flex gap-2 items-center">
-                                    <RiFileCheckLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
-                                    <span>Phone</span>
-                                </div>
-                                <span class="inline-flex gap-2 items-center overflow-hidden">
-                                    <span
-                                        role="button"
-                                        tabindex="0"
-                                        title="Copy to clipboard"
-                                        @click="copyToClipboard(form.phone_number, 'Phone')"
-                                        @keydown.enter.prevent="copyToClipboard(form.phone_number, 'Phone')"
-                                        @keydown.space.prevent="copyToClipboard(form.phone_number, 'Phone')"
-                                        class="cursor-pointer line-clamp-1 text-ellipsis"
-                                    >
-                                        {{ form.phone_number || '—' }}
-                                    </span>
-                                </span>
-                            </div>
-                        </div>
-
-                        <CardSeparator title="Access & Assignment Info" />
-
-                        <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
-                            <div class="flex flex-row justify-between items-center">
-                                <div class="inline-flex gap-2 items-center">
-                                    <RiFileCheckLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
-                                    <span>User Type</span>
-                                </div>
-                                <span class="inline-flex gap-2 items-center overflow-hidden">
-                                    <span
-                                        role="button"
-                                        tabindex="0"
-                                        title="Copy to clipboard"
-                                        @click="copyToClipboard(form.type, 'User Type')"
-                                        @keydown.enter.prevent="copyToClipboard(form.type, 'User Type')"
-                                        @keydown.space.prevent="copyToClipboard(form.type, 'User Type')"
-                                        class="cursor-pointer line-clamp-1 text-ellipsis capitalize"
-                                    >
-                                        {{ form.type || '—' }}
-                                    </span>
-                                </span>
-                            </div>
-
-                            <div v-if="form.type" class="flex flex-row justify-between items-center">
-                                <div class="inline-flex gap-2 items-center">
-                                    <RiFileCheckLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
-                                    <span>Role</span>
-                                </div>
-                                <span class="inline-flex gap-2 items-center overflow-hidden">
-                                    <span
-                                        role="button"
-                                        tabindex="0"
-                                        title="Copy to clipboard"
-                                        @click="copyToClipboard(form.role, 'Role')"
-                                        @keydown.enter.prevent="copyToClipboard(form.role, 'Role')"
-                                        @keydown.space.prevent="copyToClipboard(form.role, 'Role')"
-                                        class="cursor-pointer line-clamp-1 text-ellipsis capitalize"
-                                    >
-                                        {{ form.role || '—' }}
-                                    </span>
-                                </span>
-                            </div>
-                        </div>
-
-                        <CardSeparator v-if="form.type === 'external'" title="Company Info" />
-
-                        <div v-if="form.type === 'external'" class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
-                            <div v-if="form.type === 'external'" class="flex flex-row justify-between items-center">
-                                <div class="inline-flex gap-2 items-center">
-                                    <RiFileCheckLine class="shrink-0 h-4 w-4 text-custom-shadow/80 0"/>
-                                    <span>Company</span>
-                                </div>
-                                <span class="inline-flex gap-2 items-center overflow-hidden">
-                                    <span
-                                        role="button"
-                                        tabindex="0"
-                                        title="Copy to clipboard"
-                                        @click="copyToClipboard(selectedCompany?.company_name, 'Company')"
-                                        @keydown.enter.prevent="copyToClipboard(selectedCompany?.company_name, 'Company')"
-                                        @keydown.space.prevent="copyToClipboard(selectedCompany?.company_name, 'Company')"
-                                        class="cursor-pointer line-clamp-1 text-ellipsis capitalize"
-                                    >
-                                        {{ selectedCompany?.company_name || '—' }}
-                                        <span
-                                            v-if="selectedCompany"
-                                            class="group-hover:text-custom-shadow cursor-pointer tracking-widest bg-custom-bg dark:bg-custom-bg-light px-2 rounded-md font-mono mr-1 font-normal"
-                                        >
-                                            {{ selectedCompany.company_code }}
-                                        </span>
-                                    </span>
-                                </span>
-                            </div>
-                        </div>
-
-                        <p class="text-sm text-custom-shadow/80 mt-4 flex flex-col">
-                            <span>
-                                Default password is <span class="font-semibold">pitx@123</span>.
-                            </span>
-                            <span>
-                                New users are created with <span class="font-semibold">active</span> status.
-                            </span>
-                        </p>
-                    </CardContent>
-                </Card>
+                <UserReviewCard :values="form" :company="selectedCompany" />
             </SidePanel>
         </PanelLayout>
     </AppLayout>

@@ -61,6 +61,7 @@ import {
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { PanelLayout, MainPanel, SidePanel } from '@/components/ui/_panels';
+import { UserPreviewCard } from '@/components/internal/preview-cards';
 
 
 import {
@@ -69,7 +70,6 @@ import {
     RiArrowDownSLine,
     RiArrowUpDownLine,
     RiArrowUpSLine,
-    RiCloseLine,
     RiExternalLinkLine,
     RiFilter2Line,
     RiKey2Line,
@@ -851,148 +851,8 @@ function openArchiveDialog(user: User) {
                 </Card>
             </MainPanel>
            
-            <SidePanel>
-                <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-full">
-                    <CardHeader
-                        v-if="previewedUser"
-                        class="flex flex-row items-start justify-between gap-3"
-                    >
-                        <div class="min-w-0">
-                            <CardTitle class="truncate capitalize">
-                                {{ previewedUser.name }}
-                            </CardTitle>
-                            <CardDescription>Preview</CardDescription>
-                        </div>
-                        <Button
-                            variant="header-actions"
-                            size="icon"
-                            class="h-8 w-8 shrink-0 rounded-full"
-                            aria-label="Close user preview"
-                            @click="previewedUser = null"
-                        >
-                            <RiCloseLine class="h-4 w-4" />
-                        </Button>
-                    </CardHeader>
-
-                    <CardContent
-                        v-if="previewedUser"
-                        class="no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto py-2"
-                    >
-                        <div class="flex flex-col items-center gap-3 rounded-md border border-dashed border-custom-bg-dark bg-custom-bg p-4 dark:border-custom-bg-light dark:bg-custom-bg-dark">
-                            <img
-                                v-if="previewedUser.avatar_url"
-                                :src="previewedUser.avatar_url"
-                                :alt="`${previewedUser.name} avatar`"
-                                class="h-20 w-20 rounded-full object-cover"
-                            />
-                            <div
-                                v-else
-                                class="flex h-20 w-20 items-center justify-center rounded-full bg-custom-primary text-xl font-semibold text-white"
-                            >
-                                {{ initials(previewedUser.name) }}
-                            </div>
-                            <div class="min-w-0 text-center">
-                                <p class="truncate font-semibold text-custom-shadow">
-                                    {{ previewedUser.name }}
-                                </p>
-                                <p class="truncate text-sm text-custom-shadow/70">
-                                    @{{ previewedUser.username }}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Status</span>
-                                <Badge :class="statusBadgeClass(previewedUser.status)" class="border capitalize">
-                                    {{ previewedUser.status }}
-                                </Badge>
-                            </div>
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Verification</span>
-                                <Badge :class="emailVerificationBadgeClass(previewedUser.email_verified_at)" class="border">
-                                    {{ emailVerificationLabel(previewedUser.email_verified_at) }}
-                                </Badge>
-                            </div>
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Email</span>
-                                <span class="min-w-0 truncate text-right text-sm text-custom-shadow/80">
-                                    {{ previewedUser.email }}
-                                </span>
-                            </div>
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Phone</span>
-                                <span class="text-right text-sm text-custom-shadow/80">
-                                    {{ previewedUser.phone_number ?? 'Not provided' }}
-                                </span>
-                            </div>
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Company</span>
-                                <span class="min-w-0 truncate text-right text-sm text-custom-shadow/80">
-                                    {{ previewedUser.company?.company_name ?? 'Not assigned' }}
-                                </span>
-                            </div>
-
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-between gap-3">
-                                    <span class="text-sm font-semibold text-custom-shadow">Roles</span>
-                                    <span class="text-sm text-custom-shadow/80">
-                                        {{ visibleRoles(previewedUser).length }}
-                                    </span>
-                                </div>
-                                <div v-if="visibleRoles(previewedUser).length" class="flex flex-wrap gap-1.5">
-                                    <Badge
-                                        v-for="role in visibleRoles(previewedUser)"
-                                        :key="role.id"
-                                        :class="roleBadgeClass(role)"
-                                        class="border capitalize"
-                                    >
-                                        {{ role.name }}
-                                    </Badge>
-                                </div>
-                                <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">
-                                    No roles assigned.
-                                </p>
-                            </div>
-                        </div>
-
-                        <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <Button
-                                v-if="canArchive && !isOwnAccount(previewedUser)"
-                                variant="destructive"
-                                size="icon-text"
-                                @click="openArchiveDialog(previewedUser)"
-                            >
-                                <RiArchive2Line class="h-4 w-4" />
-                                Archive
-                            </Button>
-                            <Button
-                                as-child
-                                variant="float-primary"
-                                size="icon"
-                                class="ml-auto"
-                            >
-                                <Link :href="show(previewedUser.id).url" aria-label="View user profile">
-                                    <RiExternalLinkLine class="h-4 w-4" />
-                                </Link>
-                            </Button>
-                        </div>
-                    </CardContent>
-
-                    <CardContent
-                        v-else
-                        class="flex min-h-0 flex-1 items-center justify-center"
-                    >
-                        <div class="max-w-60 space-y-1 text-center">
-                            <p class="text-base font-semibold text-custom-shadow">No user selected</p>
-                            <p class="text-sm text-custom-shadow/80">
-                                Click on a user to preview.
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
+            <SidePanel v-if="previewedUser" class="hidden lg:flex">
+                <UserPreviewCard :user="previewedUser" :can-see-super-admin="props.canSeeSuperAdmin" @close="previewedUser = null" />
             </SidePanel>
 
             

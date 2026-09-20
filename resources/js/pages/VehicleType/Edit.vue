@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import { ArchivedNotice } from '@/components/ui/_archived-notice';
 import { index } from '@/routes/vehicle-types';
 import type { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
@@ -52,6 +53,7 @@ type AuditLogEntry = {
 };
 
 const props = defineProps<{
+    isArchived?: boolean;
     vehicleType: VehicleType;
     vehicleStats: { total: number; active: number; inactive: number; suspended: number };
     recentVehicles: RecentVehicle[];
@@ -105,6 +107,7 @@ const tabProps = computed(() => ({
     <AppLayout :breadcrumbs="breadcrumbs">
         <PanelLayout>
             <LeadPanel>
+                <ArchivedNotice v-if="props.isArchived" entity="vehicle type" />
                 <LeadingCard
                     :title="vehicleType.type_name"
                     description="Review and manage vehicle type details."

@@ -37,7 +37,6 @@ class PermissionSeeder extends Seeder
             'vehicles' => [
                 'viewAny',
                 'view',
-                'create',
                 'update',
                 'archive',
                 'restore',

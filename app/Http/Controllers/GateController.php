@@ -146,9 +146,15 @@ class GateController extends Controller
         // update() below still independently authorizes the real write.
         Gate::authorize('view', $gate);
 
+        // Archived gates open read-only, and only for whoever may open the Archives page.
+        if ($gate->trashed()) {
+            Gate::authorize('viewTrash', GateModel::class);
+        }
+
         $gate->load(['creator:id,name', 'updater:id,name']);
 
         return Inertia::render('Gates/Edit', [
+            'isArchived' => $gate->trashed(),
             'gate' => [
                 'id' => $gate->id,
                 'gate_name' => $gate->gate_name,

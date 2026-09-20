@@ -4,6 +4,7 @@ import { useForm } from '@inertiajs/vue3';
 import { useAppearance } from '@/composables/useAppearance';
 import { can } from '@/lib/can';
 import EditableField from '@/components/ui/_field/EditableField.vue';
+import RouteStepMarker from '@/components/internal/route/RouteStepMarker.vue';
 
 import {
   Card,
@@ -42,6 +43,8 @@ import {
   RiDraggable,
   RiSearchLine,
   RiAiGenerate,
+  RiLoader2Line,
+  RiRuler2Line,
 } from "vue-remix-icons";
 
 import { fmtDistance, fmtDuration } from '@/lib/format';
@@ -967,6 +970,19 @@ const stopQuery = ref('');
 const stopSuggestions = ref<SearchSuggestion[]>([]);
 const autoGenerateInterval = ref(5);
 
+// "Add Stops" starts as a search box plus a Generate button; Generate swaps the search box for the
+// kilometre prompt (with a warning) until the stops are generated or the prompt is cancelled.
+const generateMode = ref(false);
+const intervalField = ref<HTMLElement | null>(null);
+
+const canGenerate = computed(
+  () =>
+    Number.isFinite(autoGenerateInterval.value) &&
+    autoGenerateInterval.value >= 1 &&
+    autoGenerateInterval.value <= 50 &&
+    routeCoordinates.value.length >= 2,
+);
+
 const MAX_STOP_DISTANCE_M = 500;
 
 const originalPrimaryRoute = computed(() => allRouteOptions.value[0] ?? null);
@@ -1188,6 +1204,30 @@ async function autoGenerateStops() {
   }
 }
 
+async function startGenerate() {
+  if (routeCoordinates.value.length < 2) return;
+
+  stopQuery.value = '';
+  stopSuggestions.value = [];
+  generateMode.value = true;
+
+  await nextTick();
+  intervalField.value?.querySelector('input')?.focus();
+}
+
+function cancelGenerate() {
+  if (loadingAutoGenerate.value) return;
+
+  generateMode.value = false;
+}
+
+async function confirmGenerate() {
+  if (loadingAutoGenerate.value || !canGenerate.value) return;
+
+  await autoGenerateStops();
+  generateMode.value = false;
+}
+
 watch(destinationQuery, async (value) => {
   const query = value.trim();
 
@@ -1205,21 +1245,34 @@ watch(destinationQuery, async (value) => {
   }
 });
 
-watch(stopQuery, async (value) => {
+// The input stays enabled while searching (disabling it would drop focus after every keystroke), so
+// searches wait for a short pause in typing and a slower response never overwrites a newer one.
+let stopSearchTimer: ReturnType<typeof setTimeout> | null = null;
+let stopSearchRequest = 0;
+
+watch(stopQuery, (value) => {
+  if (stopSearchTimer) clearTimeout(stopSearchTimer);
+
   const query = value.trim();
+  const request = ++stopSearchRequest;
 
   if (!query || routeCoordinates.value.length < 2) {
     stopSuggestions.value = [];
+    loadingStopSearch.value = false;
     return;
   }
 
   loadingStopSearch.value = true;
 
-  try {
-    stopSuggestions.value = await searchPlacesAlongRoute(query);
-  } finally {
-    loadingStopSearch.value = false;
-  }
+  stopSearchTimer = setTimeout(async () => {
+    try {
+      const results = await searchPlacesAlongRoute(query);
+
+      if (request === stopSearchRequest) stopSuggestions.value = results;
+    } finally {
+      if (request === stopSearchRequest) loadingStopSearch.value = false;
+    }
+  }, 300);
 });
 
 function buildRouteStopsForSubmit(): StopItem[] {
@@ -1287,6 +1340,7 @@ watch(resolvedAppearance, (appearance) => {
 });
 
 onBeforeUnmount(() => {
+  if (stopSearchTimer) clearTimeout(stopSearchTimer);
   mapResizeObserver?.disconnect();
   mapResizeObserver = null;
   originMarker?.remove();
@@ -1566,7 +1620,152 @@ onBeforeUnmount(() => {
       <Separator orientation="vertical"/>
 
       <div class="flex-1">
-        <CardSeparator title="Stops Info" />
+        <template v-if="canEdit">
+          <CardSeparator title="Add Stops" />
+
+          <div class="mt-2 space-y-2">
+            <div class="flex items-center gap-2">
+              <div v-if="!generateMode" class="relative min-w-0 flex-1">
+                <RiSearchLine
+                  class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 shrink-0 -translate-y-1/2 text-custom-shadow/80"
+                />
+                <Input
+                  v-model="stopQuery"
+                  class="h-10 pr-9 pl-9 text-sm rounded-full bg-transparent"
+                  placeholder="Search route stop..."
+                />
+                <RiLoader2Line
+                  v-if="loadingStopSearch"
+                  class="pointer-events-none absolute top-1/2 right-3 h-4 w-4 shrink-0 -translate-y-1/2 animate-spin text-custom-shadow/80"
+                />
+                <button
+                  v-else-if="stopQuery"
+                  type="button"
+                  class="absolute top-1/2 right-3 -translate-y-1/2 text-custom-shadow/80 hover:text-custom-shadow"
+                  @click="
+                    stopQuery = '';
+                    stopSuggestions = [];
+                  "
+                >
+                  <RiCloseLine class="h-4 w-4 shrink-0" />
+                </button>
+              </div>
+
+              <div
+                v-else
+                ref="intervalField"
+                class="relative min-w-0 flex-1"
+                @keydown.enter.prevent="confirmGenerate"
+                @keydown.esc.prevent="cancelGenerate"
+              >
+                <RiRuler2Line
+                  class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 shrink-0 -translate-y-1/2 text-custom-shadow/80"
+                />
+                <Input
+                  v-model.number="autoGenerateInterval"
+                  type="number"
+                  min="1"
+                  max="50"
+                  class="h-10 pr-20 pl-9 text-sm rounded-full bg-transparent"
+                  placeholder="Distance between stops"
+                  :disabled="loadingAutoGenerate"
+                />
+                <span
+                  class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-custom-shadow/80"
+                >
+                  km apart
+                </span>
+              </div>
+
+              <Button
+                v-if="!generateMode"
+                type="button"
+                variant="float"
+                :disabled="routeCoordinates.length < 2"
+                @click="startGenerate"
+              >
+                <RiAiGenerate class="shrink-0 h-4 w-4" />
+                Generate
+              </Button>
+
+              <template v-else>
+                <Button
+                  type="button"
+                  variant="float-primary"
+                  :disabled="loadingAutoGenerate || !canGenerate"
+                  @click="confirmGenerate"
+                >
+                  <RiAiGenerate
+                    class="shrink-0 h-4 w-4 text-custom-bg-light dark:text-custom-shadow"
+                  />
+                  {{ loadingAutoGenerate ? 'Generating...' : 'Generate' }}
+                </Button>
+                <Button
+                  type="button"
+                  variant="float"
+                  size="icon"
+                  aria-label="Cancel generating stops"
+                  :disabled="loadingAutoGenerate"
+                  @click="cancelGenerate"
+                >
+                  <RiCloseLine class="h-4 w-4 shrink-0" />
+                </Button>
+              </template>
+            </div>
+
+            <p
+              v-if="generateMode"
+              class="text-sm text-center text-destructive"
+            >
+              <!-- <RiAlertLine class="mt-0.5 h-4 w-4 shrink-0" /> -->
+              Generating stops will remove all current stops.
+            </p>
+
+            <div v-if="stopSuggestions.length" class="pt-2">
+              <button
+                v-for="item in stopSuggestions"
+                :key="item.id"
+                type="button"
+                class="flex w-full cursor-pointer items-start gap-2 rounded-md px-3 py-2 text-left hover:bg-custom-secondary/10"
+                @click="addStopFromSuggestion(item)"
+              >
+              <!-- TODO: use the routestepmarker here -->
+                <RiMapPin2Line
+                  class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80"
+                />
+                <div class="min-w-0">
+                  <div class="truncate text-sm font-semibold text-custom-shadow">
+                    {{ item.name }}
+                  </div>
+                  <div class="truncate text-xs text-custom-shadow/80">
+                    {{ item.full_address }}
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            <InputError
+              v-if="
+                !stopSuggestions.length &&
+                stopQuery &&
+                !loadingStopSearch &&
+                routeCoordinates.length >= 2
+              "
+              message="No places found within 500 m of the route."
+            />
+            <p
+              v-else-if="stopQuery && routeCoordinates.length < 2"
+              class="px-1 text-xs text-custom-shadow/80"
+            >
+              Set a destination and build the route first to search for stops
+              along it.
+            </p>
+          </div>
+        </template>
+
+        <template v-if="!canEdit">
+          <CardSeparator title="Stops Info" />
+        </template>
 
         <div class="mt-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
           <div
@@ -1579,19 +1778,14 @@ onBeforeUnmount(() => {
           </div>
 
           <div v-else class="relative">
-            <div
-              class="absolute top-6 bottom-6 left-[18px] w-px bg-slate-200"
-            />
             <div class="space-y-1">
-              <div class="flex items-start gap-3 rounded-lg p-2">
-                <div class="relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-600 text-[9px] font-bold text-white ring-2 ring-background">
-                  1
-                </div>
-                <div class="min-w-0 pt-0.5">
-                  <p class="truncate text-sm leading-tight font-medium">
+              <div class="flex items-start gap-3 rounded-md p-2">
+                <RouteStepMarker :number="1" kind="origin" connector />
+                <div class="min-w-0">
+                  <p class="truncate text-sm leading-tight font-semibold">
                     {{ form.origin_name }}
                   </p>
-                  <p class="text-[10px] tracking-wide text-green-600 uppercase">
+                  <p class="text-xs tracking-wide text-custom-shadow/80 uppercase">
                     Origin
                   </p>
                 </div>
@@ -1602,11 +1796,11 @@ onBeforeUnmount(() => {
                 :key="`${stop.stop_name}-${stop.latitude}-${index}`"
                 :draggable="canEdit"
                 :class="[
-                  'flex items-start gap-3 rounded-lg p-2 transition-colors select-none',
+                  'flex items-center gap-3 rounded-md p-2 transition-colors select-none',
                   canEdit ? 'cursor-grab' : '',
                   dragOverIndex === index
-                    ? 'bg-blue-50 ring-1 ring-blue-300'
-                    : 'hover:bg-muted/40',
+                    ? 'bg-custom-bg'
+                    : 'hover:bg-custom-secondary/10',
                   draggedStopIndex === index
                     ? 'opacity-50'
                     : '',
@@ -1616,59 +1810,54 @@ onBeforeUnmount(() => {
                 @drop="canEdit && onDrop(index)"
                 @dragend="canEdit && onDragEnd()"
               >
-                <div
-                  :class="[
-                    'relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white ring-2 ring-background',
-                    stop.stop_type === 'landmark'
-                      ? 'bg-violet-500'
-                      : 'bg-amber-500',
-                  ]"
-                >
-                  {{ index + 2 }}
-                </div>
-                <div class="min-w-0 flex-1 pt-0.5">
+                <RouteStepMarker
+                  :number="index + 2"
+                  :kind="stop.stop_type === 'landmark' ? 'landmark' : 'stop'"
+                  connector
+                />
+                <!-- TODO: this bit is unstyled kasi di ko makita -->
+                <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2">
-                    <p class="truncate text-sm leading-tight font-medium">
+                    <p class="truncate text-sm leading-tight font-semibold">
                       {{ stop.stop_name }}
                     </p>
-                    <span
+                    <!-- <span
                       v-if="
                         stop.stop_type ===
                         'landmark'
                       "
-                      class="rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-medium text-violet-700"
+                      class="rounded bg-violet-100 px-1.5 py-0.5 text-xs font-semibold text-violet-700"
                     >
                       Landmark
-                    </span>
+                    </span> -->
                   </div>
-                  <p class="truncate text-[11px] text-muted-foreground" >
+                  <p class="truncate text-xs text-custom-shadow/80" >
                     {{ stop.address || 'No address' }}
                   </p>
                 </div>
+
                 <div
                   v-if="canEdit"
-                  class="flex shrink-0 items-center gap-1"
+                  class="flex shrink-0 items-center gap-2"
                 >
-                  <RiDraggable class="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
+                  <RiDraggable class="h-4 w-4 shrink-0 text-custom-shadow/80" />
                   <button
                     type="button"
-                    class="rounded p-0.5 text-muted-foreground/50 hover:text-destructive"
+                    class="text-custom-shadow/80 hover:text-destructive"
                     @click="removeStop(index)"
                   >
-                    <RiCloseLine class="h-3.5 w-3.5 shrink-0" />
+                    <RiCloseLine class="h-4 w-4 shrink-0" />
                   </button>
                 </div>
               </div>
 
-              <div class="flex items-start gap-3 rounded-lg p-2">
-                <div class="relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-600 text-[9px] font-bold text-white ring-2 ring-background">
-                  {{ form.stops.length + 2 }}
-                </div>
-                <div class="min-w-0 pt-0.5">
-                  <p class="truncate text-sm leading-tight font-medium">
+              <div class="flex items-start gap-3 rounded-md p-2">
+                <RouteStepMarker :number="form.stops.length + 2" kind="destination" />
+                <div class="min-w-0">
+                  <p class="truncate text-sm leading-tight font-semibold">
                     {{ form.destination_name }}
                   </p>
-                  <p class="text-[10px] tracking-wide text-red-600 uppercase">
+                  <p class="text-xs tracking-wide text-custom-shadow/80 uppercase">
                     Destination
                   </p>
                 </div>
@@ -1737,103 +1926,6 @@ onBeforeUnmount(() => {
           </p>
         </div>
 
-        <CardSeparator title="Add Stops" />
-
-        <div class="mt-2 space-y-2">
-          <div class="relative">
-            <RiSearchLine
-              class="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 shrink-0 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              v-model="stopQuery"
-              class="h-10 pr-9 pl-9 text-sm"
-              placeholder="Search route stop..."
-              :disabled="loadingStopSearch"
-            />
-            <button
-              v-if="stopQuery"
-              type="button"
-              class="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              @click="
-                stopQuery = '';
-                stopSuggestions = [];
-              "
-            >
-              <RiCloseLine class="h-3.5 w-3.5 shrink-0" />
-            </button>
-          </div>
-
-          <div v-if="stopSuggestions.length">
-            <button
-              v-for="item in stopSuggestions"
-              :key="item.id"
-              type="button"
-              class="flex w-full cursor-pointer items-start gap-2 rounded-md px-3 py-2 text-left hover:bg-custom-primary/10"
-              @click="addStopFromSuggestion(item)"
-            >
-              <RiMapPin2Line
-                class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80"
-              />
-              <div class="min-w-0">
-                <div class="truncate text-sm font-semibold text-custom-shadow">
-                  {{ item.name }}
-                </div>
-                <div class="truncate text-xs text-custom-shadow/80">
-                  {{ item.full_address }}
-                </div>
-              </div>
-            </button>
-          </div>
-
-          <InputError
-            v-if="
-              !stopSuggestions.length &&
-              stopQuery &&
-              !loadingStopSearch &&
-              routeCoordinates.length >= 2
-            "
-            message="No places found within 500 m of the route."
-          />
-          <p
-            v-else-if="stopQuery && routeCoordinates.length < 2"
-            class="px-1 text-xs text-custom-shadow/80"
-          >
-            Set a destination and build the route first to search for stops
-            along it.
-          </p>
-
-          <div class="flex items-center gap-3 pt-2">
-            <Separator class="flex-1" />
-            <p class="text-sm">or</p>
-            <Separator class="flex-1" />
-          </div>
-
-          <div class="flex items-center gap-2">
-            <Input
-              v-model.number="autoGenerateInterval"
-              type="number"
-              min="1"
-              max="50"
-              class="h-8 w-20 flex-1 text-sm"
-            />
-            <span class="text-sm text-custom-shadow">km apart</span>
-            <Button
-              type="button"
-              variant="float-primary"
-              class="group items-center"
-              :disabled="loadingAutoGenerate || routeCoordinates.length < 2"
-              @click="autoGenerateStops"
-            >
-              <RiAiGenerate
-                class="shrink-0 text-custom-bg-light dark:text-custom-shadow"
-              />
-              {{ loadingAutoGenerate ? 'Generating...' : 'Generate' }}
-            </Button>
-          </div>
-          <p class="pt-2 text-center text-xs text-custom-shadow/80">
-            This replaces all current stops.
-          </p>
-        </div>
         </template>
       </div>
     </CardContent>

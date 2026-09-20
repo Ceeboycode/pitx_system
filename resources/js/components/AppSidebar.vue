@@ -190,12 +190,6 @@ const mainNavItems: NavItem[] = [
                 href: vehicleTypesIndex().url,
                 permission: 'vehicle_types.viewAny',
             },
-            {
-                id: 'remarks',
-                title: 'Roles',
-                href: rolesIndex().url,
-                permission: 'roles.viewAny',
-            },
         ],
     },
 ];

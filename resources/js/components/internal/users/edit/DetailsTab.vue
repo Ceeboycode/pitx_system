@@ -82,10 +82,6 @@ const props = defineProps<{
     roles: Role[];
     companies: Company[];
     selectedRole: string | null;
-    // Sent by UserController@edit: true only when the edited user's role
-    // holds every permission in that group (see Role::hasAllPermissionsInGroup).
-    canManageExternalUsers: boolean;
-    canManageExternalDispatches: boolean;
 }>();
 
 // const { getInitials } = useInitials();

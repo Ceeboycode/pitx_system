@@ -149,7 +149,7 @@
     /* modified semantics */
     --success: oklch(67% 0.1585 156.35);
     --destructive: oklch(59.02% 0.1681 20.48);
-    --warning: oklch(80.62% 0.1309 95.88);
+    --warning: oklch(96.185% 0.06298 95.666);
     /* based on primary color */
     --info: oklch(48.092% 0.12718 265.651); 
 

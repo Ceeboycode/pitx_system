@@ -29,9 +29,9 @@ import {
 import ExternalLayout from '@/layouts/ExternalLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import {
-    RiCalendarLine as Calendar,
-    RiCloseLine as X,
-    RiFilter2Line as Filter,
+    RiCalendarLine,
+    RiCloseLine,
+    RiFilter2Line,
 } from 'vue-remix-icons';
 import { computed, ref } from 'vue';
 
@@ -275,7 +275,7 @@ function actionBadgeClass(action: string): string {
                                                     : ''
                                             "
                                         >
-                                            <Filter class="h-3.5 w-3.5" />
+                                            <RiFilter2Line class="h-3.5 w-3.5" />
                                             {{
                                                 hasCategoryFilters
                                                     ? 'Filters Active'
@@ -359,7 +359,7 @@ function actionBadgeClass(action: string): string {
                                                     variant="destructive"
                                                     @click="clearFilters"
                                                 >
-                                                    <X class="mr-1 h-3.5 w-3.5" />
+                                                    <RiCloseLine class="mr-1 h-3.5 w-3.5" />
                                                     Clear filters
                                                 </Button>
                                             </div>
@@ -373,7 +373,7 @@ function actionBadgeClass(action: string): string {
                                             size="icon-text"
                                             class="rounded-full gap-2"
                                         >
-                                            <Calendar class="h-4 w-4 shrink-0" />
+                                            <RiCalendarLine class="h-4 w-4 shrink-0" />
                                             <span class="text-sm">
                                                 {{ dateFrom ? formatDateDisplay(dateFrom) : 'From date' }}
                                             </span>
@@ -399,7 +399,7 @@ function actionBadgeClass(action: string): string {
                                             size="icon-text"
                                             class="rounded-full gap-2"
                                         >
-                                            <Calendar class="h-4 w-4 shrink-0" />
+                                            <RiCalendarLine class="h-4 w-4 shrink-0" />
                                             <span class="text-sm">
                                                 {{ dateTo ? formatDateDisplay(dateTo) : 'To date' }}
                                             </span>
@@ -560,7 +560,7 @@ function actionBadgeClass(action: string): string {
                         aria-label="Close activity log preview"
                         @click="previewedLog = null"
                     >
-                        <X class="h-4 w-4" />
+                        <RiCloseLine class="h-4 w-4" />
                     </Button>
                 </CardHeader>
 

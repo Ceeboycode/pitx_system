@@ -2,10 +2,8 @@
 
 use App\Models\Company;
 use App\Models\Role;
-use App\Models\Route;
 use App\Models\User;
 use App\Models\Vehicle;
-use App\Models\VehicleType;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
@@ -31,7 +29,6 @@ beforeEach(function (): void {
     foreach ([
         'vehicles.viewAny',
         'vehicles.view',
-        'vehicles.create',
         'vehicles.update',
         'vehicles.archive',
         'vehicles.toggleStatus',
@@ -44,7 +41,6 @@ beforeEach(function (): void {
     $this->internalRole->syncPermissions([
         'vehicles.viewAny',
         'vehicles.view',
-        'vehicles.create',
         'vehicles.update',
         'vehicles.archive',
         'vehicles.toggleStatus',
@@ -138,7 +134,6 @@ test('internal user can filter vehicles by operational status and verification s
             ->where('vehicles.data.0.plate_number', 'SUS003')
         );
 
-
 });
 
 test('internal user can search vehicles by plate number or body number', function (): void {
@@ -175,5 +170,3 @@ test('internal user can search vehicles by plate number or body number', functio
             ->where('vehicles.data.0.plate_number', 'ABC1234')
         );
 });
-
-

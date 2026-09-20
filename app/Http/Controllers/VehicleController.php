@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Vehicle\VehicleStoreRequest;
 use App\Http\Requests\Vehicle\VehicleUpdateRequest;
 use App\Models\Company;
 use App\Models\Route;
@@ -111,8 +110,13 @@ class VehicleController extends Controller
     {
         Gate::authorize('view', $vehicle);
 
-        // Ensure vehicle status reflects current document states (e.g., auto-activate when all verified)
-        $this->vehicleService->syncVehicleStatus($vehicle, $request->user()->id);
+        // Archived vehicles open read-only, and only for whoever may open the Archives page.
+        if ($vehicle->trashed()) {
+            Gate::authorize('viewAny', Vehicle::class);
+        } else {
+            // Ensure vehicle status reflects current document states (e.g., auto-activate when all verified)
+            $this->vehicleService->syncVehicleStatus($vehicle, $request->user()->id);
+        }
 
         $vehicle->load([
             'company:id,company_name,company_code,company_email,company_phone,company_address',
@@ -127,6 +131,7 @@ class VehicleController extends Controller
         ]);
 
         return Inertia::render('Vehicles/Show', [
+            'isArchived' => $vehicle->trashed(),
             'vehicle' => [
                 'id' => $vehicle->id,
                 'vehicle_type_id' => $vehicle->vehicle_type_id,
@@ -226,30 +231,6 @@ class VehicleController extends Controller
                 'mapboxToken' => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
             ],
         ]);
-    }
-
-    public function create(): Response
-    {
-        Gate::authorize('create', Vehicle::class);
-
-        return Inertia::render('Vehicles/Create', [
-            'companies' => Company::query()->select('id', 'company_name')->orderBy('company_name')->get(),
-            'routes' => Route::query()->select('id', 'route_name')->orderBy('route_name')->get(),
-            'vehicleTypes' => VehicleType::active()->orderBy('type_name')->get(['id', 'type_name']),
-        ]);
-    }
-
-    public function store(VehicleStoreRequest $request): RedirectResponse
-    {
-        Gate::authorize('create', Vehicle::class);
-
-        Vehicle::create([
-            ...$request->validated(),
-            'created_by' => $request->user()->id,
-            'updated_by' => $request->user()->id,
-        ]);
-
-        return to_route('vehicles.index')->with('success', 'Vehicle created successfully.');
     }
 
     public function edit(Vehicle $vehicle): Response

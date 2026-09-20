@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import { ArchivedNotice } from '@/components/ui/_archived-notice';
 import { index } from '@/routes/gates';
 import type { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
@@ -20,7 +21,7 @@ import Details from '@/components/internal/gate/edit/DetailsTab.vue';
 import Routes from '@/components/internal/gate/edit/RoutesTab.vue';
 import Dispatches from '@/components/internal/gate/edit/DispatchesTab.vue';
 import History from '@/components/internal/gate/edit/HistoryTab.vue';
-import { RiArchive2Line, RiDashboardHorizontalLine, RiFileListLine, RiRoadMapLine, RiRouteLine, RiShutDownLine, RiTimeLine } from 'vue-remix-icons';
+import { RiArchive2Line, RiDashboardHorizontalLine, RiFileListLine, RiRoadMapLine, RiRouteLine, RiShutDownLine, RiHistoryLine } from 'vue-remix-icons';
 import { can } from '@/lib/can';
 
 type Gate = {
@@ -36,7 +37,7 @@ type Gate = {
     updater: { name: string } | null;
 };
 
-const props = defineProps<{ gate: Gate }>();
+const props = defineProps<{ gate: Gate; isArchived?: boolean }>();
 
 const canArchiveGate = can('gates.archive');
 const canUpdateGate = can('gates.update');
@@ -76,7 +77,7 @@ const tabs = [
     {
         value: 'history',
         label: 'History',
-        icon: RiTimeLine,
+        icon: RiHistoryLine,
         component: History,
     },
 ] as const;
@@ -88,6 +89,7 @@ const tabs = [
     <AppLayout :breadcrumbs="breadcrumbs">
         <PanelLayout>
             <LeadPanel>
+                <ArchivedNotice v-if="props.isArchived" entity="gate" />
                 <LeadingCard
                     :title="gate.gate_name"
                     description="Review and manage gate details."

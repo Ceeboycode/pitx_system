@@ -2,12 +2,15 @@
 import ArchiveCompanyDialog from '@/components/internal/company/ArchiveCompanyDialog.vue';
 import ToggleCompanyStatusDialog from '@/components/internal/company/ToggleCompanyStatusDialog.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { ArchivedNotice } from '@/components/ui/_archived-notice';
 import type { BreadcrumbItem } from '@/types';
 import type { CompanyDocument, Operator } from '@/types/company';
 import { Head } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import { can } from '@/lib/can';
+import { companyDocumentPreview } from '@/lib/document-preview';
+import { DocumentPreviewCard } from '@/components/internal/preview-cards';
 
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 
@@ -23,6 +26,7 @@ import {
     RiAlertLine,
     RiArchive2Line,
     RiShutDownLine,
+    RiHistoryLine,
 } from 'vue-remix-icons';
 import { LeadPanel, PanelLayout, SidePanel } from '@/components/ui/_panels';
 import { LeadingCard } from '@/components/ui/_leading-card';
@@ -39,8 +43,10 @@ import Vehicles from '@/components/internal/company/show/VehiclesTab.vue';
 import Employees from '@/components/internal/company/show/EmployeesTab.vue';
 import Dispatches from '@/components/internal/company/show/DispatchesTab.vue';
 import IncidentReports from '@/components/internal/company/show/IncidentReportsTab.vue';
+import History from '@/components/internal/company/show/HistoryTab.vue';
 
 const props = defineProps<{
+    isArchived?: boolean;
     company: {
         id: number;
         company_name: string;
@@ -79,6 +85,21 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const archiveOpen = ref(false);
 const toggleOpen = ref(false);
+
+const activeTab = ref('documents');
+
+// The Documents tab picks the document; the page shows it in the side panel. Held as an id so the
+// card follows the fresh data after a document is verified, and only while that tab is open.
+const previewedDocumentId = ref<number | null>(null);
+const previewedDocument = computed(() => {
+    const doc = company.value.documents?.find((document) => document.id === previewedDocumentId.value);
+
+    return doc ? companyDocumentPreview(doc, company.value.id) : null;
+});
+
+watch(activeTab, (tab) => {
+    if (tab !== 'documents') previewedDocumentId.value = null;
+});
 
 const tabs = [
     {
@@ -123,6 +144,12 @@ const tabs = [
         icon: RiAlertLine,
         component: IncidentReports,
     },
+    {
+        value: 'history',
+        label: 'History',
+        icon: RiHistoryLine,
+        component: History,
+    }
 ] as const;
 
 // const repHasAny = computed(() => {
@@ -161,7 +188,8 @@ const tabs = [
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <PanelLayout>
-            <LeadPanel>
+            <LeadPanel class="min-w-0 shrink">
+                <ArchivedNotice v-if="props.isArchived" entity="company" />
                 <LeadingCard
                     :title="company.company_name"
                     description="Review and manage company documents."
@@ -186,7 +214,7 @@ const tabs = [
                         Archive
                     </DropdownMenuItem>
                 </LeadingCard>
-                <Tabs default-value="documents">
+                <Tabs v-model="activeTab">
                     <TabsList>
                         <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value">
                             <component :is="tab.icon" class="h-4 w-4"/>
@@ -194,12 +222,13 @@ const tabs = [
                         </TabsTrigger>
                     </TabsList>
                     <TabsContent v-for="tab in tabs" :key="tab.value" :value="tab.value">
-                        <component :is="tab.component" :company="company" />
+                        <Documents v-if="tab.value === 'documents'" v-model:previewed-id="previewedDocumentId" :company="company" />
+                        <component :is="tab.component" v-else :company="company" />
                     </TabsContent>
                 </Tabs>
             </LeadPanel>
-            <SidePanel>
-                
+            <SidePanel v-if="previewedDocument" class="hidden lg:flex">
+                <DocumentPreviewCard :doc="previewedDocument" @close="previewedDocumentId = null" />
             </SidePanel>
         </PanelLayout>
         

@@ -1,18 +1,9 @@
 <script setup lang="ts">
+import { ConfirmDialog } from '@/components/ui/_app-dialog';
 import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toggleStatus } from '@/routes/vehicle-types';
 
-import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import Separator from '@/components/ui/separator/Separator.vue';
 import { RiShutDownLine } from 'vue-remix-icons';
 
 type VehicleTypeForToggle = {
@@ -48,29 +39,19 @@ function confirm() {
 </script>
 
 <template>
-    <Dialog v-model:open="open">
-        <DialogContent class="px-6" :show-close-button="false">
-            <DialogHeader class="px-0">
-                <DialogTitle>Set vehicle type status</DialogTitle>
-                <DialogDescription class="mt-4">
-                    Are you sure you want to set
-                    <span class="font-semibold text-custom-accent-3">{{ vehicle_type?.type_name ?? 'this vehicle type' }}</span>
-                    as {{ vehicle_type?.is_active ? 'inactive' : 'active' }}?
-                </DialogDescription>
-            </DialogHeader>
-            <Separator class="mb-4" />
-            <DialogFooter class="gap-2 sm:justify-end">
-                <Button variant="ghost-outline" :disabled="processing" @click="open = false">Cancel</Button>
-                <Button
-                    :variant="vehicle_type?.is_active ? 'destructive' : 'float-primary'"
-                    :disabled="processing"
-                    @click="confirm"
-                >
-                    <RiShutDownLine class="h-4 w-4" />
-                    {{ vehicle_type?.is_active ? 'Inactivate' : 'Activate' }}
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
+    <ConfirmDialog
+        v-model:open="open"
+        title="Set Vehicle Type Status"
+        :tone="vehicle_type?.is_active ? 'negative' : 'primary'"
+        :confirm-label="vehicle_type?.is_active ? 'Inactivate' : 'Activate'"
+        :icon="RiShutDownLine"
+        :processing="processing"
+        @confirm="confirm"
+    >
+        <template #description>
+            Are you sure you want to set
+            <span class="font-semibold text-custom-accent-3">{{ vehicle_type?.type_name ?? 'this vehicle type' }}</span>
+            as {{ vehicle_type?.is_active ? 'inactive' : 'active' }}?
+        </template>
+    </ConfirmDialog>
 </template>
-

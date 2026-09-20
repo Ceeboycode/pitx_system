@@ -38,14 +38,13 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PanelLayout, MainPanel, SidePanel } from '@/components/ui/_panels';
+import { DispatchPreviewCard } from '@/components/internal/preview-cards';
 
 
 import {
     RiArrowDownSLine,
     RiArrowUpDownLine,
     RiArrowUpSLine,
-    RiClipboardLine,
-    RiCloseLine,
     RiFileInfoLine,
     RiFilter2Line,
     RiMore2Line,
@@ -458,110 +457,8 @@ function routeLabel(vehicle: DispatchVehicle | null): string {
                 </Card>
             </MainPanel>
 
-            <SidePanel>
-                <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-full">
-                    <CardHeader
-                        v-if="previewedDispatch"
-                        class="flex flex-row items-start justify-between gap-3"
-                    >
-                        <div class="min-w-0">
-                            <CardTitle class="truncate uppercase">
-                                {{ previewedDispatch.vehicle?.plate_number || `Dispatch #${previewedDispatch.id}` }}
-                            </CardTitle>
-                            <CardDescription>Preview</CardDescription>
-                        </div>
-                        <Button
-                            variant="header-actions"
-                            size="icon"
-                            class="h-8 w-8 shrink-0 rounded-full"
-                            aria-label="Close dispatch preview"
-                            @click="previewedDispatch = null"
-                        >
-                            <RiCloseLine class="h-4 w-4" />
-                        </Button>
-                    </CardHeader>
-
-                    <CardContent
-                        v-if="previewedDispatch"
-                        class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto py-2"
-                    >
-                        <div class="flex aspect-4/3 items-center justify-center overflow-hidden rounded-md border border-dashed border-custom-bg-dark bg-custom-bg text-custom-shadow/70 dark:border-none dark:bg-custom-bg-dark">
-                            <RiClipboardLine class="h-16 w-16" />
-                        </div>
-
-                        <div class="space-y-2 pt-2">
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Status</span>
-                                <Badge :class="['gap-1.5', statusClass(previewedDispatch.status)]">
-                                    <span :class="['h-1.5 w-1.5 rounded-full', statusDot(previewedDispatch.status)]" />
-                                    {{ prettyStatus(previewedDispatch.status) }}
-                                </Badge>
-                            </div>
-
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Company</span>
-                                <span class="text-right text-sm">{{ previewedDispatch.company?.company_name || '—' }}</span>
-                            </div>
-
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Vehicle</span>
-                                <span class="text-right text-sm">{{ previewedDispatch.vehicle?.vehicle_type || previewedDispatch.vehicle?.make_model || 'Not recorded' }}</span>
-                            </div>
-
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Route</span>
-                                <span class="text-right text-sm">{{ routeLabel(previewedDispatch.vehicle) }}</span>
-                            </div>
-
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Gate</span>
-                                <span class="text-right text-sm">{{ previewedDispatch.gate?.gate_name || 'Not assigned' }}</span>
-                            </div>
-
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Bay</span>
-                                <span class="text-right text-sm">{{ previewedDispatch.bay_number || 'Not assigned' }}</span>
-                            </div>
-
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">PAX Count</span>
-                                <span class="text-right text-sm">{{ previewedDispatch.pax_count ?? 'Not recorded' }}</span>
-                            </div>
-
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Dispatcher</span>
-                                <span class="text-right text-sm">{{ previewedDispatch.dispatcher?.name || 'Not recorded' }}</span>
-                            </div>
-
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Driver</span>
-                                <span class="text-right text-sm">{{ previewedDispatch.driver?.name || 'Not recorded' }}</span>
-                            </div>
-
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Dispatched At</span>
-                                <span class="text-right text-sm">{{ previewedDispatch.dispatched_at || 'Not recorded' }}</span>
-                            </div>
-
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Arrived At</span>
-                                <span class="text-right text-sm">{{ previewedDispatch.arrived_at || 'Not recorded' }}</span>
-                            </div>
-
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Departed At</span>
-                                <span class="text-right text-sm">{{ previewedDispatch.departed_at || 'Not recorded' }}</span>
-                            </div>
-                        </div>
-                    </CardContent>
-
-                    <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
-                        <div class="max-w-60 space-y-1 text-center">
-                            <p class="text-base font-semibold text-custom-shadow">No dispatch selected</p>
-                            <p class="text-sm text-custom-shadow/80">Click on a dispatch to preview.</p>
-                        </div>
-                    </CardContent>
-                </Card>
+            <SidePanel v-if="previewedDispatch" class="hidden lg:flex">
+                <DispatchPreviewCard :dispatch="previewedDispatch" @close="previewedDispatch = null" />
             </SidePanel>
         </PanelLayout>
     </AppLayout>

@@ -1,20 +1,10 @@
 <script setup lang="ts">
+import { ConfirmDialog } from '@/components/ui/_app-dialog';
 import { computed, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { toggleStatus } from '@/routes/vehicles';
 import { humanize } from '@/lib/format';
 
-import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { RiShutDownLine, RiSpam2Line } from 'vue-remix-icons';
 
@@ -69,44 +59,28 @@ function confirm() {
 </script>
 
 <template>
-    <Dialog v-model:open="open">
-        <DialogContent class="max-w-md px-6" :show-close-button="false">
-            <DialogHeader class="px-0">
-                <DialogTitle>{{ statusActionLabel(targetStatus) }}</DialogTitle>
-                <DialogDescription>
-                    <span class="block">
-                        {{ isSuspending ? 'Provide a reason to suspend' : 'This will set' }}
-                        <span class="font-semibold text-custom-accent-3">{{ vehicle?.plate_number || 'this vehicle' }}</span>.
-                        {{ isSuspending ? 'The suspension reason is stored separately.' : `New status: ${humanize(targetStatus)}.` }}
-                    </span>
-                </DialogDescription>
-            </DialogHeader>
-            <form class="space-y-3" @submit.prevent="confirm">
-                <div v-if="isSuspending" class="flex flex-col">
-                    <Textarea
-                        v-model="suspendRemarks"
-                        class="min-h-24 border-custom-bg-dark bg-custom-bg p-3 text-sm text-custom-shadow placeholder:text-custom-shadow/50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:bg-white dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5"
-                        rows="3"
-                        placeholder="Brief reason for suspension..."
-                    />
-                </div>
+    <ConfirmDialog
+        v-model:open="open"
+        :title="statusActionLabel(targetStatus)"
+        :tone="targetStatus === 'active' ? 'primary' : 'negative'"
+        :confirm-label="statusActionLabel(targetStatus)"
+        :icon="isSuspending ? RiSpam2Line : RiShutDownLine"
+        :confirm-disabled="isSuspending && !suspendRemarks.trim()"
+        @confirm="confirm"
+    >
+        <template #description>
+            {{ isSuspending ? 'Provide a reason to suspend' : 'This will set' }}
+            <span class="font-semibold text-custom-accent-3">{{ vehicle?.plate_number || 'this vehicle' }}</span>.
+            {{ isSuspending ? 'The suspension reason is stored separately.' : `New status: ${humanize(targetStatus)}.` }}
+        </template>
 
-                <Separator />
-                <DialogFooter class="gap-2 sm:justify-end">
-                    <DialogClose as-child>
-                        <Button type="button" variant="ghost-outline">Cancel</Button>
-                    </DialogClose>
-                    <Button
-                        type="submit"
-                        :variant="isSuspending ? 'destructive' : 'float-primary'"
-                        :disabled="isSuspending && !suspendRemarks.trim()"
-                    >
-                        <RiSpam2Line v-if="isSuspending" class="h-4 w-4 shrink-0" />
-                        <RiShutDownLine v-else class="h-4 w-4 shrink-0" />
-                        {{ statusActionLabel(targetStatus) }}
-                    </Button>
-                </DialogFooter>
-            </form>
-        </DialogContent>
-    </Dialog>
+        <template v-if="isSuspending" #default>
+            <Textarea
+                v-model="suspendRemarks"
+                class="min-h-24 border-custom-bg-dark bg-custom-bg p-3 text-sm text-custom-shadow placeholder:text-custom-shadow/50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:bg-white dark:border-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5"
+                rows="3"
+                placeholder="Brief reason for suspension..."
+            />
+        </template>
+    </ConfirmDialog>
 </template>

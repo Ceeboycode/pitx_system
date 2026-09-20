@@ -5,26 +5,23 @@ import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator/index';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { can } from '@/lib/can';
-import { index, restore, trash } from '@/routes/roles';
+import { edit, index, trash } from '@/routes/roles';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { RiArrowLeftSLine, RiFilter2Line, RiMore2Line, RiRestartLine } from 'vue-remix-icons';
-import { computed, ref } from 'vue';
-import { toast } from 'vue-sonner';
+import { RiArrowLeftLine, RiFilter2Line, RiRestartLine } from 'vue-remix-icons';
+import { computed, ref, watch } from 'vue';
 import { PanelLayout, MainPanel, SidePanel } from '@/components/ui/_panels';
+import { RestoreRoleDialog } from '@/components/internal/roles';
+import { RolePreviewCard } from '@/components/internal/preview-cards';
+import { Table, TableCard, TableColumn, TableContent, TableData, TableHeader, TableMoreButton, TableRow } from '@/components/ui/_table';
 
 type Permission = { id: number; name: string };
 type Role = {
@@ -89,6 +86,16 @@ function typeClass(type: Role['type']) {
         : 'border-violet-200 bg-violet-100 text-violet-700';
 }
 
+const previewedRole = ref<Role | null>(null);
+const openMenuId = ref<number | null>(null);
+
+// Drop the preview once its row leaves the list (e.g. after restoring it).
+watch(() => props.roles.data, (rows) => {
+    if (previewedRole.value && !rows.some((row) => row.id === previewedRole.value?.id)) {
+        previewedRole.value = null;
+    }
+});
+
 const restoringRole = ref<Role | null>(null);
 const restoreOpen = ref(false);
 
@@ -97,23 +104,6 @@ function openRestoreDialog(role: Role) {
     restoreOpen.value = true;
 }
 
-function closeRestoreDialog() {
-    restoreOpen.value = false;
-    restoringRole.value = null;
-}
-
-function confirmRestore() {
-    if (!restoringRole.value) return;
-    router.patch(
-        restore({ role: restoringRole.value.id }).url,
-        {},
-        {
-            preserveScroll: true,
-            onSuccess: () => closeRestoreDialog(),
-            onError: () => toast.error('Failed to restore role.'),
-        },
-    );
-}
 </script>
 
 <template>
@@ -126,7 +116,7 @@ function confirmRestore() {
                     <CardHeader class="flex flex-row items-start gap-3">
                         <Button as-child variant="header-actions" size="icon">
                             <Link :href="index().url" aria-label="Back to roles">
-                                <RiArrowLeftSLine class="h-4 w-4" />
+                                <RiArrowLeftLine class="h-4 w-4" />
                             </Link>
                         </Button>
                         <div class="flex min-w-0 flex-col">
@@ -187,57 +177,48 @@ function confirmRestore() {
                             </Popover>
                         </div>
 
-                        <Card
-                            :class="[
-                                'flex min-h-0 max-h-fit flex-1 flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
-                                roles.data.length === 0 ? 'border-dashed' : 'border-solid',
-                            ]"
-                        >
-                            <div v-if="roles.data.length" class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                                <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                                    <div class="grid grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_3rem] gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
-                                        <div class="flex h-10 items-center pl-3 text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Name</div>
-                                        <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Type</div>
-                                        <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Permissions</div>
-                                        <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Created By</div>
-                                        <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Archived At</div>
-                                        <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Archived By</div>
-                                        <div class="flex h-10 items-center justify-end pr-3 text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Actions</div>
-                                    </div>
-                                </div>
+                        <TableCard :table-data-length="props.roles.data.length">
+                            <Table v-if="props.roles.data.length > 0">
+                                <TableHeader>
+                                    <TableColumn>Name</TableColumn>
+                                    <TableColumn>Type</TableColumn>
+                                    <TableColumn>Permissions</TableColumn>
+                                    <TableColumn>Created By</TableColumn>
+                                    <TableColumn>Archived At</TableColumn>
+                                    <TableColumn>Archived By</TableColumn>
+                                </TableHeader>
 
-                                <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-                                    <div
-                                        v-for="(role, rowIndex) in roles.data"
+                                <TableContent>
+                                    <TableRow
+                                        v-for="(role, rowIndex) in props.roles.data"
                                         :key="role.id"
                                         :class="[
-                                            'grid grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_3rem] items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
-                                            rowIndex === roles.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                            rowIndex === props.roles.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                            previewedRole?.id === role.id ? 'bg-custom-secondary/10' : '',
                                         ]"
+                                        @click.left="previewedRole = role"
+                                        @dblclick="router.visit(edit({ role: role.id }).url)"
                                     >
-                                        <div class="min-w-0 py-1.5 pl-3"><span class="block truncate font-semibold capitalize">{{ role.name }}</span></div>
-                                        <div class="py-1.5"><Badge :class="typeClass(role.type)" class="border capitalize">{{ role.type }}</Badge></div>
-                                        <div class="py-1.5 text-sm">{{ role.permissions?.length ?? 0 }} permission{{ (role.permissions?.length ?? 0) === 1 ? '' : 's' }}</div>
-                                        <div class="min-w-0 py-1.5 text-sm"><span class="block truncate">{{ role.creator?.name ?? '—' }}</span></div>
-                                        <div class="min-w-0 py-1.5 text-sm"><span class="block truncate">{{ role.deleted_at_human ?? '—' }}</span></div>
-                                        <div class="min-w-0 py-1.5 text-sm"><span class="block truncate">{{ role.deleter?.name ?? '—' }}</span></div>
-                                        <div class="flex justify-end py-1.5 pr-3 text-right">
-                                            <DropdownMenu v-if="canRestore">
-                                                <DropdownMenuTrigger as-child>
-                                                    <Button variant="table-more" size="icon-more"><RiMore2Line class="h-4 w-4" /></Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>{{ role.name }}</DropdownMenuLabel>
-                                                    <DropdownMenuItem class="group" @click="openRestoreDialog(role)">
-                                                        <RiRestartLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                        Restore
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                        <TableData class="font-semibold capitalize"><span class="block truncate">{{ role.name }}</span></TableData>
+                                        <TableData><Badge :class="typeClass(role.type)" class="border capitalize">{{ role.type }}</Badge></TableData>
+                                        <TableData>{{ role.permissions?.length ?? 0 }} permission{{ (role.permissions?.length ?? 0) === 1 ? '' : 's' }}</TableData>
+                                        <TableData><span class="block truncate">{{ role.creator?.name ?? '—' }}</span></TableData>
+                                        <TableData><span class="block truncate">{{ role.deleted_at_human ?? '—' }}</span></TableData>
+                                        <TableData><span class="block truncate">{{ role.deleter?.name ?? '—' }}</span></TableData>
+
+                                        <TableMoreButton
+                                            :open="openMenuId === role.id"
+                                            @update:open="(value) => (openMenuId = value ? role.id : null)"
+                                        >
+                                            <DropdownMenuLabel>{{ role.name }}</DropdownMenuLabel>
+                                            <DropdownMenuItem v-if="canRestore" class="group cursor-pointer" @click="openRestoreDialog(role)">
+                                                <RiRestartLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                Restore
+                                            </DropdownMenuItem>
+                                        </TableMoreButton>
+                                    </TableRow>
+                                </TableContent>
+                            </Table>
 
                             <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
                                 <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
@@ -248,36 +229,17 @@ function confirmRestore() {
                                     </div>
                                 </div>
                             </div>
-                        </Card>
+                        </TableCard>
 
                         <InertiaPagination :links="roles.links" :meta="{ from: roles.from, to: roles.to, total: roles.total }" />
                     </CardContent>
                 </Card>
             </MainPanel>
-            <SidePanel>
-
+            <SidePanel v-if="previewedRole" class="hidden lg:flex">
+                <RolePreviewCard :role="previewedRole" archived @close="previewedRole = null" />
             </SidePanel>
         </PanelLayout>
 
-        <Dialog v-model:open="restoreOpen">
-            <DialogContent class="px-6">
-                <DialogHeader class="px-0">
-                    <DialogTitle>Restore Role</DialogTitle>
-                    <DialogDescription class="mt-4">
-                        Are you sure you want to restore
-                        <span class="font-semibold text-custom-accent-3">{{ restoringRole?.name ?? 'this role' }}</span>?
-                        It will be moved back to the active roles list.
-                    </DialogDescription>
-                </DialogHeader>
-                <Separator class="mb-4" />
-                <DialogFooter class="gap-2 sm:justify-end">
-                    <Button variant="ghost-outline" @click="closeRestoreDialog">Cancel</Button>
-                    <Button variant="float-primary" @click="confirmRestore">
-                        <RiRestartLine class="h-4 w-4" />
-                        Restore
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <RestoreRoleDialog v-model:open="restoreOpen" :role="restoringRole" />
     </AppLayout>
 </template>

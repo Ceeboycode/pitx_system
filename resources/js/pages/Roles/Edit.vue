@@ -1,5 +1,6 @@
 ﻿<script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import { ArchivedNotice } from '@/components/ui/_archived-notice';
 import { index, update } from '@/routes/roles';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
@@ -9,12 +10,14 @@ import { computed, ref } from 'vue';
 import {
     RiFileListLine,
     RiGroupLine,
+    RiHistoryLine,
 } from 'vue-remix-icons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/_tabs';
 import { LeadPanel, PanelLayout, SidePanel } from '@/components/ui/_panels';
 import { LeadingCard } from '@/components/ui/_leading-card';
 import Details from '@/components/internal/roles/edit/DetailsTab.vue';
 import Users from '@/components/internal/roles/edit/UsersTab.vue';
+import History from '@/components/internal/roles/edit/HistoryTab.vue';
 
 
 type Permission = {
@@ -24,6 +27,7 @@ type Permission = {
 
 
 const props = defineProps<{
+    isArchived?: boolean;
     role: {
         id: number;
         name: string;
@@ -39,6 +43,8 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Roles', href: index().url },
     { title: 'Edit', href: '#' },
 ];
+
+const roleTitle = computed(() => props.role.name.charAt(0).toUpperCase() + props.role.name.slice(1));
 
 
 const form = useForm({
@@ -191,6 +197,12 @@ const tabs = [
         icon: RiGroupLine,
         component: Users,
     },
+    {
+        value: 'history',
+        label: 'History',
+        icon: RiHistoryLine,
+        component: History,
+    },
 ] as const;
 </script>
 
@@ -200,8 +212,9 @@ const tabs = [
     <AppLayout :breadcrumbs="breadcrumbs">
         <PanelLayout>
             <LeadPanel>
+                <ArchivedNotice v-if="props.isArchived" entity="role" />
                 <LeadingCard
-                    :title="role.name"
+                    :title="roleTitle"
                     description="Update the role name, type, and permissions."
                     variant="entity-details"
                     :back="index().url"

@@ -88,7 +88,7 @@ class RoleController extends Controller
             'updated_by' => $request->user()?->id,
         ]);
 
-        $role->syncPermissions($request->input('permissions', []));
+        $role->syncPermissions(Role::permissionIdsForType($role->type, $request->input('permissions', [])));
 
         return to_route('roles.index')->with('success', 'Role created successfully.');
     }
@@ -100,9 +100,15 @@ class RoleController extends Controller
         // update() below still independently authorizes the real write.
         Gate::authorize('view', $role);
 
+        // Archived roles open read-only, and only for whoever may open the Archives page.
+        if ($role->trashed()) {
+            Gate::authorize('viewTrash', Role::class);
+        }
+
         $role->load('permissions:id', 'creator:id,name', 'updater:id,name');
 
         return Inertia::render('Roles/Edit', [
+            'isArchived' => $role->trashed(),
             'role' => [
                 'id' => $role->id,
                 'name' => $role->name,
@@ -134,7 +140,7 @@ class RoleController extends Controller
             'updated_by' => $request->user()?->id,
         ]);
 
-        $role->syncPermissions($validated['permissions'] ?? []);
+        $role->syncPermissions(Role::permissionIdsForType($role->type, $validated['permissions'] ?? []));
 
         return back()->with('success', 'Role updated successfully.');
     }

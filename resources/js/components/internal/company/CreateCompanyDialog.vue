@@ -1,14 +1,7 @@
 <script setup lang="ts">
+import { AppDialog } from '@/components/ui/_app-dialog';
 import InputError from '@/components/InputError.vue'
 import { Button } from '@/components/ui/button'
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from '@/components/ui/dialog'
 import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
 import { store } from '@/routes/companies'
@@ -37,41 +30,39 @@ function submit() {
 </script>
 
 <template>
-    <Dialog v-model:open="open">
-        <DialogContent class="sm:max-w-md">
-            <DialogHeader>
-                <DialogTitle>Add New Company</DialogTitle>
-                <DialogDescription>
-                    Add a new company to your system.
-                </DialogDescription>
-            </DialogHeader>
+    <AppDialog
+        v-model:open="open"
+        title="Add New Company"
+        description="Add a new company to your system."
+        size="md"
+        form
+        @submit="submit"
+    >
+        <div class="space-y-4">
+            <div class="space-y-2">
+                <Label for="company_name">Company name</Label>
+                <Input
+                    id="company_name"
+                    v-model="form.company_name"
+                    placeholder="Company name"
+                />
+                <InputError :message="form.errors.company_name" />
+            </div>
+        </div>
 
-            <form @submit.prevent="submit" class="space-y-4">
-                <div class="space-y-2">
-                    <Label for="company_name">Company name</Label>
-                    <Input
-                        id="company_name"
-                        v-model="form.company_name"
-                        placeholder="Company name"
-                    />
-                    <InputError :message="form.errors.company_name" />
-                </div>
+        <template #footer>
+            <Button
+                variant="float"
+                type="button"
+                @click="open = false"
+            >
+                Cancel
+            </Button>
 
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        type="button"
-                        @click="open = false"
-                    >
-                        Cancel
-                    </Button>
-
-                    <Button type="submit" :disabled="form.processing">
-                        <RiSaveLine class="shrink-0" />
-                        Save
-                    </Button>
-                </DialogFooter>
-            </form>
-        </DialogContent>
-    </Dialog>
+            <Button type="submit" variant="float-primary" :disabled="form.processing">
+                <RiSaveLine class="shrink-0" />
+                Save
+            </Button>
+        </template>
+    </AppDialog>
 </template>

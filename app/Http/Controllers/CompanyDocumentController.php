@@ -27,7 +27,7 @@ class CompanyDocumentController extends Controller
 
     public function download(Company $company, CompanyDocument $document): mixed
     {
-        Gate::authorize('view', $company);
+        $this->authorizeCompanyRead($company);
         Gate::authorize('download', $document);
         $this->assertBelongs($document, $company);
 
@@ -44,7 +44,7 @@ class CompanyDocumentController extends Controller
 
     public function downloadBulk(Request $request, Company $company): StreamedResponse
     {
-        Gate::authorize('view', $company);
+        $this->authorizeCompanyRead($company);
         Gate::authorize('viewAny', CompanyDocument::class);
 
         $timezone = config('app.timezone', 'UTC');
@@ -240,6 +240,18 @@ class CompanyDocumentController extends Controller
     private function syncCompanyStatus(Company $company): void
     {
         $this->companyStatusService->syncCompanyStatus($company);
+    }
+
+    /**
+     * Downloads are read-only, so they also work for an archived company, but only for whoever may open the Archives page.
+     */
+    private function authorizeCompanyRead(Company $company): void
+    {
+        Gate::authorize('view', $company);
+
+        if ($company->trashed()) {
+            Gate::authorize('viewAny', Company::class);
+        }
     }
 
     private function assertBelongs(CompanyDocument $document, Company $company): void

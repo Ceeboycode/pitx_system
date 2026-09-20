@@ -60,6 +60,11 @@ class CompanyController extends Controller
         // companies.view
         Gate::authorize('view', $company);
 
+        // Archived companies open read-only, and only for whoever may open the Archives page.
+        if ($company->trashed()) {
+            Gate::authorize('viewAny', Company::class);
+        }
+
         $company->load([
             'creator:id,name',
             'updater:id,name',
@@ -108,6 +113,7 @@ class CompanyController extends Controller
         ] : null);
 
         return Inertia::render('Company/Show', [
+            'isArchived' => $company->trashed(),
             'company' => $company,
         ]);
     }

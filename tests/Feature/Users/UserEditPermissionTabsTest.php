@@ -2,6 +2,9 @@
 
 use App\Models\Role;
 use App\Models\User;
+use Database\Seeders\PermissionSeeder;
+use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\RoleSeeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -21,95 +24,91 @@ beforeEach(function (): void {
     $this->admin->assignRole($adminRole);
 });
 
-/** Every permission name in the "external_users" group (mirrors PermissionSeeder). */
-function editTabsExternalUserPermissionNames(): array
-{
-    return [
-        'external_users.viewAny',
-        'external_users.view',
-        'external_users.create',
-        'external_users.update',
-        'external_users.archive',
-        'external_users.toggleStatus',
-        'external_users.resetPassword',
-    ];
-}
+dataset('seeded role tab access', [
+    'operator' => ['operator', ['vehicles' => true, 'dispatches' => true, 'employees' => true]],
+    'dispatcher' => ['dispatcher', ['vehicles' => false, 'dispatches' => true, 'employees' => false]],
+    'driver' => ['driver', ['vehicles' => true, 'dispatches' => true, 'employees' => false]],
+    'commuter' => ['commuter', ['vehicles' => false, 'dispatches' => false, 'employees' => false]],
+    'admin' => ['admin', ['vehicles' => false, 'dispatches' => false, 'employees' => false]],
+    'terminal manager' => ['terminal manager', ['vehicles' => false, 'dispatches' => false, 'employees' => false]],
+    'super-admin' => ['super-admin', ['vehicles' => false, 'dispatches' => false, 'employees' => false]],
+]);
 
-/** Every permission name in the "external_dispatches" group (mirrors PermissionSeeder). */
-function editTabsExternalDispatchPermissionNames(): array
-{
-    return [
-        'external_dispatches.viewAny',
-        'external_dispatches.view',
-        'external_dispatches.create',
-        'external_dispatches.update',
-        'external_dispatches.depart',
-        'external_dispatches.requestChange',
-    ];
-}
+it('exposes the permission-gated tabs each seeded role should see', function (string $roleName, array $expected): void {
+    $this->seed([RoleSeeder::class, PermissionSeeder::class, RolePermissionSeeder::class]);
 
-test('employees and dispatches tabs are exposed when the edited user role has every permission in each group', function (): void {
-    foreach ([...editTabsExternalUserPermissionNames(), ...editTabsExternalDispatchPermissionNames()] as $name) {
+    $target = User::factory()->create();
+    $target->assignRole($roleName);
+
+    $this->actingAs($this->admin)
+        ->get(route('users.show', $target))
+        ->assertInertia(fn ($page) => $page
+            ->component('Users/Edit')
+            ->where('tabAccess', $expected));
+})->with('seeded role tab access');
+
+test('a custom role gets a tab as soon as it holds any permission in that tab\'s group', function (): void {
+    foreach (['external_dispatches.create', 'external_vehicles.view', 'external_users.viewAny'] as $name) {
         Permission::query()->firstOrCreate(['name' => $name, 'guard_name' => 'web']);
     }
 
-    $fullRole = Role::query()->create(['name' => 'full-external', 'guard_name' => 'web', 'type' => 'external']);
-    $fullRole->givePermissionTo([
-        ...editTabsExternalUserPermissionNames(),
-        ...editTabsExternalDispatchPermissionNames(),
-    ]);
+    $customRole = Role::query()->create(['name' => 'custom-dispatch-clerk', 'guard_name' => 'web', 'type' => 'external']);
+    $customRole->givePermissionTo('external_dispatches.create');
 
     $target = User::factory()->create();
-    $target->assignRole($fullRole);
+    $target->assignRole($customRole);
 
     $this->actingAs($this->admin)
         ->get(route('users.show', $target))
         ->assertInertia(fn ($page) => $page
-            ->component('Users/Edit')
-            ->where('canManageExternalUsers', true)
-            ->where('canManageExternalDispatches', true));
+            ->where('tabAccess', ['vehicles' => false, 'dispatches' => true, 'employees' => false]));
 });
 
-test('employees and dispatches tabs are hidden when the edited user role is missing even one permission in the group', function (): void {
-    foreach ([...editTabsExternalUserPermissionNames(), ...editTabsExternalDispatchPermissionNames()] as $name) {
-        Permission::query()->firstOrCreate(['name' => $name, 'guard_name' => 'web']);
-    }
+test('editing a role\'s permissions changes its users\' tabs on the next visit', function (): void {
+    Permission::query()->firstOrCreate(['name' => 'external_vehicles.view', 'guard_name' => 'web']);
 
-    $partialRole = Role::query()->create(['name' => 'partial-external', 'guard_name' => 'web', 'type' => 'external']);
-
-    // Every external_users permission except "resetPassword", and only
-    // two of the six external_dispatches permissions.
-    $partialRole->givePermissionTo([
-        'external_users.viewAny',
-        'external_users.view',
-        'external_users.create',
-        'external_users.update',
-        'external_users.archive',
-        'external_users.toggleStatus',
-        'external_dispatches.viewAny',
-        'external_dispatches.view',
-    ]);
+    $customRole = Role::query()->create(['name' => 'custom-fleet-viewer', 'guard_name' => 'web', 'type' => 'external']);
 
     $target = User::factory()->create();
-    $target->assignRole($partialRole);
+    $target->assignRole($customRole);
 
     $this->actingAs($this->admin)
         ->get(route('users.show', $target))
-        ->assertInertia(fn ($page) => $page
-            ->component('Users/Edit')
-            ->where('canManageExternalUsers', false)
-            ->where('canManageExternalDispatches', false));
+        ->assertInertia(fn ($page) => $page->where('tabAccess.vehicles', false));
+
+    $customRole->givePermissionTo('external_vehicles.view');
+
+    $this->actingAs($this->admin)
+        ->get(route('users.show', $target))
+        ->assertInertia(fn ($page) => $page->where('tabAccess.vehicles', true));
+
+    $customRole->syncPermissions([]);
+
+    $this->actingAs($this->admin)
+        ->get(route('users.show', $target))
+        ->assertInertia(fn ($page) => $page->where('tabAccess.vehicles', false));
 });
 
-test('employees and dispatches tabs are hidden when the edited user has no role at all', function (): void {
+test('only the driver role itself gets driver tabs without permissions', function (): void {
+    $lookalike = Role::query()->create(['name' => 'driver-trainee', 'guard_name' => 'web', 'type' => 'external']);
+
+    $target = User::factory()->create();
+    $target->assignRole($lookalike);
+
+    $this->actingAs($this->admin)
+        ->get(route('users.show', $target))
+        ->assertInertia(fn ($page) => $page
+            ->where('tabAccess', ['vehicles' => false, 'dispatches' => false, 'employees' => false]));
+});
+
+test('no permission-gated tabs are exposed when the edited user has no role at all', function (): void {
     $target = User::factory()->create();
 
     $this->actingAs($this->admin)
         ->get(route('users.show', $target))
         ->assertInertia(fn ($page) => $page
             ->component('Users/Edit')
-            ->where('canManageExternalUsers', false)
-            ->where('canManageExternalDispatches', false));
+            ->where('tabAccess', ['vehicles' => false, 'dispatches' => false, 'employees' => false]));
 });
 
 test('edit page exposes the edited user\'s email verification timestamp', function (): void {

@@ -7,21 +7,20 @@ import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { index, trash } from '@/routes/companies';
+import { index, show, trash } from '@/routes/companies';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { RiArrowLeftSLine, RiFilter2Line, RiMore2Line, RiRestartLine } from 'vue-remix-icons';
-import { computed, ref } from 'vue';
+import { RiArrowLeftLine, RiFilter2Line, RiRestartLine } from 'vue-remix-icons';
+import { computed, ref, watch } from 'vue';
 import { MainPanel, PanelLayout, SidePanel } from '@/components/ui/_panels';
+import { CompanyPreviewCard } from '@/components/internal/preview-cards';
+import { Table, TableCard, TableColumn, TableContent, TableData, TableHeader, TableMoreButton, TableRow } from '@/components/ui/_table';
 
 type Company = {
     id: number;
@@ -104,6 +103,16 @@ function clearFilters() {
 
 const restoreOpen = ref(false);
 const forceDeleteOpen = ref(false);
+const previewedCompany = ref<Company | null>(null);
+const openMenuId = ref<number | null>(null);
+
+// Drop the preview once its row leaves the list (e.g. after restoring it).
+watch(() => props.companies.data, (rows) => {
+    if (previewedCompany.value && !rows.some((row) => row.id === previewedCompany.value?.id)) {
+        previewedCompany.value = null;
+    }
+});
+
 const selectedCompany = ref<Company | null>(null);
 
 function openRestore(company: Company) {
@@ -122,7 +131,7 @@ function openRestore(company: Company) {
                     <CardHeader class="flex flex-row items-start gap-3">
                         <Button as-child variant="header-actions" size="icon">
                             <Link :href="index().url" aria-label="Back to companies">
-                                <RiArrowLeftSLine class="h-4 w-4" />
+                                <RiArrowLeftLine class="h-4 w-4" />
                             </Link>
                         </Button>
                         <div class="flex min-w-0 flex-col">
@@ -187,63 +196,49 @@ function openRestore(company: Company) {
                             </Popover>
                         </div>
 
-                        <Card
-                            :class="[
-                                'flex min-h-0 max-h-fit flex-1 flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
-                                props.companies.data.length === 0 ? 'border-dashed' : 'border-solid',
-                            ]"
-                        >
-                            <div v-if="props.companies.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                                <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                                    <div class="grid grid-cols-[1.5fr_1fr_1fr_1fr_5rem] gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
-                                        <div class="flex h-10 items-center justify-start pl-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Name and Code</div>
-                                        <div class="flex h-10 items-center justify-start text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Business Type</div>
-                                        <div class="flex h-10 items-center justify-start text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Archived At</div>
-                                        <div class="flex h-10 items-center justify-start text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Archived By</div>
-                                        <div class="flex h-10 items-center justify-end pr-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Actions</div>
-                                    </div>
-                                </div>
+                        <TableCard :table-data-length="props.companies.data.length">
+                            <Table v-if="props.companies.data.length > 0">
+                                <TableHeader>
+                                    <TableColumn>Name and Code</TableColumn>
+                                    <TableColumn>Business Type</TableColumn>
+                                    <TableColumn>Archived At</TableColumn>
+                                    <TableColumn>Archived By</TableColumn>
+                                </TableHeader>
 
-                                <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-                                    <div
+                                <TableContent>
+                                    <TableRow
                                         v-for="(company, rowIndex) in props.companies.data"
                                         :key="company.id"
                                         :class="[
-                                            'grid grid-cols-[1.5fr_1fr_1fr_1fr_5rem] items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
                                             rowIndex === props.companies.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                            previewedCompany?.id === company.id ? 'bg-custom-secondary/10' : '',
                                         ]"
+                                        @click.left="previewedCompany = company"
+                                        @dblclick="router.visit(show({ company: company.id }).url)"
                                     >
-                                        <div class="flex min-w-0 flex-col justify-start py-1.5 pl-3">
-                                            <span class="truncate font-semibold capitalize">{{ company.company_name }}</span>
-                                            <span class="truncate font-mono text-xs text-custom-shadow/70">{{ company.company_code }}</span>
-                                        </div>
-                                        <div class="flex min-w-0 justify-start py-1.5 text-sm capitalize">
-                                            <span class="truncate">{{ company.business_type || '—' }}</span>
-                                        </div>
-                                        <div class="flex justify-start py-1.5 text-sm">{{ company.deleted_at_human ?? '—' }}</div>
-                                        <div class="flex min-w-0 justify-start py-1.5 text-sm capitalize">
-                                            <span class="truncate">{{ company.deleter?.name ?? '—' }}</span>
-                                        </div>
-                                        <div class="flex justify-end py-1.5 pr-3 text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger as-child>
-                                                    <Button variant="table-more" size="icon-more">
-                                                        <RiMore2Line class="h-4 w-4" />
-                                                        
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>{{ company.company_name }}</DropdownMenuLabel>
-                                                    <DropdownMenuItem class="group" @click="openRestore(company)">
-                                                        <RiRestartLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                        Restore
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                        <TableData>
+                                            <div class="flex min-w-0 flex-col">
+                                                <span class="truncate font-semibold capitalize">{{ company.company_name }}</span>
+                                                <span class="truncate font-mono text-xs text-custom-shadow/70">{{ company.company_code }}</span>
+                                            </div>
+                                        </TableData>
+                                        <TableData class="capitalize"><span class="truncate">{{ company.business_type || '—' }}</span></TableData>
+                                        <TableData>{{ company.deleted_at_human ?? '—' }}</TableData>
+                                        <TableData class="capitalize"><span class="truncate">{{ company.deleter?.name ?? '—' }}</span></TableData>
+
+                                        <TableMoreButton
+                                            :open="openMenuId === company.id"
+                                            @update:open="(value) => (openMenuId = value ? company.id : null)"
+                                        >
+                                            <DropdownMenuLabel>{{ company.company_name }}</DropdownMenuLabel>
+                                            <DropdownMenuItem class="group cursor-pointer" @click="openRestore(company)">
+                                                <RiRestartLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                Restore
+                                            </DropdownMenuItem>
+                                        </TableMoreButton>
+                                    </TableRow>
+                                </TableContent>
+                            </Table>
 
                             <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
                                 <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
@@ -256,7 +251,7 @@ function openRestore(company: Company) {
                                     </div>
                                 </div>
                             </div>
-                        </Card>
+                        </TableCard>
 
                         <InertiaPagination
                             :links="props.companies.links"
@@ -266,8 +261,8 @@ function openRestore(company: Company) {
                 </Card>
             </MainPanel>
             
-            <SidePanel>
-
+            <SidePanel v-if="previewedCompany" class="hidden lg:flex">
+                <CompanyPreviewCard :company="previewedCompany" archived @close="previewedCompany = null" />
             </SidePanel>
         </PanelLayout>
             <RestoreCompanyDialog v-if="selectedCompany" v-model:open="restoreOpen" :company="selectedCompany" />

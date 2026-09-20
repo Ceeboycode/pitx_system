@@ -17,11 +17,6 @@ class VehiclePolicy
         return $user->can('vehicles.view');
     }
 
-    public function create(User $user): bool
-    {
-        return $user->can('vehicles.create');
-    }
-
     public function update(User $user, Vehicle $vehicle): bool
     {
         return $user->can('vehicles.update');

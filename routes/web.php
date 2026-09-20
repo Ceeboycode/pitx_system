@@ -308,7 +308,7 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
     |--------------------------------------------------------------------------
     */
 
-    Route::resource('users', UserController::class)->except('edit');
+    Route::resource('users', UserController::class)->except('edit')->withTrashed(['show']);
 
     Route::get('users-trash', [UserController::class, 'trash'])
         ->name('users.trash');
@@ -323,7 +323,7 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
     Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])
         ->name('users.reset-password');
 
-    Route::resource('roles', RoleController::class);
+    Route::resource('roles', RoleController::class)->withTrashed(['edit']);
 
     Route::get('roles-trash', [RoleController::class, 'trash'])
         ->name('roles.trash');
@@ -360,9 +360,11 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
         Route::get('trash', [CompanyController::class, 'trash'])->name('trash');
 
         Route::post('{company}/documents/download-bulk', [CompanyDocumentController::class, 'downloadBulk'])
+            ->withTrashed()
             ->name('documents.downloadBulk');
 
         Route::get('{company}/documents/{document}/download', [CompanyDocumentController::class, 'download'])
+            ->withTrashed()
             ->name('documents.download');
 
         Route::patch('{company}/documents/{document}/verify', [CompanyDocumentController::class, 'verify'])
@@ -380,7 +382,7 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
         Route::get('/', [CompanyController::class, 'index'])->name('index');
         Route::get('create', [CompanyController::class, 'create'])->name('create');
         Route::post('/', [CompanyController::class, 'store'])->name('store');
-        Route::get('{company}', [CompanyController::class, 'show'])->name('show');
+        Route::get('{company}', [CompanyController::class, 'show'])->withTrashed()->name('show');
         Route::put('{company}', [CompanyController::class, 'update'])->name('update');
         Route::delete('{company}', [CompanyController::class, 'destroy'])->name('destroy');
 
@@ -393,13 +395,13 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
             ->name('forceDelete');
     });
 
-    Route::resource('vehicle-types', VehicleTypeController::class)->except(['show']);
+    Route::resource('vehicle-types', VehicleTypeController::class)->except(['show'])->withTrashed(['edit']);
     Route::patch('vehicle-types/{vehicle_type}/toggle-status', [VehicleTypeController::class, 'toggleStatus'])->name('vehicle-types.toggleStatus');
     Route::get('vehicle-types-trash', [VehicleTypeController::class, 'trash'])->name('vehicle-types.trash');
     Route::post('vehicle-types/{vehicle_type}/restore', [VehicleTypeController::class, 'restore'])->withTrashed()->name('vehicle-types.restore');
     Route::delete('vehicle-types/{vehicle_type}/force-delete', [VehicleTypeController::class, 'forceDelete'])->withTrashed()->name('vehicle-types.forceDelete');
 
-    Route::resource('gates', GateController::class)->except(['show']);
+    Route::resource('gates', GateController::class)->except(['show'])->withTrashed(['edit']);
     Route::patch('gates/{gate}/toggle-status', [GateController::class, 'toggleStatus'])->name('gates.toggleStatus');
     Route::get('gates-trash', [GateController::class, 'trash'])->name('gates.trash');
     Route::post('gates/{gate}/restore', [GateController::class, 'restore'])->name('gates.restore');
@@ -410,7 +412,7 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
     Route::post('route-stops/{route_stop}/restore', [RouteStopController::class, 'restore'])->name('route-stops.restore');
     Route::delete('route-stops/{route_stop}/force-delete', [RouteStopController::class, 'forceDelete'])->name('route-stops.forceDelete');
 
-    Route::resource('routes', RouteController::class)->except(['show']);
+    Route::resource('routes', RouteController::class)->except(['show'])->withTrashed(['edit']);
     Route::get('routes-trash', [RouteController::class, 'trash'])->name('routes.trash');
     Route::patch('routes/{route}/restore', [RouteController::class, 'restore'])->withTrashed()->name('routes.restore');
     Route::delete('routes/{route}/force-delete', [RouteController::class, 'forceDelete'])->withTrashed()->name('routes.forceDelete');
@@ -419,10 +421,7 @@ Route::middleware(['auth', 'role.type:internal', 'password.change.required', 'au
     Route::get('vehicles/export', [VehicleBackupController::class, 'export'])
         ->name('vehicles.export');
 
-    Route::post('vehicles/import', [VehicleBackupController::class, 'import'])
-        ->name('vehicles.import');
-
-    Route::resource('vehicles', VehicleController::class);
+    Route::resource('vehicles', VehicleController::class)->except(['create', 'store'])->withTrashed(['show']);
 
     Route::patch('vehicles/{vehicle}/documents/{document}/verify', [VehicleController::class, 'verifyDocument'])
         ->name('vehicles.documents.verify');

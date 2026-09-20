@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
     ArchiveCompanyDialog,
-    EditCompanyDialog,
     ImportCompanyDialog,
 } from '@/components/internal/company';
 import InertiaPagination from '@/components/InertiaPagination.vue';
@@ -53,20 +52,18 @@ import { index, show, trash } from '@/routes/companies';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { PanelLayout, MainPanel, SidePanel } from '@/components/ui/_panels';
+import { CompanyPreviewCard } from '@/components/internal/preview-cards';
 
 import {
     RiArchive2Line,
     RiArrowDownSLine,
     RiArrowUpDownLine,
     RiArrowUpSLine,
-    RiCloseLine,
-    RiEditLine,
     RiFileAddLine,
     RiFileCheckLine,
     RiFileInfoLine,
     RiFileUploadLine,
     RiFilter2Line,
-    RiImageAddLine,
     RiLoaderLine,
     RiMore2Line,
 } from 'vue-remix-icons';
@@ -127,12 +124,9 @@ const props = defineProps<{
 
 const canViewArchived = computed(() => can('companies.viewAny'));
 const canViewCompany = computed(() => can('companies.view'));
-const canUpdateCompany = computed(() => can('companies.update'));
 const canViewProfileChangeRequests = computed(() => can('companies.viewAny'));
 
-const editOpen = ref(false);
 const importOpen = ref(false);
-const selectedCompany = ref<Company | null>(null);
 const previewedCompany = ref<Company | null>(null);
 const archiveOpen = ref(false);
 const archivingCompany = ref<Company | null>(null);
@@ -165,11 +159,6 @@ function handleRowNavigationKeydown(event: KeyboardEvent) {
 
 onMounted(() => window.addEventListener('keydown', handleRowNavigationKeydown));
 onUnmounted(() => window.removeEventListener('keydown', handleRowNavigationKeydown));
-
-function openEdit(company: Company) {
-    selectedCompany.value = company;
-    editOpen.value = true;
-}
 
 function openArchiveDialog(company: Company) {
     archivingCompany.value = company;
@@ -341,9 +330,6 @@ function activeStatusLabel(company: Company): string {
     return isCompanyActive(company) ? 'Active' : 'Inactive';
 }
 
-function hasVerifiedEmail(company: Company): boolean {
-    return !!company.company_email_verified_at;
-}
 </script>
 
 <template>
@@ -705,111 +691,10 @@ function hasVerifiedEmail(company: Company): boolean {
                 </Card>
             </MainPanel>
             
-            <SidePanel>
-                <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-full">
-                    <CardHeader v-if="previewedCompany" class="flex flex-row items-start justify-between gap-3">
-                        <div class="min-w-0">
-                            <CardTitle class="truncate capitalize">{{ previewedCompany.company_name }}</CardTitle>
-                            <CardDescription>Preview</CardDescription>
-                        </div>
-                        <Button variant="header-actions" size="icon" class="h-8 w-8 shrink-0 rounded-full" @click="previewedCompany = null">
-                            <RiCloseLine class="h-4 w-4" />
-                        </Button>
-                    </CardHeader>
-
-                    <CardContent v-if="previewedCompany" class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto py-2">
-                        <div class="flex aspect-4/3 items-center justify-center overflow-hidden rounded-md border border-dashed border-custom-bg-dark bg-custom-bg text-custom-shadow/70 dark:border-none dark:bg-custom-bg-dark">
-                            <img
-                                v-if="previewedCompany.logo_url"
-                                :src="previewedCompany.logo_url"
-                                :alt="`${previewedCompany.company_name} logo`"
-                                class="h-full w-full object-contain"
-                            />
-                            <div v-else class="flex flex-col items-center gap-1 text-center">
-                                <RiImageAddLine class="h-6 w-6" />
-                                <span class="text-sm">No company logo</span>
-                            </div>
-                        </div>
-
-                        <div class="space-y-3 pt-2">
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Verification Status</span>
-                                <Badge :class="['gap-1.5', statusClass(previewedCompany.status ?? null)]">
-                                    <span :class="['h-1.5 w-1.5 rounded-full', statusDot(previewedCompany.status ?? null)]" />
-                                    {{ humanizeStatus(previewedCompany.status ?? null) }}
-                                </Badge>
-                            </div>
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Active Status</span>
-                                <Badge :class="['gap-1.5', activeStatusClass(previewedCompany)]">
-                                    <span :class="['h-1.5 w-1.5 rounded-full', activeStatusDot(previewedCompany)]" />
-                                    {{ activeStatusLabel(previewedCompany) }}
-                                </Badge>
-                            </div>
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Company Code</span>
-                                <span class="rounded bg-custom-bg px-2 py-0.5 font-mono text-xs font-semibold text-custom-shadow dark:bg-custom-bg-light">{{ previewedCompany.company_code }}</span>
-                            </div>
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Business Type</span>
-                                <span class="text-right text-sm capitalize">{{ previewedCompany.business_type || 'Not recorded' }}</span>
-                            </div>
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Email</span>
-                                <div class="min-w-0 text-right">
-                                    <p class="truncate text-sm">{{ previewedCompany.company_email || 'Not recorded' }}</p>
-                                    <p v-if="previewedCompany.company_email" class="text-xs text-custom-shadow/70">
-                                        {{ hasVerifiedEmail(previewedCompany) ? 'Verified' : 'Not verified' }}
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Phone</span>
-                                <span class="text-right text-sm">{{ previewedCompany.company_phone || 'Not recorded' }}</span>
-                            </div>
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Created</span>
-                                <span class="text-right text-sm">{{ previewedCompany.created_at_human || 'Not recorded' }}</span>
-                            </div>
-                        </div>
-
-                        <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <div class="flex flex-wrap gap-2">
-                                <Button v-if="canUpdateCompany" variant="ghost-outline" size="icon-text" @click="openEdit(previewedCompany)">
-                                    <RiEditLine class="h-4 w-4" />
-                                    Edit
-                                </Button>
-                                <Button variant="destructive" size="icon-text" @click="openArchiveDialog(previewedCompany)">
-                                    <RiArchive2Line class="h-4 w-4" />
-                                    Archive
-                                </Button>
-                            </div>
-                            <Button v-if="canViewCompany" as-child variant="float-primary" size="icon-text">
-                                <Link :href="show({ company: previewedCompany.id }).url">
-                                    <RiFileCheckLine class="h-4 w-4" />
-                                    Review Company
-                                </Link>
-                            </Button>
-                        </div>
-                    </CardContent>
-
-                    <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
-                        <div class="max-w-60 space-y-1 text-center">
-                            <p class="text-base font-semibold text-custom-shadow">No company selected</p>
-                            <p class="text-sm text-custom-shadow/80">Click on a company to preview.</p>
-                        </div>
-                    </CardContent>
-                </Card>
+            <SidePanel v-if="previewedCompany" class="hidden lg:flex">
+                <CompanyPreviewCard :company="previewedCompany" @close="previewedCompany = null" />
             </SidePanel>
         </PanelLayout>
-
-        <EditCompanyDialog
-            v-if="selectedCompany"
-            v-model:open="editOpen"
-            :company="selectedCompany"
-        />
 
         <ImportCompanyDialog v-model:open="importOpen" @done="onImportDone" />
         <ArchiveCompanyDialog v-model:open="archiveOpen" :company="archivingCompany" />

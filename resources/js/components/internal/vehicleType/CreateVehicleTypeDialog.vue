@@ -1,14 +1,7 @@
 <script setup lang="ts">
+import { AppDialog } from '@/components/ui/_app-dialog';
 import InputError from '@/components/InputError.vue'
 import { Button } from '@/components/ui/button'
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from '@/components/ui/dialog'
 import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -38,70 +31,68 @@ function submit() {
 </script>
 
 <template>
-    <Dialog v-model:open="open">
-        <DialogContent class="sm:max-w-md">
-            <DialogHeader>
-                <DialogTitle>Add New Vehicle Type</DialogTitle>
-                <DialogDescription>
-                    Add a new vehicle type to your system.
-                </DialogDescription>
-            </DialogHeader>
+    <AppDialog
+        v-model:open="open"
+        title="Add New Vehicle Type"
+        description="Add a new vehicle type to your system."
+        size="md"
+        form
+        @submit="submit"
+    >
+        <div class="space-y-4">
+            <div class="space-y-2">
+                <Label for="type_name">Vehicle type name</Label>
+                <Input
+                    id="type_name"
+                    v-model="form.type_name"
+                    placeholder="Vehicle type name"
+                />
+                <InputError :message="form.errors.type_name" />
+            </div>
 
-            <form @submit.prevent="submit" class="space-y-4">
-                <div class="space-y-2">
-                    <Label for="type_name">Vehicle type name</Label>
-                    <Input
-                        id="type_name"
-                        v-model="form.type_name"
-                        placeholder="Vehicle type name"
-                    />
-                    <InputError :message="form.errors.type_name" />
-                </div>
+            <!-- CODE: <div class="space-y-2">
+                <Label>Status</Label>
+                <Select
+                    v-model="form.is_active"
+                    class="w-full rounded-md border px-3 py-2 text-sm"
+                >
+                    <option :value="1">Active</option>
+                    <option :value="0">Inactive</option>
+                </Select>
+                <InputError :message="form.errors.is_active" />
+            </div> -->
 
-                <!-- CODE: <div class="space-y-2">
-                    <Label>Status</Label>
-                    <Select
-                        v-model="form.is_active"
-                        class="w-full rounded-md border px-3 py-2 text-sm"
-                    >
-                        <option :value="1">Active</option>
-                        <option :value="0">Inactive</option>
-                    </Select>
-                    <InputError :message="form.errors.is_active" />
-                </div> -->
+            <div class="space-y-2">
+                <Label>Status</Label>
 
-                <div class="space-y-2">
-                    <Label>Status</Label>
+                <Select v-model="form.is_active">
+                    <SelectTrigger class="w-full">
+                    <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
 
-                    <Select v-model="form.is_active">
-                        <SelectTrigger class="w-full">
-                        <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
+                    <SelectContent>
+                    <SelectItem :value="1">Active</SelectItem>
+                    <SelectItem :value="0">Inactive</SelectItem>
+                    </SelectContent>
+                </Select>
 
-                        <SelectContent>
-                        <SelectItem :value="1">Active</SelectItem>
-                        <SelectItem :value="0">Inactive</SelectItem>
-                        </SelectContent>
-                    </Select>
+                <InputError :message="form.errors.is_active" />
+            </div>
+        </div>
 
-                    <InputError :message="form.errors.is_active" />
-                </div>
-                
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        type="button"
-                        @click="open = false"
-                    >
-                        Cancel
-                    </Button>
+        <template #footer>
+            <Button
+                variant="float"
+                type="button"
+                @click="open = false"
+            >
+                Cancel
+            </Button>
 
-                    <Button type="submit" :disabled="form.processing">
-                        <RiSaveLine class="shrink-0" />
-                        Save
-                    </Button>
-                </DialogFooter>
-            </form>
-        </DialogContent>
-    </Dialog>
+            <Button type="submit" variant="float-primary" :disabled="form.processing">
+                <RiSaveLine class="shrink-0" />
+                Save
+            </Button>
+        </template>
+    </AppDialog>
 </template>

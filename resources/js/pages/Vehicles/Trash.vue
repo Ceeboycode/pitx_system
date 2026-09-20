@@ -2,18 +2,20 @@
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
-import RestoreVehicleDialog from '@/components/vehicle/RestoreVehicleDialog.vue';
+import { RestoreVehicleDialog } from '@/components/internal/vehicles';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { VehiclePreviewCard } from '@/components/internal/preview-cards';
+import { Table, TableCard, TableColumn, TableContent, TableData, TableHeader, TableMoreButton, TableRow } from '@/components/ui/_table';
+import { DropdownMenuItem, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { index, trash } from '@/routes/vehicles';
+import { index, show, trash } from '@/routes/vehicles';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { RiArrowLeftSLine, RiFilter2Line, RiMore2Line, RiRestartLine } from 'vue-remix-icons';
-import { computed, ref } from 'vue';
+import { RiArrowLeftLine, RiFilter2Line, RiRestartLine } from 'vue-remix-icons';
+import { computed, ref, watch } from 'vue';
 import { MainPanel, PanelLayout, SidePanel } from '@/components/ui/_panels';
 
 type ArchivedVehicle = {
@@ -68,6 +70,15 @@ function clearFilters() {
     applyFilters();
 }
 
+const previewedVehicle = ref<ArchivedVehicle | null>(null);
+const openMenuId = ref<number | null>(null);
+
+// Drop the preview once its row leaves the list (e.g. after restoring it).
+watch(() => props.vehicles.data, (rows) => {
+    if (previewedVehicle.value && !rows.some((row) => row.id === previewedVehicle.value?.id)) {
+        previewedVehicle.value = null;
+    }
+});
 const restoreOpen = ref(false);
 const selectedVehicle = ref<ArchivedVehicle | null>(null);
 
@@ -85,7 +96,7 @@ function openRestore(vehicle: ArchivedVehicle) {
             <MainPanel>
                 <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
                     <CardHeader class="flex flex-row items-start gap-3">
-                        <Button as-child variant="header-actions" size="icon"><Link :href="index().url" aria-label="Back to vehicles"><RiArrowLeftSLine class="h-4 w-4" /></Link></Button>
+                        <Button as-child variant="header-actions" size="icon"><Link :href="index().url" aria-label="Back to vehicles"><RiArrowLeftLine class="h-4 w-4" /></Link></Button>
                         <div class="flex min-w-0 flex-col"><CardTitle class="font-semibold">Archived Vehicles</CardTitle><CardDescription>Restore archived vehicles to the vehicles list.</CardDescription></div>
                     </CardHeader>
 
@@ -118,43 +129,71 @@ function openRestore(vehicle: ArchivedVehicle) {
                             </Popover>
                         </div>
 
-                        <Card :class="['flex min-h-0 max-h-fit flex-1 flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none', props.vehicles.data.length ? 'border-solid' : 'border-dashed']">
-                            <div v-if="props.vehicles.data.length" class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                                <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                                    <div class="grid grid-cols-[1.5fr_1.2fr_1fr_.6fr_1fr_1fr_5rem] gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
-                                        <div class="flex h-10 items-center pl-3 text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Company and Route</div>
-                                        <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Vehicle</div>
-                                        <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Plate</div>
-                                        <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Cap.</div>
-                                        <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Archived At</div>
-                                        <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Archived By</div>
-                                        <div class="flex h-10 items-center justify-end pr-3 text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Actions</div>
-                                    </div>
-                                </div>
-                                <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-                                    <div v-for="(vehicle, rowIndex) in props.vehicles.data" :key="vehicle.id" :class="['grid grid-cols-[1.5fr_1.2fr_1fr_.6fr_1fr_1fr_5rem] items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light', rowIndex === props.vehicles.data.length - 1 ? 'rounded-b-md border-b-0' : '']">
-                                        <div class="flex min-w-0 flex-col py-2 pl-3"><span class="truncate font-semibold capitalize">{{ vehicle.company?.company_name || '—' }}</span><span class="truncate text-xs text-custom-shadow/70">{{ vehicle.route?.route_name || 'No route assigned' }}</span></div>
-                                        <div class="flex min-w-0 flex-col py-2"><span class="truncate text-sm font-medium">{{ vehicle.vehicle_type?.type_name ?? '—' }}</span><span class="truncate text-xs text-custom-shadow/70">{{ vehicle.body_number || '—' }}</span></div>
-                                        <div class="flex py-2"><span class="rounded bg-custom-bg px-2 py-0.5 font-mono text-xs font-semibold text-custom-shadow dark:bg-custom-bg-light">{{ vehicle.plate_number || '—' }}</span></div>
-                                        <div class="flex py-2 text-sm tabular-nums">{{ vehicle.capacity || '—' }}</div>
-                                        <div class="flex py-2 text-sm">{{ vehicle.deleted_at_human || '—' }}</div>
-                                        <div class="flex min-w-0 py-2 text-sm"><span class="truncate">{{ vehicle.deleter?.name || '—' }}</span></div>
-                                        <div class="flex justify-end py-2 pr-3">
-                                            <DropdownMenu><DropdownMenuTrigger as-child><Button variant="table-more" size="icon-more"><RiMore2Line class="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>{{ vehicle.plate_number || 'Vehicle' }}</DropdownMenuLabel><DropdownMenuItem class="group" @click="openRestore(vehicle)"><RiRestartLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />Restore Vehicle</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <TableCard :table-data-length="props.vehicles.data.length">
+                            <Table v-if="props.vehicles.data.length > 0">
+                                <TableHeader>
+                                    <TableColumn>Company and Route</TableColumn>
+                                    <TableColumn>Vehicle</TableColumn>
+                                    <TableColumn>Plate</TableColumn>
+                                    <TableColumn>Cap.</TableColumn>
+                                    <TableColumn>Archived At</TableColumn>
+                                    <TableColumn>Archived By</TableColumn>
+                                </TableHeader>
+
+                                <TableContent>
+                                    <TableRow
+                                        v-for="(vehicle, rowIndex) in props.vehicles.data"
+                                        :key="vehicle.id"
+                                        :class="[
+                                            rowIndex === props.vehicles.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                            previewedVehicle?.id === vehicle.id ? 'bg-custom-secondary/10' : '',
+                                        ]"
+                                        @click.left="previewedVehicle = vehicle"
+                                        @dblclick="router.visit(show({ vehicle: vehicle.id }).url)"
+                                    >
+                                        <TableData class="font-semibold">
+                                            <div class="flex min-w-0 flex-col">
+                                                <span class="truncate capitalize">{{ vehicle.company?.company_name || '—' }}</span>
+                                                <span class="truncate text-xs text-custom-shadow/70">{{ vehicle.route?.route_name || 'No route assigned' }}</span>
+                                            </div>
+                                        </TableData>
+                                        <TableData>
+                                            <div class="flex min-w-0 flex-col">
+                                                <span class="truncate text-sm font-medium">{{ vehicle.vehicle_type?.type_name ?? '—' }}</span>
+                                                <span class="truncate text-xs text-custom-shadow/70">{{ vehicle.body_number || '—' }}</span>
+                                            </div>
+                                        </TableData>
+                                        <TableData>
+                                            <span class="rounded bg-custom-bg px-2 py-0.5 font-mono text-xs font-semibold text-custom-shadow dark:bg-custom-bg-light">{{ vehicle.plate_number || '—' }}</span>
+                                        </TableData>
+                                        <TableData class="tabular-nums">{{ vehicle.capacity || '—' }}</TableData>
+                                        <TableData>{{ vehicle.deleted_at_human || '—' }}</TableData>
+                                        <TableData><span class="truncate">{{ vehicle.deleter?.name || '—' }}</span></TableData>
+
+                                        <TableMoreButton
+                                            :open="openMenuId === vehicle.id"
+                                            @update:open="(value) => (openMenuId = value ? vehicle.id : null)"
+                                        >
+                                            <DropdownMenuLabel>{{ vehicle.plate_number || 'Vehicle' }}</DropdownMenuLabel>
+                                            <DropdownMenuItem class="group cursor-pointer" @click="openRestore(vehicle)">
+                                                <RiRestartLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                Restore Vehicle
+                                            </DropdownMenuItem>
+                                        </TableMoreButton>
+                                    </TableRow>
+                                </TableContent>
+                            </Table>
+
                             <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center"><div class="flex w-full max-w-md flex-col items-center gap-2"><img :src="emptyRafikiUrl" alt="" class="w-1/3 object-contain opacity-90" aria-hidden="true" /><div class="space-y-1"><p class="text-base font-semibold text-custom-shadow">No archived vehicles found</p><p class="text-sm text-custom-shadow/80">{{ props.filters.search || activeFilterCount ? 'Try adjusting your search or filters.' : 'Nothing has been archived yet.' }}</p></div></div></div>
-                        </Card>
+                        </TableCard>
 
                         <InertiaPagination :links="props.vehicles.links" :meta="{ from: props.vehicles.from, to: props.vehicles.to, total: props.vehicles.total }" />
                     </CardContent>
                 </Card>
             </MainPanel>
             
-            <SidePanel>
-                
+            <SidePanel v-if="previewedVehicle" class="hidden lg:flex">
+                <VehiclePreviewCard :vehicle="previewedVehicle" archived @close="previewedVehicle = null" />
             </SidePanel>
         </PanelLayout>
         <RestoreVehicleDialog v-if="selectedVehicle" v-model:open="restoreOpen" :vehicle="selectedVehicle" />

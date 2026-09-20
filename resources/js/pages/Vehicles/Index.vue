@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
-import ImportVehicleDialog from '@/components/vehicle/ImportVehicleDialog.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 
 import {
@@ -42,7 +41,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { VehicleArchiveDialog, VehicleStatusDialog } from '@/components/internal/vehicles';
+import {
+    VehicleArchiveDialog,
+    VehicleStatusDialog,
+} from '@/components/internal/vehicles';
+import { VehiclePreviewCard } from '@/components/internal/preview-cards';
 
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
@@ -51,7 +54,6 @@ import {
     RiArrowDownSLine,
     RiArrowUpDownLine,
     RiArrowUpSLine,
-    RiFileAddLine,
     RiFileCheckLine,
     RiFileUploadLine,
     RiFileTextLine,
@@ -59,12 +61,10 @@ import {
     RiLoaderLine,
     RiMore2Line,
     RiOctagonLine,
-    RiCloseLine,
-    RiBusLine,
     RiShutDownLine,
     RiSpam2Line,
 } from 'vue-remix-icons';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import type { AcceptableValue } from 'reka-ui';
 import { PanelLayout, MainPanel, SidePanel } from '@/components/ui/_panels';
 import { destroy, index, show, trash } from '@/routes/vehicles';
@@ -130,9 +130,15 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 
 
-const importOpen = ref(false);
 const exporting = ref(false);
 const previewedVehicle = ref<VehicleItem | null>(null);
+
+// Drop the preview once its row leaves the list (e.g. after archiving it).
+watch(() => props.vehicles.data, (rows) => {
+    if (previewedVehicle.value && !rows.some((row) => row.id === previewedVehicle.value?.id)) {
+        previewedVehicle.value = null;
+    }
+});
 
 function openPreview(vehicle: VehicleItem) {
     previewedVehicle.value = vehicle;
@@ -188,11 +194,6 @@ function triggerExport() {
         exporting.value = false;
     }, 2000);
 }
-
-function onImportDone() {
-    router.reload({ only: ['vehicles'] });
-}
-
 
 const archiveDialogOpen = ref(false);
 const selectedVehicle = ref<VehicleItem | null>(null);
@@ -362,13 +363,6 @@ const openStatusDialog = (
                                     </DropdownMenuTrigger>
 
                                     <DropdownMenuContent align="end" class="w-fit">
-                                        <DropdownMenuItem
-                                            class="group cursor-pointer"
-                                            @click="importOpen = true"
-                                        >
-                                            <RiFileAddLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
-                                            Import
-                                        </DropdownMenuItem>
                                         <DropdownMenuItem
                                             class="group cursor-pointer"
                                             :disabled="exporting"
@@ -795,6 +789,14 @@ const openStatusDialog = (
                                                 <RiSpam2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
                                                 <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Suspend</span>
                                             </DropdownMenuItem>
+
+                                            <DropdownMenuItem
+                                                class="group cursor-pointer rounded-md"
+                                                @click="openArchiveDialog(vehicle)"
+                                            >
+                                                <RiArchive2Line class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                <span class="text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg">Archive</span>
+                                            </DropdownMenuItem>
                                         </TableMoreButton>
                                     </TableRow>
                                 </TableContent>
@@ -830,63 +832,8 @@ const openStatusDialog = (
                 </Card>
             </MainPanel>
 
-            <SidePanel>
-                <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-full">
-                    <CardHeader v-if="previewedVehicle" class="flex flex-row items-start justify-between gap-3">
-                        <div class="min-w-0">
-                            <CardTitle class="truncate uppercase">{{ previewedVehicle.plate_number || 'Vehicle' }}</CardTitle>
-                            <CardDescription>Preview</CardDescription>
-                        </div>
-                        <Button variant="header-actions" size="icon" class="h-8 w-8 shrink-0 rounded-full" @click="previewedVehicle = null">
-                            <RiCloseLine class="h-4 w-4" />
-                        </Button>
-                    </CardHeader>
-
-                    <CardContent v-if="previewedVehicle" class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto pt-2">
-                        <div class="flex aspect-4/3 items-center justify-center rounded-md border border-dashed border-custom-bg-dark bg-custom-bg text-custom-shadow/70 dark:border-none dark:bg-custom-bg-dark">
-                            <RiBusLine class="h-16 w-16" />
-                        </div>
-                        <div class="space-y-3 pt-2">
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Operational Status</span>
-                                <Badge :class="['gap-1.5', operationalStatusClass(previewedVehicle.status)]"><span :class="['h-1.5 w-1.5 rounded-full', operationalStatusDot(previewedVehicle.status)]" />{{ operationalStatusLabel(previewedVehicle.status) }}</Badge>
-                            </div>
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Verification Status</span>
-                                <Badge :class="['gap-1.5', verificationStatusClass(previewedVehicle.verification_status)]"><span :class="['h-1.5 w-1.5 rounded-full', verificationStatusDot(previewedVehicle.verification_status)]" />{{ verificationStatusLabel(previewedVehicle.verification_status) }}</Badge>
-                            </div>
-                            <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Company</span><span class="text-right text-sm">{{ previewedVehicle.company?.company_name || 'Not assigned' }}</span></div>
-                            <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Route</span><span class="text-right text-sm">{{ previewedVehicle.route?.route_name || 'Not assigned' }}</span></div>
-                            <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Vehicle Type</span><span class="text-right text-sm">{{ previewedVehicle.vehicle_type?.type_name ?? '—' }}</span></div>
-                            <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Body Number</span><span class="text-right text-sm">{{ previewedVehicle.body_number || 'Not recorded' }}</span></div>
-                            <div class="flex items-start justify-between gap-3"><span class="text-sm font-semibold text-custom-shadow">Capacity</span><span class="text-right text-sm">{{ previewedVehicle.capacity || 'Not recorded' }}</span></div>
-                            <div v-if="previewedVehicle.operator_remark" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Operator Remark</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.operator_remark }}</p></div>
-                            <div v-if="previewedVehicle.suspension_remark" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Admin Remark</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.suspension_remark }}</p></div>
-                            <div v-if="previewedVehicle.verification_remark" class="space-y-1"><span class="text-sm font-semibold text-custom-shadow">Verification Remark</span><p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ previewedVehicle.verification_remark }}</p></div>
-                        </div>
-                        <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <div class="flex flex-wrap gap-2">
-                                <Button v-if="canToggle(previewedVehicle) && previewedVehicle.status !== 'active'" variant="ghost-outline" size="icon-text" @click="openStatusDialog(previewedVehicle, 'active')">
-                                    <RiOctagonLine class="h-4 w-4" />Set Active
-                                </Button>
-                                <Button v-if="canToggle(previewedVehicle) && previewedVehicle.status !== 'inactive'" variant="ghost-outline" size="icon-text" @click="openStatusDialog(previewedVehicle, 'inactive')">
-                                    <RiShutDownLine class="h-4 w-4" />Set Inactive
-                                </Button>
-                                <Button v-if="canToggle(previewedVehicle) && previewedVehicle.status !== 'suspended'" variant="ghost-outline" size="icon-text" @click="openStatusDialog(previewedVehicle, 'suspended')">
-                                    <RiSpam2Line class="h-4 w-4" />Suspend
-                                </Button>
-                                <Button variant="destructive" size="icon-text" @click="openArchiveDialog(previewedVehicle)">
-                                    <RiArchive2Line class="h-4 w-4" />Archive
-                                </Button>
-                            </div>
-                            <Button as-child variant="float-primary" size="icon-text"><Link :href="show({ vehicle: previewedVehicle.id }).url"><RiFileCheckLine class="h-4 w-4 shrink-0" />Review</Link></Button>
-                        </div>
-                    </CardContent>
-                    <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
-                        <div class="max-w-60 space-y-1 text-center"><p class="text-base font-semibold text-custom-shadow">No vehicle selected</p><p class="text-sm text-custom-shadow/80">Click on a vehicle to preview.</p></div>
-                    </CardContent>
-                </Card>
+            <SidePanel v-if="previewedVehicle" class="hidden lg:flex">
+                <VehiclePreviewCard :vehicle="previewedVehicle" @close="previewedVehicle = null" />
             </SidePanel>
         </PanelLayout>
 
@@ -902,6 +849,5 @@ const openStatusDialog = (
         />
 
 
-        <ImportVehicleDialog v-model:open="importOpen" @done="onImportDone" />
     </AppLayout>
 </template>

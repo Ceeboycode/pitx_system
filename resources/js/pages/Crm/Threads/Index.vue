@@ -32,13 +32,13 @@ import { type BreadcrumbItem } from '@/types';
 import { fetchWithAuth } from '@/utils/fetchWithAuth';
 
 import {
-    RiAttachment2 as Paperclip,
-    RiBugLine as Bug,
-    RiBus2Line as BusFront,
-    RiIdCardLine as IdCard,
-    RiMore2Line as MoreHorizontal,
-    RiSendPlane2Line as SendHorizontal,
-    RiToolsLine as Wrench,
+    RiAttachment2,
+    RiBugLine,
+    RiBus2Line,
+    RiIdCardLine,
+    RiMore2Line,
+    RiSendPlane2Line,
+    RiToolsLine,
 } from 'vue-remix-icons';
 
 type UserSummary = {
@@ -608,7 +608,7 @@ watch(
                                                     ) == 'Facilities'
                                                 "
                                             >
-                                                <BusFront
+                                                <RiBus2Line
                                                     class="inline h-4 w-4"
                                                 />
                                             </span>
@@ -620,7 +620,7 @@ watch(
                                                     ) == 'Terminal Operations'
                                                 "
                                             >
-                                                <IdCard
+                                                <RiIdCardLine
                                                     class="inline h-4 w-4"
                                                 />
                                             </span>
@@ -632,7 +632,7 @@ watch(
                                                     ) == 'Commuter App'
                                                 "
                                             >
-                                                <Bug class="inline h-4 w-4" />
+                                                <RiBugLine class="inline h-4 w-4" />
                                             </span>
                                             <span
                                                 class="text-end text-blue-900"
@@ -642,7 +642,7 @@ watch(
                                                     ) == 'Other'
                                                 "
                                             >
-                                                <Wrench
+                                                <RiToolsLine
                                                     class="inline h-4 w-4"
                                                 />
                                             </span>
@@ -718,7 +718,7 @@ watch(
                                                 ) == 'Facilities'
                                             "
                                         >
-                                            <BusFront class="inline h-4 w-4" />
+                                            <RiBus2Line class="inline h-4 w-4" />
                                         </span>
                                         <span
                                             class="text-end text-blue-900"
@@ -728,7 +728,7 @@ watch(
                                                 ) == 'Terminal Operations'
                                             "
                                         >
-                                            <IdCard class="inline h-4 w-4" />
+                                            <RiIdCardLine class="inline h-4 w-4" />
                                         </span>
                                         <span
                                             class="text-end text-blue-900"
@@ -738,7 +738,7 @@ watch(
                                                 ) == 'Commuter App'
                                             "
                                         >
-                                            <Bug class="inline h-4 w-4" />
+                                            <RiBugLine class="inline h-4 w-4" />
                                         </span>
                                         <span
                                             class="text-end text-blue-900"
@@ -748,7 +748,7 @@ watch(
                                                 ) == 'Other'
                                             "
                                         >
-                                            <Wrench class="inline h-4 w-4" />
+                                            <RiToolsLine class="inline h-4 w-4" />
                                         </span>
                                     </span>
                                     <span class=""text-sm font-medium>
@@ -772,7 +772,7 @@ watch(
                                             variant="outline"
                                             class="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
                                         >
-                                            <MoreHorizontal class="h-4 w-4" />
+                                            <RiMore2Line class="h-4 w-4" />
                                             
                                         </Button>
                                     </DropdownMenuTrigger>
@@ -1040,12 +1040,12 @@ watch(
                                         />
                                         <div class="flex flex-col gap-2">
                                             <Button :disabled="isSendingMessage" @click="attachmentInput?.click()">
-                                                <Paperclip class="h-4 w-4" />
+                                                <RiAttachment2 class="h-4 w-4" />
                                             </Button>
                                             <Button
                                                 @click="sendMessage"
                                             >
-                                                <SendHorizontal class="h-4 w-4" />
+                                                <RiSendPlane2Line class="h-4 w-4" />
                                             </Button>
                                             <label
                                                 class="flex items-center gap-2 text-sm whitespace-nowrap"

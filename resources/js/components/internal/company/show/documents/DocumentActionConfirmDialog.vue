@@ -1,16 +1,7 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
 
-import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
+import { ConfirmDialog } from '@/components/ui/_app-dialog';
 
 import {
     destroy as destroyDoc,
@@ -120,35 +111,19 @@ function runConfirmedAction() {
 </script>
 
 <template>
-    <Dialog v-model:open="open">
-        <DialogContent class="max-w-md rounded-lg p-4" :show-close-button="false">
-            <DialogHeader class="px-0">
-                <DialogTitle>{{ confirmTitle() }}</DialogTitle>
-                <DialogDescription>
-                    {{ confirmDescriptionPrefix() }}
-                    <span class="font-semibold text-custom-accent-3">{{
-                        confirmDocName()
-                    }}</span>
-                    {{ confirmDescriptionSuffix() }}
-                </DialogDescription>
-            </DialogHeader>
-            <Separator />
-            <DialogFooter class="pt-3 gap-2 sm:justify-end">
-                <Button
-                    variant="ghost-outline"
-                    :disabled="actionForm.processing"
-                    @click="open = false"
-                >
-                    Cancel
-                </Button>
-                <Button
-                    variant="float-primary"
-                    :disabled="actionForm.processing"
-                    @click="runConfirmedAction"
-                >
-                    {{ actionForm.processing ? 'Processing...' : 'Confirm' }}
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
+    <ConfirmDialog
+        v-model:open="open"
+        :title="confirmTitle()"
+        :tone="props.action === 'delete' || props.action === 'unverify' ? 'negative' : 'primary'"
+        confirm-label="Confirm"
+        processing-label="Processing..."
+        :processing="actionForm.processing"
+        @confirm="runConfirmedAction"
+    >
+        <template #description>
+            {{ confirmDescriptionPrefix() }}
+            <span class="font-semibold text-custom-accent-3">{{ confirmDocName() }}</span>
+            {{ confirmDescriptionSuffix() }}
+        </template>
+    </ConfirmDialog>
 </template>

@@ -1,18 +1,9 @@
 <script setup lang="ts">
+import { ConfirmDialog } from '@/components/ui/_app-dialog';
 import { router } from '@inertiajs/vue3';
 import { toast } from 'vue-sonner';
 import { toggleStatus } from '@/routes/users';
 
-import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 import { RiShutDownLine } from 'vue-remix-icons';
 
 type UserForToggle = {
@@ -45,34 +36,23 @@ function confirm() {
 </script>
 
 <template>
-    <Dialog v-model:open="open">
-        <DialogContent class="max-w-md px-6" :show-close-button="false">
-            <DialogHeader class="px-0">
-                <DialogTitle>Set user status</DialogTitle>
-                <DialogDescription>
-                    Are you sure you want to set
-                    <span class="font-semibold text-custom-accent-3">{{
-                        user?.name ?? 'this user'
-                    }}</span>
-                    as
-                    <span class="font-semibold text-custom-accent-3">
-                        {{ user?.status === 'active' ? 'inactive' : 'active' }} </span
-                    >?
-                </DialogDescription>
-            </DialogHeader>
-            <Separator />
-            <DialogFooter class="pt-3 gap-2 sm:justify-end">
-                <Button variant="ghost-outline" @click="open = false">
-                    Cancel
-                </Button>
-                <Button
-                    :variant="user?.status === 'active' ? 'destructive' : 'float-primary'"
-                    @click="confirm"
-                >
-                    <RiShutDownLine class="h-4 w-4 shrink-0" />
-                    {{ user?.status === 'active' ? 'Inactivate' : 'Activate' }}
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
+    <ConfirmDialog
+        v-model:open="open"
+        title="Set User Status"
+        :tone="user?.status === 'active' ? 'negative' : 'primary'"
+        :confirm-label="user?.status === 'active' ? 'Inactivate' : 'Activate'"
+        :icon="RiShutDownLine"
+        @confirm="confirm"
+    >
+        <template #description>
+            Are you sure you want to set
+            <span class="font-semibold text-custom-accent-3">{{
+                user?.name ?? 'this user'
+            }}</span>
+            as
+            <span class="font-semibold text-custom-accent-3">
+                {{ user?.status === 'active' ? 'inactive' : 'active' }} </span
+            >?
+        </template>
+    </ConfirmDialog>
 </template>

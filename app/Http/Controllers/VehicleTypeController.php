@@ -88,9 +88,15 @@ class VehicleTypeController extends Controller
         // below still independently authorizes the real write.
         Gate::authorize('view', $vehicleType);
 
+        // Archived vehicle types open read-only, and only for whoever may open the Archives page.
+        if ($vehicleType->trashed()) {
+            Gate::authorize('viewTrash', VehicleType::class);
+        }
+
         $vehicleType->load(['creator:id,name', 'updater:id,name']);
 
         return Inertia::render('VehicleType/Edit', [
+            'isArchived' => $vehicleType->trashed(),
             'vehicleType' => [
                 'id' => $vehicleType->id,
                 'type_name' => $vehicleType->type_name,

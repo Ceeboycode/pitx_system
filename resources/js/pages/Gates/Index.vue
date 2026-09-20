@@ -54,6 +54,7 @@ import { edit, index, trash } from '@/routes/gates';
 import { type BreadcrumbItem, type User } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { PanelLayout, MainPanel, SidePanel } from '@/components/ui/_panels';
+import { GatePreviewCard } from '@/components/internal/preview-cards';
 
 import {
     RiArchive2Line,
@@ -62,8 +63,6 @@ import {
     RiEditLine,
     RiAddLine,
     RiShutDownLine,
-    RiCloseLine,
-    RiImageAddLine,
     RiExternalLinkLine,
 } from 'vue-remix-icons';
 
@@ -524,194 +523,8 @@ function openArchiveDialog(gate: Gate) {
                 </Card>
             </MainPanel>
 
-            <SidePanel>
-                <Card
-                    class="hidden min-h-0 lg:flex lg:h-full lg:w-full"
-                >
-                    <CardHeader
-                        v-if="previewedGate"
-                        class="flex flex-row items-start justify-between gap-3"
-                    >
-                        <div class="min-w-0">
-                            <CardTitle class="truncate capitalize">
-                                {{ previewedGate.gate_name }}
-                            </CardTitle>
-                            <CardDescription>Preview</CardDescription>
-                        </div>
-                        <Button
-                            variant="header-actions"
-                            size="icon"
-                            class="h-8 w-8 shrink-0 rounded-full"
-                            @click="previewedGate = null"
-                        >
-                            <RiCloseLine class="h-4 w-4" />
-                        </Button>
-                    </CardHeader>
-
-                    <CardContent
-                        v-if="previewedGate"
-                        class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto py-2"
-                    >
-                        <div class="flex aspect-4/3 items-center justify-center overflow-hidden rounded-md border border-dashed border-custom-bg-dark dark:border-none bg-custom-bg dark:bg-custom-bg-dark text-custom-shadow/70">
-                            <img
-                                v-if="previewedGate.picture_url"
-                                :src="previewedGate.picture_url"
-                                :alt="`${previewedGate.gate_name} photo`"
-                                class="h-full w-full object-cover"
-                            />
-                            <div v-else class="flex flex-col items-center gap-1 text-center">
-                                <RiImageAddLine class="h-6 w-6" />
-                            </div>
-                        </div>
-
-                        <div class="space-y-2 pt-2">
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="text-sm text-custom-shadow font-semibold">Status</span>
-                                <Badge :class="['gap-1.5', statusClass(previewedGate.status)]">
-                                    <span :class="['h-1.5 w-1.5 rounded-full', statusDot(previewedGate.status)]" />
-                                    {{ previewedGate.status === 'active' ? 'Active' : 'Inactive' }}
-                                </Badge>
-                            </div>
-
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="text-sm text-custom-shadow font-semibold">Location</span>
-                                <span class="text-right text-sm">
-                                    {{ previewedGate.location.label }}
-                                </span>
-                            </div>
-
-                            <!-- CODE: <div class="flex items-center justify-between gap-3 border-b border-custom-bg-dark pb-3">
-                                <span class="text-sm text-custom-shadow/70">Created By</span>
-                                <span class="truncate text-sm font-medium">{{ previewedGate.creator?.name ?? 'Not recorded' }}</span>
-                            </div> -->
-
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-between gap-3">
-                                    <p class="text-sm font-semibold text-custom-shadow">Bay Status</p>
-                                    <span class="text-sm text-custom-shadow">
-                                        {{ previewedGate.bay_statuses.filter((bay) => bay.status === 'occupied').length }} occupied out of {{ previewedGate.bays }}
-                                    </span>
-                                </div>
-
-                                <!-- CODE: <div
-                                    v-if="previewedGate.bay_statuses.length > 0"
-                                    class="space-y-2"
-                                >
-                                    <div
-                                        v-for="bay in previewedGate.bay_statuses"
-                                        :key="bay.bay_number"
-                                        class="rounded-md bg-custom-bg px-3 py-2"
-                                    >
-                                        <div class="flex items-center justify-between gap-3">
-                                            <span class="text-sm font-medium">Bay {{ bay.bay_number }}</span>
-                                            <Badge
-                                                :class="bay.status === 'occupied'
-                                                    ? 'bg-custom-secondary/20 text-custom-shadow'
-                                                    : 'bg-emerald-100 text-emerald-700'"
-                                            >
-                                                {{ bay.status === 'occupied' ? 'Occupied' : 'Empty' }}
-                                            </Badge>
-                                        </div>
-                                        <p
-                                            v-if="bay.status === 'occupied'"
-                                            class="mt-1 text-xs text-custom-shadow/70"
-                                        >
-                                            {{ bay.vehicle?.plate_number ?? 'Unknown unit' }}
-                                            <span v-if="bay.vehicle?.body_number">/ Body #{{ bay.vehicle.body_number }}</span>
-                                            - {{ bay.company?.company_name ?? 'Unknown company' }}
-                                        </p>
-                                    </div>
-                                </div>
-                                <p
-                                    v-else
-                                    class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70"
-                                >
-                                    No bays configured.
-                                </p> -->
-                            </div>
-
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-between gap-3">
-                                    <p class="text-sm font-semibold text-custom-shadow">Assigned Routes</p>
-                                    <span class="text-sm text-custom-shadow">
-                                        {{ previewedGate.assigned_routes.length }}
-                                    </span>
-                                </div>
-                                <!-- TODO: redesign the routes list, i dont like it, and the image part too -->
-
-                                <div
-                                    v-if="previewedGate.assigned_routes.length > 0"
-                                    class="space-y-2"
-                                >
-                                    <div
-                                        v-for="route in previewedGate.assigned_routes"
-                                        :key="route.id"
-                                        class="flex items-center justify-between gap-3 rounded-md bg-custom-bg dark:bg-custom-bg-dark px-3 py-2"
-                                    >
-                                        <span class="truncate text-sm font-medium">{{ route.route_name }}</span>
-                                        <span class="shrink-0 text-xs capitalize text-custom-shadow/70">{{ route.status }}</span>
-                                    </div>
-                                </div>
-                                <p
-                                    v-else
-                                    class="rounded-md bg-custom-bg dark:bg-custom-bg-dark px-3 py-2 text-sm text-custom-shadow/70"
-                                >
-                                    No routes assigned.
-                                </p>
-                            </div>
-                        </div>
-
-                        <!-- CODE: <hr class="border-custom-bg-dark dark:border-custom-bg-light my-4"> -->
-                        <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <div class="flex flex-wrap gap-2">
-                                <Button
-                                    as-child
-                                    variant="ghost-outline"
-                                    size="icon-text"
-                                >
-                                    <Link :href="edit(previewedGate.id).url">
-                                        <RiEditLine class="h-4 w-4" />
-                                        Edit
-                                    </Link>
-                                </Button>
-                                <Button
-                                    variant="destructive"
-                                    size="icon-text"
-                                    @click="openArchiveDialog(previewedGate)"
-                                >
-                                    <RiArchive2Line class="h-4 w-4" />
-                                    Archive
-                                </Button>
-                            </div>
-                            <Button
-                                as-child
-                                variant="float-primary"
-                                size="icon"
-                            >
-                                <Link :href="edit(previewedGate.id).url">
-                                    <RiExternalLinkLine class="h-4 w-4" />
-                                </Link>
-                            </Button>
-                        </div>
-                    </CardContent>
-
-                    <CardContent
-                        v-else
-                        class="flex min-h-0 flex-1 items-center justify-center"
-                    >
-                        <div class="max-w-60 text-center space-y-1">
-                            <!-- CODE: <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-custom-bg text-custom-shadow/70">
-                                <RiEyeLine class="h-6 w-6" />
-                            </div> -->
-                            <p class="text-custom-shadow text-base font-semibold">No gate selected</p>
-                            <p class="text-custom-shadow/80 text-sm">
-                                Click on a gate to preview.
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
+            <SidePanel v-if="previewedGate" class="hidden lg:flex">
+                <GatePreviewCard :gate="previewedGate" @close="previewedGate = null" />
             </SidePanel>
             
 

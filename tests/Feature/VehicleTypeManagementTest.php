@@ -37,7 +37,6 @@ beforeEach(function (): void {
         'vehicle_types.restore',
         'vehicle_types.viewTrash',
         'vehicle_types.forceDelete',
-        'vehicles.create',
         'vehicles.update',
     ] as $permission) {
         Permission::query()->firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
@@ -57,7 +56,6 @@ function vehicleTypeManager(): User
         'vehicle_types.restore',
         'vehicle_types.viewTrash',
         'vehicle_types.forceDelete',
-        'vehicles.create',
         'vehicles.update',
     ]);
 
@@ -138,8 +136,20 @@ test('inactive types cannot be assigned but an existing inactive assignment can 
         'vehicle_type_id' => $inactiveType->id,
     ];
 
+    $activeVehicle = Vehicle::factory()->create([
+        'company_id' => $company->id,
+        'route_id' => $route->id,
+        'vehicle_type_id' => VehicleType::factory()->create(['created_by' => $user->id])->id,
+        'created_by' => $user->id,
+        'updated_by' => $user->id,
+    ]);
+
     $this->actingAs($user)
-        ->post(route('vehicles.store'), $data)
+        ->put(route('vehicles.update', $activeVehicle), [
+            ...$data,
+            'plate_number' => $activeVehicle->plate_number,
+            'body_number' => $activeVehicle->body_number,
+        ])
         ->assertSessionHasErrors('vehicle_type_id');
 
     $vehicle = Vehicle::factory()->create([

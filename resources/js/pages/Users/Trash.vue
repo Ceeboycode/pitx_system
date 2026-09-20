@@ -3,33 +3,25 @@ import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { index, restore, trash } from '@/routes/users';
+import { index, show, trash } from '@/routes/users';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { RiArrowLeftSLine, RiFilter2Line, RiMore2Line, RiRestartLine } from 'vue-remix-icons';
-import { computed, ref } from 'vue';
-import { toast } from 'vue-sonner';
+import { RiArrowLeftLine, RiFilter2Line, RiRestartLine } from 'vue-remix-icons';
+import { computed, ref, watch } from 'vue';
 import { PanelLayout, MainPanel, SidePanel } from '@/components/ui/_panels';
+import { RestoreUserDialog } from '@/components/internal/users';
+import { UserPreviewCard } from '@/components/internal/preview-cards';
+import { Table, TableCard, TableColumn, TableContent, TableData, TableHeader, TableMoreButton, TableRow } from '@/components/ui/_table';
 
 type UserArchive = {
     id: number;
@@ -84,6 +76,16 @@ function clearFilters() {
     applyFilters();
 }
 
+const previewedUser = ref<UserArchive | null>(null);
+const openMenuId = ref<number | null>(null);
+
+// Drop the preview once its row leaves the list (e.g. after restoring it).
+watch(() => props.users.data, (rows) => {
+    if (previewedUser.value && !rows.some((row) => row.id === previewedUser.value?.id)) {
+        previewedUser.value = null;
+    }
+});
+
 const restoringUser = ref<UserArchive | null>(null);
 const restoreOpen = ref(false);
 
@@ -92,21 +94,6 @@ function openRestoreDialog(user: UserArchive) {
     restoreOpen.value = true;
 }
 
-function confirmRestore() {
-    if (!restoringUser.value) return;
-    router.patch(
-        restore({ user: restoringUser.value.id }).url,
-        {},
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                restoringUser.value = null;
-                restoreOpen.value = false;
-            },
-            onError: () => toast.error('Failed to restore user.'),
-        },
-    );
-}
 </script>
 
 <template>
@@ -119,7 +106,7 @@ function confirmRestore() {
                     <CardHeader class="flex flex-row items-start gap-3">
                         <Button as-child variant="header-actions" size="icon">
                             <Link :href="index().url" aria-label="Back to users">
-                                <RiArrowLeftSLine class="h-4 w-4" />
+                                <RiArrowLeftLine class="h-4 w-4" />
                             </Link>
                         </Button>
                         <div class="flex min-w-0 flex-col">
@@ -181,55 +168,46 @@ function confirmRestore() {
                             </Popover>
                         </div>
 
-                        <Card
-                            :class="[
-                                'flex min-h-0 max-h-fit flex-1 flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
-                                users.data.length === 0 ? 'border-dashed' : 'border-solid',
-                            ]"
-                        >
-                            <div v-if="users.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                                <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                                    <div class="grid grid-cols-6 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
-                                        <div class="flex h-10 items-center pl-3 text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Username</div>
-                                        <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Name</div>
-                                        <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Email</div>
-                                        <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Archived At</div>
-                                        <div class="flex h-10 items-center text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Archived By</div>
-                                        <div class="flex h-10 items-center justify-end pr-3 text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Actions</div>
-                                    </div>
-                                </div>
+                        <TableCard :table-data-length="props.users.data.length">
+                            <Table v-if="props.users.data.length > 0">
+                                <TableHeader>
+                                    <TableColumn>Username</TableColumn>
+                                    <TableColumn>Name</TableColumn>
+                                    <TableColumn>Email</TableColumn>
+                                    <TableColumn>Archived At</TableColumn>
+                                    <TableColumn>Archived By</TableColumn>
+                                </TableHeader>
 
-                                <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-                                    <div
-                                        v-for="(user, rowIndex) in users.data"
+                                <TableContent>
+                                    <TableRow
+                                        v-for="(user, rowIndex) in props.users.data"
                                         :key="user.id"
                                         :class="[
-                                            'grid grid-cols-6 items-center gap-2 border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
-                                            rowIndex === users.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                            rowIndex === props.users.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                            previewedUser?.id === user.id ? 'bg-custom-secondary/10' : '',
                                         ]"
+                                        @click.left="previewedUser = user"
+                                        @dblclick="router.visit(show(user.id).url)"
                                     >
-                                        <div class="min-w-0 py-1.5 pl-3 font-semibold"><span class="block truncate">{{ user.username }}</span></div>
-                                        <div class="min-w-0 py-1.5"><span class="block truncate">{{ user.name }}</span></div>
-                                        <div class="min-w-0 py-1.5 text-sm"><span class="block truncate">{{ user.email }}</span></div>
-                                        <div class="min-w-0 py-1.5 text-sm"><span class="block truncate">{{ user.deleted_at_human ?? '—' }}</span></div>
-                                        <div class="min-w-0 py-1.5 text-sm"><span class="block truncate">{{ user.deleter?.name ?? '—' }}</span></div>
-                                        <div class="flex justify-end py-1.5 pr-3 text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger as-child>
-                                                    <Button variant="table-more" size="icon-more"><RiMore2Line class="h-4 w-4" /></Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>{{ user.username }}</DropdownMenuLabel>
-                                                    <DropdownMenuItem class="group" @click="openRestoreDialog(user)">
-                                                        <RiRestartLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                        Restore
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                        <TableData class="font-semibold"><span class="block truncate">{{ user.username }}</span></TableData>
+                                        <TableData><span class="block truncate">{{ user.name }}</span></TableData>
+                                        <TableData><span class="block truncate">{{ user.email }}</span></TableData>
+                                        <TableData><span class="block truncate">{{ user.deleted_at_human ?? '—' }}</span></TableData>
+                                        <TableData><span class="block truncate">{{ user.deleter?.name ?? '—' }}</span></TableData>
+
+                                        <TableMoreButton
+                                            :open="openMenuId === user.id"
+                                            @update:open="(value) => (openMenuId = value ? user.id : null)"
+                                        >
+                                            <DropdownMenuLabel>{{ user.name }}</DropdownMenuLabel>
+                                            <DropdownMenuItem class="group cursor-pointer" @click="openRestoreDialog(user)">
+                                                <RiRestartLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                Restore
+                                            </DropdownMenuItem>
+                                        </TableMoreButton>
+                                    </TableRow>
+                                </TableContent>
+                            </Table>
 
                             <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
                                 <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
@@ -240,40 +218,19 @@ function confirmRestore() {
                                     </div>
                                 </div>
                             </div>
-                        </Card>
+                        </TableCard>
 
                         <InertiaPagination :links="users.links" :meta="{ from: users.from, to: users.to, total: users.total }" />
                     </CardContent>
                 </Card>
             </MainPanel>
 
-            <SidePanel>
-
+            <SidePanel v-if="previewedUser" class="hidden lg:flex">
+                <UserPreviewCard :user="previewedUser" archived @close="previewedUser = null" />
             </SidePanel>
             
         </PanelLayout>
 
-        <Dialog v-model:open="restoreOpen">
-            <DialogContent class="max-w-md px-6" :show-close-button="false">
-                <DialogHeader class="px-0">
-                    <DialogTitle>Restore User</DialogTitle>
-                    <DialogDescription>
-                        Are you sure you want to restore
-                        <span class="font-semibold text-custom-accent-3">{{ restoringUser?.name ?? 'this user' }}</span>?
-                        They will be moved back to the active users list.
-                    </DialogDescription>
-                </DialogHeader>
-                <Separator />
-                <DialogFooter class="pt-3 gap-2 sm:justify-end">
-                    <Button variant="ghost-outline" @click="restoringUser = null; restoreOpen = false">
-                        Cancel
-                    </Button>
-                    <Button variant="float-primary" @click="confirmRestore">
-                        <RiRestartLine class="h-4 w-4" />
-                        Restore
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <RestoreUserDialog v-model:open="restoreOpen" :user="restoringUser" />
     </AppLayout>
 </template>

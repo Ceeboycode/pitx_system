@@ -48,6 +48,7 @@ import InertiaPagination from '@/components/InertiaPagination.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import { PanelLayout, MainPanel, SidePanel } from '@/components/ui/_panels';
+import { RolePreviewCard } from '@/components/internal/preview-cards';
 
 import { can } from '@/lib/can';
 
@@ -57,12 +58,10 @@ import {
     RiArrowDownSLine,
     RiArrowUpDownLine,
     RiArrowUpSLine,
-    RiCloseLine,
     RiEditLine,
     RiFilter2Line,
     RiKey2Line,
-    RiMoreLine,
-    RiShieldCheckLine,
+    RiMore2Line,
 } from 'vue-remix-icons';
 
 
@@ -266,7 +265,7 @@ function openDelete(role: Role) {
                                             size="icon"
                                             aria-label="Open role actions"
                                         >
-                                            <RiMoreLine class="h-4 w-4 shrink-0" />
+                                            <RiMore2Line class="h-4 w-4 shrink-0" />
                                         </Button>
                                     </div>
                                 </DropdownMenuTrigger>
@@ -586,128 +585,8 @@ function openDelete(role: Role) {
                 </Card>
             </MainPanel>
 
-            <SidePanel>
-                <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-full">
-                    <CardHeader
-                        v-if="previewedRole"
-                        class="flex flex-row items-start justify-between gap-3"
-                    >
-                        <div class="min-w-0">
-                            <CardTitle class="truncate capitalize">
-                                {{ previewedRole.name }}
-                            </CardTitle>
-                            <CardDescription>Preview</CardDescription>
-                        </div>
-                        <Button
-                            variant="header-actions"
-                            size="icon"
-                            class="h-8 w-8 shrink-0 rounded-full"
-                            aria-label="Close role preview"
-                            @click="previewedRole = null"
-                        >
-                            <RiCloseLine class="h-4 w-4" />
-                        </Button>
-                    </CardHeader>
-
-                    <CardContent
-                        v-if="previewedRole"
-                        class="no-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto py-2"
-                    >
-                        <div class="flex items-center justify-center rounded-md border border-dashed border-custom-bg-dark bg-custom-bg p-6 dark:border-custom-bg-light dark:bg-custom-bg-dark">
-                            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-custom-primary/15 text-custom-primary">
-                                <RiShieldCheckLine class="h-9 w-9" />
-                            </div>
-                        </div>
-
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Name</span>
-                                <span class="truncate text-right text-sm font-medium capitalize text-custom-shadow/80">
-                                    {{ previewedRole.name }}
-                                </span>
-                            </div>
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Type</span>
-                                <Badge :class="typeClass(previewedRole.type)" class="border capitalize">
-                                    {{ previewedRole.type }}
-                                </Badge>
-                            </div>
-
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-between gap-3">
-                                    <span class="text-sm font-semibold text-custom-shadow">Permissions</span>
-                                    <span class="text-sm text-custom-shadow/80">
-                                        {{ previewedRole.permissions.length }}
-                                    </span>
-                                </div>
-                                <div v-if="previewedRole.permissions.length" class="flex flex-wrap gap-1.5">
-                                    <span
-                                        v-for="permission in previewedRole.permissions"
-                                        :key="permission.id"
-                                        class="rounded-md bg-custom-bg px-2 py-1 font-mono text-xs text-custom-shadow/70 dark:bg-custom-bg-dark"
-                                    >
-                                        {{ permission.name }}
-                                    </span>
-                                </div>
-                                <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">
-                                    No permissions assigned.
-                                </p>
-                            </div>
-
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Created</span>
-                                <span class="truncate text-right text-sm text-custom-shadow/80">
-                                    {{ previewedRole.created_at_human ?? '—' }}
-                                    <span class="text-custom-accent-3"> • </span>
-                                    {{ previewedRole.creator?.name ?? '—' }}
-                                </span>
-                            </div>
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Updated</span>
-                                <span class="truncate text-right text-sm text-custom-shadow/80">
-                                    {{ previewedRole.updated_at_human ?? '—' }}
-                                    <span class="text-custom-accent-3"> • </span>
-                                    {{ previewedRole.updater?.name ?? '—' }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-
-                        <div class="flex items-center justify-between gap-2">
-                            <Button
-                                v-if="canUpdate"
-                                as-child
-                                variant="ghost-outline"
-                                size="icon-text"
-                            >
-                                <Link :href="edit({ role: previewedRole.id }).url">
-                                    <RiEditLine class="h-4 w-4" />
-                                    Edit
-                                </Link>
-                            </Button>
-                            <Button
-                                v-if="canDelete"
-                                variant="destructive"
-                                size="icon-text"
-                                class="ml-auto"
-                                @click="openDelete(previewedRole)"
-                            >
-                                <RiArchive2Line class="h-4 w-4" />
-                                Archive
-                            </Button>
-                        </div>
-                    </CardContent>
-
-                    <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
-                        <div class="max-w-60 space-y-1 text-center">
-                            <p class="text-base font-semibold text-custom-shadow">No role selected</p>
-                            <p class="text-sm text-custom-shadow/80">
-                                Click on a role to preview.
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
+            <SidePanel v-if="previewedRole" class="hidden lg:flex">
+                <RolePreviewCard :role="previewedRole" @close="previewedRole = null" />
             </SidePanel>
             
 

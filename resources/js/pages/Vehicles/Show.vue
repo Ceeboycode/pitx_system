@@ -1,55 +1,28 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { destroy, index, toggleStatus } from '@/routes/vehicles';
+import { ArchivedNotice } from '@/components/ui/_archived-notice';
+import { index, toggleStatus } from '@/routes/vehicles';
 import type { BreadcrumbItem } from '@/types';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
-import { toast } from 'vue-sonner';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 
 import RouteMapDialog from '@/components/routes/RouteMapDialog.vue';
 import {
-    DocumentPreviewDialog,
-    InvalidateDocumentDialog,
     RouteStopsDialog,
-} from '@/components/vehicles/show';
+    VehicleArchiveDialog,
+} from '@/components/internal/vehicles';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Label } from '@/components/ui/label';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover';
-import { Textarea } from '@/components/ui/textarea';
 import { can } from '@/lib/can';
+import { vehicleDocumentPreview } from '@/lib/document-preview';
+import { DocumentPreviewCard } from '@/components/internal/preview-cards';
 
 import {
     RiArchive2Line,
@@ -59,8 +32,9 @@ import {
     RiRoadMapLine,
     RiFolderLine,
     RiAlertLine,
+    RiHistoryLine,
 } from "vue-remix-icons";
-import { PanelLayout, LeadPanel } from '@/components/ui/_panels';
+import { PanelLayout, LeadPanel, SidePanel } from '@/components/ui/_panels';
 import { LeadingCard } from '@/components/ui/_leading-card';
 import { 
     Tabs,
@@ -74,6 +48,7 @@ import Details from '@/components/internal/vehicles/show/DetailsTab.vue';
 import Documents from '@/components/internal/vehicles/show/DocumentsTab.vue';
 import Dispatches from '@/components/internal/vehicles/show/DispatchesTab.vue';
 import IncidentReports from '@/components/internal/vehicles/show/IncidentReportsTab.vue';
+import History from '@/components/internal/vehicles/show/HistoryTab.vue';
 
 type UserMini = { id?: number; name: string };
 
@@ -155,6 +130,7 @@ type VehicleModel = {
 };
 
 const props = defineProps<{
+    isArchived?: boolean;
     vehicle: VehicleModel;
     mapConfig: { mapboxToken: string };
 }>();
@@ -179,20 +155,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const canViewVehicle = can('vehicles.view');
-const canVerifyVehicleDocument = can('vehicle_documents.verify');
-const canUnverifyVehicleDocument = can('vehicle_documents.unverify');
-const canInvalidateVehicleDocument = can('vehicle_documents.invalidate');
 
-function archiveVehicle() {
-    router.delete(destroy(vehicle.value.id).url, {
-        preserveScroll: true,
-        onSuccess: () => {
-            archiveOpen.value = false;
-            toast.success('Vehicle archived successfully.');
-        },
-        onError: () => toast.error('Failed to archive vehicle.'),
-    });
-}
 
 const sortedStops = computed(() =>
     [...(route.value?.stops ?? [])].sort((a, b) => a.stop_order - b.stop_order),
@@ -409,26 +372,6 @@ function statusDot(status?: string | null): string {
     }
 }
 
-function fileUrl(doc: VehicleDocument) {
-    return doc.file_url ?? '';
-}
-
-function isImage(doc: VehicleDocument) {
-    if (doc.file_mime_type) return doc.file_mime_type.startsWith('image/');
-    return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(
-        (doc.file_name ?? '').split('.').pop()?.toLowerCase() ?? '',
-    );
-}
-
-function isPdf(doc: VehicleDocument) {
-    if (doc.file_mime_type) return doc.file_mime_type === 'application/pdf';
-    return (doc.file_name ?? '').split('.').pop()?.toLowerCase() === 'pdf';
-}
-
-function canPreview(doc: VehicleDocument) {
-    return Boolean(fileUrl(doc)) && (isImage(doc) || isPdf(doc));
-}
-
 const mapDialogOpen = ref(false);
 const parsedRouteGeometry = computed(() => {
     if (!route.value?.route_geometry) return null;
@@ -465,101 +408,20 @@ const routeMapStops = computed(() =>
 
 const stopsDialogOpen = ref(false);
 
+const activeTab = ref('details');
 
-const previewOpen = ref(false);
-const previewDoc = ref<VehicleDocument | null>(null);
+// The Documents tab picks the document; the page shows it in the side panel. Held as an id so the
+// card follows the fresh data after a document is verified, and only while that tab is open.
+const previewedDocumentId = ref<number | null>(null);
+const previewedDocument = computed(() => {
+    const doc = docs.value.find((document) => document.id === previewedDocumentId.value);
 
-function openPreview(doc: VehicleDocument) {
-    if (!canPreview(doc)) return;
-    previewDoc.value = doc;
-    previewOpen.value = true;
-}
+    return doc ? vehicleDocumentPreview(doc) : null;
+});
 
-function closePreview() {
-    previewOpen.value = false;
-    previewDoc.value = null;
-}
-
-
-const actionForm = useForm({});
-const confirmOpen = ref(false);
-const actionType = ref<'verify' | 'unverify'>('verify');
-const actionDoc = ref<VehicleDocument | null>(null);
-
-function openConfirm(type: 'verify' | 'unverify', doc: VehicleDocument) {
-    actionType.value = type;
-    actionDoc.value = doc;
-    confirmOpen.value = true;
-}
-
-function submitConfirm() {
-    if (!actionDoc.value) return;
-
-    const url =
-        actionType.value === 'verify'
-            ? `/vehicles/${vehicle.value.id}/documents/${actionDoc.value.id}/verify`
-            : `/vehicles/${vehicle.value.id}/documents/${actionDoc.value.id}/unverify`;
-
-    actionForm.patch(url, {
-        preserveScroll: true,
-        onSuccess: () => {
-            confirmOpen.value = false;
-            actionDoc.value = null;
-            closePreview();
-        },
-    });
-}
-
-
-const invalidateOpen = ref(false);
-
-function openInvalidate(doc: VehicleDocument) {
-    actionDoc.value = doc;
-    invalidateOpen.value = true;
-}
-
-const selectMode = ref(false);
-const selectedDocIds = ref<number[]>([]);
-
-function toggleSelectMode() {
-    selectMode.value = !selectMode.value;
-    if (!selectMode.value) selectedDocIds.value = [];
-}
-
-function setDoc(id: number, checked: boolean) {
-    const idx = selectedDocIds.value.indexOf(id);
-    if (checked && idx === -1) selectedDocIds.value = [...selectedDocIds.value, id];
-    else if (!checked && idx !== -1) selectedDocIds.value = selectedDocIds.value.filter((x) => x !== id);
-}
-
-const allSelected = computed(
-    () => docs.value.length > 0 && selectedDocIds.value.length === docs.value.length,
-);
-
-function selectAll() {
-    if (allSelected.value) {
-        selectedDocIds.value = [];
-    } else {
-        selectedDocIds.value = docs.value.map((d) => d.id);
-    }
-}
-
-function downloadSelected() {
-    if (selectedDocIds.value.length === 0) return;
-    for (const id of selectedDocIds.value) {
-        const doc = docs.value.find((d) => d.id === id);
-        if (!doc || !fileUrl(doc)) continue;
-        const a = document.createElement('a');
-        a.href = fileUrl(doc);
-        a.setAttribute('download', doc.file_name ?? '');
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
-    selectMode.value = false;
-    selectedDocIds.value = [];
-}
+watch(activeTab, (tab) => {
+    if (tab !== 'documents') previewedDocumentId.value = null;
+});
 
 const tabs = [
     {
@@ -592,6 +454,12 @@ const tabs = [
         icon: RiAlertLine,
         component: IncidentReports,
     },
+    {
+        value: 'history',
+        label: 'History',
+        icon: RiHistoryLine,
+        component: History,
+    }
 ] as const;
 </script>
 
@@ -599,43 +467,50 @@ const tabs = [
     <Head :title="vehicle.plate_number || `Vehicle #${vehicle.id}`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <LeadPanel>
-            <LeadingCard
-                :title="vehicle.plate_number || `Vehicle #${vehicle.id}`"
-                description="View vehicle information, documents, and route details."
-                variant="entity-details"
-                :back="VEHICLES_INDEX_URL"
-                entity="Vehicles"
-                :status="vehicle.status"
-            >
-                <DropdownMenuItem as-child class="group cursor-pointer">
-                    <Button v-if="canArchiveVehicle" variant="dropdown" @click="archiveOpen = true">
-                        <RiArchive2Line class="h-4 w-4 shrink-0 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
-                        <span>Archive {{ vehicle.plate_number || `Vehicle #${vehicle.id}` }}</span>
-                    </Button>
-                    <!-- <Button
-                        as-child
-                        variant="outline"
-                        class="rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
-                    >
-                        <Link :href="VEHICLES_INDEX_URL">
-                            <RiArrowLeftLine class="h-4 w-4" />
-                        </Link>
-                    </Button> -->
-                </DropdownMenuItem>
-            </LeadingCard>
-            <Tabs default-value="details">
-                <TabsList>
-                    <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value">
-                        <component :is="tab.icon" class="h-4 w-4 shrink-0"/>
-                        <span>{{ tab.label }}</span>
-                    </TabsTrigger>
-                </TabsList>
-                <TabsContent v-for="tab in tabs" :key="tab.value" :value="tab.value">
-                    <component :is="tab.component" :vehicle="vehicle" :map-config="mapConfig" />
-                </TabsContent>
-            </Tabs>
-        </LeadPanel>
+        <PanelLayout>
+            <LeadPanel class="min-w-0 shrink">
+                <ArchivedNotice v-if="props.isArchived" entity="vehicle" />
+                <LeadingCard
+                    :title="vehicle.plate_number || `Vehicle #${vehicle.id}`"
+                    description="View vehicle information, documents, and route details."
+                    variant="entity-details"
+                    :back="VEHICLES_INDEX_URL"
+                    entity="Vehicles"
+                    :status="vehicle.status"
+                >
+                    <DropdownMenuItem as-child class="group cursor-pointer">
+                        <Button v-if="canArchiveVehicle" variant="dropdown" @click="archiveOpen = true">
+                            <RiArchive2Line class="h-4 w-4 shrink-0 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow transition-all duration-200" />
+                            <span>Archive {{ vehicle.plate_number || `Vehicle #${vehicle.id}` }}</span>
+                        </Button>
+                        <!-- <Button
+                            as-child
+                            variant="outline"
+                            class="rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                        >
+                            <Link :href="VEHICLES_INDEX_URL">
+                                <RiArrowLeftLine class="h-4 w-4" />
+                            </Link>
+                        </Button> -->
+                    </DropdownMenuItem>
+                </LeadingCard>
+                <Tabs v-model="activeTab">
+                    <TabsList>
+                        <TabsTrigger v-for="tab in tabs" :key="tab.value" :value="tab.value">
+                            <component :is="tab.icon" class="h-4 w-4 shrink-0"/>
+                            <span>{{ tab.label }}</span>
+                        </TabsTrigger>
+                    </TabsList>
+                    <TabsContent v-for="tab in tabs" :key="tab.value" :value="tab.value">
+                        <Documents v-if="tab.value === 'documents'" v-model:previewed-id="previewedDocumentId" :vehicle="vehicle" />
+                        <component :is="tab.component" v-else :vehicle="vehicle" :map-config="mapConfig" />
+                    </TabsContent>
+                </Tabs>
+            </LeadPanel>
+            <SidePanel v-if="previewedDocument" class="hidden lg:flex">
+                <DocumentPreviewCard :doc="previewedDocument" @close="previewedDocumentId = null" />
+            </SidePanel>
+        </PanelLayout>
 
         <RouteMapDialog
             v-if="canViewVehicle"
@@ -653,79 +528,10 @@ const tabs = [
 
         <RouteStopsDialog v-model:open="stopsDialogOpen" :stops="sortedStops" />
 
-        <DocumentPreviewDialog
-            v-model:open="previewOpen"
-            :doc="previewDoc"
-            :can-verify="canVerifyVehicleDocument"
-            :can-unverify="canUnverifyVehicleDocument"
-            :can-invalidate="canInvalidateVehicleDocument"
-            @verify="(d) => openConfirm('verify', d)"
-            @unverify="(d) => openConfirm('unverify', d)"
-            @invalidate="(d) => openInvalidate(d)"
-        />
 
 
-        <Dialog v-model:open="archiveOpen">
-            <DialogContent class="max-w-md px-6" :show-close-button="false">
-                <DialogHeader class="px-0">
-                    <DialogTitle>Archive Vehicle</DialogTitle>
-                    <DialogDescription>
-                        Are you sure you want to archive
-                        <span class="font-semibold text-custom-accent-3">{{
-                            vehicle.plate_number || `Vehicle #${vehicle.id}`
-                        }}</span>? You can restore it later from Archived Vehicles.
-                    </DialogDescription>
-                </DialogHeader>
-                <Separator />
-                <DialogFooter class="pt-3 gap-2 sm:justify-end">
-                    <Button variant="ghost-outline" @click="archiveOpen = false">
-                        Cancel
-                    </Button>
-                    <Button variant="destructive" @click="archiveVehicle">
-                        Archive
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <VehicleArchiveDialog v-model:open="archiveOpen" :vehicle="vehicle" />
 
-        <AlertDialog v-model:open="confirmOpen">
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>
-                        {{
-                            actionType === 'verify'
-                                ? 'Verify document?'
-                                : 'Move back to pending?'
-                        }}
-                    </AlertDialogTitle>
 
-                    <AlertDialogDescription>
-                        {{
-                            actionType === 'verify'
-                                ? `This will mark "${humanize(actionDoc?.document_type)}" as verified.`
-                                : `This will revert "${humanize(actionDoc?.document_type)}" back to pending review.`
-                        }}
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-
-                <AlertDialogFooter>
-                    <AlertDialogCancel :disabled="actionForm.processing">
-                        Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                        :disabled="actionForm.processing"
-                        @click="submitConfirm"
-                    >
-                        {{ actionForm.processing ? 'Processing...' : 'Confirm' }}
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-
-        <InvalidateDocumentDialog
-            v-model:open="invalidateOpen"
-            :doc="actionDoc"
-            :vehicle-id="vehicle.id"
-        />
     </AppLayout>
 </template>

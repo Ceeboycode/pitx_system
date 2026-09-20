@@ -51,12 +51,12 @@ import { index, edit, trash } from '@/routes/vehicle-types';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { PanelLayout, MainPanel, SidePanel } from '@/components/ui/_panels';
+import { VehicleTypePreviewCard } from '@/components/internal/preview-cards';
 import { can } from '@/lib/can';
 
 import {
     RiAddLine,
     RiArchive2Line,
-    RiCloseLine,
     RiEditLine,
     RiFilter2Line,
     RiMore2Line,
@@ -228,7 +228,7 @@ const openMenus = ref<Record<number, boolean>>({});
 
                     <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
                         <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
-                            <div class="w-full max-w-sm">
+                            <div class="w-full">
                                 <SearchInput
                                     :route="index().url"
                                     :initial-value="props.filters?.search"
@@ -414,45 +414,8 @@ const openMenus = ref<Record<number, boolean>>({});
                 </Card>
             </MainPanel>
             
-            <SidePanel>
-                <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-full">
-                    <CardHeader v-if="previewedVehicleType" class="flex flex-row items-start justify-between gap-3">
-                        <div class="min-w-0">
-                            <CardTitle class="truncate capitalize">{{ previewedVehicleType.type_name }}</CardTitle>
-                            <CardDescription>Preview</CardDescription>
-                        </div>
-                        <Button variant="header-actions" size="icon" class="h-8 w-8 shrink-0 rounded-full" @click="previewedVehicleType = null">
-                            <RiCloseLine class="h-4 w-4 shrink-0" />
-                        </Button>
-                    </CardHeader>
-
-                    <CardContent v-if="previewedVehicleType" class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto pt-2">
-                        <div class="space-y-3 pt-2">
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="text-sm font-semibold text-custom-shadow">Status</span>
-                                <Badge :class="['gap-1.5', previewedVehicleType.is_active ? 'border-emerald-200 bg-emerald-100 text-emerald-700' : 'border-0 bg-slate-100 text-slate-500']">
-                                    <span :class="['h-1.5 w-1.5 rounded-full', previewedVehicleType.is_active ? 'bg-emerald-500' : 'bg-slate-400']" />
-                                    {{ previewedVehicleType.is_active ? 'Active' : 'Inactive' }}
-                                </Badge>
-                            </div>
-                        </div>
-                        <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <div class="flex flex-wrap gap-2">
-                                <Button v-if="canUpdate" variant="ghost-outline" size="icon-text" @click="openToggleDialog(previewedVehicleType)">
-                                    <RiShutDownLine class="h-4 w-4 shrink-0" />{{ previewedVehicleType.is_active ? 'Inactivate' : 'Activate' }}
-                                </Button>
-                                <Button v-if="canArchive" variant="destructive" size="icon-text" @click="openArchiveDialog(previewedVehicleType)">
-                                    <RiArchive2Line class="h-4 w-4 shrink-0" />Archive
-                                </Button>
-                            </div>
-                            <Button as-child variant="float-primary" size="icon-text"><Link :href="edit(previewedVehicleType.id).url"><RiEditLine class="h-4 w-4 shrink-0" />Edit</Link></Button>
-                        </div>
-                    </CardContent>
-                    <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
-                        <div class="max-w-60 space-y-1 text-center"><p class="text-base font-semibold text-custom-shadow">No vehicle type selected</p><p class="text-sm text-custom-shadow/80">Click on a vehicle type to preview.</p></div>
-                    </CardContent>
-                </Card>
+            <SidePanel v-if="previewedVehicleType" class="hidden lg:flex">
+                <VehicleTypePreviewCard :vehicle-type="previewedVehicleType" @close="previewedVehicleType = null" />
             </SidePanel>
             
         </PanelLayout>

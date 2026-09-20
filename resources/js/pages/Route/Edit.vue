@@ -1,5 +1,6 @@
 ﻿<script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import { ArchivedNotice } from '@/components/ui/_archived-notice';
 import { Head } from '@inertiajs/vue3';
 import {
     ref
@@ -13,6 +14,7 @@ import {
     RiAlertLine,
     RiBusLine,
     RiShutDownLine,
+    RiHistoryLine,
 } from 'vue-remix-icons';
 
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
@@ -41,6 +43,7 @@ import Details from '@/components/internal/route/edit/DetailsTab.vue';
 import Vehicles from '@/components/internal/route/edit/VehiclesTab.vue';
 import Dispatches from '@/components/internal/route/edit/DispatchesTab.vue';
 import IncidentReports from '@/components/internal/route/edit/IncidentReportsTab.vue';
+import History from '@/components/internal/route/edit/HistoryTab.vue';
 
 type Gate = {
     id: number;
@@ -77,6 +80,7 @@ type RouteModel = {
 };
 
 const props = defineProps<{
+    isArchived?: boolean;
     route: RouteModel;
     gates: Gate[];
     mapConfig: {
@@ -130,6 +134,12 @@ const tabs = [
         icon: RiAlertLine,
         component: IncidentReports,
     },
+    {
+        value: 'history',
+        label: 'History',
+        icon: RiHistoryLine,
+        component: History,
+    }
 ] as const;
 
 </script>
@@ -140,6 +150,7 @@ const tabs = [
     <AppLayout :breadcrumbs="breadcrumbs">
         <PanelLayout>
             <LeadPanel>
+                <ArchivedNotice v-if="props.isArchived" entity="route" />
                 <LeadingCard
                     :title="route.route_name"
                     description="Update the route, map its path, and organize its stops."

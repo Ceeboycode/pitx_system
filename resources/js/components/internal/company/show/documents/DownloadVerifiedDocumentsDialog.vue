@@ -1,14 +1,5 @@
 <script setup lang="ts">
-import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
+import { ConfirmDialog } from '@/components/ui/_app-dialog';
 
 import { downloadBulk } from '@/routes/companies/documents';
 
@@ -48,32 +39,17 @@ function runBulkDownload() {
 </script>
 
 <template>
-    <Dialog v-model:open="open">
-        <DialogContent class="max-w-md px-6" :show-close-button="false">
-            <DialogHeader class="px-0">
-                <DialogTitle>Download verified documents?</DialogTitle>
-                <DialogDescription>
-                    This will download a ZIP containing only verified
-                    documents for this company.
-                    <span v-if="verifiedCount > 0"
-                        >({{ verifiedCount }} verified)</span
-                    >
-                    <span v-else> No verified documents found.</span>
-                </DialogDescription>
-            </DialogHeader>
-            <Separator />
-            <DialogFooter class="pt-3 gap-2 sm:justify-end">
-                <Button variant="ghost-outline" @click="open = false">
-                    Cancel
-                </Button>
-                <Button
-                    variant="float-primary"
-                    :disabled="verifiedCount === 0"
-                    @click="runBulkDownload"
-                >
-                    Confirm
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
+    <ConfirmDialog
+        v-model:open="open"
+        title="Download Verified Documents"
+        confirm-label="Confirm"
+        :confirm-disabled="verifiedCount === 0"
+        @confirm="runBulkDownload"
+    >
+        <template #description>
+            This will download a ZIP containing only verified documents for this company.
+            <span v-if="verifiedCount > 0">({{ verifiedCount }} verified)</span>
+            <span v-else> No verified documents found.</span>
+        </template>
+    </ConfirmDialog>
 </template>

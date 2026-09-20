@@ -3,14 +3,7 @@ import InertiaPagination from '@/components/InertiaPagination.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -20,11 +13,8 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
@@ -41,16 +31,18 @@ import {
 } from '@/components/ui/select';
 import SearchInput from '@/components/SearchInput.vue';
 import { MainPanel, PanelLayout, SidePanel } from '@/components/ui/_panels';
+import { RestoreGateDialog } from '@/components/internal/gate';
+import { GatePreviewCard } from '@/components/internal/preview-cards';
+import { Table, TableCard, TableColumn, TableContent, TableData, TableHeader, TableMoreButton, TableRow } from '@/components/ui/_table';
 
 import AppLayout from '@/layouts/AppLayout.vue';
-import { index, restore, trash } from '@/routes/gates';
+import { edit, index, trash } from '@/routes/gates';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 
-import { RiArrowLeftSLine, RiFilter2Line, RiMore2Line, RiRestartLine } from 'vue-remix-icons';
+import { RiArrowLeftLine, RiFilter2Line, RiRestartLine } from 'vue-remix-icons';
 
-import { computed, ref } from 'vue';
-import { toast } from 'vue-sonner';
+import { computed, ref, watch } from 'vue';
 
 
 interface Gate {
@@ -131,6 +123,16 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 
 const restoreOpen = ref(false);
+const previewedGate = ref<Gate | null>(null);
+const openMenuId = ref<number | null>(null);
+
+// Drop the preview once its row leaves the list (e.g. after restoring it).
+watch(() => props.gates.data, (rows) => {
+    if (previewedGate.value && !rows.some((row) => row.id === previewedGate.value?.id)) {
+        previewedGate.value = null;
+    }
+});
+
 const selectedGate = ref<Gate | null>(null);
 
 function openRestoreDialog(gate: Gate) {
@@ -138,24 +140,7 @@ function openRestoreDialog(gate: Gate) {
     restoreOpen.value = true;
 }
 
-function closeRestoreDialog() {
-    restoreOpen.value = false;
-    selectedGate.value = null;
-}
 
-
-function restoreGate() {
-    if (!selectedGate.value) return;
-    router.post(
-        restore(selectedGate.value.id).url,
-        {},
-        {
-            preserveScroll: true,
-            onSuccess: () => closeRestoreDialog(),
-            onError: () => toast.error('Failed to restore gate.'),
-        },
-    );
-}
 </script>
 
 <template>
@@ -168,7 +153,7 @@ function restoreGate() {
                     <CardHeader class="flex flex-row items-start gap-3">
                         <Button as-child variant="header-actions" size="icon">
                             <Link :href="index().url" aria-label="Back to gates">
-                                <RiArrowLeftSLine class="h-4 w-4" />
+                                <RiArrowLeftLine class="h-4 w-4" />
                             </Link>
                         </Button>
                         <div class="flex min-w-0 flex-col">
@@ -258,57 +243,40 @@ function restoreGate() {
                             </Popover>
                         </div>
 
-                        <Card
-                            :class="[
-                                'flex min-h-0 max-h-fit flex-1 flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
-                                props.gates.data.length === 0 ? 'border-dashed' : 'border-solid',
-                            ]"
-                        >
-                            <div v-if="props.gates.data.length > 0" class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                                <div class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                                    <div class="grid grid-cols-3 gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
-                                        <div class="col-span-1 flex h-10 items-center justify-start pl-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Name</div>
-                                        <div class="col-span-1 flex h-10 items-center justify-start text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Archived At</div>
-                                        <div class="col-span-1 flex h-10 items-center justify-end pr-3 text-left text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Actions</div>
-                                    </div>
-                                </div>
+                        <TableCard :table-data-length="props.gates.data.length">
+                            <Table v-if="props.gates.data.length > 0">
+                                <TableHeader>
+                                    <TableColumn>Name</TableColumn>
+                                    <TableColumn>Archived At</TableColumn>
+                                </TableHeader>
 
-                                <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-                                    <div
+                                <TableContent>
+                                    <TableRow
                                         v-for="(gate, rowIndex) in props.gates.data"
                                         :key="gate.id"
                                         :class="[
-                                            'grid grid-cols-3 items-center border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
                                             rowIndex === props.gates.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                            previewedGate?.id === gate.id ? 'bg-custom-secondary/10' : '',
                                         ]"
+                                        @click.left="previewedGate = gate"
+                                        @dblclick="router.visit(edit(gate.id).url)"
                                     >
-                                        <div class="col-span-1 flex justify-start py-1.5 pl-3 font-semibold capitalize">
-                                            {{ gate.gate_name }}
-                                        </div>
-                                        <div class="col-span-1 flex justify-start py-1.5 text-sm">
-                                            {{ gate.deleted_at_human ?? '—' }}
-                                        </div>
-                                        <div class="col-span-1 flex justify-end py-1.5 pr-3 text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger as-child>
-                                                    <Button variant="table-more" size="icon-more">
-                                                        <RiMore2Line class="h-4 w-4" />
-                                                        
-                                                    </Button>
-                                                </DropdownMenuTrigger>
+                                        <TableData class="font-semibold capitalize">{{ gate.gate_name }}</TableData>
+                                        <TableData>{{ gate.deleted_at_human ?? '—' }}</TableData>
 
-                                                <DropdownMenuContent align="end" class="">
-                                                    <DropdownMenuLabel>{{ gate.gate_name }}</DropdownMenuLabel>
-                                                    <DropdownMenuItem class="group" @click="openRestoreDialog(gate)">
-                                                        <RiRestartLine class="h-4 w-4 text-custom-shadow group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
-                                                        Restore
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                        <TableMoreButton
+                                            :open="openMenuId === gate.id"
+                                            @update:open="(value) => (openMenuId = value ? gate.id : null)"
+                                        >
+                                            <DropdownMenuLabel>{{ gate.gate_name }}</DropdownMenuLabel>
+                                            <DropdownMenuItem class="group cursor-pointer" @click="openRestoreDialog(gate)">
+                                                <RiRestartLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
+                                                Restore
+                                            </DropdownMenuItem>
+                                        </TableMoreButton>
+                                    </TableRow>
+                                </TableContent>
+                            </Table>
 
                             <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
                                 <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
@@ -326,7 +294,7 @@ function restoreGate() {
                                     </div>
                                 </div>
                             </div>
-                        </Card>
+                        </TableCard>
 
                         <InertiaPagination
                             :links="props.gates.links"
@@ -336,34 +304,12 @@ function restoreGate() {
             </Card>
             </MainPanel>
 
-            <SidePanel>
-                
+            <SidePanel v-if="previewedGate" class="hidden lg:flex">
+                <GatePreviewCard :gate="previewedGate" archived @close="previewedGate = null" />
             </SidePanel>
         </PanelLayout>
 
         
-        <Dialog v-model:open="restoreOpen">
-            <DialogContent class="max-w-md px-6" :show-close-button="false">
-                <DialogHeader class="px-0">
-                    <DialogTitle>Restore Gate</DialogTitle>
-                    <DialogDescription>
-                        Are you sure you want to restore
-                        <span class="font-semibold text-custom-accent-3">{{
-                            selectedGate?.gate_name ?? 'this gate'
-                        }}</span>? It will be moved back to the active gates list.
-                    </DialogDescription>
-                </DialogHeader>
-                <Separator />
-                <DialogFooter class="pt-3 gap-2 sm:justify-end">
-                    <Button variant="ghost-outline" @click="closeRestoreDialog">
-                        Cancel
-                    </Button>
-                    <Button variant="float-primary" @click="restoreGate">
-                        <RiRestartLine class="h-4 w-4" />
-                        Restore
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <RestoreGateDialog v-model:open="restoreOpen" :gate="selectedGate" />
     </AppLayout>
 </template>

@@ -4,11 +4,10 @@ import {
     index as changeRequestsIndex,
     reject,
 } from '@/actions/App/Http/Controllers/DispatchChangeRequestController';
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 import InertiaPagination from '@/components/InertiaPagination.vue';
-import InputError from '@/components/InputError.vue';
 import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -23,22 +22,12 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
 } from '@/components/ui/dialog';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
-    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
     Select,
@@ -47,25 +36,31 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import {
     Table,
-    TableBody,
-    TableCell,
-    TableHead,
+    TableCard,
+    TableColumn,
+    TableContent,
+    TableData,
     TableHeader,
+    TableMoreButton,
     TableRow,
-} from '@/components/ui/table';
+} from '@/components/ui/_table';
 
 import {
-    RiCheckLine as CheckCircle2,
-    RiCloseCircleLine as XCircle,
-    RiEyeLine as Eye,
-    RiFilter2Line as Filter,
-    RiMore2Line as MoreHorizontal,
-    RiTimeLine as Clock,
+    RiArrowLeftLine,
+    RiCheckLine,
+    RiCloseCircleLine,
+    RiEyeLine,
+    RiFilter2Line,
+    RiTimeLine,
 } from 'vue-remix-icons';
 import { PanelLayout, MainPanel, SidePanel } from '@/components/ui/_panels';
+import { DispatchChangeRequestPreviewCard } from '@/components/internal/preview-cards';
+import {
+    ApproveDispatchChangeRequestDialog,
+    RejectDispatchChangeRequestDialog,
+} from '@/components/internal/dispatchChangeRequests';
 
 type PaginationLink = { url: string | null; label: string; active: boolean };
 
@@ -127,6 +122,8 @@ const approveModalOpen = ref(false);
 const approveTarget = ref<DispatchChangeRequest | null>(null);
 const rejectModalOpen = ref(false);
 const selectedRequest = ref<DispatchChangeRequest | null>(null);
+const previewedRequest = ref<DispatchChangeRequest | null>(null);
+const openMenuId = ref<number | null>(null);
 const approvingId = ref<number | null>(null);
 const rejectingId = ref<number | null>(null);
 
@@ -255,13 +252,13 @@ function statusVariant(
 function statusIcon(status: string) {
     switch (status) {
         case 'pending':
-            return Clock;
+            return RiTimeLine;
         case 'approved':
-            return CheckCircle2;
+            return RiCheckLine;
         case 'rejected':
-            return XCircle;
+            return RiCloseCircleLine;
         default:
-            return Eye;
+            return RiEyeLine;
     }
 }
 </script>
@@ -273,7 +270,12 @@ function statusIcon(status: string) {
         <PanelLayout>
             <MainPanel>
                 <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
-                    <CardHeader class="flex flex-row gap-2">
+                    <CardHeader class="flex flex-row items-start gap-3">
+                        <Button as-child variant="header-actions" size="icon">
+                            <Link :href="index().url" aria-label="Back to dispatches">
+                                <RiArrowLeftLine class="h-4 w-4" />
+                            </Link>
+                        </Button>
                         <div class="flex flex-col">
                         <CardTitle class="flex items-center gap-2">
                             <span class="font-semibold">Update Requests</span>
@@ -303,7 +305,7 @@ function statusIcon(status: string) {
                                         class="rounded-full"
                                         :class="activeFilterCount ? 'bg-custom-secondary/20 transition-all duration-200 hover:bg-custom-secondary/80 hover:text-custom-bg-light' : ''"
                                     >
-                                        <Filter class="h-3.5 w-3.5" />
+                                        <RiFilter2Line class="h-3.5 w-3.5" />
                                         <span class="hidden lg:flex">{{ activeFilterCount ? '1 filter active' : 'Filter' }}</span>
                                     </Button>
                                 </PopoverTrigger>
@@ -333,329 +335,117 @@ function statusIcon(status: string) {
                                 </PopoverContent>
                             </Popover>
                         </div>
-                        <Card
-                            :class="[
-                                'flex min-h-0 flex-1 max-h-fit flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
-                                changeRequests.data.length === 0 ? 'border-dashed' : 'border-solid',
-                            ]"
-                        >
-                        <div class="no-scrollbar min-h-0 flex-1 overflow-auto">
-                            <Table>
-                                <TableHeader
-                                    v-if="changeRequests.data.length > 0"
-                                    class="border-b border-custom-bg-dark bg-custom-bg dark:border-custom-bg-light dark:bg-custom-bg-light"
-                                >
-                                    <TableRow class="gap-2">
-                                        <TableHead
-                                            class="pl-3 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                            >Dispatch</TableHead
-                                        >
-                                        <TableHead
-                                            class="px-0 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                            >Requester</TableHead
-                                        >
-                                        <TableHead
-                                            class="px-0 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                            >Company</TableHead
-                                        >
-                                        <TableHead
-                                            class="px-0 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                            >Change</TableHead
-                                        >
-                                        <TableHead
-                                            class="px-0 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                            >Reason</TableHead
-                                        >
-                                        <TableHead
-                                            class="px-0 text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                            >Status</TableHead
-                                        >
-                                        <TableHead
-                                            class="pr-3 text-right text-xs font-semibold tracking-widest text-custom-shadow/80 uppercase"
-                                            >Action</TableHead
-                                        >
-                                    </TableRow>
+                        <TableCard :table-data-length="changeRequests.data.length">
+                            <Table v-if="changeRequests.data.length > 0">
+                                <TableHeader>
+                                    <TableColumn>Dispatch</TableColumn>
+                                    <TableColumn>Requester</TableColumn>
+                                    <TableColumn>Company</TableColumn>
+                                    <TableColumn>Change</TableColumn>
+                                    <TableColumn>Reason</TableColumn>
+                                    <TableColumn>Status</TableColumn>
                                 </TableHeader>
 
-                                <TableBody>
+                                <TableContent>
                                     <TableRow
-                                        v-if="changeRequests.data.length === 0"
-                                    >
-                                        <TableCell
-                                            colspan="7"
-                                            class="py-20 text-center"
-                                        >
-                                            <div
-                                                class="flex flex-col items-center gap-2 text-custom-shadow/80"
-                                            >
-                                                    <img
-                                                        :src="emptyRafikiUrl"
-                                                        alt=""
-                                                        class="w-32 object-contain opacity-90"
-                                                        aria-hidden="true"
-                                                    />
-                                                <p class="text-sm font-medium">
-                                                    No change requests found
-                                                </p>
-                                                <p class="text-xs">
-                                                    {{
-                                                        selectedStatus === 'pending'
-                                                            ? 'No pending requests to review.'
-                                                            : 'This section is empty.'
-                                                    }}
-                                                </p>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-
-                                    <template
-                                        v-for="request in changeRequests.data"
+                                        v-for="(request, rowIndex) in changeRequests.data"
                                         :key="request.id"
+                                        :class="[
+                                            rowIndex === changeRequests.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                            previewedRequest?.id === request.id ? 'bg-custom-secondary/10' : '',
+                                        ]"
+                                        @click.left="previewedRequest = request"
                                     >
-                                        <TableRow
-                                            class="group border-b border-custom-bg-dark text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light"
-                                        >
-                                            <TableCell class="pl-3">
-                                                <div class="space-y-0.5">
-                                                    <p
-                                                        class="text-sm font-semibold"
-                                                    >
-                                                        {{
-                                                            request.dispatch
-                                                                ?.plate_number ??
-                                                            '—'
-                                                        }}
-                                                    </p>
-                                                    <p
-                                                        class="text-xs text-muted-foreground"
-                                                    >
-                                                        {{
-                                                            request.dispatch?.gate
-                                                                ?.gate_name ?? '—'
-                                                        }}
-                                                        · Bay
-                                                        {{
-                                                            request.dispatch
-                                                                ?.bay_number
-                                                        }}
-                                                    </p>
-                                                </div>
-                                            </TableCell>
+                                        <TableData>
+                                            <div class="flex min-w-0 flex-col">
+                                                <span class="truncate text-sm font-semibold">{{ request.dispatch?.plate_number ?? '—' }}</span>
+                                                <span class="truncate text-xs text-custom-shadow/70">{{ request.dispatch?.gate?.gate_name ?? '—' }} · Bay {{ request.dispatch?.bay_number }}</span>
+                                            </div>
+                                        </TableData>
 
-                                            <TableCell class="px-0">
-                                                <div class="space-y-0.5">
-                                                    <p class="text-sm font-medium">
-                                                        {{
-                                                            request.requested_by
-                                                                .name
-                                                        }}
-                                                    </p>
-                                                    <p
-                                                        class="text-xs text-muted-foreground"
-                                                    >
-                                                        {{
-                                                            request.requested_by
-                                                                .email ?? '—'
-                                                        }}
-                                                    </p>
-                                                </div>
-                                            </TableCell>
+                                        <TableData>
+                                            <div class="flex min-w-0 flex-col">
+                                                <span class="truncate text-sm font-medium">{{ request.requested_by.name }}</span>
+                                                <span class="truncate text-xs text-custom-shadow/70">{{ request.requested_by.email ?? '—' }}</span>
+                                            </div>
+                                        </TableData>
 
-                                            <TableCell class="px-0">
-                                                <div class="space-y-0.5">
-                                                    <p class="text-sm font-medium">
-                                                        {{ request.company_name }}
-                                                    </p>
-                                                    <p
-                                                        class="text-xs text-muted-foreground"
-                                                    >
-                                                        {{ request.company_code }}
-                                                    </p>
-                                                </div>
-                                            </TableCell>
+                                        <TableData>
+                                            <div class="flex min-w-0 flex-col">
+                                                <span class="truncate text-sm font-medium">{{ request.company_name }}</span>
+                                                <span class="truncate text-xs text-custom-shadow/70">{{ request.company_code }}</span>
+                                            </div>
+                                        </TableData>
 
-                                            <TableCell class="px-0">
-                                                <div class="space-y-0.5">
-                                                    <p class="text-sm font-medium">
-                                                        {{
-                                                            request.field_label ||
-                                                            formatFieldLabel(
-                                                                request.requested_field,
-                                                            )
-                                                        }}
-                                                    </p>
-                                                    <p
-                                                        class="text-xs text-muted-foreground"
-                                                    >
-                                                        {{
-                                                            request.old_value_display ??
-                                                            formatValue(
-                                                                request.old_value,
-                                                            )
-                                                        }}
-                                                        →
-                                                        {{
-                                                            request.requested_value_display ??
-                                                            formatValue(
-                                                                request.requested_value,
-                                                            )
-                                                        }}
-                                                    </p>
-                                                </div>
-                                            </TableCell>
-
-                                            <TableCell class="px-0">
-                                                <p
-                                                    class="max-w-xs truncate text-sm"
-                                                    :title="request.reason"
-                                                >
-                                                    {{ request.reason }}
-                                                </p>
-                                            </TableCell>
-
-                                            <TableCell class="px-0">
-                                                <Badge
-                                                    :variant="
-                                                        statusVariant(
-                                                            request.status,
-                                                        )
-                                                    "
-                                                >
-                                                    {{ request.status }}
-                                                </Badge>
-                                            </TableCell>
-
-                                            <TableCell class="pr-3 text-right">
-                                                <DropdownMenu
-                                                    v-if="
-                                                        request.status === 'pending'
-                                                    "
-                                                >
-                                                    <DropdownMenuTrigger as-child>
-                                                        <Button
-                                                            variant="table-more"
-                                                            size="icon-more"
-                                                        >
-                                                            <MoreHorizontal
-                                                                class="h-4 w-4"
-                                                            />
-                                                            
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-
-                                                    <DropdownMenuContent align="end" class="">
-                                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-
-                                                        <DropdownMenuItem
-                                                            as-child
-                                                            class="cursor-pointer rounded-lg text-emerald-600 focus:text-emerald-600"
-                                                            @click="
-                                                                openApproveModal(
-                                                                    request,
-                                                                )
-                                                            "
-                                                        >
-                                                            <div
-                                                                :class="{
-                                                                    'pointer-events-none opacity-50':
-                                                                        approvingId ===
-                                                                        request.id,
-                                                                }"
-                                                            >
-                                                                <CheckCircle2
-                                                                    class="mr-2 h-4 w-4"
-                                                                />
-                                                                {{
-                                                                    approvingId ===
-                                                                    request.id
-                                                                        ? 'Approving...'
-                                                                        : 'Approve'
-                                                                }}
-                                                            </div>
-                                                        </DropdownMenuItem>
-
-                                                        <DropdownMenuSeparator />
-
-                                                        <DropdownMenuItem
-                                                            class="cursor-pointer rounded-lg text-red-600 focus:text-red-600"
-                                                            @click="
-                                                                openRejectModal(
-                                                                    request,
-                                                                )
-                                                            "
-                                                        >
-                                                            <XCircle
-                                                                class="mr-2 h-4 w-4"
-                                                            />
-                                                            Reject
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-
-                                                <span
-                                                    v-else
-                                                    class="text-xs font-medium"
-                                                    :class="
-                                                        request.status ===
-                                                        'approved'
-                                                            ? 'text-emerald-600'
-                                                            : 'text-red-600'
-                                                    "
-                                                >
-                                                    {{
-                                                        request.status ===
-                                                        'approved'
-                                                            ? 'Approved'
-                                                            : 'Rejected'
-                                                    }}
+                                        <TableData>
+                                            <div class="flex min-w-0 flex-col">
+                                                <span class="truncate text-sm font-medium">{{ request.field_label || formatFieldLabel(request.requested_field) }}</span>
+                                                <span class="truncate text-xs text-custom-shadow/70">
+                                                    {{ request.old_value_display ?? formatValue(request.old_value) }}
+                                                    →
+                                                    {{ request.requested_value_display ?? formatValue(request.requested_value) }}
                                                 </span>
-                                            </TableCell>
-                                        </TableRow>
+                                            </div>
+                                        </TableData>
 
-                                        
-                                        <TableRow
-                                            v-if="
-                                                request.status === 'rejected' &&
-                                                request.rejection_reason
-                                            "
-                                            class="bg-red-50/50 hover:bg-red-50"
+                                        <TableData class="max-w-xs">
+                                            <p class="truncate text-sm" :title="request.reason">{{ request.reason }}</p>
+                                        </TableData>
+
+                                        <TableData>
+                                            <Badge :variant="statusVariant(request.status)">{{ request.status }}</Badge>
+                                        </TableData>
+
+                                        <TableMoreButton
+                                            v-if="request.status === 'pending'"
+                                            :open="openMenuId === request.id"
+                                            @update:open="(value) => (openMenuId = value ? request.id : null)"
                                         >
-                                            <TableCell
-                                                colspan="6"
-                                                class="pr-6 pl-6"
+                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+
+                                            <DropdownMenuItem
+                                                as-child
+                                                class="cursor-pointer rounded-lg text-emerald-600 focus:text-emerald-600"
+                                                @click="openApproveModal(request)"
                                             >
-                                                <div class="space-y-2 py-3">
-                                                    <div
-                                                        class="flex items-start gap-2"
-                                                    >
-                                                        <XCircle
-                                                            class="mt-0.5 h-4 w-4 shrink-0 text-red-600"
-                                                        />
-                                                        <div
-                                                            class="flex-1 space-y-1"
-                                                        >
-                                                            <p
-                                                                class="text-xs font-semibold text-red-900"
-                                                            >
-                                                                Rejection Reason
-                                                            </p>
-                                                            <p
-                                                                class="text-sm text-red-800"
-                                                            >
-                                                                {{
-                                                                    request.rejection_reason
-                                                                }}
-                                                            </p>
-                                                        </div>
-                                                    </div>
+                                                <div :class="{ 'pointer-events-none opacity-50': approvingId === request.id }">
+                                                    <RiCheckLine class="mr-2 h-4 w-4" />
+                                                    {{ approvingId === request.id ? 'Approving...' : 'Approve' }}
                                                 </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    </template>
-                                </TableBody>
+                                            </DropdownMenuItem>
+
+                                            <DropdownMenuSeparator />
+
+                                            <DropdownMenuItem
+                                                class="cursor-pointer rounded-lg text-red-600 focus:text-red-600"
+                                                @click="openRejectModal(request)"
+                                            >
+                                                <RiCloseCircleLine class="mr-2 h-4 w-4" />
+                                                Reject
+                                            </DropdownMenuItem>
+                                        </TableMoreButton>
+
+                                        <TableData
+                                            v-else
+                                            class="pr-3 text-right text-xs font-medium"
+                                            :class="request.status === 'approved' ? 'text-emerald-600' : 'text-red-600'"
+                                        >
+                                            {{ request.status === 'approved' ? 'Approved' : 'Rejected' }}
+                                        </TableData>
+                                    </TableRow>
+                                </TableContent>
                             </Table>
-                        </div>
-                        </Card>
+
+                            <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                                <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                                    <img :src="emptyRafikiUrl" alt="" class="w-1/3 object-contain opacity-90" aria-hidden="true" />
+                                    <div class="space-y-1">
+                                        <p class="text-base font-semibold text-custom-shadow">No change requests found</p>
+                                        <p class="text-sm text-custom-shadow/80">{{ selectedStatus === 'pending' ? 'No pending requests to review.' : 'This section is empty.' }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </TableCard>
 
                         <InertiaPagination
                             v-if="changeRequests.links?.length"
@@ -670,129 +460,26 @@ function statusIcon(status: string) {
                 </Card>
             </MainPanel>
 
-            <SidePanel>
-
+            <SidePanel v-if="previewedRequest" class="hidden lg:flex">
+                <DispatchChangeRequestPreviewCard :request="previewedRequest" @close="previewedRequest = null" />
             </SidePanel>
         </PanelLayout>
         
-        <Dialog
-            :open="approveModalOpen"
-            @update:open="
-                (v) => {
-                    if (!v) closeApproveModal();
-                    else approveModalOpen = true;
-                }
-            "
-        >
-            <DialogContent class="sm:max-w-sm">
-                <DialogHeader>
-                    <DialogTitle class="flex items-center gap-2">
-                        <CheckCircle2 class="h-4 w-4 text-emerald-600" />
-                        Approve Change Request
-                    </DialogTitle>
-                    <DialogDescription v-if="approveTarget">
-                        Confirm approval for
-                        {{
-                            approveTarget.dispatch?.plate_number ??
-                            'this dispatch'
-                        }}
-                        ·
-                        {{
-                            approveTarget.field_label ||
-                            formatFieldLabel(approveTarget.requested_field)
-                        }}
-                    </DialogDescription>
-                </DialogHeader>
-
-                <DialogFooter>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        class="w-full md:w-auto"
-                        @click="closeApproveModal"
-                        :disabled="approvingId === approveTarget?.id"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        type="button"
-                        class="w-full md:w-auto"
-                        :disabled="approvingId === approveTarget?.id"
-                        @click="approveSelectedRequest"
-                    >
-                        {{
-                            approvingId === approveTarget?.id
-                                ? 'Approving...'
-                                : 'Confirm Approve'
-                        }}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <ApproveDispatchChangeRequestDialog
+            v-model:open="approveModalOpen"
+            :request="approveTarget"
+            :processing="approvingId === approveTarget?.id"
+            @confirm="approveSelectedRequest"
+        />
 
         
-        <Dialog v-model:open="rejectModalOpen">
-            <DialogContent class="sm:max-w-sm">
-                <form class="space-y-4" @submit.prevent="rejectRequest">
-                    <DialogHeader>
-                        <DialogTitle class="flex items-center gap-2">
-                            <XCircle class="h-4 w-4" />
-                            Reject Change Request
-                        </DialogTitle>
-                        <DialogDescription v-if="selectedRequest">
-                            {{ selectedRequest.dispatch?.plate_number }} ·
-                            {{
-                                selectedRequest.field_label ||
-                                formatFieldLabel(
-                                    selectedRequest.requested_field,
-                                )
-                            }}
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <Separator />
-
-                    <div class="space-y-2">
-                        <Label for="rejection_reason"
-                            >Reason for Rejection</Label
-                        >
-                        <textarea
-                            id="rejection_reason"
-                            v-model="rejectForm.rejection_reason"
-                            placeholder="Explain why this request is being rejected..."
-                            class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                            rows="3"
-                        />
-                        <InputError
-                            :message="rejectForm.errors.rejection_reason"
-                        />
-                    </div>
-
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            class="w-full md:w-auto"
-                            @click="closeRejectModal"
-                            :disabled="rejectForm.processing"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            variant="destructive"
-                            class="w-full md:w-auto"
-                            :disabled="rejectForm.processing"
-                        >
-                            {{
-                                rejectForm.processing
-                                    ? 'Rejecting...'
-                                    : 'Reject Request'
-                            }}
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+        <RejectDispatchChangeRequestDialog
+            v-model:open="rejectModalOpen"
+            v-model:reason="rejectForm.rejection_reason"
+            :request="selectedRequest"
+            :error="rejectForm.errors.rejection_reason"
+            :processing="rejectForm.processing"
+            @confirm="rejectRequest"
+        />
     </AppLayout>
 </template>

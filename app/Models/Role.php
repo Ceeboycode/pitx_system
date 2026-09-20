@@ -19,6 +19,13 @@ class Role extends SpatieRole
      */
     public const NAME_COMMUTER = 'commuter';
 
+    /**
+     * Drivers hold no permissions (they have no portal yet), yet are the
+     * only role that can be assigned to dispatches (see DispatchController),
+     * so features that depend on being dispatched key off this name.
+     */
+    public const NAME_DRIVER = 'driver';
+
     protected $fillable = [
         'name',
         'guard_name',
@@ -50,31 +57,39 @@ class Role extends SpatieRole
     }
 
     /**
-     * Whether this role has been granted every permission that belongs to
-     * a given group. Permission names in this app follow a "group.action"
-     * pattern (e.g. "external_users.viewAny", "external_users.create"), so
-     * $prefix here is the "group" part, without the trailing dot.
+     * The ids, out of the given ones, that a role of this type may hold.
+     * External roles hold the "external_" permissions; internal roles hold all the others.
+     *
+     * @param  array<int, int|string>  $permissionIds
+     * @return array<int, int>
+     */
+    public static function permissionIdsForType(string $type, array $permissionIds): array
+    {
+        return Permission::query()
+            ->whereIn('id', $permissionIds)
+            ->get(['id', 'name'])
+            ->filter(fn (Permission $permission): bool => str_starts_with($permission->name, 'external_') === ($type === 'external'))
+            ->pluck('id')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Whether this role has been granted at least one permission that
+     * belongs to a given group. Permission names in this app follow a
+     * "group.action" pattern (e.g. "external_users.viewAny",
+     * "external_users.create"), so $prefix here is the "group" part,
+     * without the trailing dot.
      *
      * Used to gate access to a whole feature area (e.g. a UI tab) instead
-     * of checking one permission at a time.
+     * of checking one permission at a time. Reads the role's own
+     * permissions, so any role - seeded or created later - is handled the
+     * same way, and eager loading `permissions` avoids extra queries.
      */
-    public function hasAllPermissionsInGroup(string $prefix): bool
+    public function hasAnyPermissionInGroup(string $prefix): bool
     {
-        // "%" is the SQL LIKE wildcard, so this matches every permission
-        // name that starts with "{$prefix}.", e.g. "external_users.".
-        $groupPermissions = Permission::query()
-            ->where('name', 'like', "{$prefix}.%")
-            ->pluck('name');
-
-        // If the group has no permissions defined at all, there is nothing
-        // to have "all" of — treat that as false rather than vacuously true.
-        if ($groupPermissions->isEmpty()) {
-            return false;
-        }
-
-        // Collection::diff() returns the items in $groupPermissions that are
-        // NOT present in the role's own permission names. If that leftover
-        // list is empty, the role already has every permission in the group.
-        return $groupPermissions->diff($this->permissions->pluck('name'))->isEmpty();
+        return $this->permissions->contains(
+            fn (Permission $permission): bool => str_starts_with($permission->name, "{$prefix}."),
+        );
     }
 }

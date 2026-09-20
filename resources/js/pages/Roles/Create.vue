@@ -1,58 +1,45 @@
-﻿<script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
-import { create, index, store } from '@/routes/roles';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import {
-    RiArrowDownSLine,
-    RiArrowLeftLine,
-    RiArrowRightSLine,
-    RiBubbleChartFill,
-    RiGroupLine,
-    RiKey2Line,
-    RiSaveLine,
-    RiShieldLine,
-} from 'vue-remix-icons';
-import { computed, ref } from 'vue';
-
+<script setup lang="ts">
 import InputError from '@/components/InputError.vue';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
-    CardFooter,
+    CardDescription,
     CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
+import CardSeparator from '@/components/ui/_card-separator/CardSeparator.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AppLayout from '@/layouts/AppLayout.vue';
 
-
-type Permission = {
-    id: number;
-    name: string;
-};
-
+import { create, index, store } from '@/routes/roles';
+import { type BreadcrumbItem } from '@/types';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { computed, watch } from 'vue';
+import { LeadPanel, MainPanel, SidePanel, PanelLayout } from '@/components/ui/_panels';
+import { LeadingCard } from '@/components/ui/_leading-card';
+import { RoleReviewCard } from '@/components/internal/preview-cards';
+import RolePermissionsPicker from '@/components/internal/roles/RolePermissionsPicker.vue';
+import { permissionsOfType, type Permission } from '@/lib/permissions';
 
 const props = defineProps<{
     permissions: Permission[];
     roleTypes: string[];
 }>();
 
-
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Roles', href: index().url },
-    { title: 'Create', href: create().url },
+    { title: 'New Role', href: create().url },
 ];
-
 
 const form = useForm({
     name: '',
@@ -60,461 +47,141 @@ const form = useForm({
     permissions: [] as number[],
 });
 
-
-const collapsedModules = ref<Record<string, boolean>>({});
-
-function toggleCollapse(moduleKey: string) {
-    collapsedModules.value[moduleKey] = !collapsedModules.value[moduleKey];
-}
-
-function isCollapsed(moduleKey: string) {
-    return collapsedModules.value[moduleKey] ?? false;
-}
-
-
-function moduleLabel(moduleKey: string) {
-    return moduleKey
-        .replace(/^external_/, '')
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function actionLabel(permissionName: string) {
-    const action = permissionName.split('.').slice(1).join('.') || permissionName;
-    return action
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
-        .replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-
-const internalPermissions = computed(() =>
-    props.permissions.filter((p) => !p.name.startsWith('external_')),
+// A role holds permissions of its own type only, so switching the type clears what was ticked for the other one.
+watch(
+    () => form.type,
+    (type) => {
+        const allowed = permissionsOfType(props.permissions, type).map((p) => p.id);
+        form.permissions = form.permissions.filter((id) => allowed.includes(id));
+    },
 );
 
-const externalPermissions = computed(() =>
-    props.permissions.filter((p) => p.name.startsWith('external_')),
+const typePermissions = computed(() => permissionsOfType(props.permissions, form.type));
+
+const selectedPermissions = computed(() =>
+    typePermissions.value.filter((p) => form.permissions.includes(p.id)),
 );
 
-
-function groupPermissions(list: Permission[]) {
-    const map: Record<string, Permission[]> = {};
-
-    for (const p of list) {
-        const moduleKey = p.name.split('.')[0] || 'other';
-        if (!map[moduleKey]) map[moduleKey] = [];
-        map[moduleKey].push(p);
-    }
-
-    return Object.entries(map)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(
-            ([key, perms]) =>
-                [key, perms.sort((x, y) => x.name.localeCompare(y.name))] as const,
-        );
-}
-
-const groupedInternal = computed(() => groupPermissions(internalPermissions.value));
-const groupedExternal = computed(() => groupPermissions(externalPermissions.value));
-
-
-const allIds = computed(() => props.permissions.map((p) => p.id));
-
-const allChecked = computed(
+// Laravel reports a bad item as "permissions.N" rather than "permissions", so show whichever came back.
+const permissionsError = computed(
     () =>
-        allIds.value.length > 0 &&
-        allIds.value.every((id) => form.permissions.includes(id)),
+        form.errors.permissions ??
+        Object.entries(form.errors).find(([key]) => key.startsWith('permissions.'))?.[1],
 );
-
-const someChecked = computed(
-    () => form.permissions.length > 0 && !allChecked.value,
-);
-
-function toggleAll(checked: boolean) {
-    form.permissions = checked ? [...allIds.value] : [];
-}
-
-
-function togglePermission(permissionId: number, checked: boolean) {
-    if (checked) {
-        if (!form.permissions.includes(permissionId))
-            form.permissions.push(permissionId);
-        return;
-    }
-    form.permissions = form.permissions.filter((id) => id !== permissionId);
-}
-
-
-function moduleIds(moduleKey: string) {
-    const all = groupPermissions(props.permissions);
-    const list = all.find(([key]) => key === moduleKey)?.[1] ?? [];
-    return list.map((p) => p.id);
-}
-
-function moduleChecked(moduleKey: string) {
-    const ids = moduleIds(moduleKey);
-    return ids.length > 0 && ids.every((id) => form.permissions.includes(id));
-}
-
-function moduleSomeChecked(moduleKey: string) {
-    const ids = moduleIds(moduleKey);
-    return (
-        ids.some((id) => form.permissions.includes(id)) &&
-        !moduleChecked(moduleKey)
-    );
-}
-
-function moduleSelectedCount(moduleKey: string) {
-    const ids = moduleIds(moduleKey);
-    return ids.filter((id) => form.permissions.includes(id)).length;
-}
-
-function toggleModule(moduleKey: string, checked: boolean) {
-    const ids = moduleIds(moduleKey);
-
-    if (checked) {
-        const set = new Set(form.permissions);
-        for (const id of ids) set.add(id);
-        form.permissions = Array.from(set);
-        return;
-    }
-
-    form.permissions = form.permissions.filter((id) => !ids.includes(id));
-}
-
-
-function tabSelectedCount(list: Permission[]) {
-    return list.filter((p) => form.permissions.includes(p.id)).length;
-}
-
 
 function submit() {
     form.post(store().url, { preserveScroll: true });
 }
+
+const requiredMark = '*';
 </script>
 
 <template>
-    <Head title="Add New Role" />
+    <Head title="Add Role" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-            <Card class="">
-                <CardHeader class="py-0">
-                    <div class="flex items-center gap-4">
-                        <div
-                            class="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border-2 bg-primary shadow-sm flex items-center justify-center"
-                        >
-                            <RiShieldLine class="h-10 w-10 shrink-0 text-white" />
-                        </div>
+        <PanelLayout>
+            <MainPanel>
+                <LeadPanel class="h-fit p-0">
+                    <LeadingCard
+                        title="New role"
+                        description="Add a new role and choose what it can do."
+                        variant="entity-crud"
+                        :back="index().url"
+                        :more="false"
+                    >
+                    </LeadingCard>
+                </LeadPanel>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Details</CardTitle>
+                        <CardDescription>Fields with <span class="text-destructive font-semibold">*</span> are required.</CardDescription>
+                    </CardHeader>
+                    <CardContent class="flex flex-row gap-4">
+                        <div class="flex-1">
+                            <form @submit.prevent="submit">
+                                <CardSeparator title="Role Info" />
 
-                        <div class="gap-2 w-full">
-                            <div class="flex flex-row gap-2 pb-2 w-full items-center">
-                                <h1 class="text-2xl leading-tight font-bold tracking-tight">
-                                    Add New Role
-                                </h1>
-                                <div class="ml-2 flex flex-1 items-center">
-                                    <hr class="h-px w-full border border-rose-500" />
-                                    <div class="border-7 border-rose-500 rounded-xs">
-                                        <div class="border-3 border-white rounded-xs"></div>
+                                <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
+                                    <div class="grid grid-cols-2 gap-x-2">
+                                        <div class="space-y-2 col-span-1">
+                                            <Label class="flex items-center gap-1">
+                                                Name
+                                                <span class="text-destructive">
+                                                    {{ requiredMark }}
+                                                </span>
+                                            </Label>
+                                            <Input
+                                                v-model="form.name"
+                                                placeholder="Enter role name"
+                                                autocomplete="off"
+                                                class="capitalize"
+                                            />
+                                            <InputError :message="form.errors.name" />
+                                        </div>
+
+                                        <div class="space-y-2 col-span-1">
+                                            <Label class="flex items-center gap-1">
+                                                Role Type
+                                                <span class="text-destructive">
+                                                    {{ requiredMark }}
+                                                </span>
+                                            </Label>
+
+                                            <Select v-model="form.type">
+                                                <SelectTrigger class="w-full">
+                                                    <SelectValue placeholder="Select internal/external" class="capitalize" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        <SelectItem
+                                                            v-for="type in props.roleTypes"
+                                                            :key="type"
+                                                            :value="type"
+                                                            class="capitalize"
+                                                        >
+                                                            {{ type }}
+                                                        </SelectItem>
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+
+                                            <InputError :message="form.errors.type" />
+                                        </div>
                                     </div>
+
+                                    <CardSeparator title="Permissions" />
+
+                                    <RolePermissionsPicker
+                                        v-model="form.permissions"
+                                        :permissions="props.permissions"
+                                        :type="form.type"
+                                        :error="permissionsError"
+                                    />
                                 </div>
-                            </div>
-                            <div class="flex justify-between">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <p class="text-sm text-muted-foreground">
-                                        Enter a role name, choose its type, then assign permissions by module.
-                                    </p>
-                                </div>
-                                <div class="flex shrink-0 items-center gap-2 ml-4">
-                                    <Button
-                                        as-child
-                                        variant="outline"
-                                        class="rounded-lg bg-card border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
-                                    >
-                                        <Link :href="index().url">
-                                            <RiArrowLeftLine class="h-4 w-4 shrink-0" />
-                                        </Link>
+
+                                <div class="flex items-center justify-end gap-2">
+                                    <Button type="button" variant="float" as-child>
+                                        <Link :href="index().url">Cancel</Link>
+                                    </Button>
+
+                                    <Button type="submit" variant="float-primary" :disabled="form.processing">
+                                        {{ form.processing ? 'Adding...' : 'Add new role' }}
                                     </Button>
                                 </div>
-                            </div>
+                            </form>
                         </div>
-                    </div>
-                </CardHeader>
+                    </CardContent>
+                </Card>
+            </MainPanel>
 
-                <CardContent class="space-y-8 pt-6 border-t border-slate-100">
-                    
-                    <div class="grid gap-6 sm:grid-cols-2">
-                        <div class="space-y-2">
-                            <Label for="name" class="flex items-center gap-1.5">
-                                Role name
-                            </Label>
-                            <Input
-                                id="name"
-                                v-model="form.name"
-                                placeholder="e.g. Manager"
-                            />
-                            <InputError :message="form.errors.name" />
-                        </div>
-
-                        <div class="space-y-2">
-                            <Label for="type" class="flex items-center gap-1.5">
-                                Role type
-                            </Label>
-                            <Select v-model="form.type">
-                                <SelectTrigger id="type" class="w-full">
-                                    <SelectValue placeholder="Select role type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem
-                                        v-for="t in props.roleTypes"
-                                        :key="t"
-                                        :value="t"
-                                    >
-                                        {{ t.charAt(0).toUpperCase() + t.slice(1) }}
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <InputError :message="form.errors.type" />
-                        </div>
-                    </div>
-
-                    
-                    <div class="space-y-4">
-                        
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm font-semibold">Permissions</p>
-                                <p class="text-xs text-muted-foreground">
-                                    {{ form.permissions.length }} of
-                                    {{ props.permissions.length }} selected
-                                </p>
-                            </div>
-
-                            <label class="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors hover:bg-muted">
-                                <input
-                                    type="checkbox"
-                                    class="h-4 w-4 cursor-pointer rounded border accent-primary"
-                                    :checked="allChecked"
-                                    :indeterminate="someChecked"
-                                    @change="toggleAll(($event.target as HTMLInputElement).checked)"
-                                />
-                                <span>Select all</span>
-                            </label>
-                        </div>
-
-                        <InputError :message="form.errors.permissions" />
-
-                        
-                        <Tabs default-value="internal" class="w-full">
-                            <TabsList class="mb-4 w-full">
-                                <TabsTrigger
-                                    value="internal"
-                                    class="flex flex-1 cursor-pointer items-center gap-2"
-                                >
-                                    Internal
-                                    <Badge
-                                        v-if="tabSelectedCount(internalPermissions) > 0"
-                                        variant="secondary"
-                                        class="ml-1 h-5 px-1.5 text-xs"
-                                    >
-                                        {{ tabSelectedCount(internalPermissions) }}
-                                    </Badge>
-                                </TabsTrigger>
-
-                                <TabsTrigger
-                                    value="external"
-                                    class="flex flex-1 cursor-pointer items-center gap-2"
-                                >
-                                    External
-                                    <Badge
-                                        v-if="tabSelectedCount(externalPermissions) > 0"
-                                        variant="secondary"
-                                        class="ml-1 h-5 px-1.5 text-xs"
-                                    >
-                                        {{ tabSelectedCount(externalPermissions) }}
-                                    </Badge>
-                                </TabsTrigger>
-                            </TabsList>
-
-                            
-                            <TabsContent value="internal" class="mt-0 space-y-3">
-                                <p
-                                    v-if="groupedInternal.length === 0"
-                                    class="py-6 text-center text-sm text-muted-foreground"
-                                >
-                                    No internal permissions found.
-                                </p>
-
-                                <div
-                                    v-for="[moduleKey, perms] in groupedInternal"
-                                    :key="moduleKey"
-                                    class="overflow-hidden rounded-lg border"
-                                >
-                                    
-                                    <button
-                                        type="button"
-                                        class="flex w-full cursor-pointer items-center justify-between gap-3 bg-muted/40 px-4 py-3 transition-colors hover:bg-muted/70"
-                                        @click="toggleCollapse(moduleKey)"
-                                    >
-                                        <div class="flex items-center gap-3">
-                                            <input
-                                                type="checkbox"
-                                                class="h-4 w-4 cursor-pointer rounded border accent-primary"
-                                                :checked="moduleChecked(moduleKey)"
-                                                :indeterminate="moduleSomeChecked(moduleKey)"
-                                                @click.stop
-                                                @change="toggleModule(moduleKey, ($event.target as HTMLInputElement).checked)"
-                                            />
-                                            <span class="text-sm font-semibold">
-                                                {{ moduleLabel(moduleKey) }}
-                                            </span>
-                                            <Badge
-                                                variant="outline"
-                                                class="h-5 px-1.5 text-xs"
-                                            >
-                                                {{ moduleSelectedCount(moduleKey) }}/{{ perms.length }}
-                                            </Badge>
-                                        </div>
-
-                                        <RiArrowDownSLine
-                                            v-if="!isCollapsed(moduleKey)"
-                                            class="h-4 w-4 shrink-0 text-muted-foreground"
-                                        />
-                                        <RiArrowRightSLine
-                                            v-else
-                                            class="h-4 w-4 shrink-0 text-muted-foreground"
-                                        />
-                                    </button>
-
-
-                                    <div
-                                        v-if="!isCollapsed(moduleKey)"
-                                        class="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3"
-                                    >
-                                        <label
-                                            v-for="p in perms"
-                                            :key="p.id"
-                                            class="flex cursor-pointer items-start gap-2.5 rounded-md border p-3 transition-colors hover:bg-muted/40"
-                                            :class="
-                                                form.permissions.includes(p.id)
-                                                    ? 'border-primary/30 bg-primary/5'
-                                                    : ''
-                                            "
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                class="mt-0.5 h-4 w-4 cursor-pointer rounded border accent-primary"
-                                                :checked="form.permissions.includes(p.id)"
-                                                @change="togglePermission(p.id, ($event.target as HTMLInputElement).checked)"
-                                            />
-                                            <div class="min-w-0 flex-1">
-                                                <p class="text-sm font-medium leading-none">
-                                                    {{ actionLabel(p.name) }}
-                                                </p>
-                                                <p class="mt-1 truncate text-xs text-muted-foreground">
-                                                    {{ p.name }}
-                                                </p>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-                            </TabsContent>
-
-
-                            <TabsContent value="external" class="mt-0 space-y-3">
-                                <p
-                                    v-if="groupedExternal.length === 0"
-                                    class="py-6 text-center text-sm text-muted-foreground"
-                                >
-                                    No external permissions found.
-                                </p>
-
-                                <div
-                                    v-for="[moduleKey, perms] in groupedExternal"
-                                    :key="moduleKey"
-                                    class="overflow-hidden rounded-lg border"
-                                >
-                                    <button
-                                        type="button"
-                                        class="flex w-full cursor-pointer items-center justify-between gap-3 bg-muted/40 px-4 py-3 transition-colors hover:bg-muted/70"
-                                        @click="toggleCollapse(moduleKey)"
-                                    >
-                                        <div class="flex items-center gap-3">
-                                            <input
-                                                type="checkbox"
-                                                class="h-4 w-4 cursor-pointer rounded border accent-primary"
-                                                :checked="moduleChecked(moduleKey)"
-                                                :indeterminate="moduleSomeChecked(moduleKey)"
-                                                @click.stop
-                                                @change="toggleModule(moduleKey, ($event.target as HTMLInputElement).checked)"
-                                            />
-                                            <span class="text-sm font-semibold">
-                                                {{ moduleLabel(moduleKey) }}
-                                            </span>
-                                            <Badge
-                                                variant="outline"
-                                                class="h-5 px-1.5 text-xs"
-                                            >
-                                                {{ moduleSelectedCount(moduleKey) }}/{{ perms.length }}
-                                            </Badge>
-                                        </div>
-
-                                        <RiArrowDownSLine
-                                            v-if="!isCollapsed(moduleKey)"
-                                            class="h-4 w-4 shrink-0 text-muted-foreground"
-                                        />
-                                        <RiArrowRightSLine
-                                            v-else
-                                            class="h-4 w-4 shrink-0 text-muted-foreground"
-                                        />
-                                    </button>
-
-                                    <div
-                                        v-if="!isCollapsed(moduleKey)"
-                                        class="grid gap-2 p-4 sm:grid-cols-2 lg:grid-cols-3"
-                                    >
-                                        <label
-                                            v-for="p in perms"
-                                            :key="p.id"
-                                            class="flex cursor-pointer items-start gap-2.5 rounded-md border p-3 transition-colors hover:bg-muted/40"
-                                            :class="
-                                                form.permissions.includes(p.id)
-                                                    ? 'border-primary/30 bg-primary/5'
-                                                    : ''
-                                            "
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                class="mt-0.5 h-4 w-4 cursor-pointer rounded border accent-primary"
-                                                :checked="form.permissions.includes(p.id)"
-                                                @change="togglePermission(p.id, ($event.target as HTMLInputElement).checked)"
-                                            />
-                                            <div class="min-w-0 flex-1">
-                                                <p class="text-sm font-medium leading-none">
-                                                    {{ actionLabel(p.name) }}
-                                                </p>
-                                                <p class="mt-1 truncate text-xs text-muted-foreground">
-                                                    {{ p.name }}
-                                                </p>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-                            </TabsContent>
-                        </Tabs>
-                    </div>
-                </CardContent>
-
-                <CardFooter class="flex flex-wrap justify-end gap-2 border-t border-slate-100">
-                    <Button variant="outline" as-child class="cursor-pointer">
-                        <Link :href="index().url">Cancel</Link>
-                    </Button>
-
-                    <Button :disabled="form.processing" @click="submit" variant="outline" class="cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg hover:text-primary-foreground">
-                        <RiSaveLine class="h-4 w-4 shrink-0" />
-                        {{ form.processing ? 'Adding...' : 'Add Role' }}
-                    </Button>
-                </CardFooter>
-            </Card>
-        </div>
+            <SidePanel>
+                <RoleReviewCard
+                    :values="form"
+                    :permissions="selectedPermissions"
+                    :total="typePermissions.length"
+                />
+            </SidePanel>
+        </PanelLayout>
     </AppLayout>
 </template>
