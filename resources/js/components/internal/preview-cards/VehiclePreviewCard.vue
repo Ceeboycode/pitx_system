@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { InputMessage } from '@/components/ui/_input-message';
 import { Badge } from '@/components/ui/badge';
 import { PreviewCard, PreviewCardRow } from '@/components/ui/_preview-card';
 import {
@@ -72,15 +73,15 @@ defineEmits<{ close: [] }>();
 
             <div v-if="props.vehicle.operator_remark" class="space-y-1">
                 <span class="text-sm font-semibold text-custom-shadow">Operator Remark</span>
-                <p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ props.vehicle.operator_remark }}</p>
+                <InputMessage class="mt-0" :message="props.vehicle.operator_remark ?? undefined" />
             </div>
             <div v-if="props.vehicle.suspension_remark" class="space-y-1">
                 <span class="text-sm font-semibold text-custom-shadow">Admin Remark</span>
-                <p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ props.vehicle.suspension_remark }}</p>
+                <InputMessage class="mt-0" :message="props.vehicle.suspension_remark ?? undefined" />
             </div>
             <div v-if="props.vehicle.verification_remark" class="space-y-1">
                 <span class="text-sm font-semibold text-custom-shadow">Verification Remark</span>
-                <p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ props.vehicle.verification_remark }}</p>
+                <InputMessage class="mt-0" :message="props.vehicle.verification_remark ?? undefined" />
             </div>
         </div>
     </PreviewCard>

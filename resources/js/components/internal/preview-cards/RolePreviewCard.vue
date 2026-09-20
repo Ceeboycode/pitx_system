@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { InputMessage } from '@/components/ui/_input-message';
 import { Badge } from '@/components/ui/badge';
 import { PreviewCard, PreviewCardRow } from '@/components/ui/_preview-card';
 import { RiShieldCheckLine } from 'vue-remix-icons';
@@ -73,9 +74,7 @@ function typeClass(type: Role['type']): string {
                         {{ permission.name }}
                     </span>
                 </div>
-                <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">
-                    No permissions assigned.
-                </p>
+                <InputMessage v-else class="mt-0" message="No permissions assigned." />
             </div>
 
             <div class="flex items-center justify-between gap-3">

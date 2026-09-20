@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import PasswordController from '@/actions/App/Http/Controllers/Settings/PasswordController';
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { edit } from '@/routes/user-password';
@@ -49,7 +49,7 @@ const breadcrumbItems: BreadcrumbItem[] = [
                             autocomplete="current-password"
                             placeholder="Current password"
                         />
-                        <InputError :message="errors.current_password" />
+                        <InputMessage variant="destructive" :message="errors.current_password" />
                     </div>
 
                     <div class="grid gap-2">
@@ -62,7 +62,7 @@ const breadcrumbItems: BreadcrumbItem[] = [
                             autocomplete="new-password"
                             placeholder="New password"
                         />
-                        <InputError :message="errors.password" />
+                        <InputMessage variant="destructive" :message="errors.password" />
                     </div>
 
                     <div class="grid gap-2">
@@ -75,7 +75,7 @@ const breadcrumbItems: BreadcrumbItem[] = [
                             autocomplete="new-password"
                             placeholder="Confirm password"
                         />
-                        <InputError :message="errors.password_confirmation" />
+                        <InputMessage variant="destructive" :message="errors.password_confirmation" />
                     </div>
 
                     <Separator />

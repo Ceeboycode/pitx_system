@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { InputMessage } from '@/components/ui/_input-message';
 import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -97,7 +98,7 @@ function formatValue(value: unknown): string {
                         <p class="break-words text-xs text-custom-shadow/70">{{ formatValue(props.request.current_values?.[field]) }} → {{ formatValue(value) }}</p>
                     </div>
                 </div>
-                <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">No profile field changes requested.</p>
+                <InputMessage v-else class="mt-0" message="No profile field changes requested." />
             </div>
 
             <div v-if="props.request.logo_change?.has_change" class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">

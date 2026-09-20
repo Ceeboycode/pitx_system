@@ -102,6 +102,7 @@ function onRowDblClick(id: number) {
                                 :model-value="isSelected(doc.id)"
                                 :aria-label="`Select ${doc.typeLabel}`"
                                 @update:model-value="emit('toggle', doc.id, $event)"
+                                class="mt-1"
                             />
                         </TableData>
 
@@ -146,7 +147,7 @@ function onRowDblClick(id: number) {
                 <div class="flex w-full max-w-md flex-col items-center gap-2">
                     <img :src="documentsUrl" alt="" class="w-1/3 object-contain opacity-90" aria-hidden="true" />
                     <div class="space-y-1">
-                        <p class="text-base font-semibold text-custom-shadow">No documents found</p>
+                        <p class="text-base text-center font-semibold text-custom-shadow">No documents found</p>
                         <p class="text-sm text-custom-shadow/80">{{ props.emptyDescription }}</p>
                     </div>
                 </div>

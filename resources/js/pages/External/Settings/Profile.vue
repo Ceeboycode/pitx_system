@@ -3,7 +3,7 @@ import { send } from '@/routes/verification';
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 
 import HeadingSmall from '@/components/HeadingSmall.vue';
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -89,7 +89,7 @@ const user = page.props.auth.user;
                                 />
                             </Label>
                             <p class="text-xs text-muted-foreground">PNG, JPG, or WEBP — max 2MB</p>
-                            <InputError :message="errors.avatar" />
+                            <InputMessage variant="destructive" :message="errors.avatar" />
                         </div>
 
                         
@@ -103,7 +103,7 @@ const user = page.props.auth.user;
                                 autocomplete="name"
                                 placeholder="Full name"
                             />
-                            <InputError :message="errors.name" />
+                            <InputMessage variant="destructive" :message="errors.name" />
                         </div>
 
                         
@@ -118,7 +118,7 @@ const user = page.props.auth.user;
                                 autocomplete="username"
                                 placeholder="Email address"
                             />
-                            <InputError :message="errors.email" />
+                            <InputMessage variant="destructive" :message="errors.email" />
 
                             
                             <div v-if="mustVerifyEmail && !user.email_verified_at" class="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">

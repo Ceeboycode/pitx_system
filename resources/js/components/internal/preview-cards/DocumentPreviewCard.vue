@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { InputMessage } from '@/components/ui/_input-message';
 import { Badge } from '@/components/ui/_badge';
 import { PreviewCard, PreviewCardRow } from '@/components/ui/_preview-card';
 
@@ -49,7 +50,7 @@ defineEmits<{ close: [] }>();
 
             <div v-if="props.doc.remarks" class="space-y-1">
                 <p class="text-sm font-semibold text-custom-shadow">Remarks</p>
-                <p class="rounded-md bg-custom-bg px-3 py-2 text-sm whitespace-pre-wrap text-custom-shadow/80 dark:bg-custom-bg-dark">{{ props.doc.remarks }}</p>
+                <InputMessage class="mt-0 whitespace-pre-wrap" :message="props.doc.remarks ?? undefined" />
             </div>
 
             <p class="pt-1 text-xs text-custom-shadow/60">Double-click the row to open the document.</p>

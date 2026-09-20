@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -72,7 +72,7 @@ defineProps<{
                                 placeholder="username or email"
                             />
                             <!-- TODO: this might need some redesigning kasi i dont like it without the error title -->
-                            <InputError :message="errors.login" />
+                            <InputMessage variant="destructive" :message="errors.login" />
                         </div>
 
                         <div class="flex flex-col gap-y-1">
@@ -100,7 +100,7 @@ defineProps<{
                                     <RiEyeLine v-else class="h-4 w-4" />
                                 </button>
                             </div>
-                            <InputError :message="errors.password" />
+                            <InputMessage variant="destructive" :message="errors.password" />
                         </div>
 
                         <!-- TODO: double check if this checkbox works, or if it's just decoration -->

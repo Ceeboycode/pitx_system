@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -117,7 +117,7 @@ const requiredMark = '*';
                                                 autocomplete="off"
                                                 class="capitalize"
                                             />
-                                            <InputError :message="form.errors.name" />
+                                            <InputMessage variant="destructive" :message="form.errors.name" />
                                         </div>
 
                                         <div class="space-y-2 col-span-1">
@@ -146,7 +146,7 @@ const requiredMark = '*';
                                                 </SelectContent>
                                             </Select>
 
-                                            <InputError :message="form.errors.type" />
+                                            <InputMessage variant="destructive" :message="form.errors.type" />
                                         </div>
                                     </div>
 

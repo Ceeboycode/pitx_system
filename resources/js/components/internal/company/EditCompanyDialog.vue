@@ -5,7 +5,7 @@ import { useForm } from '@inertiajs/vue3';
 import { watch } from 'vue';
 import { RiSaveLine } from 'vue-remix-icons';
 
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -181,7 +181,7 @@ function verificationStatusDot(status?: CompanyStatus | null): string {
                         </SelectItem>
                     </SelectContent>
                 </Select>
-                <InputError :message="form.errors.is_active" />
+                <InputMessage variant="destructive" :message="form.errors.is_active" />
             </div>
         </div>
 

@@ -27,7 +27,7 @@ import {
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 
 // import SearchInput from '@/components/SearchInput.vue';
 
@@ -153,7 +153,7 @@ function submit() {
               </template>
               <span class="min-w-0 flex-1 truncate text-right text-sm font-medium">{{ role.name }}</span>
             </EditableField>
-            <InputError v-if="canEdit" :message="form.errors.name" />
+            <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.name" />
           </div>
 
           <div class="flex flex-row justify-between items-center gap-2 overflow-hidden group">
@@ -189,7 +189,7 @@ function submit() {
               </template>
               <span class="min-w-0 flex-1 truncate text-right text-sm font-medium capitalize">{{ role.type }}</span>
             </EditableField>
-            <InputError v-if="canEdit" :message="form.errors.type" />
+            <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.type" />
           </div>
 
           <div class="flex flex-row justify-between items-center overflow-hidden">

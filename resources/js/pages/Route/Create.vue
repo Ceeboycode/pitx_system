@@ -1,22 +1,21 @@
-﻿<script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
-import InputError from '@/components/InputError.vue';
-import { useAppearance } from '@/composables/useAppearance';
+<script setup lang="ts">
+import { computed, ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { useAppearance } from '@/composables/useAppearance';
+import RouteStepMarker from '@/components/internal/route/RouteStepMarker.vue';
 
-import SearchInput from '@/components/SearchInput.vue';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { CardSeparator } from '@/components/ui/_card-separator';
+import Button from '@/components/ui/button/Button.vue';
 import {
     Select,
     SelectContent,
@@ -24,24 +23,39 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import type { BreadcrumbItem } from '@/types';
+
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { InputMessage } from '@/components/ui/_input-message';
+import { LeadPanel, MainPanel, SidePanel, PanelLayout } from '@/components/ui/_panels';
+import { LeadingCard } from '@/components/ui/_leading-card';
+import { RouteReviewCard } from '@/components/internal/preview-cards';
+
+import { useClipboard } from '@vueuse/core';
+import { toast } from 'vue-sonner';
+import SearchInput from '@/components/SearchInput.vue';
+
 import {
-    RiAiGenerate,
-    RiArrowLeftLine,
-    RiCheckLine,
-    RiCloseLine,
-    RiDraggable,
-    RiMapPin2Line,
-    RiSearchLine,
-} from 'vue-remix-icons';
+  RiMapPin2Line,
+  RiTimeLine,
+  RiCloseLine,
+  RiDraggable,
+  RiSearchLine,
+  RiAiGenerate,
+  RiLoader2Line,
+  RiRuler2Line,
+  RiCursorHand,
+  RiDragMove2Line,
+} from "vue-remix-icons";
 
-import { index, store } from '@/actions/App/Http/Controllers/RouteController';
-
+import { fmtDistance, fmtDuration } from '@/lib/format';
+import { themeColor } from '@/lib/theme-color';
+import { create, index, store } from '@/actions/App/Http/Controllers/RouteController';
+import type { BreadcrumbItem } from '@/types';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-
+import navigationUrl from '@/components/assets/Navigation-rafiki.svg';
 
 type Gate = {
     id: number;
@@ -56,6 +70,28 @@ type SearchSuggestion = {
     longitude: number;
 };
 
+type AlternativeRoute = {
+    index: number;
+    geometry: GeoJSON.LineString;
+    distance: number;
+    duration: number;
+    coordinates: [number, number][];
+};
+
+type Waypoint = {
+    id: number;
+    lng: number;
+    lat: number;
+    /** `undefined` while the place is being looked up, `null` when the lookup found nothing. */
+    name?: string | null;
+    address?: string | null;
+};
+
+type PinKind = 'origin' | 'stop' | 'landmark' | 'destination' | 'detour';
+
+/** The pin helpers only touch the marker's element, which also keeps Vue's unwrapped ref types out of the way. */
+type PinMarker = { getElement: () => HTMLElement };
+
 type StopItem = {
     stop_name: string;
     stop_type: 'origin' | 'stop' | 'destination' | 'landmark';
@@ -65,28 +101,6 @@ type StopItem = {
     mapbox_feature_id: string | null;
     stop_order: number;
 };
-
-type AlternativeRoute = {
-    index: number;
-    geometry: any;
-    distance: number;
-    duration: number;
-    coordinates: [number, number][];
-};
-
-type Waypoint = {
-    lng: number;
-    lat: number;
-};
-
-type RouteSnapshot = {
-    geometry: any;
-    distance: number;
-    duration: number;
-    coordinates: [number, number][];
-};
-
-
 
 const props = defineProps<{
     gates: Gate[];
@@ -102,56 +116,17 @@ const props = defineProps<{
 
 mapboxgl.accessToken = props.mapConfig.mapboxToken;
 
-
-
-const mapEl = ref<HTMLElement | null>(null);
-const map = ref<mapboxgl.Map | null>(null);
-const { resolvedAppearance } = useAppearance();
-
-const destinationQuery = ref('');
-const destinationSuggestions = ref<SearchSuggestion[]>([]);
-const destinationMarker = ref<mapboxgl.Marker | null>(null);
-
-const stopMarkers = ref<mapboxgl.Marker[]>([]);
-const waypointMarkers = ref<mapboxgl.Marker[]>([]);
-
-const loadingDestination = ref(false);
-const loadingStopSearch = ref(false);
-const loadingAutoGenerate = ref(false);
-const loadingLandmarks = ref(false);
-
-const lineClickMessage = ref('');
-const routeNameTouched = ref(false);
-const ignoreNextMapClick = ref(false);
-
-const stopQuery = ref('');
-const stopSuggestions = ref<SearchSuggestion[]>([]);
-const autoGenerateInterval = ref(5);
-
-const landmarkSuggestions = ref<SearchSuggestion[]>([]);
-const showLandmarks = ref(false);
-
-const draggedStopIndex = ref<number | null>(null);
-const dragOverIndex = ref<number | null>(null);
-
-const routeCoordinates = ref<[number, number][]>([]);
-
-const alternativeRoutes = ref<AlternativeRoute[]>([]);
-const selectedRouteIndex = ref(0);
-const originalPrimaryRoute = ref<RouteSnapshot | null>(null);
-
-const waypoints = ref<Waypoint[]>([]);
-
-
-
 const origin = {
     name: props.mapConfig.pitx.name,
     lat: Number(props.mapConfig.pitx.lat),
     lng: Number(props.mapConfig.pitx.lng),
 };
 
+/** The route name starts with this prefix; a name that is still just the prefix is not accepted. */
+const ROUTE_NAME_PREFIX = 'PITX - ';
+
 const form = useForm({
-    route_name: '',
+    route_name: ROUTE_NAME_PREFIX,
     gate_id: '',
     origin_name: origin.name,
     origin_lat: origin.lat,
@@ -166,105 +141,204 @@ const form = useForm({
 });
 
 let originMarker: mapboxgl.Marker | null = null;
-
-
+let mapResizeObserver: ResizeObserver | null = null;
+let themeObserver: MutationObserver | null = null;
 
 const hasDestination = computed(
     () => form.destination_lat !== null && form.destination_lng !== null,
 );
 
-const defaultRouteName = computed(() => {
-    if (!form.destination_name) return form.origin_name;
-    return `${form.origin_name} → ${form.destination_name}`;
-});
+const { copy } = useClipboard({ legacy: true });
 
-const totalBusStops = computed(() => form.stops.length);
+const mapEl = ref<HTMLElement | null>(null);
+const map = ref<mapboxgl.Map | null>(null);
+const { resolvedAppearance } = useAppearance();
 
-const totalVisibleStops = computed(() => {
-    if (!hasDestination.value) return 1;
-    return form.stops.length + 2;
-});
+const destinationQuery = ref('');
 
-const routeReady = computed(() => {
-    return hasDestination.value && !!form.route_geometry;
-});
+/** The full address of the destination, kept apart from `destinationQuery`, which is whatever is typed in the search box. */
+const destinationAddress = ref<string | null>(null);
+const destinationSuggestions = ref<SearchSuggestion[]>([]);
+const destinationMarker = ref<mapboxgl.Marker | null>(null);
 
-const routeHealthText = computed(() => {
-    if (!hasDestination.value) return 'Choose a destination to start building the route.';
-    if (!routeCoordinates.value.length) return 'Waiting for route path...';
-    return 'Route is ready. You can add stops or detour points.';
-});
+const stopMarkers = ref<mapboxgl.Marker[]>([]);
+const waypointMarkers = ref<mapboxgl.Marker[]>([]);
 
-const routeHealthStatus = computed<'idle' | 'loading' | 'ready'>(() => {
-    if (!hasDestination.value) return 'idle';
-    if (!routeCoordinates.value.length) return 'loading';
-    return 'ready';
-});
+const lineClickMessage = ref('');
+const ignoreNextMapClick = ref(false);
 
+const landmarkSuggestions = ref<SearchSuggestion[]>([]);
+const showLandmarks = ref(false);
 
+const draggedStopIndex = ref<number | null>(null);
+const dragOverIndex = ref<number | null>(null);
 
-watch(
-    () => defaultRouteName.value,
-    (value) => {
-        if (!routeNameTouched.value) {
-            form.route_name = value;
-        }
-    },
-    { immediate: true },
-);
+const routeCoordinates = ref<[number, number][]>([]);
 
-watch(destinationQuery, async (value) => {
-    const query = value.trim();
+const allRouteOptions = ref<AlternativeRoute[]>([]);
+const selectedRouteIndex = ref(0);
 
-    if (!query) {
-        destinationSuggestions.value = [];
-        return;
-    }
+const waypoints = ref<Waypoint[]>([]);
+let nextWaypointId = 1;
 
-    loadingDestination.value = true;
+/** The pin of the row under the cursor (`origin`, `destination`, `stop-<n>` or `detour-<n>`), enlarged on the map. */
+const hoveredPin = ref<string | null>(null);
 
-    try {
-        destinationSuggestions.value = await searchPlaces(query);
-    } finally {
-        loadingDestination.value = false;
-    }
-});
-
-watch(stopQuery, async (value) => {
-    const query = value.trim();
-
-    if (!query || routeCoordinates.value.length < 2) {
-        stopSuggestions.value = [];
-        return;
-    }
-
-    loadingStopSearch.value = true;
-
-    try {
-        stopSuggestions.value = await searchPlacesAlongRoute(query);
-    } finally {
-        loadingStopSearch.value = false;
-    }
-});
-
-
-
-function onRouteNameInput(value: string | number) {
-    const routeName = String(value);
-
-    if (!routeName.trim()) {
-        routeNameTouched.value = false;
-        form.route_name = defaultRouteName.value;
-        return;
-    }
-
-    routeNameTouched.value = true;
-    form.route_name = routeName;
+function emptyFeatureCollection(): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: [],
+  };
 }
 
-function resetRouteNameToDefault() {
-    routeNameTouched.value = false;
-    form.route_name = defaultRouteName.value;
+function lineFeature(
+    geometry: GeoJSON.LineString,
+): GeoJSON.Feature<GeoJSON.LineString> {
+    return {
+        type: 'Feature',
+        properties: {},
+        geometry,
+    };
+}
+
+// ── Pin & line colours ─────────────────────────────────────────────────────
+// Pins and the route line use the same tokens as the RouteStepMarker of their row, so the map and the
+// lists read alike. Every pin also gets an outline in `--custom-shadow` (it flips with the theme) so
+// the pale stop pin and the dim dark-mode pins stay visible. Colours are resolved when a pin is styled
+// and again whenever the theme changes (see `repaintMap`).
+
+function pinColor(kind: PinKind): string {
+  const tokens: Record<Exclude<PinKind, 'stop'>, string> = {
+    origin: '--custom-primary',
+    landmark: '--custom-shadow',
+    destination: '--custom-accent-1',
+    detour: '--custom-accent-3',
+  };
+
+  if (kind !== 'stop') return themeColor(tokens[kind]);
+
+  const isDark = document.documentElement.classList.contains('dark');
+
+  return themeColor(isDark ? '--custom-bg-light' : '--custom-bg-dark');
+}
+
+/** A search result in the destination and stop lists, styled like the (unselected) buttons of "Route Line Suggestions". */
+const suggestionButtonClass =
+  'w-full cursor-pointer rounded-md border px-3 py-2 text-left transition-all duration-200 border-custom-bg-dark bg-transparent hover:bg-custom-secondary/10 dark:hover:bg-custom-secondary/20 dark:border-custom-bg-light hover:border-transparent dark:hover:border-transparent';
+
+/** The pin outline:`--custom-shadow`, softened to 60% in light mode where it is too dark at full strength. */
+function outlineColor(): string {
+  const color = themeColor('--custom-shadow');
+
+  return document.documentElement.classList.contains('dark') ? color : `${color}99`;
+}
+
+// The route line is the `--custom-accent-2` of the current theme, as is, and the alternative routes
+// share it (their dashes set them apart). The line layers set `line-emissive-strength: 1` so the
+// map's night lighting does not darken them to black.
+const routeLineColor = () => themeColor('--custom-accent-2');
+
+/** Paints the pin of a marker from its `data-pin-kind`, so it can be repeated after a theme change. */
+function restylePin(marker: PinMarker | null | undefined) {
+  const el = marker?.getElement();
+  const kind = el?.dataset.pinKind as PinKind | undefined;
+
+  if (!el || !kind) return;
+
+  const fill = pinColor(kind);
+  const outline = outlineColor();
+
+  if (kind === 'detour') {
+    const dot = el.firstElementChild as HTMLElement | null;
+
+    if (dot) {
+      dot.style.background = fill;
+      dot.style.boxShadow = `0 0 0 1px ${outline}, 0 2px 6px rgba(0,0,0,0.35)`;
+    }
+
+    return;
+  }
+
+  // The default Mapbox pin: the shape is the only <path> that carries a `fill`.
+  const svg = el.querySelector('svg');
+  const shape = svg?.querySelector('path[fill]');
+
+  if (!svg || !shape) return;
+
+  svg.style.overflow = 'visible';
+  shape.setAttribute('fill', fill);
+  shape.setAttribute('stroke', outline);
+  shape.setAttribute('stroke-width', '1');
+  shape.setAttribute('stroke-linejoin', 'round');
+}
+
+function createPin(kind: PinKind, draggable = false): mapboxgl.Marker {
+  const marker = new mapboxgl.Marker({ color: pinColor(kind), draggable });
+
+  marker.getElement().dataset.pinKind = kind;
+  restylePin(marker);
+
+  return marker;
+}
+
+function setPinHighlight(marker: PinMarker | null | undefined, active: boolean) {
+  const el = marker?.getElement();
+
+  if (!el) return;
+
+  // Mapbox positions the marker element with its own transform, so only the drawn part is scaled.
+  const svg = el.querySelector('svg');
+  const visual = (svg ?? el.firstElementChild) as HTMLElement | SVGSVGElement | null;
+
+  if (!visual) return;
+
+  visual.style.transition = 'transform 120ms ease, filter 120ms ease';
+  visual.style.transformOrigin = svg ? '50% 85%' : '50% 50%';
+  visual.style.transform = active ? 'scale(1.15)' : '';
+  visual.style.filter = active ? `drop-shadow(0 0 2px ${outlineColor()})` : '';
+  el.style.zIndex = active ? '2' : '';
+}
+
+function applyPinHighlight() {
+  const active = hoveredPin.value;
+
+  setPinHighlight(originMarker, active === 'origin');
+  setPinHighlight(destinationMarker.value, active === 'destination');
+  stopMarkers.value.forEach((marker, index) => setPinHighlight(marker, active === `stop-${index}`));
+  waypointMarkers.value.forEach((marker, index) => setPinHighlight(marker, active === `detour-${index}`));
+}
+
+function hoverPin(key: string) {
+  hoveredPin.value = key;
+}
+
+function unhoverPin(key: string) {
+  if (hoveredPin.value === key) hoveredPin.value = null;
+}
+
+watch(hoveredPin, applyPinHighlight);
+
+// A row that is removed or replaced while hovered never fires `mouseleave`, so a changed list resets the highlight.
+watch([() => form.stops.length, () => waypoints.value.length], () => {
+  hoveredPin.value = null;
+});
+
+function repaintMap() {
+  restylePin(originMarker);
+  restylePin(destinationMarker.value);
+  stopMarkers.value.forEach((marker) => restylePin(marker));
+  waypointMarkers.value.forEach((marker) => restylePin(marker));
+  applyPinHighlight();
+
+  const layers: [string, string][] = [
+    ['route-line-layer', routeLineColor()],
+    ['alt-route-layer-1', routeLineColor()],
+    ['alt-route-layer-2', routeLineColor()],
+  ];
+
+  layers.forEach(([layer, color]) => {
+    if (map.value?.getLayer(layer)) map.value.setPaintProperty(layer, 'line-color', color);
+  });
 }
 
 function snapToRoute(lng: number, lat: number): [number, number] {
@@ -323,111 +397,219 @@ function haversine(a: [number, number], b: [number, number]): number {
     return R * 2 * Math.atan2(Math.sqrt(sa), Math.sqrt(1 - sa));
 }
 
-function sampleRouteAtIntervals(
-    coords: [number, number][],
-    intervalKm: number,
-): [number, number][] {
-    const intervalM = intervalKm * 1000;
-    const samples: [number, number][] = [];
-
-    let accumulated = 0;
-    let nextTarget = intervalM;
-
-    for (let i = 1; i < coords.length; i++) {
-        const segDist = haversine(coords[i - 1], coords[i]);
-        accumulated += segDist;
-
-        while (accumulated >= nextTarget) {
-            const t = 1 - (accumulated - nextTarget) / segDist;
-
-            samples.push([
-                coords[i - 1][0] + t * (coords[i][0] - coords[i - 1][0]),
-                coords[i - 1][1] + t * (coords[i][1] - coords[i - 1][1]),
-            ]);
-
-            nextTarget += intervalM;
-        }
-    }
-
-    return samples;
+function clearStopMarkers() {
+  stopMarkers.value.forEach((marker) => marker.remove());
+  stopMarkers.value = [];
 }
 
-function fmtDistance(m: number) {
-    if (!m) return '—';
-    if (m < 1000) return `${Math.round(m)} m`;
-    return `${(m / 1000).toFixed(2)} km`;
+function clearWaypointMarkers() {
+  waypointMarkers.value.forEach((marker) => marker.remove());
+  waypointMarkers.value = [];
 }
 
-function fmtDuration(s: number) {
-    if (!s) return '—';
+function selectAlternativeRouteByLayer(layerAltIndex: number) {
+    const remaining = allRouteOptions.value
+        .map((route, index) => ({ route, index }))
+        .filter((item) => item.index !== selectedRouteIndex.value);
 
-    const hours = Math.floor(s / 3600);
-    const minutes = Math.ceil((s % 3600) / 60);
+    const target = remaining[layerAltIndex - 1];
+    if (!target) return;
 
-    if (hours > 0) return `${hours} hr ${minutes} min`;
-    return `${Math.ceil(s / 60)} min`;
+    applySelectedRoute(target.index);
+    lineClickMessage.value = `Switched to Route option ${target.index + 1}.`;
 }
 
-function applyRouteSnapshot(snapshot: RouteSnapshot) {
-    form.distance_meters = Math.round(snapshot.distance);
-    form.duration_seconds = Math.round(snapshot.duration);
-    form.route_geometry = JSON.stringify(snapshot.geometry);
-    routeCoordinates.value = [...snapshot.coordinates];
+function clearAlternativeRouteLayers() {
+  allRouteOptions.value = [];
+  selectedRouteIndex.value = 0;
 
-    const primarySrc = map.value?.getSource('route-line') as
-        | mapboxgl.GeoJSONSource
-        | undefined;
+  if (!map.value) return;
 
-    primarySrc?.setData({
-        type: 'FeatureCollection',
-        features: [
-            {
-                type: 'Feature',
-                properties: {},
-                geometry: snapshot.geometry,
-            },
-        ],
+  for (let i = 1; i <= 2; i++) {
+    const src = map.value.getSource(
+      `alt-route-${i}`,
+    ) as mapboxgl.GeoJSONSource;
+    src?.setData(emptyFeatureCollection());
+  }
+}
+
+function renderStopMarkers() {
+    clearStopMarkers();
+
+    form.stops.forEach((stop, index) => {
+        const marker = createPin(
+            stop.stop_type === 'landmark' ? 'landmark' : 'stop',
+            true,
+        )
+            .setLngLat([stop.longitude, stop.latitude])
+            .setPopup(
+                new mapboxgl.Popup().setText(
+                    `${index + 2}. ${stop.stop_name} (${stop.stop_type})`,
+                ),
+            )
+            .addTo(map.value!);
+
+        marker.on('dragend', async () => {
+            const ll = marker.getLngLat();
+            let [finalLng, finalLat] = [ll.lng, ll.lat];
+
+            if (routeCoordinates.value.length >= 2) {
+                [finalLng, finalLat] = snapToRoute(ll.lng, ll.lat);
+                marker.setLngLat([finalLng, finalLat]);
+            }
+
+            const place = await reversePlace(finalLng, finalLat);
+
+            form.stops[index].latitude = finalLat;
+            form.stops[index].longitude = finalLng;
+
+            if (place) {
+                form.stops[index].stop_name =
+                    place.text ||
+                    place.place_name ||
+                    form.stops[index].stop_name;
+                form.stops[index].address =
+                    place.place_name || form.stops[index].address;
+            }
+
+            await redrawRoute();
+        });
+
+        stopMarkers.value.push(marker);
     });
 
-    renderStopMarkers();
-    renderWaypointMarkers();
-    fitMap();
+    applyPinHighlight();
 }
 
-function refreshAlternativeRouteLayers() {
-    for (let i = 1; i <= 2; i++) {
-        const src = map.value?.getSource(`alt-route-${i}`) as
-            | mapboxgl.GeoJSONSource
-            | undefined;
+function clearRouteLine() {
+  const src = map.value?.getSource('route-line') as
+    | mapboxgl.GeoJSONSource
+    | undefined;
 
-        const alt = alternativeRoutes.value.find((route) => route.index === i);
+  src?.setData(emptyFeatureCollection());
+}
+
+function findInsertIndex(lng: number, lat: number): number {
+  if (waypoints.value.length === 0 || routeCoordinates.value.length < 2) {
+    return waypoints.value.length;
+  }
+
+  let nearestIdx = 0;
+  let minDist = Infinity;
+
+  for (let i = 0; i < routeCoordinates.value.length; i++) {
+    const d = haversine(routeCoordinates.value[i], [lng, lat]);
+
+    if (d < minDist) {
+      minDist = d;
+      nearestIdx = i;
+    }
+  }
+
+  let insertAt = 0;
+
+  for (const wp of waypoints.value) {
+    let wpIdx = 0;
+    let wpMin = Infinity;
+
+    for (let i = 0; i < routeCoordinates.value.length; i++) {
+      const d = haversine(routeCoordinates.value[i], [wp.lng, wp.lat]);
+
+      if (d < wpMin) {
+        wpMin = d;
+        wpIdx = i;
+      }
+    }
+
+    if (wpIdx < nearestIdx) insertAt++;
+  }
+
+  return insertAt;
+}
+
+function syncAlternativeRouteLayers() {
+    if (!map.value) return;
+
+    for (let i = 1; i <= 2; i++) {
+        const src = map.value.getSource(
+            `alt-route-${i}`,
+        ) as mapboxgl.GeoJSONSource;
+        src?.setData(emptyFeatureCollection());
+    }
+
+    const remaining = allRouteOptions.value.filter(
+        (_, index) => index !== selectedRouteIndex.value,
+    );
+
+    remaining.slice(0, 2).forEach((route, idx) => {
+        const src = map.value?.getSource(
+            `alt-route-${idx + 1}`,
+        ) as mapboxgl.GeoJSONSource;
 
         src?.setData({
             type: 'FeatureCollection',
-            features: alt
-                ? [
-                      {
-                          type: 'Feature',
-                          properties: {},
-                          geometry: alt.geometry,
-                      },
-                  ]
-                : [],
+            features: [lineFeature(route.geometry)],
         });
-    }
+    });
 }
 
+function applySelectedRoute(index: number) {
+    const selected = allRouteOptions.value[index];
+    if (!selected || !map.value) return;
 
+    selectedRouteIndex.value = index;
+    form.distance_meters = Math.round(selected.distance);
+    form.duration_seconds = Math.round(selected.duration);
+    form.route_geometry = JSON.stringify(selected.geometry);
+    routeCoordinates.value = [...selected.coordinates];
+
+    const primarySrc = map.value.getSource(
+        'route-line',
+    ) as mapboxgl.GeoJSONSource;
+    primarySrc?.setData({
+        type: 'FeatureCollection',
+        features: [lineFeature(selected.geometry)],
+    });
+
+    syncAlternativeRouteLayers();
+    renderStopMarkers();
+    renderWaypointMarkers();
+}
+
+function fitMap() {
+    if (!map.value) return;
+
+    const bounds = new mapboxgl.LngLatBounds();
+    bounds.extend([origin.lng, origin.lat]);
+
+    if (form.destination_lat !== null && form.destination_lng !== null) {
+        bounds.extend([form.destination_lng, form.destination_lat]);
+    }
+
+    form.stops.forEach((stop) =>
+        bounds.extend([stop.longitude, stop.latitude]),
+    );
+    waypoints.value.forEach((waypoint) =>
+        bounds.extend([waypoint.lng, waypoint.lat]),
+    );
+
+    map.value.fitBounds(bounds, {
+        padding: 60,
+        maxZoom: 14,
+    });
+}
 
 function initMap() {
-    if (!mapEl.value) return;
+    const el = mapEl.value;
+    if (!el) return;
 
     map.value = new mapboxgl.Map({
-        container: mapEl.value,
+        container: el,
         style: 'mapbox://styles/mapbox/standard',
         config: {
             basemap: {
-                lightPreset: resolvedAppearance.value === 'dark' ? 'night' : 'day',
+                lightPreset:
+                    resolvedAppearance.value === 'dark' ? 'night' : 'day',
             },
         },
         center: [origin.lng, origin.lat],
@@ -436,8 +618,29 @@ function initMap() {
 
     map.value.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
+    // Keep the canvas sized to its container across tab switches, sidebar
+    // toggles and window resizes.
+    mapResizeObserver = new ResizeObserver(() => map.value?.resize());
+    mapResizeObserver.observe(el);
+
+    // The pins and the route line take their colours from the theme tokens, so they are painted again
+    // whenever the `dark` class of the page flips (manual switch or system preference).
+    let wasDark = document.documentElement.classList.contains('dark');
+    themeObserver = new MutationObserver(() => {
+        const isDark = document.documentElement.classList.contains('dark');
+
+        if (isDark === wasDark) return;
+
+        wasDark = isDark;
+        repaintMap();
+    });
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class'],
+    });
+
     map.value.on('load', () => {
-        originMarker = new mapboxgl.Marker({ color: '#16a34a' })
+        originMarker = createPin('origin')
             .setLngLat([origin.lng, origin.lat])
             .setPopup(new mapboxgl.Popup().setText(origin.name))
             .addTo(map.value!);
@@ -445,7 +648,7 @@ function initMap() {
         for (let i = 1; i <= 2; i++) {
             map.value!.addSource(`alt-route-${i}`, {
                 type: 'geojson',
-                data: { type: 'FeatureCollection', features: [] },
+                data: emptyFeatureCollection(),
             });
 
             map.value!.addLayer({
@@ -462,7 +665,8 @@ function initMap() {
                 layout: { 'line-cap': 'round' },
                 paint: {
                     'line-width': 4,
-                    'line-color': '#94a3b8',
+                    'line-color': routeLineColor(),
+                    'line-emissive-strength': 1,
                     'line-dasharray': [2, 2],
                 },
             });
@@ -470,7 +674,7 @@ function initMap() {
             map.value!.on('click', `alt-route-hit-${i}`, (e) => {
                 e.preventDefault();
                 ignoreNextMapClick.value = true;
-                selectAlternativeRoute(i);
+                selectAlternativeRouteByLayer(i);
             });
 
             map.value!.on('mouseenter', `alt-route-hit-${i}`, () => {
@@ -484,7 +688,7 @@ function initMap() {
 
         map.value!.addSource('route-line', {
             type: 'geojson',
-            data: { type: 'FeatureCollection', features: [] },
+            data: emptyFeatureCollection(),
         });
 
         map.value!.addLayer({
@@ -503,7 +707,8 @@ function initMap() {
             source: 'route-line',
             paint: {
                 'line-width': 5,
-                'line-color': resolvedAppearance.value === 'dark' ? '#3b82f6' : '#2563eb',
+                'line-color': routeLineColor(),
+                'line-emissive-strength': 1,
             },
         });
 
@@ -535,575 +740,133 @@ function initMap() {
             }
 
             lineClickMessage.value =
-                'Click directly on the blue route line to add a detour waypoint.';
+                'Click directly on the route line to add a detour waypoint.';
         });
     });
-}
-
-
-
-async function searchPlaces(query: string): Promise<SearchSuggestion[]> {
-    if (!query.trim()) return [];
-
-    const url = new URL(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json`,
-    );
-
-    url.searchParams.set('access_token', mapboxgl.accessToken);
-    url.searchParams.set('autocomplete', 'true');
-    url.searchParams.set('limit', '6');
-    url.searchParams.set('country', 'ph');
-    url.searchParams.set('language', 'en');
-
-    const res = await fetch(url.toString());
-    const data = await res.json();
-
-    return (data.features ?? []).map((f: any) => ({
-        id: f.id,
-        name: f.text || f.place_name,
-        full_address: f.place_name,
-        longitude: f.center[0],
-        latitude: f.center[1],
-    }));
-}
-
-const MAX_STOP_DISTANCE_M = 500;
-
-async function searchPlacesAlongRoute(query: string): Promise<SearchSuggestion[]> {
-    if (!query.trim() || routeCoordinates.value.length < 2) return [];
-
-    const mid = routeCoordinates.value[Math.floor(routeCoordinates.value.length / 2)];
-
-    const url = new URL(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json`,
-    );
-
-    url.searchParams.set('access_token', mapboxgl.accessToken);
-    url.searchParams.set('autocomplete', 'true');
-    url.searchParams.set('limit', '10');
-    url.searchParams.set('country', 'ph');
-    url.searchParams.set('language', 'en');
-    url.searchParams.set('proximity', `${mid[0]},${mid[1]}`);
-
-    const res = await fetch(url.toString());
-    const data = await res.json();
-
-    const candidates: SearchSuggestion[] = (data.features ?? []).map((f: any) => ({
-        id: f.id,
-        name: f.text || f.place_name,
-        full_address: f.place_name,
-        longitude: f.center[0],
-        latitude: f.center[1],
-    }));
-
-    const existingNames = new Set(
-        form.stops.map((stop) => stop.stop_name.toLowerCase().trim()),
-    );
-
-    return candidates
-        .filter((candidate) => {
-            const snapped = snapToRoute(candidate.longitude, candidate.latitude);
-
-            if (
-                haversine(snapped, [candidate.longitude, candidate.latitude]) >
-                MAX_STOP_DISTANCE_M
-            ) {
-                return false;
-            }
-
-            if (existingNames.has(candidate.name.toLowerCase().trim())) {
-                return false;
-            }
-
-            if (
-                form.stops.some(
-                    (stop) =>
-                        haversine(
-                            [stop.longitude, stop.latitude],
-                            [candidate.longitude, candidate.latitude],
-                        ) < 50,
-                )
-            ) {
-                return false;
-            }
-
-            return true;
-        })
-        .slice(0, 6);
-}
-
-async function reversePlace(lng: number, lat: number) {
-    const url = new URL(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json`,
-    );
-
-    url.searchParams.set('access_token', mapboxgl.accessToken);
-    url.searchParams.set('country', 'ph');
-    url.searchParams.set('language', 'en');
-    url.searchParams.set('limit', '1');
-
-    const res = await fetch(url.toString());
-    const data = await res.json();
-
-    return data.features?.[0] ?? null;
-}
-
-
-
-async function setDestinationFromSuggestion(item: SearchSuggestion) {
-    form.destination_name = item.name;
-    form.destination_lat = item.latitude;
-    form.destination_lng = item.longitude;
-
-    destinationQuery.value = item.full_address;
-    destinationSuggestions.value = [];
-    lineClickMessage.value = '';
-    form.clearErrors('destination_name');
-
-    destinationMarker.value?.remove();
-
-    destinationMarker.value = new mapboxgl.Marker({
-        color: '#dc2626',
-        draggable: true,
-    })
-        .setLngLat([item.longitude, item.latitude])
-        .setPopup(new mapboxgl.Popup().setText(item.name))
-        .addTo(map.value!);
-
-    destinationMarker.value.on('dragend', async () => {
-        const ll = destinationMarker.value!.getLngLat();
-
-        form.destination_lat = ll.lat;
-        form.destination_lng = ll.lng;
-
-        const place = await reversePlace(ll.lng, ll.lat);
-
-        if (place) {
-            form.destination_name =
-                place.text || place.place_name || form.destination_name;
-            destinationQuery.value = place.place_name || form.destination_name;
-        }
-
-        await redrawRoute();
-    });
-
-    await redrawRoute();
-    fitMap();
-}
-
-async function setDestinationFromCoordinates(lng: number, lat: number) {
-    const place = await reversePlace(lng, lat);
-
-    await setDestinationFromSuggestion({
-        id: place?.id ?? `dest-${lng}-${lat}`,
-        name: place?.text || place?.place_name || 'Pinned Destination',
-        full_address: place?.place_name || 'Pinned destination',
-        latitude: lat,
-        longitude: lng,
-    });
-}
-
-
-
-async function addDetourWaypoint(lng: number, lat: number) {
-    const insertIndex = findInsertIndex(lng, lat);
-    waypoints.value.splice(insertIndex, 0, { lng, lat });
-
-    lineClickMessage.value =
-        'Detour point added. Drag the purple point to reshape the route.';
-
-    await redrawRoute();
-    renderWaypointMarkers();
-}
-
-function findInsertIndex(lng: number, lat: number): number {
-    if (waypoints.value.length === 0 || routeCoordinates.value.length < 2) {
-        return waypoints.value.length;
-    }
-
-    let nearestIdx = 0;
-    let minDist = Infinity;
-
-    for (let i = 0; i < routeCoordinates.value.length; i++) {
-        const d = haversine(routeCoordinates.value[i], [lng, lat]);
-
-        if (d < minDist) {
-            minDist = d;
-            nearestIdx = i;
-        }
-    }
-
-    let insertAt = 0;
-
-    for (const wp of waypoints.value) {
-        let wpIdx = 0;
-        let wpMin = Infinity;
-
-        for (let i = 0; i < routeCoordinates.value.length; i++) {
-            const d = haversine(routeCoordinates.value[i], [wp.lng, wp.lat]);
-
-            if (d < wpMin) {
-                wpMin = d;
-                wpIdx = i;
-            }
-        }
-
-        if (wpIdx < nearestIdx) insertAt++;
-    }
-
-    return insertAt;
 }
 
 function renderWaypointMarkers() {
-    clearWaypointMarkers();
+  clearWaypointMarkers();
 
-    waypoints.value.forEach((wp, index) => {
-        const el = document.createElement('div');
-        el.title = 'Drag to reshape route';
-        el.style.cssText =
-            'width:18px;height:18px;background:#7c3aed;border:3px solid white;border-radius:50%;cursor:grab;box-shadow:0 2px 6px rgba(0,0,0,0.35);';
+  waypoints.value.forEach((wp) => {
+    const id = wp.id;
+    const el = document.createElement('div');
+    el.title = 'Drag to reshape route';
+    el.style.cssText = 'width:18px;height:18px;cursor:grab;';
+    el.dataset.pinKind = 'detour';
 
-        const marker = new mapboxgl.Marker({
-            element: el,
-            draggable: true,
-        })
-            .setLngLat([wp.lng, wp.lat])
-            .addTo(map.value!);
+    // The dot is a child so it can be enlarged on hover without touching the transform Mapbox puts on `el`.
+    const dot = document.createElement('div');
+    dot.style.cssText =
+      'box-sizing:border-box;width:100%;height:100%;border:3px solid white;border-radius:50%;';
+    el.appendChild(dot);
 
-        marker.on('drag', () => {
-            const ll = marker.getLngLat();
-            waypoints.value[index] = { lng: ll.lng, lat: ll.lat };
-        });
+    const marker = new mapboxgl.Marker({
+      element: el,
+      draggable: true,
+    })
+      .setLngLat([wp.lng, wp.lat])
+      .addTo(map.value!);
 
-        marker.on('dragend', async () => {
-            const ll = marker.getLngLat();
-            waypoints.value[index] = { lng: ll.lng, lat: ll.lat };
-            await redrawRoute();
-        });
+    restylePin(marker);
 
-        el.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            waypoints.value.splice(index, 1);
-            marker.remove();
-            renderWaypointMarkers();
-            redrawRoute();
-        });
+    marker.on('drag', () => {
+      const point = waypoints.value.find((w) => w.id === id);
+      if (!point) return;
 
-        waypointMarkers.value.push(marker);
-    });
-}
-
-function clearWaypointMarkers() {
-    waypointMarkers.value.forEach((m) => m.remove());
-    waypointMarkers.value = [];
-}
-
-function removeAllWaypoints() {
-    waypoints.value = [];
-    clearWaypointMarkers();
-    redrawRoute();
-}
-
-
-
-function selectAlternativeRoute(index: number) {
-    if (!map.value) return;
-
-    if (index === 0) {
-        if (!originalPrimaryRoute.value) return;
-
-        selectedRouteIndex.value = 0;
-        applyRouteSnapshot(originalPrimaryRoute.value);
-        lineClickMessage.value = 'Switched back to Route 1.';
-        return;
-    }
-
-    const alt = alternativeRoutes.value.find((route) => route.index === index);
-
-    if (!alt) return;
-
-    selectedRouteIndex.value = index;
-
-    applyRouteSnapshot({
-        geometry: alt.geometry,
-        distance: alt.distance,
-        duration: alt.duration,
-        coordinates: alt.coordinates,
+      const ll = marker.getLngLat();
+      point.lng = ll.lng;
+      point.lat = ll.lat;
     });
 
-    lineClickMessage.value = `Switched to Route ${index + 1}.`;
-}
+    marker.on('dragend', async () => {
+      const point = waypoints.value.find((w) => w.id === id);
+      if (!point) return;
 
-function clearAlternativeRouteLayers() {
-    for (let i = 1; i <= 2; i++) {
-        const src = map.value?.getSource(`alt-route-${i}`) as
-            | mapboxgl.GeoJSONSource
-            | undefined;
+      const ll = marker.getLngLat();
+      point.lng = ll.lng;
+      point.lat = ll.lat;
+      point.name = undefined;
+      point.address = undefined;
 
-        src?.setData({
-            type: 'FeatureCollection',
-            features: [],
-        });
-    }
-
-    alternativeRoutes.value = [];
-    originalPrimaryRoute.value = null;
-    selectedRouteIndex.value = 0;
-}
-
-
-
-async function addStopFromSuggestion(item: SearchSuggestion) {
-    const alreadyExists = form.stops.some(
-        (stop) =>
-            stop.stop_name.toLowerCase().trim() ===
-            item.name.toLowerCase().trim(),
-    );
-
-    if (alreadyExists) {
-        lineClickMessage.value = `"${item.name}" is already added as a stop.`;
-        stopQuery.value = '';
-        stopSuggestions.value = [];
-        return;
-    }
-
-    let [finalLng, finalLat] = [item.longitude, item.latitude];
-
-    if (routeCoordinates.value.length >= 2) {
-        [finalLng, finalLat] = snapToRoute(item.longitude, item.latitude);
-    }
-
-    if (
-        form.stops.some(
-            (stop) =>
-                haversine(
-                    [stop.longitude, stop.latitude],
-                    [finalLng, finalLat],
-                ) < 50,
-        )
-    ) {
-        lineClickMessage.value =
-            `A stop already exists very close to "${item.name}".`;
-        stopQuery.value = '';
-        stopSuggestions.value = [];
-        return;
-    }
-
-    form.stops.push({
-        stop_name: item.name,
-        stop_type: 'stop',
-        address: item.full_address,
-        latitude: finalLat,
-        longitude: finalLng,
-        mapbox_feature_id: item.id,
-        stop_order: form.stops.length + 2,
+      void resolveWaypointName(id);
+      await redrawRoute();
     });
 
-    stopQuery.value = '';
-    stopSuggestions.value = [];
-    renderStopMarkers();
-    await redrawRoute();
-}
-
-
-
-async function autoGenerateStops() {
-    if (routeCoordinates.value.length < 2) return;
-
-    loadingAutoGenerate.value = true;
-
-    try {
-        const samples = sampleRouteAtIntervals(
-            routeCoordinates.value,
-            autoGenerateInterval.value,
-        );
-
-        const newStops: StopItem[] = [];
-
-        for (const [lng, lat] of samples) {
-            const place = await reversePlace(lng, lat);
-
-            newStops.push({
-                stop_name:
-                    place?.text ||
-                    place?.place_name ||
-                    `Stop (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
-                stop_type: 'stop',
-                address: place?.place_name ?? null,
-                latitude: lat,
-                longitude: lng,
-                mapbox_feature_id: place?.id ?? null,
-                stop_order: 0,
-            });
-        }
-
-        form.stops = newStops;
-        renderStopMarkers();
-        await redrawRoute();
-    } finally {
-        loadingAutoGenerate.value = false;
-    }
-}
-
-async function suggestLandmarks() {
-    if (!hasDestination.value) return;
-
-    loadingLandmarks.value = true;
-    landmarkSuggestions.value = [];
-    showLandmarks.value = false;
-
-    try {
-        const sampleCoords =
-            routeCoordinates.value.length >= 2
-                ? sampleRouteAtIntervals(
-                      routeCoordinates.value,
-                      Math.max(3, (form.distance_meters ?? 10000) / 1000 / 4),
-                  )
-                : [];
-
-        const pointsToSearch: [number, number][] = [
-            [origin.lng, origin.lat],
-            ...sampleCoords.slice(0, 3),
-            [form.destination_lng!, form.destination_lat!],
-        ];
-
-        const seen = new Set<string>();
-        const results: SearchSuggestion[] = [];
-
-        for (const [lng, lat] of pointsToSearch) {
-            const url = new URL(
-                'https://api.mapbox.com/geocoding/v5/mapbox.places/terminal bus stop landmark.json',
-            );
-
-            url.searchParams.set('access_token', mapboxgl.accessToken);
-            url.searchParams.set('proximity', `${lng},${lat}`);
-            url.searchParams.set('limit', '3');
-            url.searchParams.set('country', 'ph');
-            url.searchParams.set('types', 'poi');
-
-            const res = await fetch(url.toString());
-            const data = await res.json();
-
-            for (const f of data.features ?? []) {
-                if (!seen.has(f.id)) {
-                    seen.add(f.id);
-                    results.push({
-                        id: f.id,
-                        name: f.text || f.place_name,
-                        full_address: f.place_name,
-                        longitude: f.center[0],
-                        latitude: f.center[1],
-                    });
-                }
-            }
-        }
-
-        landmarkSuggestions.value = results;
-        showLandmarks.value = true;
-    } finally {
-        loadingLandmarks.value = false;
-    }
-}
-
-async function addLandmarkAsStop(item: SearchSuggestion) {
-    await addStopFromSuggestion(item);
-    landmarkSuggestions.value = landmarkSuggestions.value.filter(
-        (landmark) => landmark.id !== item.id,
-    );
-}
-
-
-
-function renderStopMarkers() {
-    clearStopMarkers();
-
-    form.stops.forEach((stop, index) => {
-        const marker = new mapboxgl.Marker({
-            color: '#f59e0b',
-            draggable: true,
-        })
-            .setLngLat([stop.longitude, stop.latitude])
-            .setPopup(
-                new mapboxgl.Popup().setText(`${index + 2}. ${stop.stop_name}`),
-            )
-            .addTo(map.value!);
-
-        marker.on('dragend', async () => {
-            const ll = marker.getLngLat();
-            let [finalLng, finalLat] = [ll.lng, ll.lat];
-
-            if (routeCoordinates.value.length >= 2) {
-                [finalLng, finalLat] = snapToRoute(ll.lng, ll.lat);
-                marker.setLngLat([finalLng, finalLat]);
-            }
-
-            const place = await reversePlace(finalLng, finalLat);
-
-            form.stops[index].latitude = finalLat;
-            form.stops[index].longitude = finalLng;
-
-            if (place) {
-                form.stops[index].stop_name =
-                    place.text ||
-                    place.place_name ||
-                    form.stops[index].stop_name;
-
-                form.stops[index].address =
-                    place.place_name || form.stops[index].address;
-            }
-
-            await redrawRoute();
-        });
-
-        stopMarkers.value.push(marker);
+    el.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      removeWaypoint(id);
     });
+
+    waypointMarkers.value.push(marker);
+  });
+
+  applyPinHighlight();
 }
 
-function clearStopMarkers() {
-    stopMarkers.value.forEach((m) => m.remove());
-    stopMarkers.value = [];
+async function removeWaypoint(id: number) {
+  const index = waypoints.value.findIndex((w) => w.id === id);
+  if (index === -1) return;
+
+  hoveredPin.value = null;
+  waypoints.value.splice(index, 1);
+  renderWaypointMarkers();
+
+  await redrawRoute();
 }
 
-function clearRouteLine() {
-    const src = map.value?.getSource('route-line') as
-        | mapboxgl.GeoJSONSource
-        | undefined;
+/** Looks up the place of a detour point for its row; a result for a point that moved or was removed meanwhile is dropped. */
+async function resolveWaypointName(id: number) {
+  const start = waypoints.value.find((w) => w.id === id);
+  if (!start) return;
 
-    src?.setData({
-        type: 'FeatureCollection',
-        features: [],
-    });
+  const { lng, lat } = start;
+  let place: { text?: string; place_name?: string } | null = null;
+
+  try {
+    place = await reversePlace(lng, lat);
+  } catch {
+    place = null;
+  }
+
+  const current = waypoints.value.find((w) => w.id === id);
+  if (!current || current.lng !== lng || current.lat !== lat) return;
+
+  current.name = place?.text || place?.place_name || null;
+  current.address = place?.place_name ?? null;
 }
 
+const waypointTitle = (wp: Waypoint) =>
+  wp.name === undefined ? 'Locating…' : (wp.name ?? `${wp.lat.toFixed(5)}, ${wp.lng.toFixed(5)}`);
 
+const waypointAddress = (wp: Waypoint) =>
+  wp.name === undefined ? '' : (wp.address ?? 'No address');
 
 async function redrawRoute() {
     if (
-        form.destination_lat === null ||
-        form.destination_lng === null ||
-        !map.value
+      form.destination_lat === null ||
+      form.destination_lng === null ||
+      !map.value
     ) {
-        form.distance_meters = null;
-        form.duration_seconds = null;
-        form.route_geometry = null;
-        routeCoordinates.value = [];
-
-        clearRouteLine();
-        clearAlternativeRouteLayers();
-        clearStopMarkers();
-
-        return;
+      form.distance_meters = null;
+      form.duration_seconds = null;
+      form.route_geometry = null;
+      routeCoordinates.value = [];
+      clearRouteLine();
+      clearAlternativeRouteLayers();
+      clearStopMarkers();
+      return;
     }
 
     const allCoords: string[] = [
-        `${origin.lng},${origin.lat}`,
-        ...waypoints.value.map((w) => `${w.lng},${w.lat}`),
-        ...form.stops.map((s) => `${s.longitude},${s.latitude}`),
-        `${form.destination_lng},${form.destination_lat}`,
+      `${origin.lng},${origin.lat}`,
+      ...waypoints.value.map((waypoint) => `${waypoint.lng},${waypoint.lat}`),
+      ...form.stops.map((stop) => `${stop.longitude},${stop.latitude}`),
+      `${form.destination_lng},${form.destination_lat}`,
     ];
 
     const url = new URL(
-        `https://api.mapbox.com/directions/v5/mapbox/driving/${allCoords.join(';')}`,
+      `https://api.mapbox.com/directions/v5/mapbox/driving/${allCoords.join(';')}`,
     );
 
     url.searchParams.set('geometries', 'geojson');
@@ -1116,90 +879,38 @@ async function redrawRoute() {
     const data = await res.json();
 
     if (!data.routes?.length) {
-        form.distance_meters = null;
-        form.duration_seconds = null;
-        form.route_geometry = null;
-        routeCoordinates.value = [];
-        originalPrimaryRoute.value = null;
+      form.distance_meters = null;
+      form.duration_seconds = null;
+      form.route_geometry = null;
+      routeCoordinates.value = [];
+      allRouteOptions.value = [];
+      selectedRouteIndex.value = 0;
 
-        clearRouteLine();
-        clearAlternativeRouteLayers();
-        return;
+      clearRouteLine();
+      clearAlternativeRouteLayers();
+
+      lineClickMessage.value =
+        'No route could be generated for the current points. Try changing the destination or stops.';
+
+      return;
     }
 
-    const primary = data.routes[0];
+    allRouteOptions.value = data.routes
+      .slice(0, 3)
+      .map((route: any, index: number) => ({
+        index,
+        geometry: route.geometry as GeoJSON.LineString,
+        distance: route.distance,
+        duration: route.duration,
+        coordinates: route.geometry.coordinates as [number, number][],
+      }));
 
-    form.distance_meters = Math.round(primary.distance);
-    form.duration_seconds = Math.round(primary.duration);
-    form.route_geometry = JSON.stringify(primary.geometry);
-    routeCoordinates.value = primary.geometry.coordinates as [number, number][];
-    selectedRouteIndex.value = 0;
-
-    originalPrimaryRoute.value = {
-        geometry: primary.geometry,
-        distance: primary.distance,
-        duration: primary.duration,
-        coordinates: primary.geometry.coordinates as [number, number][],
-    };
-
-    const primarySrc = map.value.getSource('route-line') as mapboxgl.GeoJSONSource;
-
-    primarySrc.setData({
-        type: 'FeatureCollection',
-        features: [
-            {
-                type: 'Feature',
-                properties: {},
-                geometry: primary.geometry,
-            },
-        ],
-    });
-
-    alternativeRoutes.value = [];
-
-    data.routes.slice(1, 3).forEach((alt: any, i: number) => {
-        const altIndex = i + 1;
-
-        alternativeRoutes.value.push({
-            index: altIndex,
-            geometry: alt.geometry,
-            distance: alt.distance,
-            duration: alt.duration,
-            coordinates: alt.geometry.coordinates as [number, number][],
-        });
-    });
-
-    refreshAlternativeRouteLayers();
-
-    renderStopMarkers();
-    renderWaypointMarkers();
+    applySelectedRoute(0);
     fitMap();
 }
 
-function fitMap() {
-    if (!map.value) return;
-
-    const bounds = new mapboxgl.LngLatBounds();
-    bounds.extend([origin.lng, origin.lat]);
-
-    if (form.destination_lat !== null && form.destination_lng !== null) {
-        bounds.extend([form.destination_lng, form.destination_lat]);
-    }
-
-    form.stops.forEach((stop) => bounds.extend([stop.longitude, stop.latitude]));
-    waypoints.value.forEach((waypoint) =>
-        bounds.extend([waypoint.lng, waypoint.lat]),
-    );
-
-    map.value.fitBounds(bounds, {
-        padding: 60,
-        maxZoom: 14,
-    });
-}
-
-
-
 function onDragStart(index: number) {
+    hoveredPin.value = null;
     draggedStopIndex.value = index;
 }
 
@@ -1232,96 +943,537 @@ function onDragEnd() {
     dragOverIndex.value = null;
 }
 
-
-
 function removeStop(index: number) {
+    hoveredPin.value = null;
     form.stops.splice(index, 1);
     renderStopMarkers();
     redrawRoute();
 }
 
-function clearDestination() {
-    form.destination_name = '';
-    form.destination_lat = null;
-    form.destination_lng = null;
-    destinationQuery.value = '';
-    destinationSuggestions.value = [];
+async function reversePlace(lng: number, lat: number) {
+  const url = new URL(
+    `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json`,
+  );
 
-    form.distance_meters = null;
-    form.duration_seconds = null;
-    form.route_geometry = null;
+  url.searchParams.set('access_token', mapboxgl.accessToken);
+  url.searchParams.set('country', 'ph');
+  url.searchParams.set('language', 'en');
+  url.searchParams.set('limit', '1');
+
+  const res = await fetch(url.toString());
+  const data = await res.json();
+
+  return data.features?.[0] ?? null;
+}
+
+async function setDestinationFromSuggestion(item: SearchSuggestion) {
+  const destinationChanged =
+    form.destination_lng !== item.longitude ||
+    form.destination_lat !== item.latitude;
+
+  if (destinationChanged) {
     form.stops = [];
-
-    lineClickMessage.value = '';
-    routeCoordinates.value = [];
-
+    waypoints.value = [];
     landmarkSuggestions.value = [];
     showLandmarks.value = false;
 
-    alternativeRoutes.value = [];
-    selectedRouteIndex.value = 0;
-    originalPrimaryRoute.value = null;
+    clearStopMarkers();
+    clearWaypointMarkers();
+    clearAlternativeRouteLayers();
+    clearRouteLine();
+  }
 
+  form.destination_name = item.name;
+  form.destination_lat = item.latitude;
+  form.destination_lng = item.longitude;
+
+  destinationQuery.value = item.full_address;
+  destinationAddress.value = item.full_address;
+  destinationSearchRequest++;
+  destinationSuggestions.value = [];
+  lineClickMessage.value = '';
+  form.clearErrors('destination_name');
+
+  destinationMarker.value?.remove();
+
+  destinationMarker.value = createPin('destination', true)
+    .setLngLat([item.longitude, item.latitude])
+    .setPopup(new mapboxgl.Popup().setText(item.name))
+    .addTo(map.value!);
+
+  destinationMarker.value.on('dragend', async () => {
+    const ll = destinationMarker.value!.getLngLat();
+
+    form.destination_lat = ll.lat;
+    form.destination_lng = ll.lng;
+
+    const place = await reversePlace(ll.lng, ll.lat);
+
+    destinationAddress.value = place?.place_name ?? null;
+
+    if (place) {
+      form.destination_name =
+        place.text || place.place_name || form.destination_name;
+      destinationQuery.value = place.place_name || form.destination_name;
+    }
+
+    form.stops = [];
     waypoints.value = [];
-    stopQuery.value = '';
-    stopSuggestions.value = [];
-
-    destinationMarker.value?.remove();
-    destinationMarker.value = null;
+    landmarkSuggestions.value = [];
+    showLandmarks.value = false;
 
     clearStopMarkers();
     clearWaypointMarkers();
-    clearRouteLine();
     clearAlternativeRouteLayers();
+    clearRouteLine();
 
-    if (!routeNameTouched.value) {
-        form.route_name = form.origin_name;
-    }
+    await redrawRoute();
+  });
+
+  await redrawRoute();
+  fitMap();
 }
+
+async function setDestinationFromCoordinates(lng: number, lat: number) {
+  const place = await reversePlace(lng, lat);
+
+  await setDestinationFromSuggestion({
+    id: place?.id ?? `dest-${lng}-${lat}`,
+    name: place?.text || place?.place_name || 'Pinned Destination',
+    full_address: place?.place_name || 'Pinned destination',
+    latitude: lat,
+    longitude: lng,
+  });
+}
+
+async function addDetourWaypoint(lng: number, lat: number) {
+  const insertIndex = findInsertIndex(lng, lat);
+  const waypoint: Waypoint = { id: nextWaypointId++, lng, lat };
+  waypoints.value.splice(insertIndex, 0, waypoint);
+
+  lineClickMessage.value =
+    'Detour point added. Drag the detour pin to reshape the route.';
+
+  void resolveWaypointName(waypoint.id);
+  await redrawRoute();
+  renderWaypointMarkers();
+}
+
+function onRouteNameInput(value: string | number) {
+  form.route_name = String(value);
+  form.clearErrors('route_name');
+}
+
+async function copyToClipboard(value?: string | null, label = 'Value') {
+  const text = (value ?? '').trim();
+  if (!text || text === '—') return;
+  try {
+    await copy(text);
+    toast.success(`${label} copied to clipboard.`);
+  } catch {
+    toast.error(`Could not copy ${label.toLowerCase()}.`);
+  }
+}
+
+// ── Stops & alternative routes ─────────────────────────────────────────────
+
+const loadingDestination = ref(false);
+const loadingStopSearch = ref(false);
+const loadingAutoGenerate = ref(false);
+
+const stopQuery = ref('');
+const stopSuggestions = ref<SearchSuggestion[]>([]);
+const autoGenerateInterval = ref(5);
+
+// "Add Stops" starts as a search box plus a Generate button; Generate swaps the search box for the
+// kilometre prompt (with a warning) until the stops are generated or the prompt is cancelled.
+const generateMode = ref(false);
+const intervalField = ref<HTMLElement | null>(null);
+
+const canGenerate = computed(
+  () =>
+    Number.isFinite(autoGenerateInterval.value) &&
+    autoGenerateInterval.value >= 1 &&
+    autoGenerateInterval.value <= 50 &&
+    routeCoordinates.value.length >= 2,
+);
+
+const MAX_STOP_DISTANCE_M = 500;
+
+const originalPrimaryRoute = computed(() => allRouteOptions.value[0] ?? null);
+const alternativeRoutes = computed(() => allRouteOptions.value.slice(1));
+
+function selectAlternativeRoute(index: number) {
+  applySelectedRoute(index);
+  lineClickMessage.value = `Switched to Route option ${index + 1}.`;
+}
+
+function sampleRouteAtIntervals(
+  coords: [number, number][],
+  intervalKm: number,
+): [number, number][] {
+  const intervalM = intervalKm * 1000;
+  const samples: [number, number][] = [];
+
+  let accumulated = 0;
+  let nextTarget = intervalM;
+
+  for (let i = 1; i < coords.length; i++) {
+    const segDist = haversine(coords[i - 1], coords[i]);
+    accumulated += segDist;
+
+    while (accumulated >= nextTarget) {
+      const t = 1 - (accumulated - nextTarget) / segDist;
+
+      samples.push([
+        coords[i - 1][0] + t * (coords[i][0] - coords[i - 1][0]),
+        coords[i - 1][1] + t * (coords[i][1] - coords[i - 1][1]),
+      ]);
+
+      nextTarget += intervalM;
+    }
+  }
+
+  return samples;
+}
+
+async function searchPlaces(query: string): Promise<SearchSuggestion[]> {
+  if (!query.trim()) return [];
+
+  const url = new URL(
+    `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json`,
+  );
+
+  url.searchParams.set('access_token', mapboxgl.accessToken);
+  url.searchParams.set('autocomplete', 'true');
+  url.searchParams.set('limit', '6');
+  url.searchParams.set('country', 'ph');
+  url.searchParams.set('language', 'en');
+
+  const res = await fetch(url.toString());
+  const data = await res.json();
+
+  return (data.features ?? []).map((f: any) => ({
+    id: f.id,
+    name: f.text || f.place_name,
+    full_address: f.place_name,
+    longitude: f.center[0],
+    latitude: f.center[1],
+  }));
+}
+
+async function searchPlacesAlongRoute(
+  query: string,
+): Promise<SearchSuggestion[]> {
+  if (!query.trim() || routeCoordinates.value.length < 2) return [];
+
+  const mid =
+    routeCoordinates.value[Math.floor(routeCoordinates.value.length / 2)];
+
+  const url = new URL(
+    `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json`,
+  );
+
+  url.searchParams.set('access_token', mapboxgl.accessToken);
+  url.searchParams.set('autocomplete', 'true');
+  url.searchParams.set('limit', '10');
+  url.searchParams.set('country', 'ph');
+  url.searchParams.set('language', 'en');
+  url.searchParams.set('proximity', `${mid[0]},${mid[1]}`);
+
+  const res = await fetch(url.toString());
+  const data = await res.json();
+
+  const candidates: SearchSuggestion[] = (data.features ?? []).map(
+    (f: any) => ({
+      id: f.id,
+      name: f.text || f.place_name,
+      full_address: f.place_name,
+      longitude: f.center[0],
+      latitude: f.center[1],
+    }),
+  );
+
+  const existingNames = new Set(
+    form.stops.map((stop) => stop.stop_name.toLowerCase().trim()),
+  );
+
+  return candidates
+    .filter((candidate) => {
+      const snapped = snapToRoute(candidate.longitude, candidate.latitude);
+
+      if (
+        haversine(snapped, [candidate.longitude, candidate.latitude]) >
+        MAX_STOP_DISTANCE_M
+      ) {
+        return false;
+      }
+
+      if (existingNames.has(candidate.name.toLowerCase().trim())) {
+        return false;
+      }
+
+      if (
+        form.stops.some(
+          (stop) =>
+            haversine(
+              [stop.longitude, stop.latitude],
+              [candidate.longitude, candidate.latitude],
+            ) < 50,
+        )
+      ) {
+        return false;
+      }
+
+      return true;
+    })
+    .slice(0, 6);
+}
+
+async function addStopFromSuggestion(
+  item: SearchSuggestion,
+  stopType: StopItem['stop_type'] = 'stop',
+) {
+  const alreadyExists = form.stops.some(
+    (stop) =>
+      stop.stop_name.toLowerCase().trim() === item.name.toLowerCase().trim(),
+  );
+
+  if (alreadyExists) {
+    stopQuery.value = '';
+    stopSuggestions.value = [];
+    lineClickMessage.value = `"${item.name}" is already added as a stop.`;
+    return;
+  }
+
+  let [finalLng, finalLat] = [item.longitude, item.latitude];
+
+  if (routeCoordinates.value.length >= 2) {
+    [finalLng, finalLat] = snapToRoute(item.longitude, item.latitude);
+  }
+
+  if (
+    form.stops.some(
+      (stop) =>
+        haversine([stop.longitude, stop.latitude], [finalLng, finalLat]) < 50,
+    )
+  ) {
+    stopQuery.value = '';
+    stopSuggestions.value = [];
+    lineClickMessage.value = `A stop already exists very close to "${item.name}".`;
+    return;
+  }
+
+  form.stops.push({
+    stop_name: item.name,
+    stop_type: stopType,
+    address: item.full_address,
+    latitude: finalLat,
+    longitude: finalLng,
+    mapbox_feature_id: item.id,
+    stop_order: form.stops.length + 2,
+  });
+
+  stopQuery.value = '';
+  stopSuggestions.value = [];
+
+  renderStopMarkers();
+  await redrawRoute();
+}
+
+async function autoGenerateStops() {
+  if (routeCoordinates.value.length < 2) return;
+
+  loadingAutoGenerate.value = true;
+
+  try {
+    const samples = sampleRouteAtIntervals(
+      routeCoordinates.value,
+      autoGenerateInterval.value,
+    );
+
+    const newStops: StopItem[] = [];
+
+    for (const [lng, lat] of samples) {
+      const place = await reversePlace(lng, lat);
+
+      newStops.push({
+        stop_name:
+          place?.text ||
+          place?.place_name ||
+          `Stop (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+        stop_type: 'stop',
+        address: place?.place_name ?? null,
+        latitude: lat,
+        longitude: lng,
+        mapbox_feature_id: place?.id ?? null,
+        stop_order: 0,
+      });
+    }
+
+    form.stops = newStops;
+    renderStopMarkers();
+    await redrawRoute();
+  } finally {
+    loadingAutoGenerate.value = false;
+  }
+}
+
+function startGenerate() {
+  if (routeCoordinates.value.length < 2) return;
+
+  stopQuery.value = '';
+  stopSuggestions.value = [];
+  generateMode.value = true;
+}
+
+// The km field only exists once the search box has faded out, so it is focused after it fades in.
+function focusIntervalField() {
+  if (!generateMode.value) return;
+
+  intervalField.value?.querySelector('input')?.focus();
+}
+
+/** The fade between the search box / Generate button and the km prompt / Generate + cancel buttons. */
+const generateFade = {
+  mode: 'out-in',
+  enterActiveClass: 'transition-opacity duration-150 ease-out',
+  leaveActiveClass: 'transition-opacity duration-100 ease-in',
+  enterFromClass: 'opacity-0',
+  leaveToClass: 'opacity-0',
+} as const;
+
+function cancelGenerate() {
+  if (loadingAutoGenerate.value) return;
+
+  generateMode.value = false;
+}
+
+async function confirmGenerate() {
+  if (loadingAutoGenerate.value || !canGenerate.value) return;
+
+  await autoGenerateStops();
+  generateMode.value = false;
+}
+
+let destinationSearchRequest = 0;
+
+watch(destinationQuery, async (value) => {
+  const query = value.trim();
+  const request = ++destinationSearchRequest;
+
+  // Choosing a suggestion (or dragging the pin) fills the search box with the destination itself,
+  // which is not a new search, and a search still in flight must not bring the list back afterwards.
+  if (!query || query === form.destination_name || query === destinationAddress.value) {
+    destinationSuggestions.value = [];
+    loadingDestination.value = false;
+    return;
+  }
+
+  loadingDestination.value = true;
+
+  try {
+    const results = await searchPlaces(query);
+
+    if (request === destinationSearchRequest) destinationSuggestions.value = results;
+  } finally {
+    if (request === destinationSearchRequest) loadingDestination.value = false;
+  }
+});
+
+// The input stays enabled while searching (disabling it would drop focus after every keystroke), so
+// searches wait for a short pause in typing and a slower response never overwrites a newer one.
+let stopSearchTimer: ReturnType<typeof setTimeout> | null = null;
+let stopSearchRequest = 0;
+
+watch(stopQuery, (value) => {
+  if (stopSearchTimer) clearTimeout(stopSearchTimer);
+
+  const query = value.trim();
+  const request = ++stopSearchRequest;
+
+  if (!query || routeCoordinates.value.length < 2) {
+    stopSuggestions.value = [];
+    loadingStopSearch.value = false;
+    return;
+  }
+
+  loadingStopSearch.value = true;
+
+  stopSearchTimer = setTimeout(async () => {
+    try {
+      const results = await searchPlacesAlongRoute(query);
+
+      if (request === stopSearchRequest) stopSuggestions.value = results;
+    } finally {
+      if (request === stopSearchRequest) loadingStopSearch.value = false;
+    }
+  }, 300);
+});
 
 function buildRouteStopsForSubmit(): StopItem[] {
-    return [
-        {
-            stop_name: form.origin_name,
-            stop_type: 'origin',
-            address: form.origin_name,
-            latitude: Number(form.origin_lat),
-            longitude: Number(form.origin_lng),
-            mapbox_feature_id: null,
-            stop_order: 1,
-        },
-        ...form.stops.map((stop, index) => ({
-            ...stop,
-            stop_order: index + 2,
-        })),
-        {
-            stop_name: form.destination_name,
-            stop_type: 'destination',
-            address: destinationQuery.value || form.destination_name,
-            latitude: Number(form.destination_lat),
-            longitude: Number(form.destination_lng),
-            mapbox_feature_id: null,
-            stop_order: form.stops.length + 2,
-        },
-    ];
+  return [
+    {
+      stop_name: form.origin_name,
+      stop_type: 'origin',
+      address: form.origin_name,
+      latitude: Number(form.origin_lat),
+      longitude: Number(form.origin_lng),
+      mapbox_feature_id: null,
+      stop_order: 1,
+    },
+    ...form.stops.map((stop, index) => ({
+      ...stop,
+      stop_order: index + 2,
+    })),
+    {
+      stop_name: form.destination_name,
+      stop_type: 'destination',
+      address: destinationAddress.value || form.destination_name,
+      latitude: Number(form.destination_lat),
+      longitude: Number(form.destination_lng),
+      mapbox_feature_id: null,
+      stop_order: form.stops.length + 2,
+    },
+  ];
 }
 
-async function submit() {
-    if (
-        !form.destination_name ||
-        form.destination_lat === null ||
-        form.destination_lng === null
-    ) {
-        form.setError('destination_name', 'Please select or pin a destination.');
-        return;
-    }
+/** True once something has been typed after the "PITX - " prefix. */
+const hasCustomRouteName = computed(() => {
+  const name = form.route_name.trim();
 
-    form.clearErrors('destination_name');
-    form.stops = buildRouteStopsForSubmit();
+  return name !== '' && name !== ROUTE_NAME_PREFIX.trim();
+});
 
-    await nextTick();
+function submit() {
+  let valid = true;
 
-    form.post(store().url);
+  if (!hasCustomRouteName.value) {
+    form.setError('route_name', 'Enter a route name after the "PITX - " prefix.');
+    valid = false;
+  }
+
+  if (
+    !form.destination_name ||
+    form.destination_lat === null ||
+    form.destination_lng === null
+  ) {
+    form.setError('destination_name', 'Please select or pin a destination.');
+    valid = false;
+  }
+
+  if (!valid) return;
+
+  form.clearErrors('route_name', 'destination_name');
+
+  form
+    .transform((data) => ({
+      ...data,
+      stops: buildRouteStopsForSubmit(),
+    }))
+    .post(store().url, {
+      preserveScroll: true,
+    });
 }
 
 onMounted(async () => {
@@ -1330,526 +1482,624 @@ onMounted(async () => {
 });
 
 watch(resolvedAppearance, (appearance) => {
-    if (map.value?.isStyleLoaded()) {
-        map.value.setConfigProperty(
-            'basemap',
-            'lightPreset',
-            appearance === 'dark' ? 'night' : 'day',
-        );
-        if (map.value.getLayer('route-line-layer')) {
-            map.value.setPaintProperty(
-                'route-line-layer',
-                'line-color',
-                appearance === 'dark' ? '#3b82f6' : '#2563eb',
-            );
-        }
-    }
+  if (map.value?.isStyleLoaded()) {
+    map.value.setConfigProperty(
+      'basemap',
+      'lightPreset',
+      appearance === 'dark' ? 'night' : 'day',
+    );
+  }
 });
 
 onBeforeUnmount(() => {
-    originMarker?.remove();
-    destinationMarker.value?.remove();
-    clearStopMarkers();
-    clearWaypointMarkers();
-    map.value?.remove();
+  if (stopSearchTimer) clearTimeout(stopSearchTimer);
+  mapResizeObserver?.disconnect();
+  mapResizeObserver = null;
+  themeObserver?.disconnect();
+  themeObserver = null;
+  originMarker?.remove();
+  destinationMarker.value?.remove();
+  clearStopMarkers();
+  clearWaypointMarkers();
+  map.value?.remove();
 });
 
+const routeReady = computed(() => hasDestination.value && !!form.route_geometry);
+
+const selectedGate = computed(
+  () => props.gates.find((gate) => String(gate.id) === form.gate_id) ?? null,
+);
+
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Routes', href: index().url },
-    { title: 'Add', href: '#' },
+  { title: 'Routes', href: index().url },
+  { title: 'New Route', href: create().url },
 ];
+
 </script>
 
 <template>
-    <Head title="Add New Route" />
+  <Head title="Add Route" />
 
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
-            <Card class="flex min-h-0 min-w-0 flex-1 flex-col lg:h-full">
-                <CardHeader class="flex flex-row items-start gap-3">
-                    <Button as-child variant="header-actions" size="icon">
-                        <Link :href="index().url" aria-label="Back to routes">
-                            <RiArrowLeftLine class="h-4 w-4" />
-                        </Link>
-                    </Button>
-                    <div class="flex min-w-0 flex-col">
-                        <CardTitle class="font-semibold">Add New Route</CardTitle>
-                        <CardDescription>
-                            Define the route, map its path, and organize its stops.
-                        </CardDescription>
-                    </div>
-                </CardHeader>
-                <div class="no-scrollbar flex h-full min-h-0 flex-1 flex-row max-h-full">
-                    <div class="order-1 grid h-full min-w-0 flex-1 items-stretch gap-4 px-6 grid-cols-2 pt-2 max-h-full">
-                        <div class="flex min-h-0 flex-col px-0 max-h-full flex-1">
-                            <CardContent class="flex min-h-0 flex-1 flex-col gap-2 px-0">
-                                <!-- TODO: remind me soon to put redesign this part -->
-                                <!-- <div
-                                    v-if="hasDestination"
-                                    class="flex items-start gap-2 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2.5"
-                                >
-                                    <div class="mt-1 h-2 w-2 shrink-0 rounded-full bg-purple-500" />
-                                    <div class="min-w-0 flex-1">
-                                        <p class="text-xs font-medium text-purple-800">Route Reshaping</p>
-                                        <p class="text-xs text-purple-600">
-                                            Click the blue line to add a detour point. Drag purple markers to reshape. Right-click to remove.
-                                        </p>
-                                    </div>
-                                    <Button
-                                        v-if="waypoints.length"
-                                        type="button"
-                                        size="sm"
-                                        variant="ghost"
-                                        class="h-7 shrink-0 border border-purple-300 text-xs text-purple-700 hover:bg-purple-100"
-                                        @click="removeAllWaypoints"
-                                    >
-                                        Clear ({{ waypoints.length }})
-                                    </Button>
-                                </div> -->
-                                <div class="relative min-h-0 w-full flex-1">
-                                    <div
-                                        ref="mapEl"
-                                        class="route-map h-full w-full overflow-hidden rounded-md p-0"
-                                    />
+  <AppLayout :breadcrumbs="breadcrumbs">
+    <PanelLayout>
+      <MainPanel>
+        <LeadPanel class="h-fit p-0">
+          <LeadingCard
+            title="New route"
+            description="Add a new route into the system."
+            variant="entity-crud"
+            :back="index().url"
+            :more="false"
+          />
+        </LeadPanel>
 
-                                    <div class="pointer-events-none absolute inset-x-3 top-3 z-10 max-w-2/3">
-                                        <Card class="pointer-events-auto">
-                                            <CardHeader class="mb-2">
-                                                <CardTitle class="text-sm">Destination</CardTitle>
-                                                <CardDescription class="text-custom-shadow/80">
-                                                    {{ lineClickMessage || 'Click the map to pin destination.' }}
-                                                </CardDescription>
-                                            </CardHeader>
+        <Card>
+          <CardHeader>
+            <CardTitle>Details</CardTitle>
+            <CardDescription>Fields with <span class="text-destructive font-semibold">*</span> are required.</CardDescription>
+          </CardHeader>
 
-                                            <CardContent class="relative">
-                                                <SearchInput
-                                                    v-model="destinationQuery"
-                                                    placeholder="Search destination..."
-                                                />
-                                            </CardContent>
-
-                                            <div class="mt-2 flex flex-col gap-y-2">
-                                                <div
-                                                    v-if="hasDestination"
-                                                    class="flex items-center justify-between px-3 py-2 text-left cursor-pointer rounded-md mx-6 border hover:bg-custom-accent-3/5 bg-custom-accent-3/10 border-custom-accent-3"
-                                                >
-                                                    <div class="flex flex-row gap-2 items-center">
-                                                        <RiMapPin2Line class="h-4 w-4 shrink-0 text-custom-accent-3" />
-                                                        <span class="min-w-0 truncate text-sm font-semibold">
-                                                            {{ form.destination_name }}
-                                                        </span>
-                                                    </div>
-                                                    
-                                                    <RiCheckLine class="h-4 w-4 shrink-0 text-custom-accent-3" />
-                                                </div>
-
-                                                <div
-                                                    v-if="destinationSuggestions.length"
-                                                    class="overflow-hidden mx-6"
-                                                >
-                                                    <button
-                                                        v-for="item in destinationSuggestions"
-                                                        :key="item.id"
-                                                        type="button"
-                                                        class="flex w-full items-start gap-2 px-3 py-2 text-left cursor-pointer rounded-md hover:bg-custom-primary/10"
-                                                        @click="setDestinationFromSuggestion(item)"
-                                                    >
-                                                        <RiMapPin2Line class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
-                                                        <div class="min-w-0">
-                                                            <div class="truncate text-sm text-custom-shadow font-semibold">{{ item.name }}</div>
-                                                            <div class="truncate text-xs text-custom-shadow/80">
-                                                                {{ item.full_address }}
-                                                            </div>
-                                                        </div>
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            
-
-                                            
-
-                                            <!-- <p v-else class="text-xs text-custom-shadow/80 pt-2 text-center">Click anywhere on the map to set destination.</p> -->
-
-                                            <InputError :message="form.errors.destination_name" />
-                                        </Card>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </div>
-                        <div class="space-y-4 px-0 no-scrollbar overflow-y-auto">
-                            <div class="space-y-4">
-                                <div class="flex items-center gap-3 pt-2">
-                                    <p class="font-semibold text-custom-accent-3 text-base">Alternative Routes
-                                        <!-- <Badge variant="accent-3">{{ totalVisibleStops }}</Badge> -->
-                                    </p>
-                                    <Separator class="flex-1" />
-                                </div>
-
-                                <CardContent class="space-y-2 px-0">
-                                    <!-- TODO: use Button component and style the active index with primary-outline and the rest ghost-outline -->
-                                    <button
-                                        type="button"
-                                        :class="[
-                                            'cursor-pointer w-full rounded-md border p-3 text-left transition-all duration-200 hover:-translate-y-0.5',
-                                            selectedRouteIndex === 0
-                                                ? 'hover:bg-custom-accent-3/5 bg-custom-accent-3/10 border-custom-accent-3'
-                                                : 'hover:bg-custom-accent-3/5 bg-transparent border-custom-bg-dark dark:border-custom-bg-light',
-                                        ]"
-                                        @click="selectAlternativeRoute(0)"
-                                    >
-                                        <div class="flex items-center gap-3">
-                                            <div class="min-w-0 flex-1">
-                                                <div class="flex items-center justify-between gap-2">
-                                                    <p class="flex items-center gap-x-2">
-                                                        <span class="font-semibold">
-                                                            Route 1
-                                                        </span>
-                                                        <span class="text-xs">
-                                                            Primary
-                                                        </span>
-                                                    </p>
-                                                    <p class="shrink-0 text-xs text-custom-shadow/80">
-                                                        {{ originalPrimaryRoute ? fmtDistance(originalPrimaryRoute.distance) : '—' }}
-                                                        |
-                                                        {{ originalPrimaryRoute ? fmtDuration(originalPrimaryRoute.duration) : '—' }}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </button>
-
-                                    <button
-                                        v-for="alt in alternativeRoutes"
-                                        :key="alt.index"
-                                        type="button"
-                                        :class="[
-                                            'cursor-pointer w-full rounded-md border p-3 text-left transition-all duration-200 hover:-translate-y-0.5',
-                                            selectedRouteIndex === alt.index
-                                                ? 'hover:bg-custom-accent-3/5 bg-custom-accent-3/10 border-custom-accent-3'
-                                                : 'hover:bg-custom-accent-3/5 bg-transparent border-custom-bg-dark dark:border-custom-bg-light',
-                                        ]"
-                                        @click="selectAlternativeRoute(alt.index)"
-                                    >
-                                        <div class="flex items-center gap-3">
-                                            <div class="min-w-0 flex-1">
-                                                <div class="flex items-center justify-between gap-2">
-                                                    <p class="flex items-center gap-x-2">
-                                                        <span class="font-semibold">
-                                                            Route {{ alt.index + 1 }}
-                                                        </span>
-                                                        <span class="text-xs">
-                                                            Alternate
-                                                        </span>
-                                                    </p>
-                                                    <p class="shrink-0 text-xs text-custom-shadow/80">
-                                                        {{ fmtDistance(alt.distance) }} | {{ fmtDuration(alt.duration) }}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </button>
-                                </CardContent>
-                            </div>
-
-                            <div v-if="waypoints.length" class="space-y-4">
-                                <div class="flex items-center gap-3 pt-2">
-                                    <p class="font-semibold text-custom-accent-3 text-base">Detour Points
-                                        <!-- <Badge variant="accent-3">{{ totalVisibleStops }}</Badge> -->
-                                    </p>
-                                    <Separator class="flex-1" />
-                                </div>
-
-                                <CardContent class="space-y-2 px-0">
-                                    <div
-                                        v-for="(wp, index) in waypoints"
-                                        :key="index"
-                                        class="flex w-full items-center gap-2.5 rounded-md border border-custom-bg-dark bg-transparent p-3 text-left transition-all duration-200 dark:border-custom-bg-light"
-                                    >
-                                        <p class="flex-1 font-mono tex-xs font-semibold">
-                                            {{ wp.lat.toFixed(4) }}, {{ wp.lng.toFixed(4) }}
-                                        </p>
-                                        <Button
-                                            type="button"
-                                            aria-label="Remove detour point"
-                                            @click="waypoints.splice(index, 1); renderWaypointMarkers(); redrawRoute()"
-                                            class="flex h-6 w-6 items-center rounded-full text-custom-shadow transition-all duration-200 hover:bg-destructive/20 hover:text-destructive cursor-pointer"
-                                        >
-                                            <RiCloseLine class="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                    <Button
-                                        type="button"
-                                        variant="destructive"
-                                        class="w-full"
-                                        @click="removeAllWaypoints"
-                                    >
-                                        Clear all
-                                    </Button>
-                                </CardContent>
-                            </div>
-
-                            <div class="space-y-4">
-                                <div class="flex items-center gap-3 pt-2">
-                                    <p class="font-semibold text-custom-accent-3">Add Stops
-                                        <!-- <Badge variant="accent-3">{{ totalVisibleStops }}</Badge> -->
-                                    </p>
-                                    <Separator class="flex-1" />
-                                </div>
-
-                                <CardContent class="space-y-2 px-0">
-                                    <div class="space-y-2">
-                                        <div class="relative">
-                                            <RiSearchLine class="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                                            <Input
-                                                v-model="stopQuery"
-                                                class="h-10 pl-9 pr-9 text-sm"
-                                                placeholder="Search route stop..."
-                                                :disabled="loadingStopSearch"
-                                            />
-                                            <button
-                                                v-if="stopQuery"
-                                                type="button"
-                                                class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                                @click="stopQuery = ''; stopSuggestions = []"
-                                            >
-                                                <RiCloseLine class="h-3.5 w-3.5" />
-                                            </button>
-                                        </div>
-
-                                        <div
-                                            v-if="stopSuggestions.length"
-                                        >
-                                            <button
-                                                v-for="item in stopSuggestions"
-                                                :key="item.id"
-                                                type="button"
-                                                class="flex w-full cursor-pointer items-start gap-2 rounded-md px-3 py-2 text-left hover:bg-custom-primary/10"
-                                                @click="addStopFromSuggestion(item)"
-                                            >
-                                                <RiMapPin2Line class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
-                                                <div class="min-w-0">
-                                                    <div class="truncate text-sm font-semibold text-custom-shadow">{{ item.name }}</div>
-                                                    <div class="truncate text-xs text-custom-shadow/80">
-                                                        {{ item.full_address }}
-                                                    </div>
-                                                </div>
-                                            </button>
-                                        </div>
-
-                                        <InputError
-                                            v-if="!stopSuggestions.length && stopQuery && !loadingStopSearch"
-                                            message="No places found within 500 m of the route."
-                                        />
-                                    </div>
-
-                                    <div class="flex items-center gap-3 pt-2">
-                                        <Separator class="flex-1" />
-                                        <p class="text-sm">or
-                                            <!-- <Badge variant="accent-3">{{ totalVisibleStops }}</Badge> -->
-                                        </p>
-                                        <Separator class="flex-1" />
-                                    </div>
-
-                                    <div class="space-y-2">
-                                        <!-- <div class="flex items-center gap-1.5 text-xs font-medium">
-                                            <RiMagicLine class="h-3.5 w-3.5 text-muted-foreground" />
-                                            Auto-Generate Stops
-                                        </div> -->
-
-                                        <div class="flex items-center gap-2">
-                                            <Input
-                                                v-model.number="autoGenerateInterval"
-                                                type="number"
-                                                min="1"
-                                                max="50"
-                                                class="h-8 w-20 text-sm flex-1"
-                                            />
-                                            <span class="text-sm text-custom-shadow">km apart</span>
-                                            <Button
-                                                type="button"
-                                                variant="float-primary"
-                                                class="group items-center"
-                                                :disabled="loadingAutoGenerate || routeCoordinates.length < 2"
-                                                @click="autoGenerateStops"
-                                            >
-                                                <RiAiGenerate class="text-custom-bg-light dark:text-custom-shadow"/>
-                                                {{ loadingAutoGenerate ? 'Generating...' : 'Generate' }}
-                                            </Button>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs text-custom-shadow/80 pt-2 text-center">This replaces all current stops.</p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </div>
-                        </div>
-                    </div>
+          <CardContent class="flex flex-row gap-4">
+            <div class="flex-1">
+              <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
+                <div class="relative h-[420px] w-full">
+                  <div
+                    ref="mapEl"
+                    class="route-map h-full w-full overflow-hidden rounded-md p-0"
+                  />
                 </div>
-            </Card>
 
-            <Card class="min-h-0 lg:flex lg:h-full lg:w-100">
-                <CardHeader>
-                    <CardTitle>Details</CardTitle>
-                    <CardDescription>Configure and review details</CardDescription>
-                </CardHeader>
+                <div class="hidden lg:block">
+                  <CardSeparator title="Map Controls" />
 
-                <CardContent class="no-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto py-2">
-                    <section class="space-y-4">
-                        <div class="space-y-4">
-                            <div class="flex flex-col gap-y-2">
-                                <Label for="route_name_sidebar">
-                                    Name
-                                </Label>
-                                <Input
-                                    id="route_name_sidebar"
-                                    :model-value="form.route_name"
-                                    placeholder="Enter route name"
-                                    class="h-10"
-                                    @update:model-value="onRouteNameInput"
-                                />
-                                <InputError :message="form.errors.route_name" />
-                            </div>
+                  <ul class="my-2 hidden lg:flex flex-col gap-1 text-sm text-custom-shadow">
+                    <li class="flex items-start gap-2">
+                      <RiCursorHand class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                      <span><span class="font-semibold">Left click</span> on the map to add the destination pin.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <RiCursorHand class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                      <span><span class="font-semibold">Left click</span> on the route line to add a detour pin.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <RiCursorHand class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                      <span><span class="font-semibold">Right click</span> a detour pin to remove it.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <RiDragMove2Line class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                      <span><span class="font-semibold">Drag</span> the destination or detour pins to reshape the route.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <RiDragMove2Line class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                      <span><span class="font-semibold">Drag</span> the stop pins along the route line.</span>
+                    </li>
+                  </ul>
 
-                            <div class="flex flex-col gap-y-2">
-                                <Label for="gate_id_sidebar">
-                                    Gate
-                                </Label>
-                                <Select v-model="form.gate_id">
-                                    <SelectTrigger id="gate_id_sidebar" class="w-full">
-                                        <SelectValue placeholder="Select a gate..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem v-for="gate in gates" :key="gate.id" :value="String(gate.id)">
-                                            {{ gate.gate_name }}
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <InputError :message="form.errors.gate_id" />
-                            </div>
+                  <ul class="my-2 flex lg:hidden flex-col gap-1 text-sm text-custom-shadow">
+                    <li class="flex items-start gap-2">
+                      <RiCursorHand class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                      <span><span class="font-semibold">Tap</span> on the route line to add a detour pin.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <RiCursorHand class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                      <span><span class="font-semibold">Tap</span> on a detour pin to remove it.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <RiDragMove2Line class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                      <span><span class="font-semibold">Drag</span> the destination or detour pins to reshape the route.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <RiDragMove2Line class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                      <span><span class="font-semibold">Drag</span> the stop pins along the route line.</span>
+                    </li>
+                  </ul>
+                </div>
 
-                            <div class="gap-x-4 flex flex-row">
-                                <div class="flex flex-col gap-y-2 flex-1">
-                                    <Label>
-                                        Distance
-                                    </Label>
-                                    <div
-                                        class="text-custom-shadow h-9 w-full min-w-0 rounded-md bg-custom-bg border border-custom-bg-dark dark:border-none dark:border-custom-bg-light p-3 text-sm transition-[color,background-color,border-color,box-shadow] outline-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5 flex items-center"
-                                    >
-                                        <span>{{ form.distance_meters ? fmtDistance(form.distance_meters) : '—' }}</span>
-                                    </div>
-                                </div>
-                                <div class="flex flex-col gap-y-2 flex-1">
-                                    <Label>
-                                        Est. Travel Duration
-                                    </Label>
-                                    <div
-                                        class="text-custom-shadow h-9 w-full min-w-0 rounded-md bg-custom-bg border border-custom-bg-dark dark:border-none dark:border-custom-bg-light p-3 text-sm transition-[color,background-color,border-color,box-shadow] outline-none dark:bg-custom-bg-dark dark:shadow-sm dark:shadow-white/5 flex items-center"
-                                    >
-                                        <span>{{ form.duration_seconds ? fmtDuration(form.duration_seconds) : '—' }}</span>
-                                    </div>
-                                </div>
-                            </div>
+                <CardSeparator title="Route Info" />
+
+                <div class="my-2 flex flex-col gap-2 text-sm text-custom-shadow">
+                  <div class="space-y-2">
+                    <Label for="route_name" class="flex items-center gap-1">
+                      Name
+                      <span class="text-destructive">*</span>
+                    </Label>
+                    <!-- TODO: group input and inputmessages in a div, like i did here. -->
+                    <div>
+                      <Input
+                        id="route_name"
+                        :model-value="form.route_name"
+                        placeholder="e.g. PITX - Cavite"
+                        autocomplete="off"
+                        @update:model-value="onRouteNameInput"
+                      />
+                      <InputMessage variant="destructive" :message="form.errors.route_name" />
+                    </div>
+                  </div>
+
+                  <div class="space-y-2">
+                    <Label for="gate_id" class="flex items-center gap-1">
+                      Gate
+                      <span class="text-destructive">*</span>
+                    </Label>
+                    <div>
+                      <Select v-model="form.gate_id">
+                        <SelectTrigger id="gate_id" class="w-full">
+                          <SelectValue placeholder="Select a gate..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem
+                            v-for="gate in gates"
+                            :key="gate.id"
+                            :value="String(gate.id)"
+                          >
+                            {{ gate.gate_name }}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <InputMessage variant="destructive" :message="form.errors.gate_id" />
+                    </div>
+                  </div>
+
+                  <div class="flex flex-row justify-between items-center">
+                    <div class="inline-flex gap-2 items-center">
+                      <RiRuler2Line class="shrink-0 h-4 w-4 text-custom-shadow/80"/>
+                      <span>Distance</span>
+                    </div>
+                    <span
+                      role="button"
+                      tabindex="0"
+                      title="Copy to clipboard"
+                      @click="copyToClipboard(fmtDistance(form.distance_meters), 'Distance')"
+                      @keydown.enter.prevent="copyToClipboard(fmtDistance(form.distance_meters), 'Distance')"
+                      @keydown.space.prevent="copyToClipboard(fmtDistance(form.distance_meters), 'Distance')"
+                      class="cursor-pointer line-clamp-1 text-ellipsis"
+                    >
+                      {{ form.distance_meters ? fmtDistance(form.distance_meters): '—' }}
+                    </span>
+                  </div>
+
+                  <div class="flex flex-row justify-between items-center">
+                    <div class="inline-flex gap-2 items-center">
+                      <RiTimeLine class="shrink-0 h-4 w-4 text-custom-shadow/80"/>
+                      <span>Est. Travel Duration</span>
+                    </div>
+                    <span
+                      role="button"
+                      tabindex="0"
+                      title="Copy to clipboard"
+                      @click="copyToClipboard(fmtDuration(form.duration_seconds), 'Est. Travel Duration')"
+                      @keydown.enter.prevent="copyToClipboard(fmtDuration(form.duration_seconds), 'Est. Travel Duration')"
+                      @keydown.space.prevent="copyToClipboard(fmtDuration(form.duration_seconds), 'Est. Travel Duration')"
+                      class="cursor-pointer line-clamp-1 text-ellipsis"
+                    >
+                      {{ form.duration_seconds ? fmtDuration(form.duration_seconds): '—' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Separator orientation="vertical"/>
+
+            <div class="flex-1">
+              <CardSeparator title="Destination" />
+
+              <div class="my-2 flex flex-col gap-2">
+                <!-- <Label class="flex items-center gap-1">
+                  Search a place or click the map
+                  <span class="text-destructive">*</span>
+                </Label> -->
+
+                <SearchInput
+                  v-model="destinationQuery"
+                  placeholder="Search destination..."
+                />
+
+                <div
+                  v-if="hasDestination"
+                  class="flex items-center justify-between gap-2 rounded-md bg-custom-secondary/10 dark:bg-custom-secondary/20 px-3 py-2 text-left"
+                >
+                  <div class="flex min-w-0 flex-row items-center gap-2">
+                    <RiMapPin2Line class="h-4 w-4 shrink-0 text-custom-shadow" />
+                    <div class="min-w-0">
+                      <p class="truncate text-sm font-semibold">
+                        {{ form.destination_name }}
+                      </p>
+                      <p v-if="destinationAddress" class="truncate text-xs text-custom-shadow/80">
+                        {{ destinationAddress }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-if="destinationSuggestions.length" class="space-y-2">
+                  <button
+                    v-for="item in destinationSuggestions"
+                    :key="item.id"
+                    type="button"
+                    :class="['flex items-start gap-2', suggestionButtonClass]"
+                    @click="setDestinationFromSuggestion(item)"
+                  >
+                    <RiMapPin2Line class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                    <div class="min-w-0">
+                      <div class="truncate text-sm font-semibold text-custom-shadow">
+                        {{ item.name }}
+                      </div>
+                      <div class="truncate text-xs text-custom-shadow/80">
+                        {{ item.full_address }}
+                      </div>
+                    </div>
+                  </button>
+                </div>
+
+                <InputMessage
+                  variant="destructive"
+                  class="mt-0"
+                  :message="form.errors.destination_name"
+                />
+              </div>
+
+              <template v-if="alternativeRoutes.length">
+                <CardSeparator title="Route Line Suggestions" />
+
+                <div class="my-2 space-y-2">
+                  <button
+                    type="button"
+                    :class="[
+                      'w-full cursor-pointer rounded-md border px-3 py-2 text-left transition-all duration-200',
+                      selectedRouteIndex === 0
+                        ? 'bg-custom-secondary/10 dark:bg-custom-secondary/20 hover:bg-custom-secondary/10'
+                        : 'border-custom-bg-dark bg-transparent hover:bg-custom-secondary/10 dark:hover:bg-custom-secondary/20 dark:border-custom-bg-light hover:border-transparent dark:hover:border-transparent',
+                    ]"
+                    @click="selectAlternativeRoute(0)"
+                  >
+                    <div class="flex items-center justify-between gap-2">
+                      <p class="flex items-center gap-x-2">
+                        <span class="font-semibold text-sm">Line 1</span>
+                      </p>
+                      <p class="shrink-0 text-xs text-custom-shadow/80">
+                        {{ originalPrimaryRoute ? fmtDistance(originalPrimaryRoute.distance) : '—' }}
+                        |
+                        {{ originalPrimaryRoute ? fmtDuration(originalPrimaryRoute.duration) : '—' }}
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    v-for="alt in alternativeRoutes"
+                    :key="alt.index"
+                    type="button"
+                    :class="[
+                      'w-full cursor-pointer rounded-md border px-3 py-2 text-left transition-all duration-200',
+                      selectedRouteIndex === alt.index
+                        ? 'bg-custom-secondary/10 dark:bg-custom-secondary/20 hover:bg-custom-secondary/10'
+                        : 'border-custom-bg-dark bg-transparent hover:bg-custom-secondary/10 dark:hover:bg-custom-secondary/20 dark:border-custom-bg-light hover:border-transparent dark:hover:border-transparent',
+                    ]"
+                    @click="selectAlternativeRoute(alt.index)"
+                  >
+                    <div class="flex items-center justify-between gap-2">
+                      <p class="flex items-center gap-x-2">
+                        <span class="font-semibold text-sm">Line {{ alt.index + 1 }}</span>
+                      </p>
+                      <p class="shrink-0 text-xs text-custom-shadow/80">
+                        {{ fmtDistance(alt.distance) }}
+                        |
+                        {{ fmtDuration(alt.duration) }}
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </template>
+
+              <template v-if="waypoints.length">
+                <CardSeparator title="Detour Points" />
+
+                <div class="mt-2 space-y-1">
+                  <div
+                    v-for="(wp, index) in waypoints"
+                    :key="wp.id"
+                    class="flex items-start gap-2 rounded-md p-2 transition-colors hover:bg-custom-secondary/10"
+                    @mouseenter="hoverPin(`detour-${index}`)"
+                    @mouseleave="unhoverPin(`detour-${index}`)"
+                  >
+                    <!-- The same round dot as the detour pin on the map. -->
+                    <RouteStepMarker kind="detour" />
+                    <div class="min-w-0 flex-1">
+                      <p class="truncate text-sm leading-tight font-semibold">
+                        {{ waypointTitle(wp) }}
+                      </p>
+                      <p v-if="waypointAddress(wp)" class="text-xs text-custom-shadow/80">
+                        {{ waypointAddress(wp) }}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      class="shrink-0 text-custom-shadow/80 hover:text-destructive"
+                      aria-label="Remove detour point"
+                      @click="removeWaypoint(wp.id)"
+                    >
+                      <RiCloseLine class="h-4 w-4 shrink-0" />
+                    </button>
+                  </div>
+                </div>
+              </template>
+
+              <CardSeparator title="Stops Info" />
+
+              <div class="mt-2 space-y-2">
+                <div class="group/stop flex items-center gap-2">
+                  <Transition v-bind="generateFade" @after-enter="focusIntervalField">
+                    <div v-if="!generateMode" class="relative min-w-0 flex-1">
+                      <RiSearchLine
+                        class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 shrink-0 -translate-y-1/2 text-custom-shadow/80"
+                      />
+                      <Input
+                        v-model="stopQuery"
+                        class="h-10 pr-9 pl-9 text-sm rounded-full bg-transparent"
+                        placeholder="Search route stop..."
+                      />
+                      <RiLoader2Line
+                        v-if="loadingStopSearch"
+                        class="pointer-events-none absolute top-1/2 right-3 h-4 w-4 shrink-0 -translate-y-1/2 animate-spin text-custom-shadow/80"
+                      />
+                      <button
+                        v-else-if="stopQuery"
+                        type="button"
+                        class="absolute top-1/2 right-3 -translate-y-1/2 text-custom-shadow/80 hover:text-custom-shadow"
+                        @click="
+                          stopQuery = '';
+                          stopSuggestions = [];
+                        "
+                      >
+                        <RiCloseLine class="h-4 w-4 shrink-0" />
+                      </button>
+                    </div>
+
+                    <div
+                      v-else
+                      ref="intervalField"
+                      class="relative min-w-0 flex-1"
+                      @keydown.enter.prevent="confirmGenerate"
+                      @keydown.esc.prevent="cancelGenerate"
+                    >
+                      <RiRuler2Line
+                        class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 shrink-0 -translate-y-1/2 text-custom-shadow/80"
+                      />
+                      <Input
+                        v-model.number="autoGenerateInterval"
+                        type="number"
+                        min="1"
+                        max="50"
+                        class="h-10 pr-20 pl-9 text-sm rounded-full bg-transparent"
+                        :disabled="loadingAutoGenerate"
+                      />
+                      <span
+                        class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-custom-shadow/80"
+                      >
+                        km apart
+                      </span>
+                    </div>
+                  </Transition>
+
+                  <!-- Pressing the idle Generate button must not pull focus off the search box. -->
+                  <Transition v-bind="generateFade">
+                    <Button
+                      v-if="!generateMode"
+                      type="button"
+                      variant="float"
+                      size="icon"
+                      :disabled="routeCoordinates.length < 2"
+                      @mousedown.prevent
+                      @click="startGenerate"
+                    >
+                      <RiAiGenerate class="shrink-0 h-4 w-4" />
+                    </Button>
+
+                    <div v-else class="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="float-primary"
+                        :disabled="loadingAutoGenerate || !canGenerate"
+                        @click="confirmGenerate"
+                      >
+                        <RiAiGenerate
+                          class="shrink-0 h-4 w-4 text-custom-bg-light dark:text-custom-shadow"
+                        />
+                        {{ loadingAutoGenerate ? 'Generating...' : 'Generate' }}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="float"
+                        size="icon"
+                        aria-label="Cancel generating stops"
+                        :disabled="loadingAutoGenerate"
+                        @click="cancelGenerate"
+                      >
+                        <RiCloseLine class="h-4 w-4 shrink-0" />
+                      </Button>
+                    </div>
+                  </Transition>
+                </div>
+
+                <InputMessage
+                  variant="default"
+                  v-if="generateMode"
+                  message="Generating stops will remove all current stops."
+                />
+
+                <div v-if="stopSuggestions.length" class="space-y-2 pt-2">
+                  <button
+                    v-for="item in stopSuggestions"
+                    :key="item.id"
+                    type="button"
+                    :class="['flex items-start gap-2', suggestionButtonClass]"
+                    @click="addStopFromSuggestion(item)"
+                  >
+                    <RiMapPin2Line
+                      class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80"
+                    />
+                    <div class="min-w-0">
+                      <div class="truncate text-sm font-semibold text-custom-shadow">
+                        {{ item.name }}
+                      </div>
+                      <div class="truncate text-xs text-custom-shadow/80">
+                        {{ item.full_address }}
+                      </div>
+                    </div>
+                  </button>
+                </div>
+
+                <InputMessage
+                  variant="default"
+                  v-if="
+                    !stopSuggestions.length &&
+                    stopQuery &&
+                    !loadingStopSearch &&
+                    routeCoordinates.length >= 2
+                  "
+                  message="No places found within 500 m of the route."
+                />
+
+                <div v-else-if="stopQuery && routeCoordinates.length < 2" class="mt-2 flex w-full max-w-md flex-col items-center gap-2 rounded-md border border-dashed border-custom-bg-dark p-3 text-center text-sm text-custom-shadow/80 dark:border-custom-bg-light">
+                  <img :src="navigationUrl" alt="" class="w-1/3 object-contain opacity-90" aria-hidden="true" />
+                  <div class="space-y-1">
+                    <p class="text-base text-center font-semibold text-custom-shadow">No stops yet</p>
+                    <p class="text-sm text-custom-shadow/80">Set the destination to see stops suggestions.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
+                <div v-if="!hasDestination" class="mt-2 flex w-full max-w-md flex-col items-center gap-2 rounded-md border border-dashed border-custom-bg-dark p-3 text-center text-sm text-custom-shadow/80 dark:border-custom-bg-light">
+                  <img :src="navigationUrl" alt="" class="w-1/3 object-contain opacity-90" aria-hidden="true" />
+                  <div class="space-y-1">
+                    <p class="text-base text-center font-semibold text-custom-shadow">No stops yet</p>
+                    <p class="text-sm text-custom-shadow/80">Set a destination to see the stop sequence.</p>
+                  </div>
+                </div>
+
+                <div v-else class="relative">
+                  <div class="space-y-1">
+                    <div
+                      class="flex items-start gap-2 rounded-md p-2 transition-colors hover:bg-custom-secondary/10"
+                      @mouseenter="hoverPin('origin')"
+                      @mouseleave="unhoverPin('origin')"
+                    >
+                      <RouteStepMarker :number="1" kind="origin" connector />
+                      <div class="min-w-0">
+                        <p class="truncate text-sm leading-tight font-semibold">
+                          {{ form.origin_name }}
+                        </p>
+                        <p class="text-xs tracking-wide text-custom-shadow/80 uppercase">
+                          Origin
+                        </p>
+                      </div>
+                    </div>
+
+                    <div
+                      v-for="(stop, index) in form.stops"
+                      :key="`${stop.stop_name}-${stop.latitude}-${index}`"
+                      :draggable="true"
+                      :class="[
+                        'flex cursor-grab items-start gap-2 rounded-md p-2 transition-colors select-none',
+                        dragOverIndex === index
+                          ? 'bg-custom-bg'
+                          : 'hover:bg-custom-secondary/10',
+                        draggedStopIndex === index
+                          ? 'opacity-50'
+                          : '',
+                      ]"
+                      @mouseenter="hoverPin(`stop-${index}`)"
+                      @mouseleave="unhoverPin(`stop-${index}`)"
+                      @dragstart="onDragStart(index)"
+                      @dragover="onDragOver($event, index)"
+                      @drop="onDrop(index)"
+                      @dragend="onDragEnd()"
+                    >
+                      <RouteStepMarker
+                        :number="index + 2"
+                        :kind="stop.stop_type === 'landmark' ? 'landmark' : 'stop'"
+                        connector
+                      />
+                      <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2">
+                          <p class="truncate text-sm leading-tight font-semibold">
+                            {{ stop.stop_name }}
+                          </p>
+                          <span
+                            v-if="stop.stop_type === 'landmark'"
+                            class="text-sm cursor-pointer bg-custom-bg dark:bg-custom-bg-light px-2 rounded-md mr-1"
+                          >
+                            Landmark
+                          </span>
                         </div>
-                        
-                        <div class="space-y-4">
-                            <div class="flex items-center gap-3 pt-2">
-                            <p class="font-semibold text-custom-accent-3 text-base">Stops
-                                <Badge variant="accent-3">{{ totalVisibleStops }}</Badge>
-                            </p>
-                            <Separator class="flex-1" />
-                        </div>
+                        <p class="text-xs text-custom-shadow/80">
+                          {{ stop.address || 'No address' }}
+                        </p>
+                      </div>
 
-                        <div
-                            v-if="!hasDestination"
-                            class="border border-dashed border-custom-bg-dark p-3 rounded-md text-center shadow-none dark:border-custom-bg-light "
+                      <div class="flex shrink-0 items-center gap-2">
+                        <RiDraggable class="h-4 w-4 shrink-0 text-custom-shadow/80" />
+                        <button
+                          type="button"
+                          class="text-custom-shadow/80 hover:text-destructive"
+                          @click="removeStop(index)"
                         >
-                            <p class="text-sm text-custom-shadow/80">Set a destination to see the stop sequence.</p>
-                        </div>
+                          <RiCloseLine class="h-4 w-4 shrink-0" />
+                        </button>
+                      </div>
+                    </div>
 
-                        <div v-else class="relative">
-                            <div class="absolute bottom-6 left-[18px] top-6 w-px bg-slate-200" />
-                                <div class="space-y-1">
-                                    <div class="flex items-start gap-3 rounded-lg p-2">
-                                        <div class="relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-600 text-[9px] font-bold text-white ring-2 ring-background">1</div>
-                                        <div class="min-w-0 pt-0.5">
-                                            <p class="truncate text-sm font-medium leading-tight">{{ form.origin_name }}</p>
-                                            <p class="text-[10px] uppercase tracking-wide text-green-600">Origin</p>
-                                        </div>
-                                    </div>
+                    <div
+                      class="flex items-start gap-2 rounded-md p-2 transition-colors hover:bg-custom-secondary/10"
+                      @mouseenter="hoverPin('destination')"
+                      @mouseleave="unhoverPin('destination')"
+                    >
+                      <RouteStepMarker :number="form.stops.length + 2" kind="destination" />
+                      <div class="min-w-0">
+                        <p class="truncate text-sm leading-tight font-semibold">
+                          {{ form.destination_name }}
+                        </p>
+                        <p class="text-xs tracking-wide text-custom-shadow/80 uppercase">
+                          Destination
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
 
-                                    <div
-                                        v-for="(stop, index) in form.stops"
-                                        :key="`${stop.stop_name}-${stop.latitude}-${index}`"
-                                        :draggable="true"
-                                        :class="[
-                                            'flex cursor-grab select-none items-start gap-3 rounded-lg p-2 transition-colors',
-                                            dragOverIndex === index ? 'bg-blue-50 ring-1 ring-blue-300' : 'hover:bg-muted/40',
-                                            draggedStopIndex === index ? 'opacity-50' : '',
-                                        ]"
-                                        @dragstart="onDragStart(index)"
-                                        @dragover="onDragOver($event, index)"
-                                        @drop="onDrop(index)"
-                                        @dragend="onDragEnd"
-                                    >
-                                        <div
-                                            :class="[
-                                                'relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white ring-2 ring-background',
-                                                stop.stop_type === 'landmark' ? 'bg-violet-500' : 'bg-amber-500',
-                                            ]"
-                                        >
-                                            {{ index + 2 }}
-                                        </div>
-                                        <div class="min-w-0 flex-1 pt-0.5">
-                                            <div class="flex items-center gap-2">
-                                                <p class="truncate text-sm font-medium leading-tight">{{ stop.stop_name }}</p>
-                                                <span v-if="stop.stop_type === 'landmark'" class="rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-medium text-violet-700">Landmark</span>
-                                            </div>
-                                            <p class="truncate text-[11px] text-muted-foreground">{{ stop.address || 'No address' }}</p>
-                                        </div>
-                                        <div class="flex shrink-0 items-center gap-1">
-                                            <RiDraggable class="h-3.5 w-3.5 text-muted-foreground/50" />
-                                            <button type="button" class="rounded p-0.5 text-muted-foreground/50 hover:text-destructive" @click="removeStop(index)">
-                                                <RiCloseLine class="h-3.5 w-3.5" />
-                                            </button>
-                                        </div>
-                                    </div>
+          <CardFooter class="justify-end gap-2 pt-4">
+            <Button type="button" variant="float" as-child>
+              <Link :href="index().url">Cancel</Link>
+            </Button>
 
-                                    <div class="flex items-start gap-3 rounded-lg p-2">
-                                        <div class="relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-600 text-[9px] font-bold text-white ring-2 ring-background">{{ form.stops.length + 2 }}</div>
-                                        <div class="min-w-0 pt-0.5">
-                                            <p class="truncate text-sm font-medium leading-tight">{{ form.destination_name }}</p>
-                                            <p class="text-[10px] uppercase tracking-wide text-red-600">Destination</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+            <Button
+              type="button"
+              :variant="form.processing || !routeReady ? 'disabled' : 'float-primary'"
+              :disabled="form.processing || !routeReady"
+              @click="submit"
+            >
+              {{ form.processing ? 'Adding...' : 'Add Route' }}
+            </Button>
+          </CardFooter>
+        </Card>
+      </MainPanel>
 
-                        <Separator />
-
-                        <div class="flex flex-row justify-end items-center">
-                            <Button
-                                :variant="form.processing || !routeReady ? 'disabled' : 'float-primary'"
-                                size="icon-text"
-                                :disabled="form.processing || !routeReady"
-                                @click="submit"
-                            >
-                                {{ form.processing ? 'Validating...' : 'Add Route' }}
-                            </Button>
-                        </div>
-                        
-                    </section>
-                </CardContent>
-            </Card>
-        </div>
-    </AppLayout>
+      <SidePanel>
+        <RouteReviewCard :values="form" :gate="selectedGate" />
+      </SidePanel>
+    </PanelLayout>
+  </AppLayout>
 </template>
 
 <style scoped>
 .route-map :deep(.mapboxgl-ctrl-group) {
     background-color: var(--custom-bg-dark);
-    box-shadow: 0 0 0 1px color-mix(in oklch, var(--custom-shadow) 25%, transparent);
+    box-shadow: 0 0 0 1px
+        color-mix(in oklch, var(--custom-shadow) 25%, transparent);
 }
 
 .route-map :deep(.mapboxgl-ctrl-group button) {
@@ -1857,11 +2107,14 @@ const breadcrumbs: BreadcrumbItem[] = [
 }
 
 .route-map :deep(.mapboxgl-ctrl-group button + button) {
-    border-top-color: color-mix(in oklch, var(--custom-shadow) 25%, transparent);
+    border-top-color: color-mix(
+        in oklch,
+        var(--custom-shadow) 25%,
+        transparent
+    );
 }
 
 .route-map :deep(.mapboxgl-ctrl-group button:hover) {
     background-color: var(--custom-secondary);
 }
-
 </style>

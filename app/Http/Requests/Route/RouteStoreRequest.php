@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Route;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class RouteStoreRequest extends FormRequest
 {
@@ -14,7 +15,7 @@ class RouteStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'route_name' => ['required', 'string', 'max:255'],
+            'route_name' => ['required', 'string', 'max:255', Rule::notIn(['PITX -', 'PITX'])],
             'gate_id' => ['required', 'exists:gates,id'],
 
             'origin_name' => ['required', 'string', 'max:255'],
@@ -43,6 +44,7 @@ class RouteStoreRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'route_name.not_in' => 'Enter a route name after the "PITX - " prefix.',
             'stops.required' => 'At least an origin and destination stop are required.',
             'stops.min' => 'At least an origin and destination stop are required.',
         ];

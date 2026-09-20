@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -141,7 +141,7 @@ function isEditableDate(status?: string | null) {
                         Reupload (and date edits) are only allowed for invalid
                         or expired documents.
                     </p>
-                    <InputError :message="errors[`documents.${index}.file`]" />
+                    <InputMessage variant="destructive" :message="errors[`documents.${index}.file`]" />
                 </div>
 
                 <div
@@ -155,7 +155,8 @@ function isEditableDate(status?: string | null) {
                         :disabled="readonly || !isEditableDate(document.status)"
                         type="date"
                     />
-                    <InputError
+                    <InputMessage
+                        variant="destructive"
                         :message="errors[`documents.${index}.issued_at`]"
                     />
                 </div>
@@ -171,7 +172,8 @@ function isEditableDate(status?: string | null) {
                         :disabled="readonly || !isEditableDate(document.status)"
                         type="date"
                     />
-                    <InputError
+                    <InputMessage
+                        variant="destructive"
                         :message="errors[`documents.${index}.expires_at`]"
                     />
                 </div>

@@ -16,7 +16,7 @@ import { CardSeparator } from '@/components/ui/_card-separator';
 import Button from '@/components/ui/button/Button.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import EditableField from '@/components/ui/_field/EditableField.vue';
 import { can } from '@/lib/can';
 
@@ -203,7 +203,7 @@ function submit() {
                 </LogoFallback>
               </Logo>
             </EditableField>
-            <InputError v-if="canEdit" :message="form.errors.picture" />
+            <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.picture" />
           </div>
 
           <!-- <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
@@ -245,7 +245,7 @@ function submit() {
               </template>
               <span class="min-w-0 flex-1 truncate text-right text-sm font-medium">{{ gate.gate_name }}</span>
             </EditableField>
-            <InputError v-if="canEdit" :message="form.errors.gate_name" />
+            <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.gate_name" />
           </div>
 
           <div class="flex flex-row justify-between items-center gap-2 overflow-hidden group">
@@ -268,7 +268,7 @@ function submit() {
               </template>
               <span class="min-w-0 flex-1 truncate text-right text-sm font-medium">{{ gate.bays }}</span>
             </EditableField>
-            <InputError v-if="canEdit" :message="form.errors.bays" />
+            <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.bays" />
           </div>
 
           <div class="flex flex-row justify-between items-center gap-2 overflow-hidden group">
@@ -290,7 +290,7 @@ function submit() {
               </template>
               <span class="min-w-0 flex-1 truncate text-right text-sm font-medium">{{ gate.location || 'Location not configured' }}</span>
             </EditableField>
-            <InputError v-if="canEdit" :message="form.errors.location" />
+            <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.location" />
           </div>
         </div>
 

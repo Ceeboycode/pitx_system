@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,7 +38,7 @@ import { Form, Head } from '@inertiajs/vue3';
                         name="name"
                         placeholder="Full name"
                     />
-                    <InputError :message="errors.name" />
+                    <InputMessage variant="destructive" :message="errors.name" />
                 </div>
 
                 <div class="grid gap-2">
@@ -51,7 +51,7 @@ import { Form, Head } from '@inertiajs/vue3';
                         name="email"
                         placeholder="email@example.com"
                     />
-                    <InputError :message="errors.email" />
+                    <InputMessage variant="destructive" :message="errors.email" />
                 </div>
 
                 <div class="grid gap-2">
@@ -64,7 +64,7 @@ import { Form, Head } from '@inertiajs/vue3';
                         name="password"
                         placeholder="Password"
                     />
-                    <InputError :message="errors.password" />
+                    <InputMessage variant="destructive" :message="errors.password" />
                 </div>
 
                 <div class="grid gap-2">
@@ -77,7 +77,7 @@ import { Form, Head } from '@inertiajs/vue3';
                         name="password_confirmation"
                         placeholder="Confirm password"
                     />
-                    <InputError :message="errors.password_confirmation" />
+                    <InputMessage variant="destructive" :message="errors.password_confirmation" />
                 </div>
 
                 <Button

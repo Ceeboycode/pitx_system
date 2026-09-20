@@ -18,7 +18,7 @@ import Button from '@/components/ui/button/Button.vue';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 
 import {
   RiBusLine,
@@ -200,7 +200,7 @@ function submit() {
                 </LogoFallback>
               </Logo>
             </EditableField>
-            <InputError v-if="canEdit" :message="form.errors.picture" />
+            <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.picture" />
           </div>
         </div>
 
@@ -222,7 +222,7 @@ function submit() {
               </template>
               <span class="min-w-0 flex-1 whitespace-pre-line text-right text-sm font-medium">{{ vehicleType.description || 'No description provided.' }}</span>
             </EditableField>
-            <InputError v-if="canEdit" :message="form.errors.description" />
+            <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.description" />
           </div> -->
         <!-- </div> -->
       </div>
@@ -252,7 +252,7 @@ function submit() {
               </template>
               <span class="min-w-0 flex-1 truncate text-right text-sm font-medium capitalize">{{ vehicleType.type_name }}</span>
             </EditableField>
-            <InputError v-if="canEdit" :message="form.errors.type_name" />
+            <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.type_name" />
           </div>
 
           <div class="flex flex-row justify-between items-start gap-2 overflow-hidden group">
@@ -275,7 +275,7 @@ function submit() {
               </template>
               <span class="min-w-0 flex-1 whitespace-pre-line text-right text-sm font-medium">{{ vehicleType.description || 'No description provided.' }}</span>
             </EditableField>
-            <InputError v-if="canEdit" :message="form.errors.description" />
+            <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.description" />
           </div>
         </div>
 

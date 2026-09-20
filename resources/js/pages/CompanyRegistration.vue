@@ -34,7 +34,7 @@ import { Separator } from '@/components/ui/separator';
 
 import AddressSelectPH from '@/components/AddressSelectPH.vue';
 import ConfirmPasswordRequirements from '@/components/ConfirmPasswordRequirements.vue';
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import PasswordRequirements from '@/components/PasswordRequirements.vue';
 import RegistrationStatus from '@/pages/RegistrationStatus.vue';
 
@@ -909,7 +909,7 @@ onUnmounted(() => {
                                     autocomplete="name"
                                     class="bg-custom-bg dark:bg-custom-bg-dark capitalize"
                                 />
-                                <InputError :message="step1.errors.name" />
+                                <InputMessage variant="destructive" :message="step1.errors.name" />
                             </div>
                             <div class="space-y-1">
                                 <Label for="s1_email">Email</Label>
@@ -928,7 +928,7 @@ onUnmounted(() => {
                                 >
                                     {{ step1EmailValidationMessage }}
                                 </p>
-                                <InputError :message="step1.errors.email" />
+                                <InputMessage variant="destructive" :message="step1.errors.email" />
                             </div>
                         </div>
 
@@ -955,7 +955,7 @@ onUnmounted(() => {
                                 >
                                     {{ phoneValidationMessage }}
                                 </p>
-                                <InputError :message="step1.errors.phone" />
+                                <InputMessage variant="destructive" :message="step1.errors.phone" />
                             </div>
                         </div>
 
@@ -991,7 +991,7 @@ onUnmounted(() => {
                                         <RiEyeLine v-else class="h-4 w-4" />
                                     </button>
                                 </div>
-                                <InputError :message="step1.errors.password" />
+                                <InputMessage variant="destructive" :message="step1.errors.password" />
                                 <PasswordRequirements
                                     :password="step1.password"
                                     :active="step1.password.length > 0"
@@ -1036,7 +1036,8 @@ onUnmounted(() => {
                                         <RiEyeLine v-else class="h-4 w-4" />
                                     </button>
                                 </div>
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     :message="
                                         step1.errors.password_confirmation
                                     "
@@ -1092,7 +1093,8 @@ onUnmounted(() => {
                                 :disabled="otpAccount.processing"
                                 @input="onOtpInput('account')"
                             />
-                            <InputError
+                            <InputMessage
+                                variant="destructive"
                                 :message="otpAccount.errors.otp"
                                 class="justify-center"
                             />
@@ -1223,7 +1225,7 @@ onUnmounted(() => {
                                 </div>
                             </div>
 
-                            <InputError :message="step2.errors.logo" />
+                            <InputMessage variant="destructive" :message="step2.errors.logo" />
                         </div>
 
                         <div class="grid gap-2 sm:grid-cols-2">
@@ -1234,7 +1236,8 @@ onUnmounted(() => {
                                     v-model="step2.company_name"
                                     class="bg-custom-bg dark:bg-custom-bg-dark"
                                 />
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     :message="step2.errors.company_name"
                                 />
                             </div>
@@ -1254,7 +1257,8 @@ onUnmounted(() => {
                                 >
                                     {{ step2EmailValidationMessage }}
                                 </p>
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     :message="step2.errors.company_email"
                                 />
                             </div>
@@ -1270,7 +1274,8 @@ onUnmounted(() => {
                                     placeholder="+63 9XX XXX XXXX"
                                     class="bg-custom-bg dark:bg-custom-bg-dark"
                                 />
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     :message="step2.errors.company_phone"
                                 />
                             </div>
@@ -1289,7 +1294,8 @@ onUnmounted(() => {
                                         >
                                     </SelectContent>
                                 </Select>
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     :message="step2.errors.business_type"
                                 />
                             </div>
@@ -1303,7 +1309,8 @@ onUnmounted(() => {
                                 street-label="Street / Building / Unit"
                             />
                             <!-- TODO: see how the sapcing for the input error will look like -->
-                            <InputError
+                            <InputMessage
+                                variant="destructive"
                                 :message="step2.errors.company_address"
                             />
                         </div>
@@ -1321,7 +1328,8 @@ onUnmounted(() => {
                                 v-model="step2.registration_number"
                                 class="bg-custom-bg dark:bg-custom-bg-dark"
                             />
-                            <InputError
+                            <InputMessage
+                                variant="destructive"
                                 :message="step2.errors.registration_number"
                             />
                         </div>
@@ -1347,7 +1355,8 @@ onUnmounted(() => {
                                         autocomplete="name"
                                         class="bg-custom-bg dark:bg-custom-bg-dark"
                                     />
-                                    <InputError
+                                    <InputMessage
+                                        variant="destructive"
                                         :message="
                                             step2.errors
                                                 .authorized_representative_name
@@ -1384,7 +1393,8 @@ onUnmounted(() => {
                                             step2.authorized_representative_position
                                         "
                                     />
-                                    <InputError
+                                    <InputMessage
+                                        variant="destructive"
                                         :message="
                                             step2.errors
                                                 .authorized_representative_position
@@ -1404,7 +1414,8 @@ onUnmounted(() => {
                                         autocomplete="tel"
                                         class="bg-custom-bg dark:bg-custom-bg-dark"
                                     />
-                                    <InputError
+                                    <InputMessage
+                                        variant="destructive"
                                         :message="
                                             step2.errors
                                                 .authorized_representative_contact
@@ -1457,7 +1468,8 @@ onUnmounted(() => {
                                 :disabled="otpCompany.processing"
                                 @input="onOtpInput('company')"
                             />
-                            <InputError
+                            <InputMessage
+                                variant="destructive"
                                 :message="otpCompany.errors.otp"
                                 class="text-center"
                             />
@@ -1622,7 +1634,8 @@ onUnmounted(() => {
                                                 </Button>
                                             </div>
                                         </div>
-                                        <InputError
+                                        <InputMessage
+                                            variant="destructive"
                                             :message="docError(doc.key, 'file')"
                                         />
                                     </div>
@@ -1695,7 +1708,8 @@ onUnmounted(() => {
                                                 />
                                             </PopoverContent>
                                         </Popover>
-                                        <InputError
+                                        <InputMessage
+                                            variant="destructive"
                                             :message="
                                                 docError(doc.key, 'issued_at')
                                             "
@@ -1770,7 +1784,8 @@ onUnmounted(() => {
                                                 />
                                             </PopoverContent>
                                         </Popover>
-                                        <InputError
+                                        <InputMessage
+                                            variant="destructive"
                                             :message="
                                                 docError(doc.key, 'expires_at')
                                             "
@@ -1845,7 +1860,8 @@ onUnmounted(() => {
                                             v-model="document.title"
                                             class="bg-custom-bg dark:bg-custom-bg-dark"
                                         />
-                                        <InputError
+                                        <InputMessage
+                                            variant="destructive"
                                             :message="
                                                 supportingDocError(
                                                     index,
@@ -1939,7 +1955,8 @@ onUnmounted(() => {
                                                 </Button>
                                             </div>
                                         </div>
-                                        <InputError
+                                        <InputMessage
+                                            variant="destructive"
                                             :message="
                                                 supportingDocError(
                                                     index,

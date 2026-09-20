@@ -3,7 +3,7 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, onMounted, ref, watch } from 'vue';
 
 import InertiaPagination from '@/components/InertiaPagination.vue';
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import SearchInput from '@/components/SearchInput.vue';
 import emptyRafikiUrl from '@/components/assets/Empty-rafiki.svg';
 import ExternalLayout from '@/layouts/ExternalLayout.vue';
@@ -1620,7 +1620,7 @@ watch(confirmDepartOpen, (open) => {
                                 </SelectItem>
                             </SelectContent>
                         </Select>
-                        <InputError :message="form.errors.vehicle_id" />
+                        <InputMessage variant="destructive" :message="form.errors.vehicle_id" />
                     </div>
 
                     <div class="space-y-1 pb-2">
@@ -1657,7 +1657,7 @@ watch(confirmDepartOpen, (open) => {
                                 </SelectItem>
                             </SelectContent>
                         </Select>
-                        <InputError :message="form.errors.driver_user_id" />
+                        <InputMessage variant="destructive" :message="form.errors.driver_user_id" />
                     </div>
 
                     <div class="space-y-1 pb-2">
@@ -1695,7 +1695,7 @@ watch(confirmDepartOpen, (open) => {
                             Please contact the terminal manager to activate this
                             gate before dispatching this vehicle.
                         </p>
-                        <InputError :message="form.errors.gate_id" />
+                        <InputMessage variant="destructive" :message="form.errors.gate_id" />
                     </div>
 
                     <div class="space-y-1 pb-2">
@@ -1717,7 +1717,7 @@ watch(confirmDepartOpen, (open) => {
                                 </SelectItem>
                             </SelectContent>
                         </Select>
-                        <InputError :message="form.errors.bay_number" />
+                        <InputMessage variant="destructive" :message="form.errors.bay_number" />
                     </div>
 
                     <div class="space-y-1 pb-2">
@@ -1733,7 +1733,7 @@ watch(confirmDepartOpen, (open) => {
                             v-model="form.remarks"
                             placeholder="Optional remarks or notes"
                         />
-                        <InputError :message="form.errors.remarks" />
+                        <InputMessage variant="destructive" :message="form.errors.remarks" />
                     </div>
 
                     <Separator class="mb-4"/>
@@ -1813,7 +1813,8 @@ watch(confirmDepartOpen, (open) => {
                                 min="0"
                                 placeholder="Enter passenger count"
                             />
-                            <InputError
+                            <InputMessage
+                                variant="destructive"
                                 :message="departForm.errors.pax_count"
                             />
                         </div>
@@ -1897,7 +1898,8 @@ watch(confirmDepartOpen, (open) => {
                                 </SelectItem>
                             </SelectContent>
                         </Select>
-                        <InputError
+                        <InputMessage
+                            variant="destructive"
                             :message="changeRequestForm.errors.requested_field"
                         />
                     </div>
@@ -1964,7 +1966,8 @@ watch(confirmDepartOpen, (open) => {
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     :message="
                                         changeRequestForm.errors.requested_value
                                     "
@@ -2006,7 +2009,8 @@ watch(confirmDepartOpen, (open) => {
                                             )
                                     "
                                 />
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     :message="
                                         changeRequestForm.errors.requested_value
                                     "
@@ -2068,7 +2072,8 @@ watch(confirmDepartOpen, (open) => {
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     :message="
                                         changeRequestForm.errors.requested_value
                                     "
@@ -2134,7 +2139,8 @@ watch(confirmDepartOpen, (open) => {
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     :message="
                                         changeRequestForm.errors.requested_value
                                     "
@@ -2161,7 +2167,8 @@ watch(confirmDepartOpen, (open) => {
                             class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                             rows="3"
                         />
-                        <InputError
+                        <InputMessage
+                            variant="destructive"
                             :message="changeRequestForm.errors.reason"
                         />
                     </div>

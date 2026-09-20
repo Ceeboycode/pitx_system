@@ -26,7 +26,7 @@ import {
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 
 import { useClipboard } from '@vueuse/core';
 import { toast } from 'vue-sonner';
@@ -45,12 +45,17 @@ import {
   RiAiGenerate,
   RiLoader2Line,
   RiRuler2Line,
+  RiCursorHand,
+  RiDragMove2Line,
 } from "vue-remix-icons";
 
 import { fmtDistance, fmtDuration } from '@/lib/format';
+import { themeColor } from '@/lib/theme-color';
 import { update } from '@/actions/App/Http/Controllers/RouteController';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+
+import navigationUrl from '@/components/assets/Navigation-rafiki.svg';
 
 type Gate = {
     id: number;
@@ -74,9 +79,18 @@ type AlternativeRoute = {
 };
 
 type Waypoint = {
+    id: number;
     lng: number;
     lat: number;
+    /** `undefined` while the place is being looked up, `null` when the lookup found nothing. */
+    name?: string | null;
+    address?: string | null;
 };
+
+type PinKind = 'origin' | 'stop' | 'landmark' | 'destination' | 'detour';
+
+/** The pin helpers only touch the marker's element, which also keeps Vue's unwrapped ref types out of the way. */
+type PinMarker = { getElement: () => HTMLElement };
 
 type RouteStop = {
     id: number;
@@ -184,6 +198,7 @@ const form = useForm({
 
 let originMarker: mapboxgl.Marker | null = null;
 let mapResizeObserver: ResizeObserver | null = null;
+let themeObserver: MutationObserver | null = null;
 
 const hasDestination = computed(
     () => form.destination_lat !== null && form.destination_lng !== null,
@@ -196,6 +211,11 @@ const map = ref<mapboxgl.Map | null>(null);
 const { resolvedAppearance } = useAppearance();
 
 const destinationQuery = ref(props.route.destination_name || '');
+
+/** The full address of the destination, kept apart from `destinationQuery`, which is whatever is typed in the search box. */
+const destinationAddress = ref<string | null>(
+    props.route.stops.find((stop) => stop.stop_type === 'destination')?.address ?? null,
+);
 const destinationSuggestions = ref<SearchSuggestion[]>([]);
 const destinationMarker = ref<mapboxgl.Marker | null>(null);
 
@@ -218,6 +238,10 @@ const allRouteOptions = ref<AlternativeRoute[]>([]);
 const selectedRouteIndex = ref(0);
 
 const waypoints = ref<Waypoint[]>([]);
+let nextWaypointId = 1;
+
+/** The pin of the row under the cursor (`origin`, `destination`, `stop-<n>` or `detour-<n>`), enlarged on the map. */
+const hoveredPin = ref<string | null>(null);
 
 function emptyFeatureCollection(): GeoJSON.FeatureCollection {
   return {
@@ -234,6 +258,146 @@ function lineFeature(
         properties: {},
         geometry,
     };
+}
+
+// ── Pin & line colours ─────────────────────────────────────────────────────
+// Pins and the route line use the same tokens as the RouteStepMarker of their row, so the map and the
+// lists read alike. Every pin also gets an outline in `--custom-shadow` (it flips with the theme) so
+// the pale stop pin and the dim dark-mode pins stay visible. Colours are resolved when a pin is styled
+// and again whenever the theme changes (see `repaintMap`).
+
+function pinColor(kind: PinKind): string {
+  const tokens: Record<Exclude<PinKind, 'stop'>, string> = {
+    origin: '--custom-primary',
+    landmark: '--custom-shadow',
+    destination: '--custom-accent-1',
+    detour: '--custom-accent-3',
+  };
+
+  if (kind !== 'stop') return themeColor(tokens[kind]);
+
+  const isDark = document.documentElement.classList.contains('dark');
+
+  return themeColor(isDark ? '--custom-bg-light' : '--custom-bg-dark');
+}
+
+/** A search result in the destination and stop lists, styled like the (unselected) buttons of "Route Line Suggestions". */
+const suggestionButtonClass =
+  'w-full cursor-pointer rounded-md border px-3 py-2 text-left transition-all duration-200 border-custom-bg-dark bg-transparent hover:bg-custom-secondary/10 dark:hover:bg-custom-secondary/20 dark:border-custom-bg-light hover:border-transparent dark:hover:border-transparent';
+
+/** The pin outline:`--custom-shadow`, softened to 60% in light mode where it is too dark at full strength. */
+function outlineColor(): string {
+  const color = themeColor('--custom-shadow');
+
+  return document.documentElement.classList.contains('dark') ? color : `${color}99`;
+}
+
+// The route line is the `--custom-accent-2` of the current theme, as is, and the alternative routes
+// share it (their dashes set them apart). The line layers set `line-emissive-strength: 1` so the
+// map's night lighting does not darken them to black.
+const routeLineColor = () => themeColor('--custom-accent-2');
+
+/** Paints the pin of a marker from its `data-pin-kind`, so it can be repeated after a theme change. */
+function restylePin(marker: PinMarker | null | undefined) {
+  const el = marker?.getElement();
+  const kind = el?.dataset.pinKind as PinKind | undefined;
+
+  if (!el || !kind) return;
+
+  const fill = pinColor(kind);
+  const outline = outlineColor();
+
+  if (kind === 'detour') {
+    const dot = el.firstElementChild as HTMLElement | null;
+
+    if (dot) {
+      dot.style.background = fill;
+      dot.style.boxShadow = `0 0 0 1px ${outline}, 0 2px 6px rgba(0,0,0,0.35)`;
+    }
+
+    return;
+  }
+
+  // The default Mapbox pin: the shape is the only <path> that carries a `fill`.
+  const svg = el.querySelector('svg');
+  const shape = svg?.querySelector('path[fill]');
+
+  if (!svg || !shape) return;
+
+  svg.style.overflow = 'visible';
+  shape.setAttribute('fill', fill);
+  shape.setAttribute('stroke', outline);
+  shape.setAttribute('stroke-width', '1');
+  shape.setAttribute('stroke-linejoin', 'round');
+}
+
+function createPin(kind: PinKind, draggable = false): mapboxgl.Marker {
+  const marker = new mapboxgl.Marker({ color: pinColor(kind), draggable });
+
+  marker.getElement().dataset.pinKind = kind;
+  restylePin(marker);
+
+  return marker;
+}
+
+function setPinHighlight(marker: PinMarker | null | undefined, active: boolean) {
+  const el = marker?.getElement();
+
+  if (!el) return;
+
+  // Mapbox positions the marker element with its own transform, so only the drawn part is scaled.
+  const svg = el.querySelector('svg');
+  const visual = (svg ?? el.firstElementChild) as HTMLElement | SVGSVGElement | null;
+
+  if (!visual) return;
+
+  visual.style.transition = 'transform 120ms ease, filter 120ms ease';
+  visual.style.transformOrigin = svg ? '50% 85%' : '50% 50%';
+  visual.style.transform = active ? 'scale(1.15)' : '';
+  visual.style.filter = active ? `drop-shadow(0 0 2px ${outlineColor()})` : '';
+  el.style.zIndex = active ? '2' : '';
+}
+
+function applyPinHighlight() {
+  const active = hoveredPin.value;
+
+  setPinHighlight(originMarker, active === 'origin');
+  setPinHighlight(destinationMarker.value, active === 'destination');
+  stopMarkers.value.forEach((marker, index) => setPinHighlight(marker, active === `stop-${index}`));
+  waypointMarkers.value.forEach((marker, index) => setPinHighlight(marker, active === `detour-${index}`));
+}
+
+function hoverPin(key: string) {
+  hoveredPin.value = key;
+}
+
+function unhoverPin(key: string) {
+  if (hoveredPin.value === key) hoveredPin.value = null;
+}
+
+watch(hoveredPin, applyPinHighlight);
+
+// A row that is removed or replaced while hovered never fires `mouseleave`, so a changed list resets the highlight.
+watch([() => form.stops.length, () => waypoints.value.length], () => {
+  hoveredPin.value = null;
+});
+
+function repaintMap() {
+  restylePin(originMarker);
+  restylePin(destinationMarker.value);
+  stopMarkers.value.forEach((marker) => restylePin(marker));
+  waypointMarkers.value.forEach((marker) => restylePin(marker));
+  applyPinHighlight();
+
+  const layers: [string, string][] = [
+    ['route-line-layer', routeLineColor()],
+    ['alt-route-layer-1', routeLineColor()],
+    ['alt-route-layer-2', routeLineColor()],
+  ];
+
+  layers.forEach(([layer, color]) => {
+    if (map.value?.getLayer(layer)) map.value.setPaintProperty(layer, 'line-color', color);
+  });
 }
 
 function snapToRoute(lng: number, lat: number): [number, number] {
@@ -332,13 +496,10 @@ function renderStopMarkers() {
     clearStopMarkers();
 
     form.stops.forEach((stop, index) => {
-        const markerColor =
-            stop.stop_type === 'landmark' ? '#8b5cf6' : '#f59e0b';
-
-        const marker = new mapboxgl.Marker({
-            color: markerColor,
-            draggable: canEdit,
-        })
+        const marker = createPin(
+            stop.stop_type === 'landmark' ? 'landmark' : 'stop',
+            canEdit,
+        )
             .setLngLat([stop.longitude, stop.latitude])
             .setPopup(
                 new mapboxgl.Popup().setText(
@@ -375,6 +536,8 @@ function renderStopMarkers() {
 
         stopMarkers.value.push(marker);
     });
+
+    applyPinHighlight();
 }
 
 function clearRouteLine() {
@@ -519,8 +682,24 @@ function initMap() {
     mapResizeObserver = new ResizeObserver(() => map.value?.resize());
     mapResizeObserver.observe(el);
 
+    // The pins and the route line take their colours from the theme tokens, so they are painted again
+    // whenever the `dark` class of the page flips (manual switch or system preference).
+    let wasDark = document.documentElement.classList.contains('dark');
+    themeObserver = new MutationObserver(() => {
+        const isDark = document.documentElement.classList.contains('dark');
+
+        if (isDark === wasDark) return;
+
+        wasDark = isDark;
+        repaintMap();
+    });
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class'],
+    });
+
     map.value.on('load', () => {
-        originMarker = new mapboxgl.Marker({ color: '#16a34a' })
+        originMarker = createPin('origin')
             .setLngLat([origin.lng, origin.lat])
             .setPopup(new mapboxgl.Popup().setText(origin.name))
             .addTo(map.value!);
@@ -545,7 +724,8 @@ function initMap() {
                 layout: { 'line-cap': 'round' },
                 paint: {
                     'line-width': 4,
-                    'line-color': '#94a3b8',
+                    'line-color': routeLineColor(),
+                    'line-emissive-strength': 1,
                     'line-dasharray': [2, 2],
                 },
             });
@@ -587,7 +767,8 @@ function initMap() {
             source: 'route-line',
             paint: {
                 'line-width': 5,
-                'line-color': '#2563eb',
+                'line-color': routeLineColor(),
+                'line-emissive-strength': 1,
             },
         });
 
@@ -623,14 +804,11 @@ function initMap() {
             }
 
             lineClickMessage.value =
-                'Click directly on the blue route line to add a detour waypoint.';
+                'Click directly on the route line to add a detour waypoint.';
         });
 
         if (form.destination_lat !== null && form.destination_lng !== null) {
-            destinationMarker.value = new mapboxgl.Marker({
-                color: '#dc2626',
-                draggable: canEdit,
-            })
+            destinationMarker.value = createPin('destination', canEdit)
                 .setLngLat([form.destination_lng, form.destination_lat])
                 .setPopup(new mapboxgl.Popup().setText(form.destination_name))
                 .addTo(map.value!);
@@ -642,6 +820,8 @@ function initMap() {
                 form.destination_lng = ll.lng;
 
                 const place = await reversePlace(ll.lng, ll.lat);
+
+                destinationAddress.value = place?.place_name ?? null;
 
                 if (place) {
                     form.destination_name =
@@ -694,11 +874,18 @@ function initMap() {
 function renderWaypointMarkers() {
   clearWaypointMarkers();
 
-  waypoints.value.forEach((wp, index) => {
+  waypoints.value.forEach((wp) => {
+    const id = wp.id;
     const el = document.createElement('div');
     el.title = 'Drag to reshape route';
-    el.style.cssText =
-      'width:18px;height:18px;background:#7c3aed;border:3px solid white;border-radius:50%;cursor:grab;box-shadow:0 2px 6px rgba(0,0,0,0.35);';
+    el.style.cssText = 'width:18px;height:18px;cursor:grab;';
+    el.dataset.pinKind = 'detour';
+
+    // The dot is a child so it can be enlarged on hover without touching the transform Mapbox puts on `el`.
+    const dot = document.createElement('div');
+    dot.style.cssText =
+      'box-sizing:border-box;width:100%;height:100%;border:3px solid white;border-radius:50%;';
+    el.appendChild(dot);
 
     const marker = new mapboxgl.Marker({
       element: el,
@@ -707,30 +894,81 @@ function renderWaypointMarkers() {
       .setLngLat([wp.lng, wp.lat])
       .addTo(map.value!);
 
+    restylePin(marker);
+
     if (canEdit) {
       marker.on('drag', () => {
+        const point = waypoints.value.find((w) => w.id === id);
+        if (!point) return;
+
         const ll = marker.getLngLat();
-        waypoints.value[index] = { lng: ll.lng, lat: ll.lat };
+        point.lng = ll.lng;
+        point.lat = ll.lat;
       });
 
       marker.on('dragend', async () => {
+        const point = waypoints.value.find((w) => w.id === id);
+        if (!point) return;
+
         const ll = marker.getLngLat();
-        waypoints.value[index] = { lng: ll.lng, lat: ll.lat };
+        point.lng = ll.lng;
+        point.lat = ll.lat;
+        point.name = undefined;
+        point.address = undefined;
+
+        void resolveWaypointName(id);
         await redrawRoute();
       });
 
       el.addEventListener('contextmenu', (e) => {
         e.preventDefault();
-        waypoints.value.splice(index, 1);
-        marker.remove();
-        renderWaypointMarkers();
-        redrawRoute();
+        removeWaypoint(id);
       });
     }
 
     waypointMarkers.value.push(marker);
   });
+
+  applyPinHighlight();
 }
+
+async function removeWaypoint(id: number) {
+  const index = waypoints.value.findIndex((w) => w.id === id);
+  if (index === -1) return;
+
+  hoveredPin.value = null;
+  waypoints.value.splice(index, 1);
+  renderWaypointMarkers();
+
+  await redrawRoute();
+}
+
+/** Looks up the place of a detour point for its row; a result for a point that moved or was removed meanwhile is dropped. */
+async function resolveWaypointName(id: number) {
+  const start = waypoints.value.find((w) => w.id === id);
+  if (!start) return;
+
+  const { lng, lat } = start;
+  let place: { text?: string; place_name?: string } | null = null;
+
+  try {
+    place = await reversePlace(lng, lat);
+  } catch {
+    place = null;
+  }
+
+  const current = waypoints.value.find((w) => w.id === id);
+  if (!current || current.lng !== lng || current.lat !== lat) return;
+
+  current.name = place?.text || place?.place_name || null;
+  current.address = place?.place_name ?? null;
+}
+
+const waypointTitle = (wp: Waypoint) =>
+  wp.name === undefined ? 'Locating…' : (wp.name ?? `${wp.lat.toFixed(5)}, ${wp.lng.toFixed(5)}`);
+
+const waypointAddress = (wp: Waypoint) =>
+  wp.name === undefined ? '' : (wp.address ?? 'No address');
 
 async function redrawRoute() {
     if (
@@ -800,6 +1038,7 @@ async function redrawRoute() {
 }
 
 function onDragStart(index: number) {
+    hoveredPin.value = null;
     draggedStopIndex.value = index;
 }
 
@@ -833,6 +1072,7 @@ function onDragEnd() {
 }
 
 function removeStop(index: number) {
+    hoveredPin.value = null;
     form.stops.splice(index, 1);
     renderStopMarkers();
     redrawRoute();
@@ -876,16 +1116,15 @@ async function setDestinationFromSuggestion(item: SearchSuggestion) {
   form.destination_lng = item.longitude;
 
   destinationQuery.value = item.full_address;
+  destinationAddress.value = item.full_address;
+  destinationSearchRequest++;
   destinationSuggestions.value = [];
   lineClickMessage.value = '';
   form.clearErrors('destination_name');
 
   destinationMarker.value?.remove();
 
-  destinationMarker.value = new mapboxgl.Marker({
-    color: '#dc2626',
-    draggable: canEdit,
-  })
+  destinationMarker.value = createPin('destination', canEdit)
     .setLngLat([item.longitude, item.latitude])
     .setPopup(new mapboxgl.Popup().setText(item.name))
     .addTo(map.value!);
@@ -897,6 +1136,8 @@ async function setDestinationFromSuggestion(item: SearchSuggestion) {
     form.destination_lng = ll.lng;
 
     const place = await reversePlace(ll.lng, ll.lat);
+
+    destinationAddress.value = place?.place_name ?? null;
 
     if (place) {
       form.destination_name =
@@ -935,11 +1176,13 @@ async function setDestinationFromCoordinates(lng: number, lat: number) {
 
 async function addDetourWaypoint(lng: number, lat: number) {
   const insertIndex = findInsertIndex(lng, lat);
-  waypoints.value.splice(insertIndex, 0, { lng, lat });
+  const waypoint: Waypoint = { id: nextWaypointId++, lng, lat };
+  waypoints.value.splice(insertIndex, 0, waypoint);
 
   lineClickMessage.value =
-    'Detour point added. Drag the purple point to reshape the route.';
+    'Detour point added. Drag the detour pin to reshape the route.';
 
+  void resolveWaypointName(waypoint.id);
   await redrawRoute();
   renderWaypointMarkers();
 }
@@ -1204,16 +1447,29 @@ async function autoGenerateStops() {
   }
 }
 
-async function startGenerate() {
+function startGenerate() {
   if (routeCoordinates.value.length < 2) return;
 
   stopQuery.value = '';
   stopSuggestions.value = [];
   generateMode.value = true;
+}
 
-  await nextTick();
+// The km field only exists once the search box has faded out, so it is focused after it fades in.
+function focusIntervalField() {
+  if (!generateMode.value) return;
+
   intervalField.value?.querySelector('input')?.focus();
 }
+
+/** The fade between the search box / Generate button and the km prompt / Generate + cancel buttons. */
+const generateFade = {
+  mode: 'out-in',
+  enterActiveClass: 'transition-opacity duration-150 ease-out',
+  leaveActiveClass: 'transition-opacity duration-100 ease-in',
+  enterFromClass: 'opacity-0',
+  leaveToClass: 'opacity-0',
+} as const;
 
 function cancelGenerate() {
   if (loadingAutoGenerate.value) return;
@@ -1228,20 +1484,28 @@ async function confirmGenerate() {
   generateMode.value = false;
 }
 
+let destinationSearchRequest = 0;
+
 watch(destinationQuery, async (value) => {
   const query = value.trim();
+  const request = ++destinationSearchRequest;
 
-  if (!query) {
+  // Choosing a suggestion (or dragging the pin) fills the search box with the destination itself,
+  // which is not a new search, and a search still in flight must not bring the list back afterwards.
+  if (!query || query === form.destination_name || query === destinationAddress.value) {
     destinationSuggestions.value = [];
+    loadingDestination.value = false;
     return;
   }
 
   loadingDestination.value = true;
 
   try {
-    destinationSuggestions.value = await searchPlaces(query);
+    const results = await searchPlaces(query);
+
+    if (request === destinationSearchRequest) destinationSuggestions.value = results;
   } finally {
-    loadingDestination.value = false;
+    if (request === destinationSearchRequest) loadingDestination.value = false;
   }
 });
 
@@ -1293,7 +1557,7 @@ function buildRouteStopsForSubmit(): StopItem[] {
     {
       stop_name: form.destination_name,
       stop_type: 'destination',
-      address: destinationQuery.value || form.destination_name,
+      address: destinationAddress.value || form.destination_name,
       latitude: Number(form.destination_lat),
       longitude: Number(form.destination_lng),
       mapbox_feature_id: null,
@@ -1343,6 +1607,8 @@ onBeforeUnmount(() => {
   if (stopSearchTimer) clearTimeout(stopSearchTimer);
   mapResizeObserver?.disconnect();
   mapResizeObserver = null;
+  themeObserver?.disconnect();
+  themeObserver = null;
   originMarker?.remove();
   destinationMarker.value?.remove();
   clearStopMarkers();
@@ -1386,109 +1652,51 @@ onBeforeUnmount(() => {
               ref="mapEl"
               class="route-map h-full w-full overflow-hidden rounded-md p-0"
             />
-
-            <div
-              class="pointer-events-none absolute inset-x-3 top-3 z-10 max-w-2/3"
-            >
-              <Card class="pointer-events-auto">
-                <CardHeader class="mb-2">
-                  <CardTitle class="text-sm"
-                    >Destination</CardTitle
-                  >
-                  <CardDescription
-                    v-if="canEdit"
-                    class="text-custom-shadow/80"
-                  >
-                    {{
-                      lineClickMessage ||
-                      'Click the map to pin destination.'
-                    }}
-                  </CardDescription>
-                </CardHeader>
-
-                <CardContent v-if="canEdit" class="relative">
-                  <SearchInput
-                    v-model="destinationQuery"
-                    placeholder="Search destination..."
-                  />
-                </CardContent>
-
-                <div
-                  class="mt-2 flex flex-col gap-y-2"
-                >
-                  <div
-                      v-if="hasDestination"
-                      class="mx-6 flex cursor-pointer items-center justify-between rounded-md border border-custom-accent-3 bg-custom-accent-3/10 px-3 py-2 text-left hover:bg-custom-accent-3/5"
-                  >
-                      <div
-                          class="flex flex-row items-center gap-2"
-                      >
-                          <RiMapPin2Line
-                              class="h-4 w-4 shrink-0 text-custom-accent-3"
-                          />
-                          <span
-                              class="min-w-0 text-sm font-semibold"
-                          >
-                              {{
-                                  form.destination_name
-                              }}
-                          </span>
-                      </div>
-
-                      <RiCheckLine
-                          class="h-4 w-4 shrink-0 text-custom-accent-3"
-                      />
-                  </div>
-
-                  <div
-                    v-if="
-                      canEdit && destinationSuggestions.length
-                    "
-                    class="mx-6 overflow-hidden"
-                  >
-                    <button
-                      v-for="item in destinationSuggestions"
-                      :key="item.id"
-                      type="button"
-                      class="flex w-full cursor-pointer items-start gap-2 rounded-md px-3 py-2 text-left hover:bg-custom-primary/10"
-                      @click="
-                        setDestinationFromSuggestion(
-                          item,
-                        )
-                      "
-                    >
-                      <RiMapPin2Line
-                        class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80"
-                      />
-                      <div class="min-w-0">
-                        <div
-                          class="truncate text-sm font-semibold text-custom-shadow"
-                        >
-                          {{ item.name }}
-                        </div>
-                        <div
-                          class="truncate text-xs text-custom-shadow/80"
-                        >
-                          {{
-                            item.full_address
-                          }}
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- <p v-else class="text-xs text-custom-shadow/80 pt-2 text-center">Click anywhere on the map to set destination.</p> -->
-
-                <InputError
-                  v-if="canEdit"
-                  :message="
-                    form.errors.destination_name
-                  "
-                />
-              </Card>
-            </div>
           </div>
+
+          <template v-if="canEdit">
+            <div class="hidden lg:block">
+              <CardSeparator title="Map Controls" />
+
+              <ul class="my-2 hidden lg:flex flex-col gap-1 text-sm text-custom-shadow">
+                <li class="flex items-start gap-2">
+                  <RiCursorHand class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                  <span><span class="font-semibold">Left click</span> on the route line to add a detour pin.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <RiCursorHand class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                  <span><span class="font-semibold">Right click</span> a detour pin to remove it.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <RiDragMove2Line class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                  <span><span class="font-semibold">Drag</span> the destination or detour pins to reshape the route.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <RiDragMove2Line class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                  <span><span class="font-semibold">Drag</span> the stop pins along the route line.</span>
+                </li>
+              </ul>
+
+              <ul class="my-2 flex lg:hidden flex-col gap-1 text-sm text-custom-shadow">
+                <li class="flex items-start gap-2">
+                  <RiCursorHand class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                  <span><span class="font-semibold">Tap</span> on the route line to add a detour pin.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <RiCursorHand class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                  <span><span class="font-semibold">Tap</span> on a detour pin to remove it.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <RiDragMove2Line class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                  <span><span class="font-semibold">Drag</span> the destination or detour pins to reshape the route.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <RiDragMove2Line class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                  <span><span class="font-semibold">Drag</span> the stop pins along the route line.</span>
+                </li>
+              </ul>
+            </div>
+          </template>
 
           <CardSeparator title="Route Info" />
 
@@ -1513,7 +1721,7 @@ onBeforeUnmount(() => {
                 </template>
                 <span class="min-w-0 flex-1 truncate text-right text-sm font-medium">{{ route.route_name }}</span>
               </EditableField>
-              <InputError v-if="canEdit" :message="form.errors.route_name" />
+              <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.route_name" />
             </div>
 
             <div class="flex flex-row justify-between items-center gap-2 overflow-hidden group">
@@ -1547,7 +1755,7 @@ onBeforeUnmount(() => {
                 </template>
                 <span class="min-w-0 flex-1 truncate text-right text-sm font-medium">{{ route.gate?.gate_name ?? '—' }}</span>
               </EditableField>
-              <InputError v-if="canEdit" :message="form.errors.gate_id" />
+              <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.gate_id" />
             </div>
 
             <div class="flex flex-row justify-between items-center">
@@ -1619,114 +1827,269 @@ onBeforeUnmount(() => {
 
       <Separator orientation="vertical"/>
 
-      <div class="flex-1">
+      <div class="flex-1 max-w-1/3">
         <template v-if="canEdit">
-          <CardSeparator title="Add Stops" />
+          <CardSeparator title="Destination" />
+
+          <div class="my-2 flex flex-col gap-2">
+            <!-- <p v-if="canEdit" class="text-sm text-custom-shadow/80">
+              {{ lineClickMessage || 'Click the map to pin destination.' }}
+            </p> -->
+
+            <SearchInput
+              v-if="canEdit"
+              v-model="destinationQuery"
+              placeholder="Search destination..."
+            />
+
+            <div
+              v-if="hasDestination"
+              class="flex items-center justify-between gap-2 rounded-md bg-custom-secondary/10 dark:bg-custom-secondary/20 px-3 py-2 text-left"
+            >
+              <div class="flex min-w-0 flex-row items-center gap-2">
+                <RiMapPin2Line class="h-4 w-4 shrink-0 text-custom-shadow" />
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-semibold">
+                    {{ form.destination_name }}
+                  </p>
+                  <p v-if="destinationAddress" class="truncate text-xs text-custom-shadow/80">
+                    {{ destinationAddress }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- <RiCheckLine class="h-4 w-4 shrink-0 text-custom-shadow" /> -->
+            </div>
+
+            <div v-if="canEdit && destinationSuggestions.length" class="space-y-2">
+              <button
+                v-for="item in destinationSuggestions"
+                :key="item.id"
+                type="button"
+                :class="['flex items-start gap-2', suggestionButtonClass]"
+                @click="setDestinationFromSuggestion(item)"
+              >
+                <RiMapPin2Line class="mt-0.5 h-4 w-4 shrink-0 text-custom-shadow/80" />
+                <div class="min-w-0">
+                  <div class="truncate text-sm font-semibold text-custom-shadow">
+                    {{ item.name }}
+                  </div>
+                  <div class="truncate text-xs text-custom-shadow/80">
+                    {{ item.full_address }}
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            <InputMessage
+              variant="destructive"
+              v-if="canEdit"
+              class="mt-0"
+              :message="form.errors.destination_name"
+            />
+          </div>
+        </template>
+
+        <template v-if="canEdit && alternativeRoutes.length">
+          <CardSeparator title="Route Line Suggestions" />
+
+          <div class="my-2 space-y-2">
+            <button
+              type="button"
+              :class="[
+                'w-full cursor-pointer rounded-md border px-3 py-2 text-left transition-all duration-200',
+                selectedRouteIndex === 0
+                  ? 'bg-custom-secondary/10 dark:bg-custom-secondary/20 hover:bg-custom-secondary/10'
+                  : 'border-custom-bg-dark bg-transparent hover:bg-custom-secondary/10 dark:hover:bg-custom-secondary/20 dark:border-custom-bg-light hover:border-transparent dark:hover:border-transparent',
+              ]"
+              @click="selectAlternativeRoute(0)"
+            >
+              <div class="flex items-center justify-between gap-2">
+                <p class="flex items-center gap-x-2">
+                  <span class="font-semibold text-sm">Line 1</span>
+                  <!-- <span class="text-xs">Primary</span> -->
+                </p>
+                <p class="shrink-0 text-xs text-custom-shadow/80">
+                  {{ originalPrimaryRoute ? fmtDistance(originalPrimaryRoute.distance) : '—' }}
+                  |
+                  {{ originalPrimaryRoute ? fmtDuration(originalPrimaryRoute.duration) : '—' }}
+                </p>
+              </div>
+            </button>
+
+            <button
+              v-for="alt in alternativeRoutes"
+              :key="alt.index"
+              type="button"
+              :class="[
+                'w-full cursor-pointer rounded-md border px-3 py-2 text-left transition-all duration-200',
+                selectedRouteIndex === alt.index
+                  ? 'bg-custom-secondary/10 dark:bg-custom-secondary/20 hover:bg-custom-secondary/10'
+                  : 'border-custom-bg-dark bg-transparent hover:bg-custom-secondary/10 dark:hover:bg-custom-secondary/20 dark:border-custom-bg-light hover:border-transparent dark:hover:border-transparent',
+              ]"
+              @click="selectAlternativeRoute(alt.index)"
+            >
+              <div class="flex items-center justify-between gap-2">
+                <p class="flex items-center gap-x-2">
+                  <span class="font-semibold text-sm">Line {{ alt.index + 1 }}</span>
+                  <!-- <span class="text-xs">Alternate</span> -->
+                </p>
+                <p class="shrink-0 text-xs text-custom-shadow/80">
+                  {{ fmtDistance(alt.distance) }}
+                  |
+                  {{ fmtDuration(alt.duration) }}
+                </p>
+              </div>
+            </button>
+          </div>
+        </template>
+
+        <template v-if="canEdit && waypoints.length">
+          <CardSeparator title="Detour Points" />
+
+          <div class="mt-2 space-y-1">
+            <div
+              v-for="(wp, index) in waypoints"
+              :key="wp.id"
+              class="flex items-start gap-2 rounded-md p-2 transition-colors hover:bg-custom-secondary/10"
+              @mouseenter="hoverPin(`detour-${index}`)"
+              @mouseleave="unhoverPin(`detour-${index}`)"
+            >
+              <!-- The same round dot as the detour pin on the map. -->
+              <RouteStepMarker kind="detour" />
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm leading-tight font-semibold">
+                  {{ waypointTitle(wp) }}
+                </p>
+                <p v-if="waypointAddress(wp)" class="text-xs text-custom-shadow/80">
+                  {{ waypointAddress(wp) }}
+                </p>
+              </div>
+              <button
+                type="button"
+                class="shrink-0 text-custom-shadow/80 hover:text-destructive"
+                aria-label="Remove detour point"
+                @click="removeWaypoint(wp.id)"
+              >
+                <RiCloseLine class="h-4 w-4 shrink-0" />
+              </button>
+            </div>
+          </div>
+
+        </template>
+
+        <template v-if="canEdit">
+          <CardSeparator title="Stops Info" />
 
           <div class="mt-2 space-y-2">
-            <div class="flex items-center gap-2">
-              <div v-if="!generateMode" class="relative min-w-0 flex-1">
-                <RiSearchLine
-                  class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 shrink-0 -translate-y-1/2 text-custom-shadow/80"
-                />
-                <Input
-                  v-model="stopQuery"
-                  class="h-10 pr-9 pl-9 text-sm rounded-full bg-transparent"
-                  placeholder="Search route stop..."
-                />
-                <RiLoader2Line
-                  v-if="loadingStopSearch"
-                  class="pointer-events-none absolute top-1/2 right-3 h-4 w-4 shrink-0 -translate-y-1/2 animate-spin text-custom-shadow/80"
-                />
-                <button
-                  v-else-if="stopQuery"
-                  type="button"
-                  class="absolute top-1/2 right-3 -translate-y-1/2 text-custom-shadow/80 hover:text-custom-shadow"
-                  @click="
-                    stopQuery = '';
-                    stopSuggestions = [];
-                  "
-                >
-                  <RiCloseLine class="h-4 w-4 shrink-0" />
-                </button>
-              </div>
-
-              <div
-                v-else
-                ref="intervalField"
-                class="relative min-w-0 flex-1"
-                @keydown.enter.prevent="confirmGenerate"
-                @keydown.esc.prevent="cancelGenerate"
-              >
-                <RiRuler2Line
-                  class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 shrink-0 -translate-y-1/2 text-custom-shadow/80"
-                />
-                <Input
-                  v-model.number="autoGenerateInterval"
-                  type="number"
-                  min="1"
-                  max="50"
-                  class="h-10 pr-20 pl-9 text-sm rounded-full bg-transparent"
-                  placeholder="Distance between stops"
-                  :disabled="loadingAutoGenerate"
-                />
-                <span
-                  class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-custom-shadow/80"
-                >
-                  km apart
-                </span>
-              </div>
-
-              <Button
-                v-if="!generateMode"
-                type="button"
-                variant="float"
-                :disabled="routeCoordinates.length < 2"
-                @click="startGenerate"
-              >
-                <RiAiGenerate class="shrink-0 h-4 w-4" />
-                Generate
-              </Button>
-
-              <template v-else>
-                <Button
-                  type="button"
-                  variant="float-primary"
-                  :disabled="loadingAutoGenerate || !canGenerate"
-                  @click="confirmGenerate"
-                >
-                  <RiAiGenerate
-                    class="shrink-0 h-4 w-4 text-custom-bg-light dark:text-custom-shadow"
+            <div class="group/stop flex items-center gap-2">
+              <Transition v-bind="generateFade" @after-enter="focusIntervalField">
+                <div v-if="!generateMode" class="relative min-w-0 flex-1">
+                  <RiSearchLine
+                    class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 shrink-0 -translate-y-1/2 text-custom-shadow/80"
                   />
-                  {{ loadingAutoGenerate ? 'Generating...' : 'Generate' }}
-                </Button>
+                  <Input
+                    v-model="stopQuery"
+                    class="h-10 pr-9 pl-9 text-sm rounded-full bg-transparent"
+                    placeholder="Search route stop..."
+                  />
+                  <RiLoader2Line
+                    v-if="loadingStopSearch"
+                    class="pointer-events-none absolute top-1/2 right-3 h-4 w-4 shrink-0 -translate-y-1/2 animate-spin text-custom-shadow/80"
+                  />
+                  <button
+                    v-else-if="stopQuery"
+                    type="button"
+                    class="absolute top-1/2 right-3 -translate-y-1/2 text-custom-shadow/80 hover:text-custom-shadow"
+                    @click="
+                      stopQuery = '';
+                      stopSuggestions = [];
+                    "
+                  >
+                    <RiCloseLine class="h-4 w-4 shrink-0" />
+                  </button>
+                </div>
+
+                <div
+                  v-else
+                  ref="intervalField"
+                  class="relative min-w-0 flex-1"
+                  @keydown.enter.prevent="confirmGenerate"
+                  @keydown.esc.prevent="cancelGenerate"
+                >
+                  <RiRuler2Line
+                    class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 shrink-0 -translate-y-1/2 text-custom-shadow/80"
+                  />
+                  <Input
+                    v-model.number="autoGenerateInterval"
+                    type="number"
+                    min="1"
+                    max="50"
+                    class="h-10 pr-20 pl-9 text-sm rounded-full bg-transparent"
+                    :disabled="loadingAutoGenerate"
+                  />
+                  <span
+                    class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-custom-shadow/80"
+                  >
+                    km apart
+                  </span>
+                </div>
+              </Transition>
+
+              <!-- The idle Generate button slides open (max-width; the row's gap is cancelled while it is closed) only
+                   while the search box or the button has focus. Pressing it must not pull focus off the search
+                   box, or it would collapse before the click registers. -->
+              <Transition v-bind="generateFade">
                 <Button
+                  v-if="!generateMode"
                   type="button"
                   variant="float"
                   size="icon"
-                  aria-label="Cancel generating stops"
-                  :disabled="loadingAutoGenerate"
-                  @click="cancelGenerate"
+                  :disabled="routeCoordinates.length < 2"
+                  @mousedown.prevent
+                  @click="startGenerate"
                 >
-                  <RiCloseLine class="h-4 w-4 shrink-0" />
+                  <RiAiGenerate class="shrink-0 h-4 w-4" />
                 </Button>
-              </template>
+
+                <div v-else class="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="float-primary"
+                    :disabled="loadingAutoGenerate || !canGenerate"
+                    @click="confirmGenerate"
+                  >
+                    <RiAiGenerate
+                      class="shrink-0 h-4 w-4 text-custom-bg-light dark:text-custom-shadow"
+                    />
+                    {{ loadingAutoGenerate ? 'Generating...' : 'Generate' }}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="float"
+                    size="icon"
+                    aria-label="Cancel generating stops"
+                    :disabled="loadingAutoGenerate"
+                    @click="cancelGenerate"
+                  >
+                    <RiCloseLine class="h-4 w-4 shrink-0" />
+                  </Button>
+                </div>
+              </Transition>
             </div>
 
-            <p
+            <InputMessage
+              variant="default"
               v-if="generateMode"
-              class="text-sm text-center text-destructive"
-            >
-              <!-- <RiAlertLine class="mt-0.5 h-4 w-4 shrink-0" /> -->
-              Generating stops will remove all current stops.
-            </p>
+              message="Generating stops will remove all current stops."
+            />
 
-            <div v-if="stopSuggestions.length" class="pt-2">
+            <div v-if="stopSuggestions.length" class="space-y-2 pt-2">
               <button
                 v-for="item in stopSuggestions"
                 :key="item.id"
                 type="button"
-                class="flex w-full cursor-pointer items-start gap-2 rounded-md px-3 py-2 text-left hover:bg-custom-secondary/10"
+                :class="['flex items-start gap-2', suggestionButtonClass]"
                 @click="addStopFromSuggestion(item)"
               >
               <!-- TODO: use the routestepmarker here -->
@@ -1744,7 +2107,8 @@ onBeforeUnmount(() => {
               </button>
             </div>
 
-            <InputError
+            <InputMessage
+              variant="default"
               v-if="
                 !stopSuggestions.length &&
                 stopQuery &&
@@ -1753,33 +2117,37 @@ onBeforeUnmount(() => {
               "
               message="No places found within 500 m of the route."
             />
-            <p
-              v-else-if="stopQuery && routeCoordinates.length < 2"
-              class="px-1 text-xs text-custom-shadow/80"
-            >
-              Set a destination and build the route first to search for stops
-              along it.
-            </p>
+
+            <div v-else-if="stopQuery && routeCoordinates.length < 2" class="mt-2 flex w-full max-w-md flex-col items-center gap-2 rounded-md border border-dashed border-custom-bg-dark p-3 text-center text-sm text-custom-shadow/80 dark:border-custom-bg-light">
+                <img :src="navigationUrl" alt="" class="w-1/3 object-contain opacity-90" aria-hidden="true" />
+                <div class="space-y-1">
+                    <p class="text-base text-center font-semibold text-custom-shadow">No stops yet</p>
+                    <p class="text-sm text-custom-shadow/80">Set the destination to see stops suggestions.</p>
+                </div>
+            </div>
           </div>
         </template>
 
-        <template v-if="!canEdit">
+        <!-- <template v-if="!canEdit">
           <CardSeparator title="Stops Info" />
-        </template>
+        </template> -->
 
         <div class="mt-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
-          <div
-            v-if="!hasDestination"
-            class="rounded-md border border-dashed border-custom-bg-dark p-3 text-center shadow-none dark:border-custom-bg-light"
-          >
-            <p class="text-sm text-custom-shadow/80">
-              Set a destination to see the stop sequence.
-            </p>
+          <div v-if="!hasDestination" class="mt-2 flex w-full max-w-md flex-col items-center gap-2 rounded-md border border-dashed border-custom-bg-dark p-3 text-center text-sm text-custom-shadow/80 dark:border-custom-bg-light">
+              <img :src="navigationUrl" alt="" class="w-1/3 object-contain opacity-90" aria-hidden="true" />
+              <div class="space-y-1">
+                  <p class="text-base text-center font-semibold text-custom-shadow">No stops yet</p>
+                  <p class="text-sm text-custom-shadow/80">Set a destination to see the stop sequence.</p>
+              </div>
           </div>
 
           <div v-else class="relative">
             <div class="space-y-1">
-              <div class="flex items-start gap-3 rounded-md p-2">
+              <div
+                class="flex items-start gap-2 rounded-md p-2 transition-colors hover:bg-custom-secondary/10"
+                @mouseenter="hoverPin('origin')"
+                @mouseleave="unhoverPin('origin')"
+              >
                 <RouteStepMarker :number="1" kind="origin" connector />
                 <div class="min-w-0">
                   <p class="truncate text-sm leading-tight font-semibold">
@@ -1796,7 +2164,7 @@ onBeforeUnmount(() => {
                 :key="`${stop.stop_name}-${stop.latitude}-${index}`"
                 :draggable="canEdit"
                 :class="[
-                  'flex items-center gap-3 rounded-md p-2 transition-colors select-none',
+                  'flex items-start gap-2 rounded-md p-2 transition-colors select-none',
                   canEdit ? 'cursor-grab' : '',
                   dragOverIndex === index
                     ? 'bg-custom-bg'
@@ -1805,6 +2173,8 @@ onBeforeUnmount(() => {
                     ? 'opacity-50'
                     : '',
                 ]"
+                @mouseenter="hoverPin(`stop-${index}`)"
+                @mouseleave="unhoverPin(`stop-${index}`)"
                 @dragstart="canEdit && onDragStart(index)"
                 @dragover="canEdit && onDragOver($event, index)"
                 @drop="canEdit && onDrop(index)"
@@ -1821,17 +2191,17 @@ onBeforeUnmount(() => {
                     <p class="truncate text-sm leading-tight font-semibold">
                       {{ stop.stop_name }}
                     </p>
-                    <!-- <span
+                    <span
                       v-if="
                         stop.stop_type ===
                         'landmark'
                       "
-                      class="rounded bg-violet-100 px-1.5 py-0.5 text-xs font-semibold text-violet-700"
+                      class="text-sm cursor-pointer bg-custom-bg dark:bg-custom-bg-light px-2 rounded-md mr-1"
                     >
                       Landmark
-                    </span> -->
+                    </span>
                   </div>
-                  <p class="truncate text-xs text-custom-shadow/80" >
+                  <p class="text-xs text-custom-shadow/80" >
                     {{ stop.address || 'No address' }}
                   </p>
                 </div>
@@ -1851,7 +2221,11 @@ onBeforeUnmount(() => {
                 </div>
               </div>
 
-              <div class="flex items-start gap-3 rounded-md p-2">
+              <div
+                class="flex items-start gap-2 rounded-md p-2 transition-colors hover:bg-custom-secondary/10"
+                @mouseenter="hoverPin('destination')"
+                @mouseleave="unhoverPin('destination')"
+              >
                 <RouteStepMarker :number="form.stops.length + 2" kind="destination" />
                 <div class="min-w-0">
                   <p class="truncate text-sm leading-tight font-semibold">
@@ -1865,68 +2239,6 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </div>
-
-        <template v-if="canEdit">
-        <CardSeparator title="Alternative Routes" />
-
-        <div class="mt-2 space-y-2">
-          <button
-            type="button"
-            :class="[
-              'w-full cursor-pointer rounded-md border p-3 text-left transition-all duration-200 hover:-translate-y-0.5',
-              selectedRouteIndex === 0
-                ? 'border-custom-accent-3 bg-custom-accent-3/10 hover:bg-custom-accent-3/5'
-                : 'border-custom-bg-dark bg-transparent hover:bg-custom-accent-3/5 dark:border-custom-bg-light',
-            ]"
-            @click="selectAlternativeRoute(0)"
-          >
-            <div class="flex items-center justify-between gap-2">
-              <p class="flex items-center gap-x-2">
-                <span class="font-semibold">Route 1</span>
-                <span class="text-xs">Primary</span>
-              </p>
-              <p class="shrink-0 text-xs text-custom-shadow/80">
-                {{ originalPrimaryRoute ? fmtDistance(originalPrimaryRoute.distance) : '—' }}
-                |
-                {{ originalPrimaryRoute ? fmtDuration(originalPrimaryRoute.duration) : '—' }}
-              </p>
-            </div>
-          </button>
-
-          <button
-            v-for="alt in alternativeRoutes"
-            :key="alt.index"
-            type="button"
-            :class="[
-              'w-full cursor-pointer rounded-md border p-3 text-left transition-all duration-200 hover:-translate-y-0.5',
-              selectedRouteIndex === alt.index
-                ? 'border-custom-accent-3 bg-custom-accent-3/10 hover:bg-custom-accent-3/5'
-                : 'border-custom-bg-dark bg-transparent hover:bg-custom-accent-3/5 dark:border-custom-bg-light',
-            ]"
-            @click="selectAlternativeRoute(alt.index)"
-          >
-            <div class="flex items-center justify-between gap-2">
-              <p class="flex items-center gap-x-2">
-                <span class="font-semibold">Route {{ alt.index + 1 }}</span>
-                <span class="text-xs">Alternate</span>
-              </p>
-              <p class="shrink-0 text-xs text-custom-shadow/80">
-                {{ fmtDistance(alt.distance) }}
-                |
-                {{ fmtDuration(alt.duration) }}
-              </p>
-            </div>
-          </button>
-
-          <p
-            v-if="!allRouteOptions.length"
-            class="rounded-md border border-dashed border-custom-bg-dark p-3 text-center text-sm text-custom-shadow/80 dark:border-custom-bg-light"
-          >
-            Set a destination to generate route options.
-          </p>
-        </div>
-
-        </template>
       </div>
     </CardContent>
   </Card>

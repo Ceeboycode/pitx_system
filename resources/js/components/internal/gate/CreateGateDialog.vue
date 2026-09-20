@@ -4,7 +4,7 @@ import { computed, ref, watch } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { store } from '@/routes/gates';
 
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import { Button } from '@/components/ui/button';
 import Input from '@/components/ui/input/Input.vue';
 import Label from '@/components/ui/label/Label.vue';
@@ -123,7 +123,7 @@ function submit() {
                         {{ opt }}
                     </button>
                 </div>
-                <InputError :message="form.errors.gate_name" />
+                <InputMessage variant="destructive" :message="form.errors.gate_name" />
             </div>
             <div class="space-y-1">
                 <Label for="create_status">Status</Label>
@@ -136,7 +136,7 @@ function submit() {
                         <SelectItem value="inactive">Inactive</SelectItem>
                     </SelectContent>
                 </Select>
-                <InputError :message="form.errors.status" />
+                <InputMessage variant="destructive" :message="form.errors.status" />
             </div>
             <div class="relative space-y-1">
                 <Label for="create_bays">Bays</Label>
@@ -163,12 +163,12 @@ function submit() {
                         {{ opt }}
                     </button>
                 </div>
-                <InputError :message="form.errors.bays" />
+                <InputMessage variant="destructive" :message="form.errors.bays" />
             </div>
             <div class="space-y-1">
                 <Label for="create_location">Location</Label>
                 <Input id="create_location" v-model="form.location" placeholder="e.g. Ground Floor boarding concourse" />
-                <InputError :message="form.errors.location" />
+                <InputMessage variant="destructive" :message="form.errors.location" />
             </div>
             <div class="space-y-1">
                 <Label for="create_picture">Gate Picture</Label>
@@ -184,7 +184,7 @@ function submit() {
                         <input id="create_picture" ref="pictureInputRef" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" @change="selectPicture" />
                     </div>
                 </div>
-                <InputError :message="form.errors.picture" />
+                <InputMessage variant="destructive" :message="form.errors.picture" />
             </div>
         </div>
 

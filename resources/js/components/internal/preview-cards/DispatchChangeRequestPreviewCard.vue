@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { InputMessage } from '@/components/ui/_input-message';
 import { Badge } from '@/components/ui/badge';
 import { PreviewCard, PreviewCardRow } from '@/components/ui/_preview-card';
 
@@ -81,12 +82,12 @@ function statusClass(status: string): string {
 
             <div class="space-y-1">
                 <span class="text-sm font-semibold text-custom-shadow">Reason</span>
-                <p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ props.request.reason || '—' }}</p>
+                <InputMessage class="mt-0" :message="props.request.reason || '—'" />
             </div>
 
             <div v-if="props.request.rejection_reason" class="space-y-1">
                 <span class="text-sm font-semibold text-custom-shadow">Rejection Reason</span>
-                <p class="rounded-md bg-custom-bg p-3 text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">{{ props.request.rejection_reason }}</p>
+                <InputMessage class="mt-0" :message="props.request.rejection_reason ?? undefined" />
                 <p v-if="props.request.rejected_by" class="text-xs text-custom-shadow/60">Rejected by {{ props.request.rejected_by.name }}</p>
             </div>
 

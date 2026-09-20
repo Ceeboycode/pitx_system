@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,7 +34,7 @@ import { Form, Head } from '@inertiajs/vue3';
                         autofocus
                     />
 
-                    <InputError :message="errors.password" />
+                    <InputMessage variant="destructive" :message="errors.password" />
                 </div>
 
                 <div class="flex items-center">

@@ -14,7 +14,7 @@ export const alertVariants = cva(
         destructive:
           "text-destructive bg-card [&>svg]:text-current *:data-[slot=alert-description]:text-destructive/90",
         warning:
-          "border-none bg-warning dark:custom-bg text-custom-shadow",
+          "border-none bg-warning/80 dark:custom-bg text-custom-shadow",
       },
     },
     defaultVariants: {

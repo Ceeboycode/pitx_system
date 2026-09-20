@@ -23,15 +23,15 @@ const props = defineProps<{
     <input
       v-model="model"
       type="checkbox"
-      class="peer h-4 w-4 cursor-pointer appearance-none rounded border border-custom-shadow/20 transition-all checked:border-custom-primary checked:bg-custom-primary indeterminate:border-custom-primary indeterminate:bg-custom-primary disabled:cursor-default"
+      class="peer h-4 w-4 cursor-pointer appearance-none rounded border border-custom-bg-dark dark:border-custom-bg-light bg-custom-bg-dark dark:bg-custom-bg-light transition-all checked:border-custom-accent-3 checked:bg-custom-accent-3 indeterminate:border-custom-accent-3 indeterminate:bg-custom-accent-3 dark:checked:border-custom-secondary dark:checked:bg-custom-secondary dark:indeterminate:border-custom-secondary dark:indeterminate:bg-custom-secondary disabled:cursor-default"
       :indeterminate="props.indeterminate"
       :disabled="props.disabled"
       :aria-label="props.ariaLabel"
     />
-    <span class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-custom-bg-light opacity-0 peer-checked:opacity-100">
+    <span class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-custom-bg-light dark:text-custom-shadow opacity-0 peer-checked:opacity-100">
       <RiSquareFill class="h-2 w-2 shrink-0" />
     </span>
-    <span class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-custom-bg-light opacity-0 peer-indeterminate:opacity-100">
+    <span class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-custom-bg-light dark:text-custom-shadow opacity-0 peer-indeterminate:opacity-100">
       <span class="block h-0.5 w-2 rounded-full bg-current" />
     </span>
   </span>

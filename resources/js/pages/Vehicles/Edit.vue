@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -172,7 +172,7 @@ const submit = () => {
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>
-                                <InputError :message="form.errors.company_id" />
+                                <InputMessage variant="destructive" :message="form.errors.company_id" />
                             </div>
 
                             
@@ -212,7 +212,7 @@ const submit = () => {
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>
-                                <InputError :message="form.errors.route_id" />
+                                <InputMessage variant="destructive" :message="form.errors.route_id" />
                             </div>
 
                             
@@ -252,7 +252,7 @@ const submit = () => {
                                         </SelectGroup>
                                     </SelectContent>
                                 </Select>
-                                <InputError :message="form.errors.vehicle_type_id" />
+                                <InputMessage variant="destructive" :message="form.errors.vehicle_type_id" />
                             </div>
 
                         </div>
@@ -283,7 +283,7 @@ const submit = () => {
                                     class="rounded-lg border-slate-200 uppercase focus-visible:ring-blue-500"
                                 />
                                 <p class="text-xs text-muted-foreground">Maximum 6 characters.</p>
-                                <InputError :message="form.errors.plate_number" />
+                                <InputMessage variant="destructive" :message="form.errors.plate_number" />
                             </div>
 
                             
@@ -297,7 +297,7 @@ const submit = () => {
                                     placeholder="Enter body number"
                                     class="rounded-lg border-slate-200 focus-visible:ring-blue-500"
                                 />
-                                <InputError :message="form.errors.body_number" />
+                                <InputMessage variant="destructive" :message="form.errors.body_number" />
                             </div>
 
                             
@@ -313,7 +313,7 @@ const submit = () => {
                                     placeholder="Enter capacity"
                                     class="rounded-lg border-slate-200 focus-visible:ring-blue-500"
                                 />
-                                <InputError :message="form.errors.capacity" />
+                                <InputMessage variant="destructive" :message="form.errors.capacity" />
                             </div>
 
                         </div>

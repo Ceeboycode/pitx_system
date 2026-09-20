@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { InputMessage } from '@/components/ui/_input-message';
 import { AppDialog } from '@/components/ui/_app-dialog';
 import { ref, computed } from 'vue';
 import axios from 'axios';
@@ -211,9 +212,7 @@ function handleClose(val: boolean | undefined) {
                     <ul class="space-y-0.5"><li v-for="item in summary.errors" :key="item" class="text-xs text-destructive">{{ item }}</li></ul>
                 </div>
 
-                <div v-if="!summaryHasResults" class="rounded-md bg-custom-bg px-3 py-2.5 text-center text-sm text-custom-shadow/80 dark:bg-custom-bg-dark">
-                    No companies were found in the backup file.
-                </div>
+                <InputMessage v-if="!summaryHasResults" class="mt-0 justify-center" message="No companies were found in the backup file." />
             </div>
         </div>
 

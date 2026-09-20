@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { InputMessage } from '@/components/ui/_input-message';
 import { Badge } from '@/components/ui/badge';
 import { PreviewCard, PreviewCardRow } from '@/components/ui/_preview-card';
 import { RiImageAddLine } from 'vue-remix-icons';
@@ -141,12 +142,7 @@ function statusDot(status: Gate['status']): string {
                         <span class="shrink-0 text-xs capitalize text-custom-shadow/70">{{ route.status }}</span>
                     </div>
                 </div>
-                <p
-                    v-else
-                    class="rounded-md bg-custom-bg dark:bg-custom-bg-dark px-3 py-2 text-sm text-custom-shadow/70"
-                >
-                    No routes assigned.
-                </p>
+                <InputMessage v-else class="mt-0" message="No routes assigned." />
             </div>
         </div>
 

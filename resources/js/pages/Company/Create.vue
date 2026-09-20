@@ -4,7 +4,7 @@ import { create, index, store } from '@/routes/companies';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -126,7 +126,8 @@ const submit = () => {
                                     v-model="form.company_name"
                                     placeholder="ABC Transport Corp."
                                 />
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     class="mt-1"
                                     :message="form.errors.company_name"
                                 />
@@ -149,7 +150,8 @@ const submit = () => {
                                         >
                                     </SelectContent>
                                 </Select>
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     class="mt-1"
                                     :message="form.errors.business_type"
                                 />
@@ -164,7 +166,8 @@ const submit = () => {
                                     v-model="form.company_email"
                                     placeholder="company@email.com"
                                 />
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     class="mt-1"
                                     :message="form.errors.company_email"
                                 />
@@ -179,7 +182,8 @@ const submit = () => {
                                     v-model="form.company_phone"
                                     placeholder="0917xxxxxxx"
                                 />
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     class="mt-1"
                                     :message="form.errors.company_phone"
                                 />
@@ -194,7 +198,8 @@ const submit = () => {
                                     v-model="form.company_address"
                                     placeholder="Full office address..."
                                 />
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     class="mt-1"
                                     :message="form.errors.company_address"
                                 />
@@ -209,7 +214,8 @@ const submit = () => {
                                     v-model="form.registration_number"
                                     placeholder="Optional"
                                 />
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     class="mt-1"
                                     :message="form.errors.registration_number"
                                 />
@@ -239,7 +245,8 @@ const submit = () => {
                                     "
                                     placeholder="Juan Dela Cruz"
                                 />
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     class="mt-1"
                                     :message="
                                         form.errors
@@ -257,7 +264,8 @@ const submit = () => {
                                     "
                                     placeholder="Operations Manager"
                                 />
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     class="mt-1"
                                     :message="
                                         form.errors
@@ -275,7 +283,8 @@ const submit = () => {
                                     "
                                     placeholder="0917xxxxxxx / email"
                                 />
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     class="mt-1"
                                     :message="
                                         form.errors
@@ -316,7 +325,8 @@ const submit = () => {
                                                 .files?.[0] ?? null
                                     "
                                 />
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     class="mt-1"
                                     :message="form.errors.sec_cert"
                                 />
@@ -333,7 +343,8 @@ const submit = () => {
                                                 .files?.[0] ?? null
                                     "
                                 />
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     class="mt-1"
                                     :message="form.errors.dti_cert"
                                 />
@@ -350,7 +361,8 @@ const submit = () => {
                                                 .files?.[0] ?? null
                                     "
                                 />
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     class="mt-1"
                                     :message="form.errors.mayors_permit"
                                 />
@@ -367,7 +379,8 @@ const submit = () => {
                                                 .files?.[0] ?? null
                                     "
                                 />
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     class="mt-1"
                                     :message="form.errors.bir_2303"
                                 />
@@ -387,7 +400,8 @@ const submit = () => {
                                                 .files?.[0] ?? null
                                     "
                                 />
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     class="mt-1"
                                     :message="form.errors.authorization_letter"
                                 />

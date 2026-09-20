@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AlertError from '@/components/AlertError.vue';
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -268,7 +268,8 @@ watch(
                                         />
                                     </InputOTPGroup>
                                 </InputOTP>
-                                <InputError
+                                <InputMessage
+                                    variant="destructive"
                                     :message="
                                         errors?.confirmTwoFactorAuthentication
                                             ?.code

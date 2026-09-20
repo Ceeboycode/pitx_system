@@ -53,7 +53,7 @@ export const tableRowVariants = cva(
     variants: {
       status: {
         default: "text-custom-shadow",
-        inactive: "bg-custom-bg/50 text-custom-shadow/50 dark:bg-custom-bg-dark/50",
+        inactive: "bg-custom-bg/50 text-custom-shadow/50 dark:bg-custom-bg-light/50",
       },
     },
     defaultVariants: {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import CompanyDashboardController from '@/actions/App/Http/Controllers/CompanyDashboardController';
 import { storeResubmission } from '@/actions/App/Http/Controllers/CompanyRegistration';
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import AllTheDataRafikiUrl from '@/components/assets/All-the-data-rafiki.svg';
 import BusDriverRafikiUrl from '@/components/assets/Bus-driver-rafiki.svg';
 import FilingSystemRafikiUrl from '@/components/assets/Filing-system-rafiki.svg';
@@ -609,7 +609,8 @@ onUnmounted(() => {
                                     </Button>
                                 </div>
                             </div>
-                            <InputError
+                            <InputMessage
+                                variant="destructive"
                                 :message="
                                     resubmitForm.errors[
                                         `documents.${doc.doc_type}.file`
@@ -684,7 +685,8 @@ onUnmounted(() => {
                                     />
                                 </PopoverContent>
                             </Popover>
-                            <InputError
+                            <InputMessage
+                                variant="destructive"
                                 :message="
                                     resubmitForm.errors[
                                         `documents.${doc.doc_type}.issued_at`
@@ -759,7 +761,8 @@ onUnmounted(() => {
                                     />
                                 </PopoverContent>
                             </Popover>
-                            <InputError
+                            <InputMessage
+                                variant="destructive"
                                 :message="
                                     resubmitForm.errors[
                                         `documents.${doc.doc_type}.expires_at`
@@ -832,7 +835,8 @@ onUnmounted(() => {
                                 v-model="document.title"
                                 class="bg-custom-bg dark:bg-custom-bg-dark"
                             />
-                            <InputError
+                            <InputMessage
+                                variant="destructive"
                                 :message="supportingDocError(index, 'title')"
                             />
                         </div>
@@ -891,7 +895,8 @@ onUnmounted(() => {
                                     </Button>
                                 </div>
                             </div>
-                            <InputError
+                            <InputMessage
+                                variant="destructive"
                                 :message="supportingDocError(index, 'file')"
                             />
                         </div>
@@ -964,7 +969,7 @@ onUnmounted(() => {
                     />
                     {{ resubmitForm.processing ? 'Submitting...' : 'Resubmit' }}
                 </Button>
-                <InputError :message="resubmitError('session')" class="mt-2" />
+                <InputMessage variant="destructive" :message="resubmitError('session')" class="mt-2" />
             </div>
         </div>
 

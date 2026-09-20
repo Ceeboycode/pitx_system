@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
-import InputError from '@/components/InputError.vue'
+import { InputMessage } from '@/components/ui/_input-message'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -404,7 +404,7 @@ onBeforeUnmount(() => destroyMap())
                     </div>
                 </div>
 
-                <InputError :message="error" />
+                <InputMessage variant="destructive" :message="error" />
 
                 <p class="text-xs text-muted-foreground">
                     <template v-if="selectedGate">

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { InputMessage } from '@/components/ui/_input-message';
 import { computed } from 'vue';
 
 import CardSeparator from '@/components/ui/_card-separator/CardSeparator.vue';
@@ -62,9 +63,7 @@ const groupedPermissions = computed(() => groupPermissions(props.permissions));
                 </div>
             </div>
         </div>
-        <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">
-            No permissions selected yet.
-        </p>
+        <InputMessage v-else class="mt-0" message="No permissions selected yet." />
 
         <p class="mt-4 text-sm text-custom-shadow/80">
             A role only holds permissions of its own type, so changing the role type clears the selection.

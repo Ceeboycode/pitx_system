@@ -4,7 +4,7 @@ import { Form } from '@inertiajs/vue3';
 import { useTemplateRef } from 'vue';
 
 import HeadingSmall from '@/components/HeadingSmall.vue';
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -79,7 +79,7 @@ const passwordInput = useTemplateRef('passwordInput');
                                 ref="passwordInput"
                                 placeholder="Password"
                             />
-                            <InputError :message="errors.password" />
+                            <InputMessage variant="destructive" :message="errors.password" />
                         </div>
 
                         <DialogFooter class="gap-2">

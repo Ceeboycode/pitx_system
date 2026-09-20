@@ -3,7 +3,7 @@ import { ConfirmDialog } from '@/components/ui/_app-dialog';
 import { ref, watch } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import { Checkbox } from '@/components/ui/checkbox';
 import Label from '@/components/ui/label/Label.vue';
 import { Textarea } from '@/components/ui/textarea';
@@ -202,7 +202,7 @@ function submit() {
                     class="min-h-[100px] rounded-lg text-sm"
                 />
 
-                <InputError class="mt-1" :message="form.errors.remarks" />
+                <InputMessage variant="destructive" class="mt-1" :message="form.errors.remarks" />
 
                 <p class="text-[11px] text-muted-foreground">
                     You can edit the auto-generated text or write your own

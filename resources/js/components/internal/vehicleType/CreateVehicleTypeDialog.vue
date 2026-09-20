@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { AppDialog } from '@/components/ui/_app-dialog';
-import InputError from '@/components/InputError.vue'
+import { InputMessage } from '@/components/ui/_input-message'
 import { Button } from '@/components/ui/button'
 import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
@@ -47,7 +47,7 @@ function submit() {
                     v-model="form.type_name"
                     placeholder="Vehicle type name"
                 />
-                <InputError :message="form.errors.type_name" />
+                <InputMessage variant="destructive" :message="form.errors.type_name" />
             </div>
 
             <!-- CODE: <div class="space-y-2">
@@ -59,7 +59,7 @@ function submit() {
                     <option :value="1">Active</option>
                     <option :value="0">Inactive</option>
                 </Select>
-                <InputError :message="form.errors.is_active" />
+                <InputMessage variant="destructive" :message="form.errors.is_active" />
             </div> -->
 
             <div class="space-y-2">
@@ -76,7 +76,7 @@ function submit() {
                     </SelectContent>
                 </Select>
 
-                <InputError :message="form.errors.is_active" />
+                <InputMessage variant="destructive" :message="form.errors.is_active" />
             </div>
         </div>
 

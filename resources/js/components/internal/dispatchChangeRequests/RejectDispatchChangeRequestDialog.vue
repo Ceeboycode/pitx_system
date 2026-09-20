@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import { ConfirmDialog } from '@/components/ui/_app-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -51,7 +51,7 @@ function formatFieldLabel(field: string): string {
                 rows="3"
                 placeholder="Explain why this request is being rejected..."
             />
-            <InputError :message="props.error" />
+            <InputMessage variant="destructive" :message="props.error" />
         </div>
     </ConfirmDialog>
 </template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { InputMessage } from '@/components/ui/_input-message';
 import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { PreviewCard, PreviewCardRow } from '@/components/ui/_preview-card';
@@ -157,9 +158,7 @@ const visibleRoles = computed(() => {
                         {{ role.name }}
                     </Badge>
                 </div>
-                <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">
-                    No roles assigned.
-                </p>
+                <InputMessage v-else class="mt-0" message="No roles assigned." />
             </div>
         </div>
 

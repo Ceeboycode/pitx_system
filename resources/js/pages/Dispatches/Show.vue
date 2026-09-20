@@ -1,4 +1,5 @@
 ﻿<script setup lang="ts">
+import { InputMessage } from '@/components/ui/_input-message';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
@@ -923,7 +924,7 @@ function exportCsv() {
                                         <Progress :model-value="barPct(entry.count, routeSummary)" class="mt-2 h-1.5" />
                                     </div>
                                 </div>
-                                <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">No route data.</p>
+                                <InputMessage v-else class="mt-0" message="No route data." />
                             </div>
 
                             <div class="space-y-2">
@@ -944,7 +945,7 @@ function exportCsv() {
                                         <span class="shrink-0 text-xs text-custom-shadow/70">{{ item.count }} · {{ item.pct }}%</span>
                                     </div>
                                 </div>
-                                <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">No status data.</p>
+                                <InputMessage v-else class="mt-0" message="No status data." />
                             </div>
                         </CardContent>
                     </template>

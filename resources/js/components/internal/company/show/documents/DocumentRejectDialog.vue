@@ -5,7 +5,7 @@ import { useForm } from '@inertiajs/vue3';
 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 
 import { reject } from '@/routes/companies/documents';
 
@@ -205,7 +205,8 @@ function submitReject() {
                     placeholder="Select reasons above or write your own..."
                     class="min-h-25 rounded-lg text-sm"
                 />
-                <InputError
+                <InputMessage
+                    variant="destructive"
                     class="mt-1"
                     :message="rejectForm.errors.remarks"
                 />

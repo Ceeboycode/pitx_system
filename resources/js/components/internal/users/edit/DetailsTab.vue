@@ -27,7 +27,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import {
     Select,
     SelectContent,
@@ -265,7 +265,7 @@ function submit() {
                 </template>
                 <span class="text-sm font-medium">{{ user.name }}</span>
               </EditableField>
-              <InputError v-if="canEdit" :message="form.errors.name" />
+              <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.name" />
             </div>
 
             <div class="flex flex-row justify-between items-center gap-2 overflow-hidden">
@@ -339,7 +339,7 @@ function submit() {
                 </TooltipProvider>
               </span>
             </EditableField>
-            <InputError v-if="canEdit" :message="form.errors.email" />
+            <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.email" />
           </div>
 
           <div class="flex flex-row justify-between items-center gap-2 overflow-hidden group">
@@ -361,7 +361,7 @@ function submit() {
               </template>
               <span class="text-sm font-medium">{{ user.phone_number || '—' }}</span>
             </EditableField>
-            <InputError v-if="canEdit" :message="form.errors.phone_number" />
+            <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.phone_number" />
           </div>
         </div>
 
@@ -431,7 +431,7 @@ function submit() {
               </template>
               <span class="text-sm font-medium capitalize">{{ selectedRole?.name ?? '—' }}</span>
             </EditableField>
-            <InputError v-if="canEdit" :message="form.errors.role" />
+            <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.role" />
           </div>
         </div>
 
@@ -495,7 +495,7 @@ function submit() {
               <span class="text-sm font-medium">{{ selectedCompany?.company_name ?? '—' }}</span>
             </EditableField>
 
-            <InputError v-if="canEdit" :message="form.errors.company_id" />
+            <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.company_id" />
           </div>
         </div>
 

@@ -8,6 +8,7 @@ export { default as LogPreviewCard } from './LogPreviewCard.vue';
 export { default as RolePreviewCard } from './RolePreviewCard.vue';
 export { default as RoleReviewCard } from './RoleReviewCard.vue';
 export { default as RoutePreviewCard } from './RoutePreviewCard.vue';
+export { default as RouteReviewCard } from './RouteReviewCard.vue';
 export { default as UserPreviewCard } from './UserPreviewCard.vue';
 export { default as UserReviewCard } from './UserReviewCard.vue';
 export { default as VehiclePreviewCard } from './VehiclePreviewCard.vue';

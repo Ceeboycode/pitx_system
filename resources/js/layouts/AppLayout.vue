@@ -2,11 +2,31 @@
 import AppLayout from '@/layouts/app/AppSidebarLayout.vue'
 import type { BreadcrumbItemType } from '@/types'
 import { usePage } from '@inertiajs/vue3'
-import { watch } from 'vue'
+import { onMounted, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { Toaster } from '@/components/ui/sonner'
 
 const page = usePage()
+
+// TEMP: persistent sample toasts for styling. Remove this block, the onMounted import,
+// and the `expand` / `visibleToasts` props on <Toaster> when done.
+// onMounted(() => {
+//     const persistent = { duration: Infinity, closeButton: true }
+
+//     toast('Default toast', { ...persistent, description: 'This is a default toast with a description.' })
+//     toast.success('Success toast', { ...persistent, description: 'Company was created successfully.' })
+//     toast.info('Info toast', { ...persistent, description: 'Your session will expire in 5 minutes.' })
+//     toast.warning('Warning toast', { ...persistent, description: 'This action cannot be undone.' })
+//     toast.error('Error toast', { ...persistent, description: 'Something went wrong. Please try again.' })
+//     toast.loading('Loading toast', { ...persistent, description: 'Saving your changes...' })
+//     toast('Action toast', {
+//         ...persistent,
+//         description: 'Toast with action and cancel buttons.',
+//         action: { label: 'Undo', onClick: () => {} },
+//         cancel: { label: 'Dismiss', onClick: () => {} },
+//     })
+//     toast.success('No description', persistent)
+// })
 
 watch(
     () => page.props.flash,
@@ -22,7 +42,7 @@ watch(
 
 <template>
     <AppLayout>
-        <Toaster position="top-right" />
+        <Toaster position="bottom-right" expand :visibleToasts="20" />
         <slot />
     </AppLayout>
 </template>

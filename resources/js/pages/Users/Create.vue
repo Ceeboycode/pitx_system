@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -162,7 +162,7 @@ const requiredMark = '*';
                                             placeholder="e.g. Juan Dela Cruz"
                                             autocomplete="name"
                                         />
-                                        <InputError :message="form.errors.name" />
+                                        <InputMessage variant="destructive" :message="form.errors.name" />
                                     </div>
 
                                     <div class="flex flex-row gap-x-2">
@@ -179,7 +179,7 @@ const requiredMark = '*';
                                                 placeholder="e.g. juan@example.com"
                                                 autocomplete="email"
                                             />
-                                            <InputError :message="form.errors.email" />
+                                            <InputMessage variant="destructive" :message="form.errors.email" />
                                         </div>
 
                                         <div class="space-y-2 flex-1">
@@ -189,7 +189,7 @@ const requiredMark = '*';
                                                 placeholder="e.g. 09xxxxxxxxx"
                                                 autocomplete="tel"
                                             />
-                                            <InputError :message="form.errors.phone_number" />
+                                            <InputMessage variant="destructive" :message="form.errors.phone_number" />
                                         </div>
                                     </div>
                                 </div>
@@ -222,7 +222,7 @@ const requiredMark = '*';
                                                 </SelectContent>
                                             </Select>
 
-                                            <InputError :message="form.errors.type" />
+                                            <InputMessage variant="destructive" :message="form.errors.type" />
                                         </div>
 
                                         <div v-if="form.type" class="space-y-2 col-span-1">
@@ -268,7 +268,7 @@ const requiredMark = '*';
                                                 </SelectContent>
                                             </Select>
 
-                                            <InputError :message="form.errors.role" />
+                                            <InputMessage variant="destructive" :message="form.errors.role" />
                                         </div>
                                     </div>
                                 </div>
@@ -323,7 +323,7 @@ const requiredMark = '*';
                                                 </SelectContent>
                                             </Select>
 
-                                            <InputError :message="form.errors.company_id" />
+                                            <InputMessage variant="destructive" :message="form.errors.company_id" />
                                         </div>
                                     </div>
                                 </div>

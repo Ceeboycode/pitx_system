@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import { CheckboxInput } from '@/components/ui/_checkbox';
 import { Button } from '@/components/ui/button';
 import {
@@ -93,16 +93,16 @@ function toggleModule(moduleKey: string, checked: boolean) {
             </Button>
         </div>
 
-        <InputError v-if="!props.disabled" :message="props.error" />
+        <InputMessage variant="destructive" v-if="!props.disabled" :message="props.error" />
 
-        <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-2">
             <p v-if="groupedPermissions.length === 0" class="py-6 text-center text-sm text-custom-shadow">
                 No {{ props.type }} permissions found.
             </p>
 
             <div v-for="[moduleKey, perms] in groupedPermissions" :key="moduleKey" class="overflow-hidden rounded-md">
                 <div
-                    class="flex w-full cursor-pointer items-center justify-between gap-3 rounded-md bg-custom-bg px-3 py-2 transition-colors hover:bg-custom-secondary/10"
+                    class="flex w-full cursor-pointer items-center justify-between gap-3 rounded-md bg-custom-bg dark:bg-custom-bg-light/60 px-3 py-2 transition-colors hover:bg-custom-secondary/10"
                     @click="toggleCollapse(moduleKey)"
                 >
                     <div class="flex items-center gap-2">
@@ -116,14 +116,14 @@ function toggleModule(moduleKey: string, checked: boolean) {
                         />
                         <button
                             type="button"
-                            class="flex cursor-pointer items-center gap-2 text-left"
+                            class="flex cursor-pointer items-start gap-2 text-left"
                             :aria-expanded="!isCollapsed(moduleKey)"
                         >
                             <span class="text-sm font-semibold">
                                 {{ moduleLabel(moduleKey) }}
                             </span>
                             <span class="text-sm">
-                                {{ moduleSelectedCount(moduleKey) }}/{{ perms.length }}
+                                {{ moduleSelectedCount(moduleKey) }}/{{ perms.length }} selected
                             </span>
                         </button>
                     </div>
@@ -132,21 +132,22 @@ function toggleModule(moduleKey: string, checked: boolean) {
                     <RiArrowRightSLine v-else class="h-4 w-4 shrink-0 text-custom-shadow" />
                 </div>
 
-                <div v-if="!isCollapsed(moduleKey)" class="grid gap-2 pt-2 sm:grid-cols-2 lg:grid-cols-4">
+                <div v-if="!isCollapsed(moduleKey)" class="grid gap-2 pt-2 sm:grid-cols-2 lg:grid-cols-4 pb-2">
                     <label
                         v-for="p in perms"
                         :key="p.id"
-                        class="flex items-start gap-4 rounded-md border px-3 py-2 transition-colors"
+                        class="flex items-start gap-2 rounded-md border px-3 py-2 transition-colors"
                         :class="[
                             props.disabled ? 'cursor-default' : 'cursor-pointer hover:bg-custom-secondary/10',
-                            selectedIds.includes(p.id) ? 'border-transparent bg-custom-secondary/10' : 'border-custom-bg-dark',
+                            selectedIds.includes(p.id) ? 'border-transparent bg-custom-secondary/10 dark:bg-custom-secondary/20' : 'hover:border-transparent border-custom-bg-dark dark:border-custom-bg-light',
                         ]"
                     >
-                        <div class="inline-flex h-full items-center">
+                        <div class="inline-flex h-full items-start">
                             <CheckboxInput
                                 :model-value="selectedIds.includes(p.id)"
                                 :disabled="props.disabled"
                                 @update:model-value="togglePermission(p.id, $event)"
+                                class="mt-0.5"
                             />
                         </div>
                         <div class="flex min-w-0 flex-1 flex-col gap-0">

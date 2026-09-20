@@ -5,7 +5,7 @@ import { send } from '@/routes/verification';
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 
 import HeadingSmall from '@/components/HeadingSmall.vue';
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -69,7 +69,7 @@ const user = page.props.auth.user;
                             accept="image/png,image/jpeg,image/jpg,image/webp"
                         />
                         <p class="text-xs text-muted-foreground">PNG, JPG, or WEBP up to 2MB.</p>
-                        <InputError class="mt-1" :message="errors.avatar" />
+                        <InputMessage variant="destructive" class="mt-1" :message="errors.avatar" />
                     </div>
 
                     <Separator />
@@ -86,7 +86,7 @@ const user = page.props.auth.user;
                             autocomplete="name"
                             placeholder="Full name"
                         />
-                        <InputError class="mt-1" :message="errors.name" />
+                        <InputMessage variant="destructive" class="mt-1" :message="errors.name" />
                     </div>
 
                     
@@ -102,7 +102,7 @@ const user = page.props.auth.user;
                             autocomplete="username"
                             placeholder="Email address"
                         />
-                        <InputError class="mt-1" :message="errors.email" />
+                        <InputMessage variant="destructive" class="mt-1" :message="errors.email" />
                     </div>
 
                     

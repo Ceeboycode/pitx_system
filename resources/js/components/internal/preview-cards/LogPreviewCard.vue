@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { InputMessage } from '@/components/ui/_input-message';
 import { Badge } from '@/components/ui/badge';
 import { PreviewCard } from '@/components/ui/_preview-card';
 
@@ -101,9 +102,7 @@ function actionBadgeClass(action: string): string {
                     </p>
                 </div>
             </div>
-            <p v-else class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">
-                No field-level changes recorded.
-            </p>
+            <InputMessage v-else class="mt-0" message="No field-level changes recorded." />
         </div>
 
         <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">

@@ -4,7 +4,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import ExternalLayout from '@/layouts/ExternalLayout.vue';
 import { can } from '@/lib/can';
 
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -301,7 +301,7 @@ function submit() {
                                         autocomplete="off"
                                         class="rounded-lg border-slate-200 focus-visible:ring-blue-500"
                                     />
-                                    <InputError :message="form.errors.name" />
+                                    <InputMessage variant="destructive" :message="form.errors.name" />
                                 </div>
 
                                 
@@ -321,7 +321,8 @@ function submit() {
                                             autocomplete="off"
                                             class="rounded-lg border-slate-200 focus-visible:ring-blue-500"
                                         />
-                                        <InputError
+                                        <InputMessage
+                                            variant="destructive"
                                             :message="form.errors.email"
                                         />
                                     </div>
@@ -341,7 +342,8 @@ function submit() {
                                                 class="rounded-lg border-slate-200 pl-9 focus-visible:ring-blue-500"
                                             />
                                         </div>
-                                        <InputError
+                                        <InputMessage
+                                            variant="destructive"
                                             :message="form.errors.phone_number"
                                         />
                                     </div>
@@ -398,7 +400,7 @@ function submit() {
                                         }}
                                         available.
                                     </p>
-                                    <InputError :message="form.errors.role" />
+                                    <InputMessage variant="destructive" :message="form.errors.role" />
                                 </div>
 
                                 

@@ -3,7 +3,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3'
 import { computed } from 'vue'
 
 import AuthBase from '@/layouts/AuthLayout.vue'
-import InputError from '@/components/InputError.vue'
+import { InputMessage } from '@/components/ui/_input-message'
 import { Button } from '@/components/ui/button'
 import {
     Dialog,
@@ -67,7 +67,7 @@ function submit() {
                             placeholder="Enter new password"
                             autocomplete="new-password"
                         />
-                        <InputError :message="form.errors.password" />
+                        <InputMessage variant="destructive" :message="form.errors.password" />
                     </div>
 
                     <div class="space-y-2">

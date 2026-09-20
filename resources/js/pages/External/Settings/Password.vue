@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { Form, Head } from '@inertiajs/vue3';
 
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -64,7 +64,7 @@ const showConfirm = ref(false);
                                     </svg>
                                 </button>
                             </div>
-                            <InputError :message="errors.current_password" />
+                            <InputMessage variant="destructive" :message="errors.current_password" />
                         </div>
 
                         
@@ -92,7 +92,7 @@ const showConfirm = ref(false);
                                     </svg>
                                 </button>
                             </div>
-                            <InputError :message="errors.password" />
+                            <InputMessage variant="destructive" :message="errors.password" />
                         </div>
 
                         
@@ -120,7 +120,7 @@ const showConfirm = ref(false);
                                     </svg>
                                 </button>
                             </div>
-                            <InputError :message="errors.password_confirmation" />
+                            <InputMessage variant="destructive" :message="errors.password_confirmation" />
                         </div>
 
                         

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import InputError from '@/components/InputError.vue'
+import { InputMessage } from '@/components/ui/_input-message'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -172,7 +172,7 @@ function updateCapacity(value: AcceptableValue) {
                             </SelectContent>
                         </Select>
 
-                        <InputError :message="form.errors.vehicle_type_id" />
+                        <InputMessage variant="destructive" :message="form.errors.vehicle_type_id" />
                     </div>
 
                     <div class="space-y-2">
@@ -197,7 +197,7 @@ function updateCapacity(value: AcceptableValue) {
                             />
                         </div>
 
-                        <InputError :message="form.errors.plate_number" />
+                        <InputMessage variant="destructive" :message="form.errors.plate_number" />
                     </div>
 
                     <div class="space-y-2">
@@ -222,7 +222,7 @@ function updateCapacity(value: AcceptableValue) {
                             />
                         </div>
 
-                        <InputError :message="form.errors.body_number" />
+                        <InputMessage variant="destructive" :message="form.errors.body_number" />
                     </div>
 
                     <div class="space-y-2">
@@ -272,7 +272,7 @@ function updateCapacity(value: AcceptableValue) {
                             />
                         </div>
 
-                        <InputError :message="form.errors.capacity" />
+                        <InputMessage variant="destructive" :message="form.errors.capacity" />
                     </div>
                 </div>
             </div>
@@ -315,7 +315,7 @@ function updateCapacity(value: AcceptableValue) {
                             />
                         </div>
 
-                        <InputError :message="form.errors.color" />
+                        <InputMessage variant="destructive" :message="form.errors.color" />
                     </div>
 
                     <div class="space-y-2">
@@ -340,7 +340,7 @@ function updateCapacity(value: AcceptableValue) {
                             />
                         </div>
 
-                        <InputError :message="form.errors.make_model" />
+                        <InputMessage variant="destructive" :message="form.errors.make_model" />
                     </div>
 
                     <div class="space-y-2">
@@ -365,7 +365,7 @@ function updateCapacity(value: AcceptableValue) {
                             />
                         </div>
 
-                        <InputError :message="form.errors.engine_number" />
+                        <InputMessage variant="destructive" :message="form.errors.engine_number" />
                     </div>
 
                     <div class="space-y-2">
@@ -390,7 +390,7 @@ function updateCapacity(value: AcceptableValue) {
                             />
                         </div>
 
-                        <InputError :message="form.errors.chassis_number" />
+                        <InputMessage variant="destructive" :message="form.errors.chassis_number" />
                     </div>
                 </div>
             </div>

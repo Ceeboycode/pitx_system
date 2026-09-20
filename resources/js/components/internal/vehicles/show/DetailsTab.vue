@@ -15,7 +15,7 @@ import { CardSeparator } from '@/components/ui/_card-separator';
 import Button from '@/components/ui/button/Button.vue';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import InputError from '@/components/InputError.vue';
+import { InputMessage } from '@/components/ui/_input-message';
 import { Link, useForm } from '@inertiajs/vue3';
 import { show as userShow } from '@/routes/users';
 import { show as companyShow } from '@/routes/companies';
@@ -456,7 +456,7 @@ async function copyToClipboard(value?: string | null, label = 'Value') {
                 <option value="inactive">Inactive</option>
                 <option value="suspended">Suspended</option>
               </select>
-              <InputError :message="statusForm.errors.status" />
+              <InputMessage variant="destructive" :message="statusForm.errors.status" />
             </div>
 
             <div class="space-y-1.5">
@@ -479,7 +479,7 @@ async function copyToClipboard(value?: string | null, label = 'Value') {
                 class="min-h-24 text-sm"
                 placeholder="Reason for suspension..."
               />
-              <InputError :message="statusForm.errors.suspension_remark" />
+              <InputMessage variant="destructive" :message="statusForm.errors.suspension_remark" />
             </div>
 
             <Button
