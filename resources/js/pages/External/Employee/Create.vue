@@ -3,21 +3,32 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 
 import ExternalLayout from '@/layouts/ExternalLayout.vue';
 import { can } from '@/lib/can';
+import { index, store } from '@/routes/employee-users';
 
+import CardSeparator from '@/components/ui/_card-separator/CardSeparator.vue';
 import { InputMessage } from '@/components/ui/_input-message';
+import { LeadingCard } from '@/components/ui/_leading-card';
+import { LeadPanel, MainPanel, PanelLayout, SidePanel } from '@/components/ui/_panels';
+import { PreviewCard, ReviewCardRow } from '@/components/ui/_preview-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-
 
 type Company = {
     id: number;
@@ -34,27 +45,24 @@ type AuthUser = {
     email: string;
 };
 
-
 type RoleItem = {
     name: string;
     guard_name: string;
     type: string;
 };
 
-
-
 const props = defineProps<{
     company: Company;
     user: AuthUser;
     roles: RoleItem[];
-    // FIX: defaultStatus is now 'active' from the controller
     defaultStatus: string;
     nextUsernamePreview: string;
 }>();
 
 const canCreateEmployee = can('external_users.create');
 
-
+const requiredMark = '*';
+const defaultPassword = 'pitx@123';
 
 const form = useForm({
     name: '',
@@ -62,8 +70,6 @@ const form = useForm({
     phone_number: '',
     role: '',
 });
-
-
 
 function humanize(value?: string | null) {
     if (!value) return '—';
@@ -77,7 +83,6 @@ function statusClass(status?: string | null) {
         return 'bg-amber-100 text-amber-700 border-amber-200';
     if (status === 'suspended')
         return 'bg-rose-100 text-rose-600 border-rose-200';
-    if (status === 'inactive') return 'bg-slate-100 text-slate-500 border-0';
     return 'bg-slate-100 text-slate-500 border-0';
 }
 
@@ -88,48 +93,10 @@ function statusDot(status?: string | null) {
     return 'bg-slate-400';
 }
 
-
-const roleColorMap: Record<
-    string,
-    { icon: string; text: string; badge: string }
-> = {
-    driver: {
-        icon: 'bg-sky-100',
-        text: 'text-sky-700',
-        badge: 'bg-sky-100 text-sky-700 border-sky-200',
-    },
-    dispatcher: {
-        icon: 'bg-violet-100',
-        text: 'text-violet-700',
-        badge: 'bg-violet-100 text-violet-700 border-violet-200',
-    },
-    conductor: {
-        icon: 'bg-teal-100',
-        text: 'text-teal-700',
-        badge: 'bg-teal-100 text-teal-700 border-teal-200',
-    },
-    inspector: {
-        icon: 'bg-orange-100',
-        text: 'text-orange-700',
-        badge: 'bg-orange-100 text-orange-700 border-orange-200',
-    },
-};
-const fallbackColor = {
-    icon: 'bg-slate-100',
-    text: 'text-slate-600',
-    badge: 'bg-slate-100 text-slate-600 border-0',
-};
-
-function roleColor(roleName: string) {
-    return roleColorMap[roleName] ?? fallbackColor;
-}
-
-
-
 function submit() {
     if (!canCreateEmployee) return;
 
-    form.post('/employee-users', { preserveScroll: true });
+    form.post(store().url, { preserveScroll: true });
 }
 </script>
 
@@ -137,592 +104,206 @@ function submit() {
     <Head title="Add New Employee" />
 
     <ExternalLayout :company="company" :user="user">
-        <div class="min-h-screen bg-slate-50/60">
-            <div class="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
-                
-                <div
-                    class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-                >
-                    <div class="space-y-1">
-                        <div
-                            class="flex items-center gap-2 text-xs font-semibold tracking-widest text-slate-400 uppercase"
-                        >
-                            {{ company.company_code ?? company.company_name }}
-                            <span class="text-slate-300">·</span>
-                            <span>Employees</span>
-                            <span class="text-slate-300">·</span>
-                            <span>Add New</span>
-                        </div>
-                        <div class="flex items-center gap-2.5">
-                            <div
-                                class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700"
-                            ></div>
-                            <h1
-                                class="text-2xl font-bold tracking-tight text-slate-900"
-                            >
-                                Add Employee
-                            </h1>
-                        </div>
-                        <p class="text-sm text-slate-500">
-                            Create a new employee account. Select from available
-                            external roles.
-                        </p>
-                    </div>
+        <PanelLayout>
+            <MainPanel>
+                <LeadPanel class="h-fit p-0">
+                    <LeadingCard
+                        title="Add New Employee"
+                        :description="`Add a new employee account to ${props.company.company_name}.`"
+                        variant="entity-crud"
+                        entity="employee"
+                        :back="index().url"
+                        :more="false"
+                    />
+                </LeadPanel>
 
-                    <Button
-                        as-child
-                        variant="outline"
-                        class="shrink-0 self-start rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
-                    >
-                        <Link href="/employee-users">
-                            Back to Employees
-                        </Link>
-                    </Button>
-                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Details</CardTitle>
+                        <CardDescription>
+                            Fields with <span class="font-semibold text-destructive">*</span> are required.
+                            The username is generated automatically on save.
+                        </CardDescription>
+                    </CardHeader>
 
-                
-                <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
-                    <div
-                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-                    >
-                        <div
-                            class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700"
-                        ></div>
-                        <p
-                            class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                        >
-                            Account Type
-                        </p>
-                        <p class="mt-0.5 text-sm font-bold text-slate-900">
-                            Employee
-                        </p>
-                    </div>
+                    <CardContent>
+                        <form @submit.prevent="submit">
+                            <CardSeparator title="Account Info" />
 
-                    <!-- FIX: Shows 'Active' since defaultStatus is now 'active' -->
-                    <div
-                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-                    >
-                        <div
-                            class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500"
-                        ></div>
-                        <p
-                            class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                        >
-                            Default Status
-                        </p>
-                        <Badge
-                            :class="[
-                                'mt-1 gap-1.5 border',
-                                statusClass(defaultStatus),
-                            ]"
-                        >
-                            <span
-                                :class="[
-                                    'h-1.5 w-1.5 rounded-full',
-                                    statusDot(defaultStatus),
-                                ]"
-                            />
-                            {{ humanize(defaultStatus) }}
-                        </Badge>
-                    </div>
-
-                    <div
-                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-                    >
-                        <div
-                            class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-slate-600"
-                        ></div>
-                        <p
-                            class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                        >
-                            Default Password
-                        </p>
-                        <p
-                            class="mt-0.5 inline-block rounded bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-700"
-                        >
-                            pitx@123
-                        </p>
-                    </div>
-
-                    <div
-                        class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-                    >
-                        <div
-                            class="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600"
-                        ></div>
-                        <p
-                            class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                        >
-                            Username Preview
-                        </p>
-                        <p
-                            class="mt-0.5 inline-block max-w-full truncate rounded bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-700"
-                        >
-                            {{ nextUsernamePreview }}
-                        </p>
-                    </div>
-                </div>
-
-                
-                <form class="space-y-6" @submit.prevent="submit">
-                    <div
-                        class="grid items-start gap-6 xl:grid-cols-[1fr_320px]"
-                    >
-                        
-                        <div
-                            class="rounded-xl border border-slate-200 bg-white shadow-sm"
-                        >
-                            <div class="border-b border-slate-100 px-6 py-4">
-                                <h2
-                                    class="text-base font-semibold text-slate-800"
-                                >
-                                    Employee Information
-                                </h2>
-                                <p class="mt-0.5 text-xs text-slate-400">
-                                    Fill in the details. Username is
-                                    auto-generated on save.
-                                </p>
-                            </div>
-
-                            <div class="space-y-6 p-6">
-                                
-                                <div class="space-y-1.5">
-                                    <Label
-                                        for="name"
-                                        class="text-xs font-semibold tracking-widest text-slate-400 uppercase"
-                                    >
+                            <div class="my-2 flex flex-col gap-2 text-sm text-custom-shadow">
+                                <div class="space-y-2">
+                                    <Label for="name" class="flex items-center gap-1">
                                         Full Name
-                                        <span class="text-rose-500">*</span>
+                                        <span class="text-destructive">{{ requiredMark }}</span>
                                     </Label>
                                     <Input
                                         id="name"
                                         v-model="form.name"
-                                        placeholder="Enter full name"
+                                        placeholder="e.g. Juan Dela Cruz"
                                         autocomplete="off"
-                                        class="rounded-lg border-slate-200 focus-visible:ring-blue-500"
                                     />
                                     <InputMessage variant="destructive" :message="form.errors.name" />
                                 </div>
 
-                                
-                                <div class="grid gap-5 sm:grid-cols-2">
-                                    <div class="space-y-1.5">
-                                        <Label
-                                            for="email"
-                                            class="text-xs font-semibold tracking-widest text-slate-400 uppercase"
-                                        >
-                                            Email Address
-                                        </Label>
+                                <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                    <div class="space-y-2">
+                                        <Label for="email">Email Address</Label>
                                         <Input
                                             id="email"
                                             v-model="form.email"
                                             type="email"
-                                            placeholder="Enter email address"
+                                            placeholder="e.g. juan@example.com"
                                             autocomplete="off"
-                                            class="rounded-lg border-slate-200 focus-visible:ring-blue-500"
                                         />
-                                        <InputMessage
-                                            variant="destructive"
-                                            :message="form.errors.email"
-                                        />
+                                        <InputMessage variant="destructive" :message="form.errors.email" />
                                     </div>
 
-                                    <div class="space-y-1.5">
-                                        <Label
-                                            for="phone_number"
-                                            class="text-xs font-semibold tracking-widest text-slate-400 uppercase"
-                                        >
-                                            Phone Number
-                                        </Label>
-                                        <div class="relative">
-                                            <Input
-                                                id="phone_number"
-                                                v-model="form.phone_number"
-                                                placeholder="Enter phone number"
-                                                class="rounded-lg border-slate-200 pl-9 focus-visible:ring-blue-500"
-                                            />
-                                        </div>
-                                        <InputMessage
-                                            variant="destructive"
-                                            :message="form.errors.phone_number"
+                                    <div class="space-y-2">
+                                        <Label for="phone_number">Phone Number</Label>
+                                        <Input
+                                            id="phone_number"
+                                            v-model="form.phone_number"
+                                            placeholder="e.g. 09xxxxxxxxx"
+                                            autocomplete="tel"
                                         />
+                                        <InputMessage variant="destructive" :message="form.errors.phone_number" />
                                     </div>
                                 </div>
+                            </div>
 
-                                
-                                <div class="space-y-1.5">
-                                    <Label
-                                        for="role"
-                                        class="text-xs font-semibold tracking-widest text-slate-400 uppercase"
-                                    >
+                            <CardSeparator title="Role & Access" />
+
+                            <div class="my-2 flex flex-col gap-2 text-sm text-custom-shadow">
+                                <div class="space-y-2">
+                                    <Label for="role" class="flex items-center gap-1">
                                         Role
-                                        <span class="text-rose-500">*</span>
+                                        <span class="text-destructive">{{ requiredMark }}</span>
                                     </Label>
                                     <Select v-model="form.role">
-                                        <SelectTrigger
-                                            id="role"
-                                            class="w-full rounded-lg border-slate-200 focus:ring-blue-500"
-                                        >
-                                            <SelectValue
-                                                placeholder="Select a role"
-                                            />
+                                        <SelectTrigger id="role" class="w-full">
+                                            <SelectValue placeholder="Select a role" />
                                         </SelectTrigger>
-                                        <SelectContent class="rounded-xl">
-                                            <!-- FIX: iterate role.name (RoleItem objects, not plain strings) -->
-                                            <SelectItem
-                                                v-for="role in roles"
-                                                :key="role.name"
-                                                :value="role.name"
-                                                class="rounded-lg"
-                                            >
-                                                <span
-                                                    class="flex items-center gap-2"
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                <SelectItem
+                                                    v-for="role in props.roles"
+                                                    :key="role.name"
+                                                    :value="role.name"
                                                 >
-                                                    <span
-                                                        class="inline-block h-2 w-2 rounded-full"
-                                                        :class="
-                                                            roleColor(
-                                                                role.name,
-                                                            ).icon.replace(
-                                                                '-100',
-                                                                '-400',
-                                                            )
-                                                        "
-                                                    />
                                                     {{ humanize(role.name) }}
-                                                </span>
-                                            </SelectItem>
+                                                </SelectItem>
+                                                <p
+                                                    v-if="props.roles.length === 0"
+                                                    class="px-2 py-1 text-sm text-custom-shadow/80"
+                                                >
+                                                    No roles found.
+                                                </p>
+                                            </SelectGroup>
                                         </SelectContent>
                                     </Select>
-                                    <p class="text-xs text-slate-400">
-                                        {{ roles.length }} external role{{
-                                            roles.length === 1 ? '' : 's'
-                                        }}
-                                        available.
+                                    <p class="text-sm text-custom-shadow/80">
+                                        {{ props.roles.length }} external role{{ props.roles.length === 1 ? '' : 's' }}
+                                        available. Assign one per employee.
                                     </p>
+                                    <InputMessage
+                                        v-if="props.roles.length === 0"
+                                        variant="warning"
+                                        title="No external roles found"
+                                        message="Ask a PITX administrator to set up external roles before adding employees."
+                                    />
                                     <InputMessage variant="destructive" :message="form.errors.role" />
                                 </div>
-
-                                
-                                <div class="grid gap-5 sm:grid-cols-2">
-                                    <div class="space-y-1.5">
-                                        <Label
-                                            class="text-xs font-semibold tracking-widest text-slate-400 uppercase"
-                                        >
-                                            Default Status
-                                        </Label>
-                                        <div
-                                            class="flex h-10 items-center rounded-lg border border-slate-200 bg-slate-50 px-3"
-                                        >
-                                            <!-- FIX: shows Active with green styling -->
-                                            <Badge
-                                                :class="[
-                                                    'gap-1.5 border',
-                                                    statusClass(defaultStatus),
-                                                ]"
-                                            >
-                                                <span
-                                                    :class="[
-                                                        'h-1.5 w-1.5 rounded-full',
-                                                        statusDot(
-                                                            defaultStatus,
-                                                        ),
-                                                    ]"
-                                                />
-                                                {{ humanize(defaultStatus) }}
-                                            </Badge>
-                                        </div>
-                                        <p class="text-xs text-slate-400">
-                                            New accounts are created as active.
-                                        </p>
-                                    </div>
-
-                                    <div class="space-y-1.5">
-                                        <Label
-                                            class="text-xs font-semibold tracking-widest text-slate-400 uppercase"
-                                        >
-                                            Default Password
-                                        </Label>
-                                        <div
-                                            class="flex h-10 items-center rounded-lg border border-slate-200 bg-slate-50 px-3"
-                                        >
-                                            <span
-                                                class="font-mono text-sm font-semibold text-slate-500"
-                                                >pitx@123</span
-                                            >
-                                        </div>
-                                        <p class="text-xs text-slate-400">
-                                            Employee uses this on first login.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <Separator class="bg-slate-100" />
-
-                                <div
-                                    class="flex flex-col gap-3 sm:flex-row sm:justify-end"
-                                >
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        as-child
-                                        class="rounded-lg border-slate-200 text-slate-600 hover:bg-slate-100"
-                                    >
-                                        <Link href="/employee-users"
-                                            >Cancel</Link
-                                        >
-                                    </Button>
-                                    <Button
-                                        v-if="canCreateEmployee"
-                                        type="submit"
-                                        :disabled="form.processing"
-                                        class="rounded-lg border-0 bg-blue-700 font-semibold text-white shadow-sm hover:bg-blue-800 disabled:opacity-60"
-                                    >
-                                        {{
-                                            form.processing
-                                                ? 'Adding...'
-                                                : 'Add Employee'
-                                        }}
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-
-                        
-                        <div class="space-y-4">
-                            
-                            <div
-                                class="rounded-xl border border-slate-200 bg-white shadow-sm"
-                            >
-                                <div
-                                    class="border-b border-slate-100 px-5 py-4"
-                                >
-                                    <h3
-                                        class="flex items-center gap-2 text-sm font-semibold text-slate-800"
-                                    >
-                                        Company
-                                    </h3>
-                                </div>
-                                <div class="divide-y divide-slate-100">
-                                    <div class="px-5 py-3">
-                                        <p
-                                            class="mb-0.5 text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                                        >
-                                            Company Name
-                                        </p>
-                                        <p
-                                            class="text-sm font-semibold text-slate-800"
-                                        >
-                                            {{ company.company_name }}
-                                        </p>
-                                    </div>
-                                    <div class="px-5 py-3">
-                                        <p
-                                            class="mb-0.5 text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                                        >
-                                            Company Code
-                                        </p>
-                                        <p
-                                            class="font-mono text-sm font-semibold text-slate-700"
-                                        >
-                                            {{ company.company_code || '—' }}
-                                        </p>
-                                    </div>
-                                    <div
-                                        class="flex items-center justify-between px-5 py-3"
-                                    >
-                                        <p
-                                            class="text-[11px] font-semibold tracking-widest text-slate-400 uppercase"
-                                        >
-                                            Status
-                                        </p>
-                                        <Badge
-                                            :class="[
-                                                'gap-1.5 border',
-                                                statusClass(company.status),
-                                            ]"
-                                        >
-                                            <span
-                                                :class="[
-                                                    'h-1.5 w-1.5 rounded-full',
-                                                    statusDot(company.status),
-                                                ]"
-                                            />
-                                            {{ humanize(company.status) }}
-                                        </Badge>
-                                    </div>
-                                </div>
                             </div>
 
-                            
-                            <div
-                                class="rounded-xl border border-slate-200 bg-white shadow-sm"
-                            >
-                                <div
-                                    class="border-b border-slate-100 px-5 py-4"
-                                >
-                                    <h3
-                                        class="flex items-center gap-2 text-sm font-semibold text-slate-800"
-                                    >
-                                        Available Roles
-                                    </h3>
-                                    <p class="mt-0.5 text-xs text-slate-400">
-                                        {{ roles.length }} external role{{
-                                            roles.length === 1 ? '' : 's'
-                                        }}. Assign one per employee.
-                                    </p>
-                                </div>
+                            <InputMessage variant="info" class="lg:hidden">
+                                New employees are created with
+                                <span class="font-semibold">{{ props.defaultStatus }}</span> status.
+                                Their default password is
+                                <span class="font-mono font-semibold">{{ defaultPassword }}</span>,
+                                which they change on first login.
+                            </InputMessage>
 
-                                <div
-                                    v-if="roles.length > 0"
-                                    class="divide-y divide-slate-100"
-                                >
-                                    <div
-                                        v-for="role in roles"
-                                        :key="role.name"
-                                        class="flex cursor-pointer gap-3 px-5 py-4 transition-colors hover:bg-slate-50"
-                                        :class="
-                                            form.role === role.name
-                                                ? 'bg-blue-50/70'
-                                                : ''
-                                        "
-                                        @click="form.role = role.name"
-                                    >
-                                        <div
-                                            class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
-                                            :class="roleColor(role.name).icon"
-                                        ></div>
-                                        <div class="min-w-0 flex-1">
-                                            <div
-                                                class="mb-0.5 flex items-center gap-2"
-                                            >
-                                                <p
-                                                    class="text-xs font-semibold tracking-widest uppercase"
-                                                    :class="
-                                                        roleColor(role.name)
-                                                            .text
-                                                    "
-                                                >
-                                                    {{ humanize(role.name) }}
-                                                </p>
-                                                <span
-                                                    v-if="
-                                                        form.role === role.name
-                                                    "
-                                                    class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white"
-                                                    >✓</span
-                                                >
-                                            </div>
-                                            <p class="text-xs text-slate-400">
-                                                type:
-                                                <code
-                                                    class="rounded bg-slate-100 px-1 font-mono text-[10px]"
-                                                    >{{ role.type }}</code
-                                                >
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div class="mt-4 flex items-center justify-end gap-2">
+                                <Button type="button" variant="float" as-child>
+                                    <Link :href="index().url">Cancel</Link>
+                                </Button>
 
-                                <div v-else class="px-5 py-6 text-center">
-                                    <p class="text-xs text-slate-400">
-                                        No external roles found.
-                                    </p>
-                                    <p class="mt-1 text-xs text-slate-400">
-                                        Ensure roles have
-                                        <code
-                                            class="rounded bg-slate-100 px-1 font-mono text-[10px]"
-                                            >type = 'external'</code
-                                        >.
-                                    </p>
-                                </div>
+                                <Button
+                                    v-if="canCreateEmployee"
+                                    type="submit"
+                                    variant="float-primary"
+                                    :disabled="form.processing"
+                                >
+                                    {{ form.processing ? 'Adding...' : 'Add Employee' }}
+                                </Button>
                             </div>
+                        </form>
+                    </CardContent>
+                </Card>
+            </MainPanel>
 
-                            
-                            <div
-                                class="rounded-xl border border-slate-200 bg-white shadow-sm"
-                            >
-                                <div
-                                    class="border-b border-slate-100 px-5 py-4"
-                                >
-                                    <h3
-                                        class="flex items-center gap-2 text-sm font-semibold text-slate-800"
-                                    >
-                                        Account Notes
-                                    </h3>
-                                </div>
-                                <div class="divide-y divide-slate-100">
-                                    <div class="flex gap-3 px-5 py-4">
-                                        <div
-                                            class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-emerald-100"
-                                        ></div>
-                                        <div>
-                                            <p
-                                                class="text-xs font-semibold tracking-widest text-emerald-700 uppercase"
-                                            >
-                                                Status
-                                            </p>
-                                            <p
-                                                class="mt-0.5 text-xs text-slate-500"
-                                            >
-                                                New accounts are created as
-                                                <strong>active</strong>
-                                                immediately.
-                                            </p>
-                                        </div>
-                                    </div>
+            <SidePanel class="hidden lg:flex">
+                <PreviewCard
+                    title="Review"
+                    description="Review new employee details before confirming."
+                    :closable="false"
+                >
+                    <CardSeparator title="Account Info" />
 
-                                    <div class="flex gap-3 px-5 py-4">
-                                        <div
-                                            class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-blue-100"
-                                        ></div>
-                                        <div>
-                                            <p
-                                                class="text-xs font-semibold tracking-widest text-blue-700 uppercase"
-                                            >
-                                                Phone
-                                            </p>
-                                            <p
-                                                class="mt-0.5 text-xs text-slate-500"
-                                            >
-                                                Optional but helpful for
-                                                contact.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div
-                                        class="flex items-center justify-between px-5 py-4"
-                                    >
-                                        <div class="flex gap-3">
-                                            <div
-                                                class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-100"
-                                            ></div>
-                                            <div>
-                                                <p
-                                                    class="text-xs font-semibold tracking-widest text-slate-500 uppercase"
-                                                >
-                                                    Password
-                                                </p>
-                                                <p
-                                                    class="mt-0.5 text-xs text-slate-500"
-                                                >
-                                                    Changed on first login.
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <code
-                                            class="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-700"
-                                        >
-                                            pitx@123
-                                        </code>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
+                        <ReviewCardRow label="Name" :value="form.name" />
+                        <ReviewCardRow label="Email" :value="form.email" />
+                        <ReviewCardRow label="Phone" :value="form.phone_number" />
+                        <ReviewCardRow
+                            label="Username"
+                            :value="props.nextUsernamePreview"
+                            value-class="font-mono"
+                        />
                     </div>
-                </form>
-            </div>
-        </div>
+
+                    <CardSeparator title="Role & Access" />
+
+                    <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
+                        <ReviewCardRow label="Role" :value="form.role ? humanize(form.role) : ''" />
+                        <ReviewCardRow label="Status" :value="humanize(props.defaultStatus)">
+                            <Badge :class="['gap-1.5', statusClass(props.defaultStatus)]">
+                                <span :class="['h-1.5 w-1.5 rounded-full', statusDot(props.defaultStatus)]" />
+                                {{ humanize(props.defaultStatus) }}
+                            </Badge>
+                        </ReviewCardRow>
+                    </div>
+
+                    <CardSeparator title="Company Info" />
+
+                    <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
+                        <ReviewCardRow label="Company" :value="props.company.company_name">
+                            {{ props.company.company_name }}
+                            <span
+                                v-if="props.company.company_code"
+                                class="mr-1 rounded-md bg-custom-bg px-2 font-mono font-normal tracking-widest dark:bg-custom-bg-light"
+                            >
+                                {{ props.company.company_code }}
+                            </span>
+                        </ReviewCardRow>
+                        <ReviewCardRow label="Company Status" :value="humanize(props.company.status)">
+                            <Badge :class="['gap-1.5', statusClass(props.company.status)]">
+                                <span :class="['h-1.5 w-1.5 rounded-full', statusDot(props.company.status)]" />
+                                {{ humanize(props.company.status) }}
+                            </Badge>
+                        </ReviewCardRow>
+                    </div>
+
+                    <p class="mt-4 flex flex-col text-sm text-custom-shadow/80">
+                        <span>
+                            Default password is <span class="font-semibold">{{ defaultPassword }}</span>.
+                        </span>
+                        <span>
+                            New employees are created with
+                            <span class="font-semibold">{{ props.defaultStatus }}</span> status.
+                        </span>
+                    </p>
+                </PreviewCard>
+            </SidePanel>
+        </PanelLayout>
     </ExternalLayout>
 </template>
