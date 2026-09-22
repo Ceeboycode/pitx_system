@@ -44,10 +44,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const canRestore = can('vehicle_types.restore');
-const canForceDelete = can('vehicle_types.forceDelete');
+// const canForceDelete = can('vehicle_types.forceDelete');
 
 const restoreOpen = ref(false);
-const forceDeleteOpen = ref(false);
+// const forceDeleteOpen = ref(false);
 const previewedVehicleType = ref<ArchivedVehicleType | null>(null);
 const openMenuId = ref<number | null>(null);
 
@@ -65,10 +65,10 @@ function openRestore(vehicleType: ArchivedVehicleType) {
     restoreOpen.value = true;
 }
 
-function openForceDelete(vehicleType: ArchivedVehicleType) {
-    selectedVehicleType.value = vehicleType;
-    forceDeleteOpen.value = true;
-}
+// function openForceDelete(vehicleType: ArchivedVehicleType) {
+//     selectedVehicleType.value = vehicleType;
+//     forceDeleteOpen.value = true;
+// }
 </script>
 
 <template>
@@ -132,10 +132,10 @@ function openForceDelete(vehicleType: ArchivedVehicleType) {
                                                 <RiRestartLine class="h-4 w-4 shrink-0 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-bg" />
                                                 Restore
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem v-if="canForceDelete" class="group cursor-pointer text-destructive" @click="openForceDelete(vehicleType)">
+                                            <!-- <DropdownMenuItem v-if="canForceDelete" class="group cursor-pointer text-destructive" @click="openForceDelete(vehicleType)">
                                                 <RiDeleteBin7Line class="h-4 w-4 shrink-0" />
                                                 Delete Permanently
-                                            </DropdownMenuItem>
+                                            </DropdownMenuItem> -->
                                         </TableMoreButton>
                                     </TableRow>
                                 </TableContent>
@@ -155,6 +155,6 @@ function openForceDelete(vehicleType: ArchivedVehicleType) {
         </PanelLayout>
         
         <RestoreVehicleTypeDialog v-if="selectedVehicleType" v-model:open="restoreOpen" :vehicle-type="selectedVehicleType" />
-        <ForceDeleteVehicleTypeDialog v-if="selectedVehicleType" v-model:open="forceDeleteOpen" :vehicle-type="selectedVehicleType" />
+        <!-- <ForceDeleteVehicleTypeDialog v-if="selectedVehicleType" v-model:open="forceDeleteOpen" :vehicle-type="selectedVehicleType" /> -->
     </AppLayout>
 </template>
