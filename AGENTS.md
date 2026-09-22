@@ -231,3 +231,10 @@ Vue components must have a single root element.
 - IMPORTANT: Activate `inertia-vue-development` when working with Inertia Vue client-side patterns.
 
 </laravel-boost-guidelines>
+
+# Internal UI Standards
+
+- Before creating or modifying any internal-side frontend UI, read `docs/design-ui.md` and treat it as the source of truth for UI consistency.
+- This applies to: internal pages (anything rendered in `AppLayout`), Vue components under `resources/js/components/internal/**` and `resources/js/components/ui/**`, forms, tables, dialogs, internal layouts, navigation/sidebar, responsive behavior, and any other internal frontend work.
+- Reuse the components and patterns it documents instead of inventing new ones. If a task requires a pattern it does not cover, follow the closest documented pattern and update `docs/design-ui.md` in the same change.
+- It does not apply to `resources/js/pages/Dashboard.vue`, `resources/js/pages/External/**`, auth pages, or public/marketing pages.
