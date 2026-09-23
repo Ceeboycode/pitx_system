@@ -29,6 +29,11 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { CalendarDate } from '@internationalized/date';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import {
+    docStatusClass,
+    docStatusDot,
+    docStatusLabel,
+} from '@/lib/company-documents';
+import {
     RiAddLine,
     RiCalendarLine,
     RiCloseLine,
@@ -156,13 +161,18 @@ onUnmounted(() => {
     if (timer) clearInterval(timer);
 });
 
+function getDocKey(doc: DocRow): string {
+    return doc.doc_type === 'SUPPORTING_DOCUMENT' ? String(doc.id) : doc.doc_type;
+}
+
 const resubmitForm = useForm({
     documents: {} as Record<string, ResubmissionDocumentInput>,
     supporting_documents: [] as SupportingDocumentInput[],
 });
 
 for (const doc of actionRequiredDocs.value) {
-    resubmitForm.documents[doc.doc_type] = {
+    const key = getDocKey(doc);
+    resubmitForm.documents[key] = {
         file: null,
         issued_at: '',
         expires_at: '',
@@ -186,10 +196,12 @@ let supportingDocumentId = 0;
 
 const selectedResubmissionDocuments = computed(() => [
     ...actionRequiredDocs.value
-        .filter((doc) => resubmitForm.documents[doc.doc_type]?.file)
+        .filter((doc) => resubmitForm.documents[getDocKey(doc)]?.file)
         .map((doc) => ({
-            label: humanize(doc.doc_type),
-            file: resubmitForm.documents[doc.doc_type].file as File,
+            label: doc.doc_type === 'SUPPORTING_DOCUMENT' && doc.remarks
+                ? doc.remarks.replace(/^Supporting document:\s*/i, '')
+                : humanize(doc.doc_type),
+            file: resubmitForm.documents[getDocKey(doc)].file as File,
         })),
     ...resubmitForm.supporting_documents
         .filter((document) => document.file)
@@ -211,22 +223,22 @@ function parseCalendarDate(value: string): CalendarDate | undefined {
 }
 
 function selectDocumentDate(
-    docType: string,
+    docKey: string,
     field: 'issued_at' | 'expires_at',
     value: CalendarDate | undefined,
 ) {
-    resubmitForm.documents[docType][field] = value
+    resubmitForm.documents[docKey][field] = value
         ? `${value.year}-${String(value.month).padStart(2, '0')}-${String(value.day).padStart(2, '0')}`
         : '';
     openDatePicker.value = null;
 }
 
-function handleFile(docType: string, event: Event) {
+function handleFile(docKey: string, event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
-    resubmitForm.documents[docType].file = file;
-    resubmitForm.clearErrors(`documents.${docType}.file` as never);
-    setPreviewUrl(`documents.${docType}`, file);
+    resubmitForm.documents[docKey].file = file;
+    resubmitForm.clearErrors(`documents.${docKey}.file` as never);
+    setPreviewUrl(`documents.${docKey}`, file);
 }
 
 function submitResubmission() {
@@ -292,11 +304,11 @@ function handleSupportingFile(index: number, event: Event) {
     setPreviewUrl(`supporting_documents.${document.id}`, file);
 }
 
-function removeDocumentFile(docType: string) {
-    resubmitForm.documents[docType].file = null;
-    revokePreviewUrl(`documents.${docType}`);
-    documentInputResetKeys.value[docType] =
-        (documentInputResetKeys.value[docType] ?? 0) + 1;
+function removeDocumentFile(docKey: string) {
+    resubmitForm.documents[docKey].file = null;
+    revokePreviewUrl(`documents.${docKey}`);
+    documentInputResetKeys.value[docKey] =
+        (documentInputResetKeys.value[docKey] ?? 0) + 1;
 }
 
 function removeSupportingFile(index: number) {
@@ -453,19 +465,10 @@ onUnmounted(() => {
                             {{ humanize(doc.doc_type) }}
                         </p>
                         <Badge
-                            variant="outline"
-                            class="shrink-0 border-none text-custom-shadow"
-                            :class="{
-                                'bg-custom-accent-3 text-custom-bg-light dark:text-custom-bg-dark':
-                                    doc.status === 'verified',
-                                'bg-custom-bg-dark dark:bg-custom-bg-light':
-                                    doc.status === 'pending',
-                                'bg-destructive/30':
-                                    doc.status === 'expired' ||
-                                    doc.status === 'invalid',
-                            }"
+                            :class="['shrink-0 gap-1.5 border', docStatusClass(doc)]"
                         >
-                            {{ humanize(doc.status) }}
+                            <span :class="['h-1.5 w-1.5 rounded-full', docStatusDot(doc)]" />
+                            {{ docStatusLabel(doc) }}
                         </Badge>
                     </div>
                     <p
@@ -528,14 +531,15 @@ onUnmounted(() => {
 
                 <div
                     v-if="
-                        company.status === 'needs_revision' &&
-                        resubmitForm.documents[doc.doc_type]
+                        (company.status === 'needs_revision' ||
+                            ['invalid', 'expired'].includes(doc.status)) &&
+                        resubmitForm.documents[getDocKey(doc)]
                     "
                     class="mt-2"
                 >
                     <div class="grid gap-2 sm:grid-cols-2">
                         <div class="space-y-1 sm:col-span-2">
-                            <Label :for="`file_${doc.doc_type}`"
+                            <Label :for="`file_${getDocKey(doc)}`"
                                 >Document</Label
                             >
                             <p class="text-xs text-custom-shadow/70">
@@ -543,21 +547,21 @@ onUnmounted(() => {
                                 {{ maxFileSizeText }}.
                             </p>
                             <Input
-                                :id="`file_${doc.doc_type}`"
-                                :key="documentInputResetKeys[doc.doc_type] ?? 0"
+                                :id="`file_${getDocKey(doc)}`"
+                                :key="documentInputResetKeys[getDocKey(doc)] ?? 0"
                                 type="file"
                                 :accept="uploadRules.accept"
                                 class="cursor-pointer p-0 pr-3 file:mr-3 file:h-full file:cursor-pointer file:border-0 file:border-r file:border-custom-bg-dark file:bg-custom-bg-dark file:px-3 file:text-sm file:text-custom-shadow hover:file:bg-custom-bg"
-                                @change="handleFile(doc.doc_type, $event)"
+                                @change="handleFile(getDocKey(doc), $event)"
                             />
                             <div
-                                v-if="resubmitForm.documents[doc.doc_type].file"
+                                v-if="resubmitForm.documents[getDocKey(doc)].file"
                                 class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-custom-bg-dark/40 bg-custom-bg-dark/10 px-3 py-2 text-xs text-custom-shadow dark:border-custom-bg-light/30"
                             >
                                 <div class="min-w-0">
                                     <p class="truncate font-semibold">
                                         {{
-                                            resubmitForm.documents[doc.doc_type]
+                                            resubmitForm.documents[getDocKey(doc)]
                                                 .file?.name
                                         }}
                                     </p>
@@ -565,7 +569,7 @@ onUnmounted(() => {
                                         {{
                                             formatFileSize(
                                                 resubmitForm.documents[
-                                                    doc.doc_type
+                                                    getDocKey(doc)
                                                 ].file?.size,
                                             )
                                         }}
@@ -576,7 +580,7 @@ onUnmounted(() => {
                                         v-if="
                                             canPreviewFile(
                                                 resubmitForm.documents[
-                                                    doc.doc_type
+                                                    getDocKey(doc)
                                                 ].file,
                                             )
                                         "
@@ -585,10 +589,12 @@ onUnmounted(() => {
                                         size="icon-text"
                                         @click="
                                             openSelectedFilePreview(
-                                                `documents.${doc.doc_type}`,
-                                                humanize(doc.doc_type),
+                                                `documents.${getDocKey(doc)}`,
+                                                doc.doc_type === 'SUPPORTING_DOCUMENT' && doc.remarks
+                                                    ? doc.remarks.replace(/^Supporting document:\s*/i, '')
+                                                    : humanize(doc.doc_type),
                                                 resubmitForm.documents[
-                                                    doc.doc_type
+                                                    getDocKey(doc)
                                                 ].file,
                                             )
                                         "
@@ -601,7 +607,7 @@ onUnmounted(() => {
                                         variant="ghost-outline"
                                         size="icon-text"
                                         @click="
-                                            removeDocumentFile(doc.doc_type)
+                                            removeDocumentFile(getDocKey(doc))
                                         "
                                     >
                                         <RiCloseLine class="h-4 w-4" />
@@ -613,32 +619,32 @@ onUnmounted(() => {
                                 variant="destructive"
                                 :message="
                                     resubmitForm.errors[
-                                        `documents.${doc.doc_type}.file`
+                                        `documents.${getDocKey(doc)}.file`
                                     ]
                                 "
                             />
                         </div>
                         <div class="space-y-1">
-                            <Label :for="`iss_${doc.doc_type}`"
+                            <Label :for="`iss_${getDocKey(doc)}`"
                                 >Issue Date</Label
                             >
                             <Popover
                                 :open="
                                     openDatePicker ===
-                                    `${doc.doc_type}_issued_at`
+                                    `${getDocKey(doc)}_issued_at`
                                 "
                                 @update:open="
                                     (open) =>
                                         (openDatePicker = open
-                                            ? `${doc.doc_type}_issued_at`
+                                            ? `${getDocKey(doc)}_issued_at`
                                             : null)
                                 "
                             >
                                 <div class="flex">
                                     <Input
-                                        :id="`iss_${doc.doc_type}`"
+                                        :id="`iss_${getDocKey(doc)}`"
                                         v-model="
-                                            resubmitForm.documents[doc.doc_type]
+                                            resubmitForm.documents[getDocKey(doc)]
                                                 .issued_at
                                         "
                                         type="text"
@@ -667,7 +673,7 @@ onUnmounted(() => {
                                         :model-value="
                                             parseCalendarDate(
                                                 resubmitForm.documents[
-                                                    doc.doc_type
+                                                    getDocKey(doc)
                                                 ].issued_at,
                                             )
                                         "
@@ -675,7 +681,7 @@ onUnmounted(() => {
                                         @update:model-value="
                                             (value) =>
                                                 selectDocumentDate(
-                                                    doc.doc_type,
+                                                    getDocKey(doc),
                                                     'issued_at',
                                                     value as
                                                         | CalendarDate
@@ -689,32 +695,32 @@ onUnmounted(() => {
                                 variant="destructive"
                                 :message="
                                     resubmitForm.errors[
-                                        `documents.${doc.doc_type}.issued_at`
+                                        `documents.${getDocKey(doc)}.issued_at`
                                     ]
                                 "
                             />
                         </div>
                         <div class="space-y-1">
-                            <Label :for="`exp_${doc.doc_type}`"
+                            <Label :for="`exp_${getDocKey(doc)}`"
                                 >Expiration Date</Label
                             >
                             <Popover
                                 :open="
                                     openDatePicker ===
-                                    `${doc.doc_type}_expires_at`
+                                    `${getDocKey(doc)}_expires_at`
                                 "
                                 @update:open="
                                     (open) =>
                                         (openDatePicker = open
-                                            ? `${doc.doc_type}_expires_at`
+                                            ? `${getDocKey(doc)}_expires_at`
                                             : null)
                                 "
                             >
                                 <div class="flex">
                                     <Input
-                                        :id="`exp_${doc.doc_type}`"
+                                        :id="`exp_${getDocKey(doc)}`"
                                         v-model="
-                                            resubmitForm.documents[doc.doc_type]
+                                            resubmitForm.documents[getDocKey(doc)]
                                                 .expires_at
                                         "
                                         type="text"
@@ -743,7 +749,7 @@ onUnmounted(() => {
                                         :model-value="
                                             parseCalendarDate(
                                                 resubmitForm.documents[
-                                                    doc.doc_type
+                                                    getDocKey(doc)
                                                 ].expires_at,
                                             )
                                         "
@@ -751,7 +757,7 @@ onUnmounted(() => {
                                         @update:model-value="
                                             (value) =>
                                                 selectDocumentDate(
-                                                    doc.doc_type,
+                                                    getDocKey(doc),
                                                     'expires_at',
                                                     value as
                                                         | CalendarDate
@@ -765,7 +771,7 @@ onUnmounted(() => {
                                 variant="destructive"
                                 :message="
                                     resubmitForm.errors[
-                                        `documents.${doc.doc_type}.expires_at`
+                                        `documents.${getDocKey(doc)}.expires_at`
                                     ]
                                 "
                             />

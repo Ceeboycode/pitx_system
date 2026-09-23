@@ -24,6 +24,10 @@ class RoleBasedTwoFactorLoginResponse implements TwoFactorLoginResponseContract
         }
 
         if ($isExternal) {
+            if ($user->company && $user->company->status !== 'verified') {
+                return redirect()->intended(route('registration.status'));
+            }
+
             return redirect()->intended(route('company.dashboard'));
         }
 

@@ -15,11 +15,12 @@ import {
   fetchRegions,
   fetchProvincesByRegion,
   fetchCitiesMunByProvince,
+  fetchCitiesMunByRegion,
   fetchBarangaysByCityMun,
   type PSGCItem,
 } from '@/lib/psgc'
 
-import { Separator } from '@/components/ui/separator';
+import { Separator } from '@/components/ui/separator'
 
 type Codes = {
   regionCode: string
@@ -64,11 +65,25 @@ const barangayCode = ref(props.codes?.barangayCode ?? '')
 
 const street = ref('')
 
-// LABEL: selected labels (for composing final address string)
-const selectedRegion = computed(() => regions.value.find(r => r.code === regionCode.value)?.name ?? '')
-const selectedProvince = computed(() => provinces.value.find(p => p.code === provinceCode.value)?.name ?? '')
-const selectedCity = computed(() => cities.value.find(c => c.code === cityMunCode.value)?.name ?? '')
-const selectedBarangay = computed(() => barangays.value.find(b => b.code === barangayCode.value)?.name ?? '')
+const hasProvinces = computed(() => provinces.value.length > 0)
+const isNoProvinceRegion = computed(
+  () => Boolean(regionCode.value) && !loading.value.provinces && provinces.value.length === 0,
+)
+
+// Selected labels (for composing final address string)
+const selectedRegion = computed(
+  () => regions.value.find((r) => r.code === regionCode.value)?.name ?? '',
+)
+const selectedProvince = computed(() => {
+  if (isNoProvinceRegion.value) return ''
+  return provinces.value.find((p) => p.code === provinceCode.value)?.name ?? ''
+})
+const selectedCity = computed(
+  () => cities.value.find((c) => c.code === cityMunCode.value)?.name ?? '',
+)
+const selectedBarangay = computed(
+  () => barangays.value.find((b) => b.code === barangayCode.value)?.name ?? '',
+)
 
 const composedAddress = computed(() => {
   const parts = [
@@ -119,7 +134,13 @@ async function loadProvinces() {
   try {
     error.value = null
     loading.value.provinces = true
-    provinces.value = await fetchProvincesByRegion(regionCode.value)
+    const fetchedProvinces = await fetchProvincesByRegion(regionCode.value)
+    provinces.value = fetchedProvinces
+
+    // If region has no provinces (e.g. NCR), immediately load its cities/municipalities
+    if (fetchedProvinces.length === 0) {
+      await loadCities()
+    }
   } catch (e: any) {
     error.value = e?.message ?? 'Failed to load provinces'
   } finally {
@@ -133,12 +154,20 @@ async function loadCities() {
   cityMunCode.value = ''
   barangayCode.value = ''
 
-  if (!provinceCode.value) return
+  if (!regionCode.value) return
+
+  // If region has provinces, a province must be selected first
+  if (hasProvinces.value && !provinceCode.value) return
 
   try {
     error.value = null
     loading.value.cities = true
-    cities.value = await fetchCitiesMunByProvince(provinceCode.value)
+
+    if (isNoProvinceRegion.value || provinces.value.length === 0) {
+      cities.value = await fetchCitiesMunByRegion(regionCode.value)
+    } else if (provinceCode.value) {
+      cities.value = await fetchCitiesMunByProvince(provinceCode.value)
+    }
   } catch (e: any) {
     error.value = e?.message ?? 'Failed to load cities/municipalities'
   } finally {
@@ -163,24 +192,53 @@ async function loadBarangays() {
   }
 }
 
-watch(regionCode, async () => loadProvinces())
-watch(provinceCode, async () => loadCities())
-watch(cityMunCode, async () => loadBarangays())
+watch(regionCode, async () => {
+  await loadProvinces()
+})
+
+watch(provinceCode, async (newVal) => {
+  if (hasProvinces.value && newVal) {
+    await loadCities()
+  }
+})
+
+watch(cityMunCode, async (newVal) => {
+  if (newVal) {
+    await loadBarangays()
+  }
+})
 
 onMounted(async () => {
   await loadRegions()
 
-  if (regionCode.value) await loadProvinces()
-  if (provinceCode.value) await loadCities()
-  if (cityMunCode.value) await loadBarangays()
+  if (regionCode.value) {
+    try {
+      loading.value.provinces = true
+      provinces.value = await fetchProvincesByRegion(regionCode.value)
+    } catch (e: any) {
+      error.value = e?.message ?? 'Failed to load provinces'
+    } finally {
+      loading.value.provinces = false
+    }
+
+    if (provinces.value.length === 0 || isNoProvinceRegion.value) {
+      await loadCities()
+    } else if (provinceCode.value) {
+      await loadCities()
+    }
+
+    if (cityMunCode.value) {
+      await loadBarangays()
+    }
+  }
 })
 </script>
 
 <template>
   <div class="space-y-2">
     <div class="flex items-center gap-3 py-2">
-        <p class="font-semibold text-custom-accent-3 text-base">Address</p>
-        <Separator class="flex-1" />
+      <p class="font-semibold text-custom-accent-3 text-base">{{ label }}</p>
+      <Separator class="flex-1" />
     </div>
 
     <div class="grid gap-2 sm:grid-cols-2">
@@ -192,7 +250,7 @@ onMounted(async () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem v-for="r in regions" :key="r.code" :value="r.code">
-              {{ r.name }}
+              {{ r.name === 'NCR' ? 'NCR (National Capital Region)' : (r.regionName && r.regionName !== r.name ? `${r.name} (${r.regionName})` : r.name) }}
             </SelectItem>
           </SelectContent>
         </Select>
@@ -200,9 +258,19 @@ onMounted(async () => {
 
       <div class="space-y-1">
         <Label>Province</Label>
-        <Select v-model="provinceCode" :disabled="!regionCode">
+        <Select v-model="provinceCode" :disabled="!regionCode || isNoProvinceRegion || loading.provinces">
           <SelectTrigger class="w-full">
-            <SelectValue :placeholder="!regionCode ? 'Select region first...' : (loading.provinces ? 'Loading...' : 'Select province...')" />
+            <SelectValue
+              :placeholder="
+                !regionCode
+                  ? 'Select region first...'
+                  : loading.provinces
+                    ? 'Loading...'
+                    : isNoProvinceRegion
+                      ? 'Not Applicable (NCR)'
+                      : 'Select province...'
+              "
+            />
           </SelectTrigger>
           <SelectContent>
             <SelectItem v-for="p in provinces" :key="p.code" :value="p.code">
@@ -214,9 +282,22 @@ onMounted(async () => {
 
       <div class="space-y-1">
         <Label>City / Municipality</Label>
-        <Select v-model="cityMunCode" :disabled="!provinceCode">
+        <Select
+          v-model="cityMunCode"
+          :disabled="!regionCode || loading.provinces || loading.cities || (hasProvinces && !provinceCode)"
+        >
           <SelectTrigger class="w-full">
-            <SelectValue :placeholder="!provinceCode ? 'Select province first...' : (loading.cities ? 'Loading...' : 'Select city/municipality...')" />
+            <SelectValue
+              :placeholder="
+                !regionCode
+                  ? 'Select region first...'
+                  : loading.provinces || loading.cities
+                    ? 'Loading...'
+                    : hasProvinces && !provinceCode
+                      ? 'Select province first...'
+                      : 'Select city/municipality...'
+              "
+            />
           </SelectTrigger>
           <SelectContent>
             <SelectItem v-for="c in cities" :key="c.code" :value="c.code">
@@ -228,9 +309,17 @@ onMounted(async () => {
 
       <div class="space-y-1">
         <Label>Barangay</Label>
-        <Select v-model="barangayCode" :disabled="!cityMunCode">
+        <Select v-model="barangayCode" :disabled="!cityMunCode || loading.barangays">
           <SelectTrigger class="w-full">
-            <SelectValue :placeholder="!cityMunCode ? 'Select city first...' : (loading.barangays ? 'Loading...' : 'Select barangay...')" />
+            <SelectValue
+              :placeholder="
+                !cityMunCode
+                  ? 'Select city first...'
+                  : loading.barangays
+                    ? 'Loading...'
+                    : 'Select barangay...'
+              "
+            />
           </SelectTrigger>
           <SelectContent>
             <SelectItem v-for="b in barangays" :key="b.code" :value="b.code">
@@ -245,11 +334,6 @@ onMounted(async () => {
       <Label>{{ streetLabel }}</Label>
       <Input v-model="street" placeholder="House/Unit No., Street, Building..." />
     </div>
-
-    <!-- CODE: <div class="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
-      <div class="font-medium text-foreground">Preview</div>
-      <div class="mt-1">{{ composedAddress || '—' }}</div>
-    </div> -->
 
     <p v-if="error" class="text-xs text-destructive">{{ error }}</p>
   </div>

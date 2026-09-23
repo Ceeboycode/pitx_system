@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Http\Responses\RoleBasedLoginResponse;
 use App\Http\Responses\RoleBasedTwoFactorLoginResponse;
 use App\Models\User;
+use App\Services\Company\CompanyStatusService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -67,7 +68,7 @@ class FortifyServiceProvider extends ServiceProvider
             $loginLower = Str::lower($login);
 
             $user = User::query()
-                ->with(['company:id,is_active', 'roles'])
+                ->with(['company', 'roles'])
                 ->where(function ($query) use ($loginLower) {
                     $query->whereRaw('LOWER(username) = ?', [$loginLower])
                         ->orWhereRaw('LOWER(email) = ?', [$loginLower]);
@@ -86,8 +87,26 @@ class FortifyServiceProvider extends ServiceProvider
                 return null;
             }
 
-            if ($user->company_id !== null && ! $user->company?->is_active) {
-                return null;
+            $isInternal = $user->roles()->where('type', 'internal')->exists();
+            if ($isInternal) {
+                return $user;
+            }
+
+            if ($user->company_id !== null) {
+                if (! $user->company || ! $user->company->is_active) {
+                    return null;
+                }
+
+                $companyStatusService = app(CompanyStatusService::class);
+                $companyStatusService->markExpiredDocumentsAndSync(collect([$user->company]));
+                $companyStatusService->syncCompanyStatus($user->company);
+                $user->company->refresh();
+
+                if ($user->company->status !== 'verified') {
+                    if (! $user->hasRole('operator')) {
+                        return null;
+                    }
+                }
             }
 
             return $user;

@@ -523,6 +523,16 @@ class CompanyRegistration extends Controller
             return redirect()->route('company-registration.show');
         }
 
+        $isInternal = $user->roles()->where('type', 'internal')->exists();
+        if ($company->status !== 'verified' && ! $user->hasRole('operator') && ! $isInternal) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')
+                ->with('error', 'Access is restricted to company operators while verification is pending.');
+        }
+
         $this->companyStatusService->markExpiredDocumentsAndSync(collect([$company]));
         $this->companyStatusService->syncCompanyStatus($company);
         $company = $company->fresh();
@@ -623,25 +633,42 @@ class CompanyRegistration extends Controller
             return redirect()->route('company-registration.show');
         }
 
-        if ($company->status !== 'needs_revision') {
-            return redirect()->route('registration.status');
+        $isInternal = $user->roles()->where('type', 'internal')->exists();
+        if (! $user->hasRole('operator') && ! $isInternal) {
+            abort(403, 'Only operators can resubmit company documents.');
         }
+
+        $this->companyStatusService->markExpiredDocumentsAndSync(collect([$company]));
+        $this->companyStatusService->syncCompanyStatus($company);
+        $company = $company->fresh();
 
         $actionRequiredDocs = $company->documents()
             ->whereIn('status', ['invalid', 'expired'])
             ->get();
 
-        if ($actionRequiredDocs->isEmpty()) {
+        if ($actionRequiredDocs->isEmpty() && ! $request->hasFile('supporting_documents')) {
             return redirect()->route('registration.status');
         }
 
         $rules = [];
         foreach ($actionRequiredDocs as $doc) {
             $t = $doc->doc_type;
+            $id = $doc->id;
 
-            $rules["documents.$t.file"] = $this->documentFileRules(true);
-            $rules["documents.$t.issued_at"] = ['required', 'date', 'before_or_equal:today'];
-            $rules["documents.$t.expires_at"] = ['required', 'date', 'after_or_equal:today', "after:documents.$t.issued_at"];
+            $key = ($request->has("documents.{$id}") || $request->hasFile("documents.{$id}.file"))
+                ? "documents.{$id}"
+                : "documents.{$t}";
+
+            $isSupporting = ($t === 'SUPPORTING_DOCUMENT');
+
+            $rules["{$key}.file"] = $this->documentFileRules(true);
+            if ($isSupporting) {
+                $rules["{$key}.issued_at"] = ['nullable', 'date', 'before_or_equal:today'];
+                $rules["{$key}.expires_at"] = ['nullable', 'date', 'after_or_equal:today'];
+            } else {
+                $rules["{$key}.issued_at"] = ['required', 'date', 'before_or_equal:today'];
+                $rules["{$key}.expires_at"] = ['required', 'date', 'after_or_equal:today', "after:{$key}.issued_at"];
+            }
         }
 
         $rules['supporting_documents'] = ['nullable', 'array', 'max:10'];
@@ -658,7 +685,13 @@ class CompanyRegistration extends Controller
 
             foreach ($actionRequiredDocs as $doc) {
                 $type = $doc->doc_type;
-                $fileKey = "documents.$type.file";
+                $id = $doc->id;
+
+                $key = ($request->has("documents.{$id}") || $request->hasFile("documents.{$id}.file"))
+                    ? "documents.{$id}"
+                    : "documents.{$type}";
+
+                $fileKey = "{$key}.file";
 
                 if (! $request->hasFile($fileKey)) {
                     continue;
@@ -673,39 +706,53 @@ class CompanyRegistration extends Controller
                     'public'
                 );
 
-                $duplicateDocs = CompanyDocument::query()
-                    ->where('company_id', $company->id)
-                    ->where('doc_type', $type)
-                    ->where('id', '!=', $doc->id)
-                    ->get();
+                if ($type !== 'SUPPORTING_DOCUMENT') {
+                    $duplicateDocs = CompanyDocument::query()
+                        ->where('company_id', $company->id)
+                        ->where('doc_type', $type)
+                        ->where('id', '!=', $doc->id)
+                        ->get();
 
-                foreach ($duplicateDocs as $duplicateDoc) {
-                    if ($duplicateDoc->file_path && $disk->exists($duplicateDoc->file_path)) {
-                        $disk->delete($duplicateDoc->file_path);
+                    foreach ($duplicateDocs as $duplicateDoc) {
+                        if ($duplicateDoc->file_path && $disk->exists($duplicateDoc->file_path)) {
+                            $disk->delete($duplicateDoc->file_path);
+                        }
+
+                        $duplicateDoc->delete();
                     }
-
-                    $duplicateDoc->delete();
                 }
 
                 if ($doc->file_path && $disk->exists($doc->file_path)) {
                     $disk->delete($doc->file_path);
                 }
 
+                $baseName = $type === 'SUPPORTING_DOCUMENT'
+                    ? "{$companySlug}_SUPPORTING_DOCUMENT"
+                    : "{$companySlug}_{$type}";
+
                 $uniformOriginal = $this->nextUniformOriginalName(
                     companyId: $company->id,
-                    base: "{$companySlug}_{$type}",
+                    base: $baseName,
                     ext: $ext
                 );
+
+                $issuedAt = data_get($request->input('documents'), "{$id}.issued_at")
+                    ?? data_get($request->input('documents'), "{$type}.issued_at")
+                    ?? $doc->issued_at;
+
+                $expiresAt = data_get($request->input('documents'), "{$id}.expires_at")
+                    ?? data_get($request->input('documents'), "{$type}.expires_at")
+                    ?? $doc->expires_at;
 
                 $doc->update([
                     'file_path' => $newPath,
                     'original_name' => $uniformOriginal,
                     'mime_type' => $file->getMimeType(),
                     'file_size' => $file->getSize(),
-                    'issued_at' => data_get($request->input('documents'), "$type.issued_at"),
-                    'expires_at' => data_get($request->input('documents'), "$type.expires_at"),
+                    'issued_at' => $issuedAt,
+                    'expires_at' => $expiresAt,
                     'status' => 'pending',
-                    'remarks' => null,
+                    'remarks' => $type === 'SUPPORTING_DOCUMENT' ? $doc->remarks : null,
                     'verified_by' => null,
                     'verified_at' => null,
                     'uploaded_by' => $user->id,
@@ -714,7 +761,7 @@ class CompanyRegistration extends Controller
 
             $this->storeSupportingDocuments($request, $company, $user->id, $companySlug);
 
-            $company->update(['status' => 'for_verification']);
+            $this->companyStatusService->syncCompanyStatus($company);
         });
 
         $company->refresh();
