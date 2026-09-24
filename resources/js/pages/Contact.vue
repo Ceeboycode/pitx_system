@@ -33,7 +33,7 @@ import { RiMailLine, RiMapPin2Line, RiPhoneLine, RiTimeLine } from 'vue-remix-ic
                     </div>
                     <div>
                         <p class="text-xs font-bold uppercase tracking-widest text-gray-400">Address</p>
-                        <p class="mt-1 text-sm font-medium text-[#1a1a2e]">Parañaque Integrated Terminal Exchange</p>
+                        <p class="mt-1 text-sm font-semibold text-[#1a1a2e]">Parañaque Integrated Terminal Exchange</p>
                         <p class="mt-0.5 text-sm text-gray-500">Dr. A. Santos Ave., Parañaque City, Metro Manila, Philippines</p>
                     </div>
                 </div>
@@ -45,7 +45,7 @@ import { RiMailLine, RiMapPin2Line, RiPhoneLine, RiTimeLine } from 'vue-remix-ic
                     </div>
                     <div>
                         <p class="text-xs font-bold uppercase tracking-widest text-gray-400">Email</p>
-                        <p class="mt-1 text-sm font-medium text-[#1a1a2e]">System Administrator</p>
+                        <p class="mt-1 text-sm font-semibold text-[#1a1a2e]">System Administrator</p>
                         <a href="mailto:admin@pitx.gov.ph" class="mt-0.5 block text-sm text-[#1a3a6b] hover:underline">admin@pitx.gov.ph</a>
                     </div>
                 </div>
@@ -57,7 +57,7 @@ import { RiMailLine, RiMapPin2Line, RiPhoneLine, RiTimeLine } from 'vue-remix-ic
                     </div>
                     <div>
                         <p class="text-xs font-bold uppercase tracking-widest text-gray-400">Phone</p>
-                        <p class="mt-1 text-sm font-medium text-[#1a1a2e]">Terminal Operations</p>
+                        <p class="mt-1 text-sm font-semibold text-[#1a1a2e]">Terminal Operations</p>
                         <p class="mt-0.5 text-sm text-gray-500">(02) 8888-PITX (7489)</p>
                     </div>
                 </div>
@@ -69,7 +69,7 @@ import { RiMailLine, RiMapPin2Line, RiPhoneLine, RiTimeLine } from 'vue-remix-ic
                     </div>
                     <div>
                         <p class="text-xs font-bold uppercase tracking-widest text-gray-400">Office Hours</p>
-                        <p class="mt-1 text-sm font-medium text-[#1a1a2e]">Monday – Friday</p>
+                        <p class="mt-1 text-sm font-semibold text-[#1a1a2e]">Monday – Friday</p>
                         <p class="mt-0.5 text-sm text-gray-500">8:00 AM – 5:00 PM PHT</p>
                     </div>
                 </div>

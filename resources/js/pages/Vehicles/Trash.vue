@@ -159,7 +159,7 @@ function openRestore(vehicle: ArchivedVehicle) {
                                         </TableData>
                                         <TableData>
                                             <div class="flex min-w-0 flex-col">
-                                                <span class="truncate text-sm font-medium">{{ vehicle.vehicle_type?.type_name ?? '—' }}</span>
+                                                <span class="truncate text-sm font-semibold">{{ vehicle.vehicle_type?.type_name ?? '—' }}</span>
                                                 <span class="truncate text-xs text-custom-shadow/70">{{ vehicle.body_number || '—' }}</span>
                                             </div>
                                         </TableData>

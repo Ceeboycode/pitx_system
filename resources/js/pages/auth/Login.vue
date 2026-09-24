@@ -48,7 +48,7 @@ defineProps<{
                 <!-- TODO: this element stays unstyled, i cant see it... -->
                 <div
                     v-if="status"
-                    class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-center text-sm font-medium text-green-700"
+                    class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-center text-sm font-semibold text-green-700"
                 >
                     {{ status }}
                 </div>

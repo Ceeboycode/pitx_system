@@ -52,7 +52,7 @@ const { urlIsActive } = useActiveUrl();
                                 :key="toUrl(item.href)"
                                 variant="ghost"
                                 :class="[
-                                    'w-full justify-start gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                                    'w-full justify-start gap-2 rounded-md px-3 py-2 text-sm font-semibold transition-colors',
                                     urlIsActive(item.href)
                                         ? 'bg-blue-50 text-primary hover:bg-blue-50 border-l-2 border-primary rounded-l-none'
                                         : 'text-muted-foreground hover:bg-muted hover:text-foreground',

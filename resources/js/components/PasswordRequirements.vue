@@ -49,7 +49,7 @@ const requirements = computed(() => [
 
 <template>
     <div v-if="isVisible" class="mt-2 text-sm" aria-live="polite">
-        <!-- <p class="mb-1 font-medium">Password requirements</p> -->
+        <!-- <p class="mb-1 font-semibold">Password requirements</p> -->
          <!-- TODO: make it appear only when requirement is still not met, otherwise, keep it hidden -->
 
         <div

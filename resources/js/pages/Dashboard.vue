@@ -318,7 +318,9 @@ const today = new Date().toLocaleDateString('en-PH', {
                 variant="dashboard"
             ></LeadingCard>
 
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            :PP
+
+            <!-- <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <Card>
                     <CardHeader
                         class="flex flex-row items-center justify-between space-y-0 pb-2"
@@ -339,7 +341,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                             {{ stats.total_companies }}
                         </div>
                         <p class="mt-1 text-xs text-muted-foreground">
-                            <span class="font-medium text-blue-700"
+                            <span class="font-semibold text-blue-700"
                                 >{{ stats.verified_companies }} verified</span
                             >
                             · {{ stats.pending_companies }} in process
@@ -352,7 +354,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                         class="flex flex-row items-center justify-between space-y-0 pb-2"
                     >
                         <CardTitle
-                            class="text-sm font-medium text-muted-foreground"
+                            class="text-sm font-semibold text-muted-foreground"
                             >Fleet</CardTitle
                         >
                         <div
@@ -366,7 +368,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                             {{ stats.total_vehicles }}
                         </div>
                         <p class="mt-1 text-xs text-muted-foreground">
-                            <span class="font-medium text-blue-700"
+                            <span class="font-semibold text-blue-700"
                                 >{{ stats.active_vehicles }} active</span
                             >
                             vehicles
@@ -379,7 +381,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                         class="flex flex-row items-center justify-between space-y-0 pb-2"
                     >
                         <CardTitle
-                            class="text-sm font-medium text-muted-foreground"
+                            class="text-sm font-semibold text-muted-foreground"
                             >Network</CardTitle
                         >
                         <div
@@ -396,7 +398,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                         </div>
                         <p class="mt-1 text-xs text-muted-foreground">
                             {{ stats.total_routes }} routes ·
-                            <span class="font-medium text-red-600"
+                            <span class="font-semibold text-red-600"
                                 >{{ stats.active_gates }}/{{
                                     stats.total_gates
                                 }}
@@ -411,7 +413,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                         class="flex flex-row items-center justify-between space-y-0 pb-2"
                     >
                         <CardTitle
-                            class="text-sm font-medium text-muted-foreground"
+                            class="text-sm font-semibold text-muted-foreground"
                             >Dispatches Today</CardTitle
                         >
                         <div
@@ -427,7 +429,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                             {{ stats.dispatches_today }}
                         </div>
                         <p class="mt-1 text-xs text-muted-foreground">
-                            <span class="font-medium text-red-600"
+                            <span class="font-semibold text-red-600"
                                 >{{ stats.total_pax_today }} passengers</span
                             >
                             logged today
@@ -585,7 +587,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                         >
                             <div class="flex items-center gap-2">
                                 <RiFileWarningLine class="h-4 w-4 shrink-0" />
-                                <span class="text-sm font-medium"
+                                <span class="text-sm font-semibold"
                                     >Expiring vehicle docs</span
                                 >
                             </div>
@@ -606,7 +608,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                         >
                             <div class="flex items-center gap-2">
                                 <RiBuildingLine class="h-4 w-4 shrink-0" />
-                                <span class="text-sm font-medium"
+                                <span class="text-sm font-semibold"
                                     >Pending companies</span
                                 >
                             </div>
@@ -632,7 +634,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                         >
                             <div class="flex items-center gap-2">
                                 <RiGitBranchLine class="h-4 w-4 shrink-0" />
-                                <span class="text-sm font-medium"
+                                <span class="text-sm font-semibold"
                                     >Inactive routes</span
                                 >
                             </div>
@@ -657,7 +659,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                         >
                             <div class="flex items-center gap-2">
                                 <RiDoorOpenLine class="h-4 w-4 shrink-0" />
-                                <span class="text-sm font-medium"
+                                <span class="text-sm font-semibold"
                                     >Inactive gates</span
                                 >
                             </div>
@@ -685,45 +687,6 @@ const today = new Date().toLocaleDateString('en-PH', {
                     <CardContent
                         class="flex flex-col gap-6 lg:flex-row lg:items-center"
                     >
-                        <!-- <div class="mx-auto flex items-center justify-center"> -->
-                            <!-- <svg viewBox="0 0 120 120" class="h-48 w-48">
-                                <circle
-                                    cx="60"
-                                    cy="60"
-                                    r="42"
-                                    fill="none"
-                                    stroke="hsl(var(--muted))"
-                                    stroke-width="14"
-                                />
-                                <path
-                                    v-for="(segment, index) in companySegments"
-                                    :key="index"
-                                    :d="segment.path"
-                                    fill="none"
-                                    :stroke="segment.color"
-                                    stroke-width="14"
-                                    stroke-linecap="round"
-                                />
-                                <text
-                                    x="60"
-                                    y="54"
-                                    text-anchor="middle"
-                                    style="font-size: 8px; font-weight: 500"
-                                    fill="#94a3b8"
-                                >
-                                    Companies
-                                </text>
-                                <text
-                                    x="60"
-                                    y="70"
-                                    text-anchor="middle"
-                                    style="font-size: 16px; font-weight: 700"
-                                    fill="currentColor"
-                                >
-                                    {{ stats.total_companies }}
-                                </text>
-                            </svg> -->
-                        <!-- </div> -->
                         <div class="flex-1 space-y-2">
                             <div
                                 v-for="item in companyChartData"
@@ -736,7 +699,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                                         :style="{ backgroundColor: item.color }"
                                     />
                                     <div>
-                                        <div class="text-sm font-medium">
+                                        <div class="text-sm font-semibold">
                                             {{ item.label }}
                                         </div>
                                         <div
@@ -763,45 +726,6 @@ const today = new Date().toLocaleDateString('en-PH', {
                     <CardContent
                         class="flex flex-col gap-6 lg:flex-row lg:items-center"
                     >
-                        <!-- <div class="mx-auto flex items-center justify-center"> -->
-                            <!-- <svg viewBox="0 0 120 120" class="h-48 w-48">
-                                <circle
-                                    cx="60"
-                                    cy="60"
-                                    r="42"
-                                    fill="none"
-                                    stroke="hsl(var(--muted))"
-                                    stroke-width="14"
-                                />
-                                <path
-                                    v-for="(segment, index) in dispatchSegments"
-                                    :key="index"
-                                    :d="segment.path"
-                                    fill="none"
-                                    :stroke="segment.color"
-                                    stroke-width="14"
-                                    stroke-linecap="round"
-                                />
-                                <text
-                                    x="60"
-                                    y="54"
-                                    text-anchor="middle"
-                                    style="font-size: 8px; font-weight: 500"
-                                    fill="#94a3b8"
-                                >
-                                    Dispatches
-                                </text>
-                                <text
-                                    x="60"
-                                    y="70"
-                                    text-anchor="middle"
-                                    style="font-size: 16px; font-weight: 700"
-                                    fill="currentColor"
-                                >
-                                    {{ stats.dispatches_today }}
-                                </text>
-                            </svg> -->
-                        <!-- </div> -->
                         <div class="flex-1 space-y-2">
                             <div
                                 v-for="item in dispatchChartData"
@@ -814,7 +738,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                                         :style="{ backgroundColor: item.color }"
                                     />
                                     <div>
-                                        <div class="text-sm font-medium">
+                                        <div class="text-sm font-semibold">
                                             {{ item.label }}
                                         </div>
                                         <div
@@ -936,7 +860,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                                             </div>
                                         </div>
                                         <div
-                                            class="py-2 text-sm font-medium tabular-nums"
+                                            class="py-2 text-sm font-semibold tabular-nums"
                                         >
                                             {{ item.pax_count }}
                                         </div>
@@ -1262,7 +1186,7 @@ const today = new Date().toLocaleDateString('en-PH', {
                         </div>
                     </div>
                 </CardContent>
-            </Card>
+            </Card> -->
         </MainPanel>
     </AppLayout>
 </template>

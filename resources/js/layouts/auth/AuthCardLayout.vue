@@ -23,7 +23,7 @@ defineProps<{
         <div class="flex w-full max-w-md flex-col gap-6">
             <Link
                 :href="home()"
-                class="flex items-center gap-2 self-center font-medium"
+                class="flex items-center gap-2 self-center font-semibold"
             >
                 <div class="flex h-9 w-9 items-center justify-center">
                     <AppLogoIcon

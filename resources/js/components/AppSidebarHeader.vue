@@ -21,7 +21,7 @@ withDefaults(
     >
         <div class="flex items-center justify-between gap-2 px-6 pb-3 pt-6 lg:px-0">
             <div class="flex min-w-0 items-center gap-2">
-                <SidebarTrigger class="h-9 w-9 rounded-full bg-custom-bg text-custom-shadow hover:bg-custom-secondary/20 dark:bg-custom-bg-light dark:hover:bg-custom-secondary/20" />
+                <SidebarTrigger />
                 <template v-if="breadcrumbs && breadcrumbs.length > 0">
                     <Breadcrumbs :breadcrumbs="breadcrumbs" />
                 </template>

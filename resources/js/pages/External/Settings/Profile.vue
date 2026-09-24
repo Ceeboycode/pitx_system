@@ -56,14 +56,14 @@ const user = page.props.auth.user;
                                     class="h-12 w-12 rounded-full object-cover"
                                 />
                                 <div>
-                                    <p class="text-sm font-medium">{{ user.name }}</p>
+                                    <p class="text-sm font-semibold">{{ user.name }}</p>
                                     <p class="text-xs text-muted-foreground">Current profile picture</p>
                                 </div>
                             </div>
 
                             
                             <div v-else class="flex items-center gap-3 rounded-md border bg-muted/40 p-3">
-                                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-sm font-medium text-muted-foreground">
+                                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
                                     {{ user.name?.charAt(0).toUpperCase() }}
                                 </div>
                                 <p class="text-sm text-muted-foreground">No profile picture set</p>
@@ -72,7 +72,7 @@ const user = page.props.auth.user;
                             
                             <Label
                                 for="avatar"
-                                class="mt-1 inline-flex w-fit cursor-pointer items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted"
+                                class="mt-1 inline-flex w-fit cursor-pointer items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -127,13 +127,13 @@ const user = page.props.auth.user;
                                 </svg>
                                 <span>
                                     Your email address is unverified.
-                                    <Link :href="send()" as="button" class="font-medium underline underline-offset-4 hover:text-amber-900">
+                                    <Link :href="send()" as="button" class="font-semibold underline underline-offset-4 hover:text-amber-900">
                                         Resend verification email.
                                     </Link>
                                 </span>
                             </div>
 
-                            <div v-if="status === 'verification-link-sent'" class="text-sm font-medium text-green-600">
+                            <div v-if="status === 'verification-link-sent'" class="text-sm font-semibold text-green-600">
                                 A new verification link has been sent to your email address.
                             </div>
                         </div>

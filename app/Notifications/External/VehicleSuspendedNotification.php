@@ -52,7 +52,7 @@ class VehicleSuspendedNotification extends Notification implements ShouldQueue
                 fn (MailMessage $message) => $message->line("Reason: {$this->vehicle->suspension_remark}")
             )
             ->line('Please review the vehicle record or contact support for more information.')
-            ->action('Open Vehicle Record', route('company.vehicles.show', $this->vehicle->id))
+            ->action('Open Vehicle Record', route('company.vehicles.edit', $this->vehicle->id))
             ->line('Thank you.');
     }
 }

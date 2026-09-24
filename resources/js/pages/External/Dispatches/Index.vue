@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 import InertiaPagination from '@/components/InertiaPagination.vue';
 import { InputMessage } from '@/components/ui/_input-message';
@@ -12,7 +12,25 @@ import { can } from '@/lib/can';
 import { store as storeChangeRequest } from '@/actions/App/Http/Controllers/DispatchChangeRequestController';
 import DispatchController from '@/actions/App/Http/Controllers/DispatchController';
 
-import { Badge } from '@/components/ui/badge';
+import {
+    DispatchFormDialog,
+    DispatchPreviewCard,
+    type DispatchDriverOption,
+    type DispatchGateOption,
+    type DispatchItem,
+    type DispatchVehicleOption,
+} from '@/components/external/dispatch';
+import { MainPanel, PanelLayout, SidePanel } from '@/components/ui/_panels';
+import {
+    Table,
+    TableCard,
+    TableColumn,
+    TableContent,
+    TableData,
+    TableHeader,
+    TableMoreButton,
+    TableRow,
+} from '@/components/ui/_table';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -35,7 +53,6 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
@@ -53,13 +70,12 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 
 import {
     RiAddLine,
     RiExternalLinkLine,
-    RiBus2Line,
     RiCheckLine,
-    RiCloseLine,
     RiCloseCircleLine,
     RiFileTextLine,
     RiFilter2Line,
@@ -86,66 +102,9 @@ type Company = {
     company_code?: string | null;
 };
 
-type Vehicle = {
-    id: number;
-    plate_number: string;
-    body_number?: string | null;
-    vehicle_type?: string | null;
-    make_model?: string | null;
-    status?: string | null;
-    route?: {
-        id: number;
-        gate_id?: number | null;
-        route_name?: string | null;
-        origin_name?: string | null;
-        destination_name?: string | null;
-        status?: string | null;
-        gate?: {
-            id: number;
-            gate_name?: string | null;
-            status?: string | null;
-        } | null;
-    } | null;
-    label: string;
-};
-
-type Driver = {
-    id: number;
-    name: string;
-    username?: string | null;
-    email?: string | null;
-    label: string;
-};
-
-type Gate = {
-    id: number;
-    gate_name: string;
-    bays: number;
-    status?: string | null;
-    label: string;
-    bay_options: Array<{ value: number; label: string }>;
-};
-
-type DispatchItem = {
-    id: number;
-    plate_number: string;
-    pax_count: number;
-    bay_number: string | number;
-    remarks?: string | null;
-    status: string;
-    arrived_at_formatted?: string | null;
-    departed_at_formatted?: string | null;
-    vehicle?: {
-        id: number;
-        plate_number: string;
-        body_number?: string | null;
-        vehicle_type?: string | null;
-        make_model?: string | null;
-    } | null;
-    dispatcher?: { id: number; name: string; username?: string | null } | null;
-    driver?: { id: number; name: string; username?: string | null } | null;
-    gate?: { id: number; gate_name: string } | null;
-};
+type Vehicle = DispatchVehicleOption;
+type Driver = DispatchDriverOption;
+type Gate = DispatchGateOption;
 
 type Paginated<T> = {
     data: T[];
@@ -280,21 +239,14 @@ function clearFilters() {
 
 
 const dialogOpen = ref(false);
-const editingDispatchId = ref<number | null>(null);
+const editingDispatch = ref<DispatchItem | null>(null);
+const openMenus = ref<Record<number, boolean>>({});
 const confirmDepartOpen = ref(false);
 const pendingDepartId = ref<number | null>(null);
 const pendingDepartDispatch = ref<DispatchItem | null>(null);
 const remarksViewOpen = ref(false);
 const viewingDispatch = ref<DispatchItem | null>(null);
 const previewedDispatch = ref<DispatchItem | null>(null);
-
-const form = useForm({
-    vehicle_id: '',
-    driver_user_id: 'unassigned',
-    gate_id: '',
-    bay_number: '',
-    remarks: '',
-});
 
 const departForm = useForm({ pax_count: '' });
 
@@ -322,46 +274,9 @@ const changeRequestFields: Array<{ value: ChangeRequestField; label: string }> =
     ];
 
 
-const selectedVehicle = computed(
-    () =>
-        props.vehicles.find((v) => String(v.id) === String(form.vehicle_id)) ??
-        null,
-);
-const selectedGate = computed(
-    () =>
-        props.gates.find((g) => String(g.id) === String(form.gate_id)) ?? null,
-);
-const selectedDriver = computed(() => {
-    if (form.driver_user_id === 'unassigned') return null;
-    return (
-        props.drivers.find(
-            (d) => String(d.id) === String(form.driver_user_id),
-        ) ?? null
-    );
-});
-const bayOptions = computed(() => selectedGate.value?.bay_options ?? []);
-const isEditing = computed(() => editingDispatchId.value !== null);
-const isGateAutoLocked = computed(
-    () => !!selectedVehicle.value?.route?.gate_id,
-);
-const selectedVehicleRouteGateInactive = computed(
-    () => selectedVehicle.value?.route?.gate?.status === 'inactive',
-);
-const selectedVehicleRouteGateName = computed(
-    () => selectedVehicle.value?.route?.gate?.gate_name ?? 'this route gate',
-);
 const assignedDriverIdsToday = computed(
     () => new Set(props.assigned_driver_ids_today ?? []),
 );
-const assignedVehicleIdsActive = computed(
-    () => new Set(props.assigned_vehicle_ids_active ?? []),
-);
-const editingDispatch = computed(
-    () =>
-        props.dispatches.data.find((d) => d.id === editingDispatchId.value) ??
-        null,
-);
-
 const arrivedCount = computed(
     () => props.dispatches.data.filter((d) => d.status === 'arrived').length,
 );
@@ -401,22 +316,6 @@ const changeRequestBayOptions = computed(() => {
     }));
 });
 
-function isDriverDisabledForDispatchForm(driverId: number): boolean {
-    if (editingDispatch.value?.driver?.id === driverId) {
-        return false;
-    }
-
-    return assignedDriverIdsToday.value.has(driverId);
-}
-
-function isVehicleDisabledForDispatchForm(vehicleId: number): boolean {
-    if (editingDispatch.value?.vehicle?.id === vehicleId) {
-        return false;
-    }
-
-    return assignedVehicleIdsActive.value.has(vehicleId);
-}
-
 function isDriverDisabledForChangeRequest(driverId: number): boolean {
     if (changeRequestDispatch.value?.driver?.id === driverId) {
         return true;
@@ -426,42 +325,6 @@ function isDriverDisabledForChangeRequest(driverId: number): boolean {
 }
 
 
-function onGateChange(value: unknown) {
-    form.gate_id = String(value ?? '');
-    form.bay_number = '';
-}
-
-function onVehicleChange(value: string) {
-    form.vehicle_id = value;
-
-    const vehicle = props.vehicles.find((v) => String(v.id) === value) ?? null;
-    const routeGateId = vehicle?.route?.gate_id
-        ? String(vehicle.route.gate_id)
-        : '';
-
-    if (vehicle?.route?.gate?.status === 'inactive') {
-        form.gate_id = '';
-        form.bay_number = '';
-        return;
-    }
-
-    if (!routeGateId) {
-        return;
-    }
-
-    if (form.gate_id !== routeGateId) {
-        form.gate_id = routeGateId;
-        form.bay_number = '';
-    }
-}
-
-function resetForm() {
-    form.transform((d) => d);
-    form.reset();
-    form.driver_user_id = 'unassigned';
-    form.clearErrors();
-}
-
 function resetDepartForm() {
     departForm.reset();
     departForm.clearErrors();
@@ -470,68 +333,48 @@ function resetDepartForm() {
 function openCreateDialog() {
     if (!canCreateDispatch) return;
 
-    editingDispatchId.value = null;
-    resetForm();
+    editingDispatch.value = null;
     dialogOpen.value = true;
 }
 
 function openEditDialog(dispatch: DispatchItem) {
-    if (!canUpdateDispatch) return;
-    if (dispatch.status === 'departed') return;
-    editingDispatchId.value = dispatch.id;
-    form.transform((d) => d);
-    form.clearErrors();
-    form.vehicle_id = dispatch.vehicle?.id ? String(dispatch.vehicle.id) : '';
-    onVehicleChange(form.vehicle_id);
-    form.driver_user_id = dispatch.driver?.id
-        ? String(dispatch.driver.id)
-        : 'unassigned';
-    if (!selectedVehicle.value?.route?.gate_id) {
-        form.gate_id = dispatch.gate?.id ? String(dispatch.gate.id) : '';
-    }
-    form.bay_number = String(dispatch.bay_number ?? '');
-    form.remarks = dispatch.remarks ?? '';
+    if (!canUpdateDispatch || dispatch.status === 'departed') return;
+
+    editingDispatch.value = dispatch;
     dialogOpen.value = true;
 }
+
+function openPreview(dispatch: DispatchItem) {
+    previewedDispatch.value = dispatch;
+}
+
+function selectAdjacentDispatch(direction: 1 | -1) {
+    if (!previewedDispatch.value) return;
+
+    const list = props.dispatches.data;
+    const currentIndex = list.findIndex((d) => d.id === previewedDispatch.value?.id);
+    const nextIndex = currentIndex + direction;
+    if (currentIndex === -1 || nextIndex < 0 || nextIndex >= list.length) return;
+
+    openPreview(list[nextIndex]);
+}
+
+function handleRowNavigationKeydown(event: KeyboardEvent) {
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        selectAdjacentDispatch(1);
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        selectAdjacentDispatch(-1);
+    }
+}
+
+onMounted(() => window.addEventListener('keydown', handleRowNavigationKeydown));
+onUnmounted(() => window.removeEventListener('keydown', handleRowNavigationKeydown));
 
 function openRemarksDialog(dispatch: DispatchItem) {
     viewingDispatch.value = dispatch;
     remarksViewOpen.value = true;
-}
-
-function submit() {
-    if (isEditing.value && !canUpdateDispatch) return;
-    if (!isEditing.value && !canCreateDispatch) return;
-
-    const payload = {
-        ...form.data(),
-        driver_user_id:
-            form.driver_user_id && form.driver_user_id !== 'unassigned'
-                ? form.driver_user_id
-                : null,
-    };
-    const afterRequest = () => {
-        form.transform((d) => d);
-    };
-    const options = {
-        preserveScroll: true,
-        onSuccess: () => {
-            dialogOpen.value = false;
-            editingDispatchId.value = null;
-            resetForm();
-        },
-        onError: afterRequest,
-        onFinish: afterRequest,
-    };
-    form.transform(() => payload);
-    if (isEditing.value && editingDispatchId.value) {
-        form.put(
-            DispatchController.update(editingDispatchId.value).url,
-            options,
-        );
-        return;
-    }
-    form.post(DispatchController.store().url, options);
 }
 
 function askDepart(dispatch: DispatchItem) {
@@ -742,14 +585,6 @@ function openChangeRequestDetail(request: (typeof props.changeRequests)[0]) {
     changeRequestDetailOpen.value = true;
 }
 
-watch(dialogOpen, (open) => {
-    if (!open) {
-        editingDispatchId.value = null;
-        form.transform((d) => d);
-        form.clearErrors();
-    }
-});
-
 watch(confirmDepartOpen, (open) => {
     if (!open) {
         pendingDepartId.value = null;
@@ -763,591 +598,330 @@ watch(confirmDepartOpen, (open) => {
     <Head title="Dispatches" />
 
     <ExternalLayout :company="company">
-        <div class="flex h-full min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
-        <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
-            <CardHeader class="flex flex-row gap-2">
-                <div class="flex flex-col">
-                    <CardTitle class="flex items-center gap-2">
-                        <span class="font-semibold">Dispatches</span>
-                    </CardTitle>
-                    <CardDescription>
-                        Arrival time is automatically recorded on dispatch
-                        creation.
-                    </CardDescription>
-                </div>
-                <div class="flex flex-1 items-center justify-end gap-2">
-                    <Button
-                        v-if="
-                            props.changeRequests &&
-                            props.changeRequests.length > 0
-                        "
-                        variant="header-actions"
-                        size="icon-text"
-                        class="relative rounded-full"
-                        @click="changeRequestStatusOpen = true"
-                    >
-                        <RiFileTextLine class="h-3.5 w-3.5" />
-                        <span class="hidden lg:flex">Change Requests</span>
-                        <span
-                            class="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white"
-                        >
-                            {{ props.changeRequests.length }}
-                        </span>
-                    </Button>
-
-                    <Button
-                        v-if="canCreateDispatch"
-                        variant="float-primary"
-                        @click="openCreateDialog"
-                    >
-                        <RiAddLine class="h-4 w-4 shrink-0" />
-                        <span>Dispatch Vehicle</span>
-                    </Button>
-                </div>
-            </CardHeader>
-
-            <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 py-2">
-                <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
-                    <div class="w-full">
-                        <SearchInput
-                            :route="DispatchController.index().url"
-                            :initial-value="props.filters?.search ?? ''"
-                            placeholder="Search plate, remarks..."
-                            :only="['dispatches', 'filters']"
-                        />
-                    </div>
-
-                    <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
-                        <Popover v-model:open="filterOpen">
-                            <PopoverTrigger as-child>
+        <PanelLayout>
+            <MainPanel>
+                <Card class="min-h-0 min-w-0 flex-1 lg:h-full">
+                    <CardHeader class="flex flex-row gap-2">
+                        <div class="flex flex-col">
+                            <CardTitle class="flex items-center gap-2">
+                                <span class="font-semibold">Dispatches</span>
+                            </CardTitle>
+                            <CardDescription>List of all dispatches of your company.</CardDescription>
+                        </div>
+                        <div class="flex flex-1 justify-end gap-2">
+                            <div class="items-center gap-2 sm:justify-end lg:flex">
                                 <Button
-                                    variant="header-actions"
-                                    size="icon-text"
-                                    class="rounded-full"
-                                    :class="
-                                        activeFilterCount > 0
-                                            ? 'bg-custom-secondary/20 transition-all duration-200 hover:bg-custom-secondary/80 hover:text-custom-bg-light'
-                                            : ''
-                                    "
+                                    v-if="canCreateDispatch"
+                                    variant="float-primary"
+                                    class="hidden lg:flex"
+                                    @click="openCreateDialog"
                                 >
-                                    <RiFilter2Line class="h-3.5 w-3.5" />
-                                    <span class="hidden lg:flex">
-                                        {{
-                                            activeFilterCount > 0
-                                                ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
-                                                : 'Filter'
-                                        }}
-                                    </span>
+                                    <RiAddLine class="h-4 w-4 shrink-0" />
+                                    <span>Add Dispatch</span>
                                 </Button>
-                            </PopoverTrigger>
-
-                            <PopoverContent align="end">
-                                <div class="grid gap-y-2">
-                                    <div class="flex flex-col gap-y-1">
-                                        <p class="text-sm text-custom-shadow/80">Status</p>
-                                        <Select
-                                            :model-value="statusFilter"
-                                            @update:model-value="(value) => statusFilter = value != null ? String(value) : 'all'"
-                                        >
-                                            <SelectTrigger class="w-full">
-                                                <SelectValue placeholder="All statuses" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all" class="cursor-pointer">All Statuses</SelectItem>
-                                                <SelectItem value="arrived" class="cursor-pointer">Arrived</SelectItem>
-                                                <SelectItem value="departed" class="cursor-pointer">Departed</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    <div class="flex flex-col gap-y-1">
-                                        <p class="text-sm text-custom-shadow/80">Date</p>
-                                        <div class="flex gap-1.5">
-                                            <Button
-                                                size="sm"
-                                                variant="header-actions"
-                                                class="h-7 flex-1 rounded-full text-xs"
-                                                :class="selectedDateLabel === 'Today' ? 'bg-custom-secondary/20' : ''"
-                                                @click="setToday"
-                                            >
-                                                Today
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="header-actions"
-                                                class="h-7 flex-1 rounded-full text-xs"
-                                                :class="selectedDateLabel === 'Yesterday' ? 'bg-custom-secondary/20' : ''"
-                                                @click="setYesterday"
-                                            >
-                                                Yesterday
+                                <DropdownMenu v-if="canCreateDispatch || props.changeRequests?.length">
+                                    <DropdownMenuTrigger as-child class="m-0">
+                                        <div class="inline-flex">
+                                            <Button variant="header-actions" class="text-custom-shadow" size="icon">
+                                                <RiMore2Line class="h-4 w-4 shrink-0" />
                                             </Button>
                                         </div>
+                                    </DropdownMenuTrigger>
 
-                                        <Calendar
-                                            :model-value="selectedDate"
-                                            :max-value="today(localTz)"
-                                            initial-focus
-                                            @update:model-value="(d) => selectedDate = d as CalendarDate | undefined"
-                                        />
-                                    </div>
-
-                                    <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-
-                                    <div class="flex w-full flex-row items-center justify-between">
-                                        <Button
-                                            v-if="hasActiveFilters"
-                                            size="sm"
-                                            variant="destructive"
-                                            @click="clearFilters"
+                                    <DropdownMenuContent align="end" class="w-fit">
+                                        <DropdownMenuItem v-if="canCreateDispatch" as-child class="cursor-pointer lg:hidden">
+                                            <button type="button" class="flex items-center" @click="openCreateDialog">
+                                                <RiAddLine class="h-4 w-4 hover:text-custom-bg-light" />
+                                                Add Dispatch
+                                            </button>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            v-if="props.changeRequests?.length"
+                                            class="group cursor-pointer"
+                                            @click="changeRequestStatusOpen = true"
                                         >
-                                            Clear
-                                        </Button>
+                                            <RiFileTextLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                            Change Requests
+                                            <span class="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-custom-primary px-1 text-[10px] text-custom-bg-light dark:text-custom-shadow">
+                                                {{ props.changeRequests.length }}
+                                            </span>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </div>
+                    </CardHeader>
 
-                                        <div class="ml-auto flex items-center gap-2">
-                                            <Button
-                                                variant="ghost-outline"
-                                                size="sm"
-                                                @click="filterOpen = false"
-                                            >
-                                                Cancel
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="float-primary"
-                                                @click="applyFilters"
-                                            >
-                                                Apply
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                </div>
-
-                
-                <Card
-                    :class="[
-                        'flex min-h-0 max-h-fit flex-1 flex-col overflow-hidden border border-custom-bg-dark py-0 shadow-none dark:border-custom-bg-light dark:inset-shadow-none',
-                        dispatches.data.length === 0 ? 'border-dashed' : 'border-solid',
-                    ]"
-                >
-                    <div class="no-scrollbar min-h-0 flex-1 overflow-auto">
-                        <div class="flex min-h-0 min-w-[1000px] w-full flex-1 flex-col overflow-hidden">
-                            <div v-if="dispatches.data.length > 0" class="shrink-0 rounded-t-md bg-custom-bg dark:bg-custom-bg-light">
-                                <div class="grid grid-cols-[1fr_1fr_.65fr_.55fr_1fr_1fr_1fr_4rem] gap-2 border-b border-custom-bg-dark dark:border-custom-bg-light">
-                                    <div class="flex h-10 items-center justify-start pl-3 text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Vehicle</div>
-                                    <div class="flex h-10 items-center justify-start text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Driver</div>
-                                    <div class="flex h-10 items-center justify-start text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Gate / Bay</div>
-                                    <div class="flex h-10 items-center justify-start text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Pax</div>
-                                    <div class="flex h-10 items-center justify-start text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Arrived</div>
-                                    <div class="flex h-10 items-center justify-start text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Departed</div>
-                                    <div class="flex h-10 items-center justify-start text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Dispatcher</div>
-                                    <div class="flex h-10 items-center justify-end pr-3 text-xs font-semibold uppercase tracking-widest text-custom-shadow/80">Actions</div>
-                                </div>
+                    <CardContent class="flex min-h-0 flex-1 flex-col space-y-4 pt-2">
+                        <div class="flex flex-row gap-2 lg:items-center lg:justify-between">
+                            <div class="w-full">
+                                <SearchInput
+                                    :route="DispatchController.index().url"
+                                    :initial-value="props.filters?.search ?? ''"
+                                    placeholder="Search plate, remarks..."
+                                    :only="['dispatches', 'filters']"
+                                />
                             </div>
 
-                            <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-                                
-                                <div
-                                    v-if="dispatches.data.length === 0"
-                                    class="flex min-h-64 items-center justify-center p-6 text-center"
-                                >
-                                    <div>
-                                        <div
-                                            class="flex flex-col items-center gap-3"
-                                        >
-                                            <img
-                                                :src="emptyRafikiUrl"
-                                                alt=""
-                                                class="w-32 object-contain opacity-90"
-                                                aria-hidden="true"
-                                            />
-                                            <div>
-                                                <p
-                                                    class="text-sm font-semibold text-slate-600"
-                                                >
-                                                    {{
-                                                        selectedDate
-                                                            ? `No dispatches on ${selectedDateLabel}`
-                                                            : 'No dispatch records found'
-                                                    }}
-                                                </p>
-                                                <p
-                                                    class="mt-0.5 text-xs text-slate-400"
-                                                >
-                                                    {{
-                                                        selectedDate
-                                                            ? 'Try a different date or clear the filter.'
-                                                            : 'Try adjusting your search or filter.'
-                                                    }}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div
-                                    v-for="(dispatch, dispatchIndex) in dispatches.data"
-                                    :key="dispatch.id"
-                                    :class="[
-                                        'group grid cursor-pointer grid-cols-[1fr_1fr_.65fr_.55fr_1fr_1fr_1fr_4rem] items-center gap-2 border-b border-custom-bg-dark bg-transparent text-custom-shadow/80 transition-colors hover:bg-custom-secondary/10 hover:text-custom-shadow dark:border-custom-bg-light',
-                                        dispatch.status === 'departed' ? 'opacity-60' : '',
-                                        dispatchIndex === dispatches.data.length - 1 ? 'rounded-b-md border-b-0' : '',
-                                        previewedDispatch?.id === dispatch.id ? 'bg-custom-secondary/10 text-custom-shadow' : '',
-                                    ]"
-                                    @click="previewedDispatch = dispatch"
-                                >
-                                    
-                                    <div class="flex min-w-0 justify-start py-1.5 pl-3">
-                                        <div>
-                                                <p
-                                                    class="text-sm font-semibold"
-                                                >
-                                                    {{ dispatch.plate_number }}
-                                                </p>
-                                                <p
-                                                    class="text-xs text-custom-shadow/60"
-                                                >
-                                                    {{
-                                                        dispatch.vehicle
-                                                            ?.vehicle_type ??
-                                                        '—'
-                                                    }}
-                                                </p>
-                                        </div>
-                                    </div>
-
-                                    
-                                    <div class="flex min-w-0 justify-start py-1.5">
-                                        <div class="flex items-center gap-1.5">
-                                            <RiUserLine
-                                                class="h-3.5 w-3.5 text-custom-shadow/60"
-                                            />
-                                            <span
-                                                class="text-sm"
-                                                :class="
-                                                    !dispatch.driver
-                                                        ? 'text-custom-shadow/60 italic'
-                                                        : ''
-                                                "
-                                            >
-                                                {{
-                                                    dispatch.driver?.name ??
-                                                    'Unassigned'
-                                                }}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    
-                                    <div class="flex min-w-0 flex-col justify-center py-1.5">
-                                        <p
-                                            class="text-sm font-medium"
-                                        >
-                                            {{
-                                                dispatch.gate?.gate_name ?? '—'
-                                            }}
-                                        </p>
-                                        <p class="text-xs text-custom-shadow/60">
-                                            Bay {{ dispatch.bay_number }}
-                                        </p>
-                                    </div>
-
-                                    
-                                    <div class="flex justify-start py-1.5">
-                                        <div
-                                            class="inline-flex items-center gap-1.5 rounded-full bg-custom-bg px-2.5 py-1 text-xs font-medium text-custom-shadow dark:bg-custom-bg-light"
-                                        >
-                                            <RiGroupLine class="h-3 w-3" />
-                                            {{ dispatch.pax_count }}
-                                        </div>
-                                    </div>
-
-                                    
-                                    <div class="flex justify-start py-1.5 text-xs text-custom-shadow/70">
-                                        <div
-                                            v-if="dispatch.arrived_at_formatted"
-                                        >
-                                            {{ dispatch.arrived_at_formatted }}
-                                        </div>
-                                        <span v-else class="text-custom-shadow/60"
-                                            >—</span
-                                        >
-                                    </div>
-
-                                    
-                                    <div class="flex justify-start py-1.5 text-xs text-custom-shadow/70">
-                                        <div
-                                            v-if="
-                                                dispatch.departed_at_formatted
+                            <div class="flex w-fit flex-row gap-2 lg:items-center lg:justify-between">
+                                <Popover v-model:open="filterOpen">
+                                    <PopoverTrigger as-child>
+                                        <Button
+                                            variant="header-actions"
+                                            size="icon-text"
+                                            class="rounded-full"
+                                            :class="
+                                                activeFilterCount > 0
+                                                    ? 'bg-custom-secondary/20 transition-all duration-200 hover:bg-custom-secondary/80 hover:text-custom-bg-light'
+                                                    : ''
                                             "
                                         >
-                                            {{ dispatch.departed_at_formatted }}
-                                        </div>
-                                        <span v-else class="text-custom-shadow/60"
-                                            >—</span
-                                        >
-                                    </div>
-
-                                    
-                                    <div class="flex min-w-0 justify-start py-1.5">
-                                        <div class="flex items-center gap-1.5">
-                                            <RiFingerprintLine
-                                                class="h-3.5 w-3.5 text-custom-shadow/60"
-                                            />
-                                            <span
-                                                class="text-sm"
-                                            >
+                                            <RiFilter2Line class="h-3.5 w-3.5" />
+                                            <span class="hidden lg:flex">
                                                 {{
-                                                    dispatch.dispatcher?.name ||
-                                                    '—'
+                                                    activeFilterCount > 0
+                                                        ? (activeFilterCount === 1 ? '1 filter active' : `${activeFilterCount} filters active`)
+                                                        : 'Filter'
                                                 }}
                                             </span>
-                                        </div>
-                                    </div>
+                                        </Button>
+                                    </PopoverTrigger>
 
-                                    
-                                    <div class="flex justify-end py-1.5 pr-3 text-right" @click.stop>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger as-child>
+                                    <PopoverContent align="end">
+                                        <div class="grid gap-y-2">
+                                            <div class="flex flex-col gap-y-1">
+                                                <p class="text-sm text-custom-shadow/80">Status</p>
+                                                <Select
+                                                    :model-value="statusFilter"
+                                                    @update:model-value="(value) => statusFilter = value != null ? String(value) : 'all'"
+                                                >
+                                                    <SelectTrigger class="w-full">
+                                                        <SelectValue placeholder="All statuses" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all" class="cursor-pointer">All Statuses</SelectItem>
+                                                        <SelectItem value="arrived" class="cursor-pointer">Arrived</SelectItem>
+                                                        <SelectItem value="departed" class="cursor-pointer">Departed</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div class="flex flex-col gap-y-1">
+                                                <p class="text-sm text-custom-shadow/80">Date</p>
+                                                <div class="flex gap-1.5">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="header-actions"
+                                                        class="h-7 flex-1 rounded-full text-xs"
+                                                        :class="selectedDateLabel === 'Today' ? 'bg-custom-secondary/20' : ''"
+                                                        @click="setToday"
+                                                    >
+                                                        Today
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="header-actions"
+                                                        class="h-7 flex-1 rounded-full text-xs"
+                                                        :class="selectedDateLabel === 'Yesterday' ? 'bg-custom-secondary/20' : ''"
+                                                        @click="setYesterday"
+                                                    >
+                                                        Yesterday
+                                                    </Button>
+                                                </div>
+
+                                                <Calendar
+                                                    :model-value="selectedDate"
+                                                    :max-value="today(localTz)"
+                                                    initial-focus
+                                                    @update:model-value="(d) => selectedDate = d as CalendarDate | undefined"
+                                                />
+                                            </div>
+
+                                            <hr class="my-1 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
+
+                                            <div class="flex w-full flex-row items-center justify-between">
                                                 <Button
-                                                    variant="table-more"
-                                                    size="icon-more"
+                                                    v-if="hasActiveFilters"
+                                                    size="sm"
+                                                    variant="destructive"
+                                                    @click="clearFilters"
                                                 >
-                                                    <RiMore2Line
-                                                        class="h-4 w-4"
-                                                    />
+                                                    Clear
                                                 </Button>
-                                            </DropdownMenuTrigger>
 
-                                            <DropdownMenuContent align="end" class="">
-                                                <DropdownMenuItem
-                                                    as-child
-                                                    class="group"
-                                                >
-                                                    <Link
-                                                        :href="
-                                                            DispatchController.show(
-                                                                dispatch.id,
-                                                            ).url
-                                                        "
-                                                        class="flex items-center"
+                                                <div class="ml-auto flex items-center gap-2">
+                                                    <Button
+                                                        variant="ghost-outline"
+                                                        size="sm"
+                                                        @click="filterOpen = false"
                                                     >
-                                                        <RiExternalLinkLine
-                                                            class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
-                                                        />
-                                                        View
-                                                    </Link>
+                                                        Cancel
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="float-primary"
+                                                        @click="applyFilters"
+                                                    >
+                                                        Apply
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        </div>
+
+                        <TableCard :table-data-length="dispatches.data.length">
+                            <Table v-if="dispatches.data.length > 0">
+                                <TableHeader>
+                                    <TableColumn>Vehicle</TableColumn>
+                                    <TableColumn>Driver</TableColumn>
+                                    <TableColumn>Gate / Bay</TableColumn>
+                                    <TableColumn>Pax</TableColumn>
+                                    <TableColumn>Arrived</TableColumn>
+                                    <TableColumn>Departed</TableColumn>
+                                    <TableColumn>Dispatcher</TableColumn>
+                                </TableHeader>
+
+                                <TableContent>
+                                    <TableRow
+                                        v-for="(dispatch, rowIndex) in dispatches.data"
+                                        :key="dispatch.id"
+                                        :class="[
+                                            rowIndex === dispatches.data.length - 1 ? 'rounded-b-md border-b-0' : '',
+                                            previewedDispatch?.id === dispatch.id ? 'bg-custom-secondary/10' : '',
+                                        ]"
+                                        :status="dispatch.status === 'departed' ? 'inactive' : 'default'"
+                                        @click.left="openPreview(dispatch)"
+                                        @dblclick="router.visit(DispatchController.show(dispatch.id).url)"
+                                    >
+                                        <TableData class="pl-3">
+                                            <div class="flex min-w-0 flex-col">
+                                                <span class="font-semibold">{{ dispatch.plate_number }}</span>
+                                                <span class="text-xs text-custom-shadow/60">{{ dispatch.vehicle?.vehicle_type ?? '—' }}</span>
+                                            </div>
+                                        </TableData>
+
+                                        <TableData>
+                                            <div class="flex items-center gap-1.5">
+                                                <RiUserLine class="h-3.5 w-3.5 shrink-0 text-custom-shadow/60" />
+                                                <span :class="!dispatch.driver ? 'italic text-custom-shadow/60' : ''">
+                                                    {{ dispatch.driver?.name ?? 'Unassigned' }}
+                                                </span>
+                                            </div>
+                                        </TableData>
+
+                                        <TableData>
+                                            <div class="flex min-w-0 flex-col">
+                                                <span class="font-semibold">{{ dispatch.gate?.gate_name ?? '—' }}</span>
+                                                <span class="text-xs text-custom-shadow/60">Bay {{ dispatch.bay_number }}</span>
+                                            </div>
+                                        </TableData>
+
+                                        <TableData>
+                                            <span class="inline-flex items-center gap-1.5 rounded-full bg-custom-bg px-2.5 py-1 text-xs font-semibold text-custom-shadow dark:bg-custom-bg-light">
+                                                <RiGroupLine class="h-3 w-3" />
+                                                {{ dispatch.pax_count }}
+                                            </span>
+                                        </TableData>
+
+                                        <TableData class="text-xs">
+                                            {{ dispatch.arrived_at_formatted ?? '—' }}
+                                        </TableData>
+
+                                        <TableData class="text-xs">
+                                            {{ dispatch.departed_at_formatted ?? '—' }}
+                                        </TableData>
+
+                                        <TableData>
+                                            <div class="flex items-center gap-1.5">
+                                                <RiFingerprintLine class="h-3.5 w-3.5 shrink-0 text-custom-shadow/60" />
+                                                <span>{{ dispatch.dispatcher?.name || '—' }}</span>
+                                            </div>
+                                        </TableData>
+
+                                        <TableMoreButton
+                                            :open="openMenus[dispatch.id] ?? false"
+                                            @update:open="(value) => (openMenus[dispatch.id] = value)"
+                                        >
+                                            <DropdownMenuLabel>{{ dispatch.plate_number }}</DropdownMenuLabel>
+
+                                            <DropdownMenuItem as-child class="group">
+                                                <Link :href="DispatchController.show(dispatch.id).url" class="flex items-center">
+                                                    <RiExternalLinkLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                    View
+                                                </Link>
+                                            </DropdownMenuItem>
+
+                                            <template v-if="dispatch.status === 'arrived'">
+                                                <DropdownMenuItem v-if="canUpdateDispatch" class="group" @click="openEditDialog(dispatch)">
+                                                    <RiEditLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                    Edit
                                                 </DropdownMenuItem>
+                                                <DropdownMenuItem v-if="canDepartDispatch" class="group" @click="askDepart(dispatch)">
+                                                    <RiLogoutBoxLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                    Mark as Departed
+                                                </DropdownMenuItem>
+                                            </template>
 
-                                                <template
-                                                    v-if="
-                                                        dispatch.status ===
-                                                            'arrived' &&
-                                                        (canUpdateDispatch ||
-                                                            canDepartDispatch)
-                                                    "
-                                                >
-                                                    <DropdownMenuItem
-                                                        v-if="canUpdateDispatch"
-                                                        class="group"
-                                                        @click="
-                                                            openEditDialog(
-                                                                dispatch,
-                                                            )
-                                                        "
-                                                    >
-                                                        <RiEditLine
-                                                            class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
-                                                        />
-                                                        Edit
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        v-if="canDepartDispatch"
-                                                        class="group"
-                                                        @click="
-                                                            askDepart(dispatch)
-                                                        "
-                                                    >
-                                                        <RiLogoutBoxLine
-                                                            class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
-                                                        />
-                                                        Mark as Departed
-                                                    </DropdownMenuItem>
-                                                </template>
+                                            <DropdownMenuItem
+                                                v-if="dispatch.status === 'departed' && canRequestDispatchChange"
+                                                class="group"
+                                                @click="openChangeRequestModal(dispatch)"
+                                            >
+                                                <RiRoadMapLine class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow" />
+                                                Update Dispatch
+                                            </DropdownMenuItem>
+                                        </TableMoreButton>
+                                    </TableRow>
+                                </TableContent>
+                            </Table>
 
-                                                <template
-                                                    v-if="
-                                                        dispatch.status ===
-                                                            'departed' &&
-                                                        canRequestDispatchChange
-                                                    "
-                                                >
-                                                    <DropdownMenuSeparator
-                                                        class=""
-                                                    />
-                                                    <DropdownMenuItem
-                                                        class="group"
-                                                        @click="
-                                                            openChangeRequestModal(
-                                                                dispatch,
-                                                            )
-                                                        "
-                                                    >
-                                                        <RiRoadMapLine
-                                                            class="h-4 w-4 text-custom-shadow transition-all duration-200 group-hover:text-custom-bg-light dark:group-hover:text-custom-shadow"
-                                                        />
-                                                        Request Change
-                                                    </DropdownMenuItem>
-                                                </template>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                            <div v-else class="flex min-h-0 flex-1 items-center justify-center p-6 text-center">
+                                <div class="flex w-full max-w-md flex-col items-center justify-center gap-2">
+                                    <img :src="emptyRafikiUrl" alt="" class="w-1/3 object-contain opacity-90" aria-hidden="true" />
+                                    <div class="space-y-1">
+                                        <p class="text-base font-semibold text-custom-shadow">
+                                            {{ selectedDate ? `No dispatches on ${selectedDateLabel}` : 'No dispatches found' }}
+                                        </p>
+                                        <p class="text-sm text-custom-shadow/80">
+                                            {{ hasActiveFilters ? 'Try adjusting or clearing your filters.' : 'Try adjusting your search or add a new dispatch.' }}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                    </Card>
+                        </TableCard>
 
-                
-                <div
-                    v-if="dispatches.last_page > 1 || dispatches.total > 0"
-                    class="border-t border-custom-bg-dark px-5 py-3 dark:border-custom-bg-light"
-                >
-                    <InertiaPagination
-                        :links="dispatches.links"
-                        :meta="{
-                            from: dispatches.from,
-                            to: dispatches.to,
-                            total: dispatches.total,
-                        }"
-                    />
-                </div>
-            </CardContent>
-        </Card>
+                        <InertiaPagination
+                            :links="dispatches.links"
+                            :meta="{ from: dispatches.from, to: dispatches.to, total: dispatches.total }"
+                        />
+                    </CardContent>
+                </Card>
+            </MainPanel>
 
-            <Card class="hidden min-h-0 lg:flex lg:h-full lg:w-100">
-                <CardHeader
-                    v-if="previewedDispatch"
-                    class="flex flex-row items-start justify-between gap-3"
-                >
-                    <div class="min-w-0">
-                        <CardTitle class="truncate uppercase">
-                            {{ previewedDispatch.plate_number }}
-                        </CardTitle>
-                        <CardDescription>Preview</CardDescription>
-                    </div>
-                    <Button
-                        variant="header-actions"
-                        size="icon"
-                        class="h-8 w-8 shrink-0 rounded-full"
-                        aria-label="Close dispatch preview"
-                        @click="previewedDispatch = null"
-                    >
-                        <RiCloseLine class="h-4 w-4" />
-                    </Button>
-                </CardHeader>
+            <SidePanel v-if="previewedDispatch" class="hidden lg:flex">
+                <DispatchPreviewCard
+                    :dispatch="previewedDispatch"
+                    :status-class="statusClass(previewedDispatch.status)"
+                    :status-dot="statusDot(previewedDispatch.status)"
+                    :status-label="statusLabel(previewedDispatch.status)"
+                    @close="previewedDispatch = null"
+                />
+            </SidePanel>
+        </PanelLayout>
 
-                <CardContent
-                    v-if="previewedDispatch"
-                    class="no-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto py-2"
-                >
-                    <div class="flex aspect-4/3 items-center justify-center overflow-hidden rounded-md border border-dashed border-custom-bg-dark bg-custom-bg text-custom-shadow/70 dark:border-none dark:bg-custom-bg-dark">
-                        <RiBus2Line class="h-16 w-16" />
-                    </div>
+        <DispatchFormDialog
+            v-model:open="dialogOpen"
+            :dispatch="editingDispatch"
+            :vehicles="vehicles"
+            :drivers="drivers"
+            :gates="gates"
+            :assigned-driver-ids-today="assigned_driver_ids_today ?? []"
+            :assigned-vehicle-ids-active="assigned_vehicle_ids_active ?? []"
+        />
 
-                    <div class="space-y-2 pt-2">
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Status</span>
-                            <Badge :class="['gap-1.5', statusClass(previewedDispatch.status)]">
-                                <span :class="['h-1.5 w-1.5 rounded-full', statusDot(previewedDispatch.status)]" />
-                                {{ statusLabel(previewedDispatch.status) }}
-                            </Badge>
-                        </div>
-
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Vehicle</span>
-                            <div class="min-w-0 text-right text-sm">
-                                <p>{{ previewedDispatch.vehicle?.make_model ?? previewedDispatch.vehicle?.vehicle_type ?? '—' }}</p>
-                                <p v-if="previewedDispatch.vehicle?.body_number" class="text-xs text-custom-shadow/70">Body #{{ previewedDispatch.vehicle.body_number }}</p>
-                            </div>
-                        </div>
-
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Driver</span>
-                            <span class="text-right text-sm">{{ previewedDispatch.driver?.name ?? 'Unassigned' }}</span>
-                        </div>
-
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Gate / Bay</span>
-                            <span class="text-right text-sm">{{ previewedDispatch.gate?.gate_name ?? '—' }} / Bay {{ previewedDispatch.bay_number }}</span>
-                        </div>
-
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Passengers</span>
-                            <span class="text-sm text-custom-shadow">{{ previewedDispatch.pax_count }}</span>
-                        </div>
-
-                        <div class="space-y-2">
-                            <div class="flex items-center justify-between gap-3">
-                                <p class="text-sm font-semibold text-custom-shadow">Dispatch Timeline</p>
-                            </div>
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-between gap-3 rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">
-                                    <span class="text-sm font-medium">Arrived</span>
-                                    <span class="shrink-0 text-xs text-custom-shadow/70">{{ previewedDispatch.arrived_at_formatted ?? '—' }}</span>
-                                </div>
-                                <div class="flex items-center justify-between gap-3 rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">
-                                    <span class="text-sm font-medium">Departed</span>
-                                    <span class="shrink-0 text-xs text-custom-shadow/70">{{ previewedDispatch.departed_at_formatted ?? '—' }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="text-sm font-semibold text-custom-shadow">Dispatcher</span>
-                            <span class="text-right text-sm">{{ previewedDispatch.dispatcher?.name ?? '—' }}</span>
-                        </div>
-
-                        <div v-if="previewedDispatch.remarks" class="space-y-1">
-                            <p class="text-sm font-semibold text-custom-shadow">Remarks</p>
-                            <p class="rounded-md bg-custom-bg px-3 py-2 text-sm text-custom-shadow/70 dark:bg-custom-bg-dark">{{ previewedDispatch.remarks }}</p>
-                        </div>
-                    </div>
-
-                    <hr class="my-4 h-px border-0 bg-custom-bg-dark dark:bg-custom-bg-light">
-
-                    <div class="flex items-center justify-between gap-2">
-                        <Button
-                            v-if="canUpdateDispatch && previewedDispatch.status === 'arrived'"
-                            variant="ghost-outline"
-                            size="icon-text"
-                            @click="openEditDialog(previewedDispatch)"
-                        >
-                            <RiEditLine class="h-4 w-4" />
-                            Edit
-                        </Button>
-                        <span v-else />
-                        <Button as-child variant="float-primary" size="icon">
-                            <Link :href="DispatchController.show(previewedDispatch.id).url">
-                                <RiExternalLinkLine class="h-4 w-4" />
-                            </Link>
-                        </Button>
-                    </div>
-                </CardContent>
-
-                <CardContent v-else class="flex min-h-0 flex-1 items-center justify-center">
-                    <div class="max-w-60 space-y-1 text-center">
-                        <p class="text-base font-semibold text-custom-shadow">No dispatch selected</p>
-                        <p class="text-sm text-custom-shadow/80">Click on a dispatch to preview.</p>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-
-        
         <Dialog v-model:open="changeRequestStatusOpen">
             <DialogContent class="max-h-[80vh] max-w-2xl overflow-y-auto">
                 <DialogHeader>
@@ -1369,7 +943,7 @@ watch(confirmDepartOpen, (open) => {
                             class="rounded-lg border border-amber-200 bg-amber-50 p-3"
                         >
                             <div class="flex items-center justify-between">
-                                <p class="text-xs font-medium text-amber-900">
+                                <p class="text-xs font-semibold text-amber-900">
                                     Pending
                                 </p>
                                 <RiTimeLine class="h-4 w-4 text-amber-600" />
@@ -1382,7 +956,7 @@ watch(confirmDepartOpen, (open) => {
                             class="rounded-lg border border-emerald-200 bg-emerald-50 p-3"
                         >
                             <div class="flex items-center justify-between">
-                                <p class="text-xs font-medium text-emerald-900">
+                                <p class="text-xs font-semibold text-emerald-900">
                                     Approved
                                 </p>
                                 <RiCheckLine
@@ -1397,7 +971,7 @@ watch(confirmDepartOpen, (open) => {
                             class="rounded-lg border border-rose-200 bg-rose-50 p-3"
                         >
                             <div class="flex items-center justify-between">
-                                <p class="text-xs font-medium text-rose-900">
+                                <p class="text-xs font-semibold text-rose-900">
                                     Rejected
                                 </p>
                                 <RiCloseCircleLine class="h-4 w-4 text-rose-600" />
@@ -1460,11 +1034,11 @@ watch(confirmDepartOpen, (open) => {
                                     <div class="grid grid-cols-2 gap-3 text-sm">
                                         <div>
                                             <p
-                                                class="text-xs font-medium text-muted-foreground"
+                                                class="text-xs font-semibold text-muted-foreground"
                                             >
                                                 Field
                                             </p>
-                                            <p class="font-medium">
+                                            <p class="font-semibold">
                                                 {{
                                                     request.field_label ||
                                                     formatFieldLabel(
@@ -1475,7 +1049,7 @@ watch(confirmDepartOpen, (open) => {
                                         </div>
                                         <div>
                                             <p
-                                                class="text-xs font-medium text-muted-foreground"
+                                                class="text-xs font-semibold text-muted-foreground"
                                             >
                                                 Change
                                             </p>
@@ -1559,7 +1133,7 @@ watch(confirmDepartOpen, (open) => {
                             <RiFileTextLine
                                 class="mx-auto mb-3 h-10 w-10 text-slate-300"
                             />
-                            <p class="text-sm font-medium text-slate-500">
+                            <p class="text-sm font-semibold text-slate-500">
                                 No change requests yet
                             </p>
                         </div>
@@ -1568,240 +1142,25 @@ watch(confirmDepartOpen, (open) => {
             </DialogContent>
         </Dialog>
 
-        <!-- TODO: make the other dialog elements within the file follow the layout and design of this one -->
-        <Dialog v-model:open="dialogOpen">
-            <DialogContent class="sm:max-w-md">
+        <Dialog v-model:open="confirmDepartOpen">
+            <DialogContent class="rounded-md sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>{{
-                        isEditing ? 'Edit Dispatch' : 'Create Dispatch'
-                    }}</DialogTitle>
+                    <DialogTitle
+                        >Mark dispatch as departed?</DialogTitle
+                    >
                     <DialogDescription>
-                        {{
-                            isEditing
-                                ? 'Update the dispatch details below.'
-                                : 'Arrival time is automatically set to now.'
-                        }}
+                        <span class="block">
+                            This will record the departure time of 
+                            <span class="text-custom-accent-3 font-semibold">
+                                {{ pendingDepartDispatch.plate_number }}
+                            </span>
+                             as now. Departed dispatches can no longer be edited.
+                        </span>
                     </DialogDescription>
                 </DialogHeader>
-
-                <form class="flex flex-col px-6" @submit.prevent="submit">
-                    <div class="space-y-1 pb-2">
-                        <Label for="vehicle_id">Vehicle</Label>
-                        <Select
-                            :model-value="form.vehicle_id"
-                            @update:model-value="
-                                (value) => onVehicleChange(String(value ?? ''))
-                            "
-                        >
-                            <SelectTrigger id="vehicle_id"
-                                ><SelectValue placeholder="Select a vehicle"
-                            /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem
-                                    v-for="vehicle in vehicles"
-                                    :key="vehicle.id"
-                                    :value="String(vehicle.id)"
-                                    :disabled="
-                                        isVehicleDisabledForDispatchForm(
-                                            vehicle.id,
-                                        )
-                                    "
-                                >
-                                    <span
-                                        v-if="
-                                            isVehicleDisabledForDispatchForm(
-                                                vehicle.id,
-                                            )
-                                        "
-                                    >
-                                        {{ vehicle.label }} (Already arrived)
-                                    </span>
-                                    <span v-else>{{ vehicle.label }}</span>
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <InputMessage variant="destructive" :message="form.errors.vehicle_id" />
-                    </div>
-
-                    <div class="space-y-1 pb-2">
-                        <Label for="driver_user_id">Driver</Label>
-                        <Select v-model="form.driver_user_id">
-                            <SelectTrigger id="driver_user_id"
-                                ><SelectValue placeholder="Assign a driver"
-                            /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="unassigned"
-                                    >No driver assigned</SelectItem
-                                >
-                                <SelectItem
-                                    v-for="driver in drivers"
-                                    :key="driver.id"
-                                    :value="String(driver.id)"
-                                    :disabled="
-                                        isDriverDisabledForDispatchForm(
-                                            driver.id,
-                                        )
-                                    "
-                                >
-                                    <span
-                                        v-if="
-                                            isDriverDisabledForDispatchForm(
-                                                driver.id,
-                                            )
-                                        "
-                                    >
-                                        {{ driver.label }} (Already assigned
-                                        today)
-                                    </span>
-                                    <span v-else>{{ driver.label }}</span>
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <InputMessage variant="destructive" :message="form.errors.driver_user_id" />
-                    </div>
-
-                    <div class="space-y-1 pb-2">
-                        <Label for="gate_id">Gate</Label>
-                        <Select
-                            :disabled="isGateAutoLocked"
-                            :model-value="form.gate_id"
-                            @update:model-value="onGateChange"
-                        >
-                            <SelectTrigger id="gate_id"
-                                ><SelectValue placeholder="Select a gate"
-                            /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem
-                                    v-for="gate in gates"
-                                    :key="gate.id"
-                                    :value="String(gate.id)"
-                                >
-                                    {{ gate.label }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <p
-                            v-if="isGateAutoLocked"
-                            class="text-xs text-slate-500"
-                        >
-                            Gate is automatically selected from the vehicle
-                            route.
-                        </p>
-                        <p
-                            v-if="selectedVehicleRouteGateInactive"
-                            class="text-xs text-rose-600"
-                        >
-                            {{ selectedVehicleRouteGateName }} is inactive.
-                            Please contact the terminal manager to activate this
-                            gate before dispatching this vehicle.
-                        </p>
-                        <InputMessage variant="destructive" :message="form.errors.gate_id" />
-                    </div>
-
-                    <div class="space-y-1 pb-2">
-                        <Label for="bay_number">Bay Number</Label>
-                        <Select
-                            v-model="form.bay_number"
-                            :disabled="!selectedGate"
-                        >
-                            <SelectTrigger id="bay_number"
-                                ><SelectValue placeholder="Select a bay"
-                            /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem
-                                    v-for="bay in bayOptions"
-                                    :key="bay.value"
-                                    :value="String(bay.value)"
-                                >
-                                    {{ bay.label }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <InputMessage variant="destructive" :message="form.errors.bay_number" />
-                    </div>
-
-                    <div class="space-y-1 pb-2">
-                        <Label for="remarks">
-                            Remarks
-                            <span
-                                class="text-xs text-custom-shadow/80"
-                                >(optional)</span
-                            >
-                        </Label>
-                        <Input
-                            id="remarks"
-                            v-model="form.remarks"
-                            placeholder="Optional remarks or notes"
-                        />
-                        <InputMessage variant="destructive" :message="form.errors.remarks" />
-                    </div>
-
-                    <Separator class="mb-4"/>
-
-                    <DialogFooter class="gap-2 sm:justify-end">
-                        <Button
-                            type="button"
-                            variant="ghost-outline"
-                            @click="dialogOpen = false"
-                            >Cancel</Button
-                        >
-                        <Button
-                            type="submit"
-                            variant="float-primary"
-                            :disabled="
-                                form.processing ||
-                                selectedVehicleRouteGateInactive
-                            "
-                        >
-                            <RiRoadMapLine class="h-4 w-4" />
-                            {{
-                                form.processing
-                                    ? 'Saving...'
-                                    : isEditing
-                                      ? 'Save Changes'
-                                      : 'Create Dispatch'
-                            }}
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
-        
-        <Dialog v-model:open="confirmDepartOpen">
-            <DialogContent class="rounded-lg p-4 sm:max-w-md">
-                <form class="space-y-4" @submit.prevent="confirmDepart">
-                    <DialogHeader>
-                        <DialogTitle
-                            >Mark dispatch as departed?</DialogTitle
-                        >
-                        <DialogDescription>
-                            <span class="block"
-                                >This will record the departure time as
-                                <strong>now</strong>.</span
-                            >
-                            <span class="mt-1 block"
-                                >Departed dispatches can no longer be
-                                edited.</span
-                            >
-                        </DialogDescription>
-                    </DialogHeader>
-
+                
+                <form class="space-y-4 px-6" @submit.prevent="confirmDepart">
                     <div class="space-y-4">
-                        <div
-                            v-if="pendingDepartDispatch"
-                            class="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm"
-                        >
-                            <div class="font-semibold text-slate-800">
-                                {{ pendingDepartDispatch.plate_number }}
-                            </div>
-                            <div class="text-xs text-slate-400">
-                                {{
-                                    pendingDepartDispatch.gate?.gate_name ?? '—'
-                                }}
-                                · Bay {{ pendingDepartDispatch.bay_number }}
-                            </div>
-                        </div>
-
                         <div class="space-y-2">
                             <Label for="depart_pax_count"
                                 >Passenger Count</Label
@@ -1845,46 +1204,22 @@ watch(confirmDepartOpen, (open) => {
             <DialogContent class="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle class="flex items-center gap-2">
-                        <RiRoadMapLine class="h-4 w-4 text-slate-500" />
-                        Request Change
+                        <!-- <RiRoadMapLine class="h-4 w-4 text-slate-500" /> -->
+                        Update Dispatch Request
                     </DialogTitle>
                     <DialogDescription v-if="changeRequestDispatch">
-                        Submit a change request for dispatch
-                        {{ changeRequestDispatch.plate_number }}.
+                        This dispatch has already departed. Changes require
+                            approval from management before they are applied.
                     </DialogDescription>
                 </DialogHeader>
 
-                <form class="space-y-4" @submit.prevent="submitChangeRequest">
-                    
-                    <div
-                        class="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"
-                    >
-                        <p class="font-medium">Notice</p>
-                        <p class="mt-1 text-xs text-slate-500">
-                            This dispatch has already departed. Changes require
-                            approval from management before they are applied.
-                        </p>
-                    </div>
-
-                    <div
-                        class="rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-sm"
-                    >
-                        <div class="font-medium">
-                            {{ changeRequestDispatch?.plate_number }}
-                        </div>
-                        <div class="text-xs text-muted-foreground">
-                            {{ changeRequestDispatch?.gate?.gate_name ?? '—' }}
-                            · Bay
-                            {{ changeRequestDispatch?.bay_number }}
-                        </div>
-                    </div>
-
+                <form class="space-y-4 px-6" @submit.prevent="submitChangeRequest">
                     <div class="space-y-2">
                         <Label for="change_field"
                             >What do you want to change?</Label
                         >
                         <Select v-model="changeRequestForm.requested_field">
-                            <SelectTrigger id="change_field"
+                            <SelectTrigger id="change_field" clss="w-full"
                                 ><SelectValue
                                     placeholder="Select a field to change"
                             /></SelectTrigger>
@@ -1915,7 +1250,7 @@ watch(confirmDepartOpen, (open) => {
                                 'driver_user_id'
                             "
                         >
-                            <div>
+                            <div class="space-y-2">
                                 <Label for="change_driver"
                                     >Select New Driver</Label
                                 >
@@ -1990,7 +1325,7 @@ watch(confirmDepartOpen, (open) => {
                                 'pax_count'
                             "
                         >
-                            <div>
+                            <div class="space-y-2">
                                 <Label for="change_pax"
                                     >New Passenger Count</Label
                                 >
@@ -2030,7 +1365,7 @@ watch(confirmDepartOpen, (open) => {
                                 'vehicle_id'
                             "
                         >
-                            <div>
+                            <div class="space-y-2">
                                 <Label for="change_vehicle"
                                     >Select New Vehicle</Label
                                 >
@@ -2088,30 +1423,16 @@ watch(confirmDepartOpen, (open) => {
                                 'bay_number'
                             "
                         >
-                            <div>
-                                <Label>Current Gate (Locked)</Label>
-                                <div
-                                    class="mt-1 rounded-md border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-600"
-                                >
-                                    {{
-                                        changeRequestDispatch?.gate
-                                            ?.gate_name ?? '—'
-                                    }}
-                                    <span class="text-slate-400">
-                                        ·
-                                        {{ changeRequestGate?.bays ?? 0 }} bays
-                                    </span>
-                                </div>
-                            </div>
-                            <div>
+                            <div class="space-y-2">
                                 <Label for="change_bay">Select New Bay</Label>
                                 <Select
                                     v-model="changeRequestForm.requested_value"
                                 >
                                     <SelectTrigger id="change_bay"
                                         ><SelectValue
-                                            placeholder="Select a bay number"
-                                    /></SelectTrigger>
+                                            :placeholder="`Bay ${changeRequestDispatch?.bay_number ?? '—'}`"
+                                        />
+                                        </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem
                                             v-for="bay in changeRequestBayOptions"
@@ -2145,26 +1466,16 @@ watch(confirmDepartOpen, (open) => {
                                         changeRequestForm.errors.requested_value
                                     "
                                 />
-                                <p class="mt-1 text-xs text-slate-400">
-                                    Current: Gate
-                                    {{
-                                        changeRequestDispatch?.gate
-                                            ?.gate_name ?? '—'
-                                    }}
-                                    · Bay
-                                    {{ changeRequestDispatch?.bay_number }}
-                                </p>
                             </div>
                         </template>
                     </div>
 
                     <div class="space-y-2">
                         <Label for="change_reason">Reason for Change</Label>
-                        <textarea
+                        <Textarea
                             id="change_reason"
                             v-model="changeRequestForm.reason"
                             placeholder="Explain why this change is needed..."
-                            class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                             rows="3"
                         />
                         <InputMessage
@@ -2176,9 +1487,10 @@ watch(confirmDepartOpen, (open) => {
                     <DialogFooter>
                         <Button
                             type="button"
-                            variant="outline"
+                            variant="float"
                             :disabled="changeRequestForm.processing"
                             @click="closeChangeRequestModal"
+                            size="text"
                         >
                             Cancel
                         </Button>
@@ -2200,6 +1512,8 @@ watch(confirmDepartOpen, (open) => {
                                         ) ===
                                             changeRequestDispatch?.bay_number))
                             "
+                            variant="float-primary"
+                            size="text"
                         >
                             {{
                                 changeRequestForm.processing
@@ -2216,8 +1530,8 @@ watch(confirmDepartOpen, (open) => {
         <Dialog v-model:open="changeRequestDetailOpen">
             <DialogContent class="sm:max-w-md">
                 <DialogHeader v-if="selectedChangeRequest">
-                    <DialogTitle class="flex items-center gap-2">
-                        Change Request
+                    <DialogTitle>
+                        Update Dispatch Request
                         <span
                             class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize"
                             :class="{
@@ -2252,7 +1566,7 @@ watch(confirmDepartOpen, (open) => {
                             >
                                 Field
                             </p>
-                            <p class="mt-1 text-sm font-medium text-slate-800">
+                            <p class="mt-1 text-sm font-semibold text-slate-800">
                                 {{
                                     selectedChangeRequest.field_label ||
                                     formatFieldLabel(
@@ -2330,7 +1644,7 @@ watch(confirmDepartOpen, (open) => {
                         <RiCheckLine
                             class="h-5 w-5 shrink-0 text-emerald-600"
                         />
-                        <p class="text-sm font-medium text-emerald-900">
+                        <p class="text-sm font-semibold text-emerald-900">
                             This request has been approved.
                         </p>
                     </div>
@@ -2340,7 +1654,7 @@ watch(confirmDepartOpen, (open) => {
                         class="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-4"
                     >
                         <RiTimeLine class="h-5 w-5 shrink-0 text-amber-600" />
-                        <p class="text-sm font-medium text-amber-900">
+                        <p class="text-sm font-semibold text-amber-900">
                             Awaiting approval from administrator.
                         </p>
                     </div>

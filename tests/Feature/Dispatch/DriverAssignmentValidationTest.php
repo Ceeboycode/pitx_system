@@ -7,13 +7,29 @@ use App\Models\Role;
 use App\Models\Route as RouteModel;
 use App\Models\User;
 use App\Models\Vehicle;
+use Spatie\Permission\Models\Permission;
 
 function makeDispatchContext(): array
 {
+    foreach (['admin', 'it', 'terminal manager'] as $name) {
+        Role::query()->firstOrCreate(['name' => $name, 'guard_name' => 'web'], ['type' => 'internal']);
+    }
+
     Role::query()->updateOrCreate(
+        ['name' => 'operator', 'guard_name' => 'web'],
+        ['type' => 'external'],
+    );
+
+    $dispatcherRole = Role::query()->updateOrCreate(
         ['name' => 'dispatcher', 'guard_name' => 'web'],
         ['type' => 'external'],
     );
+
+    foreach (['create', 'update', 'requestChange'] as $action) {
+        $dispatcherRole->givePermissionTo(
+            Permission::query()->firstOrCreate(['name' => "external_dispatches.{$action}", 'guard_name' => 'web']),
+        );
+    }
 
     Role::query()->updateOrCreate(
         ['name' => 'driver', 'guard_name' => 'web'],
@@ -133,6 +149,7 @@ test('it rejects creating a dispatch when driver is already assigned today', fun
             'driver_user_id' => $ctx['driverA']->id,
             'gate_id' => $ctx['gate']->id,
             'bay_number' => 1,
+            'pax_count' => 15,
             'remarks' => 'Duplicate should fail',
         ])
         ->assertSessionHasErrors('driver_user_id');
@@ -165,6 +182,7 @@ test('it rejects updating a dispatch when selected driver is already assigned to
             'driver_user_id' => $ctx['driverA']->id,
             'gate_id' => $ctx['gate']->id,
             'bay_number' => 1,
+            'pax_count' => 15,
             'remarks' => 'Should fail update',
         ])
         ->assertSessionHasErrors('driver_user_id');
@@ -188,6 +206,7 @@ test('it allows updating dispatch while keeping the same driver on the same disp
             'driver_user_id' => $ctx['driverA']->id,
             'gate_id' => $ctx['gate']->id,
             'bay_number' => 2,
+            'pax_count' => 15,
             'remarks' => 'Allowed same driver update',
         ])
         ->assertSessionHasNoErrors();
@@ -257,7 +276,61 @@ test('it rejects creating a duplicate driver assignment when existing active dis
             'driver_user_id' => $ctx['driverA']->id,
             'gate_id' => $ctx['gate']->id,
             'bay_number' => 1,
+            'pax_count' => 15,
             'remarks' => 'Should still fail with null dispatched_at fallback',
         ])
         ->assertSessionHasErrors('driver_user_id');
+});
+
+test('it creates a dispatch without a passenger count', function () {
+    $ctx = makeDispatchContext();
+
+    $this->actingAs($ctx['dispatcher'])
+        ->post(route('company.dispatches.store'), [
+            'vehicle_id' => $ctx['vehicleOne']->id,
+            'gate_id' => $ctx['gate']->id,
+            'bay_number' => 1,
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect(Dispatch::query()->where('vehicle_id', $ctx['vehicleOne']->id)->value('pax_count'))->toBe(0);
+});
+
+test('it ignores a passenger count sent when creating a dispatch', function () {
+    $ctx = makeDispatchContext();
+
+    $this->actingAs($ctx['dispatcher'])
+        ->post(route('company.dispatches.store'), [
+            'vehicle_id' => $ctx['vehicleOne']->id,
+            'gate_id' => $ctx['gate']->id,
+            'bay_number' => 1,
+            'pax_count' => 18,
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect(Dispatch::query()->where('vehicle_id', $ctx['vehicleOne']->id)->value('pax_count'))->toBe(0);
+});
+
+test('it leaves the passenger count untouched when updating an arrived dispatch', function () {
+    $ctx = makeDispatchContext();
+
+    $dispatch = createDispatch(
+        company: $ctx['company'],
+        vehicle: $ctx['vehicleOne'],
+        gate: $ctx['gate'],
+        dispatcher: $ctx['dispatcher'],
+        driver: null,
+        status: Dispatch::STATUS_ARRIVED,
+    );
+    $dispatch->update(['pax_count' => 20]);
+
+    $this->actingAs($ctx['dispatcher'])
+        ->put(route('company.dispatches.update', $dispatch), [
+            'vehicle_id' => $ctx['vehicleOne']->id,
+            'gate_id' => $ctx['gate']->id,
+            'bay_number' => 1,
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($dispatch->fresh()->pax_count)->toBe(20);
 });

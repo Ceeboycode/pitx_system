@@ -94,7 +94,7 @@ const breadcrumbItems: BreadcrumbItem[] = [
                             leave-active-class="transition ease-in-out"
                             leave-to-class="opacity-0"
                         >
-                            <p v-show="recentlySuccessful" class="text-sm text-green-600 font-medium">
+                            <p v-show="recentlySuccessful" class="text-sm text-green-600 font-semibold">
                                 Saved successfully.
                             </p>
                         </Transition>

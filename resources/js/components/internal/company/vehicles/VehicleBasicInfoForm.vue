@@ -120,7 +120,7 @@ function updateCapacity(value: AcceptableValue) {
 
                 <div
                     v-if="readonly"
-                    class="inline-flex w-fit items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground"
+                    class="inline-flex w-fit items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs font-semibold text-muted-foreground"
                 >
                     <RiVerifiedBadgeLine class="h-3.5 w-3.5 shrink-0" />
                     Read only

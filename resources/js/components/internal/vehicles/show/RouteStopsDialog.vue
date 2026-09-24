@@ -68,7 +68,7 @@ function stopDotClass(type: RouteStop['stop_type']) {
                     />
                     <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center gap-2">
-                            <p class="text-sm font-medium">
+                            <p class="text-sm font-semibold">
                                 {{ i + 1 }}. {{ stop.stop_name }}
                             </p>
                             <Badge variant="outline">

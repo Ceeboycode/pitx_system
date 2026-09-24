@@ -279,7 +279,7 @@ function openRestoreDialog(route: RouteRow) {
                                         <TableData>
                                             <span
                                                 :class="[
-                                                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
+                                                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold',
                                                     routeItem.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-zinc-100 text-zinc-600',
                                                 ]"
                                             >

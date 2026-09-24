@@ -36,7 +36,7 @@ class CompanyProfileController extends Controller
         $company = $user->company;
 
         $this->companyStatusService->markExpiredDocumentsAndSync(collect([$company]));
-        $company = $company->fresh();
+        $company = $company->fresh(['creator:id,name', 'updater:id,name']);
 
         $latestChangeRequest = CompanyProfileChangeRequest::query()
             ->where('company_id', $company->id)
@@ -71,6 +71,10 @@ class CompanyProfileController extends Controller
                 'authorized_representative_name' => $company->authorized_representative_name,
                 'authorized_representative_position' => $company->authorized_representative_position,
                 'authorized_representative_contact' => $company->authorized_representative_contact,
+                'created_at_human' => $company->created_at_human,
+                'updated_at_human' => $company->updated_at_human,
+                'creator' => $company->creator?->only(['name']),
+                'updater' => $company->updater?->only(['name']),
                 'logo_url' => filled($company->logo)
                     ? Storage::url($company->logo)
                     : null,

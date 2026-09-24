@@ -16,9 +16,9 @@ const { isMobile, state, toggleSidebar } = useSidebar()
   <Button
     data-sidebar="trigger"
     data-slot="sidebar-trigger"
-    variant="ghost"
+    variant="float"
     size="icon"
-    :class="cn('h-7 w-7', props.class)"
+    :class="cn(props.class)"
     @click="toggleSidebar"
   >
     <RiSidebarUnfoldLine v-if="isMobile || state === 'collapsed'" class="shrink-0" />

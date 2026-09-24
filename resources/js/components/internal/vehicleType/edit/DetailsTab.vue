@@ -220,7 +220,7 @@ function submit() {
                   />
                 </div>
               </template>
-              <span class="min-w-0 flex-1 whitespace-pre-line text-right text-sm font-medium">{{ vehicleType.description || 'No description provided.' }}</span>
+              <span class="min-w-0 flex-1 whitespace-pre-line text-right text-sm font-semibold">{{ vehicleType.description || 'No description provided.' }}</span>
             </EditableField>
             <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.description" />
           </div> -->
@@ -250,7 +250,7 @@ function submit() {
                   <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
                 </span>
               </template>
-              <span class="min-w-0 flex-1 truncate text-right text-sm font-medium capitalize">{{ vehicleType.type_name }}</span>
+              <span class="min-w-0 flex-1 truncate text-right text-sm font-semibold capitalize">{{ vehicleType.type_name }}</span>
             </EditableField>
             <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.type_name" />
           </div>
@@ -273,7 +273,7 @@ function submit() {
                   <!-- <RiEditLine class="pointer-events-none absolute top-1 right-1 h-4 w-4 shrink-0 text-custom-shadow/80 opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 group-focus-within:opacity-100"/> -->
                 </div>
               </template>
-              <span class="min-w-0 flex-1 whitespace-pre-line text-right text-sm font-medium">{{ vehicleType.description || 'No description provided.' }}</span>
+              <span class="min-w-0 flex-1 whitespace-pre-line text-right text-sm font-semibold">{{ vehicleType.description || 'No description provided.' }}</span>
             </EditableField>
             <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.description" />
           </div>

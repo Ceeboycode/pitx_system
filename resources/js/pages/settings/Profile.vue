@@ -119,7 +119,7 @@ const user = page.props.auth.user;
                         </p>
                         <div
                             v-if="status === 'verification-link-sent'"
-                            class="mt-2 text-sm font-medium text-green-600"
+                            class="mt-2 text-sm font-semibold text-green-600"
                         >
                             A new verification link has been sent to your email address.
                         </div>
@@ -141,7 +141,7 @@ const user = page.props.auth.user;
                             leave-active-class="transition ease-in-out"
                             leave-to-class="opacity-0"
                         >
-                            <p v-show="recentlySuccessful" class="text-sm text-green-600 font-medium">
+                            <p v-show="recentlySuccessful" class="text-sm text-green-600 font-semibold">
                                 Saved successfully.
                             </p>
                         </Transition>

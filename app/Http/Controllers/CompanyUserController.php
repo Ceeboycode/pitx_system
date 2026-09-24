@@ -180,49 +180,20 @@ class CompanyUserController extends Controller
             ->with('success', "Employee created successfully. Username: {$user->username}");
     }
 
-    // ── Show ───────────────────────────────────────────────────────────────────
+    // ── Edit (also serves as the detail/show page — fields are gated by ─────────
+    // ── external_users.update on the frontend, viewing only needs .view) ────────
 
-    public function show(Request $request, User $employeeUser)
+    public function edit(Request $request, User $employeeUser)
     {
         Gate::authorize('external_users.view');
 
         $this->ensureCompanyUser($request, $employeeUser);
 
-        $employeeUser->load(['roles', 'company']);
+        // Also pulls each loaded role's permissions (id + name only) so
+        // tabAccessFor()'s hasAnyPermissionInGroup() below doesn't need extra queries.
+        $employeeUser->load(['roles.permissions', 'company']);
 
-        return Inertia::render('External/Employee/Show', [
-            'company' => $request->user()->company,
-            'user' => $request->user(),
-            'employee' => [
-                'id' => $employeeUser->id,
-                'username' => $employeeUser->username,
-                'name' => $employeeUser->name,
-                'email' => $employeeUser->email,
-                'phone_number' => $employeeUser->phone_number,
-                'status' => $employeeUser->status,
-                'created_at' => $employeeUser->created_at,
-                'avatar' => $employeeUser->profile_photo_path
-                    ? Storage::url($employeeUser->profile_photo_path)
-                    : null,
-                'roles' => $employeeUser->roles->map(fn ($role) => [
-                    'id' => $role->id,
-                    'name' => $role->name,
-                ])->values(),
-                'company' => $employeeUser->company,
-            ],
-        ]);
-    }
-
-    // ── Edit ───────────────────────────────────────────────────────────────────
-
-    public function edit(Request $request, User $employeeUser)
-    {
-        Gate::authorize('external_users.update');
-
-        $this->ensureCompanyUser($request, $employeeUser);
-        $this->ensureNotActingOnSelf($request, $employeeUser);
-
-        $employeeUser->load(['roles', 'company']);
+        $selectedRole = $employeeUser->roles->first();
 
         return Inertia::render('External/Employee/Edit', [
             'company' => $request->user()->company,
@@ -248,8 +219,30 @@ class CompanyUserController extends Controller
             // FIX: statuses on edit do not include 'pending' — only real operational states
             'statuses' => ['active', 'inactive', 'suspended'],
             // selectedRole is the current role name string (or null if none)
-            'selectedRole' => $employeeUser->getRoleNames()->first() ?? null,
+            'selectedRole' => $selectedRole?->name,
+            'tabAccess' => $this->tabAccessFor($selectedRole),
         ]);
+    }
+
+    /**
+     * Which permission-gated tabs External/Employee/Edit.vue shows for the
+     * viewed employee's role. Mirrors UserController::tabAccessFor() — a tab
+     * appears when the role holds any permission in its group, so roles
+     * created later follow their own permissions with no changes here.
+     * Drivers hold no permissions but are dispatched and assigned to
+     * vehicles, so they always get the Vehicles and Dispatches tabs (also
+     * when they have no dispatches yet, so it's visible that there are none).
+     *
+     * @return array{vehicles: bool, dispatches: bool}
+     */
+    private function tabAccessFor(?Role $role): array
+    {
+        $isDriver = $role?->name === Role::NAME_DRIVER;
+
+        return [
+            'vehicles' => $isDriver || ($role?->hasAnyPermissionInGroup('external_vehicles') ?? false),
+            'dispatches' => $isDriver || ($role?->hasAnyPermissionInGroup('external_dispatches') ?? false),
+        ];
     }
 
     // ── Update ─────────────────────────────────────────────────────────────────
@@ -259,7 +252,6 @@ class CompanyUserController extends Controller
         Gate::authorize('external_users.update');
 
         $this->ensureCompanyUser($request, $employeeUser);
-        $this->ensureNotActingOnSelf($request, $employeeUser);
 
         $externalRoleNames = $this->getExternalRoles()->pluck('name')->toArray();
 

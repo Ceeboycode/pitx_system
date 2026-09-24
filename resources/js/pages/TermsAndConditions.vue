@@ -128,7 +128,7 @@ const sections = [
                         <div class="text-sm font-bold uppercase tracking-wide text-[#1a1a2e]">
                             Parañaque Integrated Terminal Exchange
                         </div>
-                        <div class="text-[10px] font-medium uppercase tracking-widest text-gray-400">
+                        <div class="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
                             Centralized Transport System
                         </div>
                     </div>
@@ -143,7 +143,7 @@ const sections = [
                         </Button>
                     </template>
                     <template v-else>
-                        <Button variant="ghost" as-child class="text-sm font-medium text-gray-600 hover:text-[#c0392b]">
+                        <Button variant="ghost" as-child class="text-sm font-semibold text-gray-600 hover:text-[#c0392b]">
                             <Link :href="login()">Log in</Link>
                         </Button>
                     </template>
@@ -249,7 +249,7 @@ const sections = [
                     <img :src="PitxLogo" alt="PITX Logo" class="h-7 w-auto object-contain opacity-70" />
                     <p class="text-sm text-gray-400">© 2026 PITX System. All rights reserved.</p>
                 </div>
-                <div class="flex gap-5 text-xs font-medium uppercase tracking-widest">
+                <div class="flex gap-5 text-xs font-semibold uppercase tracking-widest">
                     <a href="/privacy" class="text-gray-400 transition-colors hover:text-[#c0392b]">Privacy</a>
                     <a href="#" class="text-[#1a3a6b]">Terms</a>
                 </div>

@@ -554,7 +554,7 @@ function actionBadgeClass(action: string): string {
                                     >
                                         <TableData class="pl-3">
                                             <div class="min-w-0">
-                                                <div class="truncate text-sm font-medium">
+                                                <div class="truncate text-sm font-semibold">
                                                     {{ log.user?.name ?? 'System' }}
                                                 </div>
                                                 <div class="truncate text-xs text-muted-foreground">
@@ -575,7 +575,7 @@ function actionBadgeClass(action: string): string {
 
                                         <TableData>
                                             <div class="min-w-0">
-                                                <div class="truncate text-sm font-medium">
+                                                <div class="truncate text-sm font-semibold">
                                                     {{ log.entity_label }}
                                                 </div>
                                                 <div class="truncate text-xs text-muted-foreground">

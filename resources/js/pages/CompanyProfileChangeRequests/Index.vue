@@ -484,7 +484,7 @@ function canTakePreviewAction(): boolean {
                         :href="previewDoc.preview_url"
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="inline-flex items-center gap-1.5 rounded border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                        class="inline-flex items-center gap-1.5 rounded border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
                     >
                         <RiExternalLinkLine class="h-3.5 w-3.5" />
                         Open in New Tab

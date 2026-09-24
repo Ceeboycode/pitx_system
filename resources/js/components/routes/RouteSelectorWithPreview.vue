@@ -309,7 +309,7 @@ onBeforeUnmount(() => destroyMap())
 
             
             <div class="space-y-2">
-                <Label for="gate_id" class="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                <Label for="gate_id" class="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     Gate
                 </Label>
                 <Select v-model="selectedGateId" :disabled="readonly">
@@ -327,7 +327,7 @@ onBeforeUnmount(() => destroyMap())
 
             
             <div class="space-y-2">
-                <Label for="route_id" class="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                <Label for="route_id" class="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     Route
                 </Label>
 
@@ -381,7 +381,7 @@ onBeforeUnmount(() => destroyMap())
                                     :class="String(modelValue) === String(route.id) ? 'opacity-100' : 'opacity-0'"
                                 />
                                 <div class="min-w-0 flex-1">
-                                    <p class="truncate text-sm font-medium">{{ route.route_name }}</p>
+                                    <p class="truncate text-sm font-semibold">{{ route.route_name }}</p>
                                     <p class="mt-0.5 truncate text-xs text-muted-foreground">
                                         <span class="text-emerald-600">{{ route.origin_name || '—' }}</span>
                                         <span class="mx-1">→</span>
@@ -408,7 +408,7 @@ onBeforeUnmount(() => destroyMap())
 
                 <p class="text-xs text-muted-foreground">
                     <template v-if="selectedGate">
-                        Filtering for <span class="font-medium text-foreground">{{ selectedGate.gate_name }}</span>.
+                        Filtering for <span class="font-semibold text-foreground">{{ selectedGate.gate_name }}</span>.
                     </template>
                     <template v-else>Showing all gates.</template>
                     <span class="ml-1">{{ filteredRoutes.length }} route{{ filteredRoutes.length === 1 ? '' : 's' }} available.</span>
@@ -428,9 +428,9 @@ onBeforeUnmount(() => destroyMap())
                     <div class="min-w-0">
                         <p class="truncate font-semibold text-sm">{{ routeSummary.name }}</p>
                         <p class="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                            <span class="text-emerald-600 font-medium">{{ routeSummary.origin }}</span>
+                            <span class="text-emerald-600 font-semibold">{{ routeSummary.origin }}</span>
                             <RiCompass3Line class="h-3 w-3 shrink-0 rotate-90" />
-                            <span class="text-red-500 font-medium">{{ routeSummary.destination }}</span>
+                            <span class="text-red-500 font-semibold">{{ routeSummary.destination }}</span>
                         </p>
                     </div>
                 </div>
@@ -588,7 +588,7 @@ onBeforeUnmount(() => destroyMap())
                             class="h-2.5 w-2.5 rounded-full"
                             :class="stopTypeDot(stop.stop_type)"
                         />
-                        <span class="text-xs font-medium whitespace-nowrap">{{ stop.stop_name }}</span>
+                        <span class="text-xs font-semibold whitespace-nowrap">{{ stop.stop_name }}</span>
                     </div>
                     <div
                         v-if="idx < Math.min(sortedStops.length, 5) - 1"

@@ -19,6 +19,7 @@ class DemoDataSeeder extends Seeder
             VehicleTypeSeeder::class,
             DevelopmentCompanySeeder::class,
             ExternalUserSeeder::class,
+            CompanyUserSeeder::class,
             DevelopmentCompanyDocumentSeeder::class,
             DevelopmentGateSeeder::class,
             DevelopmentRouteSeeder::class,

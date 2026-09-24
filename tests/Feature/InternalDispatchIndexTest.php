@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\Route;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Models\VehicleType;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -125,4 +126,31 @@ test('status filter narrows results to the selected dispatch status', function (
         ->assertInertia(fn ($page) => $page
             ->has('dispatches.data', 1)
             ->where('dispatches.data.0.status', 'departed'));
+});
+
+test('index shows the vehicle type name and search matches it', function (): void {
+    $company = Company::factory()->create();
+    $route = Route::factory()->create(['gate_id' => $this->gate->id]);
+    $vehicleType = VehicleType::factory()->create(['type_name' => 'Provincial Bus']);
+
+    $vehicle = Vehicle::factory()->create([
+        'company_id' => $company->id,
+        'route_id' => $route->id,
+        'vehicle_type_id' => $vehicleType->id,
+        'plate_number' => 'TYP0001',
+    ]);
+    Dispatch::factory()->create([
+        'company_id' => $company->id,
+        'vehicle_id' => $vehicle->id,
+        'gate_id' => $route->gate_id,
+        'plate_number' => 'TYP0001',
+        'status' => 'arrived',
+    ]);
+    makeDispatchFor($company, $route, 'OTH0001', 'arrived');
+
+    $this->actingAs($this->viewer)
+        ->get(route('dispatches.index', ['search' => 'Provincial Bus']))
+        ->assertInertia(fn ($page) => $page
+            ->has('dispatches.data', 1)
+            ->where('dispatches.data.0.vehicle.vehicle_type', 'Provincial Bus'));
 });

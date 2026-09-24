@@ -14,7 +14,7 @@ defineEmits<{ close: [] }>();
 </script>
 
 <template>
-    <PreviewCard :title="props.doc.typeLabel" :description="props.doc.fileName || 'Document preview'" @close="$emit('close')">
+    <PreviewCard :title="props.doc.typeLabel" description="Document preview">
         <div class="space-y-3 pt-2">
             <PreviewCardRow label="Status">
                 <span class="flex flex-wrap items-center justify-end gap-1.5">
@@ -37,7 +37,7 @@ defineEmits<{ close: [] }>();
             </PreviewCardRow>
             <PreviewCardRow label="Issued">{{ formatDate(props.doc.issuedAt) }}</PreviewCardRow>
             <PreviewCardRow label="Expires">
-                <span :class="isExpired(props.doc.expiresAt) ? 'font-medium text-rose-600 dark:text-rose-400' : ''">{{ formatDate(props.doc.expiresAt) }}</span>
+                <span :class="isExpired(props.doc.expiresAt) ? 'font-semibold text-rose-600 dark:text-rose-400' : ''">{{ formatDate(props.doc.expiresAt) }}</span>
             </PreviewCardRow>
             <PreviewCardRow label="Uploaded">
                 <span v-if="props.doc.uploadedBy" class="block">{{ props.doc.uploadedBy }}</span>

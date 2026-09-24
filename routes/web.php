@@ -204,7 +204,6 @@ Route::middleware(['auth', 'role.type:external', 'audit.request'])->group(functi
             Route::get('/', [CompanyVehicleController::class, 'index'])->name('index');
             Route::get('create', [CompanyVehicleController::class, 'create'])->name('create');
             Route::post('/', [CompanyVehicleController::class, 'store'])->name('store');
-            Route::get('{vehicle}', [CompanyVehicleController::class, 'show'])->name('show');
             Route::get('{vehicle}/edit', [CompanyVehicleController::class, 'edit'])->name('edit');
             Route::put('{vehicle}', [CompanyVehicleController::class, 'update'])->name('update');
 
@@ -222,6 +221,7 @@ Route::middleware(['auth', 'role.type:external', 'audit.request'])->group(functi
         */
 
         Route::resource('employee-users', CompanyUserController::class)
+            ->except(['show'])
             ->parameters([
                 'employee-users' => 'employeeUser',
             ]);

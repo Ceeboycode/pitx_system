@@ -85,6 +85,11 @@ class Vehicle extends Model
         return $this->hasMany(VehicleDocument::class);
     }
 
+    public function dispatches(): HasMany
+    {
+        return $this->hasMany(Dispatch::class);
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

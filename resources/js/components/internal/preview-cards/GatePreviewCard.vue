@@ -72,7 +72,7 @@ function statusDot(status: Gate['status']): string {
 
             <!-- CODE: <div class="flex items-center justify-between gap-3 border-b border-custom-bg-dark pb-3">
                 <span class="text-sm text-custom-shadow/70">Created By</span>
-                <span class="truncate text-sm font-medium">{{ gate.creator?.name ?? 'Not recorded' }}</span>
+                <span class="truncate text-sm font-semibold">{{ gate.creator?.name ?? 'Not recorded' }}</span>
             </div> -->
 
             <div v-if="gate.bay_statuses" class="space-y-2">
@@ -93,7 +93,7 @@ function statusDot(status: Gate['status']): string {
                         class="rounded-md bg-custom-bg px-3 py-2"
                     >
                         <div class="flex items-center justify-between gap-3">
-                            <span class="text-sm font-medium">Bay {{ bay.bay_number }}</span>
+                            <span class="text-sm font-semibold">Bay {{ bay.bay_number }}</span>
                             <Badge
                                 :class="bay.status === 'occupied'
                                     ? 'bg-custom-secondary/20 text-custom-shadow'
@@ -138,7 +138,7 @@ function statusDot(status: Gate['status']): string {
                         :key="route.id"
                         class="flex items-center justify-between gap-3 rounded-md bg-custom-bg dark:bg-custom-bg-dark px-3 py-2"
                     >
-                        <span class="truncate text-sm font-medium">{{ route.route_name }}</span>
+                        <span class="truncate text-sm font-semibold">{{ route.route_name }}</span>
                         <span class="shrink-0 text-xs capitalize text-custom-shadow/70">{{ route.status }}</span>
                     </div>
                 </div>

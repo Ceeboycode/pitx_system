@@ -357,212 +357,212 @@ function handleLogout() {
                 isCollapsed && 'md:w-(--sidebar-width-icon)',
             )"
         >
-        <div class="flex h-full min-h-0 flex-col gap-3 overflow-visible p-3">
-            <Link
-                :href="dashboard().url"
-                :class="cn(
-                    'flex h-10 shrink-0 items-center justify-center rounded-md',
-                    isCollapsed && 'mx-auto w-fit',
-                )"
-                aria-label="Open dashboard"
-                @click="closeMobileSidebar"
-            >
-                <div :class="cn('flex items-center', isCollapsed ? 'w-10' : 'max-w-24 flex-1')">
-                    <img
-                        :src="PitxLogo"
-                        alt="PITX Logo"
-                        class="w-full object-contain"
-                    />
-                </div>
-            </Link>
+            <div class="flex h-full min-h-0 flex-col gap-3 overflow-visible p-3">
+                <Link
+                    :href="dashboard().url"
+                    :class="cn(
+                        'flex h-10 shrink-0 items-center justify-center rounded-md',
+                        isCollapsed && 'mx-auto w-fit',
+                    )"
+                    aria-label="Open dashboard"
+                    @click="closeMobileSidebar"
+                >
+                    <div :class="cn('flex items-center', isCollapsed ? 'w-10' : 'max-w-24 flex-1')">
+                        <img
+                            :src="PitxLogo"
+                            alt="PITX Logo"
+                            class="w-full object-contain"
+                        />
+                    </div>
+                </Link>
 
-            <div class="flex min-h-0 flex-1 flex-col justify-between gap-3">
-                <div class="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden no-scrollbar">
-                    <span
-                        :class="cn(
-                            'px-3 pb-1 text-xs text-custom-shadow',
-                            isCollapsed && 'hidden',
-                        )"
-                    >
-                        Main
-                    </span>
-
-                    <nav class="flex min-h-0 flex-col gap-0">
-                        <div
-                            v-for="item in visibleMainNavItems"
-                            :key="item.id"
+                <div class="flex min-h-0 flex-1 flex-col justify-between gap-3">
+                    <div class="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden no-scrollbar">
+                        <span
+                            :class="cn(
+                                'px-3 pb-1 text-xs text-custom-shadow',
+                                isCollapsed && 'hidden',
+                            )"
                         >
-                            <component
-                                :is="shouldUseParentButton(item) ? 'button' : Link"
-                                :href="shouldUseParentButton(item) ? undefined : item.items[0]?.href"
-                                :title="item.title"
-                                :type="shouldUseParentButton(item) ? 'button' : undefined"
-                                :class="cn(
-                                    'flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-custom-shadow transition-colors hover:bg-custom-secondary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:hover:bg-custom-secondary/20',
-                                    isCollapsed && 'mx-auto size-10 justify-center rounded-full p-0 lg:gap-0',
-                                    isItemActive(item) && 'bg-custom-secondary/10 dark:bg-custom-secondary/20',
-                                )"
-                                @click="handleParentClick(item)"
-                            >
-                                <component :is="item.icon" class="size-4 shrink-0" />
-                                <span
-                                    :class="cn(
-                                        'flex w-full items-center justify-between truncate pl-1',
-                                        isCollapsed && 'hidden',
-                                    )"
-                                >
-                                    {{ item.title }}
-                                </span>
-                                <span
-                                    v-if="item.items.length > 1"
-                                    :class="cn('flex shrink-0', isCollapsed && 'hidden')"
-                                >
-                                    <RiArrowDownSLine
-                                        v-if="isItemExpanded(item)"
-                                        class="size-4 shrink-0"
-                                    />
-                                    <RiArrowRightSLine v-else class="size-4 shrink-0" />
-                                </span>
-                            </component>
+                            Main
+                        </span>
 
+                        <nav class="flex min-h-0 flex-col gap-0">
                             <div
-                                v-if="item.items.length > 1 && isItemExpanded(item) && !isCollapsed"
-                                class="flex flex-row gap-2 pl-2"
+                                v-for="item in visibleMainNavItems"
+                                :key="item.id"
                             >
-                                <div class="ml-3 w-0.25 bg-custom-shadow/80" />
-                                <div class="flex w-full flex-col">
-                                    <Link
-                                        v-for="subItem in item.items"
-                                        :key="subItem.id"
-                                        :href="subItem.href"
-                                        :title="subItem.title"
+                                <component
+                                    :is="shouldUseParentButton(item) ? 'button' : Link"
+                                    :href="shouldUseParentButton(item) ? undefined : item.items[0]?.href"
+                                    :title="item.title"
+                                    :type="shouldUseParentButton(item) ? 'button' : undefined"
+                                    :class="cn(
+                                        'flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-custom-shadow transition-colors hover:bg-custom-secondary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:hover:bg-custom-secondary/20',
+                                        isCollapsed && 'mx-auto size-10 justify-center rounded-full p-0 lg:gap-0',
+                                        isItemActive(item) && 'bg-custom-secondary/10 dark:bg-custom-secondary/20',
+                                    )"
+                                    @click="handleParentClick(item)"
+                                >
+                                    <component :is="item.icon" class="size-4 shrink-0" />
+                                    <span
                                         :class="cn(
-                                            'flex items-center rounded-md px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
-                                            isHrefActive(subItem.href)
-                                                ? 'bg-custom-primary text-custom-bg-light dark:text-custom-shadow'
-                                                : 'text-custom-shadow hover:bg-custom-secondary/10 dark:hover:bg-custom-secondary/20',
+                                            'flex w-full items-center justify-between truncate pl-1',
+                                            isCollapsed && 'hidden',
                                         )"
-                                        @click="closeMobileSidebar"
                                     >
-                                        {{ subItem.title }}
-                                    </Link>
+                                        {{ item.title }}
+                                    </span>
+                                    <span
+                                        v-if="item.items.length > 1"
+                                        :class="cn('flex shrink-0', isCollapsed && 'hidden')"
+                                    >
+                                        <RiArrowDownSLine
+                                            v-if="isItemExpanded(item)"
+                                            class="size-4 shrink-0"
+                                        />
+                                        <RiArrowRightSLine v-else class="size-4 shrink-0" />
+                                    </span>
+                                </component>
+
+                                <div
+                                    v-if="item.items.length > 1 && isItemExpanded(item) && !isCollapsed"
+                                    class="flex flex-row gap-2 pl-2"
+                                >
+                                    <div class="ml-3 w-0.25 bg-custom-shadow/80" />
+                                    <div class="flex w-full flex-col">
+                                        <Link
+                                            v-for="subItem in item.items"
+                                            :key="subItem.id"
+                                            :href="subItem.href"
+                                            :title="subItem.title"
+                                            :class="cn(
+                                                'flex items-center rounded-md px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+                                                isHrefActive(subItem.href)
+                                                    ? 'bg-custom-primary text-custom-bg-light dark:text-custom-shadow'
+                                                    : 'text-custom-shadow hover:bg-custom-secondary/10 dark:hover:bg-custom-secondary/20',
+                                            )"
+                                            @click="closeMobileSidebar"
+                                        >
+                                            {{ subItem.title }}
+                                        </Link>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </nav>
-                </div>
+                        </nav>
+                    </div>
 
-                <div class="flex shrink-0 flex-col gap-0">
-                    <span
-                        :class="cn(
-                            'px-3 pb-1 text-xs text-custom-shadow',
-                            isCollapsed && 'hidden',
-                        )"
-                    >
-                        Other
-                    </span>
-
-                    <Button
-                        type="button"
-                        variant="default"
-                        size="icon"
-                        :class="cn(
-                            'min-h-10 w-full cursor-pointer justify-start rounded-md px-3 py-2 text-custom-shadow transition-colors hover:bg-custom-secondary/10 dark:hover:bg-custom-secondary/20',
-                            isCollapsed && 'mx-auto size-10 justify-center rounded-full p-0',
-                        )"
-                        @click="toggleTheme"
-                    >
-                        <RiSunLine class="hidden size-4 shrink-0 dark:block" aria-hidden="true" />
-                        <RiMoonLine class="size-4 shrink-0 dark:hidden" aria-hidden="true" />
-                        <span :class="cn('truncate pl-1', isCollapsed && 'hidden')">
-                            Theme
+                    <div class="flex shrink-0 flex-col gap-0">
+                        <span
+                            :class="cn(
+                                'px-3 pb-1 text-xs text-custom-shadow',
+                                isCollapsed && 'hidden',
+                            )"
+                        >
+                            Other
                         </span>
-                    </Button>
 
-                    <nav class="flex flex-col gap-0 overflow-hidden">
-                        <component
-                            :is="shouldExpandFromCollapsed() ? 'button' : Link"
-                            v-for="item in visibleFooterNavItems"
-                            :key="item.title"
-                            :href="shouldExpandFromCollapsed() ? undefined : item.href"
-                            :title="item.title"
-                            :type="shouldExpandFromCollapsed() ? 'button' : undefined"
-                            :class="cn(
-                                'flex min-h-10 w-full cursor-pointer items-center rounded-md px-3 py-2 text-sm text-custom-shadow transition-colors hover:bg-custom-secondary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:hover:bg-custom-secondary/20',
-                                isCollapsed ? 'mx-auto size-10 justify-center rounded-full p-0 lg:gap-0' : 'gap-2',
-                                isHrefActive(item.href) && 'bg-custom-secondary/10 text-custom-primary dark:text-custom-shadow',
-                            )"
-                            @click="handleFooterClick"
-                        >
-                            <component :is="item.icon" class="size-4 shrink-0" />
-                            <span :class="cn('truncate pl-1', isCollapsed && 'hidden')">
-                                {{ item.title }}
-                            </span>
-                        </component>
-                    </nav>
-                </div>
-
-                <DropdownMenu>
-                    <DropdownMenuTrigger as-child>
                         <Button
-                            variant="float"
+                            type="button"
+                            variant="default"
+                            size="icon"
                             :class="cn(
-                                'group min-h-fit items-center rounded-3xl border border-custom-bg-dark bg-custom-bg px-3 py-2 shadow-none transition-colors transition-all duration-200 hover:border-custom-secondary/10 hover:bg-custom-secondary/20 focus-visible:ring-2 focus-visible:ring-ring/50 dark:border-custom-bg-light dark:bg-custom-bg-light',
-                                isCollapsed ? 'mx-auto size-12 justify-center rounded-full p-1' : 'gap-3',
+                                'min-h-10 w-full cursor-pointer justify-start rounded-md px-3 py-2 text-custom-shadow transition-colors hover:bg-custom-secondary/10 dark:hover:bg-custom-secondary/20',
+                                isCollapsed && 'mx-auto size-10 justify-center rounded-full p-0',
                             )"
+                            @click="toggleTheme"
                         >
-                            <Avatar class="size-10">
-                                <AvatarImage
-                                    v-if="user.avatar"
-                                    :src="user.avatar"
-                                    :alt="user.name"
-                                />
-                                <AvatarFallback variant="current-user" class="bg-custom-primary/20 dark:bg-custom-primary dark:text-custom-shadow">
-                                    {{ getInitials(user.name) }}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div :class="cn('min-w-0 flex-1', isCollapsed && 'hidden')">
-                                <p class="truncate text-start text-sm font-semibold text-custom-body">
-                                    {{ user.name }}
-                                </p>
-                                <p class="truncate text-start text-xs text-custom-shadow">
-                                    {{ user.role }}
-                                </p>
-                            </div>
+                            <RiSunLine class="hidden size-4 shrink-0 dark:block" aria-hidden="true" />
+                            <RiMoonLine class="size-4 shrink-0 dark:hidden" aria-hidden="true" />
+                            <span :class="cn('truncate pl-1', isCollapsed && 'hidden')">
+                                Theme
+                            </span>
                         </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                        align="start"
-                        :side="isMobile ? 'bottom' : isCollapsed ? 'left' : 'top'"
-                        class="mb-2"
-                    >
-                        <DropdownMenuItem as-child class="rounded-md hover:bg-custom-secondary/10 hover:text-custom-shadow">
-                            <Link
-                                :href="editProfile()"
-                                class="flex cursor-pointer flex-row items-center gap-3 px-3 py-2 text-custom-shadow"
-                                @click="closeMobileSidebar"
+
+                        <nav class="flex flex-col gap-0 overflow-hidden">
+                            <component
+                                :is="shouldExpandFromCollapsed() ? 'button' : Link"
+                                v-for="item in visibleFooterNavItems"
+                                :key="item.title"
+                                :href="shouldExpandFromCollapsed() ? undefined : item.href"
+                                :title="item.title"
+                                :type="shouldExpandFromCollapsed() ? 'button' : undefined"
+                                :class="cn(
+                                    'flex min-h-10 w-full cursor-pointer items-center rounded-md px-3 py-2 text-sm text-custom-shadow transition-colors hover:bg-custom-secondary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:hover:bg-custom-secondary/20',
+                                    isCollapsed ? 'mx-auto size-10 justify-center rounded-full p-0 lg:gap-0' : 'gap-2',
+                                    isHrefActive(item.href) && 'bg-custom-secondary/10 text-custom-primary dark:text-custom-shadow',
+                                )"
+                                @click="handleFooterClick"
                             >
-                                <RiSettings5Line class="size-4 shrink-0 text-custom-shadow" />
-                                <span>Settings</span>
-                            </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem as-child class="cursor-pointer rounded-md hover:bg-destructive/10 hover:text-destructive">
-                            <Link
-                                href="/logout"
-                                method="post"
-                                as="button"
-                                class="flex w-full cursor-pointer flex-row items-center gap-3 px-3 py-2 text-left"
-                                data-test="logout-button"
-                                @click="handleLogout"
+                                <component :is="item.icon" class="size-4 shrink-0" />
+                                <span :class="cn('truncate pl-1', isCollapsed && 'hidden')">
+                                    {{ item.title }}
+                                </span>
+                            </component>
+                        </nav>
+                    </div>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger as-child>
+                            <Button
+                                variant="float"
+                                :class="cn(
+                                    'group min-h-fit items-center rounded-3xl border border-custom-bg-dark bg-custom-bg px-3 py-2 shadow-none transition-colors transition-all duration-200 hover:border-custom-secondary/10 hover:bg-custom-secondary/20 focus-visible:ring-2 focus-visible:ring-ring/50 dark:border-custom-bg-light dark:bg-custom-bg-light',
+                                    isCollapsed ? 'mx-auto size-12 justify-center rounded-full p-1' : 'gap-3',
+                                )"
                             >
-                                <RiLogoutBoxLine class="size-4 shrink-0 hover:text-destructive" />
-                                <span>Log out</span>
-                            </Link>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                                <Avatar class="size-10">
+                                    <AvatarImage
+                                        v-if="user.avatar"
+                                        :src="user.avatar"
+                                        :alt="user.name"
+                                    />
+                                    <AvatarFallback variant="current-user" class="bg-custom-primary/20 dark:bg-custom-primary dark:text-custom-shadow">
+                                        {{ getInitials(user.name) }}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div :class="cn('min-w-0 flex-1', isCollapsed && 'hidden')">
+                                    <p class="truncate text-start text-sm font-semibold text-custom-body">
+                                        {{ user.name }}
+                                    </p>
+                                    <p class="truncate text-start text-xs text-custom-shadow">
+                                        {{ user.role }}
+                                    </p>
+                                </div>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                            align="start"
+                            :side="isMobile ? 'bottom' : isCollapsed ? 'left' : 'top'"
+                            class="mb-2"
+                        >
+                            <DropdownMenuItem as-child class="rounded-md hover:bg-custom-secondary/10 hover:text-custom-shadow">
+                                <Link
+                                    :href="editProfile()"
+                                    class="flex cursor-pointer flex-row items-center gap-3 px-3 py-2 text-custom-shadow"
+                                    @click="closeMobileSidebar"
+                                >
+                                    <RiSettings5Line class="size-4 shrink-0 text-custom-shadow" />
+                                    <span>Settings</span>
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem as-child class="cursor-pointer rounded-md hover:bg-destructive/10 hover:text-destructive">
+                                <Link
+                                    href="/logout"
+                                    method="post"
+                                    as="button"
+                                    class="flex w-full cursor-pointer flex-row items-center gap-3 px-3 py-2 text-left"
+                                    data-test="logout-button"
+                                    @click="handleLogout"
+                                >
+                                    <RiLogoutBoxLine class="size-4 shrink-0 hover:text-destructive" />
+                                    <span>Log out</span>
+                                </Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
-        </div>
         </aside>
     </div>
 

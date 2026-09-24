@@ -45,7 +45,7 @@ class VehicleApprovedNotification extends Notification implements ShouldQueue
             ->subject('Vehicle Approved')
             ->greeting('Hello,')
             ->line("Your vehicle {$this->vehicle->plate_number} has been approved.")
-            ->action('Open Vehicle Record', route('company.vehicles.show', $this->vehicle->id))
+            ->action('Open Vehicle Record', route('company.vehicles.edit', $this->vehicle->id))
             ->line('Thank you.');
     }
 }

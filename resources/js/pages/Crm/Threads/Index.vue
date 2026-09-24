@@ -592,7 +592,7 @@ watch(
                                 >
                                     <div class="flex justify-between gap-2 p-0">
                                         <span
-                                            class="truncate text-sm font-medium"
+                                            class="truncate text-sm font-semibold"
                                         >
                                             {{
                                                 thread.subject ||
@@ -655,7 +655,7 @@ watch(
                                             class="flex min-w-0 items-center gap-1.5 truncate"
                                         >
                                             <span
-                                                class="inline-flex shrink-0 items-center rounded border px-1.5 py-0.5 text-[10px] font-medium"
+                                                class="inline-flex shrink-0 items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold"
                                                 :class="
                                                     statusLabel(thread).class
                                                 "
@@ -751,11 +751,11 @@ watch(
                                             <RiToolsLine class="inline h-4 w-4" />
                                         </span>
                                     </span>
-                                    <span class=""text-sm font-medium>
+                                    <span class=""text-sm font-semibold>
                                         {{ categoryLabel(selectedThread.category) }}
                                     </span>
                                     <span
-                                        class="inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium"
+                                        class="inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold"
                                         :class="
                                             statusLabel(selectedThread).class
                                         "
@@ -789,7 +789,7 @@ watch(
                                         <DropdownMenuSeparator />
 
                                         <div class="p-2">
-                                            <label class="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                            <label class="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                                                 Assign to
                                             </label>
                                             <Select
@@ -921,7 +921,7 @@ watch(
                                                             message.sender?.id
                                                     )
                                                 "
-                                                class="text-xs font-medium mb-1 px-3"
+                                                class="text-xs font-semibold mb-1 px-3"
                                             >
                                                 {{
                                                     message.sender?.name ||
@@ -940,7 +940,7 @@ watch(
                                                     </p>
                                                 CODE: <p
                                                     v-if="message.is_internal"
-                                                    class="mt-2 text-[11px] font-medium text-blue-700"
+                                                    class="mt-2 text-[11px] font-semibold text-blue-700"
                                                 >
                                                     Internal note
                                                 </p> -->

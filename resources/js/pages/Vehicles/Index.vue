@@ -664,7 +664,7 @@ const openStatusDialog = (
                                         </TableData>
 
                                         <TableData class="justify-center flex-col">
-                                            <p class="truncate text-sm font-medium">{{ vehicle.vehicle_type?.type_name ?? '—' }}</p>
+                                            <p class="truncate text-sm font-semibold">{{ vehicle.vehicle_type?.type_name ?? '—' }}</p>
                                             <p class="truncate text-xs">{{ vehicle.body_number || '—' }}</p>
                                         </TableData>
 

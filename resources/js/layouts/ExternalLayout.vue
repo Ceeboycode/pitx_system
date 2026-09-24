@@ -46,7 +46,7 @@ watch(
         >
             <header class="sticky top-0 z-30 shrink-0 bg-custom-bg-light dark:bg-custom-bg">
                 <div class="flex items-center justify-between gap-2 px-6 pb-3 pt-6 lg:px-0">
-                    <SidebarTrigger class="h-9 w-9 rounded-full bg-custom-bg text-custom-shadow hover:bg-custom-secondary/20 dark:bg-custom-bg-light dark:hover:bg-custom-secondary/20" />
+                    <SidebarTrigger />
 
                     <div class="flex items-center gap-2 sm:gap-3">
                         <MessagingPanel />

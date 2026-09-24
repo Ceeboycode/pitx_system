@@ -269,7 +269,8 @@ const documentChartData = computed(() => {
     <Head :title="`Dashboard — ${company.company_name}`" />
 
     <ExternalLayout :company="company" :user="user">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        :PP
+        <!-- <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
             <Card>
                 <CardContent class="p-6">
                     <div
@@ -380,7 +381,7 @@ const documentChartData = computed(() => {
                         <div class="flex items-start justify-between">
                             <div class="space-y-1">
                                 <p
-                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                    class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
                                 >
                                     {{ item.title }}
                                 </p>
@@ -510,7 +511,7 @@ const documentChartData = computed(() => {
                                 <div
                                     class="flex items-center justify-between text-sm"
                                 >
-                                    <span class="font-medium"
+                                    <span class="font-semibold"
                                         >Dispatch Completion</span
                                     >
                                     <span class="font-semibold text-blue-700"
@@ -539,7 +540,7 @@ const documentChartData = computed(() => {
                                 <div
                                     class="flex items-center justify-between text-sm"
                                 >
-                                    <span class="font-medium"
+                                    <span class="font-semibold"
                                         >Fleet Readiness</span
                                     >
                                     <span
@@ -578,7 +579,7 @@ const documentChartData = computed(() => {
                                 <div
                                     class="flex items-center justify-between text-sm"
                                 >
-                                    <span class="font-medium"
+                                    <span class="font-semibold"
                                         >Route Coverage</span
                                     >
                                     <span
@@ -877,7 +878,7 @@ const documentChartData = computed(() => {
                                                 dispatch.route?.origin_name ||
                                                 dispatch.route?.destination_name
                                             "
-                                            class="flex items-center gap-1 text-xs font-medium text-slate-600"
+                                            class="flex items-center gap-1 text-xs font-semibold text-slate-600"
                                         >
                                             <span>{{
                                                 dispatch.route?.origin_name ??
@@ -914,7 +915,7 @@ const documentChartData = computed(() => {
                                         <span class="text-muted-foreground"
                                             >Bay:</span
                                         >
-                                        <span class="font-medium">{{
+                                        <span class="font-semibold">{{
                                             dispatch.bay_number ?? '—'
                                         }}</span>
                                     </div>
@@ -924,7 +925,7 @@ const documentChartData = computed(() => {
                                         <span class="text-muted-foreground"
                                             >Pax:</span
                                         >
-                                        <span class="font-medium">{{
+                                        <span class="font-semibold">{{
                                             dispatch.pax_count ?? 0
                                         }}</span>
                                     </div>
@@ -934,7 +935,7 @@ const documentChartData = computed(() => {
                                         <span class="text-muted-foreground"
                                             >Arrived:</span
                                         >
-                                        <span class="font-medium">{{
+                                        <span class="font-semibold">{{
                                             formatDateTime(dispatch.arrived_at)
                                         }}</span>
                                     </div>
@@ -958,7 +959,7 @@ const documentChartData = computed(() => {
                             >
                                 <RiBusLine class="h-6 w-6 shrink-0 text-blue-400" />
                             </div>
-                            <p class="text-sm font-medium">No dispatches yet</p>
+                            <p class="text-sm font-semibold">No dispatches yet</p>
                             <p class="mt-1 text-xs text-muted-foreground">
                                 Dispatch activity will appear here once records
                                 are created.
@@ -1115,7 +1116,7 @@ const documentChartData = computed(() => {
                                     >
                                         <div class="min-w-0 flex-1 space-y-0.5">
                                             <p
-                                                class="truncate text-sm font-medium"
+                                                class="truncate text-sm font-semibold"
                                             >
                                                 {{
                                                     route.route_name ??
@@ -1171,7 +1172,7 @@ const documentChartData = computed(() => {
                                 <RiRouteLine
                                     class="mx-auto mb-2 h-7 w-7 shrink-0 text-muted-foreground"
                                 />
-                                <p class="text-sm font-medium">
+                                <p class="text-sm font-semibold">
                                     No routes assigned
                                 </p>
                             </div>
@@ -1179,6 +1180,6 @@ const documentChartData = computed(() => {
                     </Card>
                 </div>
             </div>
-        </div>
+        </div> -->
     </ExternalLayout>
 </template>

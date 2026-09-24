@@ -94,7 +94,7 @@ function formatValue(value: unknown): string {
                         :key="`${props.request.id}-${field}`"
                         class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark"
                     >
-                        <p class="text-sm font-medium text-custom-shadow">{{ normalizeFieldName(String(field)) }}</p>
+                        <p class="text-sm font-semibold text-custom-shadow">{{ normalizeFieldName(String(field)) }}</p>
                         <p class="break-words text-xs text-custom-shadow/70">{{ formatValue(props.request.current_values?.[field]) }} → {{ formatValue(value) }}</p>
                     </div>
                 </div>
@@ -102,7 +102,7 @@ function formatValue(value: unknown): string {
             </div>
 
             <div v-if="props.request.logo_change?.has_change" class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">
-                <p class="text-sm font-medium text-custom-shadow">Company Logo</p>
+                <p class="text-sm font-semibold text-custom-shadow">Company Logo</p>
                 <p class="text-xs text-custom-shadow/70">{{ props.request.logo_change.is_remove ? 'Remove current logo' : 'Replace current logo' }}</p>
                 <Button v-if="hasPrimaryPreview" variant="link" size="sm" class="h-auto px-0" @click="emit('preview-logo')">Preview logo</Button>
             </div>

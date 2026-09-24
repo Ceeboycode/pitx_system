@@ -263,7 +263,7 @@ function submit() {
                     <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
                   </span>
                 </template>
-                <span class="text-sm font-medium">{{ user.name }}</span>
+                <span class="text-sm font-semibold">{{ user.name }}</span>
               </EditableField>
               <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.name" />
             </div>
@@ -326,7 +326,7 @@ function submit() {
                 </span>
               </template>
               <span class="inline-flex items-center gap-2 overflow-hidden">
-                <span class="text-sm font-medium">{{ user.email }}</span>
+                <span class="text-sm font-semibold">{{ user.email }}</span>
                 <TooltipProvider v-if="user.email_verified_at">
                   <Tooltip>
                     <TooltipTrigger as-child>
@@ -359,7 +359,7 @@ function submit() {
                   <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
                 </span>
               </template>
-              <span class="text-sm font-medium">{{ user.phone_number || '—' }}</span>
+              <span class="text-sm font-semibold">{{ user.phone_number || '—' }}</span>
             </EditableField>
             <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.phone_number" />
           </div>
@@ -429,7 +429,7 @@ function submit() {
                   </Select>
                 </span>
               </template>
-              <span class="text-sm font-medium capitalize">{{ selectedRole?.name ?? '—' }}</span>
+              <span class="text-sm font-semibold capitalize">{{ selectedRole?.name ?? '—' }}</span>
             </EditableField>
             <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.role" />
           </div>
@@ -492,7 +492,7 @@ function submit() {
                   </Select>
                 </span>
               </template>
-              <span class="text-sm font-medium">{{ selectedCompany?.company_name ?? '—' }}</span>
+              <span class="text-sm font-semibold">{{ selectedCompany?.company_name ?? '—' }}</span>
             </EditableField>
 
             <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.company_id" />

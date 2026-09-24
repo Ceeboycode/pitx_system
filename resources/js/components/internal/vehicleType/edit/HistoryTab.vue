@@ -65,7 +65,7 @@ function displayValue(value: unknown): string {
           <div class="min-w-0 flex-1 space-y-1.5 pt-1">
             <div class="flex flex-wrap items-center gap-2">
               <Badge :class="actionBadgeClass(log.action)">{{ log.action_label }}</Badge>
-              <span class="text-sm font-medium text-custom-shadow">{{ log.user_name || 'System' }}</span>
+              <span class="text-sm font-semibold text-custom-shadow">{{ log.user_name || 'System' }}</span>
               <span class="text-xs text-custom-shadow/70">{{ log.created_at_human }}</span>
             </div>
 
@@ -75,7 +75,7 @@ function displayValue(value: unknown): string {
                   :key="change.field"
                   class="flex flex-wrap items-center gap-1.5"
               >
-                <span class="font-medium text-custom-shadow">{{ change.label }}:</span>
+                <span class="font-semibold text-custom-shadow">{{ change.label }}:</span>
                 <span class="text-custom-shadow/70 line-through">{{ displayValue(change.old) }}</span>
                 <span class="text-custom-shadow/50">→</span>
                 <span class="text-custom-shadow">{{ displayValue(change.new) }}</span>

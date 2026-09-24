@@ -75,17 +75,6 @@ class RouteSeeder extends Seeder
             ['Gate 3', 'Route 39: PITX - NLET', 'nlet', ['buendia', 'lawton', 'blumentritt', 'nlet']],
             ['Gate 3', 'Route 24: PITX - Alabang', 'alabang', ['baclaran', 'southmall', 'alabang']],
             ['Gate 4', 'PITX - Bicol', 'naga', ['turbina', 'lucena', 'naga']],
-            ['Gate 4', 'PITX - Baguio City', 'baguio', ['dau', 'tarlac', 'baguio']],
-            ['Gate 5', 'PITX - Batangas', 'batangas', ['turbina', 'lipa', 'batangas']],
-            ['Gate 5', 'PITX - Laguna', 'sta_cruz', ['alabang', 'calamba', 'sta_cruz']],
-            ['Gate 5', 'PITX - Quezon', 'lucena', ['turbina', 'san_pablo', 'lucena']],
-            ['Gate 6', 'PITX - Ternate', 'ternate', ['kawit', 'naic', 'ternate']],
-            ['Gate 6', 'PITX - Naic', 'naic', ['kawit', 'tanza', 'naic']],
-            ['Gate 6', 'PITX - Cavite City', 'cavite_city', ['kawit', 'noveleta', 'cavite_city']],
-            ['Gate 7', 'PITX - Tanza (Mex)', 'tanza', ['kawit', 'noveleta', 'tanza']],
-            ['Gate 7', 'PITX - Dasma (KB)', 'dasma', ['bacoor', 'imus', 'dasma']],
-            ['Gate 7', 'PITX - Buendia (Beep)', 'buendia', ['moa', 'taft', 'buendia']],
-            ['Gate 10', 'PITX - EDSA Busway', 'monumento', ['moa', 'ayala', 'ortigas', 'cubao', 'monumento']],
         ];
 
         DB::transaction(function () use ($places, $routes) {

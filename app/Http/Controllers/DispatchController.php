@@ -486,7 +486,6 @@ class DispatchController extends Controller
             'vehicle_id' => $vehicle->id,
             'gate_id' => $gate->id,
             'plate_number' => $vehicle->plate_number,
-            'pax_count' => 0,
             'bay_number' => $request->integer('bay_number'),
             'remarks' => $request->filled('remarks')
                 ? $request->string('remarks')->toString()

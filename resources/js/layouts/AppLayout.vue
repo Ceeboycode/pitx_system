@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/app/AppSidebarLayout.vue'
+import AppSidebarLayout from '@/layouts/app/AppSidebarLayout.vue'
 import type { BreadcrumbItemType } from '@/types'
 import { usePage } from '@inertiajs/vue3'
 import { onMounted, watch } from 'vue'
@@ -41,8 +41,8 @@ watch(
 </script>
 
 <template>
-    <AppLayout>
+    <AppSidebarLayout>
         <Toaster position="bottom-right" expand :visibleToasts="20" />
         <slot />
-    </AppLayout>
+    </AppSidebarLayout>
 </template>

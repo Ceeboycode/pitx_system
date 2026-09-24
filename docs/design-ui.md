@@ -265,7 +265,7 @@ Detail tabs show values read-only, and switch to inline inputs when the user can
                 <RiEditLine class="h-4 w-0 shrink-0 opacity-0 … group-hover:w-4 group-hover:opacity-100" />
             </span>
         </template>
-        <span class="min-w-0 flex-1 truncate text-right text-sm font-medium">{{ gate.gate_name }}</span>
+        <span class="min-w-0 flex-1 truncate text-right text-sm font-semibold">{{ gate.gate_name }}</span>
     </EditableField>
 </div>
 ```

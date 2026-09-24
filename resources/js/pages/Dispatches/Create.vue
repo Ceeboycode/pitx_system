@@ -69,7 +69,7 @@ function submit() {
                         <CardTitle>Add New Dispatch</CardTitle>
                         <CardDescription>
                             Company:
-                            <span class="font-medium">
+                            <span class="font-semibold">
                                 {{ props.company.code }} -
                                 {{ props.company.name }}
                             </span>

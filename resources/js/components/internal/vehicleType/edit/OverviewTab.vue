@@ -79,7 +79,7 @@ const stats = [
             class="flex flex-row items-center justify-between gap-2 overflow-hidden rounded-md px-2 py-1.5 transition-colors hover:bg-custom-secondary/10"
         >
           <div class="flex min-w-0 flex-col">
-            <span class="truncate font-medium">{{ vehicle.plate_number || '—' }}</span>
+            <span class="truncate font-semibold">{{ vehicle.plate_number || '—' }}</span>
             <span class="truncate text-xs text-custom-shadow/70">{{ vehicle.company_name || 'No company assigned' }}</span>
           </div>
           <Badge :class="['gap-1.5', operationalStatusClass(vehicle.status)]">

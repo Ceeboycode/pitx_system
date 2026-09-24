@@ -76,7 +76,7 @@ test('policy before hook grants access to admins and returns null for operators'
         ->and($policy->before($operator, 'view'))->toBeNull();
 });
 
-test('operator can view their own company vehicles and show page', function (): void {
+test('operator can view their own company vehicles and the vehicle page', function (): void {
     $companyA = Company::factory()->verified()->create();
     $operatorA = createOperatorUser($companyA);
 
@@ -100,10 +100,10 @@ test('operator can view their own company vehicles and show page', function (): 
         );
 
     $this->actingAs($operatorA)
-        ->get(route('company.vehicles.show', $vehicleA))
+        ->get(route('company.vehicles.edit', $vehicleA))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('External/Vehicles/Show')
+            ->component('External/Vehicles/Edit')
             ->where('vehicle.plate_number', 'COMPA-01')
         );
 });
@@ -125,10 +125,6 @@ test('operator cannot view or edit another company vehicle', function (): void {
         ->and($policy->toggleStatus($operatorA, $vehicleB))->toBeFalse();
 
     // Operator A receives 404 Not Found due to tenant isolation
-    $this->actingAs($operatorA)
-        ->get(route('company.vehicles.show', $vehicleB))
-        ->assertNotFound();
-
     $this->actingAs($operatorA)
         ->get(route('company.vehicles.edit', $vehicleB))
         ->assertNotFound();

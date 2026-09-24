@@ -151,7 +151,7 @@ function submit() {
                   <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
                 </span>
               </template>
-              <span class="min-w-0 flex-1 truncate text-right text-sm font-medium">{{ role.name }}</span>
+              <span class="min-w-0 flex-1 truncate text-right text-sm font-semibold">{{ role.name }}</span>
             </EditableField>
             <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.name" />
           </div>
@@ -187,7 +187,7 @@ function submit() {
                   </Select>
                 </span>
               </template>
-              <span class="min-w-0 flex-1 truncate text-right text-sm font-medium capitalize">{{ role.type }}</span>
+              <span class="min-w-0 flex-1 truncate text-right text-sm font-semibold capitalize">{{ role.type }}</span>
             </EditableField>
             <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.type" />
           </div>

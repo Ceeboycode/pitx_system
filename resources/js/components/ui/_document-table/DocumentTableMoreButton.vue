@@ -55,7 +55,7 @@ const menuStyle = computed(() => {
 
 <template>
   <div
-    :class="cn('col-span-1 flex min-w-0 justify-start py-1.5 pr-3 text-right justify-end text-sm font-medium', props.class)"
+    :class="cn('col-span-1 flex min-w-0 justify-start py-1.5 pr-3 text-right justify-end text-sm font-semibold', props.class)"
     @click.stop
     @contextmenu.prevent.stop
   >

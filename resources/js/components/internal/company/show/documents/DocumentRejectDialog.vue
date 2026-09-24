@@ -185,7 +185,7 @@ function submitReject() {
 
                 <p
                     v-if="selectedPresets.length > 0"
-                    class="mt-2 text-xs font-medium text-rose-600"
+                    class="mt-2 text-xs font-semibold text-rose-600"
                 >
                     {{ selectedPresets.length }} reason{{
                         selectedPresets.length > 1 ? 's' : ''

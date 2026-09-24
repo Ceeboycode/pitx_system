@@ -136,7 +136,7 @@ function submit() {
             Select one or more reasons below. The remarks field will be
             built automatically — you can still edit it before
             submitting for
-            <span class="font-medium text-foreground">
+            <span class="font-semibold text-foreground">
                 {{ humanize(doc?.document_type) }} </span
             >.
         </template>
@@ -179,7 +179,7 @@ function submit() {
 
                 <p
                     v-if="selectedInvalidPresets.length > 0"
-                    class="mt-2 text-xs font-medium text-rose-600"
+                    class="mt-2 text-xs font-semibold text-rose-600"
                 >
                     {{ selectedInvalidPresets.length }}
                     reason{{ selectedInvalidPresets.length > 1 ? 's' : '' }}

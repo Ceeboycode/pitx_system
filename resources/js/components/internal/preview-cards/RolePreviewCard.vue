@@ -47,7 +47,7 @@ function typeClass(type: Role['type']): string {
         <div class="space-y-3">
             <div class="flex items-center justify-between gap-3">
                 <span class="text-sm font-semibold text-custom-shadow">Name</span>
-                <span class="truncate text-right text-sm font-medium capitalize text-custom-shadow/80">
+                <span class="truncate text-right text-sm font-semibold capitalize text-custom-shadow/80">
                     {{ role.name }}
                 </span>
             </div>

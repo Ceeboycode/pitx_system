@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CompanyVehicleRequest;
 use App\Http\Requests\UpdateCompanyVehicleRequest;
+use App\Models\AuditLog;
 use App\Models\Gate as GateModel;
 use App\Models\Route;
 use App\Models\Vehicle;
@@ -261,7 +262,7 @@ class CompanyVehicleController extends Controller
             ->with('success', 'Vehicle registered successfully and documents submitted for review.');
     }
 
-    public function show(Request $request, Vehicle $vehicle): Response
+    public function edit(Request $request, Vehicle $vehicle): Response
     {
         Gate::authorize('external_vehicles.view');
 
@@ -280,18 +281,20 @@ class CompanyVehicleController extends Controller
             'documents:id,vehicle_id,document_type,file_path,file_name,file_mime_type,file_size,status,issued_at,expires_at,created_at',
         ]);
 
-        $gates = GateModel::query()
-            ->where('status', 'active')
-            ->select(['id', 'gate_name', 'bays'])
-            ->orderBy('gate_name')
-            ->get();
-
+        // The vehicle's current route stays selectable (and visible) even if it has since been deactivated.
         $routes = Route::query()
-            ->where('status', 'active')
-            ->where(function ($query) {
+            ->where(function ($query) use ($vehicle) {
                 $query
-                    ->whereNull('gate_id')
-                    ->orWhereHas('gate', fn ($gateQuery) => $gateQuery->where('status', 'active'));
+                    ->where(function ($active) {
+                        $active
+                            ->where('status', 'active')
+                            ->where(function ($gateQuery) {
+                                $gateQuery
+                                    ->whereNull('gate_id')
+                                    ->orWhereHas('gate', fn ($gate) => $gate->where('status', 'active'));
+                            });
+                    })
+                    ->when($vehicle->route_id, fn ($inner) => $inner->orWhere('id', $vehicle->route_id));
             })
             ->select(['id', 'gate_id', 'route_name', 'origin_name', 'destination_name', 'route_geometry'])
             ->with([
@@ -301,7 +304,7 @@ class CompanyVehicleController extends Controller
             ->orderBy('route_name')
             ->get();
 
-        return Inertia::render('External/Vehicles/Show', [
+        return Inertia::render('External/Vehicles/Edit', [
             'company' => [
                 'id' => $company->id,
                 'company_name' => $company->company_name,
@@ -335,6 +338,7 @@ class CompanyVehicleController extends Controller
                 'operator_remark' => $vehicle->operator_remark,
                 'suspension_remark' => $vehicle->suspension_remark,
                 'created_at' => optional($vehicle->created_at)?->toDateTimeString(),
+                'updated_at' => optional($vehicle->updated_at)?->toDateTimeString(),
                 'route' => $vehicle->route ? [
                     'id' => $vehicle->route->id,
                     'gate_id' => $vehicle->route->gate_id,
@@ -378,100 +382,10 @@ class CompanyVehicleController extends Controller
                     ];
                 })->values(),
             ],
-            'gates' => $gates,
-            'routes' => $routes,
-            'vehicleTypes' => $this->vehicleTypesForSelection($vehicle),
-            'docTypes' => self::DOC_TYPES,
-            'mapConfig' => [
-                'mapboxToken' => config('app.mapbox_public_token', env('VITE_MAPBOX_TOKEN')),
-                'defaultCenter' => ['lng' => 120.9842, 'lat' => 14.5995],
-                'defaultZoom' => 11,
-            ],
-        ]);
-    }
-
-    public function edit(Request $request, Vehicle $vehicle): Response
-    {
-        Gate::authorize('external_vehicles.update');
-
-        $user = $request->user();
-        $company = $user->company;
-
-        abort_unless($vehicle->company_id === $company->id, 404);
-        abort_if($vehicle->status === 'suspended', 403, 'Suspended vehicles cannot be edited.');
-
-        $this->syncExpiredDocumentsForVehicle($vehicle, $user->id);
-
-        $vehicle->load([
-            'vehicleType:id,type_name,is_active',
-            'documents:id,vehicle_id,document_type,file_name,status,issued_at,expires_at,created_at',
-        ]);
-
-        $gates = GateModel::query()
-            ->where('status', 'active')
-            ->select(['id', 'gate_name', 'bays'])
-            ->orderBy('gate_name')
-            ->get();
-
-        $routes = Route::query()
-            ->where('status', 'active')
-            ->where(function ($query) {
-                $query
-                    ->whereNull('gate_id')
-                    ->orWhereHas('gate', fn ($gateQuery) => $gateQuery->where('status', 'active'));
-            })
-            ->select(['id', 'gate_id', 'route_name', 'origin_name', 'destination_name', 'route_geometry'])
-            ->with([
-                'gate:id,gate_name',
-                'stops:id,route_id,stop_name,stop_order,stop_type,address,latitude,longitude',
-            ])
-            ->orderBy('route_name')
-            ->get();
-
-        return Inertia::render('External/Vehicles/Edit', [
-            'company' => [
-                'id' => $company->id,
-                'company_name' => $company->company_name,
-                'company_code' => $company->company_code,
-                'status' => $company->status,
-                'logo_url' => $company->logo
-                    ? $this->publicDisk()->url($company->logo)
-                    : null,
-            ],
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'username' => $user->username,
-                'email' => $user->email,
-            ],
-            'vehicle' => [
-                'id' => $vehicle->id,
-                'route_id' => $vehicle->route_id,
-                'vehicle_type_id' => $vehicle->vehicle_type_id,
-                'vehicle_type' => $vehicle->vehicleType?->type_name,
-                'plate_number' => $vehicle->plate_number,
-                'body_number' => $vehicle->body_number,
-                'capacity' => $vehicle->capacity,
-                'color' => $vehicle->color,
-                'engine_number' => $vehicle->engine_number,
-                'chassis_number' => $vehicle->chassis_number,
-                'make_model' => $vehicle->make_model,
-                'status' => $vehicle->status,
-                'verification_status' => $vehicle->verification_status,
-                'verification_remark' => $vehicle->verification_remark,
-                'operator_remark' => $vehicle->operator_remark,
-                'suspension_remark' => $vehicle->suspension_remark,
-                'documents' => $vehicle->documents->map(fn ($document) => [
-                    'id' => $document->id,
-                    'document_type' => $document->document_type,
-                    'file_name' => $document->file_name,
-                    'status' => $document->status,
-                    'issued_at' => optional($document->issued_at)?->format('Y-m-d'),
-                    'expires_at' => optional($document->expires_at)?->format('Y-m-d'),
-                    'created_at' => optional($document->created_at)?->toDateTimeString(),
-                ])->values(),
-            ],
-            'gates' => $gates,
+            'dispatches' => $user->can('external_dispatches.viewAny')
+                ? $this->dispatchesFor($vehicle)
+                : [],
+            'history' => $this->historyFor($vehicle, $company->id),
             'routes' => $routes,
             'vehicleTypes' => $this->vehicleTypesForSelection($vehicle),
             'docTypes' => self::DOC_TYPES,
@@ -554,13 +468,7 @@ class CompanyVehicleController extends Controller
                 $resubmittedDocumentLabels[] = self::DOC_TYPES[$documentType] ?? strtoupper((string) $documentType);
             }
 
-            if (empty($resubmittedDocumentLabels)) {
-                throw ValidationException::withMessages([
-                    'documents' => 'Upload at least one invalid or expired document to resubmit.',
-                ]);
-            }
-
-            $vehicle->update([
+            $vehicle->fill([
                 'route_id' => $validated['route_id'],
                 'vehicle_type_id' => $validated['vehicle_type_id'],
                 'plate_number' => strtoupper(trim((string) $validated['plate_number'])),
@@ -570,11 +478,25 @@ class CompanyVehicleController extends Controller
                 'engine_number' => $validated['engine_number'],
                 'chassis_number' => $validated['chassis_number'],
                 'make_model' => $validated['make_model'],
+            ]);
+
+            $detailsChanged = $vehicle->isDirty();
+
+            if (empty($resubmittedDocumentLabels) && ! $detailsChanged) {
+                throw ValidationException::withMessages([
+                    'documents' => 'There are no changes to save.',
+                ]);
+            }
+
+            $vehicle->fill([
                 'status' => Vehicle::STATUS_INACTIVE,
                 'verification_status' => Vehicle::VERIFICATION_STATUS_FOR_VERIFICATION,
-                'verification_remark' => 'Pending review: resubmitted invalid/expired documents - '.collect($resubmittedDocumentLabels)->unique()->implode(', '),
+                'verification_remark' => empty($resubmittedDocumentLabels)
+                    ? 'Pending review: vehicle details were updated.'
+                    : 'Pending review: resubmitted invalid/expired documents - '.collect($resubmittedDocumentLabels)->unique()->implode(', '),
                 'updated_by' => $user->id,
             ]);
+            $vehicle->save();
 
             return [
                 'old_paths_to_delete' => array_values(array_unique($oldPathsToDelete)),
@@ -592,7 +514,7 @@ class CompanyVehicleController extends Controller
             ['super-admin', 'admin', 'terminal manager']
         );
 
-        return to_route('company.vehicles.show', $vehicle)
+        return to_route('company.vehicles.edit', $vehicle)
             ->with('success', 'Vehicle updated successfully.');
     }
 
@@ -706,11 +628,153 @@ class CompanyVehicleController extends Controller
         return trim($value ?? '', '_') ?: 'FILE';
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function dispatchesFor(Vehicle $vehicle): array
+    {
+        return $vehicle->dispatches()
+            ->with('gate:id,gate_name')
+            ->latest('id')
+            ->limit(20)
+            ->get()
+            ->map(fn ($dispatch) => [
+                'id' => $dispatch->id,
+                'gate_name' => $dispatch->gate?->gate_name,
+                'status' => $dispatch->status,
+                'pax_count' => $dispatch->pax_count,
+                'bay_number' => $dispatch->bay_number,
+                'arrived_at' => $dispatch->arrived_at_formatted,
+                'departed_at' => $dispatch->departed_at_formatted,
+                'remarks' => $dispatch->remarks,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * The audit trail of the vehicle and its documents, newest first. Staff are shown as "PITX Staff"
+     * rather than by name, and fields that mean nothing to an operator (ids, file paths) are left out.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function historyFor(Vehicle $vehicle, int $companyId): array
+    {
+        $hiddenFields = [
+            'file_path', 'file_name', 'file_mime_type', 'file_size', 'company_id', 'vehicle_id',
+            'created_by', 'updated_by', 'deleted_by',
+        ];
+
+        $documentTypesById = $vehicle->documents->pluck('document_type', 'id');
+
+        $logs = AuditLog::query()
+            ->with('user:id,name,company_id')
+            ->where(function ($query) use ($vehicle, $documentTypesById) {
+                $query
+                    ->where(fn ($vehicleLogs) => $vehicleLogs
+                        ->where('auditable_type', $vehicle->getMorphClass())
+                        ->where('auditable_id', $vehicle->id))
+                    ->orWhere(fn ($documentLogs) => $documentLogs
+                        ->where('auditable_type', (new VehicleDocument)->getMorphClass())
+                        ->whereIn('auditable_id', $documentTypesById->keys()));
+            })
+            ->latest('id')
+            ->limit(50)
+            ->get();
+
+        $routeIds = collect();
+        $vehicleTypeIds = collect();
+
+        foreach ($logs as $log) {
+            foreach ((array) $log->changed_fields as $field => $change) {
+                if ($field === 'route_id') {
+                    $routeIds->push($change['old'] ?? null, $change['new'] ?? null);
+                }
+
+                if ($field === 'vehicle_type_id') {
+                    $vehicleTypeIds->push($change['old'] ?? null, $change['new'] ?? null);
+                }
+            }
+        }
+
+        $routeNames = Route::withTrashed()->whereIn('id', $routeIds->filter()->unique())->pluck('route_name', 'id');
+        $vehicleTypeNames = VehicleType::withTrashed()->whereIn('id', $vehicleTypeIds->filter()->unique())->pluck('type_name', 'id');
+
+        return $logs
+            ->map(function (AuditLog $log) use ($companyId, $documentTypesById, $hiddenFields, $routeNames, $vehicleTypeNames) {
+                $isDocument = $log->auditable_type === (new VehicleDocument)->getMorphClass();
+
+                $changes = [];
+
+                if ($log->action === 'updated') {
+                    foreach ((array) $log->changed_fields as $field => $change) {
+                        if (in_array($field, $hiddenFields, true)) {
+                            continue;
+                        }
+
+                        $old = $change['old'] ?? null;
+                        $new = $change['new'] ?? null;
+                        $label = $field;
+
+                        if ($field === 'route_id') {
+                            $label = 'route';
+                            $old = $routeNames[$old] ?? $old;
+                            $new = $routeNames[$new] ?? $new;
+                        } elseif ($field === 'vehicle_type_id') {
+                            $label = 'vehicle_type';
+                            $old = $vehicleTypeNames[$old] ?? $old;
+                            $new = $vehicleTypeNames[$new] ?? $new;
+                        }
+
+                        $changes[] = [
+                            'field' => $label,
+                            'old' => $this->historyValue($old),
+                            'new' => $this->historyValue($new),
+                        ];
+                    }
+
+                    if ($changes === []) {
+                        return null;
+                    }
+                }
+
+                return [
+                    'id' => $log->id,
+                    'action' => $log->action,
+                    'subject' => $isDocument ? 'document' : 'vehicle',
+                    'document_label' => $isDocument
+                        ? (self::DOC_TYPES[$documentTypesById[$log->auditable_id] ?? ''] ?? 'Document')
+                        : null,
+                    'actor' => match (true) {
+                        $log->user === null => 'System',
+                        (int) $log->user->company_id === $companyId => $log->user->name,
+                        default => 'PITX Staff',
+                    },
+                    'created_at' => optional($log->created_at)?->toIso8601String(),
+                    'changes' => $changes,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function historyValue(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $text = is_scalar($value) ? (string) $value : json_encode($value);
+
+        return mb_strimwidth($text, 0, 120, '…');
+    }
+
     private function vehicleTypesForSelection(Vehicle $vehicle)
     {
         return VehicleType::query()
             ->where('is_active', true)
-            ->orWhereKey($vehicle->vehicle_type_id)
+            ->orWhere('id', $vehicle->vehicle_type_id)
             ->orderBy('type_name')
             ->get(['id', 'type_name']);
     }

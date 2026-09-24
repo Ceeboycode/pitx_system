@@ -311,7 +311,7 @@ function openReject(docId: number) {
                                             <span v-if="doc.issued_at"
                                                 >Issued:
                                                 <span
-                                                    class="font-medium text-foreground"
+                                                    class="font-semibold text-foreground"
                                                     >{{
                                                         formatDate(doc.issued_at)
                                                     }}</span
@@ -321,7 +321,7 @@ function openReject(docId: number) {
                                                 Expires:
                                                 <span
                                                     :class="[
-                                                        'font-medium',
+                                                        'font-semibold',
                                                         isExpired(doc.expires_at)
                                                             ? 'text-rose-600'
                                                             : 'text-foreground',
@@ -335,13 +335,13 @@ function openReject(docId: number) {
                                             <span v-if="doc.uploader"
                                                 >Uploaded by:
                                                 <span
-                                                    class="font-medium text-foreground"
+                                                    class="font-semibold text-foreground"
                                                 >
                                                     {{ doc.uploader.name }}
                                                 </span>
                                                 on
                                                 <span
-                                                    class="font-medium text-foreground"
+                                                    class="font-semibold text-foreground"
                                                 >
                                                     {{
                                                         formatDateTime(
@@ -353,13 +353,13 @@ function openReject(docId: number) {
                                             <span v-if="doc.verifier">
                                                 Verified by:
                                                 <span
-                                                    class="font-medium text-foreground"
+                                                    class="font-semibold text-foreground"
                                                 >
                                                     {{ doc.verifier.name }}
                                                 </span>
                                                 on
                                                 <span
-                                                    class="font-medium text-foreground"
+                                                    class="font-semibold text-foreground"
                                                 >
                                                     {{
                                                         formatDateTime(
@@ -539,7 +539,7 @@ function openReject(docId: number) {
                                     <span v-if="doc.issued_at"
                                         >Issued:
                                         <span
-                                            class="font-medium text-foreground"
+                                            class="font-semibold text-foreground"
                                             >{{
                                                 formatDate(doc.issued_at)
                                             }}</span
@@ -549,7 +549,7 @@ function openReject(docId: number) {
                                         Expires:
                                         <span
                                             :class="[
-                                                'font-medium',
+                                                'font-semibold',
                                                 isExpired(doc.expires_at)
                                                     ? 'text-rose-600'
                                                     : 'text-foreground',
@@ -563,13 +563,13 @@ function openReject(docId: number) {
                                     <span v-if="doc.uploader"
                                         >Uploaded by:
                                         <span
-                                            class="font-medium text-foreground"
+                                            class="font-semibold text-foreground"
                                         >
                                             {{ doc.uploader.name }}
                                         </span>
                                         on
                                         <span
-                                            class="font-medium text-foreground"
+                                            class="font-semibold text-foreground"
                                         >
                                             {{
                                                 formatDateTime(
@@ -581,13 +581,13 @@ function openReject(docId: number) {
                                     <span v-if="doc.verifier">
                                         Verified by:
                                         <span
-                                            class="font-medium text-foreground"
+                                            class="font-semibold text-foreground"
                                         >
                                             {{ doc.verifier.name }}
                                         </span>
                                         on
                                         <span
-                                            class="font-medium text-foreground"
+                                            class="font-semibold text-foreground"
                                         >
                                             {{
                                                 formatDateTime(

@@ -55,7 +55,7 @@ const menuStyle = computed(() => {
 
 <template>
   <td
-    :class="cn('py-1.5 pr-3 text-right align-middle text-sm font-medium', props.class)"
+    :class="cn('py-1.5 pr-3 text-right align-middle text-sm font-semibold', props.class)"
     @click.stop
     @contextmenu.prevent.stop
   >

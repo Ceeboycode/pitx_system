@@ -365,21 +365,21 @@ function statusIcon(status: string) {
 
                                         <TableData>
                                             <div class="flex min-w-0 flex-col">
-                                                <span class="truncate text-sm font-medium">{{ request.requested_by.name }}</span>
+                                                <span class="truncate text-sm font-semibold">{{ request.requested_by.name }}</span>
                                                 <span class="truncate text-xs text-custom-shadow/70">{{ request.requested_by.email ?? '—' }}</span>
                                             </div>
                                         </TableData>
 
                                         <TableData>
                                             <div class="flex min-w-0 flex-col">
-                                                <span class="truncate text-sm font-medium">{{ request.company_name }}</span>
+                                                <span class="truncate text-sm font-semibold">{{ request.company_name }}</span>
                                                 <span class="truncate text-xs text-custom-shadow/70">{{ request.company_code }}</span>
                                             </div>
                                         </TableData>
 
                                         <TableData>
                                             <div class="flex min-w-0 flex-col">
-                                                <span class="truncate text-sm font-medium">{{ request.field_label || formatFieldLabel(request.requested_field) }}</span>
+                                                <span class="truncate text-sm font-semibold">{{ request.field_label || formatFieldLabel(request.requested_field) }}</span>
                                                 <span class="truncate text-xs text-custom-shadow/70">
                                                     {{ request.old_value_display ?? formatValue(request.old_value) }}
                                                     →
@@ -401,33 +401,29 @@ function statusIcon(status: string) {
                                             :open="openMenuId === request.id"
                                             @update:open="(value) => (openMenuId = value ? request.id : null)"
                                         >
-                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-
                                             <DropdownMenuItem
                                                 as-child
-                                                class="cursor-pointer rounded-lg text-emerald-600 focus:text-emerald-600"
+                                                class="cursor-pointer"
                                                 @click="openApproveModal(request)"
                                             >
                                                 <div :class="{ 'pointer-events-none opacity-50': approvingId === request.id }">
-                                                    <RiCheckLine class="mr-2 h-4 w-4" />
+                                                    <RiCheckLine class="mr-1 h-4 w-4" />
                                                     {{ approvingId === request.id ? 'Approving...' : 'Approve' }}
                                                 </div>
                                             </DropdownMenuItem>
 
-                                            <DropdownMenuSeparator />
-
                                             <DropdownMenuItem
-                                                class="cursor-pointer rounded-lg text-red-600 focus:text-red-600"
+                                                class="cursor-pointer"
                                                 @click="openRejectModal(request)"
                                             >
-                                                <RiCloseCircleLine class="mr-2 h-4 w-4" />
+                                                <RiCloseCircleLine class="mr-1 h-4 w-4" />
                                                 Reject
                                             </DropdownMenuItem>
                                         </TableMoreButton>
 
                                         <TableData
                                             v-else
-                                            class="pr-3 text-right text-xs font-medium"
+                                            class="pr-3 text-right text-xs font-semibold"
                                             :class="request.status === 'approved' ? 'text-emerald-600' : 'text-red-600'"
                                         >
                                             {{ request.status === 'approved' ? 'Approved' : 'Rejected' }}

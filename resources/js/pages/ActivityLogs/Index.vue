@@ -471,7 +471,7 @@ function actionBadgeClass(action: string): string {
                                         </div>
 
                                         <div class="min-w-0 py-1.5">
-                                            <div class="text-sm font-medium">
+                                            <div class="text-sm font-semibold">
                                                 {{ log.entity_label }}
                                             </div>
                                             <div
@@ -492,7 +492,7 @@ function actionBadgeClass(action: string): string {
                                                     class="text-xs text-muted-foreground break-words whitespace-normal"
                                                 >
                                                     <span
-                                                        class="font-medium text-foreground"
+                                                        class="font-semibold text-foreground"
                                                         >{{ change.label }}:</span
                                                     >
                                                     {{ formatValue(change.old) }} to

@@ -302,15 +302,27 @@ function handleLogout() {
             )"
         >
             <div class="flex h-full min-h-0 flex-col gap-3 overflow-visible p-3">
+                <!-- <Link
+                    href="/company/dashboard"
+                    :class="cn(
+                        'flex min-h-10 shrink-0 items-center rounded-md',
+                        isCollapsed ? 'mx-auto size-10 justify-center rounded-full p-0' : 'gap-3 px-2',
+                    )"
+                    aria-label="Open company dashboard"
+                    @click="closeMobileSidebar"
+                > -->
+
                 <Link
                     href="/company/dashboard"
                     :class="cn(
-                        'flex min-h-10 shrink-0 items-center rounded-md text-custom-shadow',
+                        'flex min-h-10 shrink-0 items-center rounded-md',
                         isCollapsed ? 'mx-auto size-10 justify-center rounded-full p-0' : 'gap-3 px-2',
                     )"
                     aria-label="Open company dashboard"
                     @click="closeMobileSidebar"
                 >
+                    <!-- <div class="relative size-10 shrink-0 overflow-hidden rounded-full border border-custom-bg-dark bg-custom-bg dark:border-custom-bg-light dark:bg-custom-bg-light"> -->
+                    <!-- TODO: use logo component here -->
                     <div class="relative size-10 shrink-0 overflow-hidden rounded-full border border-custom-bg-dark bg-custom-bg dark:border-custom-bg-light dark:bg-custom-bg-light">
                         <img
                             v-if="showImage"
@@ -328,6 +340,7 @@ function handleLogout() {
                     </div>
 
                     <div :class="cn('min-w-0 flex-1', isCollapsed && 'hidden')">
+                        <!-- TODO: use the username / code component here -->
                         <p class="truncate text-sm font-semibold text-custom-body">
                             {{ company?.company_code ?? company?.company_name ?? 'Company Portal' }}
                         </p>

@@ -670,7 +670,7 @@ function exportCsv() {
                                         >
                                             Route
                                         </p>
-                                        <p class="text-sm font-medium">
+                                        <p class="text-sm font-semibold">
                                             {{
                                                 dispatch.vehicle?.route
                                                     ?.route_name || '—'
@@ -687,7 +687,7 @@ function exportCsv() {
                                             >
                                                 Gate
                                             </p>
-                                            <p class="font-medium">
+                                            <p class="font-semibold">
                                                 {{
                                                     dispatch.gate?.gate_name ||
                                                     '—'
@@ -721,7 +721,7 @@ function exportCsv() {
                                             >
                                                 Driver
                                             </p>
-                                            <p class="font-medium">
+                                            <p class="font-semibold">
                                                 {{
                                                     dispatch.driver?.name || '—'
                                                 }}
@@ -744,7 +744,7 @@ function exportCsv() {
                                                 >
                                                     Arrived
                                                 </p>
-                                                <p class="text-xs font-medium">
+                                                <p class="text-xs font-semibold">
                                                     {{ dispatch.arrived_at }}
                                                 </p>
                                             </div>
@@ -759,7 +759,7 @@ function exportCsv() {
                                                 >
                                                     Departed
                                                 </p>
-                                                <p class="text-xs font-medium">
+                                                <p class="text-xs font-semibold">
                                                     {{ dispatch.departed_at }}
                                                 </p>
                                             </div>
@@ -796,7 +796,7 @@ function exportCsv() {
                                 <RiSearchLine class="h-6 w-6 text-muted-foreground/40" />
                             </div>
                             <div>
-                                <p class="text-sm font-medium">
+                                <p class="text-sm font-semibold">
                                     No records found
                                 </p>
                                 <p class="text-xs text-muted-foreground">
@@ -857,7 +857,7 @@ function exportCsv() {
                         <div class="space-y-2">
                             <p class="text-sm font-semibold text-custom-shadow">Route</p>
                             <div class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">
-                                <p class="text-sm font-medium text-custom-shadow">{{ previewedDispatch.vehicle?.route?.route_name || '—' }}</p>
+                                <p class="text-sm font-semibold text-custom-shadow">{{ previewedDispatch.vehicle?.route?.route_name || '—' }}</p>
                             </div>
                         </div>
 
@@ -918,7 +918,7 @@ function exportCsv() {
                                         class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark"
                                     >
                                         <div class="flex items-center justify-between gap-3">
-                                            <span class="min-w-0 truncate text-sm font-medium text-custom-shadow">{{ entry.label }}</span>
+                                            <span class="min-w-0 truncate text-sm font-semibold text-custom-shadow">{{ entry.label }}</span>
                                             <span class="shrink-0 text-xs text-custom-shadow/70">{{ entry.count }}x · {{ entry.pax }} pax</span>
                                         </div>
                                         <Progress :model-value="barPct(entry.count, routeSummary)" class="mt-2 h-1.5" />

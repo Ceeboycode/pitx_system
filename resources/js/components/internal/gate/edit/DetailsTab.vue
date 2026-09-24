@@ -243,7 +243,7 @@ function submit() {
                   <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
                 </span>
               </template>
-              <span class="min-w-0 flex-1 truncate text-right text-sm font-medium">{{ gate.gate_name }}</span>
+              <span class="min-w-0 flex-1 truncate text-right text-sm font-semibold">{{ gate.gate_name }}</span>
             </EditableField>
             <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.gate_name" />
           </div>
@@ -266,7 +266,7 @@ function submit() {
                   <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
                 </span>
               </template>
-              <span class="min-w-0 flex-1 truncate text-right text-sm font-medium">{{ gate.bays }}</span>
+              <span class="min-w-0 flex-1 truncate text-right text-sm font-semibold">{{ gate.bays }}</span>
             </EditableField>
             <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.bays" />
           </div>
@@ -288,7 +288,7 @@ function submit() {
                   <RiEditLine class="shrink-0 h-4 w-0 overflow-hidden text-custom-shadow/80 opacity-0 transition-all duration-200 ease-out group-hover:w-4 group-hover:ml-2 group-hover:opacity-100 group-focus-within:w-4 group-focus-within:ml-2 group-focus-within:opacity-100"/>
                 </span>
               </template>
-              <span class="min-w-0 flex-1 truncate text-right text-sm font-medium">{{ gate.location || 'Location not configured' }}</span>
+              <span class="min-w-0 flex-1 truncate text-right text-sm font-semibold">{{ gate.location || 'Location not configured' }}</span>
             </EditableField>
             <InputMessage variant="destructive" v-if="canEdit" :message="form.errors.location" />
           </div>

@@ -37,7 +37,7 @@ const uploadedCount = computed(() => {
                 <RiBusLine class="h-4 w-4 shrink-0" />
             </div>
             <div class="min-w-0">
-                <p class="text-sm font-medium">Vehicle Type</p>
+                <p class="text-sm font-semibold">Vehicle Type</p>
                 <p class="text-sm text-muted-foreground">
                     {{ vehicleTypeName || 'Not selected' }}
                 </p>
@@ -49,7 +49,7 @@ const uploadedCount = computed(() => {
                 <RiRouteLine class="h-4 w-4 shrink-0" />
             </div>
             <div class="min-w-0">
-                <p class="text-sm font-medium">Assigned Route</p>
+                <p class="text-sm font-semibold">Assigned Route</p>
                 <p class="text-sm text-muted-foreground">
                     {{ selectedRouteName || 'No route selected' }}
                 </p>
@@ -61,7 +61,7 @@ const uploadedCount = computed(() => {
                 <RiShieldCheckLine class="h-4 w-4 shrink-0" />
             </div>
             <div class="min-w-0">
-                <p class="text-sm font-medium">Documents</p>
+                <p class="text-sm font-semibold">Documents</p>
                 <p class="text-sm text-muted-foreground">
                     {{ uploadedCount }} of {{ requiredDocumentsCount }} attached
                 </p>
@@ -73,7 +73,7 @@ const uploadedCount = computed(() => {
                 <RiUserLine class="h-4 w-4 shrink-0" />
             </div>
             <div class="min-w-0">
-                <p class="text-sm font-medium">Submitted By</p>
+                <p class="text-sm font-semibold">Submitted By</p>
                 <p class="text-sm text-muted-foreground">
                     {{ userName }}
                 </p>

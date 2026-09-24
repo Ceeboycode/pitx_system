@@ -76,20 +76,17 @@ function humanize(value?: string | null) {
     return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function statusClass(status?: string | null) {
-    if (status === 'active')
-        return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-    if (status === 'pending')
-        return 'bg-amber-100 text-amber-700 border-amber-200';
-    if (status === 'suspended')
-        return 'bg-rose-100 text-rose-600 border-rose-200';
-    return 'bg-slate-100 text-slate-500 border-0';
+function statusVariant(status?: string | null) {
+    if (status === 'active') return 'success';
+    if (status === 'pending') return 'warning';
+    if (status === 'suspended') return 'orange';
+    return 'muted';
 }
 
 function statusDot(status?: string | null) {
     if (status === 'active') return 'bg-emerald-500';
     if (status === 'pending') return 'bg-amber-500';
-    if (status === 'suspended') return 'bg-rose-500';
+    if (status === 'suspended') return 'bg-orange-500';
     return 'bg-slate-400';
 }
 
@@ -266,7 +263,7 @@ function submit() {
                     <div class="my-2 flex flex-col gap-0.5 text-sm text-custom-shadow">
                         <ReviewCardRow label="Role" :value="form.role ? humanize(form.role) : ''" />
                         <ReviewCardRow label="Status" :value="humanize(props.defaultStatus)">
-                            <Badge :class="['gap-1.5', statusClass(props.defaultStatus)]">
+                            <Badge :variant="statusVariant(props.defaultStatus)" class="gap-1.5">
                                 <span :class="['h-1.5 w-1.5 rounded-full', statusDot(props.defaultStatus)]" />
                                 {{ humanize(props.defaultStatus) }}
                             </Badge>
@@ -286,7 +283,7 @@ function submit() {
                             </span>
                         </ReviewCardRow>
                         <ReviewCardRow label="Company Status" :value="humanize(props.company.status)">
-                            <Badge :class="['gap-1.5', statusClass(props.company.status)]">
+                            <Badge :variant="statusVariant(props.company.status)" class="gap-1.5">
                                 <span :class="['h-1.5 w-1.5 rounded-full', statusDot(props.company.status)]" />
                                 {{ humanize(props.company.status) }}
                             </Badge>

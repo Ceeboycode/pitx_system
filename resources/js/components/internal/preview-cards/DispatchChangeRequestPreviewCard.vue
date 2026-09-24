@@ -73,7 +73,7 @@ function statusClass(status: string): string {
             <div class="space-y-2">
                 <span class="text-sm font-semibold text-custom-shadow">Requested change</span>
                 <div class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark">
-                    <p class="text-sm font-medium text-custom-shadow">{{ props.request.field_label ?? humanize(props.request.requested_field) }}</p>
+                    <p class="text-sm font-semibold text-custom-shadow">{{ props.request.field_label ?? humanize(props.request.requested_field) }}</p>
                     <p class="break-words text-xs text-custom-shadow/70">
                         {{ props.request.old_value_display ?? '—' }} → {{ props.request.requested_value_display ?? '—' }}
                     </p>

@@ -96,7 +96,7 @@ function actionBadgeClass(action: string): string {
                     :key="`${log.id}-preview-${change.field}`"
                     class="rounded-md bg-custom-bg px-3 py-2 dark:bg-custom-bg-dark"
                 >
-                    <p class="text-sm font-medium text-custom-shadow">{{ change.label }}</p>
+                    <p class="text-sm font-semibold text-custom-shadow">{{ change.label }}</p>
                     <p class="break-words text-xs text-custom-shadow/70">
                         {{ formatValue(change.old) }} → {{ formatValue(change.new) }}
                     </p>

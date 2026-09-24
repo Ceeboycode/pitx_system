@@ -52,7 +52,7 @@ class VehicleDocumentNeedsRevisionNotification extends Notification implements S
             ->line("A vehicle document for {$this->vehicle->plate_number} needs correction.")
             ->line("Document type: {$this->document->document_type}")
             ->line("Remarks: {$this->remarks}")
-            ->action('Open Vehicle Record', route('company.vehicles.show', $this->vehicle->id))
+            ->action('Open Vehicle Record', route('company.vehicles.edit', $this->vehicle->id))
             ->line('Please upload the corrected document as soon as possible.');
     }
 }
