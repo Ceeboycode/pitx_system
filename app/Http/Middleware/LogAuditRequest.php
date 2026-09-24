@@ -71,22 +71,34 @@ class LogAuditRequest
         return 'request.'.strtolower($request->method()).'.'.str_replace('/', '_', $request->path());
     }
 
-    private function sanitizeInput(array $input): array
+    private function sanitizeInput(mixed $input): mixed
     {
-        $sanitized = [];
-
-        foreach ($input as $key => $value) {
-            if (in_array($key, config('audit.sensitive_fields', []), true)) {
-                $sanitized[$key] = '[REDACTED]';
-
-                continue;
-            }
-
-            $sanitized[$key] = is_scalar($value) || is_array($value) || is_null($value)
-                ? $value
-                : (string) $value;
+        if ($input instanceof \Illuminate\Http\UploadedFile) {
+            return [
+                'original_name' => $input->getClientOriginalName(),
+                'mime_type' => $input->getClientMimeType(),
+                'size' => $input->getSize(),
+            ];
         }
 
-        return $sanitized;
+        if (is_array($input)) {
+            $sanitized = [];
+
+            foreach ($input as $key => $value) {
+                if (in_array($key, config('audit.sensitive_fields', []), true)) {
+                    $sanitized[$key] = '[REDACTED]';
+
+                    continue;
+                }
+
+                $sanitized[$key] = $this->sanitizeInput($value);
+            }
+
+            return $sanitized;
+        }
+
+        return is_scalar($input) || is_null($input)
+            ? $input
+            : (string) $input;
     }
 }

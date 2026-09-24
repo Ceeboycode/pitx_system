@@ -8,11 +8,20 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\Models\Role;
 
 beforeEach(function (): void {
     $this->withoutMiddleware(EnsureRoleType::class);
     Notification::fake();
     Storage::fake('public');
+
+    Role::firstOrCreate(['name' => 'operator', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'dispatcher', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'driver', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'super-admin', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'terminal manager', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'it', 'guard_name' => 'web']);
 });
 
 it('accepts docx registration resubmissions and stores optional supporting documents', function (): void {
@@ -22,6 +31,7 @@ it('accepts docx registration resubmissions and stores optional supporting docum
     ]);
 
     $user = User::factory()->external($company->id)->create();
+    $user->assignRole('operator');
 
     $oldPath = 'company-documents/old-permit.pdf';
     Storage::disk('public')->put($oldPath, 'old file');
@@ -32,6 +42,20 @@ it('accepts docx registration resubmissions and stores optional supporting docum
         'file_path' => $oldPath,
         'status' => 'invalid',
         'remarks' => 'Blurry scan.',
+        'uploaded_by' => $user->id,
+    ]);
+
+    CompanyDocument::factory()->create([
+        'company_id' => $company->id,
+        'doc_type' => 'BIR_2303',
+        'status' => 'verified',
+        'uploaded_by' => $user->id,
+    ]);
+
+    CompanyDocument::factory()->create([
+        'company_id' => $company->id,
+        'doc_type' => 'SEC_CERT',
+        'status' => 'verified',
         'uploaded_by' => $user->id,
     ]);
 
@@ -80,6 +104,7 @@ it('rejects unsupported registration document file extensions', function (): voi
     ]);
 
     $user = User::factory()->external($company->id)->create();
+    $user->assignRole('operator');
 
     CompanyDocument::factory()->create([
         'company_id' => $company->id,
@@ -111,6 +136,7 @@ it('shows uploaded document preview metadata on the registration status page', f
     ]);
 
     $user = User::factory()->external($company->id)->create();
+    $user->assignRole('operator');
 
     $path = 'company-documents/'.$company->id.'/MAYORS_PERMIT/permit.pdf';
     Storage::disk('public')->put($path, '%PDF-1.4');
@@ -145,6 +171,7 @@ it('allows external users to preview their own uploaded registration documents',
     ]);
 
     $user = User::factory()->external($company->id)->create();
+    $user->assignRole('operator');
 
     $path = 'company-documents/'.$company->id.'/MAYORS_PERMIT/permit.pdf';
     Storage::disk('public')->put($path, '%PDF-1.4');
@@ -171,6 +198,7 @@ it('downloads uploaded registration documents that cannot be previewed', functio
     ]);
 
     $user = User::factory()->external($company->id)->create();
+    $user->assignRole('operator');
 
     $path = 'company-documents/'.$company->id.'/BIR_2303/certificate.docx';
     Storage::disk('public')->put($path, 'docx file');
@@ -200,7 +228,9 @@ it('does not allow external users to preview documents from another company', fu
     ]);
 
     $user = User::factory()->external($company->id)->create();
+    $user->assignRole('operator');
     $otherUser = User::factory()->external($otherCompany->id)->create();
+    $otherUser->assignRole('operator');
 
     $path = 'company-documents/'.$otherCompany->id.'/MAYORS_PERMIT/permit.pdf';
     Storage::disk('public')->put($path, '%PDF-1.4');

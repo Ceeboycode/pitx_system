@@ -12,13 +12,15 @@ class CompanyStatusService
     {
         $requiredTypes = $this->requiredDocTypes($company->business_type);
 
-        $docs = CompanyDocument::query()
+        $allDocs = CompanyDocument::query()
             ->where('company_id', $company->id)
+            ->get();
+
+        $requiredDocs = $allDocs
             ->whereIn('doc_type', $requiredTypes)
-            ->get()
             ->keyBy('doc_type');
 
-        $allUploaded = count(array_diff($requiredTypes, $docs->keys()->all())) === 0;
+        $allUploaded = count(array_diff($requiredTypes, $requiredDocs->keys()->all())) === 0;
 
         if (! $allUploaded) {
             $company->updateQuietly(['status' => 'draft']);
@@ -26,15 +28,18 @@ class CompanyStatusService
             return;
         }
 
-        $statuses = $docs->pluck('status');
-
-        if ($statuses->contains('invalid') || $statuses->contains('expired')) {
+        // If ANY document (required or supporting) is invalid or expired -> needs_revision
+        if ($allDocs->contains(fn (CompanyDocument $doc): bool => in_array($doc->status, ['invalid', 'expired'], true))) {
             $company->updateQuietly(['status' => 'needs_revision']);
 
             return;
         }
 
-        if ($statuses->every(fn (string $status): bool => $status === 'verified')) {
+        // If all required documents are verified and no document is invalid/expired/pending
+        if (
+            $requiredDocs->every(fn (CompanyDocument $doc): bool => $doc->status === 'verified')
+            && ! $allDocs->contains(fn (CompanyDocument $doc): bool => $doc->status === 'pending')
+        ) {
             $company->updateQuietly(['status' => 'verified']);
 
             return;
